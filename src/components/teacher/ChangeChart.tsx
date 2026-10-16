@@ -11,6 +11,8 @@
 // Divs rather than SVG, unlike TrendChart: these are rectangles on a baseline, which is
 // exactly what ViewChart's own bars already are, and building them the same way keeps the
 // print/theme behaviour ViewChart's comment argues for.
+import { signedDelta } from "@/lib/signed-delta";
+
 const LANE = 38; // px of travel either side of the zero line
 
 export type ChangeBar = {
@@ -25,7 +27,7 @@ export type ChangeBar = {
   value: number | null;
 };
 
-const signedPercent = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}%`;
+const signedPercent = (v: number) => signedDelta(v, (x) => `${Math.abs(Math.round(x))}%`);
 
 export function ChangeChart({
   bars,

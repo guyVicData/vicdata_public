@@ -11,6 +11,7 @@ import { MEASURE_LABEL, MEASURE_UNIT, ordinal, PEER_PLURAL, PHASE_NOUN } from "@
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
 import { reasonWords } from "@/lib/groups/dash";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 const unitOf = (m: string): Unit => (MEASURE_UNIT[m] === "pct" ? "pct" : MEASURE_UNIT[m] === "va" ? "va" : "points");
 const f = (v: number | null | undefined, m: string) => fmt(v ?? null, unitOf(m), m.startsWith("ks5_aps") ? "aps_per_entry" : undefined);
@@ -134,7 +135,7 @@ export function SubjectAreasAcross({ a }: { a: GroupAcademic }) {
               <span className="absolute top-0 h-full w-px bg-[var(--muted2)]" style={{ left: "50%" }} />
               {r.gap !== null && <span className="absolute top-0 h-full rounded-[3px]" style={{ left: r.gap >= 0 ? "50%" : `${50 - (50 * Math.abs(r.gap)) / max}%`, width: `${(50 * Math.abs(r.gap)) / max}%`, background: r.gap >= 0 ? "var(--adm-up-fg)" : "var(--adm-down-fg)" }} />}
             </span>
-            <span className={`text-right font-semibold ${dirClass(r.gap, 0.05)}`}>{r.gap === null ? "—" : `${r.gap > 0 ? "+" : r.gap < 0 ? "−" : "±"}${Math.abs(r.gap).toFixed(2)}`}</span>
+            <span className={`text-right font-semibold ${dirClass(r.gap, 0.05)}`}>{r.gap === null ? "—" : signedDelta(r.gap, (x) => Math.abs(x).toFixed(2), { zero: "±" })}</span>
             <span className="text-[11px] text-[var(--muted2)]">{r.group?.shown ? `${r.group.n_schools} schools, ${r.group.entries.toLocaleString("en-GB")} entries` : `withheld: fewer than ${s.min?.schools ?? 2} schools with ${s.min?.entries ?? 10}+ entries`}</span>
           </div>
         ))}
@@ -403,7 +404,7 @@ export function ProjectionPerSchool({ rows, fullscreen }: { rows: ProjectionRow[
               <Td className="max-w-[160px] truncate">{r.name}</Td>
               <Td className="text-[var(--muted2)]">{r.km} km{r.from === "saved" ? " (saved)" : ""}, ages {r.ages}</Td>
               <Td>{fmt(r.now, "pupils")}</Td>
-              <Td className={dirClass(r.pct, 1)}>{r.end === null ? "—" : `${fmt(r.end, "pupils")} by ${r.endYear} (${r.pct === null ? "—" : `${r.pct > 0 ? "+" : ""}${r.pct.toFixed(1)}%`})`}</Td>
+              <Td className={dirClass(r.pct, 1)}>{r.end === null ? "—" : `${fmt(r.end, "pupils")} by ${r.endYear} (${r.pct === null ? "—" : signedDelta(r.pct, (x) => `${Math.abs(x).toFixed(1)}%`, HYPHEN_SIGN)})`}</Td>
             </tr>
           ))}
         </tbody>

@@ -29,6 +29,7 @@
 //
 // RECOMPUTE THESE when a new year of data lands, using the same two queries; they are a
 // measurement of the data, not a preference.
+import { HYPHEN_SIGN, signedDelta } from "./signed-delta";
 export const CANDIDATE_CHANGE_THRESHOLD_PCT = 20;
 export const ATTAINMENT8_CHANGE_THRESHOLD_POINTS = 5;
 
@@ -62,7 +63,7 @@ export function resultsMoved(previous: number | null, latest: number | null, per
   return {
     kind: "results",
     direction,
-    magnitude: `${delta > 0 ? "+" : ""}${delta.toFixed(1)}`,
+    magnitude: signedDelta(delta, (x) => Math.abs(x).toFixed(1), HYPHEN_SIGN),
     sentence: `The headline result is ${direction} ${Math.abs(delta).toFixed(1)} points on last year, in ${periodLabel}.`,
   };
 }

@@ -9,6 +9,7 @@ import type { MarketView, PipelineOk } from "../api";
 import { Empty, Key, LineSwatch, ViewTitle, fillHeight, fmtN, fmtPct, yearLabel } from "../ui";
 import { LineChart, YearBars } from "./charts";
 import { cohortWord } from "../panels/EntryNow";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 const yr = (y: number) => yearLabel(y);
 
@@ -133,7 +134,7 @@ export function AreaPopulation({ p, la = true, region = true }: { p: PipelineOk;
             <div key={c.name} className="flex flex-col gap-1">
               <div className="truncate text-[11.5px] font-bold text-[var(--fg)]">{c.name}</div>
               <div className="text-[11px] text-[var(--muted2)]">
-                {c.trend ? `${POPULATION_TREND_LABELS[c.trend.tier]} · ${displayPopulationTrendPct(c.trend.pct) > 0 ? "+" : ""}${displayPopulationTrendPct(c.trend.pct).toFixed(1)}%` : "Too few pupils to call"}
+                {c.trend ? `${POPULATION_TREND_LABELS[c.trend.tier]} · ${signedDelta(displayPopulationTrendPct(c.trend.pct), (x) => `${Math.abs(x).toFixed(1)}%`, HYPHEN_SIGN)}` : "Too few pupils to call"}
               </div>
               {c.series!.map((s) => (
                 <div key={s.age} className="grid grid-cols-[22px_1fr] items-center gap-1 text-[10px] text-[var(--muted)]" title={`Age ${s.age}: ${fmtN(s.total)}`}>

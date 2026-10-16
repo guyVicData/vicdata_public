@@ -25,10 +25,11 @@
 // points, since the underlying value is already itself a percentage).
 
 import { trendColour } from "@/lib/trend-colours";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 export default function DivergingBarChart({
   points,
-  formatValue = (v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`,
+  formatValue = (v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN),
 }: {
   points: { urn: string; name: string; pctChange: number | null; isTarget: boolean }[];
   formatValue?: (v: number) => string;

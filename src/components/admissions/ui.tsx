@@ -13,6 +13,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { productAccent } from "@/components/shell/accent";
 import { RailPanel } from "@/components/shell/RailPanel";
 import type { Theme } from "@/components/teacher/TeacherChrome";
+import { signedDelta } from "@/lib/signed-delta";
 
 const A = productAccent("admissions")!;
 
@@ -118,7 +119,7 @@ export function Skeleton() {
 // ------------------------------------------------------------------------- formats
 export const fmtN = (v: number | null | undefined) => (v === null || v === undefined ? "—" : Math.round(v).toLocaleString("en-GB"));
 export const fmtPct = (v: number | null | undefined, dp = 1) => (v === null || v === undefined ? "—" : `${v.toFixed(dp)}%`);
-export const fmtSigned = (v: number | null | undefined, dp = 1, unit = "%") => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v).toFixed(dp)}${unit}`);
+export const fmtSigned = (v: number | null | undefined, dp = 1, unit = "%") => (v === null || v === undefined ? "—" : signedDelta(v, (x) => `${Math.abs(x).toFixed(dp)}${unit}`, { zero: "±" }));
 export const arrow = (v: number | null | undefined, flat = 0.5) => (v === null || v === undefined ? "" : v > flat ? "▲" : v < -flat ? "▼" : "▬");
 export const yearLabel = (p: number) => `${p}/${String((p + 1) % 100).padStart(2, "0")}`;
 export const ordinal = (n: number | null | undefined) => {

@@ -433,7 +433,7 @@ export function CandidatesPanels({
     source: source(spanLabel(changeData)),
     headline: (() => {
       const p = changeBars.find((b) => b.key === focused?.key)?.value ?? null;
-      return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
+      return p === null || p === undefined ? undefined : signedDelta(p, (x) => `${Math.abs(Math.round(x))}%`);
     })(),
   };
 

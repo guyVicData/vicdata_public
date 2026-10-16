@@ -46,6 +46,7 @@ import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
 import { CENSUS_FIRST_PERIOD } from "@/catalogue/years";
+import { HYPHEN_SIGN_PLUS_ZERO, signedDelta } from "@/lib/signed-delta";
 
 const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
   ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
@@ -753,7 +754,7 @@ export default function MapView({
           : colourMode === "trend"
             ? `${entry.currentTotal.toLocaleString()}${
                 pctChange !== null && entry.anchorPeriod !== null
-                  ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since ${academicYearLabel(entry.anchorPeriod)})`
+                  ? ` (${signedDelta(pctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN_PLUS_ZERO)} since ${academicYearLabel(entry.anchorPeriod)})`
                   : ""
               }`
             : `${entry.currentTotal.toLocaleString()} pupils`;
@@ -973,7 +974,7 @@ export default function MapView({
           colour = colourMode === "trend" ? trendColour(pctChange) : s.profile.sector ? tagColour(s.profile.sector) : "#9ca3af";
           radius = radiusFor(current, minV, maxV);
           const statsLine = `${current.toLocaleString()}${
-            anchor !== null ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since ${academicYearLabel(filters.startPeriod)})` : ""
+            anchor !== null ? ` (${signedDelta(pctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN_PLUS_ZERO)} since ${academicYearLabel(filters.startPeriod)})` : ""
           }`;
           tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${statsLine}</div>`;
           // UX round (2026-09-14), Part 2, per direct instruction: the target's own

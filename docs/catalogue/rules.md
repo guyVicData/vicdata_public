@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 141 rules: 137 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -21,7 +21,7 @@ What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lif
 | R-ZERO-CANDIDATE | active | A school with a stage row but no real candidate count and no real headline measure is not 'present' for that stage; special schools are matched only with special schools (and vice versa) in nearest and comparator pools. | no | manual | yes |
 | R-POINTS-WEIGHTED | active | A subject's points across several qualifications in one family are weighted by points-eligible entries, not flat-averaged. | lifted | auto: pointsWeighted | — |
 | R-TREND-LINE-4YR | active | A trend is drawn as a line only with 4 or more real years; below that: per-year bars (TrendChart), a ranked change-in-units list (MultiTrend), or the table alone (Comparisons Trend); the Actual and Trend-line toggles disable. | no | auto: trendLine | — |
-| R-MEETINGS-TREND-4YR | active | A meeting's trend follows R-TREND-LINE-4YR, as every other view does: a line only with 4 or more real years. The live slide picker (the S4 chooser) offers each view's 'Over time' form and the slide draws it through the host's own panels, so a 3-year series draws as per-year bars, never a line. The round-5 axis catalogue's 'N-year trend' gate (availableViews), no longer called by any page, uses the same 4 (MEETING_TREND_MIN_YEARS = TREND_LINE_MIN_YEARS in years.ts). | no | auto: meetingsTrend4yr | — |
+| R-MEETINGS-TREND-4YR | active | A meeting's trend follows R-TREND-LINE-4YR, as every other view does: a line only with 4 or more real years. The live slide picker (the S4 chooser) offers each view's 'Over time' form and the slide draws it through the host's own panels, so a 3-year series draws as per-year bars, never a line. (The round-5 axis catalogue and its 'N-year trend' gate, which no page called, were deleted in the year rules leftovers.) | no | auto: meetingsTrend4yr | — |
 | R-DONUT-COUNTS-ONLY | active | Share (donut) only for counts (entries), and for grade bands once a range is picked; never for averages or rates. | lifted | manual | — |
 | R-NO-GRADE-RATE-GEO | active | No LA, region or England benchmark for the Grade 4+ / A*-E rate; the geography comparison is points-only on Results (entries on Candidates). | lifted | manual | yes |
 | R-BANDS-ENGLAND-BENCH | active | On Grade bands the focused subject's benchmark is England's rate on the same span, from grade geography; peers carry none. | lifted | auto: bandsEnglandBench | — |
@@ -62,6 +62,8 @@ What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lif
 | R-RANKING-SAMPLE | active | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure -- or, with a subject in focus (0.6.6), on the measure in view (R-RANKING-MEASURE). | lifted | none yet | — |
 | R-RANKING-MEASURE | active | With a subject in focus, a national or regional ranking ranks EVERY school in the filtered population on the measure in view: the focused subject (the exact qualification at Post-16; at GCSE a rate is the focus's qualification), on entries, average points, Grade 4+ / A*–E, a band or a Grade counts selection, in the panel's year (a rate's latest from 2023/24). A school needs 5 entries (graded entries on a rate) to be ranked (R-MIN-ENTRIES; entries rank from 1); ties share a rank (R-RANK-TIES); a school its own filters exclude is placed against the population and says so. The table draws a window at real ranks -- the card the top 3 and 5 either side (one block when the school is in the top 8), full screen the top 10, 10 either side and the bottom 3; the change list is the whole population's in the same window: points and rates from 2022/23, entries from the first year with data (R-RANKING-ENTRIES-CHANGE). No subject in focus: the headline ranking, unchanged. | no | auto: rankingOnMeasure | — |
 | R-RANKING-ENTRIES-CHANGE | active | The subject ranking measures its change in entries from the first year with data (the earliest year any school in the ranking has a figure), in %; never from 2022/23. Points and rates keep 2022/23 (R-TREND-FROM-2223). The database function takes one start year, so for entries the app reads the years in its answer and asks again from the first; the app-side fallback applies the same rule (changeFrom). | no | auto: rankingEntriesChange | — |
+| R-ENTRIES-FIRST-YEAR | active | Every view that draws or measures entries (Candidates) starts at the first year with entries in the data, per phase and measure, read through one helper (years.ts entriesFirstPeriod / changeStartFor): 2020/21 for GCSE subjects, the teacher-assessed year (entry totals, no grades). Teacher's Candidates panels, the subject ranking's entries change, the Data View's 'Candidates, % change' (category and subject mode, and the set's average) and the SMT entries mix all start there. Grades and points keep R-TREND-FROM-2223 (change from 2022/23, drawn from 2021/22 with the note). Area comparisons (LA, region, England) start where the area entry totals do (2021/22). | no | auto: entriesFirstYear | — |
+| R-NO-NEGATIVE-ZERO | active | A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's true minus and '+0'; the hyphen and an unsigned zero where a view has always printed them). | no | auto: noNegativeZero | — |
 | R-ADM-LADDER | active | An entry point's pool for a future September is traced back through the schools holding those children now: counted from the census (full-time pupils from age 4; full- plus part-time at nursery ages) at the rung age E - (Y - P), births below age 4, ONS age-10 projections for 11+ only and off by default. Past pools (2020 to next September) are the age E-1 rung in the census a year before. Horizons: 10 years for 11+ and 16+; Reception to its last birth year (two more only with projections we don't hold). | no | auto: admLadder | — |
 | R-ADM-BIRTH-SPLIT | active | A school year runs September to August, so a pool from calendar-year births is 8/12 of year X plus 4/12 of year X-1 (X = entry year - entry age), in the LA blend; births have no sex split, so a girls' or boys' pool from births is 49% / 51% of it, labelled an estimate. | no | auto: admBirthSplit | — |
 | R-ADM-DRIFT-RANGE | active | Beyond the counted rung a pool is a range, never a single point: the set's observed year-on-year cohort ratios 2019/20-2025/26 (schools with a census in both years only; within one kind of school; handovers between kinds measured on their own), their 10th-90th percentile applied for each year still to go, so the range widens with distance. | no | auto: admDriftRange | — |
@@ -145,7 +147,7 @@ What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lif
 | R-SMT-VIEW-AREAS | active | Subject areas are Admissions' strengths and weaknesses (buildRivals), against the comparison set instead of the rivals. | no | auto: smtAreas | — |
 | R-SMT-VIEW-SUBJECTS | active | Subjects list the area's subjects with entries, average, rank in the set and England, since 2022/23, and the subject explorer link carrying ?set=. | no | auto: smtSubjects | — |
 | R-SMT-VIEW-GRADES | active | The grade profile bands the main qualification's latest graded entries (GCSE 9-7, 6-5, 4, 3-1; A level A*-A, B, C, D-U); the bands add up to all of them. | no | auto: smtGrades | — |
-| R-SMT-VIEW-MIX | active | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from 2021/22 (the subject rollup), as the results trend beside it does; entries count from the first year (not graded, so no 2021/22 note). | no | auto: smtMix | — |
+| R-SMT-VIEW-MIX | active | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from the subject rollup's first year with entries (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, a year before the results trend beside it); entries count from the first year (not graded, so no 2021/22 note). | no | auto: smtMix | — |
 | R-SMT-VIEW-RESERVED | active | Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body -- "the top 25%, middle 50% and bottom 25% of entries" (the bands are of entries, not pupils) -- and no figure. | no | auto: smtReserved | — |
 
 ## Cards
@@ -349,8 +351,8 @@ What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lif
 | Statement | A trend is drawn as a line only with 4 or more real years; below that: per-year bars (TrendChart), a ranked change-in-units list (MultiTrend), or the table alone (Comparisons Trend); the Actual and Trend-line toggles disable. |
 | Why | Two or three points drawn as a line read as a trend that isn't there. |
 | Applies to | Every over-time view |
-| Enforced in | - src/lib/teacher-view-panels.ts:TREND_LINE_MIN_YEARS, trendChartKind (311-315)<br>- src/components/teacher/SeriesViews.tsx:multiTrendHasLine (48-49), MultiTrend fallback (76-90)<br>- src/components/teacher/TrendChart.tsx:185<br>- src/components/teacher/ComparisonsPanels.tsx:614-616, 649 (table only)<br>- src/components/teacher/CandidatesPanels.tsx:284, 292<br>- src/components/teacher/SubjectPanels.tsx:789, 798<br>- src/lib/teacher-view-catalogue.ts:availableViews (the meetings slide picker's trend option, R-MEETINGS-TREND-4YR) |
-| Tagged at | - src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/series.ts<br>- src/lib/view-series/subjects.ts<br>- src/lib/year-rules.test.ts |
+| Enforced in | - src/lib/teacher-view-panels.ts:TREND_LINE_MIN_YEARS, trendChartKind (311-315)<br>- src/components/teacher/SeriesViews.tsx:multiTrendHasLine (48-49), MultiTrend fallback (76-90)<br>- src/components/teacher/TrendChart.tsx:185<br>- src/components/teacher/ComparisonsPanels.tsx:614-616, 649 (table only)<br>- src/components/teacher/CandidatesPanels.tsx:284, 292<br>- src/components/teacher/SubjectPanels.tsx:789, 798 |
+| Tagged at | - src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/series.ts<br>- src/lib/view-series/subjects.ts<br>- src/lib/year-rules.test.ts |
 | Test case | Acland Burghley School (100053), ks4, Mathematics: Average points and Grade 4+ each have the latest year's expected count of real years (rule-year-fixtures: 5 in 2025/26, 2021/22-2025/26; 4 in 2024/25) -> line (Grade 4+ had 2, 2023/24-2024/25 -> bars / change list, before 0.6.2). [runner: trendLine] |
 | Origin | Teacher view round 7 §4 |
 | Status | active |
@@ -362,12 +364,12 @@ What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | A meeting's trend follows R-TREND-LINE-4YR, as every other view does: a line only with 4 or more real years. The live slide picker (the S4 chooser) offers each view's 'Over time' form and the slide draws it through the host's own panels, so a 3-year series draws as per-year bars, never a line. The round-5 axis catalogue's 'N-year trend' gate (availableViews), no longer called by any page, uses the same 4 (MEETING_TREND_MIN_YEARS = TREND_LINE_MIN_YEARS in years.ts). |
+| Statement | A meeting's trend follows R-TREND-LINE-4YR, as every other view does: a line only with 4 or more real years. The live slide picker (the S4 chooser) offers each view's 'Over time' form and the slide draws it through the host's own panels, so a 3-year series draws as per-year bars, never a line. (The round-5 axis catalogue and its 'N-year trend' gate, which no page called, were deleted in the year rules leftovers.) |
 | Why | Guy, 13 Oct 2026 (year rules follow-ups, Y4 5): the round-5 picker was the last place still on R-TREND-3YR's 3 years. |
-| Applies to | /teacher/meetings: trend slides; the round-5 axis catalogue (availableViews) |
-| Enforced in | - src/catalogue/years.ts:MEETING_TREND_MIN_YEARS<br>- src/lib/teacher-view-catalogue.ts:TREND_MIN_YEARS, availableViews<br>- src/lib/teacher-view-panels.ts:trendChartKind (the slide's drawing) |
+| Applies to | /teacher/meetings: trend slides |
+| Enforced in | - src/lib/teacher-view-panels.ts:TREND_LINE_MIN_YEARS, trendChartKind (the slide's drawing) |
 | Tagged at | — |
-| Test case | King's Worcester (117037), ks4, Computer Science: Computer Science (3 real years of points): the axis catalogue offers no trend and its series draws as bars; a subject with 4 or more real years is offered a trend, titled with its real span, and draws as a line. [runner: meetingsTrend4yr] |
+| Test case | King's Worcester (117037), ks4, Computer Science: Computer Science (3 real years of points) draws as bars; a subject with 4 or more real years draws as a line. [runner: meetingsTrend4yr] |
 | Origin | Year rules follow-ups (16 Oct 2026) |
 | Status | active |
 | Must lift | — |
@@ -1005,10 +1007,42 @@ What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lif
 | Statement | The subject ranking measures its change in entries from the first year with data (the earliest year any school in the ranking has a figure), in %; never from 2022/23. Points and rates keep 2022/23 (R-TREND-FROM-2223). The database function takes one start year, so for entries the app reads the years in its answer and asks again from the first; the app-side fallback applies the same rule (changeFrom). |
 | Why | Guy, 13 Oct 2026 (year rules follow-ups, Y4 6): the 2022/23 start exists because 2021/22's grading was generous, which doesn't touch entry numbers; R-TREND-FROM-2223 never applies to Candidates. |
 | Applies to | Comparisons' subject ranking on Candidates (entries): its change list, tiles and bars |
-| Enforced in | - src/lib/subject-ranking.ts:changeFrom, rankFigures, rankByFunction, rankRpcArgs |
+| Enforced in | - src/catalogue/years.ts:changeStartFor (R-ENTRIES-FIRST-YEAR)<br>- src/lib/subject-ranking.ts:changeFrom, rankFigures, rankByFunction, rankRpcArgs |
 | Tagged at | - src/lib/subject-ranking.test.ts |
 | Test case | The Chase (137625), ks4, History: GCSE History entries, national: the change list starts at the first year with data (before 2022/23), the same from the database function and the app's fallback; Average points' starts at 2022/23. [runner: rankingEntriesChange] |
 | Origin | Year rules follow-ups (16 Oct 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ENTRIES-FIRST-YEAR
+
+| Field | Content |
+| --- | --- |
+| Statement | Every view that draws or measures entries (Candidates) starts at the first year with entries in the data, per phase and measure, read through one helper (years.ts entriesFirstPeriod / changeStartFor): 2020/21 for GCSE subjects, the teacher-assessed year (entry totals, no grades). Teacher's Candidates panels, the subject ranking's entries change, the Data View's 'Candidates, % change' (category and subject mode, and the set's average) and the SMT entries mix all start there. Grades and points keep R-TREND-FROM-2223 (change from 2022/23, drawn from 2021/22 with the note). Area comparisons (LA, region, England) start where the area entry totals do (2021/22). |
+| Why | Guy, 16 Oct 2026 (year rules leftovers, item 1): keep 2020/21 and extend every entries view to it, so every entries figure starts at the same year. |
+| Applies to | Teacher Candidates (year table, trend, % change, rankings); the Data View's Candidates figures; SMT's entries mix |
+| Enforced in | - src/catalogue/years.ts:entriesFirstPeriod, changeStartFor<br>- src/lib/subject-ranking.ts:changeFrom<br>- src/components/data-view/SubjectAreaSection.tsx:entriesChange, buildCategoryRows, buildSubjectRows<br>- src/lib/smt/academic.ts:mix<br>- src/lib/teacher-view-panels.ts:trimToData (Teacher's Candidates: every year the headline holds, trimmed to the data) |
+| Tagged at | - src/components/data-view/SubjectAreaSection.tsx<br>- src/lib/signed-delta.test.ts<br>- src/lib/smt/academic.ts<br>- src/lib/subject-ranking.ts |
+| Test case | The Chase (137625), ks4, History: GCSE History: entries from 2020/21 (results from 2021/22); Teacher's Candidates draws 2020/21; the Data View's subject-mode change and the ranked list agree (+29% since 2020/21). [runner: entriesFirstYear] |
+| Origin | Year rules leftovers (16 Oct 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-NO-NEGATIVE-ZERO
+
+| Field | Content |
+| --- | --- |
+| Statement | A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's true minus and '+0'; the hyphen and an unsigned zero where a view has always printed them). |
+| Why | Guy, 16 Oct 2026 (year rules leftovers, item 2): '−0%' reads as a fall that didn't happen. Teacher's 0.8 fix (signedDelta) hadn't reached the Data View or the other dashboards. |
+| Applies to | Every signed change or gap: Teacher, the Data View, SMT, Admissions, the group dashboards, the narrative |
+| Enforced in | - src/lib/signed-delta.ts:signedDelta, HYPHEN_SIGN, HYPHEN_SIGN_PLUS_ZERO<br>- src/lib/teacher-view-panels.ts:formatChange, formatDelta |
+| Tagged at | - src/lib/signed-delta.test.ts<br>- src/lib/signed-delta.ts |
+| Test case | (formatters) (), ks4: −0.3% prints '+0%' (Teacher), '0%' (the Data View's bars, rendered), '±0.0 pp' (SMT), '±0.0%' (Admissions); −3% stays '-3%'; no hand-rolled sign-then-toFixed is left in src. [runner: noNegativeZero] |
+| Origin | Year rules leftovers (16 Oct 2026) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
@@ -2346,12 +2380,12 @@ What a number is allowed to be. 139 rules: 135 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from 2021/22 (the subject rollup), as the results trend beside it does; entries count from the first year (not graded, so no 2021/22 note). |
+| Statement | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from the subject rollup's first year with entries (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, a year before the results trend beside it); entries count from the first year (not graded, so no 2021/22 note). |
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE |
 | Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
 | Tagged at | - src/components/smt/views/Mix.tsx<br>- src/components/smt/views/Tables.tsx<br>- src/lib/smt/academic.ts |
-| Test case | The Chase (137625), ks4: The GCSE mix runs from 2021/22 to the latest year, as the results trend does; each year's shares add up to 100%. [runner: smtMix] |
+| Test case | The Chase (137625), ks4: The GCSE mix runs from the rollup's first year with entries (2020/21) to the latest year, a year before the results trend's 2021/22; each year's shares add up to 100%. [runner: smtMix] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |

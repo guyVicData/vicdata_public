@@ -31,7 +31,7 @@ import { academicYearLabel } from "./TrendPill";
 import SubjectAreaBarChart from "./SubjectAreaBarChart";
 import SubjectAreaDivergingBarChart from "./SubjectAreaDivergingBarChart";
 import { Card } from "./GraphsView";
-import { withProvisional } from "@/catalogue/years";
+import { entriesFirstPeriod, withProvisional } from "@/catalogue/years";
 
 function pctChange(first: number | null, last: number | null): number | null {
   if (first === null || last === null || first === 0) return null;
@@ -45,6 +45,16 @@ function pointsChangeSince(years: readonly { period: number; avgPointScore: numb
   const last = [...years].reverse().find((y) => y.avgPointScore !== null);
   if (!last || last.period <= base) return null;
   return pctChange(years.find((y) => y.period === base)?.avgPointScore ?? null, last.avgPointScore);
+}
+
+// An entries (Candidates) change: from the first year with entries (R-ENTRIES-FIRST-YEAR, the one
+// helper in years.ts) to the latest year with entries.
+function entriesChange(years: readonly { period: number; entriesTotal: number | null }[]): number | null {
+  const withData = years.filter((y) => (y.entriesTotal ?? 0) > 0);
+  const from = entriesFirstPeriod(withData.map((y) => y.period));
+  if (from === null) return null;
+  const last = withData.reduce((a, y) => (y.period > a.period ? y : a));
+  return pctChange(withData.find((y) => y.period === from)!.entriesTotal, last.entriesTotal);
 }
 
 export type SubjectRow = {
@@ -134,15 +144,13 @@ export function buildCategoryRows(
     const years = (bucketFamilies ?? fallbackYears ?? familyYearsFor(profile, stage, id)).filter((y) => y.familyId === id);
     const label = families.find((f) => f.familyId === id)?.familyLabel ?? id;
     const latest = years.length ? years[years.length - 1] : null;
-    const entriesFirst = years.find((y) => y.entriesTotal > 0)?.entriesTotal ?? null;
-    const entriesLast = [...years].reverse().find((y) => y.entriesTotal > 0)?.entriesTotal ?? null;
     return {
       id,
       label,
       candidates: latest?.entriesTotal ?? null,
       candidatesPeriod: latest?.period ?? null,
       results: latest?.avgPointScore ?? null,
-      candidatesPctChange: pctChange(entriesFirst, entriesLast),
+      candidatesPctChange: entriesChange(years),
       resultsPctChange: pointsChangeSince(years, TREND_BASELINE_PERIOD[stage]),
       // Only tagged when the figure genuinely came from a non-A-level bucket's own rows.
       // A fallback of "alevel" reads the pre-existing 'all' rows, which ARE the A-level
@@ -318,6 +326,19 @@ export function buildSubjectRows(
     }
 
     const needsSuffix = qualificationType !== null && (qualsPerSubject.get(name)?.size ?? 0) > 1;
+    // Candidates, % change (R-ENTRIES-FIRST-YEAR): from the subject rollup's entry totals, which
+    // reach back to the first year with data (2020/21 at GCSE; the raw facts above start in
+    // 2023/24), the same totals Teacher's Candidates panels read. The rollup has no qualification
+    // dimension at GCSE (every qualification's entries, summed per subject) and is keyed by bucket
+    // at Post-16, so it is used only where it describes this row alone: the whole subject, a GCSE
+    // subject the school runs under one qualification, or a Post-16 row's own bucket. Otherwise the
+    // raw facts' own first and latest years, as before.
+    const rollupEntries = stage === "ks5"
+      ? (headlineBySubject.get(name) ?? []).filter((h) => (h.bucket ?? "all") === (groupKey ?? "all"))
+      : qualificationType === null || !needsSuffix ? (headlineBySubject.get(name) ?? []) : [];
+    const candidatesPctChange = rollupEntries.some((h) => h.entriesTotal > 0)
+      ? entriesChange(rollupEntries)
+      : pctChange(candidatesFirst, candidates);
     return {
       id: qualificationType === null ? name : key,
       // At KS5 a row can cover several qualifications inside one bucket, so the
@@ -334,7 +355,7 @@ export function buildSubjectRows(
       candidates,
       candidatesPeriod: latestPeriod,
       results,
-      candidatesPctChange: pctChange(candidatesFirst, candidates),
+      candidatesPctChange,
       resultsPctChange,
     };
   });
@@ -635,10 +656,10 @@ export default function SubjectAreaSection({
   // the same total-based way -- sum of real comparableGroup entries at the earliest
   // real period vs the latest real period. Category mode aggregates from each
   // profile's own familyYearsFor history (aggregateFamilyTrend); subject mode
-  // aggregates from each comparator's own already-computed SubjectRow (
-  // aggregateSubjectTrend) -- subject rows don't carry a per-period series to walk
-  // the same way category rows' underlying familyYearsFor does. When a specific
-  // comparator is selected, shows THAT school's own real %-change instead.
+  // averages each comparator's own change from its already-computed SubjectRow
+  // (aggregateSubjectTrend; year rules leftovers: it used to sum the comparators'
+  // latest entries and draw the sum as a %). When a specific comparator is
+  // selected, shows THAT school's own real %-change instead.
   const candidatesTrendComparisonItems = order.map((id) => ({
     id,
     label: labelById.get(id) ?? id,
@@ -646,7 +667,7 @@ export default function SubjectAreaSection({
       ? (selectedRows.find((r) => r.id === id)?.candidatesPctChange ?? null)
       : categoryMode
         ? aggregateFamilyTrend(comparableGroup, stage, id, (y) => (y.entriesTotal > 0 ? y.entriesTotal : null), sum, ks5Bucket)
-        : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => r.candidatesPctChange !== null ? r.candidates : null, sum),
+        : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => r.candidatesPctChange, average),
   }));
 
   // Row C, right: AVERAGE avg point score / value-added across comparableGroup

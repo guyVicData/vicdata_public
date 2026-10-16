@@ -979,34 +979,27 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt(v) };
   },
 
-  // R-MEETINGS-TREND-4YR (year rules follow-ups): King's Worcester 117037 GCSE. Computer Science has 3
-  // real years of points: the axis catalogue offers it no trend and the slide draws its series as
-  // bars; a subject with 4+ is offered a trend titled with its span and draws as a line.
+  // R-MEETINGS-TREND-4YR (year rules follow-ups; the round-5 catalogue deleted in the leftovers): King's
+  // Worcester 117037 GCSE. Computer Science has 3 real years of points and the slide draws its series as
+  // bars; a subject with 4+ draws as a line (trendChartKind, the host's panels).
   async meetingsTrend4yr({ adv, tvp }) {
-    const Y = await import("../src/catalogue/years");
-    const cat = await import("../src/lib/teacher-view-catalogue");
     const urn = "117037";
-    const qual = "GCSE (9-1) Full Course";
     const headline = (await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? [];
-    const ref = (subject: string) => ({ key: subject, subject, qualificationType: qual, label: subject });
-    const yearsOf = (subject: string) => cat.yearsOfData(headline, subject, null, "points");
-    const four = [...new Set(headline.map((h) => h.subject))].sort().find((s) => yearsOf(s) >= 4) ?? null;
-    const trendFor = (subject: string) => cat.availableViews("results", "ks4", [ref(subject)], headline).filter((d) => d.trend);
+    const yearsOf = (subject: string) => new Set(headline.filter((h) => h.subject === subject && h.avgPointScore !== null).map((h) => h.period)).size;
+    const four = [...new Set(headline.map((h) => h.subject))].sort().find((s) => yearsOf(s) >= tvp.TREND_LINE_MIN_YEARS) ?? null;
     const kind = (subject: string) => {
       const rows = headline.filter((h) => h.subject === subject);
       const periods = [...new Set(rows.map((h) => h.period))].sort();
       return tvp.trendChartKind({ periods, series: [{ key: subject, label: subject, colour: "#000", values: periods.map((p) => rows.find((h) => h.period === p)?.avgPointScore ?? null) }] } as never);
     };
     const v = {
-      minYears: Y.MEETING_TREND_MIN_YEARS,
+      minYears: tvp.TREND_LINE_MIN_YEARS,
       cs3Years: yearsOf("Computer Science"),
-      cs3Trends: trendFor("Computer Science").length,
       cs3Draws: kind("Computer Science"),
       fourYearSubject: four,
-      fourYearTrend: four ? (trendFor(four)[0]?.shortTitle ?? "none") : "none",
       fourYearDraws: four ? kind(four) : "none",
     };
-    const pass = v.minYears === Y.TREND_LINE_MIN_YEARS && v.cs3Years === 3 && v.cs3Trends === 0 && v.cs3Draws === "bars" && !!four && v.fourYearTrend.includes(`${yearsOf(four)}-year trend`) && v.fourYearDraws === "line";
+    const pass = v.minYears === 4 && v.cs3Years === 3 && v.cs3Draws === "bars" && !!four && v.fourYearDraws === "line";
     return { pass, detail: fmt(v) };
   },
 
@@ -1036,6 +1029,90 @@ const RUNNERS: Record<string, Runner> = {
     };
     const pass = v.entriesFrom !== null && v.entriesFrom === v.fallbackFrom && (firstYear === null || v.entriesFrom === firstYear) && v.entriesFrom < Y.TREND_BASE_PERIOD && v.sameWindow && v.pointsFrom === Y.TREND_BASE_PERIOD;
     return { pass, detail: fmt(v) };
+  },
+
+  // R-ENTRIES-FIRST-YEAR (year rules leftovers): The Chase 137625 GCSE History. Every entries view starts at
+  // the first year with entries in the data (2020/21, the teacher-assessed year): Teacher's Candidates
+  // draws it, the Data View's subject-mode "Candidates, % change" and the SMT entries mix measure from it,
+  // and both changes match the ranked list (+29% since 2020/21). Results keep 2021/22 / 2022/23.
+  async entriesFirstYear({ adv, tvp }) {
+    const Y = await import("../src/catalogue/years");
+    const SR = await import("../src/lib/subject-ranking");
+    const SAS = await import("../src/components/data-view/SubjectAreaSection");
+    const { cachedRankingPopulation } = await import("../src/lib/chooser-sets");
+    const CC = await import("../src/lib/comparator-chooser");
+    const urn = "137625";
+    const head = (await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? [];
+    const hist = head.filter((h) => h.subject === "History").sort((a, b) => a.period - b.period);
+    const first = Y.entriesFirstPeriod(hist.filter((h) => h.entriesTotal > 0).map((h) => h.period));
+    // Teacher's Candidates: the page's periods (every year the headline holds), trimmed to the data.
+    const periods = [...new Set(head.map((h) => h.period))].sort();
+    const drawn = tvp.trimToData({ periods, series: [{ key: "History", label: "History", colour: "#000", values: periods.map((p) => hist.find((h) => h.period === p)?.entriesTotal ?? null) }] } as never);
+    const resultsFrom = hist.find((h) => h.avgPointScore !== null)?.period ?? null;
+    // The Data View, subject mode, as the page builds the school's rows.
+    const { byUrn, subjectFamilyMap } = await adv.fetchSubjectLevelDataForSchools([urn], "ks4");
+    const sd = byUrn.get(urn);
+    const familyId = subjectFamilyMap["History"] ?? "";
+    const bySubject = new Map<string, typeof head>();
+    for (const h of head) if (h.familyId === familyId) bySubject.set(h.subject, [...(bySubject.get(h.subject) ?? []), h]);
+    const rows = SAS.buildSubjectRows("ks4", familyId, sd ? { entries: sd.entries, valueAdded: sd.valueAdded ?? [], subjectFamilyMap } : null, bySubject, "qualification");
+    const dv = rows.find((r) => r.subject === "History")?.candidatesPctChange ?? null;
+    // The ranked list (national).
+    const urns = (await cachedRankingPopulation(null, "ks4", null)).filter((r) => CC.matchesRanking(r, CC.defaultRankingFilters(CC.NATIONAL))).map((r) => r[0]);
+    const req = { urns, targetUrn: urn, phase: "ks4" as const, subject: "History", familyId: familyId || null, qualificationType: null, measure: { kind: "entries" as const }, period: null };
+    const rk = (await SR.rankByFunction(req)) ?? SR.rankFigures(req, await SR.fallbackFigures(req));
+    const v = {
+      firstWithEntries: first,
+      teacherDrawsFrom: (drawn as { periods: number[] }).periods[0] ?? null,
+      resultsFrom,
+      dataViewChange: dv === null ? null : Math.round(dv),
+      rankedFrom: rk.change?.from ?? null,
+      rankedChange: rk.change?.target === undefined || rk.change?.target === null ? null : Math.round(rk.change.target),
+    };
+    const pass = first !== null && first < Y.GRADING_2122_PERIOD && v.teacherDrawsFrom === first && v.rankedFrom === first && v.resultsFrom === Y.GRADING_2122_PERIOD && v.dataViewChange !== null && v.dataViewChange === v.rankedChange && v.rankedChange === 29;
+    return { pass, detail: fmt(v) };
+  },
+
+  // R-NO-NEGATIVE-ZERO (year rules leftovers): a change that rounds to zero prints as an exact zero prints
+  // there, never "−0" / "-0": the shared formatter in each style, the Data View's diverging bars (rendered),
+  // SMT's, Admissions' and the change map's formatters; and no hand-rolled sign-then-toFixed is left in src.
+  async noNegativeZero() {
+    const { signedDelta, HYPHEN_SIGN, HYPHEN_SIGN_PLUS_ZERO } = await import("../src/lib/signed-delta");
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const DBC = (await import("../src/components/data-view/DivergingBarChart")).default;
+    const SDBC = (await import("../src/components/data-view/SubjectAreaDivergingBarChart")).default;
+    const smt = await import("../src/components/smt/ui");
+    const adm = await import("../src/components/admissions/ui");
+    const cmp = await import("../src/lib/teacher-view-comparisons");
+    const { readdirSync, readFileSync, statSync } = await import("node:fs");
+    const pct = (x: number) => `${Math.abs(x).toFixed(0)}%`;
+    const printed: Record<string, string> = {
+      teacher: signedDelta(-0.3, pct),
+      dataView: signedDelta(-0.3, pct, HYPHEN_SIGN),
+      dataViewPlusZero: signedDelta(-0.3, pct, HYPHEN_SIGN_PLUS_ZERO),
+      bars: renderToStaticMarkup(createElement(DBC, { points: [{ urn: "1", name: "A", pctChange: -0.3, isTarget: true }, { urn: "2", name: "B", pctChange: 4, isTarget: false }] })),
+      subjectBars: renderToStaticMarkup(createElement(SDBC, { items: [{ id: "a", label: "A", pctChange: -0.4 }, { id: "b", label: "B", pctChange: -3 }] })),
+      smtVa: smt.fmt(-0.004, "va"),
+      smtPp: smt.fmtChange({ change: -0.04, unit: "pp" }),
+      admissions: adm.fmtSigned(-0.04),
+      changeMap: cmp.signedPercent(-0.3),
+    };
+    const neg0 = /[−-]0(\.0+)?(%|pp| ?pts)?(?![.0-9])/;
+    const bad = Object.entries(printed).filter(([, s]) => neg0.test(s.replace(/<[^>]+>/g, " "))).map(([k]) => k);
+    // Still signed where the change is real: −3% stays "-3%" in the Data View's bars, "−6pp" in Teacher's.
+    const real = printed.subjectBars.includes("-3%") && signedDelta(-6.5, (x) => `${Math.abs(Math.round(x))}pp`) === "−6pp";
+    const handRolled: string[] = [];
+    const walk = (d: string) => {
+      for (const f of readdirSync(d)) {
+        const p = path.join(d, f);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.tsx?$/.test(f) && !/\.test\./.test(f) && /\? "\+" : ""\}?\s*\$?\{?[^`]{0,80}\.toFixed\(/.test(readFileSync(p, "utf8"))) handRolled.push(path.relative(ROOT, p));
+      }
+    };
+    walk(path.join(ROOT, "src"));
+    const pass = bad.length === 0 && real && handRolled.length === 0;
+    return { pass, detail: fmt({ negativeZero: bad.join(", ") || "none", stillSigned: real, handRolled: handRolled.join(", ") || "none", smtPp: printed.smtPp, admissions: printed.admissions, dataView: printed.dataView, teacher: printed.teacher }) };
   },
 
   // R-CURRENT-GRADES-FROM-2324: Acland Burghley 100053 GCSE Grade 4+ on its real four-year rows.
@@ -1668,8 +1745,13 @@ const RUNNERS: Record<string, Runner> = {
     const years = p.mix.years.map((y) => y.year);
     const trendYears = p.trend.school.filter((x) => x.value !== null).map((x) => x.year);
     const sums = p.mix.years.every((y) => Math.abs(Object.values(y.shares).reduce((s, v) => s + v, 0) - 100) < 1e-6);
-    const pass = years[0] === 2021 && years.at(-1) === p.period && trendYears[0] === years[0] && sums;
-    return { pass, detail: fmt({ mixYears: years.join("/"), trendFrom: trendYears[0], addsTo100: sums }) };
+    // R-ENTRIES-FIRST-YEAR (year rules leftovers): the mix starts at the rollup's first year with entries
+    // (2020/21 at GCSE), a year before the results trend's first graded year.
+    const L = await lib();
+    const head = (await L.adv.fetchSubjectHeadlineForSchools(["137625"], "ks4")).get("137625") ?? [];
+    const first = Math.min(...head.filter((e) => e.entriesTotal > 0).map((e) => e.period));
+    const pass = years[0] === first && years.at(-1) === p.period && trendYears[0] === L.notes.GRADING_2122_PERIOD && years[0] < trendYears[0] && sums;
+    return { pass, detail: fmt({ mixYears: years.join("/"), rollupFirst: first, trendFrom: trendYears[0], addsTo100: sums }) };
   },
   async smtPupilsLevel() {
     const out: string[] = [];

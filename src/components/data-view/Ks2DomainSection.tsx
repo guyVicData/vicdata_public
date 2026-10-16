@@ -42,6 +42,7 @@ import { Card } from "./GraphsView";
 import SubjectAreaDivergingBarChart from "./SubjectAreaDivergingBarChart";
 import { academicYearLabel } from "./TrendPill";
 import type { AcademicSchoolProfile, AcademicHeadlineYear } from "@/lib/academic-data-view";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 type Unit = "scaled" | "percent";
 
@@ -174,7 +175,7 @@ function DomainRows({
               {showSupporting && higher && <span>higher standard {higher.value.toFixed(1)}%</span>}
               {showSupporting && progress && (
                 <span>
-                  progress {progress.value > 0 ? "+" : ""}{progress.value.toFixed(1)}
+                  progress {signedDelta(progress.value, (x) => Math.abs(x).toFixed(1), HYPHEN_SIGN)}
                   {low && high ? ` (${low.value.toFixed(1)} to ${high.value.toFixed(1)})` : ""}
                   {` · ${academicYearLabel(progress.period)}`}
                 </span>

@@ -55,6 +55,7 @@ import { bucketFor, KS5_BUCKET_LABEL, type Ks5Bucket } from "@/lib/dfe-qualifica
 // The real grade scales and their ordering, shared with Teacher view's threshold
 // measure rather than kept as a second copy here -- see subject-grades.ts.
 import { gradeOrderFrom } from "@/lib/subject-grades";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 export type DeepDiveTarget = { familyId: string; familyLabel: string; subject?: string };
 
@@ -429,7 +430,7 @@ export default function SubjectDeepDiveDrawer({
                 <div className="grid grid-cols-2 gap-3">
                   <StatTile label="Candidates" value={targetRow?.candidates?.toLocaleString() ?? "—"} sub={targetRow?.candidatesPeriod !== null && targetRow?.candidatesPeriod !== undefined ? academicYearLabel(targetRow.candidatesPeriod) : undefined} />
                   <StatTile label={`Market share of ${setLabel}`} value={marketShare !== null ? `${marketShare.toFixed(0)}%` : "—"} />
-                  <StatTile label="Candidates, % change" value={targetRow?.candidatesPctChange !== null && targetRow?.candidatesPctChange !== undefined ? `${targetRow.candidatesPctChange > 0 ? "+" : ""}${targetRow.candidatesPctChange.toFixed(0)}%` : "Not enough real history"} />
+                  <StatTile label="Candidates, % change" value={targetRow?.candidatesPctChange !== null && targetRow?.candidatesPctChange !== undefined ? signedDelta(targetRow.candidatesPctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN) : "Not enough real history"} />
                   <StatTile
                     label="Results"
                     value={targetRow?.results !== null && targetRow?.results !== undefined ? targetRow.results.toFixed(1) : "No real figure yet"}
@@ -442,7 +443,7 @@ export default function SubjectDeepDiveDrawer({
                     <p className="mb-2 text-xs text-neutral-500">Results, % change ({resultsUnit})</p>
                     <p className="text-sm text-neutral-900 dark:text-neutral-100">
                       {targetRow?.resultsPctChange !== null && targetRow?.resultsPctChange !== undefined
-                        ? `${targetRow.resultsPctChange > 0 ? "+" : ""}${targetRow.resultsPctChange.toFixed(0)}% since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`
+                        ? `${signedDelta(targetRow.resultsPctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN)} since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`
                         : "Not enough real history to compute growth/decline."}
                     </p>
                   </div>

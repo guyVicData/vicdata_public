@@ -90,7 +90,7 @@ export const SMT_MEASURES: Measure[] = [
     numberTypes: ["totals", "points", "change_points", "rank"],
     rules: ["R-SMT-SET-RANKS", "R-SMT-SMALL-ENTRIES", "R-ADM-FLAG-STRENGTHS", "R-TREND-FROM-2223"],
     fetchedBy: ["src/lib/smt/academic.ts:buildAcademic", "src/app/api/smt/academic/route.ts"],
-    knownGaps: ["The subject areas are the data's own families (8), not the spec's illustrative list.", "Entries before 2023/24 come from the historic sources; the mix draws the years both hold."],
+    knownGaps: ["The subject areas are the data's own families (8), not the spec's illustrative list.", "Entries before 2023/24 come from the historic sources; the mix draws every year the subject rollup holds entries for, from its first (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, entries only)."],
     citation: "DfE KS4 and KS5 subject tables",
   },
   {

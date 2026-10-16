@@ -8,6 +8,7 @@ import {
   type PopulationTrendTier,
   type BirthsTrend,
 } from "@/lib/population-trend";
+import { HYPHEN_SIGN_PLUS_ZERO, signedDelta } from "@/lib/signed-delta";
 
 const TIER_COLOUR: Record<PopulationTrendTier, string> = {
   growing: "#2f7d4f",
@@ -62,8 +63,7 @@ function TrendReadout({ tier, pct, captionSuffix }: { tier: PopulationTrendTier;
         {/* displayPopulationTrendPct: display-only sign flip, see population-trend.ts's
             own comment -- kept in sync with the narrative generator's Paragraph 4,
             the only other place this metric is shown to a user. */}
-        ({displayPopulationTrendPct(pct) >= 0 ? "+" : ""}
-        {displayPopulationTrendPct(pct).toFixed(1)}% {captionSuffix})
+        ({signedDelta(displayPopulationTrendPct(pct), (x) => `${Math.abs(x).toFixed(1)}%`, HYPHEN_SIGN_PLUS_ZERO)} {captionSuffix})
       </span>
     </div>
   );

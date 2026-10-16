@@ -38,16 +38,27 @@ export const TREND_BASE_PERIOD = 2022;
 // trend that isn't there.
 export const TREND_LINE_MIN_YEARS = 4;
 
-// The meetings slide picker's "N-year trend" follows R-TREND-LINE-4YR, as every other view does
-// (Guy, 13 Oct 2026: year rules follow-ups). R-TREND-3YR's 3 is retired; the name stays for
-// teacher-view-catalogue.ts.
-export const MEETING_TREND_MIN_YEARS = TREND_LINE_MIN_YEARS;
-
 // The Data View's academic "since" year, per key stage: GCSE and Post-16 follow R-TREND-FROM-2223
 // (Guy, 13 Oct 2026: year rules follow-ups), as Teacher does; KS2 from its first year (2022/23:
 // KS2 has no earlier rows), as Teacher's KS2 does. Its graphs still draw 2021/22, with the note.
 // Candidates (entries) changes in the Data View are measured from the first year with data.
 export const DATA_VIEW_TREND_BASELINE: Record<"ks2" | "ks4" | "ks5", number> = { ks2: 2022, ks4: TREND_BASE_PERIOD, ks5: TREND_BASE_PERIOD };
+
+// R-ENTRIES-FIRST-YEAR (Guy, 16 Oct 2026: year rules leftovers): an entries (Candidates) view draws
+// and measures from the first year with data, per phase and measure -- read from the data, never
+// written here. For GCSE subjects that is 2020/21, the teacher-assessed year (entry totals, no
+// grades). Grades and points keep R-TREND-FROM-2223. Pass the years that hold an entries figure.
+export function entriesFirstPeriod(periodsWithData: Iterable<number>): number | null {
+  let first: number | null = null;
+  for (const p of periodsWithData) if (Number.isFinite(p) && (first === null || p < first)) first = p;
+  return first;
+}
+
+// Where a change starts: entries from their first year with data (R-ENTRIES-FIRST-YEAR), everything
+// else from 2022/23 (R-TREND-FROM-2223).
+export function changeStartFor(kind: "entries" | "results", periodsWithData: Iterable<number>): number {
+  return kind === "entries" ? (entriesFirstPeriod(periodsWithData) ?? TREND_BASE_PERIOD) : TREND_BASE_PERIOD;
+}
 
 // ---------------------------------------------- RULES: where the sources start (source facts)
 

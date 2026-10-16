@@ -10,6 +10,7 @@ import { DivergingBar } from "@/components/admissions/views/charts";
 import { TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import type { StagePart } from "@/lib/smt/academic";
 import { ord } from "../ui";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 const dir = (v: number | null) => (v === null ? "—" : v > 0.05 ? "▲ rising" : v < -0.05 ? "▼ falling" : "▬ steady");
 const FLAG_WORD: Record<string, string> = { strength: "Strength", strength_growing: "Strength, growing", weakness: "Weakness", weakness_widening: "Weakness, widening" };
@@ -47,10 +48,10 @@ export function SubjectAreas({ parts, setLabel, onArea, area }: { parts: StagePa
                   <span>
                     {ord(a.rank)} of {a.of}
                   </span>
-                  <span title={`You ${a.mine.toFixed(2)}; the set's average ${(a.mine - a.gap).toFixed(2)} (gap ${a.gap > 0 ? "+" : ""}${a.gap.toFixed(2)} pts)`}>
+                  <span title={`You ${a.mine.toFixed(2)}; the set's average ${(a.mine - a.gap).toFixed(2)} (gap ${signedDelta(a.gap, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts)`}>
                     <DivergingBar value={a.gap} max={max} />
                   </span>
-                  <span title={a.gapSince2223 === null ? `No ${periodLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${a.gapSince2223 > 0 ? "+" : ""}${a.gapSince2223.toFixed(2)} pts since ${periodLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
+                  <span title={a.gapSince2223 === null ? `No ${periodLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${signedDelta(a.gapSince2223, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts since ${periodLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
                   <span className="flex flex-wrap gap-1">
                     {a.flags
                       .filter((f) => !(f.id === "strength" && a.flags.some((g) => g.id === "strength_growing")) && !(f.id === "weakness" && a.flags.some((g) => g.id === "weakness_widening")))
