@@ -461,8 +461,12 @@ const RUNNERS: Record<string, Runner> = {
     const regional = { rank: 1 + regVals.filter((v) => v > mine).length, of: regVals.length };
     const preps = r.rows.filter((x) => x.results.note === "no_published_results").map((x) => x.urn);
     const igcse = r.rows.filter((x) => x.results.note === "igcse_not_ranked").map((x) => x.urn);
+    // Every rival the IGCSE rule flags is listed and not ranked, and there is one (117018 was fixed here
+    // until it left the GIAS data on 16 Oct 2026; King's Worcester 117037 is the one now).
+    const flagged = await (await import("../src/lib/igcse")).igcseAmong(r.rows.filter((x) => !x.isSchool).map((x) => x.urn));
+    const igcseRivalsOk = flagged.size > 0 && [...flagged].every((u) => igcse.includes(u)) && igcse.every((u) => flagged.has(u));
     const v = { national: `${me.results.national?.rank}/${me.results.national?.of} (raw ${national.rank}/${national.of})`, regional: `${me.results.regional?.rank}/${me.results.regional?.of} (raw ${regional.rank}/${regional.of})`, size: `${me.size?.badge} ${me.size?.national?.rank}/${me.size?.national?.of}`, noResults: preps.join(" "), igcse: igcse.join(" ") };
-    const pass = me.results.national?.rank === national.rank && me.results.national?.of === national.of && me.results.regional?.rank === regional.rank && me.results.regional?.of === regional.of && preps.includes("117002") && igcse.includes("117018") && !!me.size?.badge;
+    const pass = me.results.national?.rank === national.rank && me.results.national?.of === national.of && me.results.regional?.rank === regional.rank && me.results.regional?.of === regional.of && preps.includes("117002") && igcseRivalsOk && !!me.size?.badge;
     return { pass, detail: fmt(v) };
   },
 
