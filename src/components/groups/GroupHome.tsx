@@ -25,8 +25,8 @@ const SCHOOLS_TILE: TileColour = { hex: "#a78bfa", rgb: "167,139,250" };
 const ACCESS_TILE: TileColour = { hex: "#fbbf24", rgb: "251,191,36" };
 const DASHBOARDS_TILE: TileColour = { hex: "#c4b5fd", rgb: "167,139,250" };
 export const GROUP_DASHBOARD_NAMES = ["Overview", "Schools", "Academic", "Pupils"] as const;
-// 0.8 groups r2: Overview and Schools are live; Academic and Pupils stay "coming" until round 3.
-export const GROUP_DASHBOARD_LIVE: Record<(typeof GROUP_DASHBOARD_NAMES)[number], string | null> = { Overview: "/teacher/group/overview", Schools: "/teacher/group/schools", Academic: null, Pupils: null };
+// 0.8 groups r2: Overview and Schools live; r3: Academic and Pupils too.
+export const GROUP_DASHBOARD_LIVE: Record<(typeof GROUP_DASHBOARD_NAMES)[number], string | null> = { Overview: "/teacher/group/overview", Schools: "/teacher/group/schools", Academic: "/teacher/group/academic", Pupils: "/teacher/group/pupils" };
 
 /** The group card's dashboard chips: a live one opens that dashboard for this account; a coming one is dashed. */
 export function GroupDashChips({ accountId, size = "md" }: { accountId: string; size?: "md" | "sm" }) {

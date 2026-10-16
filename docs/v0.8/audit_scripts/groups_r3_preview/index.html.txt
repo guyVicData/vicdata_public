@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.write('<link rel="stylesheet" href="' + (new URLSearchParams(location.search).get("css") || "app") + '.css">');</script>
+<link rel="stylesheet" href="leaflet.css">
+<style>body{margin:0}</style>
+<script>
+window.process = { env: { NODE_ENV: "production" } };
+const P = new URLSearchParams(location.search);
+const THEME = P.get("theme") || "dark";
+try { localStorage.setItem("vicdata.teacher.theme", THEME); if (P.get("lens")) localStorage.setItem("vicdata.home.lens", P.get("lens")); localStorage.removeItem("vicdata.smt.level:" + (P.get("case") || "137625")); } catch {}
+const CASE = P.get("case") || "137625";
+const ROLE = P.get("role") || "smt"; // smt | admin | teacher | padmin | viewas
+window.onerror = (m) => { document.title = "ERR " + m; const pre = document.getElementById("err"); if (pre) pre.textContent += m + "\n"; };
+</script>
+<script>document.write('<script src="' + (P.get("fx") || "fx") + '/index.js"><\/script><script src="' + (P.get("fx") || "fx") + '/group.js"><\/script>');</script>
+<script>try { if (P.get("groupset") === "1") { const g = window.__SMTFX && window.__SMTFX[CASE]; } } catch {}</script>
+<script>
+const fx = window.__SMTFX[CASE];
+try { if (P.get("groupset") === "1" && fx.groupSetId) localStorage.setItem("vicdata.smt.set:" + CASE, JSON.stringify({ kind: "saved", id: fx.groupSetId })); else localStorage.removeItem("vicdata.smt.set:" + CASE); } catch {}
+const roles = { smt: ["smt"], admin: ["teacher"], teacher: ["teacher"], padmin: ["teacher"], viewas: ["teacher"], multi: ["smt", "teacher", "admissions"] }[ROLE];
+window.__DB = {
+  school_memberships: [{ id: "m1", profile_id: "00000000-0000-0000-0000-000000000001", roles, role: roles[0], is_admin: ROLE === "admin", approved_at: "2026-01-01", status: "approved", school_account_id: "acc1",
+    school_accounts: { id: "acc1", school_urn: fx.urn, account_holder_membership_id: null, schools: { current_name: fx.name } }, profiles: { full_name: "Alex Deputy", email: "alex@school.example" } }],
+  school_accounts: [{ id: "acc1", school_urn: fx.urn }],
+  schools: [{ urn: fx.urn, current_name: fx.name }],
+  dashboards: [{ id: "00000000-0000-0000-0000-0000000000d1", slug: "vicdata.smt.overview", kind: "dashboard", owner_scope: "vicdata", name: "SMT Overview", published_version_id: null, owner_profile_id: null, school_account_id: null, updated_at: "2026-10-13T10:00:00Z", created_at: "2026-10-13T10:00:00Z" }, { id: "00000000-0000-0000-0000-0000000000d2", slug: "vicdata.smt.academic", kind: "dashboard", owner_scope: "vicdata", name: "SMT Academic", published_version_id: null, owner_profile_id: null, school_account_id: null, updated_at: "2026-10-13T10:00:00Z", created_at: "2026-10-13T10:00:00Z" }], dashboard_drafts: [], dashboard_versions: [], dashboard_assignments: [], admissions_list_shares: [], admissions_lists: [], teams: [], profiles: [{ id: "00000000-0000-0000-0000-000000000001", full_name: "Alex Deputy", email: "alex@school.example" }],
+  meetings: [], saved_sets: [], saved_rankings: [], teacher_view_preferences: [], teacher_view_onboarding: [{ phase: "ks4" }, { phase: "ks5" }],
+};
+window.__RPC = { is_platform_admin: ROLE === "viewas" || ROLE === "padmin" };
+const realFetch = window.fetch;
+window.__USAGE = [];
+window.fetch = async (input, init) => {
+  const u = new URL(typeof input === "string" ? input : input.url, location.href);
+  const json = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
+  if (!u.pathname.startsWith("/api/")) return realFetch(input, init);
+  const body = init && init.body ? JSON.parse(init.body) : null;
+  if (u.pathname === "/api/usage") { window.__USAGE.push(body); return new Response(null, { status: 204 }); }
+  if (u.pathname === "/api/teacher/phases") return json({ phases: ["ks4", "ks5"] });
+  if (u.pathname === "/api/smt/school") return json(fx.school);
+  if (u.pathname === "/api/teacher/chooser-set") return json({ rows: fx.nearest.rows, seriesByUrn: {}, note: null });
+  if (u.pathname === "/api/teacher/saved-comparator-sets") return json(fx.savedSets || { me: { membershipId: "m1", schoolAccountId: "acc1", canEditShared: true }, cap: 8, personalCount: 0, sets: [], seriesByUrn: {}, excludedUrns: [], candidates: [], target: { laName: fx.school.laName ?? null, independent: !!fx.school.independent } });
+  if (u.pathname === "/api/smt/overview") { const f = body.filters || {}; return json(fx.overview[(f.sex || "all") + "|" + (f.boarding || "all")] || fx.overview["all|all"]); }
+  if (u.pathname === "/api/smt/pupils") { const f = body.filters || {}; return json(fx.pupils[(body.level || "whole") + "|" + (f.sex || "all") + "|" + (f.boarding || "all")] || fx.pupils["whole|all|all"]); }
+  if (u.pathname === "/api/smt/context") return json(fx.context[u.searchParams.get("area") === "la" ? "la" : "around"]);
+  if (u.pathname === "/api/smt/academic") { const k = (body.level || "whole") + "|" + (body.area || ""); return fx.academic[k] ? json(fx.academic[k]) : json({ error: "no fixture " + k }, 502); }
+  return json({ error: "unstubbed " + u.pathname }, 404);
+};
+if (ROLE === "viewas") document.cookie = "vicdata_view_as=" + encodeURIComponent(JSON.stringify({ u: fx.urn, r: "smt", n: fx.name })) + "; path=/";
+</script>
+</head><body><div id="root"></div><pre id="err" style="color:red"></pre><script>document.write('<script src="' + (P.get("bundle") || "bundle") + '.js"><\/script>');</script></body></html>

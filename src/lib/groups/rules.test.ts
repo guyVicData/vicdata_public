@@ -10,8 +10,8 @@
 // the round stops: the test is never changed to match.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { COMPARISON_KINDS, groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, type Figures, type GroupAggregate } from "./aggregates";
-import { buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE } from "./dash";
+import { COMPARISON_KINDS, groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, namedCandidates, type ComparisonRow, type Figures, type GroupAggregate } from "./aggregates";
+import { buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE, NOT_OFFERED, mixMatchedLabel, setsFor, type CompareKey, type SetRef } from "./dash";
 
 const HARRIS = "3320";
 const DUKES = "club_iss:dukes-education";
@@ -122,4 +122,149 @@ test("R-GROUP-DUKES: Dukes' roll and change are G0's corrected figures, Cardiff 
   const s = buildSchools({ agg: await agg(DUKES, "at_time"), schools: await groupSchoolsYear(DUKES), focus: "all" });
   const cardiff = s.rows.find((r) => r.urn === CARDIFF);
   assert.ok(cardiff && cardiff.outsideEngland && /outside England/.test(cardiff.reason ?? ""), "the Schools table says why");
+});
+
+// ------------------------------------------------------------------------------- groups r3 (A, P)
+import { buildAcademic, buildPupils } from "./dash-r3";
+
+const r3 = async (g: string, focus: "all" | "secondary" | "post16" | "primary") => {
+  const agg = await groupAggregate(g, "at_time");
+  const comps = await groupComparisons(g, kindsFor(DEFAULT_COMPARE));
+  const schools = await groupSchoolsYear(g);
+  return { a: buildAcademic({ agg: agg!, comps, schools, compare: DEFAULT_COMPARE, focus }), p: buildPupils({ agg: agg!, comps, schools, compare: DEFAULT_COMPARE, focus }), schools, agg: agg! };
+};
+
+test("R-GROUP-VA-SEPARATE: value added never appears in a results chart", async () => {
+  for (const g of [HARRIS, DUKES])
+    for (const focus of ["all", "secondary", "post16"] as const) {
+      const { a } = await r3(g, focus);
+      const charted = [...a.overview.trends.results.map((r) => r.measure), ...(a.post16 ?? []).map((r) => r.measure)];
+      assert.ok(!charted.some((m) => m === "ks4_p8" || m === "ks5_va_alevel"), `${g} ${focus}: ${charted.join(" ")}`);
+      assert.ok(a.headlines.every((h) => h.measures.every((m) => m.measure !== "ks4_p8" && m.measure !== "ks5_va_alevel")), `${g} ${focus}: no VA among the headlines`);
+    }
+});
+
+test("R-GROUP-IGCSE: at group level, IGCSE schools are listed 'not ranked at GCSE', never ranked or counted", async () => {
+  const { a, schools } = await r3(DUKES, "secondary");
+  const igcse = new Set(schools.filter((s) => s.years.some((y) => y.figures?.igcse)).map((s) => s.urn));
+  assert.ok(igcse.size >= 4, `Dukes has IGCSE schools (${igcse.size})`);
+  for (const r of a.ranked.rows.filter((x) => igcse.has(x.urn))) {
+    assert.equal(r.value, null, `${r.name}: no value`);
+    assert.equal(r.inGroup, null, `${r.name}: no rank in the group`);
+    assert.match(r.reason ?? "", /IGCSE: not ranked at GCSE/);
+  }
+  const ranked = a.ranked.rows.filter((x) => x.inGroup);
+  assert.ok(ranked.every((x) => x.inGroup!.of === ranked.length), "ranks counted over schools with a figure only");
+  const h = a.headlines.find((x) => x.phase === "secondary")!;
+  assert.equal(h.withFigure, h.measures[0].group?.n_with_figure ?? 0, "the n is the lookup's");
+  assert.ok(h.excluded.filter((e) => e.reason === "igcse").length >= 4, "IGCSE schools in the excluded list, with the reason");
+});
+
+test("subject areas: the audit-fixes minimum, n per area, the lookup's figures", async () => {
+  const { a, agg } = await r3(HARRIS, "secondary");
+  assert.equal(a.areas.stage, "ks4");
+  const raw = agg.rows.find((r) => r.period === a.areas.year && r.phase === "secondary")!.figures.subject_areas!.ks4!;
+  for (const r of a.areas.rows) {
+    const x = raw.find((y) => y.family_id === r.familyId)!;
+    assert.equal(r.group?.points_per_entry, x.points_per_entry);
+    assert.ok(x.shown ? x.n_schools >= 2 : x.points_per_entry === null, `${r.label}: shown only with 2+ schools`);
+  }
+});
+
+test("Pupils: Year 12 against Year 11 adds up from the schools' own rows; the shape is the lookup's", async () => {
+  const { p, agg } = await r3(HARRIS, "all");
+  assert.equal(p.leaving.reduce((t, r) => t + (r.y12 ?? 0), 0), p.stayingOn.y12);
+  assert.equal(p.leaving.reduce((t, r) => t + (r.y11 ?? 0), 0), p.stayingOn.y11);
+  assert.deepEqual(p.shape.ages, agg.rows.find((r) => r.period === p.shape.year && r.phase === "all")!.figures.roll_by_age);
+});
+
+// ------------------------------------------------------------------- comparison rows by key, not order
+// group_comparison_lookup returns its rows in no fixed order (the ingest's verify: the same 448 rows as
+// the fixtures, matched by key). Every view must read a comparison row by its full key (kind, variant,
+// phase, reading, period), never by its position, so the views are the same whatever order the rows come in.
+
+const compKey = (c: ComparisonRow) => `${c.kind}|${c.variant}|${c.phase}|${c.reading}|${c.period}`;
+/** A fixed shuffle (seeded), so a failure reproduces. */
+function shuffled<T>(xs: T[], seed: number): T[] {
+  const out = [...xs];
+  let s = seed;
+  for (let i = out.length - 1; i > 0; i--) {
+    s = (s * 1103515245 + 12345) % 2147483648;
+    const j = s % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+test("R-GROUP-KEYS: each comparison row's key (kind, variant, phase, reading, period) is unique", async () => {
+  for (const g of [HARRIS, DUKES]) {
+    const named = (await namedCandidates(g, (await agg(g, "at_time")).group.type, 0)).slice(0, 3).map((n) => `peer_named:${n.id}`);
+    const comps = await groupComparisons(g, [...COMPARISON_KINDS, ...named]);
+    assert.ok(comps.length > 0, `${g}: comparison rows`);
+    const seen = new Map<string, number>();
+    for (const c of comps) seen.set(compKey(c), (seen.get(compKey(c)) ?? 0) + 1);
+    const dups = [...seen].filter(([, n]) => n > 1).map(([k]) => k);
+    assert.deepEqual(dups, [], `${g}: duplicate comparison keys`);
+  }
+});
+
+test("R-GROUP-KEYS: the views are the same whatever order the comparison and aggregate rows come in", async () => {
+  for (const g of [HARRIS, DUKES]) {
+    const a = await agg(g, "at_time");
+    const named = (await namedCandidates(g, a.group.type, 0)).slice(0, 3).map((n) => n.id);
+    const compares: CompareKey[] = ["peer_band", "non_group", "areas", "england", "mix_matched", ...(named.length ? [`peer_named:${named.join(",")}` as CompareKey] : [])];
+    const kinds = [...new Set(compares.flatMap(kindsFor))];
+    const comps = await groupComparisons(g, kinds);
+    const schools = await groupSchoolsYear(g);
+    const orders: [string, GroupAggregate, ComparisonRow[]][] = [
+      ["reversed", { ...a, rows: [...a.rows].reverse() }, [...comps].reverse()],
+      ["shuffled 1", { ...a, rows: shuffled(a.rows, 1) }, shuffled(comps, 7)],
+      ["shuffled 2", { ...a, rows: shuffled(a.rows, 42) }, shuffled(comps, 2026)],
+    ];
+    for (const compare of compares)
+      for (const focus of FOCI) {
+        if (focus !== "all" && !a.rows.some((r) => r.phase === focus)) continue;
+        const want = JSON.stringify({
+          o: buildOverview({ agg: a, comps, compare, focus }),
+          ac: buildAcademic({ agg: a, comps, schools, compare, focus }),
+          pu: buildPupils({ agg: a, comps, schools, compare, focus }),
+        });
+        for (const [how, a2, c2] of orders) {
+          const got = JSON.stringify({
+            o: buildOverview({ agg: a2, comps: c2, compare, focus }),
+            ac: buildAcademic({ agg: a2, comps: c2, schools, compare, focus }),
+            pu: buildPupils({ agg: a2, comps: c2, schools, compare, focus }),
+          });
+          assert.ok(got === want, `${g} ${compare} ${focus}: the views change when the rows come ${how}`);
+        }
+      }
+  }
+});
+
+// ----------------------------------------------------------------------- no two offered sets the same
+// Guy, 16 Oct: mix-matched means non-group schools only. The ingest's mix_matched:england duplicates
+// areas:region by construction (the same region cells, the same weights), so it's never offered. A set
+// that repeats another set's figures in every year of a phase is a duplicate under a second label.
+
+test("R-GROUP-SETS-DISTINCT: no two offered sets have identical figures in every year of any phase", async () => {
+  for (const g of [HARRIS, DUKES])
+    for (const reading of ["at_time", "listed_now"] as const) {
+      const a = await agg(g, reading);
+      const named = (await namedCandidates(g, a.group.type, 0)).slice(0, 3).map((n) => `peer_named:${n.id}`);
+      const comps = await groupComparisons(g, [...COMPARISON_KINDS, ...named]);
+      const sets = setsFor(a, comps, reading, "the group");
+      assert.ok(!sets.some((s) => NOT_OFFERED.has(s.key)), `${g} ${reading}: mix_matched:england is never offered`);
+      assert.equal(sets.find((s) => s.key === "mix_matched:non_group")?.label, mixMatchedLabel("the group"), `${g}: the mix-matched label`);
+      assert.ok(sets.some((s) => s.key === "areas:region"), `${g}: the areas set stays, under its own label`);
+      const byPhase = (s: SetRef, ph: string) => new Map(s.rows.filter((r) => r.phase === ph).map((r) => [r.period, JSON.stringify(r.figures)]));
+      for (let i = 0; i < sets.length; i++)
+        for (let j = i + 1; j < sets.length; j++)
+          for (const ph of ["all", "primary", "secondary", "post16"]) {
+            const x = byPhase(sets[i], ph);
+            const y = byPhase(sets[j], ph);
+            if (!x.size || x.size !== y.size) continue;
+            const same = [...x].every(([p, f]) => y.get(p) === f);
+            assert.ok(!same, `${g} ${reading}: ${sets[i].key} and ${sets[j].key} have identical ${ph} figures in every year`);
+          }
+    }
 });

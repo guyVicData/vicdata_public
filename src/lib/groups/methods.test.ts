@@ -9,10 +9,10 @@ import { methodText } from "@/catalogue/methods";
 import { GROUP_NOTES } from "@/catalogue/notes";
 
 const dashboard = readFileSync(path.join(__dirname, "../../components/groups/dash/GroupDashboard.tsx"), "utf8");
-const viewIds = Array.from(dashboard.matchAll(/"(GRP-[OS]-[A-Z]+)": \{ label:/g)).map((m) => m[1]);
+const viewIds = Array.from(dashboard.matchAll(/"(GRP-[OSAP]-[A-Z0-9]+)": \{ label:/g)).map((m) => m[1]);
 
 test("R-METHOD-PRESENT: every group view has a method: sources, area, years, steps, and no unfilled placeholder", () => {
-  assert.ok(viewIds.length >= 12, `views registered: ${viewIds.join(" ")}`);
+  assert.ok(viewIds.length >= 28, `views registered: ${viewIds.join(" ")}`);
   for (const id of viewIds) {
     const m = groupMethodOf(id, {});
     assert.ok(m, `${id}: a method`);

@@ -35,6 +35,8 @@ export type SavedComparatorSet = {
   members: SetMember[];
   // A Victoria Consultancy set switched on for this school (read-only, never mine).
   vc?: boolean;
+  // 0.8 groups r3 (S): one of the school's own groups, offered as a set (read-only, never mine).
+  group?: { groupId: string; source: string; sourceLabel: string; likely: boolean; likelyMembers: number; type: string; selfDeclared: boolean };
   rows: { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean; distanceKm?: number | null; independent?: boolean }[];
 };
 

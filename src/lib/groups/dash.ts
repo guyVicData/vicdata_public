@@ -165,6 +165,11 @@ export function chainedIndex(rows: { period: number; figures: Figures }[]): Pt[]
 
 export type SetRef = { key: string; label: string; kind: ComparisonKind | "peer_named" | "group"; variant: string; rows: { period: number; phase: Phase; figures: Figures }[] };
 
+/** Mix-matched means non-group schools only (Guy, 16 Oct): the ingest's `mix_matched:england` weights
+ * the same region cells by the same weights as `areas:region`, so it duplicates that set and is never offered. */
+export const NOT_OFFERED = new Set(["mix_matched:england"]);
+export const mixMatchedLabel = (group: string) => `Non-group schools, same regions and phases as ${group}`;
+
 /** The comparison sets as rows of one reading: the group itself first, then each kind's variants. */
 export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Reading, groupLabel: string): SetRef[] {
   const out: SetRef[] = [{ key: "group", label: groupLabel, kind: "group", variant: "group", rows: agg.rows }];
@@ -172,15 +177,17 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
   for (const r of comps) {
     if (r.reading !== reading) continue;
     const key = r.kind === "peer_named" ? `peer_named:${r.variant}` : `${r.kind}:${r.variant}`;
-    const s = by.get(key) ?? { key, label: r.kind === "peer_named" ? displayName(r.label) : r.label, kind: r.kind, variant: r.variant, rows: [] };
+    if (NOT_OFFERED.has(key)) continue;
+    const label = r.kind === "peer_named" ? displayName(r.label) : key === "mix_matched:non_group" ? mixMatchedLabel(groupLabel) : r.label;
+    const s = by.get(key) ?? { key, label, kind: r.kind, variant: r.variant, rows: [] };
     s.rows.push({ period: r.period, phase: r.phase, figures: r.figures });
     by.set(key, s);
   }
-  const order = ["peer_band:band", "non_group:england", "non_group:areas", "areas:la", "areas:region", "england:england", "mix_matched:non_group", "mix_matched:england"];
+  const order = ["peer_band:band", "non_group:england", "non_group:areas", "areas:la", "areas:region", "england:england", "mix_matched:non_group"];
   const sorted = Array.from(by.values()).sort((a, b) => {
     const ia = order.indexOf(a.key);
     const ib = order.indexOf(b.key);
-    return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib) || a.label.localeCompare(b.label);
+    return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib) || a.label.localeCompare(b.label) || a.key.localeCompare(b.key);
   });
   return [...out, ...sorted];
 }
@@ -303,7 +310,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
     opt("non_group", "non_group:england", "Non-group schools", sector === "independent" ? "Standalone independent schools in England (in no independent group)." : "LA-maintained schools and single-academy trusts in England (in no MAT or federation)."),
     opt("areas", "areas:la", `All schools in ${name}’s areas`, `Every school in the LAs where ${name}’s schools sit, weighted to ${name}’s pupils in each.`),
     opt("england", "england:england", "England", "Every school in England with the figure."),
-    opt("mix_matched", "mix_matched:non_group", "Mix-matched (labelled)", `Non-group schools reweighted to ${name}’s phase and region mix, so the gap isn’t geography.`),
+    opt("mix_matched", "mix_matched:non_group", mixMatchedLabel(name), `Non-group schools in ${name}’s regions, reweighted to its mix of phases and regions, so the gap isn’t geography.`),
     ...namedIds(input.compare).map((id) => opt(`peer_named:${id}` as CompareKey, `peer_named:${id}`, input.namedLabels?.[id] ?? sets.find((s) => s.key === `peer_named:${id}`)?.label ?? id, "A named group of the same type, its own figures.")),
   ];
   const chosen = chosenSets(sets, input.compare);

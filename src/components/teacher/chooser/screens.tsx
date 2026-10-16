@@ -68,7 +68,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString
 
 // ======================================================================== screen 1: hub
 
-export type HubPick = "nearest" | "la" | "rankings" | "mine" | "school" | "vc";
+export type HubPick = "nearest" | "la" | "rankings" | "mine" | "school" | "vc" | "group";
 
 export type HubProps = {
   targetName: string;
@@ -101,6 +101,8 @@ export type HubProps = {
   onDeleteSet: (s: SavedComparatorSet) => void;
   // Victoria Consultancy Sets (null = not switched on for this school)
   vc: { sets: SavedComparatorSet[] } | null;
+  // 0.8 groups r3 (S): the school's own groups, read-only (absent = in no group: nothing drawn)
+  groups?: { sets: SavedComparatorSet[]; countOf: (s: SavedComparatorSet) => string };
   // Footer
   count: string; // "10 schools selected", "4,857 schools & colleges"
   action: { label: "Next" | "Done"; disabled: boolean; onClick: () => void };
@@ -252,6 +254,23 @@ export function HubScreen(p: HubProps) {
           />
         )}
         {p.pick === "vc" && p.vc && <SubList>{setRows(p.vc.sets, false)}</SubList>}
+
+        {p.groups && (
+          <HubRow
+            active={p.pick === "group"}
+            title="Your groups"
+            subtitle="Groups your school belongs to · offered automatically, can't be edited"
+            badge={plural(p.groups.sets.length, "group")}
+            onClick={() => p.onPick("group")}
+          />
+        )}
+        {p.pick === "group" && p.groups && (
+          <SubList>
+            {p.groups.sets.map((s) => (
+              <SubRow key={s.id} active={p.setSub === s.id} label={`${s.name} · ${s.group?.sourceLabel ?? ""}${s.group?.likely ? " · likely" : ""}`} count={p.groups!.countOf(s)} onClick={() => p.onSetSub(s.id)} />
+            ))}
+          </SubList>
+        )}
       </Body>
       <Footer>
         <FooterCount>{p.count}</FooterCount>
