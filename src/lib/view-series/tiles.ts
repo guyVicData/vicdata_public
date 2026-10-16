@@ -12,11 +12,12 @@
 // null = the host draws it (no tiles here, no subjects, a band with no range).
 import { applyMainLabel, applyTileFigures, readTileParams, type TileVars } from "@/lib/tile-figures";
 import { bandRate, inlineRangeLabel } from "@/lib/subject-grades";
-import { currentRowsWithDelta, ENTRIES_MEASURE, rankByValue } from "@/lib/teacher-view-panels";
+import { currentRowsWithDelta, ENTRIES_MEASURE } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeOver, directionOf, signed } from "@/lib/teacher-view-trend-styles";
 import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, SeriesFrame } from "./frames";
 import type { BuildContext, TileData, ViewSeries } from "./series";
+import { competitionRanks } from "../rank";
 
 // 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd". (NumberTiles re-exports it.)
 export function ordinal(n: number): string {
@@ -67,10 +68,10 @@ function subjectTiles(f: SubjectsFrame): Built | null {
       tiles.push({ key: "england", icon: "FlagIcon", figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir, vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" } });
     }
   } else if (tileFocus && tileFocus.value !== null) {
-    const inCategory = rankByValue(rows.map((r) => ({ key: r.s.key, value: r.value })));
-    const rank = inCategory.get(tileFocus.s.key);
-    if (rank && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: "PodiumIcon", figure: ordinal(rank), detail: `of ${inCategory.size} in ${f.categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+    const inCategory = competitionRanks(rows.map((r) => ({ key: r.s.key, value: r.value })));
+    const place = inCategory.get(tileFocus.s.key);
+    if (place && inCategory.size > 1) {
+      tiles.push({ key: "category", icon: "PodiumIcon", figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${f.categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
     }
     if (tileFocus.bench !== null) {
       tiles.push({ key: "england-average", icon: "AverageIcon", figure: measure.format(tileFocus.bench), detail: `England average for ${tileFocus.s.label}` });
@@ -109,15 +110,15 @@ function candidateTiles(f: CandidatesFrame): Built | null {
   const main = focused && latest !== null ? { figure: focusedNow === null ? "—" : ENTRIES_MEASURE.format(focusedNow), label: `${focused.label} entries in ${academicYearLabel(latest)}` } : null;
   const tiles: TileData[] = [];
   if (focused && focusedNow !== null && latestIdx >= 0) {
-    const inCategory = rankByValue(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
-    const r = inCategory.get(focused.key);
-    if (r && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: "PodiumIcon", figure: ordinal(r), detail: `of ${inCategory.size} in ${f.categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+    const inCategory = competitionRanks(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+    const place = inCategory.get(focused.key);
+    if (place && inCategory.size > 1) {
+      tiles.push({ key: "category", icon: "PodiumIcon", figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${f.categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
     }
     if (f.schoolSubjects?.length) {
-      const inSchool = rankByValue(f.schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+      const inSchool = competitionRanks(f.schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
       const rs = inSchool.get(focused.key);
-      if (rs) tiles.push({ key: "school", icon: "SchoolIcon", figure: ordinal(rs), detail: `of ${inSchool.size} subjects at school`, vars: { total: inSchool.size } });
+      if (rs) tiles.push({ key: "school", icon: "SchoolIcon", figure: placeWord(rs.rank, rs.tied), detail: `of ${inSchool.size} subjects at school`, vars: { total: inSchool.size } });
     }
     const change = changeOver(focused.values);
     const firstIdx = focused.values.findIndex((v) => v !== null);

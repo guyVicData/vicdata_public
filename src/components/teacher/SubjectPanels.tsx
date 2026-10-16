@@ -28,7 +28,6 @@ import {
   changePhrase,
   changeTitle,
   formatChange,
-  rankByValue,
   periodsWithData,
   sliceFrom,
   trimToData,
@@ -54,7 +53,9 @@ import { GradeDistribution } from "./GradeDistribution";
 import { bandDistribution } from "@/lib/grade-spread";
 import { bandRate, inlineRangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
-import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, type NumberTile } from "./NumberTiles";
+import { competitionRanks } from "@/lib/rank";
+import { placeWord } from "@/lib/view-series/tiles";
 import { RankingsMap } from "./RankingsMap";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { ShareDonut } from "./ShareDonut";
@@ -474,10 +475,10 @@ export function SubjectPanels({
       tileRow.push({ key: "england", icon: FlagIcon, figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir, vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" } });
     }
   } else if (tiles && tileFocus && tileFocus.value !== null) {
-    const inCategory = rankByValue(rows.map((r) => ({ key: r.s.key, value: r.value })));
-    const rank = inCategory.get(tileFocus.s.key);
-    if (rank && inCategory.size > 1) {
-      tileRow.push({ key: "category", icon: PodiumIcon, figure: ordinal(rank), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+    const inCategory = competitionRanks(rows.map((r) => ({ key: r.s.key, value: r.value })));
+    const place = inCategory.get(tileFocus.s.key);
+    if (place && inCategory.size > 1) {
+      tileRow.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
     }
     // The middle tile: England's own figure for this subject, a benchmark beside the main
     // one -- the same England anchor the next tile's gap is taken from.

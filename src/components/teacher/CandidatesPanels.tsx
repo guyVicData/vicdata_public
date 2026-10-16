@@ -21,7 +21,6 @@ import {
   DIRECTION_WORD,
   ENTRIES_MEASURE,
   percentChange,
-  rankByValue,
   periodsWithData,
   sliceFrom,
   trimToData,
@@ -34,7 +33,9 @@ import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
 import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, SchoolIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
-import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, type NumberTile } from "./NumberTiles";
+import { competitionRanks } from "@/lib/rank";
+import { placeWord } from "@/lib/view-series/tiles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
@@ -206,15 +207,15 @@ export function CandidatesPanels({
     : null;
   const tiles: NumberTile[] = [];
   if (focused && focusedNow !== null && latestIdx >= 0) {
-    const inCategory = rankByValue(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
-    const r = inCategory.get(focused.key);
-    if (r && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: PodiumIcon, figure: ordinal(r), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+    const inCategory = competitionRanks(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+    const place = inCategory.get(focused.key);
+    if (place && inCategory.size > 1) {
+      tiles.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
     }
     if (schoolSubjects?.length) {
-      const inSchool = rankByValue(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+      const inSchool = competitionRanks(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
       const rs = inSchool.get(focused.key);
-      if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: ordinal(rs), detail: `of ${inSchool.size} subjects at school`, vars: { total: inSchool.size } });
+      if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: placeWord(rs.rank, rs.tied), detail: `of ${inSchool.size} subjects at school`, vars: { total: inSchool.size } });
     }
     const change = changeOver(focused.values);
     const firstIdx = focused.values.findIndex((v) => v !== null);

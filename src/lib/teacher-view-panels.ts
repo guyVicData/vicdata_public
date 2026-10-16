@@ -13,6 +13,7 @@
 import type { TeacherPhase } from "./teacher-view-phases";
 import { MODERN_GRADE_FROM } from "./grade-rows";
 import { TREND_LINE_MIN_YEARS } from "../catalogue/years";
+import { competitionRanks } from "./rank";
 
 // ---------------------------------------------------------------- the panels
 
@@ -405,13 +406,7 @@ export function trendChartKind(data: PanelData): "bars" | "line" {
 // them is better.
 // R-RANK-TIES, R-COMPARATOR-NO-FIGURE (never ranked last).
 export function rankByValue(rows: { key: string; value: number | null }[]): Map<string, number> {
-  const placed = rows.filter((r) => r.value !== null).sort((a, b) => b.value! - a.value!);
-  const ranks = new Map<string, number>();
-  placed.forEach((r, i) => {
-    const previous = placed[i - 1];
-    ranks.set(r.key, previous && previous.value === r.value ? ranks.get(previous.key)! : i + 1);
-  });
-  return ranks;
+  return new Map(Array.from(competitionRanks(rows), ([k, p]) => [k, p.rank]));
 }
 
 // R-PREV-YEAR-FALLBACK, R-SAME-YEAR-BENCH: Current's rows for the year at `latestIdx`, each

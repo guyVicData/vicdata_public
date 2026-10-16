@@ -16,6 +16,7 @@ import { lookupAgeBandDistributions, sizeBadgeForValue, type SizeBadge } from ".
 import { AGE_BANDS, CURRENT_CENSUS_PERIOD, type AgeBandKey, type AgeGenderCounts } from "../roll-data";
 import type { RegionNationRow } from "../region-nation-comparator";
 import { TREND_BASE_PERIOD } from "../../catalogue/years";
+import { placeAmong } from "../rank";
 
 export const KS2_HEADLINE = HEADLINE_MEASURE.ks2;
 const FIGURE_YEARS = 3; // the latest year and the two before (two-year changes)
@@ -98,7 +99,8 @@ export function englandSchools(): Promise<Map<string, SchoolPlace>> {
 
 /** 1-based rank of `value` among `values` (ties share; higher first), and how many there are. */
 export function rankIn(values: number[], value: number): { rank: number; of: number } {
-  return { rank: 1 + values.filter((v) => v > value).length, of: values.length };
+  const { rank, of } = placeAmong(values, value);
+  return { rank, of };
 }
 
 export type Place = { value: number | null; period: number | null; national: { rank: number; of: number } | null; regional: { rank: number; of: number; region: string } | null };

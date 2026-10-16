@@ -6,6 +6,7 @@
 // "given that number for everyone in the set, what does the card actually say."
 
 import type { ShapeLabel } from "./shape-classifier";
+import { competitionRanks } from "./rank";
 
 export type TrendDirection = "up" | "down" | "flat";
 
@@ -64,15 +65,9 @@ export function rankDescendingWithTies(
   entries: { urn: string; name: string; value: number | null; isTarget: boolean }[],
 ): { ranked: RankedEntry[]; targetRank: number | null; total: number } {
   const real = entries.filter((e): e is { urn: string; name: string; value: number; isTarget: boolean } => e.value !== null);
-  const sorted = [...real].sort((a, b) => b.value - a.value);
-  const ranked: RankedEntry[] = [];
-  let rank = 0;
-  let previousValue: number | null = null;
-  for (let i = 0; i < sorted.length; i++) {
-    if (previousValue === null || sorted[i].value !== previousValue) rank = i + 1;
-    ranked.push({ ...sorted[i], rank });
-    previousValue = sorted[i].value;
-  }
+  const places = competitionRanks(real.map((e, i) => ({ key: i, value: e.value })));
+  const order = real.map((_, i) => i).sort((a, b) => real[b].value - real[a].value || a - b);
+  const ranked: RankedEntry[] = order.map((i) => ({ ...real[i], rank: places.get(i)!.rank }));
   const targetEntry = ranked.find((r) => r.isTarget);
   return { ranked, targetRank: targetEntry?.rank ?? null, total: ranked.length };
 }
