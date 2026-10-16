@@ -2201,3 +2201,26 @@ Group round 2: the Overview and Schools dashboards (`docs/v0.8/vicdata_0_8_group
 11. **Not built from the wireframes:** the "Open schools" pill, the "Confirmed + likely" filter, the "Sponsor record 3319: same body, shown once" chip, and "Other independents nearby" in the scatter (no lookup holds them). The reading pill and "Highlight a school" are built.
 12. **Joined dates** come from round 1's `group_schools_lookup`. Club ISS and Companies House have none, so those schools read "listed · last seen {date}".
 13. **The group's name** is the GIAS record's in title case (GIAS writes trusts in capitals: "HARRIS FEDERATION" reads "Harris Federation").
+
+## 2026-10-16 — 0.8 groups r3
+
+Group round 3: Academic and Pupils, and a school's group as a comparison set (`docs/v0.8/vicdata_0_8_groups_round3_academic_pupils_sets_claude_code_prompt_v1.md`; report `docs/v0.8/groups_r3_report_v1.md`). Built overnight on round 2's branch, against the same fixtures. **Every call below is decided overnight, for Guy to confirm.**
+
+1. **Subject areas across a group come from the ingest,** not the browser. The ingest round added them (points per entry by subject family per group, per year, with the audit-fixes minimum of 2 schools with 10+ entries each), because this round must not compute them in the app.
+2. **Schools ranked:** each school's headline in its own latest year, its rank in the group (ties shared) and nationally. A school that has a figure but wasn't a member that year (at the time) reads "joined after {year}". IGCSE schools read "not ranked at GCSE".
+3. **Peer, non-group and England figures beside the ranked schools are pupil-weighted, not medians.** The lookups hold weighted and average-school figures, not set medians; the group's own median is taken over its schools' figures.
+4. **"Improved / steady / fell" since 2022/23,** each school's headline: steady within 1 point (Attainment 8, A-level points) or 2 percentage points (KS2, English and maths).
+5. **Year 12 against Year 11** counts schools with a sixth form this year and a Year 11 last year. Sixth-form-only colleges (no Year 11 of their own) are left out of both the group figure and the table.
+6. **Entry cohorts:** a school's main entry point is the age with the largest rise over the age below (Reception, Year 7, Year 12). The ingest holds no entry points per school.
+7. **Market share is each school's share of its own LA's places in its main phase** (the default, labelled). Admissions' rivals-based share is per school, needs each school's Admissions, and isn't held for a group. An ingest or app function per school would be needed to show it here.
+8. **The projection is shown per school, never summed.** `area_projection` gives each area's total, so a neighbourhood near two schools would count twice. Each school is at its saved catchment, else its default by type. **For the ingest:** a function over several schools' catchments that counts each LSOA once (the union of their LSOAs) would give the group's total. R-GROUP-CATCHMENT-OVERLAP is not built.
+9. **Results by band:** a labelled placeholder, as SMT has.
+10. **The group as a comparison set, built for Teacher and SMT** through the shared chooser's payload. Each group is a read-only set, as Victoria Consultancy's are, and choosing it opens its schools. SMT's scorecard then ranks the school within its group beside its region and England ("2 of 8" at Radnor House on A-level points).
+    - **Admissions isn't given it:** its "compared against" is the lead's saved rivals list (a market choice, with writes), not a set.
+    - **The public page has no chooser** (its comparisons are for verified staff, in Teacher).
+11. **Which groups are offered:**
+    - every official group of the school except single-academy trusts, and groups of no other school;
+    - likely members included and labelled;
+    - two records of the same body (a MAT and its sponsor record, Harris 3320 and 3319) shown once, by identical member lists.
+12. **The set's label** follows round 1's Access page ("All Dukes schools": a trailing "Education" or "Group" drops; "Federation" and "Trust" stay).
+13. **The open decision (as the prompt asks): rank groups only against groups of the same type** (built: peer bands are one type and one size band), **or also offer a mixed comparison with a label?** Not built; Guy decides.

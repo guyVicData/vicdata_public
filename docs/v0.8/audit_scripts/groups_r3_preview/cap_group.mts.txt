@@ -1,0 +1,30 @@
+// Groups r3 (S) preview: a member school's SMT with its group chosen as the comparison set. The routes'
+// own functions, read-only: the school, its group sets (the chooser payload's, src/lib/groups/school-sets.ts),
+// the set's ranks (rankFixedSets), and SMT Overview and Academic with the group as the set.
+import { writeFileSync } from "node:fs";
+const R = "/Users/guy/dev/vicdata_public_groups/src/lib";
+const { smtSchool } = await import(`${R}/smt/school`);
+const { buildOverview } = await import(`${R}/smt/overview`);
+const { buildAcademic } = await import(`${R}/smt/academic`);
+const { resolveDefaultNearest } = await import(`${R}/chooser-sets`);
+const { setPhaseOf, levelChips } = await import(`${R}/smt/levels`);
+const { schoolGroupSets } = await import(`${R}/groups/school-sets`);
+const { rankFixedSets } = await import(`${R}/teacher-view-comparator-series`);
+const { createServiceRoleSupabaseClient } = await import(`${R}/supabase`);
+const out: Record<string, unknown> = {};
+for (const urn of process.argv.slice(3)) {
+  const s = (await smtSchool(urn))!;
+  const phase = setPhaseOf(s.phases);
+  const near = await resolveDefaultNearest(urn, phase);
+  const groups = await schoolGroupSets(urn, createServiceRoleSupabaseClient());
+  const { ranked, seriesByUrn, excludedUrns } = await rankFixedSets(urn, groups.map((g: any) => ({ id: g.id, urns: g.members.map((m: any) => m.urn) })), phase);
+  const sets = groups.map((g: any) => ({ ...g, rows: ranked[g.id] ?? [] }));
+  const g0 = sets[0];
+  const set = { kind: "saved", label: g0.name, urns: g0.members.map((m: any) => m.urn) };
+  const overview: Record<string, unknown> = { "all|all": await buildOverview(s, set, { sex: "all", boarding: "all" }, null) };
+  const academic: Record<string, unknown> = {};
+  for (const p of levelChips(s.phases)) academic[`${p}|`] = await buildAcademic(s, { phase: p, area: null }, set);
+  out[urn] = { urn, name: s.name, school: s, phase, nearest: { rows: near.rows.map((r: any) => ({ urn: r.urn, name: r.name })) }, overview, academic, pupils: {}, context: {}, savedSets: { me: { membershipId: "m1", schoolAccountId: "acc1", canEditShared: true }, cap: 8, personalCount: 0, sets, seriesByUrn, excludedUrns, candidates: [], target: { laName: s.laName ?? null, independent: !!s.independent } }, groupSetId: g0.id };
+  console.error(urn, s.name, sets.map((x: any) => `${x.name} (${x.members.length})`).join("; "));
+}
+writeFileSync(process.argv[2], `window.__SMTFX = Object.assign(window.__SMTFX || {}, ${JSON.stringify(out)});\n`);
