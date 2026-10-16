@@ -1696,7 +1696,7 @@ export const RULES: Rule[] = [
     why: "SMT reads top-down (Guy, 3 Oct; spec §2.2, confirmed 13 Oct): the same chips, in the same place, as Teacher's subjects and Admissions' entry points.",
     appliesTo: "The SMT control bar; every SMT view",
     enforcedIn: ["src/lib/smt/levels.ts:levelChips, parseLevel", "src/lib/smt/school.ts:smtSchool", "src/components/smt/SmtDashboard.tsx:Dashboard"],
-    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: Whole school, GCSE, Post-16 (no Primary); its GCSE areas are the areas it entered. Leighton Park: GCSE shown, marked IGCSE, no GCSE areas. ?level=primary at The Chase falls back to Whole school.", check: "smtLevelChips" },
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: Whole school, GCSE, Post-16 (no Primary); its GCSE areas are the areas it entered. Leighton Park: GCSE shown, marked IGCSE; its GCSE areas offered, the incomplete ones as 'Sciences & Maths · no maths (IGCSE)' and 'Languages & Literature · no English (IGCSE)' (0.8 IGCSE subjects). ?level=primary at The Chase falls back to Whole school.", check: "smtLevelChips" },
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
     status: "active",
   },

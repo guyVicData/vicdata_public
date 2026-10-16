@@ -2012,7 +2012,7 @@ What a number is allowed to be. 136 rules: 132 active, 4 superseded; 22 must lif
 | Applies to | The SMT control bar; every SMT view |
 | Enforced in | - src/lib/smt/levels.ts:levelChips, parseLevel<br>- src/lib/smt/school.ts:smtSchool<br>- src/components/smt/SmtDashboard.tsx:Dashboard |
 | Tagged at | - src/lib/smt/smt.test.ts |
-| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: Whole school, GCSE, Post-16 (no Primary); its GCSE areas are the areas it entered. Leighton Park: GCSE shown, marked IGCSE, no GCSE areas. ?level=primary at The Chase falls back to Whole school. [runner: smtLevelChips] |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: Whole school, GCSE, Post-16 (no Primary); its GCSE areas are the areas it entered. Leighton Park: GCSE shown, marked IGCSE; its GCSE areas offered, the incomplete ones as 'Sciences & Maths · no maths (IGCSE)' and 'Languages & Literature · no English (IGCSE)' (0.8 IGCSE subjects). ?level=primary at The Chase falls back to Whole school. [runner: smtLevelChips] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |

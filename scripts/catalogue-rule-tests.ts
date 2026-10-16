@@ -508,13 +508,17 @@ const RUNNERS: Record<string, Runner> = {
     const { entryPoint } = await import("../src/lib/admissions/entry-points");
     const th = await admissionsThresholds();
     const r = await buildRivals("137625", entryPoint("11+")!, { thresholds: th.thresholds });
-    const ranked = r.rows.filter((x) => x.results.note !== "igcse_not_ranked").map((x) => x.urn);
-    const fam = await ref.lookupAcademicSubjectFamily({ entityIds: ranked, ksStage: "ks4", periodMin: r.resultsPeriod!, periodMax: r.resultsPeriod! });
+    // 0.8 IGCSE subjects: an IGCSE rival is out of an area only where the area is incomplete at it.
+    const { igcseFamiliesOut } = await import("../src/lib/igcse");
+    const out = await igcseFamiliesOut();
+    const outOf = (u: string, f: string) => (out.get(u)?.[String(r.resultsPeriod)] ?? []).includes(f);
+    const all = r.rows.map((x) => x.urn);
+    const fam = await ref.lookupAcademicSubjectFamily({ entityIds: all, ksStage: "ks4", periodMin: r.resultsPeriod!, periodMax: r.resultsPeriod! });
     const fig = (u: string, f: string) => { const x = fam.find((y) => y.entity_id === u && y.family_id === f); return x && x.avg_point_score !== null && Number(x.entries_total) >= MIN_AREA_ENTRIES ? Number(x.avg_point_score) : null; };
     const problems: string[] = [];
     for (const a of r.areas) {
       const mine = fig("137625", a.familyId)!;
-      const rivals = ranked.filter((u) => u !== "137625").map((u) => fig(u, a.familyId)).filter((v): v is number => v !== null);
+      const rivals = all.filter((u) => u !== "137625" && !outOf(u, a.familyId)).map((u) => fig(u, a.familyId)).filter((v): v is number => v !== null);
       const rank = 1 + rivals.filter((v) => v > mine).length;
       const gap = mine - rivals.reduce((x, y) => x + y, 0) / rivals.length;
       if (rank !== a.rank || rivals.length + 1 !== a.of || Math.abs(gap - a.gap) > 1e-9) problems.push(`${a.familyId}: rank ${a.rank}/${a.of} vs ${rank}/${rivals.length + 1}, gap ${a.gap} vs ${gap}`);
@@ -1917,7 +1921,10 @@ const RUNNERS: Record<string, Runner> = {
     const p = chase.latest.ks4!.period;
     const raw = (await lookupAcademicSubjectFamily({ entityIds: ["137625"], ksStage: "ks4", periodMin: p, periodMax: p })).filter((r) => Number(r.entries_total) > 0).map((r) => r.family_id).sort();
     const areasOk = JSON.stringify(chase.areas.gcse.map((a) => a.id).sort()) === JSON.stringify(raw);
-    const pass = chips === "whole,gcse,post16" && lpChips === "whole,gcse,post16" && lp.phases.igcse === true && lp.areas.gcse.length === 0 && fallback.phase === "whole" && areasOk;
+    // 0.8 IGCSE subjects: Leighton Park's GCSE areas are offered; its incomplete ones under the short label.
+    const lpLabels = lp.areas.gcse.map((a) => a.label);
+    const lpAreasOk = lpLabels.includes("Sciences & Maths · no maths (IGCSE)") && lpLabels.includes("Languages & Literature · no English (IGCSE)") && lp.areas.gcse.filter((a) => a.igcseNote).length === 2;
+    const pass = chips === "whole,gcse,post16" && lpChips === "whole,gcse,post16" && lp.phases.igcse === true && lpAreasOk && fallback.phase === "whole" && areasOk;
     return { pass, detail: fmt({ chase: chips, leighton: `${lpChips} (igcse=${lp.phases.igcse})`, leightonGcseAreas: lp.areas.gcse.length, primaryFallsBackTo: fallback.phase, chaseAreasMatchFamilies: areasOk }) };
   },
   async smtSetRanks() {
