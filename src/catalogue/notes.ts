@@ -319,6 +319,7 @@ export const GROUP_NOTES = {
   comparesOnly: "Compares only groups of the same type and a similar size band. A self-declared group is never ranked against official groups.",
   missingListed: "Schools without published results (IGCSE-heavy schools, preps with no KS2, schools outside England) are listed and labelled, never left out silently.",
   likelyWhyCh: "“Likely” means Companies House shows {group} controlling the school’s company, not yet confirmed by a second source.",
+  comparedAgainst: "Compared against: {set}.",
   mixMatched: "Mix-matched: non-group schools in the same regions and phases as {group}, reweighted to its mix, so the gap isn’t just geography.",
   likeForLike: "Like for like: each year’s change over the schools with a roll in both years, so a school joining or leaving doesn’t move the line.",
   outsideEngland: "{n} outside England: no DfE data, counted and listed, never added up.",

@@ -542,8 +542,15 @@ function captionOf(id: ViewId, c: Ctx): ReactNode {
     case "GRP-S-TABLE":
       return GROUP_NOTES.missingListed;
     case "GRP-O-ROLL":
+      return `${reading} ${GROUP_NOTES.likeForLike} ${groupNote("comparedAgainst", { set: c.o.compare.label })}`;
     case "GRP-S-GROWING":
       return `${reading} ${GROUP_NOTES.likeForLike}`;
+    // 0.8 IGCSE subjects (follow-up 5): the trends' legends truncate a long set name; the (i) has it in full.
+    case "GRP-O-RESULTS":
+    case "GRP-A-TREND":
+    case "GRP-A-POST16":
+    case "GRP-P-ROLL":
+      return `${reading} ${groupNote("comparedAgainst", { set: c.o.compare.label })}`;
     default:
       return reading;
   }

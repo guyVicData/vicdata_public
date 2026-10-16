@@ -140,8 +140,11 @@ export function AgainstOthers({ o, average, candidates = [], onNamed, highlightN
             {a.rows.map((r) => (
               <tr key={r.key} className={`border-b border-[var(--panel-border)] last:border-0 ${r.kind === "group" ? "bg-[var(--adm-tint)] font-bold" : ""}`}>
                 <Td>
-                  {r.label}
-                  {r.kind === "mix_matched" && <span className="ml-1 text-[10.5px] font-semibold text-[var(--muted2)]">(mix-matched)</span>}
+                  {/* 0.8 IGCSE subjects (follow-up 5): a long set name takes two lines at most, the full name its tooltip. */}
+                  <span data-set-name="" title={r.label} className="line-clamp-2 max-w-[22rem]">
+                    {r.label}
+                    {r.kind === "mix_matched" && <span className="ml-1 text-[10.5px] font-semibold text-[var(--muted2)]">(mix-matched)</span>}
+                  </span>
                 </Td>
                 <Td>{r.schools === null ? "—" : r.schools.toLocaleString("en-GB")}</Td>
                 <Td className={`whitespace-nowrap ${dirClass(r.roll.pct, 0.5)}`}>{pctText(r.roll.pct)}</Td>
@@ -268,6 +271,19 @@ export function JoinedLeft({ membership, schools, compact = false }: { membershi
 
 const yr = (p: number) => periodLabel(p);
 
+// 0.8 IGCSE subjects (follow-up 5): a set's legend entry stays on one line however long its name
+// ("Non-group schools, same regions and phases as …"), truncated with the full name as its tooltip, so the
+// legend wraps within the panel, every series keeps its entry, and the footnote stays on the panel. The
+// full name is also in the panel's (i) (GroupDashboard captionOf).
+export function SetKey({ swatch, label }: { swatch: ReactNode; label: string }) {
+  return (
+    <span data-set-key="" title={label} className="inline-flex min-w-0 max-w-full items-center gap-[6px] text-[11px] text-[var(--chip-fg)]">
+      {swatch}
+      <span className="min-w-0 max-w-[15rem] truncate">{label}</span>
+    </span>
+  );
+}
+
 export function RollTrend({ o, fullscreen, room }: { o: GroupOverview; fullscreen: boolean; room?: number }) {
   const lines = o.trends.roll.lines;
   const { base, out } = indexTo(lines.map((l) => l.pts));
@@ -284,11 +300,9 @@ export function RollTrend({ o, fullscreen, room }: { o: GroupOverview; fullscree
         xLabels={[yr(years[0]), yr(years[years.length - 1])]}
         series={lines.map((l, i) => ({ id: l.key, label: l.label, colour: colour(i), width: i === 0 ? 2.6 : 1.8, dashed: i > 1 ? "5 4" : undefined, points: out[i].map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${l.label} ${yr(pt.x)}: ${pt.y?.toFixed(1)}` }))}
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-1">
         {lines.map((l, i) => (
-          <Key key={l.key} swatch={<LineSwatch colour={colour(i)} width={14} dashed={i > 1} />}>
-            {l.label}
-          </Key>
+          <SetKey key={l.key} swatch={<LineSwatch colour={colour(i)} width={14} dashed={i > 1} />} label={l.label} />
         ))}
       </div>
       <div className="text-[10.5px] leading-snug text-[var(--muted)]">{GROUP_NOTES.likeForLike}</div>
@@ -305,7 +319,10 @@ export function ResultsTrend({ o, average, fullscreen, room }: { o: GroupOvervie
   const years = p.lines[0].pts.map((x) => x.year);
   return (
     <>
-      <div className="text-[13px] font-bold text-[var(--fg)]">Results against {p.lines.slice(1).map((l) => l.label).join(" and ") || "the comparison set"}</div>
+      {(() => {
+        const title = `Results against ${p.lines.slice(1).map((l) => l.label).join(" and ") || "the comparison set"}`;
+        return <div title={title} className="truncate text-[13px] font-bold text-[var(--fg)]">{title}</div>;
+      })()}
       {parts.length > 1 && (
         <div className="flex flex-wrap gap-1.5">
           {parts.map((x, k) => (
@@ -321,11 +338,9 @@ export function ResultsTrend({ o, average, fullscreen, room }: { o: GroupOvervie
         xLabels={years.length ? [yr(years[0]), yr(years[years.length - 1])] : null}
         series={p.lines.map((l, k) => ({ id: l.key, label: l.label, colour: colour(k), width: k === 0 ? 2.6 : 1.8, dashed: k > 1 ? "5 4" : undefined, points: (average ? l.average : l.pts).map((x) => ({ x: x.year, y: x.value })), dots: true, title: (pt) => `${l.label} ${yr(pt.x)}: ${fmt(pt.y, unitOf(p.measure))}${(() => { const n = l.n[years.indexOf(pt.x)]; return n !== null && n !== undefined ? ` (${n} schools)` : ""; })()}` }))}
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-1">
         {p.lines.map((l, k) => (
-          <Key key={l.key} swatch={<LineSwatch colour={colour(k)} width={14} dashed={k > 1} />}>
-            {l.label}
-          </Key>
+          <SetKey key={l.key} swatch={<LineSwatch colour={colour(k)} width={14} dashed={k > 1} />} label={l.label} />
         ))}
       </div>
       <div className="text-[10.5px] text-[var(--muted)]">{average ? "Average school: each school counts once." : "Pupil-weighted."} {MEASURE_LABEL[p.measure]}.</div>
