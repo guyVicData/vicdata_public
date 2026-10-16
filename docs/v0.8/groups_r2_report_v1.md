@@ -1,6 +1,6 @@
 # VicData 0.8 — Group round 2: Overview and Schools — report
 
-Report for `docs/v0.8/vicdata_0_8_groups_round2_overview_schools_claude_code_prompt_v1.md`. Built overnight, 15–16 Oct 2026, in the worktree `~/dev/vicdata_public_groups`, on branch **`v0.8-groups-r2`** (base: see the overnight summary). **Not merged:** overnight, rounds push and wait for the morning.
+Report for `docs/v0.8/vicdata_0_8_groups_round2_overview_schools_claude_code_prompt_v1.md`. Built overnight, 15–16 Oct 2026, in the worktree `~/dev/vicdata_public_groups`, on branch **`v0.8-groups-r2`**. **Its base is `v0.8-audit-fixes` (4bfe5ec), not `main`.** The audit fixes stopped without merging (their report: one IGCSE question for Guy), and the overnight rule bases this round on their branch. Rebase onto `main` once they merge. **Not merged:** overnight, rounds push and wait for the morning.
 
 **The figures are fixture data.** The prompt says to stop if the group lookups don't answer in production. Overnight they can't: the ingest round (`~/dev/vicdata` `feat/group-aggregates`) is dry-run only, and Guy promotes it in the morning. So everything here reads the ingest's dry run through a guarded test-and-preview switch, and every screenshot is marked `fixture-data`. The R-GROUP tests read through the same module and are written to rerun on production unchanged. That rerun is the morning step.
 
@@ -103,12 +103,12 @@ It says which source it read ("[R-GROUP] reading the production"). If a figure d
 | eslint (changed files) | clean |
 | next build | clean |
 | Unit tests (every `src/**/*.test.ts` + `scripts/catalogue-unit-tests.ts`) | **478 / 478** |
-| Rule tests (`scripts/catalogue-rule-tests.ts`, production reads) | **95 pass, 1 fail** (R-SMT-YEARS: its LSOA rehearsal stopped on a production `area_context` answer that was an error. Production was timing out repeatedly overnight. This round touches nothing on that path.) MANUAL 15, NONE 19 |
+| Rule tests (`scripts/catalogue-rule-tests.ts`, production reads) | **96 pass, 0 fail** (MANUAL 15, NONE 19, SUPERSEDED 4). The full run gave 95: R-SMT-YEARS' LSOA rehearsal hit a production statement timeout; it passes alone |
 | RLS (PGlite), every test in `supabase/tests` | groups r1 **102 / 102**; usage log **19 / 19**; this round's usage migration **10 / 10**; admissions 111/111; v06 51/51 and the rest pass; SMT r3 21/21 and r4 31/31 (PostGIS PGlite 0.5.5). **1 fail, not this round's:** `v08_subject_latest_names` (the migration's inlined map has 31 names, the app's now 47; neither is touched here) |
-| Teacher parity (`run_parity.sh`, branch vs base 048206f) | see the overnight summary |
+| Teacher parity (`run_parity.sh`: every case set, both trees on the same fixtures; branch vs 048206f, its first base, and the `src/` and `supabase/` diff is byte-identical on the final base) | **2,875 pairs: 2,874 identical, 1 render noise, 0 unexpected**; fixtures 10/10 byte-identical. The import graph shows the changed files in Teacher's graph: `notes.ts` (new `GROUP_NOTES` keys), `GroupHome.tsx` and `SchoolGroupTile.tsx` (live chips, which only a group account or a granted school draws), and `data-view-cards.ts` (`SHAPE_LABELS` exported). One error file (130416 points, a fixture gap) is on both sides |
 | Admissions parity (every view of both dashboards, 3 schools × entries × themes × widths) | **328 / 328 identical**, pixels and DOM, 592 panel-views |
 | SMT parity (Overview, Academic, Pupils, Context and the Teacher home; The Chase and Leighton Park; both themes; 1440 and 390; every rail view) | **312 pairs: 301 identical, 11 render noise.** DOM identical in all 156; max channel difference 1–2 of 255 |
-| Public page | in the Teacher parity's SSR step |
+| Public page (SSR, live data recorded, then replayed) | **identical** (137625, 117037) |
 
 ## Screenshots (`docs/v0.8/groups_r2_screenshots/`, all fixture data)
 
