@@ -11,7 +11,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { COMPARISON_KINDS, groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, namedCandidates, type ComparisonRow, type Figures, type GroupAggregate } from "./aggregates";
-import { buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE, type CompareKey } from "./dash";
+import { buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE, NOT_OFFERED, mixMatchedLabel, setsFor, type CompareKey, type SetRef } from "./dash";
 
 const HARRIS = "3320";
 const DUKES = "club_iss:dukes-education";
@@ -239,4 +239,32 @@ test("R-GROUP-KEYS: the views are the same whatever order the comparison and agg
         }
       }
   }
+});
+
+// ----------------------------------------------------------------------- no two offered sets the same
+// Guy, 16 Oct: mix-matched means non-group schools only. The ingest's mix_matched:england duplicates
+// areas:region by construction (the same region cells, the same weights), so it's never offered. A set
+// that repeats another set's figures in every year of a phase is a duplicate under a second label.
+
+test("R-GROUP-SETS-DISTINCT: no two offered sets have identical figures in every year of any phase", async () => {
+  for (const g of [HARRIS, DUKES])
+    for (const reading of ["at_time", "listed_now"] as const) {
+      const a = await agg(g, reading);
+      const named = (await namedCandidates(g, a.group.type, 0)).slice(0, 3).map((n) => `peer_named:${n.id}`);
+      const comps = await groupComparisons(g, [...COMPARISON_KINDS, ...named]);
+      const sets = setsFor(a, comps, reading, "the group");
+      assert.ok(!sets.some((s) => NOT_OFFERED.has(s.key)), `${g} ${reading}: mix_matched:england is never offered`);
+      assert.equal(sets.find((s) => s.key === "mix_matched:non_group")?.label, mixMatchedLabel("the group"), `${g}: the mix-matched label`);
+      assert.ok(sets.some((s) => s.key === "areas:region"), `${g}: the areas set stays, under its own label`);
+      const byPhase = (s: SetRef, ph: string) => new Map(s.rows.filter((r) => r.phase === ph).map((r) => [r.period, JSON.stringify(r.figures)]));
+      for (let i = 0; i < sets.length; i++)
+        for (let j = i + 1; j < sets.length; j++)
+          for (const ph of ["all", "primary", "secondary", "post16"]) {
+            const x = byPhase(sets[i], ph);
+            const y = byPhase(sets[j], ph);
+            if (!x.size || x.size !== y.size) continue;
+            const same = [...x].every(([p, f]) => y.get(p) === f);
+            assert.ok(!same, `${g} ${reading}: ${sets[i].key} and ${sets[j].key} have identical ${ph} figures in every year`);
+          }
+    }
 });
