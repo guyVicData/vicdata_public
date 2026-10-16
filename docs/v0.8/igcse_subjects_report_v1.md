@@ -70,6 +70,24 @@ Report for `docs/v0.8/vicdata_0_8_igcse_subject_rankings_claude_code_prompt_v1.m
    - **The rule test now names a subprocess's own error line**, not "Command failed".
    - **Evidence:** six concurrent rehearsals all failed before and all passed after. No timeout was raised.
 
+5. **Group legend overflow:**
+   - a set's legend entry stays on one line, truncated, with the full name as its tooltip (`SetKey`), so the legend wraps within the panel, every series keeps its entry, and the footnote stays;
+   - Results' title truncates the same way; Against others clamps a long set name to two lines;
+   - the trends' (i) names the set in full ("Compared against: …").
+   - **Test:** `src/lib/groups/legend.test.ts`, with the longest real set label: mix-matched for "Christ Church (Church of England) Infant School and Nursery and Christ Church (Church of England) Junior School Federation", 168 characters, the longest of 3,733 group names.
+   - Checked in headless Chrome at 1440 and 390.
+6. **Three snags:**
+   - **Negative zero:** every measure's delta takes its sign from the printed figure (`signedDelta`), so a change that rounds to zero prints as zero does ("+0.0"), never "−0.0". Each measure keeps its own rounding: the first version moved half-points (−6.5pp printed −7pp), parity caught it, and it's fixed and pinned by a test.
+   - **"Has grown the most":** the summary says "has fallen the least" when every subject fell, and "has held steady" at zero (`moversSentence`).
+   - **Croydon's two chips:**
+     - Both read "Business Studies · BTec, OCR, VRQ"; chips that would read alike now take the exact qualification ("Business Studies · BTEC Extended Diploma", "· BTEC Foundation Diploma", …), then DfE's own name (`uniqueChipLabels`).
+     - They aren't merged: each chip is its own qualification's figures.
+   - **`engmath_97_percent`: not built.** No view in the app shows it, so there is no trend or change line to remove. Showing it, current year only, is a new figure that needs a place: logged for Guy.
+7. **BTEC historic points: cured.**
+   - Croydon College (130432) has no zero-point BTEC rows in 2021/22 or 2022/23: each has real points or null.
+   - Across every school, BTEC and OCR rows with zero points: 2021/22 none, 2022/23 one, 2023/24 one.
+   - The two remaining (132779 Construction Extended Diploma 2022/23, 8 entries; 130681 Computer Architecture Certificate 2023/24, 6 entries) look like genuine all-fail results. Not changed.
+
 ## Leighton Park and King's Worcester, before and after (national, GCSE points)
 
 | | Before (`main`) | After |
@@ -114,26 +132,28 @@ The same code paths were run on `main` and on the branch, read-only, for four sc
   - Leighton Park's and King's Worcester's subject lists each gain 5 IGCSE schools;
   - The Chase's and Abbey Grange's are unchanged (no IGCSE school near enough).
 
-### Teacher parity (`run_parity.sh`, branch against `main` `da44856`)
+### Teacher parity (`run_parity.sh`, branch against `main` `da44856`, final branch, `main`'s fixtures recaptured on the same data)
 
 The ranking fixtures are computed by the branch's code and shared by both trees, so this compares the browser code only. The server-side changes are listed above.
 
-| Case set | Pairs | Identical | Unexpected | Why |
-|---|---|---|---|---|
-| c5_0 | 588 | 587 | 1 | King's Worcester, Post-16 Mathematics tile: "1st" → "**=1st** of 5 in Sciences & Maths" (follow-up 2) |
-| c5_1 (rerun) | 576 | 576 | 0 | — |
-| c5_2 (rerun) | 552 | 550 | 2 | the same "=1st" tile at 390; Croydon College, Law: "44th" → "**=44th** of 71 subjects at school" |
-| c5_3 (rerun) | 590 | 589 | 1 | the same "=44th" tile at 390 |
-| rka | 268 | 268 | 0 | — |
-| rkb | 229 | 228 | 1 | the known `rk-137625-nat-pending` Trends map flake |
-| sv | 72 | 71 | 1 | the "=1st" tile in the saved-set case |
-| **Total** | **2,875** | **2,869** | **6** | five are "=" on a shared place, one is the known flake |
+| Pairs | Identical | Noise | Unexpected |
+|---|---|---|---|
+| 2,875 | 2,737 | 23 | 115 |
+
+Every one of the 115 is an intended change:
+
+| Difference | Where | Count |
+|---|---|---|
+| "−0.0" → "+0.0" (follow-up 6) | change tables, sortable tables, area charts, at GCSE and Post-16 | 279 word changes, in 93 pairs |
+| "1st" → "=1st", "44th" → "=44th" (follow-up 2) | King's Worcester Post-16 Mathematics; Croydon Law at school | 5 pairs |
+| "Mathematics has grown the most (0pp)" → "has held steady (0pp)" (follow-up 6) | King's Worcester's Post-16 change panels' summary (pixels only: the summary sits in the caption) | 16 pairs |
+| the known `rk-137625-nat-pending` Trends map flake | — | 1 pair |
 
 Other Teacher checks:
 - The public page SSR is identical (137625, 117037).
-- The first run's c5_1 to c5_3 had `main`-side cases where the fixture script didn't load (`window.__FIX` undefined), a harness flake. Their rerun is in the table.
-- The 130416 Post-16 error file on both sides is the README's known random flake.
-- The branch bundle was built before `ce91cb6` (the tile's compact name). No harness school is an IGCSE school at GCSE, so the tile name doesn't appear.
+- The 130416 error file is the README's known random flake.
+- **Data drift between runs:** a run with `main`'s fixtures cached from the morning showed Sevenoaks' (118952) Post-16 nearest set with different schools on the two sides: production's data had moved (the GIAS refresh). With `main` recaptured, the 10 fixtures are byte-identical between the trees, and that is the run above.
+- **Not exercised here:** the IGCSE label and the subject sets with IGCSE schools. No harness Teacher school is an IGCSE school at GCSE, so those are covered by the rules and the server-side listing.
 
 ### Admissions parity (`par.mjs`)
 
@@ -193,11 +213,11 @@ A clean per-tree comparison of the rest wasn't possible: production's data moved
 | Check | Result |
 |---|---|
 | tsc, eslint, `next build` | clean; no server key in `.next/static` |
-| Unit tests (every `src/**/*.test.ts` + `scripts/catalogue-unit-tests.ts`) | **488 / 488** |
-| Rule tests (production) | **98 pass, 0 fail** with every rule run (the full run under load gave statement timeouts on R-IGCSE-EVERYWHERE and R-RANKING-MEASURE; both pass alone) |
+| Unit tests (every `src/**/*.test.ts` + `scripts/catalogue-unit-tests.ts`) | **494 / 494** |
+| Rule tests (production) | **98 pass, 0 fail, 0 errors**, in one full run on the final code |
 | R-GROUP (production, switch off) | 13 / 13 |
 | PGlite: RLS, the usage log and every `supabase/tests/*.mjs` | **16 / 16** |
-| Parity | as above: Teacher's differences are the intended "=" (and one known flake); Admissions identical; SMT only the IGCSE wording at Leighton Park |
+| Parity | as above. Teacher: only the intended "+0.0", "=" and movers wording, and one known flake. Admissions: 328 / 328 identical. SMT: only the IGCSE wording at Leighton Park |
 
 ## Logged calls
 
