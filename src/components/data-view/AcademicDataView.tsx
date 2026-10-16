@@ -34,6 +34,7 @@ import {
   availableFamilies,
   deserializeAcademicProfile,
   igcseExclusionLikely,
+  igcseOutFor,
   ks5HasBucketEntries,
   KS5_BUCKET_OPTIONS,
   KS5_BUCKETS,
@@ -738,7 +739,7 @@ export default function AcademicDataView({
                 familyId={familyId}
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
                 activeSetLabel={activeSetLabel}
-                ks4ExcludedUrns={ks4ExcludedUrns}
+                ks4ExcludedUrns={familyId && effectiveStage === "ks4" ? igcseOutFor([targetProfile, ...academicGroupProfiles].filter((p): p is AcademicSchoolProfile => !!p), effectiveStage, { familyId }) : ks4ExcludedUrns}
                 ks5Bucket={ks5Bucket}
                 ks5ExcludedUrns={ks5ExcludedUrns}
                 activeView={activeView}

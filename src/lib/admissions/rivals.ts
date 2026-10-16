@@ -10,7 +10,7 @@ import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
 import { cachedReference } from "../server-cache";
 import { lookupAcademicLatestYears } from "../vicdata-reference";
 import type { KsStage } from "../academic-data-view";
-import { igcseAmong } from "../igcse";
+import { igcseAmong, igcseFamiliesOut } from "../igcse";
 import { CURRENT_CENSUS_PERIOD, type AgeBandKey } from "../roll-data";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 import { cohortAt } from "./cohort";
@@ -120,8 +120,14 @@ export async function buildRivals(urn: string, entry: EntryPoint, opts: { rivals
       const x = fam.get(u)?.get(f)?.get(y);
       return x && x.avg !== null && x.entries >= MIN_AREA_ENTRIES ? x.avg : null;
     };
-    const ranked = urns.filter((u) => !igcse.has(u));
+    // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): an IGCSE school is out of a subject area only where that area
+    // is incomplete at it that year (it took one of its subjects as IGCSE); the school's own incomplete
+    // area isn't ranked against its rivals either.
+    const familiesOut = stage === "ks4" ? await igcseFamiliesOut() : new Map<string, Record<string, string[]>>();
+    const outOf = (u: string, f: string) => (familiesOut.get(u)?.[String(period)] ?? []).includes(f);
     for (const f of Array.from(fam.get(urn)?.keys() ?? []).sort()) {
+      const ranked = urns.filter((u) => !outOf(u, f));
+      if (outOf(urn, f)) continue;
       const mine = figure(urn, f, period);
       if (mine === null) continue;
       const rivalVals = ranked.filter((u) => u !== urn).map((u) => figure(u, f, period)).filter((v): v is number => v !== null);

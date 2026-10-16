@@ -189,7 +189,7 @@ export async function rankFixedSets(
   targetUrn: string,
   sets: { id: string; urns: string[] }[],
   phase: KsStage,
-): Promise<{ ranked: Record<string, RankedRow[]>; seriesByUrn: Record<string, SchoolSeries>; excludedUrns: string[] }> {
+): Promise<{ ranked: Record<string, RankedRow[]>; subjectRanked: Record<string, RankedRow[]>; seriesByUrn: Record<string, SchoolSeries>; excludedUrns: string[] }> {
   const union = Array.from(new Set([targetUrn, ...sets.flatMap((s) => s.urns)]));
   const profiles = union.length ? await fetchAcademicProfiles(union, { includePopulation: false }) : [];
   const byUrn = new Map<string, AcademicSchoolProfile>(profiles.map((p) => [p.urn, p]));
@@ -202,19 +202,24 @@ export async function rankFixedSets(
     return latestMeasureAt(years, HEADLINE_MEASURE[phase])?.value ?? null;
   };
   const ranked: Record<string, RankedRow[]> = {};
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): a subject view ranks an IGCSE school in the subjects it entered
+  // as GCSE, so at GCSE each set whose IGCSE members were left out of the whole-school rows also comes
+  // with them kept (subjectRanked). Only where one was left out: every other set's answer is unchanged.
+  const subjectRanked: Record<string, RankedRow[]> = {};
+  const rowOf = (u: string): RankedRow => ({
+    urn: u,
+    name: byUrn.get(u)?.name ?? u,
+    value: valueFor(u),
+    isTarget: false,
+    distanceKm: gridDistanceKm(byUrn.get(targetUrn), byUrn.get(u)),
+    independent: isIndependent(byUrn.get(u)?.establishmentTypeGroup ?? null),
+  });
   for (const set of sets) {
-    const kept = set.urns.filter((u) => u !== targetUrn && !excluded(u));
-    ranked[set.id] = [
-      { urn: targetUrn, name: "This school", value: valueFor(targetUrn), isTarget: true, distanceKm: 0, igcseExcluded: excluded(targetUrn), independent: isIndependent(byUrn.get(targetUrn)?.establishmentTypeGroup ?? null) },
-      ...kept.map((u) => ({
-        urn: u,
-        name: byUrn.get(u)?.name ?? u,
-        value: valueFor(u),
-        isTarget: false,
-        distanceKm: gridDistanceKm(byUrn.get(targetUrn), byUrn.get(u)),
-        independent: isIndependent(byUrn.get(u)?.establishmentTypeGroup ?? null),
-      })),
-    ];
+    const others = set.urns.filter((u) => u !== targetUrn);
+    const kept = others.filter((u) => !excluded(u));
+    const targetRow: RankedRow = { urn: targetUrn, name: "This school", value: valueFor(targetUrn), isTarget: true, distanceKm: 0, igcseExcluded: excluded(targetUrn), independent: isIndependent(byUrn.get(targetUrn)?.establishmentTypeGroup ?? null) };
+    ranked[set.id] = [targetRow, ...kept.map(rowOf)];
+    if (kept.length < others.length) subjectRanked[set.id] = [targetRow, ...others.map(rowOf)];
   }
   const seriesByUrn: Record<string, SchoolSeries> = {};
   for (const urn of union) {
@@ -224,5 +229,5 @@ export async function rankFixedSets(
       candidates: prof ? entriesSeries(prof, phase, null) : [],
     };
   }
-  return { ranked, seriesByUrn, excludedUrns: union.filter((u) => u !== targetUrn && excluded(u)) };
+  return { ranked, subjectRanked, seriesByUrn, excludedUrns: union.filter((u) => u !== targetUrn && excluded(u)) };
 }

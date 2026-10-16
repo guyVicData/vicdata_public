@@ -2,6 +2,7 @@ import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchAcademicProfiles, serializeAcademicProfile } from "@/lib/academic-data-view";
+import { withIgcseFamilies } from "@/lib/igcse";
 import { cachedReference } from "@/lib/server-cache";
 import { lookupAcademicLatestYears } from "@/lib/vicdata-reference";
 
@@ -60,5 +61,6 @@ export async function GET(request: NextRequest) {
   // 0.7 year rules: the latest year per key stage with DfE's provisional flag
   // (src/catalogue/years.ts), for the "(provisional)" after a year label.
   const latestYears = await cachedReference("years:latest", () => lookupAcademicLatestYears()).catch(() => null);
-  return NextResponse.json({ profiles: profiles.map(serializeAcademicProfile), latestYears });
+  // 0.8 IGCSE subjects: IGCSE schools carry their incomplete families, for the family views' exclusion.
+  return NextResponse.json({ profiles: (await withIgcseFamilies(profiles)).map(serializeAcademicProfile), latestYears });
 }

@@ -1939,7 +1939,7 @@ const RUNNERS: Record<string, Runner> = {
   },
   async igcseGroupLabel() {
     const { igcseAmong } = await import("../src/lib/igcse");
-    const { igcseGroupLabelFor } = await import("../src/lib/igcse-words");
+    const { igcseGroupLabelFor, igcseGroupNoteFor } = await import("../src/lib/igcse-words");
     const L = await lib();
     const ig = await igcseAmong(["110110", "137625"]);
     const rows = await L.adv.fetchSubjectHeadlineForSchools(["110110", "137625"], "ks4");
@@ -1951,11 +1951,14 @@ const RUNNERS: Record<string, Runner> = {
     const bio = igcseGroupLabelFor(lp, "Biology", ig.has("110110"));
     const latin = igcseGroupLabelFor(lp, "Latin", ig.has("110110"));
     const chase = igcseGroupLabelFor(ch, "Biology", ig.has("137625"));
+    // 0.8 IGCSE subjects (follow-up 1): the short label everywhere, the full sentence in the (i).
+    const bioNote = igcseGroupNoteFor(lp, "Biology", ig.has("110110")) ?? "";
     const pass = ig.has("110110") && !ig.has("137625") && raw
-      && bio === "Sciences & Maths (sciences only: maths taken as IGCSE)"
-      && latin === "Languages & Literature (no English: taken as IGCSE)"
-      && chase === "Sciences & Maths";
-    return { pass, detail: fmt({ lpIgcse: ig.has("110110"), latest, noMathsOrEnglish: raw, bio, latin, chase }) };
+      && bio === "Sciences & Maths · no maths (IGCSE)"
+      && latin === "Languages & Literature · no English (IGCSE)"
+      && bioNote.includes("sciences only: maths taken as IGCSE")
+      && chase === "Sciences & Maths" && igcseGroupNoteFor(ch, "Biology", false) === null;
+    return { pass, detail: fmt({ lpIgcse: ig.has("110110"), latest, noMathsOrEnglish: raw, bio, latin, bioNote: bioNote.slice(0, 60), chase }) };
   },
 
   async igcseEverywhere() {
@@ -1980,11 +1983,13 @@ const RUNNERS: Record<string, Runner> = {
       sampleClear: kw.rows.every((r) => !ig.has(r.urn)) && lpRank.rows.every((r) => r.isTarget || !ig.has(r.urn)) && !kw.targetIgcse,
       outOf: kw.ranked === Array.from(withFigure).filter((u) => !ig.has(u)).length && (kw.igcseOut ?? 0) > 0 && /not ranked at GCSE \(mostly IGCSE\)/.test(kw.note ?? ""),
     };
-    // A GCSE subject ranking (Mathematics, points).
-    const base = { phase: "ks4" as const, subject: "Mathematics", familyId: null, qualificationType: null, measure: { kind: "points" as const }, period: null, urns: pop };
-    const sLp = await subjectRanking({ ...base, targetUrn: "110110" }, "rule:igcse:nation");
-    const sKw = await subjectRanking({ ...base, targetUrn: "137625" }, "rule:igcse:nation");
-    const subject = { lpUnranked: sLp.targetRank === null && !!sLp.targetIgcse, windowClear: sKw.window.every((w) => !ig.has(w.urn)) && sLp.window.every((w) => !ig.has(w.urn)), igcseOut: (sKw.igcseOut ?? 0) > 0 };
+    // 0.8 IGCSE subjects: narrowed to whole-school measures and incomplete subject groups. A subject group
+    // across schools leaves an IGCSE school out only where the group is incomplete at it (Leighton Park's
+    // Sciences & Maths: no GCSE maths); single subjects are R-IGCSE-SUBJECT's.
+    const { familyPlaces } = await import("../src/lib/admissions/ranks");
+    const fp = Math.max(...heads.map((h) => h.period));
+    const famSci = await familyPlaces("ks4", fp, "sciences_maths", ["110110", "137625"], 10);
+    const subject = { lpSciencesOut: famSci.get("110110")!.national === null, chaseSciencesIn: famSci.get("137625")!.national !== null, notSubjectRule: typeof subjectRanking === "function" };
     // Admissions' and SMT's national places: the same population less the IGCSE schools.
     const period = Math.max(...heads.map((h) => h.period));
     const hp = await headlinePopulation("ks4", period);
@@ -2000,7 +2005,72 @@ const RUNNERS: Record<string, Runner> = {
     const near = await Promise.all(["110110", "117037", "137625"].map((u) => resolveDefaultNearest(u, "ks4")));
     const nearest = { ten: near.every((n) => n.count === 10 && n.rows.filter((r) => !r.isTarget).length === 10), clear: near.every((n) => n.rows.every((r) => r.isTarget || !ig.has(r.urn))), reach: /nearest eligible reach \d+ km/.test(near[0].note ?? "") && near[2].note === null };
     const all = [teacher, subject, places, nearest].flatMap((o) => Object.values(o));
-    return { pass: all.every(Boolean) && ig.has("110110"), detail: fmt({ igcseEngland: ig.size, teacher: JSON.stringify(teacher), subject: JSON.stringify(subject), places: JSON.stringify(places), nearest: JSON.stringify(nearest), kwOutOf: `${kw.ranked} vs ${Array.from(withFigure).filter((u) => !ig.has(u)).length}`, lpNote: lpRank.note, nearLp: near[0].note }) };
+    return { pass: all.every(Boolean) && ig.has("110110"), detail: fmt({ igcseEngland: ig.size, teacher: JSON.stringify(teacher), families: JSON.stringify(subject), places: JSON.stringify(places), nearest: JSON.stringify(nearest), kwOutOf: `${kw.ranked} vs ${Array.from(withFigure).filter((u) => !ig.has(u)).length}`, lpNote: lpRank.note, nearLp: near[0].note }) };
+  },
+  async igcseSubject() {
+    // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): Leighton Park and King's Worcester, IGCSE schools both.
+    const { igcseAmong, igcseFamiliesOut } = await import("../src/lib/igcse");
+    const { igcseGroupNoteFor, igcseTakenAsIgcse } = await import("../src/lib/igcse-words");
+    const { resolveRankingSet, resolveDefaultNearest, cachedRankingPopulation } = await import("../src/lib/chooser-sets");
+    const { defaultRankingFilters, matchesRanking, NATIONAL } = await import("../src/lib/comparator-chooser");
+    const { subjectRanking } = await import("../src/lib/subject-ranking");
+    const { familyPlaces, headlinePopulation } = await import("../src/lib/admissions/ranks");
+    const { placesOn, population } = await import("../src/lib/smt/population");
+    const { igcseExcluded } = await import("../src/lib/smt/overview");
+    const L = await lib();
+    const ig = await igcseAmong(["110110", "117037", "137625"]);
+    const nat = defaultRankingFilters(NATIONAL);
+    const pop = (await cachedRankingPopulation(null, "ks4", null)).filter((r) => matchesRanking(r, nat)).map((r) => r[0]);
+    const rankIn = async (urn: string, subject: string) => (await subjectRanking({ urns: pop, targetUrn: urn, phase: "ks4", subject, familyId: null, qualificationType: null, measure: { kind: "points" }, period: null }, "rule:igcse-subject:nation"));
+    const rows = await L.adv.fetchSubjectHeadlineForSchools(["110110", "117037"], "ks4");
+    const latestOf = (u: string) => Math.max(...(rows.get(u) ?? []).map((r) => r.period));
+    const held = (u: string) => new Set((rows.get(u) ?? []).filter((r) => r.period === latestOf(u) && r.entriesTotal > 0).map((r) => r.subject));
+    const period = latestOf("110110");
+    const hp = await headlinePopulation("ks4", period);
+    const sp = await population("ks4");
+    const out: Record<string, unknown> = {};
+    const ok: boolean[] = [ig.has("110110"), ig.has("117037"), !ig.has("137625")];
+    // Ranked in the subjects each entered as GCSE: Leighton Park's five, King's Worcester's held ones.
+    const lpSubjects = ["Biology", "Chemistry", "Physics", "Art and Design", "Combined Science"];
+    const kwSubjects = ["Art and Design", "History", "Geography"].filter((x) => held("117037").has(x));
+    for (const [u, list] of [["110110", lpSubjects], ["117037", kwSubjects]] as const) {
+      for (const sub of list) {
+        const r = await rankIn(u, sub);
+        out[`${u}:${sub}`] = r.targetRank === null ? "unranked" : `${r.targetTied ? "=" : ""}${r.targetRank} of ${r.ranked}`;
+        ok.push(r.targetRank !== null && !r.targetIgcse && r.window.some((w) => w.urn === u));
+      }
+    }
+    ok.push(kwSubjects.length > 0);
+    // Never inferred for a subject it simply doesn't take: King's Worcester has no GCSE Biology, and
+    // Biology isn't "taken as IGCSE" -- there's no figure, so no rank, and nothing claims IGCSE.
+    ok.push(!held("117037").has("Biology") && !igcseTakenAsIgcse(true, held("117037")).has("Biology") && (await rankIn("117037", "Biology")).targetRank === null);
+    // Not ranked: Attainment 8, English and maths, Sciences & Maths, English (Languages & Literature).
+    const a8 = await resolveRankingSet("110110", "Leighton Park School", "ks4", nat, null);
+    const em = await placesOn(sp, period, "engmath_95_percent", ["110110", "117037"], await igcseExcluded());
+    const fams = await Promise.all(["sciences_maths", "languages_literature", "humanities_social"].map((f) => familyPlaces("ks4", period, f, ["110110", "117037"], 10)));
+    const fo = await igcseFamiliesOut();
+    ok.push(a8.targetRank === null && !!a8.targetIgcse);
+    ok.push(em.get("110110")!.national === null && em.get("117037")!.national === null);
+    for (const u of ["110110", "117037"]) ok.push(fams[0].get(u)!.national === null && fams[1].get(u)!.national === null);
+    // King's Worcester's humanities are complete: ranked in that group.
+    ok.push(fams[2].get("117037")!.national !== null && !(fo.get("117037")?.[String(period)] ?? []).includes("humanities_social"));
+    // The label's sentence; the population count includes IGCSE schools with the subject as GCSE.
+    const note = igcseGroupNoteFor(rows.get("110110") ?? [], "Biology", true) ?? "";
+    ok.push(note.includes("sciences only: maths taken as IGCSE"));
+    const bio = await rankIn("137625", "Biology");
+    ok.push(bio.window.length > 0 && (await rankIn("110110", "Biology")).ranked === bio.ranked);
+    // "10 nearest" for a subject: Leighton Park's set has IGCSE schools back for their GCSE subjects; the
+    // whole-school ten still has none.
+    const igAll = await (await import("../src/lib/igcse")).igcseEngland();
+    const near = await resolveDefaultNearest("110110", "ks4");
+    const subjectIgcse = (near.subjectRows ?? []).filter((r) => !r.isTarget && igAll.has(r.urn)).length;
+    ok.push(near.rows.every((r) => r.isTarget || !igAll.has(r.urn)) && subjectIgcse > 0 && (near.subjectRows ?? []).filter((r) => !r.isTarget).length === near.count);
+    Object.assign(out, {
+      a8: a8.targetIgcse ? "IGCSE, unranked" : a8.targetRank, em: `${em.get("110110")!.national} / ${em.get("117037")!.national}`,
+      sciences: `${fams[0].get("110110")!.national} / ${fams[0].get("117037")!.national}`, english: `${fams[1].get("110110")!.national} / ${fams[1].get("117037")!.national}`,
+      kwHumanities: JSON.stringify(fams[2].get("117037")!.national), nearSubjectIgcse: subjectIgcse, biologyRanked: bio.ranked, popN: hp.size,
+    });
+    return { pass: ok.every(Boolean), detail: fmt(out) + ` checks=${ok.map((b) => (b ? 1 : 0)).join("")}` };
   },
   async smtIgcse() {
     const c = await smtCase("110110");
@@ -2009,7 +2079,8 @@ const RUNNERS: Record<string, Runner> = {
     const g = c.overview.rows.filter((r) => r.stage === "ks4");
     const a = c.overview.rows.find((r) => r.key === "A level::aps_per_entry");
     const academic = await smtAcademicCase("110110", "gcse", null);
-    const html = textOf(await smtRender("110110", "DV-SMT-A-AREAS", academic));
+    // 0.8 IGCSE subjects: only the whole-school views keep the note (value added; the headline trend).
+    const html = textOf(await smtRender("110110", "DV-SMT-A-VA", academic));
     const sc = textOf(await smtRender("110110", "DV-SMT-O-SCORECARD"));
     const pass = g.length === 2 && g.every((r) => r.note === "igcse" && r.value === null && r.set === null && r.england === null) && !!a?.set && setPhaseOf(c.school.phases) === "ks5" && html.includes(smtNote("igcseView", { school: c.school.name })) && /IGCSE not ranked/.test(sc) && !!SMT_NOTES.igcseChip;
     return { pass, detail: fmt({ gcseRows: g.map((r) => `${r.label}:${r.note}`).join("/"), alevelRank: a?.set && `${a.set.rank} of ${a.set.of}`, setPhase: setPhaseOf(c.school.phases), gcseViewSaysWhy: html.includes("sits IGCSEs"), scorecardNotRanked: /IGCSE not ranked/.test(sc) }) };

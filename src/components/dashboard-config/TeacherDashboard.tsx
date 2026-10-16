@@ -259,7 +259,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Snagging round 1 Part 4: a ranking also brings its rank-in-the-whole-population and
   // population-average figures (RankingFigures), which a list of schools does not have.
   // 0.6.7 B1: `profiles` -- the set's lean school details, at GCSE and Post-16 (chooser-set).
-  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null; profiles?: WireAcademicSchoolProfile[] } | null>(null);
+  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; subjectRows?: ComparatorSchool[]; subjectNote?: string | null; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null; profiles?: WireAcademicSchoolProfile[] } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route: the subject
   // itself at GCSE; at Post-16 the subject in its exact qualification, with no fallback.
   const [englandAvg, setEnglandAvg] = useState<{
@@ -503,9 +503,18 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   }, [savedSets, storedSet, chooserRaw, chooserSet]);
   const { storedSaved, chooserChoice, activeChoiceKey } = activeComparison(storedSet, chooserRaw, savedSets);
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): the same sets for a subject view at GCSE -- with the IGCSE schools
+  // the whole-school rows leave out, where the server sent them (subjectRows). Only subject views read it.
+  const subjectComparatorSets = useMemo<Record<string, ComparatorSchool[] | undefined>>(() => {
+    const key = activeComparison(storedSet, chooserRaw, savedSets).activeChoiceKey;
+    return {
+      ...Object.fromEntries((savedSets?.sets ?? []).map((set) => [savedSetKey(set.id), set.subjectRows ?? set.rows])),
+      ...(key ? { [CHOOSER_SET_ID]: chooserSet?.key === key ? chooserSet.subjectRows ?? chooserSet.rows : [] } : {}),
+    };
+  }, [savedSets, storedSet, chooserRaw, chooserSet]);
   const comparatorUrns = useMemo(
-    () => Array.from(new Set(Object.values(allComparatorSets).flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
-    [allComparatorSets],
+    () => Array.from(new Set([...Object.values(allComparatorSets), ...Object.values(subjectComparatorSets)].flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
+    [allComparatorSets, subjectComparatorSets],
   );
 
   // Resolve the chooser's unsaved choice whenever it changes (and once on load).
@@ -519,7 +528,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const token = data.session?.access_token;
       if (!token) return;
       // Shared for 5 minutes with every other view of this school (fetch-cache.ts).
-      const res = await cachedFetchJson<{ rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; profiles?: WireAcademicSchoolProfile[] } & Partial<RankingFigures>>("/api/teacher/chooser-set", {
+      const res = await cachedFetchJson<{ rows: ComparatorSchool[]; subjectRows?: ComparatorSchool[]; subjectNote?: string | null; seriesByUrn: Record<string, SchoolSeries>; note: string | null; profiles?: WireAcademicSchoolProfile[] } & Partial<RankingFigures>>("/api/teacher/chooser-set", {
         token,
         method: "POST",
         body: JSON.stringify({
@@ -545,7 +554,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               targetTied: body.targetTied ?? false,
             }
           : null;
-      if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking, ...(body.profiles ? { profiles: body.profiles } : {}) });
+      if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, ...(body.subjectRows ? { subjectRows: body.subjectRows, subjectNote: body.subjectNote ?? null } : {}), seriesByUrn: body.seriesByUrn, note: body.note, ranking, ...(body.profiles ? { profiles: body.profiles } : {}) });
     })();
     return () => { cancelled = true; };
   }, [activeChoiceKey, schoolUrn, phase, supabase]);
@@ -595,7 +604,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     const forPhase = phase;
     const lean = forPhase === "ks4" || forPhase === "ks5";
     const wanted = comparatorUrns.includes(schoolUrn) ? comparatorUrns : [...comparatorUrns, schoolUrn];
-    const covered = new Set((chooserProfiles?.rows ?? []).map((r) => r.urn).concat(schoolUrn));
+    const covered = new Set([...(chooserProfiles?.rows ?? []), ...(chooserProfiles?.subjectRows ?? [])].map((r) => r.urn).concat(schoolUrn));
     const fromChooser = lean && chooserProfiles?.profiles && covered.size === wanted.length && wanted.every((u) => covered.has(u)) ? chooserProfiles.profiles : null;
     let cancelled = false;
     (async () => {
@@ -1709,6 +1718,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // it. Nothing new is fetched here; subjectYearsFor reads the profiles already loaded.
   // 0.6.5 S3: at Post-16, the set's exact-qualification rows (null while they load; rows null
   // if the request failed). `urns` is the set and the school, as Comparisons draws them.
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): every view of the focused subject reads the set with its IGCSE
+  // schools kept (at GCSE; the same sets elsewhere): they are ranked in the subjects they entered as GCSE.
+  const subjectSets = phase === "ks4" ? subjectComparatorSets : allComparatorSets;
   const exactQuals = (() => {
     if (phase !== "ks5" || !focusItem || !schoolUrn || !activeMapChip) return null;
     const urns = Array.from(new Set([schoolUrn, ...(allComparatorSets[comparisonsSet] ?? []).map((sc) => sc.urn)])).sort();
@@ -1762,7 +1774,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const schoolSetOn = (figure: "results" | "candidates", periods: number[]) => () => {
     if (!activeMapChip || !mapProfiles) return null;
     if (comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking") return null;
-    const others = (allComparatorSets[comparisonsSet] ?? []).filter((s) => !s.isTarget && s.urn !== schoolUrn);
+    const others = (subjectSets[comparisonsSet] ?? []).filter((s) => !s.isTarget && s.urn !== schoolUrn);
     const at = (rows: { period: number; value: number }[] | undefined, p: number) => rows?.find((r) => r.period === p)?.value ?? null;
     return {
       label: activeSetLabel,
@@ -1781,7 +1793,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const setGradeRowsFor = (): FrameSetGrades | null => {
     if (!focusItem || !schoolUrn || (phase !== "ks4" && phase !== "ks5")) return null;
     if (comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking") return null;
-    const all = allComparatorSets[comparisonsSet] ?? [];
+    const all = subjectSets[comparisonsSet] ?? [];
     const others = all.filter((s) => !s.isTarget && s.urn !== schoolUrn);
     if (!others.length) return null;
     // Comparisons' own request, to the letter (its gradeUrns), so the two share one fetch.
@@ -1826,7 +1838,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // page's own rate function; the school's own from its own grade rows.
   const column1MapSeries = (): MapSeries | null => {
     if (!focusItem || !schoolUrn || !activeMapChip) return null;
-    const set = allComparatorSets[comparisonsSet] ?? [];
+    const set = subjectSets[comparisonsSet] ?? [];
     const urns = Array.from(new Set([schoolUrn, ...set.map((sc) => sc.urn)]));
     const onRate = usingThreshold || (usingBands && !!bandRange);
     const measure = resultsMeasureShown;
@@ -1896,7 +1908,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const comparatorSetNote =
     comparisonsSet === CHOOSER_SET_ID
       ? chooserSet && chooserSet.key === activeChoiceKey
-        ? chooserSet.note ?? undefined
+        ? (activeMapChip && chooserSet.subjectRows ? chooserSet.subjectNote : chooserSet.note) ?? undefined
         : "Loading these schools…"
       : storedSaved === "pending"
         ? "Loading these schools…"
@@ -2497,7 +2509,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         activeSet={activeSetOption}
         setLabel={activeSetLabel}
         setNote={comparatorSetNote}
-        schools={allComparatorSets[comparisonsSet] ?? []}
+        schools={(activeMapChip ? subjectSets : allComparatorSets)[comparisonsSet] ?? []}
         seriesByUrn={activeMapChip ? comparatorSubjectSeries : { ...seriesByUrn, ...(savedSets?.seriesByUrn ?? {}), ...(chooserSet?.seriesByUrn ?? {}) }}
         // Part 3: "Choose schools…" / "Edit" open the chooser. A new set starts from
         // whichever set is selected now.

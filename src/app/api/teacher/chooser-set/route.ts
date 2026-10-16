@@ -52,10 +52,10 @@ export async function POST(request: NextRequest) {
   // academic-schools for when this set is all it holds -- one request instead of two in a
   // row, and the 0.6.4 prefetch of the other phase's nearest set now warms them as well.
   const phase = body.phase;
-  const withProfiles = async <T extends { rows: { urn: string }[] }>(set: T) =>
+  const withProfiles = async <T extends { rows: { urn: string }[]; subjectRows?: { urn: string }[] }>(set: T) =>
     phase === "ks2"
       ? set
-      : { ...set, profiles: (await fetchTeacherComparatorProfiles(profileUrnsFor(set.rows.map((r) => r.urn), body.urn), phase)).map(serializeAcademicProfile) };
+      : { ...set, profiles: (await fetchTeacherComparatorProfiles(profileUrnsFor([...set.rows, ...(set.subjectRows ?? [])].map((r) => r.urn), body.urn), phase)).map(serializeAcademicProfile) };
 
   try {
     // 0.6.5 S4: the default nearest set is school-level public data (the same for every member,

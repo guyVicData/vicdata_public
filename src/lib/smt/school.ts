@@ -4,7 +4,8 @@
 // areas it enters at GCSE and Post-16 (the second row). Server-only; public data, cached an hour.
 import { cachedReference } from "../server-cache";
 import { createServerAnonSupabaseClient } from "../supabase";
-import { lookupAcademicLatestYears, lookupAcademicSubjectFamily, lookupReferenceData } from "../vicdata-reference";
+import { lookupAcademicLatestYears, lookupAcademicSubjectFamily, lookupAcademicSubjectHeadline, lookupReferenceData } from "../vicdata-reference";
+import { igcseGroupLabel, igcseGroupNote } from "../igcse-words";
 import { igcseEngland, INDEPENDENT_GROUP } from "../igcse";
 import { buildRollTrend, type RollSnapshot } from "../roll-data";
 import { isBoardingSchool } from "../admissions/boarding";
@@ -12,7 +13,9 @@ import { englandSchools } from "../admissions/ranks";
 import type { SchoolPhases } from "./levels";
 import { figure, population, SMT_MEASURES, type Population } from "./population";
 
-export type SmtArea = { id: string; label: string; entries: number };
+// 0.8 IGCSE subjects: at an IGCSE school, an area lacking a subject it takes as IGCSE carries the short label
+// ("Sciences & Maths · no maths (IGCSE)") and its (i) sentence, and isn't ranked against other schools.
+export type SmtArea = { id: string; label: string; entries: number; igcseNote?: string };
 export type LatestYears = Partial<Record<"ks2" | "ks4" | "ks5", { period: number; provisional: boolean }>>;
 
 export type SmtSchool = {
@@ -59,6 +62,17 @@ export async function sitsIgcse(urn: string, typeGroup: string | null): Promise<
   return typeGroup === INDEPENDENT_GROUP && (await igcseEngland()).has(urn);
 }
 
+/** An IGCSE school's GCSE areas, each incomplete one under its short label with its (i) sentence. */
+async function igcseLabelledAreas(urn: string, areas: SmtArea[], period: number | null): Promise<SmtArea[]> {
+  if (period === null || !areas.length) return areas;
+  const rows = await cachedReference(`smt:igcse-subjects:${urn}:${period}`, () => lookupAcademicSubjectHeadline({ entityIds: [urn], ksStage: "ks4", periodMin: period, periodMax: period, bucket: "all" }));
+  const subjects = rows.filter((r) => r.entries_total > 0).map((r) => r.subject);
+  return areas.map((a) => {
+    const note = igcseGroupNote(a.id, a.label, subjects, true);
+    return note ? { ...a, label: igcseGroupLabel(a.id, a.label, subjects, true), igcseNote: note } : a;
+  });
+}
+
 /** The subject areas the school entered in a year, largest first, as the family lookup names them. */
 export async function schoolAreas(urn: string, stage: "ks4" | "ks5", period: number | null): Promise<SmtArea[]> {
   if (period === null) return [];
@@ -96,7 +110,10 @@ export async function smtSchool(urn: string): Promise<SmtSchool | null> {
     post16: now ? band("sixth_form") : results.ks5,
     ...(igcse ? { igcse: true } : {}),
   };
-  const [gcse, post16] = await Promise.all([phases.gcse && !igcse ? schoolAreas(urn, "ks4", latest.ks4?.period ?? null) : Promise.resolve([]), phases.post16 ? schoolAreas(urn, "ks5", latest.ks5?.period ?? null) : Promise.resolve([])]);
+  const [gcseAll, post16] = await Promise.all([phases.gcse ? schoolAreas(urn, "ks4", latest.ks4?.period ?? null) : Promise.resolve([]), phases.post16 ? schoolAreas(urn, "ks5", latest.ks5?.period ?? null) : Promise.resolve([])]);
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): an IGCSE school's GCSE areas are offered too; an incomplete one
+  // is labelled (the school's own subjects with GCSE entries in the latest year decide).
+  const gcse = igcse ? await igcseLabelledAreas(urn, gcseAll, latest.ks4?.period ?? null) : gcseAll;
   const typeGroup = data.establishment_type_group;
   return {
     urn,

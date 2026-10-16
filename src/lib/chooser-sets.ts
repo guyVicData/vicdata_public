@@ -40,11 +40,14 @@ export async function cachedRankingPopulation(regionCode: string | null, phase: 
 
 // ------------------------------------------------------------------------- resolvers
 
-export type ChooserSetResult = { rows: RankedRow[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null };
+// 0.8 IGCSE subjects (R-IGCSE-SUBJECT): at GCSE, where the set's whole-school rows leave IGCSE schools
+// out, `subjectRows` keeps them for subject views (an IGCSE school is ranked in the subjects it entered
+// as GCSE), with `subjectNote` for the set's caption there. Absent when nothing differs.
+export type ChooserSetResult = { rows: RankedRow[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; subjectRows?: RankedRow[]; subjectNote?: string | null };
 
 export async function resolveFixedSet(targetUrn: string, phase: KsStage, urns: string[]): Promise<ChooserSetResult> {
-  const { ranked, seriesByUrn } = await rankFixedSets(targetUrn, [{ id: "chooser", urns }], phase);
-  return { rows: ranked.chooser ?? [], seriesByUrn, note: null };
+  const { ranked, subjectRanked, seriesByUrn } = await rankFixedSets(targetUrn, [{ id: "chooser", urns }], phase);
+  return { rows: ranked.chooser ?? [], seriesByUrn, note: null, ...(subjectRanked.chooser ? { subjectRows: subjectRanked.chooser } : {}) };
 }
 
 // Snagging round 1 Part 4: what the Comparisons column shows for a ranking in place of a
@@ -88,13 +91,33 @@ export async function resolveDefaultNearest(targetUrn: string, phase: KsStage): 
   const chosen = resolveNearestOption(lists.list1, lists.boardingBand, lists.boardingRecipe, null);
   const urns = (chosen?.schools ?? []).map((s) => s.urn).filter((u) => u !== targetUrn);
   const set = await resolveFixedSet(targetUrn, phase, urns);
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): "10 nearest" for a subject is the 10 nearest by the same rules
+  // with IGCSE schools in (they come back in for their GCSE subjects): the same build without the
+  // IGCSE filter. Carried only where it differs from the whole-school ten.
+  let subject: Pick<ChooserSetResult, "subjectRows" | "subjectNote"> = {};
+  if (phase === "ks4" && lists.igcseSkipped && (lists.igcseSkipped.list1.length || lists.igcseSkipped.boardingRecipe.length)) {
+    const all = await buildDefaultComparatorLists(targetUrn, { only: "nearest" });
+    const chosenAll = resolveNearestOption(all.list1, all.boardingBand, all.boardingRecipe, null);
+    const subjectUrns = (chosenAll?.schools ?? []).map((s) => s.urn).filter((u) => u !== targetUrn);
+    if (subjectUrns.join(",") !== urns.join(",")) {
+      const r = await rankFixedSets(targetUrn, [{ id: "subject", urns: subjectUrns }], phase);
+      const igcseIn = subjectUrns.length - ((r.ranked.subject?.length ?? 1) - 1);
+      Object.assign(set.seriesByUrn, r.seriesByUrn);
+      subject = {
+        subjectRows: r.subjectRanked.subject ?? r.ranked.subject ?? [],
+        subjectNote: igcseIn
+          ? `The ${subjectUrns.length} nearest schools, including ${igcseIn} not ranked at GCSE overall (mostly IGCSE): each is ranked in the subjects it entered as GCSE.`
+          : null,
+      };
+    }
+  }
   // 0.8 audit fixes (1, T6): at GCSE the list filled past IGCSE schools; where it did, the caption
   // says how many nearer schools aren't ranked at GCSE and the radius the ten reached.
   const skipped = lists.igcseSkipped ? (chosen === lists.boardingRecipe ? lists.igcseSkipped.boardingRecipe : lists.igcseSkipped.list1) : [];
   const reach = Math.max(0, ...(chosen?.schools ?? []).map((s) => s.distanceKm ?? 0));
   const nearer = skipped.filter((s) => s.urn !== targetUrn && s.distanceKm !== null && s.distanceKm <= reach).length;
   const note = nearer ? `${igcseNotRankedLine(nearer)}; the ${urns.length} nearest eligible reach ${Math.round(reach)} km.` : set.note;
-  return { ...set, note, count: urns.length };
+  return { ...set, ...subject, note, count: urns.length };
 }
 
 const TOP = 15;

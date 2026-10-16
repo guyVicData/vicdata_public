@@ -23,6 +23,7 @@ import { MIN_SUBJECT_ENTRIES_UI, type SmtLevel } from "./levels";
 import { areaSetPlace, figure, placesOn, population, setPlace, SMT_MEASURES, VA_QUALS, type Population } from "./population";
 import type { SmtSchool } from "./school";
 import { igcseExcluded, middleHalf, p8Of, type BandPt, type P8, type Pt, type Rank, type SmtSet } from "./overview";
+import { igcseFamilyOut } from "../igcse";
 
 export const MIN_SUBJECT_ENTRIES = MIN_SUBJECT_ENTRIES_UI; // R-SMT-SMALL-ENTRIES: a subject needs this many to be ranked
 export const MAX_SUBJECTS = 16;
@@ -114,9 +115,11 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   const exclude = stage === "ks4" ? igcse : new Set<string>();
   const empty: StagePart = { stage, period, provisional: latest?.provisional ?? false, tiles: [], areas: [], overall: null, subjects: [], grades: { period, bands: [], entries: 0 }, trend: { label: "", school: [], band: [] }, mix: { keys: [], years: [] } };
   if (period === null) return empty;
-  if (stage === "ks4" && school.phases.igcse) {
-    return { ...empty, tiles: [{ key: "igcse", label: "GCSE", value: null, unit: "points", period, sub: smtNote("igcseChip"), set: null, england: null, note: "igcse" }] };
-  }
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): an IGCSE school at GCSE keeps its subject rows (each ranked like
+  // any other school's), its complete subject areas and its own entries and grades. Only the whole-school
+  // tiles (Attainment 8, English and maths) stay out, as the IGCSE tile; an incomplete area isn't ranked.
+  const igcseSchool = stage === "ks4" && !!school.phases.igcse;
+  const areaOut = area && stage === "ks4" ? await igcseFamilyOut(area, period) : new Set<string>();
 
   // ------------------------------------------------------------ the school's subject rows
   const { byUrn, subjectFamilyMap } = await cachedReference(`smt:subjects:${urn}:${stage}`, () => fetchSubjectLevelDataForSchools([urn], stage, { gradeYears: "four" }));
@@ -149,10 +152,12 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
     tiles.push({ key: "area_avg", label: stage === "ks4" ? "Average grade" : "Points per entry", value: v, unit: stage === "ks4" ? "grade" : "points", period, sub: `the area's subjects, ${periodLabel(period)}`, set: null, england: null, note: v === null ? "none" : null });
     // S4 (the Academic board): the rank in the set is its own tile, the fourth.
     // 0.8 audit fixes (7): the same minimum as the rows (SUBJECT_AREA_MIN): 10+ entries, 2+ set schools.
-    const r = areaSetPlace(setVals, urn, exclude);
+    const r = areaOut.has(urn) ? null : areaSetPlace(setVals, urn, areaOut);
     const areaName = school.areas[stage === "ks4" ? "gcse" : "post16"].find((a) => a.id === area)?.label ?? "this area";
-    const why = setVals.get(urn)!.value === null ? `no ${areaName} figure to rank` : smtNote("areaRankNone", { schools: SUBJECT_AREA_MIN.schools, entries: SUBJECT_AREA_MIN.entries, area: areaName });
+    const why = areaOut.has(urn) ? smtNote("igcseAreaNotRanked", { area: areaName }) : setVals.get(urn)!.value === null ? `no ${areaName} figure to rank` : smtNote("areaRankNone", { schools: SUBJECT_AREA_MIN.schools, entries: SUBJECT_AREA_MIN.entries, area: areaName });
     tiles.push({ key: "area_rank", label: `Rank in ${set.label}`, value: r?.rank ?? null, unit: "rank", period, sub: r ? `of ${r.of}, schools with ${SUBJECT_AREA_MIN.entries}+ ${areaName} entries` : why, set: r ? { ...r, label: `${set.label} with ${areaName} results` } : null, england: null, note: r ? null : "none" });
+  } else if (igcseSchool) {
+    tiles.push({ key: "igcse", label: "GCSE", value: null, unit: "points", period, sub: smtNote("igcseChip"), set: null, england: null, note: "igcse" });
   } else {
     const places = await placesOn(pop, period, headKey, [urn], exclude);
     const p = places.get(urn)!;
@@ -229,7 +234,7 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   if (area) {
     const sch = years.map((y) => ({ year: y, value: famVal(urn, y) }));
     const band = years.map((y) => {
-      const vals = setUrns.filter((u) => !exclude.has(u)).map((u) => famVal(u, y)).filter((v): v is number => v !== null);
+      const vals = setUrns.filter((u) => !areaOut.has(u)).map((u) => famVal(u, y)).filter((v): v is number => v !== null);
       return { year: y, p25: percentile(vals, 25), p75: percentile(vals, 75), n: vals.length };
     });
     trend = { label: stage === "ks4" ? "Average grade" : "Points per entry", school: sch, band };

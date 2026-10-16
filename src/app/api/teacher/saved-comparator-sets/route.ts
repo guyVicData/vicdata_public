@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
   // A school in no group gets none, and the payload is exactly as before.
   const groupSets = await schoolGroupSets(urn, supabase);
 
-  const { ranked, seriesByUrn, excludedUrns } = await rankFixedSets(
+  const { ranked, subjectRanked, seriesByUrn, excludedUrns } = await rankFixedSets(
     urn,
     [...sets, ...groupSets].map((s) => ({ id: s.id, urns: s.members.map((m) => m.urn) })),
     phase,
@@ -213,7 +213,8 @@ export async function GET(request: NextRequest) {
     ...(ctx.rankings ? { rankings: ctx.rankings } : {}),
     cap: PERSONAL_COMPARATOR_CAP,
     personalCount: sets.filter((s) => s.mine).length,
-    sets: [...sets, ...groupSets].map((s) => ({ ...s, rows: ranked[s.id] ?? [] })),
+    // 0.8 IGCSE subjects: at GCSE a set with IGCSE members also carries them for subject views (subjectRows).
+    sets: [...sets, ...groupSets].map((s) => ({ ...s, rows: ranked[s.id] ?? [], ...(subjectRanked[s.id] ? { subjectRows: subjectRanked[s.id] } : {}) })),
     seriesByUrn,
     // GCSE schools left out of comparison entirely (igcseExclusionLikely) -- the chooser
     // can say so beside a ticked school rather than let it silently vanish.

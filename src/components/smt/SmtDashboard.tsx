@@ -276,7 +276,8 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const chips: FocusSubject[] = s
     ? levelChips(s.phases).map((p) => ({ key: p, label: LEVEL_LABEL[p], ...(p === "gcse" && s.phases.igcse ? { marked: { reason: SMT_NOTES.igcseChip } } : {}) }))
     : [];
-  const areas = s && (level.phase === "gcse" || level.phase === "post16") && !(level.phase === "gcse" && s.phases.igcse) ? s.areas[level.phase] : [];
+  // 0.8 IGCSE subjects: an IGCSE school's GCSE areas are offered too (an incomplete one under its short label).
+  const areas = s && (level.phase === "gcse" || level.phase === "post16") ? s.areas[level.phase] : [];
   const subRow =
     dash === "academic" && areas.length
       ? { label: "Subject area", chips: [{ key: "", label: ALL_AREAS_LABEL }, ...areas.map((a) => ({ key: a.id, label: a.label }))], focusKey: level.area ?? "", onFocus: (k: string) => setLevel({ phase: level.phase, area: k || null }) }
@@ -736,6 +737,9 @@ function sourceOf(dv: string, c?: Ctx): ReactNode {
 function captionOf(dv: string, c: Ctx): ReactNode {
   const set = c.set.label;
   const igcse = c.school.phases.igcse ? ` ${smtNote("igcseView", { school: c.school.name })}` : "";
+  // 0.8 IGCSE subjects (follow-up 1): an incomplete area chosen at GCSE carries its full sentence.
+  const areaNote = c.level.phase === "gcse" && c.level.area ? c.school.areas.gcse.find((a) => a.id === c.level.area)?.igcseNote : undefined;
+  const withArea = (text: string) => (areaNote ? `${text} ${areaNote}` : text);
   switch (dv) {
     case "DV-SMT-O-NOW":
       return `${SMT_NOTES.size} ${c.overview.status === "ready" ? c.overview.data.p8.text : ""}`;
@@ -750,15 +754,15 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-O-RESULTS-TABLE":
     case "DV-SMT-A-TREND-LINE":
     case "DV-SMT-A-TREND-TABLE":
-      return `${smtNote("middleHalf", { setLabel: set })} ${TREND_BASE_NOTE}${igcse}`;
+      return withArea(`${smtNote("middleHalf", { setLabel: set })} ${TREND_BASE_NOTE}${igcse}`);
     case "DV-SMT-O-MARKET-LINE":
     case "DV-SMT-O-MARKET-TABLE":
       return SMT_NOTES.marketShort;
     case "DV-SMT-A-NOW":
     case "DV-SMT-A-AREAS":
-      return `${SMT_NOTES.ranks}${igcse}`;
+      return withArea(`${SMT_NOTES.ranks}${igcse}`);
     case "DV-SMT-A-SUBJECTS":
-      return `${SMT_NOTES.ranks} ${smtNote("smallEntries", { min: 5 })}`;
+      return withArea(`${SMT_NOTES.ranks} ${smtNote("smallEntries", { min: 5 })}`);
     case "DV-SMT-A-VA":
       return SMT_NOTES.alevelVa;
     case "DV-SMT-A-MIX":
@@ -1032,7 +1036,10 @@ function academicWhyNot(dv: string, c: Ctx): string | null {
     if (dv === "DV-SMT-A-AREAS" || dv === "DV-SMT-A-SUBJECTS" || dv === "DV-SMT-A-GRADES" || dv.startsWith("DV-SMT-A-MIX")) return "KS2 results have no subject areas or subjects: these views are for GCSE and Post-16.";
     if (dv.startsWith("DV-SMT-A-TREND")) return "KS2's results trend arrives with SMT round 2.";
   }
-  if (p === "gcse" && c.school.phases.igcse && dv !== "DV-SMT-A-NOW" && dv !== "DV-SMT-A-BANDS") return smtNote("igcseView", { school: c.school.name });
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): only the whole-school views stay out for an IGCSE school at GCSE --
+  // value added (Progress 8) and the results trend on the whole-school headline (no area chosen). Its
+  // subject areas, subjects, grade profile and entries mix are its own GCSE subjects, ranked as usual.
+  if (p === "gcse" && c.school.phases.igcse && (dv === "DV-SMT-A-VA" || (dv.startsWith("DV-SMT-A-TREND") && !c.level.area))) return smtNote("igcseView", { school: c.school.name });
   return null;
 }
 

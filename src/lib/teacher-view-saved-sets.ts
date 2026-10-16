@@ -38,6 +38,9 @@ export type SavedComparatorSet = {
   // 0.8 groups r3 (S): one of the school's own groups, offered as a set (read-only, never mine).
   group?: { groupId: string; source: string; sourceLabel: string; likely: boolean; likelyMembers: number; type: string; selfDeclared: boolean };
   rows: { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean; distanceKm?: number | null; independent?: boolean }[];
+  // 0.8 IGCSE subjects: at GCSE, the set with its IGCSE members kept, for subject views (R-IGCSE-SUBJECT).
+  // Present only where the whole-school rows left one out.
+  subjectRows?: { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean; distanceKm?: number | null; independent?: boolean }[];
 };
 
 export type SavedSetsPayload = {
