@@ -60,6 +60,13 @@ const fmt = (o: Record<string, unknown>) =>
     .map(([k, v]) => `${k}=${v}`)
     .join(", ");
 
+// A rehearsal subprocess's failure, named by its own last error line (stderr) rather than "Command failed".
+const subprocessError = (e: unknown) => {
+  const err = (e as { stderr?: string }).stderr ?? "";
+  const line = err.split("\n").map((l) => l.trim()).filter((l) => /error/i.test(l)).at(-1);
+  return (line ?? (e as Error).message).slice(0, 200);
+};
+
 // --------------------------------------------------------------------------- runners
 // 0.8 SMT round 1: one school's SMT figures, built by the routes' own functions on the school's
 // default set (Teacher's 10 nearest), memoised for the SMT runners.
@@ -1639,7 +1646,7 @@ const RUNNERS: Record<string, Runner> = {
     const { execFileSync } = await import("node:child_process");
     const run = (pre: string[], urn: string) => {
       try {
-        const out = execFileSync("npx", ["-y", "tsx", "--env-file=.env", ...pre, path.join(ROOT, "scripts/context-preview/context-map-check.mts"), urn], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n").at(-1) ?? "";
+        const out = execFileSync("npx", ["-y", "tsx", "--env-file=.env", ...pre, path.join(ROOT, "scripts/context-preview/context-map-check.mts"), urn], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "pipe"] }).trim().split("\n").at(-1) ?? "";
         return JSON.parse(out) as { state: string; reason?: string; opts: string[]; here?: number; lookup?: number; everyBoundary?: boolean; las?: number };
       } catch (e) {
         return { state: `error ${(e as Error).message.slice(0, 120)}`, opts: [] as string[] };
@@ -2043,18 +2050,18 @@ const RUNNERS: Record<string, Runner> = {
     const script = path.join(ROOT, "scripts/year-rehearsal/smt-rehearsal-check.mts");
     let rehearsal = "";
     try {
-      rehearsal = execFileSync("npx", ["-y", "tsx", "--env-file=.env", "--import=./scripts/year-rehearsal/install-ks4-2025.ts", script], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n").at(-1) ?? "";
+      rehearsal = execFileSync("npx", ["-y", "tsx", "--env-file=.env", "--import=./scripts/year-rehearsal/install-ks4-2025.ts", script], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "pipe"] }).trim().split("\n").at(-1) ?? "";
     } catch (e) {
-      rehearsal = `error ${(e as Error).message.slice(0, 120)}`;
+      rehearsal = `error ${subprocessError(e)}`;
     }
     const r = (() => { try { return JSON.parse(rehearsal) as { a8: number; aps: number; provisional: boolean }; } catch { return null; } })();
     // 0.8 SMT r3: ONS adds an LSOA mid-year (install-lsoa-next.ts): Context moves to it with no code change.
     const ctx = await smtContextCase("137625", "around", "gcse");
     let lsoa = "";
     try {
-      lsoa = execFileSync("npx", ["-y", "tsx", "--env-file=.env", "--import=./scripts/year-rehearsal/install-lsoa-next.ts", path.join(ROOT, "scripts/year-rehearsal/smt-context-rehearsal-check.mts")], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n").at(-1) ?? "";
+      lsoa = execFileSync("npx", ["-y", "tsx", "--env-file=.env", "--import=./scripts/year-rehearsal/install-lsoa-next.ts", path.join(ROOT, "scripts/year-rehearsal/smt-context-rehearsal-check.mts")], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "pipe"] }).trim().split("\n").at(-1) ?? "";
     } catch (e) {
-      lsoa = `error ${(e as Error).message.slice(0, 120)}`;
+      lsoa = `error ${subprocessError(e)}`;
     }
     const l = (() => { try { return JSON.parse(lsoa) as { children: number; byAge: number; sources: number; nearbyLast: number }; } catch { return null; } })();
     const next = (ctx.now.children.year ?? 0) + 1;

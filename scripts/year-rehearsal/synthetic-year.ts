@@ -100,7 +100,10 @@ export function installSyntheticYear(o: SyntheticYearOptions): () => void {
       return new Response(JSON.stringify({ code: "PGRST202", message: `synthetic year: ${name} answers not applied` }), { status: 404, headers: { "Content-Type": "application/json" } });
     }
     if (name === "academic_current_periods") {
-      const rows = (await (await real(input, init)).json()) as Row[];
+      // A failed answer passes through, for the app's own handling (as install-lsoa-next.ts).
+      const res = await real(input, init);
+      if (!res.ok) return res;
+      const rows = (await res.json()) as Row[];
       const out = rows.map((r) => (r.ks_stage === o.stage ? { ...r, latest_period: o.to, provisional: o.provisional } : r));
       return Response.json(out);
     }
