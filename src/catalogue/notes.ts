@@ -136,7 +136,7 @@ export const SMT_NOTES = {
   // R-IGCSE-EXCL, said for SMT.
   igcseChip: "No comparable whole-school GCSE results: this school sits IGCSEs, which DfE's tables don't count. Its GCSE subjects are ranked like any other school's.",
   igcseView: "{school} sits IGCSEs, which DfE's GCSE tables don't count. Its whole-school GCSE figures (Attainment 8, English and maths) would read near zero, so they aren't compared or ranked. Each subject it entered as GCSE is ranked like any other school's, and each subject area where it took no subject as IGCSE. Post-16 results are compared as usual.",
-  igcseAreaNotRanked: "not ranked: {area} lacks a subject the school takes as IGCSE",
+  igcseAreaNotRanked: "not ranked against other schools: {area}",
   igcseRow: "not ranked: IGCSE",
   // Progress 8 (R-SMT-P8-REASON): which reason applies, never a blank.
   p8Independent: "Progress 8 is not published for independent schools.",
