@@ -21,22 +21,17 @@ import { matchesRanking, type PopulationRow, type RankingFilters } from "./compa
 import { buildDefaultComparatorLists } from "./default-comparator-lists";
 import { resolveNearestOption } from "./nearest-option";
 import { precomputedPost16Neighbours } from "./post16-default-neighbours";
+import { makeRankingPopulationCache } from "./ranking-population-cache";
+import { schoolSyncStamp } from "./school-sync-stamp";
 
 // ------------------------------------------------------------------- population cache
 
-// A population changes only when the census snapshot does: kept six hours, shared by the
+// Kept six hours or until the next school sync (ranking-population-cache.ts), shared by the
 // population route (the chooser's counts) and the ranking resolver below (Done).
-const CACHE_MS = 6 * 60 * 60 * 1000;
-const cache = new Map<string, { at: number; rows: PopulationRow[] }>();
-
-export async function cachedRankingPopulation(regionCode: string | null, phase: RankingPhase, laName: string | null): Promise<PopulationRow[]> {
-  const key = `${regionCode ?? "england"}|${phase}`;
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.rows;
-  const rows = await buildRankingPopulation({ regionCode, nation: regionCode ? null : "england" }, phase, laName);
-  cache.set(key, { at: Date.now(), rows });
-  return rows;
-}
+export const cachedRankingPopulation: (regionCode: string | null, phase: RankingPhase, laName: string | null) => Promise<PopulationRow[]> = makeRankingPopulationCache(
+  (regionCode, phase, laName) => buildRankingPopulation({ regionCode, nation: regionCode ? null : "england" }, phase, laName),
+  schoolSyncStamp,
+);
 
 // ------------------------------------------------------------------------- resolvers
 

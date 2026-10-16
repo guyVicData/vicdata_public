@@ -22,6 +22,7 @@ import { shapeOf } from "./shape";
 import { loadThresholds, phaseForEntryAge, type Thresholds } from "./thresholds";
 import { subjectRanking, type RankMeasure } from "../subject-ranking";
 import { cachedRankingPopulation } from "../chooser-sets";
+import { schoolSyncStamp } from "../school-sync-stamp";
 import { defaultRankingFilters, matchesRanking, NATIONAL } from "../comparator-chooser";
 import { entryYearShrinking, gainingPupils, losingPupils, newSixthForm, pointsChange, resultsRisingFast, shapeChanged, strengthFlags, type Flag } from "./flags";
 
@@ -153,15 +154,17 @@ export async function subjectPlaces(urns: string[], phase: "ks4" | "ks5", subjec
   const { englandSchools } = await import("./ranks");
   const england = await englandSchools();
   const nation = (await cachedRankingPopulation(null, phase, null)).filter((r) => matchesRanking(r, defaultRankingFilters(NATIONAL))).map((r) => r[0]);
+  // The populations' keys carry the last school sync, as the populations do (school-sync-stamp.ts).
+  const sync = await schoolSyncStamp();
   const out = new Map<string, { national: { rank: number | null; of: number }; regional: { rank: number | null; of: number; region: string } | null; value: number | null }>();
   for (const u of urns) {
     const base = { targetUrn: u, phase, subject: subject.subject, familyId: subject.familyId, qualificationType: subject.qualificationType, measure: subject.measure, period: null };
-    const nat = await subjectRanking({ ...base, urns: nation }, `adm:nation:${phase}`);
+    const nat = await subjectRanking({ ...base, urns: nation }, `adm:nation:${phase}|sync:${sync}`);
     const place = england.get(u);
     let regional = null;
     if (place) {
       const reg = (await cachedRankingPopulation(place.regionCode, phase, null)).map((r) => r[0]);
-      const r = await subjectRanking({ ...base, urns: reg }, `adm:region:${place.regionCode}:${phase}`);
+      const r = await subjectRanking({ ...base, urns: reg }, `adm:region:${place.regionCode}:${phase}|sync:${sync}`);
       regional = { rank: r.targetRank, of: r.ranked, region: place.regionName };
     }
     out.set(u, { national: { rank: nat.targetRank, of: nat.ranked }, regional, value: nat.target?.value ?? null });
