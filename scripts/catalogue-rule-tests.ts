@@ -1930,6 +1930,27 @@ const RUNNERS: Record<string, Runner> = {
     const pass = row.set?.rank === rank && row.set?.of === of && labelOk && row.england !== null;
     return { pass, detail: fmt({ value: row.value, scorecard: `${row.set?.rank} of ${row.set?.of}`, recomputed: `${rank} of ${of}`, igcseInSet: igcse.size, label: row.set?.label, england: row.england && `${row.england.rank} of ${row.england.of}` }) };
   },
+  async igcseGroupLabel() {
+    const { igcseAmong } = await import("../src/lib/igcse");
+    const { igcseGroupLabelFor } = await import("../src/lib/igcse-words");
+    const L = await lib();
+    const ig = await igcseAmong(["110110", "137625"]);
+    const rows = await L.adv.fetchSubjectHeadlineForSchools(["110110", "137625"], "ks4");
+    const lp = rows.get("110110") ?? [], ch = rows.get("137625") ?? [];
+    // Raw: Leighton Park's latest year holds no Mathematics and no English with entries.
+    const latest = Math.max(...lp.map((r) => r.period));
+    const held = new Set(lp.filter((r) => r.period === latest && r.entriesTotal > 0).map((r) => r.subject));
+    const raw = !held.has("Mathematics") && !held.has("English Language") && !held.has("English Literature");
+    const bio = igcseGroupLabelFor(lp, "Biology", ig.has("110110"));
+    const latin = igcseGroupLabelFor(lp, "Latin", ig.has("110110"));
+    const chase = igcseGroupLabelFor(ch, "Biology", ig.has("137625"));
+    const pass = ig.has("110110") && !ig.has("137625") && raw
+      && bio === "Sciences & Maths (sciences only: maths taken as IGCSE)"
+      && latin === "Languages & Literature (no English: taken as IGCSE)"
+      && chase === "Sciences & Maths";
+    return { pass, detail: fmt({ lpIgcse: ig.has("110110"), latest, noMathsOrEnglish: raw, bio, latin, chase }) };
+  },
+
   async igcseEverywhere() {
     const { igcseEngland } = await import("../src/lib/igcse");
     const { resolveRankingSet, resolveDefaultNearest, cachedRankingPopulation } = await import("../src/lib/chooser-sets");

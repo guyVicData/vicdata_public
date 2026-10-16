@@ -758,6 +758,17 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-IGCSE-GROUP-LABEL",
+    statement:
+      "Teacher's Column 1 keeps an IGCSE school's own GCSE subject figures (its rank among its own subjects, its gap to England): only ranks against other schools follow R-IGCSE-EVERYWHERE. Where the focused subject's category at the school lacks the subjects it takes as IGCSE (English and maths, the subjects the IGCSE rule rests on), Column 1 names the category with what it lacks: 'Sciences & Maths (sciences only: maths taken as IGCSE)' (or '(no Mathematics: taken as IGCSE)' when Statistics or Additional Maths is held), 'Languages & Literature (no English: taken as IGCSE)' or '(no English Language: taken as IGCSE)', judged on the subjects with entries in the school's latest GCSE year. Every other school, every other category, and England's lines keep the plain name.",
+    why: "Leighton Park's Biology reads '2nd of 4 in Sciences & Maths', a category with no maths at the school; the name must say so (Guy, 16 Oct 2026: only ranks against other schools count).",
+    appliesTo: "Teacher Column 1 (Results and Candidates) at GCSE: the category rank tile and the 'Results / Entries in {category}' headings",
+    enforcedIn: ["src/lib/igcse-words.ts:igcseGroupLabel, igcseGroupLabelFor", "src/app/api/teacher/dashboard/route.ts (igcseExcluded)", "src/components/dashboard-config/TeacherDashboard.tsx:focusGroupLabel"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625", phase: "ks4", expect: "Leighton Park is IGCSE-excluded and has no Mathematics or English entries in its latest GCSE year: Biology's category reads 'Sciences & Maths (sciences only: maths taken as IGCSE)', Latin's 'Languages & Literature (no English: taken as IGCSE)'. The Chase's Biology reads 'Sciences & Maths'.", check: "igcseGroupLabel" },
+    origin: "0.8 audit fixes, Guy's decision on the Leighton Park stop (16 Oct 2026)",
+    status: "active",
+  },
+  {
     id: "R-COMPARATOR-NO-FIGURE",
     statement:
       "A comparator with no figure for the measure (or none in the latest year) is not listed and never ranked last. Not applied while loading.",

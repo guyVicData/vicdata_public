@@ -22,7 +22,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
-import { igcseTargetLine } from "@/lib/igcse-words";
+import { igcseGroupLabelFor, igcseTargetLine } from "@/lib/igcse-words";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import type { InPlaceHost } from "@/components/editor/EditorScreen";
@@ -125,6 +125,7 @@ type DashboardPayload = {
   subjectData?: { entries?: SubjectEntry[]; gradeDistribution?: SubjectGradeCount[] };
   headline?: AcademicSubjectHeadlineEntry[];
   qualificationHeadline?: AcademicSubjectHeadlineEntry[];
+  igcseExcluded?: boolean;
   rollAtAge10?: number | null;
   neighbours?: (RankedSchool & { distanceKm: number | null })[];
   headlineLabel?: string;
@@ -240,6 +241,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
   const [headlineLabel, setHeadlineLabel] = useState<string>("");
+  const [igcseOwn, setIgcseOwn] = useState(false);
   // Round 6 (§6.4): every comparator school's own real per-year history for both measures.
   // (The route's four preset sets themselves -- comparatorSets, with setInfo -- are
   // mothballed since the comparator dropdown round: still returned, no longer read.)
@@ -409,6 +411,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         setRollAtAge10(body.rollAtAge10 ?? null);
         setNeighbours(body.neighbours ?? []);
         setHeadlineLabel(body.headlineLabel ?? "");
+        setIgcseOwn(body.igcseExcluded ?? false);
         setSeriesByUrn(body.seriesByUrn ?? {});
         setEnglandAvg(body.englandAverages ?? null);
       } else {
@@ -1434,6 +1437,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // no qualifications, so everything matches there.
   const { focusQualFamily, inFocusQualFamily } = focusQualificationFamily(phase, focusItem);
   const focusFamilyLabel = focusItem ? familyLabelFor(headline, focusItem.subject) ?? "its category" : null;
+  // 0.8 audit fixes (R-IGCSE-GROUP-LABEL): Column 1 names the school's own group, so at an IGCSE school
+  // a group without the subjects it takes as IGCSE says so ("Sciences & Maths (sciences only: maths
+  // taken as IGCSE)"). England's lines keep the plain name: theirs is the whole group.
+  const focusGroupLabel = focusItem && phase === "ks4" ? igcseGroupLabelFor(headline, focusItem.subject, igcseOwn) ?? focusFamilyLabel : focusFamilyLabel;
   const categoryItems: SubjectItem[] = categoryItemsOf(focusItem, items, headline, inFocusQualFamily);
   // The peers are context, not the teacher's own subjects, so they take one muted colour
   // and the focused subject keeps its qualification colour.
@@ -2103,7 +2110,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // category averages) leave the per-subject Trend, as they did for Context.
         changeScope="individual"
         spaciousBars
-        categoryLabel={focusFamilyLabel ?? undefined}
+        categoryLabel={focusGroupLabel ?? undefined}
         theme={theme}
         // % change: the focused subject's average point score against its LA, region
         // and England (the shared GeographyView), on average point score only -- no
@@ -2225,7 +2232,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         schoolSubjects={schoolSubjectsOf(items, focusItem, focusKey, phase)
           .map((i) => ({ key: i.key, values: categoryPeriods.map((p) => entriesAt(i, p)) }))}
         groupLabel={`${focusFamilyLabel} average`}
-        categoryLabel={focusFamilyLabel ?? undefined}
+        categoryLabel={focusGroupLabel ?? undefined}
         // Live review Part 5: the % Change table compares the focused subject with its
         // LA, region and England. At GCSE only where the focused item is the
         // points-bearing qualification -- the area figures count GCSE points-eligible
