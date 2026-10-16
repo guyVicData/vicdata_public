@@ -140,3 +140,40 @@ The `src/` diff of `v0.8-groups-r3` against `v0.8-groups-r2` is byte-identical t
 ## Logged calls
 
 Under "2026-10-16 — 0.8 groups r3" in `docs/OPEN_QUESTIONS.md`, all "decided overnight, for Guy to confirm", **including the open decision:** rank groups only against groups of the same type (built), or also offer a mixed comparison with a label?
+
+## 16 Oct, after the run
+
+Two commits on `v0.8-groups-r3`, after `3258c7f`:
+
+- **`384686a`: comparison rows read by their full key.** `group_comparison_lookup` returns its rows in no fixed order, and the app already read them by key (kind, variant, reading; then period and phase). R-GROUP-KEYS now proves it:
+  - each key (kind, variant, phase, reading, period) is unique;
+  - Overview, Academic and Pupils are byte-identical with the comparison and aggregate rows reversed or shuffled two ways, for every compare choice and phase.
+  - A planted positional read fails it. Sets with the same label now sort by key.
+- **`b4ab21a`: mix-matched is non-group schools only (Guy's decision, OPEN_QUESTIONS r3 item 15).**
+  - Labelled "Non-group schools, same regions and phases as {group}"; still the default set when mix-matched is chosen.
+  - `mix_matched:england` is never offered: it duplicates `areas:region` by construction (the same region cells, the same weights). The areas set keeps its own label.
+  - R-GROUP-SETS-DISTINCT checks that no two offered sets have identical figures in every year of any phase (both readings, Harris and Dukes); it fails when `mix_matched:england` is offered again.
+
+**Production, after the promote:**
+- every R-GROUP test passes with the switch off (13);
+- the comparison lookups match the fixtures value for value. Every key is present on both sides. The only differences are row order and `0` printed as `0.0`. The ingest's `verify` reports both comparison calls as "DIFFERS" because it compares by position.
+
+**For the ingest:**
+- an `ORDER BY` in `group_comparison_lookup`;
+- `verify` comparing rows by key and numbers by value;
+- optionally, no longer computing `mix_matched_england`.
+
+**Checks on `b4ab21a`, against `3258c7f`:**
+
+| Check | Result |
+|---|---|
+| tsc, eslint, `next build` | clean; no fixture flag or service key in `.next/static` |
+| Unit tests (every `src/**/*.test.ts` + `scripts/catalogue-unit-tests.ts`) | **491 / 491** |
+| R-GROUP on production (switch off) | **13 / 13** |
+| Rule tests (`scripts/catalogue-rule-tests.ts`, production) | **96 pass, 0 fail** |
+| PGlite (`supabase/tests/*.mjs`) | all pass except `v08_subject_latest_names_pglite.mjs` (31 vs 47). It fails on `main` too: `c65acfd` (15 Oct) grew the app's map without updating the test's inlined copy. Not this round's |
+| Teacher parity | 2,875 pairs: 2,873 identical, 1 noise, 1 unexpected (`rk-117037-reg-astara` Column 2 bar chart). The case set rerun gave that pair identical, and its one difference was the known `rk-137625-nat-pending` Trends map flake. The import graph's only changed module is `notes.ts` (the mix-matched note, not drawn in Teacher). Public page SSR identical |
+| Admissions parity | **328 / 328 identical**, pixels and DOM |
+| SMT parity | **156 / 156 DOM identical**; 308 of 312 PNGs identical, 4 antialiasing noise (max 1–2 of 255) |
+
+The Admissions and SMT bundles of the two commits differ only in the `mixMatched` note string.
