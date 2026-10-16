@@ -3,7 +3,7 @@
 // Local only (WASM Postgres): stubs the four tables the subject latest names migration rewrites
 // and dashboard_versions with its immutability trigger, loads one sample of each stored shape,
 // applies 20261112090000_v08_subject_latest_names.sql twice, and checks:
-//   - the inlined map is the app's SUBJECT_LATEST_NAMES, row for row;
+//   - the inlined map is the app's SUBJECT_LATEST_NAMES, row for row, less the KS5 rows added after it;
 //   - every rewritten value is exactly what the app's read-time mapping gives;
 //   - ticked subjects are deduplicated in order; free text and unknown names are untouched;
 //   - published versions are untouched; a second run changes nothing; updated_at is kept.
@@ -67,10 +67,20 @@ await db.exec(`insert into recruitment_jobs values
   ('20000000-0000-0000-0000-000000000003', 'History', 'History'),
   ('20000000-0000-0000-0000-000000000004', 'Open', null)`);
 
-// The inlined map is the app's.
+// The inlined map is the app's, less the KS5 rows the app gained after this migration (c65acfd,
+// 15 Oct 2026: DfE's 2024/25 KS5 renames). No saved choice held an old KS5 name, so they needed no
+// migration. Any other app row missing here (a GCSE rename added without a migration) fails.
 const inlined = Object.fromEntries([...MIG.matchAll(/\('((?:[^']|'')+)', '((?:[^']|'')+)'\)/g)].map((m) => [m[1].replaceAll("''", "'"), m[2].replaceAll("''", "'")]));
-ok("inlined map = the app's SUBJECT_LATEST_NAMES", JSON.stringify(Object.entries(inlined).sort()) === JSON.stringify(Object.entries(SUBJECT_LATEST_NAMES).sort()),
-  `${Object.keys(inlined).length} vs ${Object.keys(SUBJECT_LATEST_NAMES).length}`);
+const KS5_AFTER = [
+  "Accounting / Finance", "Additional Mathematics FSMQ", "Animal Care (Non-Agricultural)", "Applied Sciences",
+  "Art and Design (3d Studies)", "Art and Design (Critical Studies)", "Art and Design (Fine Art)", "Art and Design (Graphics)",
+  "Art and Design (Photography)", "Art and Design (Textiles)", "Business Studies:Single", "Computer Studies / Computing",
+  "Electrical installation (Buildings / Construction)", "Finance / Accounting (General)", "Media/Film/Tv Studies", "Music performance (Group)",
+];
+const appAtMigration = Object.fromEntries(Object.entries(SUBJECT_LATEST_NAMES).filter(([k]) => !KS5_AFTER.includes(k)));
+ok("the KS5 rows added after the migration are all in the app's map", KS5_AFTER.every((k) => k in SUBJECT_LATEST_NAMES), KS5_AFTER.filter((k) => !(k in SUBJECT_LATEST_NAMES)).join(", "));
+ok("inlined map = the app's SUBJECT_LATEST_NAMES (less the later KS5 rows)", JSON.stringify(Object.entries(inlined).sort()) === JSON.stringify(Object.entries(appAtMigration).sort()),
+  `${Object.keys(inlined).length} vs ${Object.keys(appAtMigration).length}`);
 
 await db.exec(MIG);
 const snap = async () => JSON.stringify({
