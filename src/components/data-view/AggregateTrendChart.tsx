@@ -46,7 +46,10 @@ function LineSwatch({ colour }: { colour: string }) {
   );
 }
 
-export default function AggregateTrendChart({ series }: { series: AggregateChartSeries[] }) {
+// `indexFrom`: the year each line is indexed to (its own first real year from there on). An index
+// is a change measured from its base, so the academic chart passes 2022/23 (R-TREND-FROM-2223, year
+// rules follow-ups) and still draws 2021/22 against it; the rolls chart passes nothing, as before.
+export default function AggregateTrendChart({ series, indexFrom }: { series: AggregateChartSeries[]; indexFrom?: number }) {
   const periods = Array.from(new Set(series.flatMap((s) => s.points.map((p) => p.period)))).sort((a, b) => a - b);
 
   if (periods.length < 2 || series.every((s) => s.points.length < 2)) {
@@ -60,7 +63,7 @@ export default function AggregateTrendChart({ series }: { series: AggregateChart
   const indexed = series
     .map((s) => {
       const byPeriod = new Map(s.points.map((p) => [p.period, p.value]));
-      const firstReal = periods.find((p) => byPeriod.has(p) && (byPeriod.get(p) ?? 0) > 0);
+      const firstReal = periods.find((p) => p >= (indexFrom ?? -Infinity) && byPeriod.has(p) && (byPeriod.get(p) ?? 0) > 0);
       if (firstReal === undefined) return null;
       const base = byPeriod.get(firstReal)!;
       return {
@@ -141,7 +144,7 @@ export default function AggregateTrendChart({ series }: { series: AggregateChart
           </span>
         ))}
       </div>
-      <p className="mt-1 text-xs text-neutral-400">Indexed to 100 at {academicYearLabel(firstPeriod)} — real totals shown on hover.</p>
+      <p className="mt-1 text-xs text-neutral-400">Indexed to 100 at {academicYearLabel(indexFrom !== undefined && periods.includes(indexFrom) ? indexFrom : firstPeriod)} — real totals shown on hover.</p>
     </div>
   );
 }

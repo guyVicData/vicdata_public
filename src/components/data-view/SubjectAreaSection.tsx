@@ -24,7 +24,7 @@
 // the new batched fetch only slows the COMPARISON side, which had no data at all
 // before this round.
 import { useCallback, useMemo, useState } from "react";
-import { stageFamilies, familyYearsFor, type AcademicFamilyYear, type AcademicSchoolProfile, type KsStage, type SubjectEntry, type SubjectValueAdded, type AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
+import { stageFamilies, familyYearsFor, TREND_BASELINE_PERIOD, type AcademicFamilyYear, type AcademicSchoolProfile, type KsStage, type SubjectEntry, type SubjectValueAdded, type AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
 import { bucketFor, ks5BucketHasPointsFigure, KS5_BUCKET_LABEL, POINTS_BEARING_QUALIFICATION, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
 import { academicYearLabel } from "./TrendPill";
@@ -36,6 +36,15 @@ import { withProvisional } from "@/catalogue/years";
 function pctChange(first: number | null, last: number | null): number | null {
   if (first === null || last === null || first === 0) return null;
   return ((last - first) / first) * 100;
+}
+
+// A points change (Results, % change): from the Data View's baseline year, 2022/23 at GCSE and
+// Post-16 (R-TREND-FROM-2223, year rules follow-ups), to the latest real year -- never from the
+// first real year. Candidates' (entries) changes still run from the first year with data.
+function pointsChangeSince(years: readonly { period: number; avgPointScore: number | null }[], base: number): number | null {
+  const last = [...years].reverse().find((y) => y.avgPointScore !== null);
+  if (!last || last.period <= base) return null;
+  return pctChange(years.find((y) => y.period === base)?.avgPointScore ?? null, last.avgPointScore);
 }
 
 export type SubjectRow = {
@@ -127,8 +136,6 @@ export function buildCategoryRows(
     const latest = years.length ? years[years.length - 1] : null;
     const entriesFirst = years.find((y) => y.entriesTotal > 0)?.entriesTotal ?? null;
     const entriesLast = [...years].reverse().find((y) => y.entriesTotal > 0)?.entriesTotal ?? null;
-    const scoreFirst = years.find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
-    const scoreLast = [...years].reverse().find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
     return {
       id,
       label,
@@ -136,7 +143,7 @@ export function buildCategoryRows(
       candidatesPeriod: latest?.period ?? null,
       results: latest?.avgPointScore ?? null,
       candidatesPctChange: pctChange(entriesFirst, entriesLast),
-      resultsPctChange: pctChange(scoreFirst, scoreLast),
+      resultsPctChange: pointsChangeSince(years, TREND_BASELINE_PERIOD[stage]),
       // Only tagged when the figure genuinely came from a non-A-level bucket's own rows.
       // A fallback of "alevel" reads the pre-existing 'all' rows, which ARE the A-level
       // figure and are exactly what these schools already showed, so tagging them would
@@ -296,9 +303,7 @@ export function buildSubjectRows(
         .sort((a, b) => a.period - b.period);
       if (years.length > 0) {
         results = years[years.length - 1].avgPointScore;
-        const scoreFirst = years.find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
-        const scoreLast = [...years].reverse().find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
-        resultsPctChange = pctChange(scoreFirst, scoreLast);
+        resultsPctChange = pointsChangeSince(years, TREND_BASELINE_PERIOD[stage]);
       }
     } else {
       // headlineBySubject comes from the rollup, which has no qualification dimension,
@@ -308,9 +313,7 @@ export function buildSubjectRows(
       const years = scoreBelongsHere ? [...(headlineBySubject.get(name) ?? [])].sort((a, b) => a.period - b.period) : [];
       if (years.length > 0) {
         results = years[years.length - 1].avgPointScore;
-        const scoreFirst = years.find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
-        const scoreLast = [...years].reverse().find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
-        resultsPctChange = pctChange(scoreFirst, scoreLast);
+        resultsPctChange = pointsChangeSince(years, TREND_BASELINE_PERIOD[stage]);
       }
     }
 
@@ -355,6 +358,9 @@ function aggregateFamilyTrend(
   // averaging A-level points under a non-A-level selection -- the borrowed-points bug
   // the previous round fixed by suppression, now fixable with real data instead.
   bucket?: Ks5Bucket | null,
+  // Where the change starts: omitted for entries (the first real period, as before); the baseline
+  // year for points (R-TREND-FROM-2223, year rules follow-ups).
+  from?: number,
 ): number | null {
   const useBucket = bucket && bucket !== "alevel" && stage === "ks5";
   const byPeriod = new Map<number, number[]>();
@@ -372,7 +378,12 @@ function aggregateFamilyTrend(
   }
   const periods = Array.from(byPeriod.keys()).sort((a, b) => a - b);
   if (periods.length === 0) return null;
-  return pctChange(combine(byPeriod.get(periods[0])!), combine(byPeriod.get(periods[periods.length - 1])!));
+  const last = periods[periods.length - 1];
+  if (from !== undefined) {
+    const base = byPeriod.get(from);
+    return base && last > from ? pctChange(combine(base), combine(byPeriod.get(last)!)) : null;
+  }
+  return pctChange(combine(byPeriod.get(periods[0])!), combine(byPeriod.get(last)!));
 }
 
 // Subject deep-dive round, Part 1: the same real aggregate-trend shape as
@@ -692,8 +703,11 @@ export default function SubjectAreaSection({
             aggregateFamilyTrend(
               comparableGroup, stage, id, (y) => y.avgPointScore, average,
               ks5Bucket ?? agreedScoredBucketFor(comparableGroup, id),
+              TREND_BASELINE_PERIOD[stage],
             )
-        : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => (r.resultsPctChange !== null ? r.results : null), average),
+        : // Year rules follow-ups: the set's change since 2022/23 is the average of each comparator's
+          // own change since then. (It was the average of their latest RESULTS, drawn as a % change.)
+          aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => r.resultsPctChange, average),
   }));
 
   return (
@@ -767,7 +781,7 @@ export default function SubjectAreaSection({
         </div>
       </Card>
 
-      <Card title="Results, % change">
+      <Card title={`Results, % change since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>

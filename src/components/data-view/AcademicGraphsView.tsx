@@ -86,6 +86,7 @@ import Ks2DomainSection from "./Ks2DomainSection";
 import TargetVsAverageTrend from "./TargetVsAverageTrend";
 import SubjectTable from "./SubjectTable";
 import SubjectDeepDiveDrawer, { type DeepDiveTarget } from "./SubjectDeepDiveDrawer";
+import TrendBaseNote from "./TrendBaseNote";
 import AggregateTrendChart, { AGGREGATE_TARGET_COLOUR, AGGREGATE_REGION_COLOUR, AGGREGATE_NATION_COLOUR, type AggregateChartSeries } from "./AggregateTrendChart";
 import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
@@ -388,8 +389,11 @@ export default function AcademicGraphsView({
     return { urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, pctChange: trendBadge(current, anchor)?.pctChange ?? null };
   });
 
+  // The years the trends draw: from the data's own first year (2021/22 at GCSE and Post-16), as
+  // before. Change is measured from `baseline` (2022/23, R-TREND-FROM-2223), and a trend that
+  // draws 2021/22 carries the note (TrendBaseNote).
   const allPeriods = Array.from(new Set(comparableGroup.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
-    .filter((p) => p >= Math.max(startPeriod, baseline))
+    .filter((p) => p >= startPeriod)
     .sort((a, b) => a - b);
 
   const latestPeriod = allPeriods[allPeriods.length - 1] ?? null;
@@ -412,8 +416,11 @@ export default function AcademicGraphsView({
   const familyTrendYears = familyId ? familyYearsFor(targetProfile, stage, familyId) : [];
   const familyTargetSeries = allPeriods.map((p) => familyTrendYears.find((y) => y.period === p)?.avgPointScore ?? null);
   const familyPointScoreAvailable = targetFamilyYear?.avgPointScore !== null && targetFamilyYear?.avgPointScore !== undefined;
-  const familyFirstScore = familyTrendYears.find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
-  const familyLastScore = [...familyTrendYears].reverse().find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
+  // The sentence's change: from the baseline year (R-TREND-FROM-2223), not the first real year.
+  const familyLast = [...familyTrendYears].reverse().find((y) => y.avgPointScore !== null) ?? null;
+  const familyFirstScore = familyLast && familyLast.period > baseline ? (familyTrendYears.find((y) => y.period === baseline)?.avgPointScore ?? null) : null;
+  const familyLastScore = familyLast?.avgPointScore ?? null;
+  const familyDrawnYears = allPeriods.filter((_, i) => familyTargetSeries[i] !== null);
 
   // Round 2, Part C: real distinct subject names, union of both real sources (a
   // subject with entries but no value-added row, or vice-versa, should still be a
@@ -504,6 +511,7 @@ export default function AcademicGraphsView({
           : []),
       ]
     : [];
+  const aggregateDrawnYears = Array.from(new Set(headlineAggregateSeries.flatMap((s) => s.points.map((p) => p.period)))).sort((a, b) => a - b);
 
   return (
     <div className="space-y-8">
@@ -590,11 +598,14 @@ export default function AcademicGraphsView({
             // region and nation), not a comparator-set bar chart over a handful of
             // ticked schools.
             <>
-              <Card title={`${groupHeadlineLabel}, ${targetProfile.name} vs region and nation since ${academicYearLabel(baseline)}`}>
+              <Card title={`${groupHeadlineLabel}, ${targetProfile.name} vs region and nation since ${academicYearLabel(aggregateDrawnYears[0] ?? baseline)}`}>
                 {aggregateTrends === undefined || aggregateTrends === null ? (
                   <p className="text-sm text-neutral-500">Loading region/nation comparison…</p>
                 ) : (
-                  <AggregateTrendChart series={headlineAggregateSeries} />
+                  <>
+                    <AggregateTrendChart series={headlineAggregateSeries} indexFrom={baseline} />
+                    <TrendBaseNote years={aggregateDrawnYears} />
+                  </>
                 )}
               </Card>
               <p className="mt-2 text-xs text-neutral-400">
@@ -775,6 +786,7 @@ export default function AcademicGraphsView({
                           : `Not enough real history to show a trend for ${familyLabel} yet.`}
                       </p>
                       <TargetVsAverageTrend periods={allPeriods} targetSeries={familyTargetSeries} averageSeries={allPeriods.map(() => null)} />
+                      <TrendBaseNote years={familyDrawnYears} />
                     </div>
                   </>
                 ) : (
