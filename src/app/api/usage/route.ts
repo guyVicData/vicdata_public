@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (data) {
       // The role the page is for, where the member holds it; else their first.
       const roles = data.roles ?? [];
-      const role = report.product === "smt" && roles.includes("smt") ? "smt" : report.product === "admissions" && roles.includes("admissions") ? "admissions" : roles.includes("teacher") && report.product === "teacher" ? "teacher" : data.is_admin ? "school_admin" : (roles[0] ?? null);
+      const role = (report.product === "smt" || report.product === "groups") && roles.includes("smt") ? "smt" : report.product === "admissions" && roles.includes("admissions") ? "admissions" : roles.includes("teacher") && report.product === "teacher" ? "teacher" : data.is_admin ? "school_admin" : (roles[0] ?? null);
       await writeUsageEvent(report, { membershipId: data.id, role });
     } else if (await isPlatformAdmin(supabase)) {
       await writeUsageEvent(report, { membershipId: null, role: "platform_admin" });

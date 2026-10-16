@@ -6,7 +6,9 @@
 // and nothing throws.
 import { createServiceRoleSupabaseClient } from "./supabase";
 
-export const USAGE_PRODUCTS = ["teacher", "admissions", "smt"] as const;
+// 0.8 groups r2: "groups", a member school's SMT reading its group's dashboards (the Access page counts
+// these by school, "Opened, last 30 days"). Needs migration 20261114090000_v08_groups_r2_usage.sql.
+export const USAGE_PRODUCTS = ["teacher", "admissions", "smt", "groups"] as const;
 export const USAGE_EVENTS = ["page_view", "fullscreen"] as const;
 export type UsageProduct = (typeof USAGE_PRODUCTS)[number];
 export type UsageEventKind = (typeof USAGE_EVENTS)[number];

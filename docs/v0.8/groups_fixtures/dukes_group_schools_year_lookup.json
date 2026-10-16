@@ -1,0 +1,10126 @@
+[
+ {
+  "urn": "100080",
+  "name": "Devonshire House Preparatory School",
+  "role": "member",
+  "member_urn": "100080",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Camden",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1989-09-25",
+  "closed_date": null,
+  "easting": 526456,
+  "northing": 185413,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 663,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      47,
+      79,
+      81,
+      76,
+      70,
+      73,
+      67,
+      62,
+      54,
+      30,
+      24,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 402,
+      "secondary": 54
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 642,
+     "igcse": false,
+     "trend": {
+      "1": -3.17,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      30,
+      62,
+      80,
+      77,
+      78,
+      61,
+      74,
+      72,
+      60,
+      20,
+      27,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 422,
+      "secondary": 48
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 559,
+     "igcse": false,
+     "trend": {
+      "1": -12.93,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      34,
+      48,
+      55,
+      66,
+      67,
+      60,
+      52,
+      66,
+      64,
+      27,
+      20,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 375,
+      "secondary": 47
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 561,
+     "igcse": false,
+     "trend": {
+      "1": 0.36,
+      "3": -15.38,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      33,
+      60,
+      57,
+      45,
+      66,
+      57,
+      59,
+      48,
+      76,
+      25,
+      35,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 351,
+      "secondary": 60
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 509,
+     "igcse": false,
+     "trend": {
+      "1": -9.27,
+      "3": -20.72,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      6,
+      36,
+      36,
+      64,
+      55,
+      45,
+      56,
+      58,
+      58,
+      47,
+      22,
+      25,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 319,
+      "secondary": 48
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 471,
+     "igcse": false,
+     "trend": {
+      "1": -7.47,
+      "3": -15.74,
+      "5": -28.96
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      45,
+      52,
+      22,
+      42,
+      55,
+      49,
+      45,
+      54,
+      47,
+      22,
+      18,
+      20,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 292,
+      "secondary": 60
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 430,
+     "igcse": false,
+     "trend": {
+      "1": -8.7,
+      "3": -23.35,
+      "5": -33.02
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      9,
+      32,
+      59,
+      51,
+      35,
+      51,
+      46,
+      38,
+      47,
+      46,
+      0,
+      15,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 263,
+      "secondary": 16
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "100084",
+  "name": "Hampstead Fine Arts College",
+  "role": "member",
+  "member_urn": "100084",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Camden",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1992-06-10",
+  "closed_date": null,
+  "easting": 527535,
+  "northing": 184578,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 201,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7,
+      17,
+      21,
+      67,
+      65,
+      22,
+      2
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 154,
+      "primary": 0,
+      "secondary": 45
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 196,
+     "igcse": false,
+     "trend": {
+      "1": -2.49,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      7,
+      12,
+      26,
+      55,
+      77,
+      13,
+      5
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 145,
+      "primary": 0,
+      "secondary": 46
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 209,
+     "igcse": false,
+     "trend": {
+      "1": 6.63,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 8.4,
+      "ks4_em4": 11,
+      "ks4_em5": 7,
+      "ks5_aps_all": 41.1,
+      "ks5_aps_alevel": 40.37
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      10,
+      14,
+      22,
+      84,
+      67,
+      12,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4190,
+       "rank": 3712,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4190,
+       "rank": 3612,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4190,
+       "rank": 3559,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2640,
+       "rank": 585,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2589,
+       "rank": 727,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 163,
+      "primary": 0,
+      "secondary": 46
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 227,
+     "igcse": false,
+     "trend": {
+      "1": 8.61,
+      "3": 12.94,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 45.6,
+      "ks4_em4": 65.4,
+      "ks4_em5": 38.5,
+      "ks5_aps_all": 38.04,
+      "ks5_aps_alevel": 37.44
+     },
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": 26,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      25,
+      19,
+      60,
+      109,
+      9,
+      2
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4234,
+       "rank": 1848,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4234,
+       "rank": 1858,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4234,
+       "rank": 2203,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2642,
+       "rank": 535,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2583,
+       "rank": 627,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 178,
+      "primary": 0,
+      "secondary": 47
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 226,
+     "igcse": false,
+     "trend": {
+      "1": -0.44,
+      "3": 15.31,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 41.3,
+      "ks4_em4": 60,
+      "ks4_em5": 36.7,
+      "ks5_aps_all": 39.12,
+      "ks5_aps_alevel": 38.22
+     },
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": 30,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      17,
+      32,
+      77,
+      83,
+      13,
+      1
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.28
+     },
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4284,
+       "rank": 2576,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4284,
+       "rank": 2369,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4284,
+       "rank": 2452,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 450,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 561,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 173,
+      "primary": 0,
+      "secondary": 52
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 209,
+     "igcse": false,
+     "trend": {
+      "1": -7.52,
+      "3": 0,
+      "5": 3.98
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 11.3,
+      "ks4_em4": 13.1,
+      "ks4_em5": 7.1,
+      "ks5_aps_all": 40.94,
+      "ks5_aps_alevel": 39.62
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 99,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      12,
+      19,
+      28,
+      60,
+      80,
+      9,
+      1
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.36
+     },
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4341,
+       "rank": 3705,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4341,
+       "rank": 3664,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 4341,
+       "rank": 3647,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 353,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 451,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 149,
+      "primary": 0,
+      "secondary": 59
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 187,
+     "igcse": false,
+     "trend": {
+      "1": -10.53,
+      "3": -17.62,
+      "5": -4.59
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 31.3,
+      "ks4_em4": 44.8,
+      "ks4_em5": 34.5
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 29,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      8,
+      23,
+      29,
+      41,
+      66,
+      15,
+      3
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4383,
+       "rank": 3492,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 4383,
+       "rank": 3326,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4383,
+       "rank": 2753,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 122,
+      "primary": 0,
+      "secondary": 62
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "100198",
+  "name": "The Pointer School",
+  "role": "member",
+  "member_urn": "100198",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Greenwich",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1957-11-06",
+  "closed_date": null,
+  "easting": 540209,
+  "northing": 177029,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 369,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      38,
+      59,
+      61,
+      38,
+      64,
+      32,
+      28,
+      32,
+      17,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 255,
+      "secondary": 17
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 358,
+     "igcse": false,
+     "trend": {
+      "1": -2.98,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      6,
+      44,
+      57,
+      58,
+      49,
+      44,
+      37,
+      34,
+      29,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 251,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 346,
+     "igcse": false,
+     "trend": {
+      "1": -3.35,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      5,
+      43,
+      47,
+      52,
+      53,
+      37,
+      45,
+      33,
+      31,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 251,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 339,
+     "igcse": false,
+     "trend": {
+      "1": -2.02,
+      "3": -8.13,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      4,
+      34,
+      52,
+      46,
+      53,
+      49,
+      31,
+      36,
+      34,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 249,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 346,
+     "igcse": false,
+     "trend": {
+      "1": 2.06,
+      "3": -3.35,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      4,
+      49,
+      48,
+      46,
+      48,
+      41,
+      47,
+      30,
+      31,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 243,
+      "secondary": 2
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 347,
+     "igcse": false,
+     "trend": {
+      "1": 0.29,
+      "3": 0.29,
+      "5": -5.96
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      4,
+      50,
+      50,
+      49,
+      49,
+      37,
+      38,
+      39,
+      30,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 242,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 344,
+     "igcse": false,
+     "trend": {
+      "1": -0.86,
+      "3": 1.47,
+      "5": -3.91
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      7,
+      48,
+      50,
+      48,
+      47,
+      36,
+      33,
+      37,
+      37,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 238,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "100513",
+  "name": "Bassett House School",
+  "role": "member",
+  "member_urn": "100513",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Kensington and Chelsea",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1958-06-18",
+  "closed_date": null,
+  "easting": 523767,
+  "northing": 181435,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 168,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      13,
+      21,
+      32,
+      22,
+      19,
+      21,
+      19,
+      20,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 133,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 138,
+     "igcse": false,
+     "trend": {
+      "1": -17.86,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      7,
+      21,
+      17,
+      24,
+      19,
+      15,
+      17,
+      18,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 110,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 109,
+     "igcse": false,
+     "trend": {
+      "1": -21.01,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      7,
+      14,
+      18,
+      12,
+      19,
+      15,
+      8,
+      15,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 87,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 117,
+     "igcse": false,
+     "trend": {
+      "1": 7.34,
+      "3": -30.36,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      1,
+      10,
+      15,
+      14,
+      21,
+      14,
+      18,
+      17,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 91,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 152,
+     "igcse": false,
+     "trend": {
+      "1": 29.91,
+      "3": 10.14,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      3,
+      17,
+      21,
+      18,
+      13,
+      25,
+      18,
+      19,
+      16,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 109,
+      "secondary": 2
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 124,
+     "igcse": false,
+     "trend": {
+      "1": -18.42,
+      "3": 13.76,
+      "5": -26.19
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      4,
+      9,
+      23,
+      21,
+      13,
+      12,
+      17,
+      12,
+      13,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 88,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 112,
+     "igcse": false,
+     "trend": {
+      "1": -9.68,
+      "3": -4.27,
+      "5": -18.84
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      3,
+      8,
+      11,
+      13,
+      14,
+      22,
+      10,
+      8,
+      12,
+      10,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 76,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "100533",
+  "name": "Knightsbridge School",
+  "role": "member",
+  "member_urn": "100533",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Kensington and Chelsea",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1980-11-21",
+  "closed_date": null,
+  "easting": 527623,
+  "northing": 179103,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 447,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      13,
+      58,
+      69,
+      47,
+      65,
+      58,
+      56,
+      41,
+      20,
+      20,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 336,
+      "secondary": 40
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 417,
+     "igcse": false,
+     "trend": {
+      "1": -6.71,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      13,
+      54,
+      57,
+      58,
+      49,
+      50,
+      47,
+      46,
+      22,
+      16,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 307,
+      "secondary": 43
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 398,
+     "igcse": false,
+     "trend": {
+      "1": -4.56,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      8,
+      40,
+      47,
+      52,
+      49,
+      40,
+      48,
+      46,
+      39,
+      21,
+      2,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 282,
+      "secondary": 68
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 380,
+     "igcse": false,
+     "trend": {
+      "1": -4.52,
+      "3": -14.99,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 54.8,
+      "ks4_em4": 83.3,
+      "ks4_em5": 83.3
+     },
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": 6,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      12,
+      26,
+      41,
+      45,
+      42,
+      42,
+      39,
+      44,
+      31,
+      35,
+      14,
+      2,
+      7,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4234,
+       "rank": 624,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4234,
+       "rank": 549,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4234,
+       "rank": 192,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 253,
+      "secondary": 89
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 399,
+     "igcse": false,
+     "trend": {
+      "1": 5,
+      "3": -4.32,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": 2,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      10,
+      40,
+      31,
+      45,
+      48,
+      46,
+      43,
+      41,
+      33,
+      26,
+      22,
+      11,
+      2,
+      1,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 1,
+      "primary": 254,
+      "secondary": 94
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 378,
+     "igcse": false,
+     "trend": {
+      "1": -5.26,
+      "3": -5.03,
+      "5": -15.44
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 52.4,
+      "ks4_em4": 72.7,
+      "ks4_em5": 45.5
+     },
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": 11,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      11,
+      29,
+      38,
+      28,
+      42,
+      34,
+      43,
+      43,
+      35,
+      30,
+      16,
+      18,
+      10,
+      1,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4341,
+       "rank": 823,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4341,
+       "rank": 1210,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4341,
+       "rank": 1678,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 1,
+      "primary": 228,
+      "secondary": 109
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 295,
+     "igcse": false,
+     "trend": {
+      "1": -21.96,
+      "3": -22.37,
+      "5": -29.26
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 56.5,
+      "ks4_em4": 82.4,
+      "ks4_em5": 64.7
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 17,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      9,
+      19,
+      20,
+      30,
+      22,
+      34,
+      28,
+      36,
+      21,
+      32,
+      13,
+      15,
+      16,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4383,
+       "rank": 488,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4383,
+       "rank": 547,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4383,
+       "rank": 549,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 170,
+      "secondary": 97
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "101074",
+  "name": "Broomwood Pre-Prep & Broomwood Prep-Girls",
+  "role": "member",
+  "member_urn": "101074",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Wandsworth",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1985-01-31",
+  "closed_date": null,
+  "easting": 528034,
+  "northing": 173974,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 573,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      76,
+      82,
+      90,
+      91,
+      62,
+      36,
+      63,
+      45,
+      27,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 424,
+      "secondary": 73
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 519,
+     "igcse": false,
+     "trend": {
+      "1": -9.42,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      72,
+      70,
+      68,
+      78,
+      47,
+      53,
+      35,
+      57,
+      38,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 351,
+      "secondary": 96
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 490,
+     "igcse": false,
+     "trend": {
+      "1": -5.59,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      56,
+      63,
+      62,
+      66,
+      43,
+      44,
+      57,
+      41,
+      57,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 335,
+      "secondary": 99
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 458,
+     "igcse": false,
+     "trend": {
+      "1": -6.53,
+      "3": -20.07,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      42,
+      57,
+      59,
+      60,
+      28,
+      45,
+      48,
+      59,
+      40,
+      20,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 297,
+      "secondary": 119
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 440,
+     "igcse": false,
+     "trend": {
+      "1": -3.93,
+      "3": -15.22,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      19,
+      49,
+      42,
+      57,
+      61,
+      36,
+      33,
+      47,
+      51,
+      44,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 276,
+      "secondary": 96
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 359,
+     "igcse": false,
+     "trend": {
+      "1": -18.41,
+      "3": -26.73,
+      "5": -37.35
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      8,
+      32,
+      45,
+      42,
+      39,
+      39,
+      19,
+      38,
+      36,
+      33,
+      28,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 222,
+      "secondary": 97
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 321,
+     "igcse": false,
+     "trend": {
+      "1": -10.58,
+      "3": -29.91,
+      "5": -38.15
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      30,
+      37,
+      40,
+      41,
+      22,
+      35,
+      20,
+      21,
+      30,
+      32,
+      13,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 179,
+      "secondary": 75
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "101081",
+  "name": "Prospect House School",
+  "role": "member",
+  "member_urn": "101081",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Wandsworth",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1991-04-26",
+  "closed_date": null,
+  "easting": 523728,
+  "northing": 173976,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 316,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      29,
+      38,
+      41,
+      38,
+      42,
+      43,
+      40,
+      42,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 246,
+      "secondary": 3
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 311,
+     "igcse": false,
+     "trend": {
+      "1": -1.58,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      32,
+      40,
+      35,
+      39,
+      41,
+      42,
+      42,
+      38,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 237,
+      "secondary": 2
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 307,
+     "igcse": false,
+     "trend": {
+      "1": -1.29,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      28,
+      38,
+      43,
+      30,
+      46,
+      39,
+      43,
+      39,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 240,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 287,
+     "igcse": false,
+     "trend": {
+      "1": -6.51,
+      "3": -9.18,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      25,
+      32,
+      33,
+      41,
+      28,
+      44,
+      43,
+      41,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 230,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 280,
+     "igcse": false,
+     "trend": {
+      "1": -2.44,
+      "3": -9.97,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      28,
+      30,
+      30,
+      32,
+      43,
+      33,
+      43,
+      41,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 222,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 261,
+     "igcse": false,
+     "trend": {
+      "1": -6.79,
+      "3": -14.98,
+      "5": -17.41
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      21,
+      25,
+      34,
+      33,
+      28,
+      43,
+      32,
+      43,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 213,
+      "secondary": 2
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 245,
+     "igcse": false,
+     "trend": {
+      "1": -6.13,
+      "3": -14.63,
+      "5": -21.22
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      1,
+      23,
+      24,
+      32,
+      31,
+      30,
+      26,
+      46,
+      30,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 195,
+      "secondary": 2
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "101088",
+  "name": "Eaton House the Manor School",
+  "role": "member",
+  "member_urn": "101088",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Wandsworth",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1993-07-14",
+  "closed_date": null,
+  "easting": 528543,
+  "northing": 175257,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 678,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      15,
+      24,
+      85,
+      85,
+      85,
+      78,
+      87,
+      73,
+      63,
+      44,
+      39,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 471,
+      "secondary": 83
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 686,
+     "igcse": false,
+     "trend": {
+      "1": 1.18,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      18,
+      24,
+      84,
+      84,
+      84,
+      85,
+      70,
+      83,
+      71,
+      37,
+      46,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 477,
+      "secondary": 83
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 684,
+     "igcse": false,
+     "trend": {
+      "1": -0.29,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      19,
+      25,
+      97,
+      83,
+      88,
+      70,
+      80,
+      67,
+      68,
+      48,
+      38,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 456,
+      "secondary": 87
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 682,
+     "igcse": false,
+     "trend": {
+      "1": -0.29,
+      "3": 0.59,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      20,
+      26,
+      80,
+      92,
+      82,
+      80,
+      67,
+      78,
+      69,
+      40,
+      47,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 468,
+      "secondary": 88
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 686,
+     "igcse": false,
+     "trend": {
+      "1": 0.59,
+      "3": 0,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      18,
+      24,
+      69,
+      79,
+      88,
+      90,
+      77,
+      71,
+      80,
+      46,
+      41,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 485,
+      "secondary": 90
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 673,
+     "igcse": false,
+     "trend": {
+      "1": -1.9,
+      "3": -1.61,
+      "5": -0.74
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      20,
+      23,
+      70,
+      71,
+      76,
+      84,
+      90,
+      75,
+      70,
+      47,
+      47,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 466,
+      "secondary": 94
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 668,
+     "igcse": false,
+     "trend": {
+      "1": -0.74,
+      "3": -2.05,
+      "5": -2.62
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XL",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      23,
+      24,
+      67,
+      69,
+      77,
+      77,
+      81,
+      90,
+      74,
+      39,
+      45,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 468,
+      "secondary": 86
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "101089",
+  "name": "Broomwood Prep - Boys",
+  "role": "member",
+  "member_urn": "101089",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Wandsworth",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1993-09-27",
+  "closed_date": null,
+  "easting": 527584,
+  "northing": 174151,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 252,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      49,
+      59,
+      54,
+      45,
+      45,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 162,
+      "secondary": 90
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 240,
+     "igcse": false,
+     "trend": {
+      "1": -4.76,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      38,
+      50,
+      57,
+      50,
+      45,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 145,
+      "secondary": 95
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 224,
+     "igcse": false,
+     "trend": {
+      "1": -6.67,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      37,
+      41,
+      42,
+      54,
+      49,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 121,
+      "secondary": 103
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 202,
+     "igcse": false,
+     "trend": {
+      "1": -9.82,
+      "3": -19.84,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      34,
+      41,
+      40,
+      35,
+      50,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 115,
+      "secondary": 87
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 190,
+     "igcse": false,
+     "trend": {
+      "1": -5.94,
+      "3": -20.83,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      35,
+      34,
+      48,
+      36,
+      35,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 117,
+      "secondary": 73
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 208,
+     "igcse": false,
+     "trend": {
+      "1": 9.47,
+      "3": -7.14,
+      "5": -17.46
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9,
+      31,
+      32,
+      39,
+      38,
+      43,
+      16,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 111,
+      "secondary": 97
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 203,
+     "igcse": false,
+     "trend": {
+      "1": -2.4,
+      "3": 0.5,
+      "5": -15.42
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      8,
+      31,
+      33,
+      32,
+      40,
+      39,
+      20,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 104,
+      "secondary": 99
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "101160",
+  "name": "Eaton House School",
+  "role": "member",
+  "member_urn": "101160",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Westminster",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1943-01-01",
+  "closed_date": null,
+  "easting": 528183,
+  "northing": 178867,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 196,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      6,
+      9,
+      42,
+      36,
+      38,
+      52,
+      7,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 139,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 164,
+     "igcse": false,
+     "trend": {
+      "1": -16.33,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      2,
+      11,
+      29,
+      38,
+      31,
+      24,
+      16,
+      7,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 122,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 164,
+     "igcse": false,
+     "trend": {
+      "1": 0,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      9,
+      0,
+      0,
+      11,
+      36,
+      26,
+      36,
+      25,
+      2,
+      14,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 108,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 172,
+     "igcse": false,
+     "trend": {
+      "1": 4.88,
+      "3": -12.24,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      10,
+      12,
+      32,
+      40,
+      28,
+      23,
+      10,
+      5,
+      12,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 118,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 162,
+     "igcse": false,
+     "trend": {
+      "1": -5.81,
+      "3": -1.22,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      10,
+      12,
+      42,
+      28,
+      36,
+      14,
+      4,
+      9,
+      6,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 97,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 149,
+     "igcse": false,
+     "trend": {
+      "1": -8.02,
+      "3": -9.15,
+      "5": -23.98
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      17,
+      17,
+      27,
+      33,
+      27,
+      11,
+      7,
+      4,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 88,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 114,
+     "igcse": false,
+     "trend": {
+      "1": -23.49,
+      "3": -33.72,
+      "5": -30.49
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      11,
+      19,
+      22,
+      23,
+      29,
+      10,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 62,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "101178",
+  "name": "Eaton Square Prep School",
+  "role": "member",
+  "member_urn": "101178",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Westminster",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1988-10-05",
+  "closed_date": null,
+  "easting": 529044,
+  "northing": 178732,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 403,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      35,
+      48,
+      31,
+      35,
+      34,
+      47,
+      37,
+      52,
+      66,
+      18,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 271,
+      "secondary": 18
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 316,
+     "igcse": false,
+     "trend": {
+      "1": -21.59,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      4,
+      21,
+      34,
+      30,
+      21,
+      36,
+      28,
+      37,
+      40,
+      60,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 222,
+      "secondary": 5
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 253,
+     "igcse": false,
+     "trend": {
+      "1": -19.94,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      4,
+      18,
+      22,
+      25,
+      31,
+      24,
+      25,
+      31,
+      28,
+      44,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 183,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 256,
+     "igcse": false,
+     "trend": {
+      "1": 1.19,
+      "3": -36.48,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      3,
+      11,
+      30,
+      22,
+      33,
+      31,
+      31,
+      25,
+      36,
+      31,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 187,
+      "secondary": 3
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 259,
+     "igcse": false,
+     "trend": {
+      "1": 1.17,
+      "3": -18.04,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      22,
+      26,
+      37,
+      20,
+      29,
+      36,
+      31,
+      25,
+      30,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 171,
+      "secondary": 3
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 258,
+     "igcse": false,
+     "trend": {
+      "1": -0.39,
+      "3": 1.98,
+      "5": -35.98
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      18,
+      32,
+      30,
+      34,
+      22,
+      34,
+      27,
+      31,
+      27,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 175,
+      "secondary": 3
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 222,
+     "igcse": false,
+     "trend": {
+      "1": -13.95,
+      "3": -13.28,
+      "5": -29.75
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      6,
+      15,
+      28,
+      32,
+      33,
+      21,
+      17,
+      24,
+      27,
+      19,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 154,
+      "secondary": 19
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "102547",
+  "name": "Orchard House School",
+  "role": "member",
+  "member_urn": "102547",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Hounslow",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1957-10-03",
+  "closed_date": null,
+  "easting": 521271,
+  "northing": 178957,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 177,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      29,
+      31,
+      27,
+      30,
+      11,
+      15,
+      17,
+      17,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 117,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 174,
+     "igcse": false,
+     "trend": {
+      "1": -3.06,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      31,
+      32,
+      30,
+      26,
+      13,
+      10,
+      15,
+      17,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 111,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 169,
+     "igcse": false,
+     "trend": {
+      "1": -2.93,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      27,
+      39,
+      27,
+      31,
+      16,
+      10,
+      8,
+      11,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 103,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 161,
+     "igcse": false,
+     "trend": {
+      "1": 0.7,
+      "3": -5.24,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      29,
+      24,
+      40,
+      23,
+      13,
+      13,
+      11,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 108,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 141,
+     "igcse": false,
+     "trend": {
+      "1": 2.76,
+      "3": 0.45,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      32,
+      30,
+      35,
+      16,
+      9,
+      8,
+      11,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 109,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 407,
+     "igcse": false,
+     "trend": {
+      "1": -8.74,
+      "3": -5.57,
+      "5": -11.14
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      52,
+      48,
+      56,
+      52,
+      57,
+      51,
+      40,
+      47,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 303,
+      "secondary": 4
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 331,
+     "igcse": false,
+     "trend": {
+      "1": -18.67,
+      "3": -23.73,
+      "5": -25.45
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      6,
+      35,
+      51,
+      39,
+      51,
+      31,
+      45,
+      37,
+      36,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 239,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "101961",
+  "name": "Orchard House School",
+  "role": "predecessor",
+  "member_urn": "102547",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Ealing",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1993-10-07",
+  "closed_date": "2024-08-30",
+  "easting": 521040,
+  "northing": 179022,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 281,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      22,
+      38,
+      37,
+      38,
+      40,
+      34,
+      36,
+      36,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 221,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 270,
+     "igcse": false,
+     "trend": {
+      "1": -3.06,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      20,
+      41,
+      39,
+      40,
+      33,
+      36,
+      27,
+      34,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 209,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 262,
+     "igcse": false,
+     "trend": {
+      "1": -2.93,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      20,
+      41,
+      42,
+      40,
+      39,
+      27,
+      29,
+      24,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 201,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 273,
+     "igcse": false,
+     "trend": {
+      "1": 0.7,
+      "3": -5.24,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      22,
+      33,
+      43,
+      39,
+      37,
+      38,
+      32,
+      29,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 218,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 305,
+     "igcse": false,
+     "trend": {
+      "1": 2.76,
+      "3": 0.45,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      47,
+      34,
+      32,
+      46,
+      38,
+      36,
+      39,
+      33,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 224,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "102938",
+  "name": "Broomfield House School",
+  "role": "member",
+  "member_urn": "102938",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Richmond upon Thames",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1957-10-28",
+  "closed_date": null,
+  "easting": 518971,
+  "northing": 176919,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 183,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      19,
+      18,
+      25,
+      25,
+      20,
+      27,
+      25,
+      22,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 144,
+      "secondary": 2
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 173,
+     "igcse": false,
+     "trend": {
+      "1": -5.46,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      13,
+      23,
+      20,
+      23,
+      24,
+      20,
+      25,
+      25,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 137,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 184,
+     "igcse": false,
+     "trend": {
+      "1": 6.36,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      23,
+      21,
+      26,
+      23,
+      24,
+      25,
+      22,
+      19,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 139,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 176,
+     "igcse": false,
+     "trend": {
+      "1": -4.35,
+      "3": -3.83,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      22,
+      23,
+      18,
+      26,
+      19,
+      23,
+      25,
+      20,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 131,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 178,
+     "igcse": false,
+     "trend": {
+      "1": 1.14,
+      "3": 2.89,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      20,
+      23,
+      24,
+      21,
+      22,
+      20,
+      25,
+      23,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 135,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 178,
+     "igcse": false,
+     "trend": {
+      "1": 0,
+      "3": -3.26,
+      "5": -2.73
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      19,
+      25,
+      21,
+      26,
+      17,
+      25,
+      19,
+      25,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 133,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 160,
+     "igcse": false,
+     "trend": {
+      "1": -10.11,
+      "3": -9.09,
+      "5": -7.51
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      4,
+      18,
+      15,
+      25,
+      20,
+      15,
+      17,
+      27,
+      17,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 121,
+      "secondary": 2
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "110921",
+  "name": "Sancton Wood School",
+  "role": "member",
+  "member_urn": "110921",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Cambridgeshire",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1976-09-28",
+  "closed_date": null,
+  "easting": 545674,
+  "northing": 257682,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 351,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      17,
+      16,
+      15,
+      17,
+      15,
+      12,
+      15,
+      13,
+      26,
+      25,
+      33,
+      36,
+      34,
+      41,
+      35,
+      1,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 1,
+      "primary": 106,
+      "secondary": 179
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 367,
+     "igcse": false,
+     "trend": {
+      "1": 4.56,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      14,
+      13,
+      9,
+      11,
+      20,
+      19,
+      14,
+      17,
+      18,
+      29,
+      35,
+      39,
+      42,
+      41,
+      40,
+      6,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 6,
+      "primary": 117,
+      "secondary": 197
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 393,
+     "igcse": false,
+     "trend": {
+      "1": 7.08,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 44.7,
+      "ks4_em4": 0,
+      "ks4_em5": 0
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      7,
+      15,
+      13,
+      17,
+      9,
+      13,
+      22,
+      16,
+      15,
+      19,
+      18,
+      37,
+      38,
+      43,
+      47,
+      43,
+      21,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4190,
+       "rank": 2399,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4190,
+       "rank": 3758,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4190,
+       "rank": 3625,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 21,
+      "primary": 103,
+      "secondary": 208
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 389,
+     "igcse": false,
+     "trend": {
+      "1": -1.02,
+      "3": 10.83,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 58.9,
+      "ks4_em4": 93.6,
+      "ks4_em5": 61.7
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 47,
+     "roll_by_age": [
+      1,
+      13,
+      17,
+      16,
+      10,
+      13,
+      13,
+      16,
+      22,
+      19,
+      25,
+      27,
+      39,
+      44,
+      52,
+      41,
+      20,
+      1,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4234,
+       "rank": 352,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4234,
+       "rank": 233,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 4234,
+       "rank": 645,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 21,
+      "primary": 108,
+      "secondary": 203
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 397,
+     "igcse": false,
+     "trend": {
+      "1": 2.06,
+      "3": 8.17,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 54.6,
+      "ks4_em4": 82.7,
+      "ks4_em5": 63.5
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 52,
+     "roll_by_age": [
+      2,
+      16,
+      20,
+      16,
+      14,
+      13,
+      17,
+      16,
+      21,
+      19,
+      16,
+      44,
+      39,
+      45,
+      49,
+      48,
+      2,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4284,
+       "rank": 639,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4284,
+       "rank": 556,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4284,
+       "rank": 630,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 2,
+      "primary": 102,
+      "secondary": 225
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 391,
+     "igcse": false,
+     "trend": {
+      "1": -1.51,
+      "3": -0.51,
+      "5": 11.4
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 52.4,
+      "ks4_em4": 81.3,
+      "ks4_em5": 62.5
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 48,
+     "roll_by_age": [
+      6,
+      13,
+      18,
+      19,
+      11,
+      14,
+      14,
+      17,
+      19,
+      24,
+      22,
+      32,
+      43,
+      43,
+      46,
+      48,
+      2,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4341,
+       "rank": 823,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4341,
+       "rank": 593,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4341,
+       "rank": 601,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 2,
+      "primary": 110,
+      "secondary": 212
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 363,
+     "igcse": false,
+     "trend": {
+      "1": -7.16,
+      "3": -6.68,
+      "5": -1.09
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 60.4,
+      "ks4_em4": 89.6,
+      "ks4_em5": 66.7
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 48,
+     "roll_by_age": [
+      3,
+      15,
+      16,
+      17,
+      13,
+      12,
+      16,
+      17,
+      15,
+      17,
+      27,
+      20,
+      35,
+      44,
+      45,
+      47,
+      4,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4383,
+       "rank": 306,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4383,
+       "rank": 278,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4383,
+       "rank": 482,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 4,
+      "primary": 104,
+      "secondary": 191
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "110932",
+  "name": "St. Andrew's College Cambridge",
+  "role": "member",
+  "member_urn": "110932",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Cambridgeshire",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1990-04-30",
+  "closed_date": null,
+  "easting": 545835,
+  "northing": 257366,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 109,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 70,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      8,
+      20,
+      32,
+      35,
+      12
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 87,
+      "primary": 0,
+      "secondary": 10
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 84,
+     "igcse": false,
+     "trend": {
+      "1": -22.94,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "post16"
+     ],
+     "results": {},
+     "boarders": 35,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4,
+      2,
+      13,
+      18,
+      22,
+      25
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 53,
+      "primary": 0,
+      "secondary": 6
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 112,
+     "igcse": false,
+     "trend": {
+      "1": 33.33,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 8.6,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 33.6,
+      "ks5_aps_alevel": 34.8
+     },
+     "boarders": 75,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      10,
+      30,
+      34,
+      22,
+      15
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4190,
+       "rank": 3706,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4190,
+       "rank": 3758,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4190,
+       "rank": 3625,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2640,
+       "rank": 1734,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2589,
+       "rank": 1601,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 86,
+      "primary": 0,
+      "secondary": 11
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 128,
+     "igcse": false,
+     "trend": {
+      "1": 14.29,
+      "3": 17.43,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 8.6,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 28.35,
+      "ks5_aps_alevel": 28.63
+     },
+     "boarders": 100,
+     "size_band": "M",
+     "ks4_pupils": 11,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      11,
+      27,
+      49,
+      28,
+      11
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4234,
+       "rank": 3728,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4234,
+       "rank": 3793,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4234,
+       "rank": 3681,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2642,
+       "rank": 1978,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2583,
+       "rank": 1927,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 104,
+      "primary": 0,
+      "secondary": 13
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 146,
+     "igcse": false,
+     "trend": {
+      "1": 14.06,
+      "3": 73.81,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 6,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 24.36,
+      "ks5_aps_alevel": 26.9
+     },
+     "boarders": 105,
+     "size_band": "M",
+     "ks4_pupils": 35,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      20,
+      41,
+      35,
+      31,
+      18
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.73
+     },
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4284,
+       "rank": 3850,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4284,
+       "rank": 3824,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4284,
+       "rank": 3704,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 2419,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 2076,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 107,
+      "primary": 0,
+      "secondary": 21
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 151,
+     "igcse": false,
+     "trend": {
+      "1": 3.42,
+      "3": 34.82,
+      "5": 38.53
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 0.2,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 31.44,
+      "ks5_aps_alevel": 31.54
+     },
+     "boarders": 115,
+     "size_band": "M",
+     "ks4_pupils": 132,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      11,
+      39,
+      56,
+      23,
+      21
+     ],
+     "value_added": {
+      "ks5_va_alevel": -0.69
+     },
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4341,
+       "rank": 4318,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4341,
+       "rank": 3843,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4341,
+       "rank": 3725,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 1631,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 1599,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 118,
+      "primary": 0,
+      "secondary": 12
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 123,
+     "igcse": false,
+     "trend": {
+      "1": -18.54,
+      "3": -3.91,
+      "5": 46.43
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 6.9,
+      "ks4_em4": 5.6,
+      "ks4_em5": 0
+     },
+     "boarders": 102,
+     "size_band": "M",
+     "ks4_pupils": 18,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      17,
+      31,
+      49,
+      21,
+      5
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4383,
+       "rank": 3861,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4383,
+       "rank": 3811,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4383,
+       "rank": 3757,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 101,
+      "primary": 0,
+      "secondary": 17
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "119006",
+  "name": "Rochester Independent College",
+  "role": "member",
+  "member_urn": "119006",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Medway",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1986-09-26",
+  "closed_date": null,
+  "easting": 574653,
+  "northing": 167978,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 336,
+     "igcse": true,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 105,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      20,
+      16,
+      11,
+      22,
+      50,
+      58,
+      84,
+      61,
+      14
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 203,
+      "primary": 0,
+      "secondary": 119
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 330,
+     "igcse": true,
+     "trend": {
+      "1": -1.79,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 105,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      15,
+      21,
+      23,
+      15,
+      44,
+      70,
+      58,
+      66,
+      18
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 194,
+      "primary": 0,
+      "secondary": 118
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 334,
+     "igcse": true,
+     "trend": {
+      "1": 1.21,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 22.6,
+      "ks4_em4": 2,
+      "ks4_em5": 2,
+      "ks5_aps_all": 34.24,
+      "ks5_aps_alevel": 35.61
+     },
+     "boarders": 115,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      16,
+      20,
+      24,
+      30,
+      37,
+      60,
+      101,
+      35,
+      11
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2640,
+       "rank": 1609,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2589,
+       "rank": 1478,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 196,
+      "primary": 0,
+      "secondary": 127
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 358,
+     "igcse": true,
+     "trend": {
+      "1": 7.19,
+      "3": 6.55,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 21,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 34.28,
+      "ks5_aps_alevel": 33.77
+     },
+     "boarders": 130,
+     "size_band": "L",
+     "ks4_pupils": 58,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      25,
+      24,
+      27,
+      34,
+      54,
+      59,
+      79,
+      41,
+      15
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2642,
+       "rank": 1026,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2583,
+       "rank": 1152,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 179,
+      "primary": 0,
+      "secondary": 164
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 374,
+     "igcse": true,
+     "trend": {
+      "1": 4.47,
+      "3": 13.33,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 19.9,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 34.45,
+      "ks5_aps_alevel": 35.39
+     },
+     "boarders": 145,
+     "size_band": "L",
+     "ks4_pupils": 63,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      19,
+      26,
+      32,
+      37,
+      59,
+      63,
+      69,
+      53,
+      16
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.11
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 1017,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 908,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 185,
+      "primary": 0,
+      "secondary": 173
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 412,
+     "igcse": true,
+     "trend": {
+      "1": 10.16,
+      "3": 23.35,
+      "5": 22.62
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 18.9,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 37.27,
+      "ks5_aps_alevel": 37.41
+     },
+     "boarders": 175,
+     "size_band": "L",
+     "ks4_pupils": 60,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      24,
+      22,
+      31,
+      44,
+      64,
+      76,
+      86,
+      47,
+      18
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.02
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 697,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 713,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 209,
+      "primary": 0,
+      "secondary": 185
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 401,
+     "igcse": true,
+     "trend": {
+      "1": -2.67,
+      "3": 12.01,
+      "5": 21.52
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 21.2,
+      "ks4_em4": 0,
+      "ks4_em5": 0
+     },
+     "boarders": 155,
+     "size_band": "L",
+     "ks4_pupils": 65,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      18,
+      24,
+      25,
+      36,
+      59,
+      84,
+      91,
+      48,
+      14
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 223,
+      "primary": 2,
+      "secondary": 162
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "131343",
+  "name": "The Lyceum",
+  "role": "member",
+  "member_urn": "131343",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Hackney",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "1997-09-17",
+  "closed_date": null,
+  "easting": 533013,
+  "northing": 182106,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 122,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      3,
+      18,
+      23,
+      17,
+      11,
+      15,
+      12,
+      11,
+      12,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 78,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 141,
+     "igcse": false,
+     "trend": {
+      "1": 15.57,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      3,
+      19,
+      30,
+      22,
+      18,
+      10,
+      14,
+      12,
+      12,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 88,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 145,
+     "igcse": false,
+     "trend": {
+      "1": 2.84,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      1,
+      14,
+      33,
+      23,
+      24,
+      16,
+      9,
+      17,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 97,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 120,
+     "igcse": false,
+     "trend": {
+      "1": -17.24,
+      "3": -1.64,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      21,
+      30,
+      16,
+      19,
+      11,
+      9,
+      13,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 98,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 122,
+     "igcse": false,
+     "trend": {
+      "1": 1.67,
+      "3": -13.48,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      17,
+      22,
+      30,
+      16,
+      18,
+      12,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 105,
+      "secondary": 0
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 121,
+     "igcse": false,
+     "trend": {
+      "1": -0.82,
+      "3": -16.55,
+      "5": -0.82
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      10,
+      18,
+      21,
+      28,
+      13,
+      19,
+      12,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 109,
+      "secondary": 12
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 126,
+     "igcse": false,
+     "trend": {
+      "1": 4.13,
+      "3": 5,
+      "5": -10.64
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      33,
+      8,
+      18,
+      16,
+      24,
+      12,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 111,
+      "secondary": 15
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "133443",
+  "name": "Hampton Court House",
+  "role": "member",
+  "member_urn": "133443",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Richmond upon Thames",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2001-09-06",
+  "closed_date": null,
+  "easting": 515370,
+  "northing": 169020,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 236,
+     "igcse": true,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      17,
+      16,
+      19,
+      15,
+      19,
+      20,
+      22,
+      16,
+      20,
+      22,
+      27,
+      17,
+      6,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 23,
+      "primary": 106,
+      "secondary": 107
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 249,
+     "igcse": true,
+     "trend": {
+      "1": 5.51,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      16,
+      18,
+      18,
+      14,
+      14,
+      22,
+      27,
+      16,
+      23,
+      25,
+      21,
+      16,
+      18,
+      1,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 35,
+      "primary": 102,
+      "secondary": 112
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 300,
+     "igcse": true,
+     "trend": {
+      "1": 20.48,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 57.5,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 46.67,
+      "ks5_aps_alevel": 47.83
+     },
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      5,
+      7,
+      15,
+      15,
+      18,
+      17,
+      16,
+      15,
+      12,
+      24,
+      23,
+      29,
+      21,
+      27,
+      26,
+      15,
+      15,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2640,
+       "rank": 198,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2589,
+       "rank": 157,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 30,
+      "primary": 102,
+      "secondary": 126
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 295,
+     "igcse": true,
+     "trend": {
+      "1": -1.67,
+      "3": 25,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 48.1,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 38.54,
+      "ks5_aps_alevel": 41.4
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 31,
+     "roll_by_age": [
+      0,
+      2,
+      7,
+      10,
+      16,
+      14,
+      17,
+      15,
+      17,
+      18,
+      20,
+      29,
+      36,
+      22,
+      23,
+      26,
+      9,
+      12,
+      2,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2642,
+       "rank": 498,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2583,
+       "rank": 302,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 23,
+      "primary": 101,
+      "secondary": 136
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 312,
+     "igcse": true,
+     "trend": {
+      "1": 5.76,
+      "3": 25.3,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 57.3,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 38.33,
+      "ks5_aps_alevel": 38.08
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 24,
+     "roll_by_age": [
+      0,
+      0,
+      9,
+      6,
+      7,
+      18,
+      13,
+      8,
+      18,
+      17,
+      19,
+      22,
+      35,
+      53,
+      30,
+      25,
+      20,
+      11,
+      1,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.54
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 523,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 579,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 32,
+      "primary": 93,
+      "secondary": 165
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 374,
+     "igcse": true,
+     "trend": {
+      "1": 19.87,
+      "3": 24.67,
+      "5": 58.47
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 53.2,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 34.71,
+      "ks5_aps_alevel": 37.55
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 35,
+     "roll_by_age": [
+      0,
+      2,
+      9,
+      11,
+      10,
+      10,
+      21,
+      12,
+      9,
+      21,
+      26,
+      34,
+      27,
+      53,
+      56,
+      32,
+      21,
+      17,
+      3,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.03
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 1067,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 692,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 41,
+      "primary": 99,
+      "secondary": 202
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 346,
+     "igcse": true,
+     "trend": {
+      "1": -7.49,
+      "3": 17.29,
+      "5": 38.96
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 50.3,
+      "ks4_em4": 0,
+      "ks4_em5": 0
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 61,
+     "roll_by_age": [
+      0,
+      0,
+      3,
+      10,
+      9,
+      10,
+      7,
+      16,
+      13,
+      9,
+      20,
+      32,
+      31,
+      40,
+      55,
+      56,
+      13,
+      18,
+      4,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 35,
+      "primary": 75,
+      "secondary": 214
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "134664",
+  "name": "Notting Hill Prep School",
+  "role": "member",
+  "member_urn": "134664",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Kensington and Chelsea",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2004-03-22",
+  "closed_date": null,
+  "easting": 524376,
+  "northing": 181269,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 360,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      56,
+      56,
+      51,
+      50,
+      42,
+      32,
+      31,
+      14,
+      27,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 262,
+      "secondary": 42
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 358,
+     "igcse": false,
+     "trend": {
+      "1": -0.56,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      52,
+      60,
+      53,
+      49,
+      44,
+      38,
+      31,
+      19,
+      10,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 275,
+      "secondary": 31
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 388,
+     "igcse": false,
+     "trend": {
+      "1": 8.38,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      60,
+      57,
+      58,
+      51,
+      50,
+      45,
+      33,
+      14,
+      18,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 294,
+      "secondary": 34
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 443,
+     "igcse": false,
+     "trend": {
+      "1": 14.18,
+      "3": 23.06,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      61,
+      59,
+      59,
+      58,
+      58,
+      57,
+      46,
+      29,
+      15,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 337,
+      "secondary": 45
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 440,
+     "igcse": false,
+     "trend": {
+      "1": -0.68,
+      "3": 22.91,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      55,
+      62,
+      60,
+      48,
+      55,
+      50,
+      52,
+      25,
+      31,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 327,
+      "secondary": 58
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 383,
+     "igcse": false,
+     "trend": {
+      "1": -12.95,
+      "3": -1.29,
+      "5": 6.39
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      31,
+      50,
+      61,
+      51,
+      36,
+      54,
+      52,
+      28,
+      18,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 304,
+      "secondary": 48
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 344,
+     "igcse": false,
+     "trend": {
+      "1": -10.18,
+      "3": -22.35,
+      "5": -3.91
+     },
+     "phases": [
+      "primary",
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "L",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      42,
+      33,
+      46,
+      57,
+      34,
+      33,
+      51,
+      27,
+      21,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 254,
+      "secondary": 48
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "137018",
+  "name": "Radnor House",
+  "role": "member",
+  "member_urn": "137018",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Richmond upon Thames",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2011-08-02",
+  "closed_date": null,
+  "easting": 515956,
+  "northing": 172690,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 426,
+     "igcse": true,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      19,
+      20,
+      61,
+      61,
+      64,
+      62,
+      59,
+      38,
+      41,
+      1,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 80,
+      "primary": 39,
+      "secondary": 307
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 432,
+     "igcse": true,
+     "trend": {
+      "1": 1.41,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      19,
+      20,
+      58,
+      64,
+      66,
+      65,
+      61,
+      43,
+      33,
+      3,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 79,
+      "primary": 39,
+      "secondary": 314
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 442,
+     "igcse": true,
+     "trend": {
+      "1": 2.31,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 54,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 44.22,
+      "ks5_aps_alevel": 43.62
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      20,
+      20,
+      66,
+      64,
+      65,
+      65,
+      63,
+      38,
+      39,
+      2,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2640,
+       "rank": 308,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2589,
+       "rank": 378,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 79,
+      "primary": 40,
+      "secondary": 323
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 453,
+     "igcse": true,
+     "trend": {
+      "1": 2.49,
+      "3": 6.34,
+      "5": null
+     },
+     "phases": [
+      "primary",
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 53.9,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 41.41,
+      "ks5_aps_alevel": 42.26
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 66,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      20,
+      20,
+      64,
+      67,
+      65,
+      65,
+      65,
+      46,
+      38,
+      3,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2642,
+       "rank": 287,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2583,
+       "rank": 256,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 87,
+      "primary": 40,
+      "secondary": 326
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 455,
+     "igcse": true,
+     "trend": {
+      "1": 0.44,
+      "3": 5.32,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 53.7,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 42.58,
+      "ks5_aps_alevel": 41.85
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 66,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      95,
+      70,
+      67,
+      69,
+      65,
+      46,
+      43,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.29
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 251,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 302,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 89,
+      "primary": 0,
+      "secondary": 366
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 481,
+     "igcse": true,
+     "trend": {
+      "1": 5.71,
+      "3": 8.82,
+      "5": 12.91
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 56.2,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 44.78,
+      "ks5_aps_alevel": 43.82
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 69,
+     "roll_by_age": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      82,
+      99,
+      68,
+      65,
+      71,
+      47,
+      47,
+      1,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.59
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 169,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 216,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 95,
+      "primary": 0,
+      "secondary": 385
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 471,
+     "igcse": true,
+     "trend": {
+      "1": -2.08,
+      "3": 3.97,
+      "5": 9.03
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 58.2,
+      "ks4_em4": 0,
+      "ks4_em5": 0
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 65,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      61,
+      88,
+      91,
+      74,
+      65,
+      42,
+      48,
+      2,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 92,
+      "primary": 0,
+      "secondary": 379
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "138405",
+  "name": "Earlscliffe (Sussex Summer Schools Ltd)",
+  "role": "member",
+  "member_urn": "138405",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Kent",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2012-07-17",
+  "closed_date": null,
+  "easting": 621725,
+  "northing": 136091,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 115,
+     "igcse": true,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 115,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      19,
+      32,
+      37,
+      18,
+      6
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 87,
+      "primary": 0,
+      "secondary": 22
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 110,
+     "igcse": true,
+     "trend": {
+      "1": -4.35,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {},
+     "boarders": 105,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      10,
+      39,
+      40,
+      18,
+      1
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 97,
+      "primary": 0,
+      "secondary": 12
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 111,
+     "igcse": true,
+     "trend": {
+      "1": 0.91,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 16.4,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 32.73,
+      "ks5_aps_alevel": 36.75
+     },
+     "boarders": 105,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      16,
+      35,
+      33,
+      19,
+      5
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2640,
+       "rank": 1867,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2589,
+       "rank": 1278,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 87,
+      "primary": 0,
+      "secondary": 19
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 129,
+     "igcse": true,
+     "trend": {
+      "1": 16.22,
+      "3": 12.17,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 9.9,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 35.15,
+      "ks5_aps_alevel": 36.43
+     },
+     "boarders": 130,
+     "size_band": "M",
+     "ks4_pupils": 29,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      22,
+      40,
+      41,
+      19,
+      4
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2642,
+       "rank": 901,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2583,
+       "rank": 779,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 100,
+      "primary": 0,
+      "secondary": 25
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 135,
+     "igcse": true,
+     "trend": {
+      "1": 4.65,
+      "3": 22.73,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 12,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 32.61,
+      "ks5_aps_alevel": 33.03
+     },
+     "boarders": 135,
+     "size_band": "M",
+     "ks4_pupils": 34,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      22,
+      43,
+      47,
+      16,
+      4
+     ],
+     "value_added": {
+      "ks5_va_alevel": -0.55
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 1345,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 1268,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 106,
+      "primary": 0,
+      "secondary": 25
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 123,
+     "igcse": true,
+     "trend": {
+      "1": -8.89,
+      "3": 10.81,
+      "5": 6.96
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 9.9,
+      "ks4_em4": 0,
+      "ks4_em5": 0,
+      "ks5_aps_all": 34.4,
+      "ks5_aps_alevel": 35.19
+     },
+     "boarders": 120,
+     "size_band": "M",
+     "ks4_pupils": 39,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      19,
+      41,
+      39,
+      12,
+      7
+     ],
+     "value_added": {
+      "ks5_va_alevel": -0.24
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 1128,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 1031,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 92,
+      "primary": 0,
+      "secondary": 24
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 101,
+     "igcse": true,
+     "trend": {
+      "1": -17.89,
+      "3": -21.71,
+      "5": -8.18
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 10.3,
+      "ks4_em4": 0,
+      "ks4_em5": 0
+     },
+     "boarders": 100,
+     "size_band": "M",
+     "ks4_pupils": 11,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      6,
+      13,
+      29,
+      37,
+      14,
+      2
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 80,
+      "primary": 0,
+      "secondary": 19
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "144795",
+  "name": "London Park School Mayfair and London Park School Sixth",
+  "role": "member",
+  "member_urn": "144795",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Westminster",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2017-07-20",
+  "closed_date": null,
+  "easting": 528715,
+  "northing": 180107,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": {
+     "roll": 182,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      54,
+      45,
+      30,
+      32,
+      20,
+      1,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 1,
+      "primary": 0,
+      "secondary": 181
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": {
+     "roll": 164,
+     "igcse": false,
+     "trend": {
+      "1": -9.89,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      35,
+      42,
+      35,
+      27,
+      24,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 1,
+      "secondary": 163
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": {
+     "roll": 160,
+     "igcse": false,
+     "trend": {
+      "1": -2.44,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 58.7,
+      "ks4_em4": 92,
+      "ks4_em5": 67
+     },
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      26,
+      34,
+      33,
+      34,
+      29,
+      3,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4190,
+       "rank": 497,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4190,
+       "rank": 273,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4190,
+       "rank": 591,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 3,
+      "primary": 1,
+      "secondary": 156
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 165,
+     "igcse": false,
+     "trend": {
+      "1": 3.12,
+      "3": -9.34,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 56.2,
+      "ks4_em4": 87.1,
+      "ks4_em5": 67.7
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 31,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      26,
+      24,
+      35,
+      31,
+      27,
+      19,
+      2,
+      0,
+      1
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4234,
+       "rank": 528,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4234,
+       "rank": 384,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4234,
+       "rank": 436,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 21,
+      "primary": 0,
+      "secondary": 143
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 154,
+     "igcse": false,
+     "trend": {
+      "1": -6.67,
+      "3": -6.1,
+      "5": null
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 55.1,
+      "ks4_em4": 86.7,
+      "ks4_em5": 63.3,
+      "ks5_aps_all": 34.29,
+      "ks5_aps_alevel": 31.05
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 30,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      16,
+      22,
+      26,
+      31,
+      27,
+      16,
+      15,
+      1,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": -0.06
+     },
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4284,
+       "rank": 604,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4284,
+       "rank": 399,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4284,
+       "rank": 637,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 1040,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 1585,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 32,
+      "primary": 0,
+      "secondary": 122
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 253,
+     "igcse": false,
+     "trend": {
+      "1": 64.29,
+      "3": 58.13,
+      "5": 39.01
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 54.4,
+      "ks4_em4": 81.2,
+      "ks4_em5": 60.9,
+      "ks5_aps_all": 38.18,
+      "ks5_aps_alevel": 36.48
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 69,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      28,
+      28,
+      32,
+      55,
+      66,
+      25,
+      15,
+      4,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": 0.59
+     },
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4341,
+       "rank": 646,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4341,
+       "rank": 600,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4341,
+       "rank": 678,
+       "tied": true
+      },
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 573,
+       "tied": true
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 837,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 44,
+      "primary": 0,
+      "secondary": 209
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 202,
+     "igcse": false,
+     "trend": {
+      "1": -20.16,
+      "3": 22.42,
+      "5": 23.17
+     },
+     "phases": [
+      "secondary",
+      "post16"
+     ],
+     "results": {
+      "ks4_a8": 51.6,
+      "ks4_em4": 86.3,
+      "ks4_em5": 60.8
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 51,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      8,
+      27,
+      26,
+      33,
+      50,
+      35,
+      20,
+      3,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4383,
+       "rank": 916,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4383,
+       "rank": 379,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4383,
+       "rank": 708,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 58,
+      "primary": 0,
+      "secondary": 144
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "149027",
+  "name": "Cardiff Sixth Form College, Cambridge",
+  "role": "member",
+  "member_urn": "149027",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Cambridgeshire",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2022-06-30",
+  "closed_date": null,
+  "easting": 545451,
+  "northing": 257890,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": {
+     "roll": 20,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "post16"
+     ],
+     "results": {},
+     "boarders": 15,
+     "size_band": "S",
+     "ks4_pupils": 1,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      14,
+      5,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 19,
+      "primary": 0,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 74,
+     "igcse": false,
+     "trend": {
+      "1": 270,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "post16"
+     ],
+     "results": {
+      "ks5_aps_all": 52.16,
+      "ks5_aps_alevel": 52.04
+     },
+     "boarders": 75,
+     "size_band": "S",
+     "ks4_pupils": 3,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      38,
+      28,
+      5,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": -0.08
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2629,
+       "rank": 8,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2487,
+       "rank": 13,
+       "tied": false
+      }
+     },
+     "roll_by_phase": {
+      "post16": 71,
+      "primary": 0,
+      "secondary": 3
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 98,
+     "igcse": false,
+     "trend": {
+      "1": 32.43,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "post16"
+     ],
+     "results": {
+      "ks5_aps_all": 48.75,
+      "ks5_aps_alevel": 48.93
+     },
+     "boarders": 95,
+     "size_band": "M",
+     "ks4_pupils": 5,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      38,
+      44,
+      11,
+      0
+     ],
+     "value_added": {
+      "ks5_va_alevel": 1.28
+     },
+     "national_rank": {
+      "ks5_aps_all": {
+       "of": 2639,
+       "rank": 62,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 2536,
+       "rank": 61,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 93,
+      "primary": 0,
+      "secondary": 5
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 100,
+     "igcse": false,
+     "trend": {
+      "1": 2.04,
+      "3": 400,
+      "5": null
+     },
+     "phases": [
+      "post16"
+     ],
+     "results": {},
+     "boarders": 96,
+     "size_band": "M",
+     "ks4_pupils": 5,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      36,
+      43,
+      16,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 95,
+      "primary": 0,
+      "secondary": 5
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "149692",
+  "name": "Radnor House Prep School",
+  "role": "member",
+  "member_urn": "149692",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Richmond upon Thames",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2023-08-30",
+  "closed_date": null,
+  "easting": 518111,
+  "northing": 175517,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 108,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      5,
+      6,
+      15,
+      17,
+      61,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 107,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 96,
+     "igcse": false,
+     "trend": {
+      "1": -11.11,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "S",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      7,
+      11,
+      31,
+      42,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 92,
+      "secondary": 4
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 77,
+     "igcse": false,
+     "trend": {
+      "1": -19.79,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "primary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "XS",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      4,
+      11,
+      20,
+      39,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 76,
+      "secondary": 1
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "149715",
+  "name": "London Park School Clapham",
+  "role": "member",
+  "member_urn": "149715",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": false,
+  "la_name": "Wandsworth",
+  "establishment_type_group": "Independent schools",
+  "opened_date": "2023-08-23",
+  "closed_date": null,
+  "easting": 528654,
+  "northing": 174246,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": {
+     "roll": 72,
+     "igcse": false,
+     "trend": {
+      "1": null,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary"
+     ],
+     "results": {},
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": null,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      20,
+      16,
+      18,
+      18,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {},
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 0,
+      "secondary": 72
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": {
+     "roll": 109,
+     "igcse": false,
+     "trend": {
+      "1": 51.39,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 50.4,
+      "ks4_em4": 89.5,
+      "ks4_em5": 73.7
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 19,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      16,
+      26,
+      19,
+      29,
+      19,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4341,
+       "rank": 1057,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4341,
+       "rank": 298,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4341,
+       "rank": 317,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 0,
+      "secondary": 109
+     }
+    },
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": {
+     "roll": 106,
+     "igcse": false,
+     "trend": {
+      "1": -2.75,
+      "3": null,
+      "5": null
+     },
+     "phases": [
+      "secondary"
+     ],
+     "results": {
+      "ks4_a8": 57.8,
+      "ks4_em4": 92,
+      "ks4_em5": 76
+     },
+     "boarders": 0,
+     "size_band": "M",
+     "ks4_pupils": 25,
+     "roll_by_age": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      12,
+      19,
+      24,
+      26,
+      25,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {},
+     "national_rank": {
+      "ks4_a8": {
+       "of": 4383,
+       "rank": 417,
+       "tied": true
+      },
+      "ks4_em4": {
+       "of": 4383,
+       "rank": 227,
+       "tied": true
+      },
+      "ks4_em5": {
+       "of": 4383,
+       "rank": 276,
+       "tied": true
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 0,
+      "secondary": 106
+     }
+    },
+    "listed_now": true
+   }
+  ]
+ },
+ {
+  "urn": "402394",
+  "name": "Cardiff Sixth Form College",
+  "role": "member",
+  "member_urn": "402394",
+  "basis": "assumed",
+  "confidence": "confirmed",
+  "source": "club_iss",
+  "outside_england": true,
+  "la_name": "Cardiff",
+  "establishment_type_group": "Welsh schools",
+  "opened_date": "2017-04-21",
+  "closed_date": null,
+  "easting": null,
+  "northing": null,
+  "years": [
+   {
+    "period": 2019,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2020,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2021,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2022,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2023,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2024,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   },
+   {
+    "period": 2025,
+    "at_time": true,
+    "figures": null,
+    "listed_now": true
+   }
+  ]
+ }
+]

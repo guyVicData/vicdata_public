@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="app.css"><link rel="stylesheet" href="leaflet.css">
+<style>body{margin:0}</style>
+<script>
+window.process = { env: { NODE_ENV: "production" } };
+const P = new URLSearchParams(location.search);
+const THEME = P.get("theme") || "dark";
+try { localStorage.setItem("vicdata.teacher.theme", THEME); sessionStorage.clear(); } catch {}
+window.onerror = (m) => { document.title = "ERR " + m; const pre = document.getElementById("err"); if (pre) pre.textContent += m + "\n"; };
+</script>
+<script src="fx/r2.js"></script>
+<script>
+const GK = P.get("g") || "harris";
+const FX = window.__R2FX[GK];
+const NEG = P.get("neg") === "1";
+window.__DB = { school_memberships: [], profiles: [{ id: "00000000-0000-0000-0000-000000000001", full_name: "Sam Morgan", email: "sam@" + GK + ".example" }], meetings: [], dashboards: [], teacher_view_onboarding: [] };
+window.__RPC = { is_platform_admin: false };
+const realFetch = window.fetch;
+window.fetch = async (input, init) => {
+  const u = new URL(typeof input === "string" ? input : input.url, location.href);
+  const json = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
+  if (!u.pathname.startsWith("/api/")) return realFetch(input, init);
+  const q = u.searchParams;
+  if (u.pathname === "/api/usage") return new Response(null, { status: 204 });
+  if (u.pathname === "/api/group/dash") {
+    if (NEG) return json({ error: "Not found." }, 404);
+    const k = q.get("dash") === "schools" ? `schools|${q.get("reading")}|${q.get("focus")}` : `overview|${q.get("reading")}|${q.get("focus")}|${q.get("compare")}`;
+    return FX[k] ? json(FX[k]) : json({ error: "no fixture " + k }, 500);
+  }
+  const anyO = FX["overview|at_time|all|peer_band"];
+  const office = { id: anyO.viewer.accountId, groupId: anyO.viewer.groupId, name: anyO.viewer.name, status: "active", role: "head_office_admin" };
+  if (u.pathname === "/api/group/me") return json({ offices: [office], viewAs: false });
+  if (u.pathname === "/api/group/home") { const o = anyO.overview; return json({ office, viewAs: false, canManage: true, summary: { schools: o.group.confirmed + o.group.likely, changePct: o.now.change["1"].combined, growing: o.now.change["1"].growing, compared: o.now.change["1"].of, period: o.years.census }, access: { seeing: 0, of: o.group.confirmed + o.group.likely }, schools: anyO.map.map((s) => ({ urn: s.urn, name: s.name, likely: s.likely, vicdata: false })), source: o.group.sources[0], lastSeen: o.group.asOf }); }
+  if (u.pathname === "/api/teacher/phases") return json({ phases: [] });
+  return json({ error: "unstubbed " + u.pathname }, 404);
+};
+</script>
+</head><body><div id="root"></div><pre id="err" style="color:red"></pre><script src="bundle.js"></script></body></html>

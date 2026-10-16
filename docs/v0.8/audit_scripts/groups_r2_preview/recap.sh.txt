@@ -1,0 +1,4 @@
+#!/bin/zsh
+# Recapture the fixtures and rebuild the bundle.
+D=${0:A:h}; R=${REPO:-/Users/guy/dev/vicdata_public_groups}
+cd $R && VICDATA_GROUP_FIXTURES=true VICDATA_GROUP_FIXTURES_DIR=$R/docs/v0.8/groups_fixtures npx -y tsx --env-file=.env --tsconfig tsconfig.json $D/cap.mts $D/fx/r2.js && $D/build.sh

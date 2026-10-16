@@ -1,0 +1,37 @@
+// SMT preview fixtures: the routes' own server functions, read-only, for each school and level.
+import { writeFileSync } from "node:fs";
+import { smtSchool } from "/Users/guy/dev/vicdata_public_groups/src/lib/smt/school";
+import { buildOverview } from "/Users/guy/dev/vicdata_public_groups/src/lib/smt/overview";
+import { buildAcademic } from "/Users/guy/dev/vicdata_public_groups/src/lib/smt/academic";
+import { buildPupils } from "/Users/guy/dev/vicdata_public_groups/src/lib/smt/pupils";
+import { buildContext } from "/Users/guy/dev/vicdata_public_groups/src/lib/smt/context";
+import { resolveCatchment } from "/Users/guy/dev/vicdata_public_groups/src/lib/smt/catchment";
+import { resolveDefaultNearest } from "/Users/guy/dev/vicdata_public_groups/src/lib/chooser-sets";
+import { setPhaseOf, levelChips, type SmtLevel } from "/Users/guy/dev/vicdata_public_groups/src/lib/smt/levels";
+const out: Record<string, unknown> = {};
+for (const urn of process.argv.slice(3)) {
+  const t = Date.now();
+  const s = (await smtSchool(urn))!;
+  const phase = setPhaseOf(s.phases);
+  const near = await resolveDefaultNearest(urn, phase);
+  const urns = near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn);
+  const set = { kind: "nearest", label: "10 nearest schools", urns };
+  const overview: Record<string, unknown> = {};
+  for (const f of [{ sex: "all", boarding: "all" }, ...(s.boarding ? [{ sex: "all", boarding: "day" }, { sex: "all", boarding: "boarding" }] : []), ...(s.mixed ? [{ sex: "female", boarding: "all" }] : [])] as const)
+    overview[`${f.sex}|${f.boarding}`] = await buildOverview(s, set, f, null);
+  const academic: Record<string, unknown> = {};
+  const levels: SmtLevel[] = [];
+  for (const p of levelChips(s.phases)) {
+    levels.push({ phase: p, area: null });
+    if (p === "gcse" || p === "post16") for (const a of s.areas[p].slice(0, 3)) levels.push({ phase: p, area: a.id });
+  }
+  if (s.areas.gcse.some((a) => a.id === "sciences_maths") && !levels.some((l) => l.area === "sciences_maths")) levels.push({ phase: "gcse", area: "sciences_maths" });
+  for (const l of levels) academic[`${l.phase}|${l.area ?? ""}`] = await buildAcademic(s, l, set);
+  const pupils: Record<string, unknown> = {};
+  for (const l of levelChips(s.phases)) pupils[`${l}|all|all`] = await buildPupils(s, set, { sex: "all", boarding: "all" }, { phase: l, area: null }, null);
+  const ca = resolveCatchment(s as never, null, null);
+  const context = { around: await buildContext(s, "around", "whole" as never, ca), la: await buildContext(s, "la", "whole" as never, ca) };
+  out[urn] = { urn, name: s.name, school: s, phase, nearest: { rows: near.rows.map((r: { urn: string; name?: string }) => ({ urn: r.urn, name: r.name })) }, overview, academic, pupils, context };
+  console.error(urn, s.name, levels.length, "levels", Date.now() - t, "ms");
+}
+writeFileSync(process.argv[2], `window.__SMTFX = ${JSON.stringify(out)};\n`);

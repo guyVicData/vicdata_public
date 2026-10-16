@@ -308,6 +308,19 @@ export const GROUP_NOTES = {
   // The honesty lines (spec §3.4), for the dashboards to come.
   membershipAsOf: "Membership as of {date}, from {source}.",
   combined: "Combined figures add up the schools listed. A school that joined recently counts for every year shown.",
+  // 0.8 groups r2 (E): the honesty lines on the dashboards, each locked by a rule (R-GROUP-NOTES).
+  combinedAtTime: "Combined figures add up the schools that were members in each year, where the source dates membership. A school counts only from the year it joined.",
+  combinedUndated: "{source} doesn’t date membership, so every school listed now counts for every year shown.",
+  readingAtTime: "Members at the time",
+  readingListed: "All schools listed now",
+  readingAtTimeWhy: "Each year counts the schools that were members on that year’s census day, where the source dates membership. The default for change.",
+  readingListedWhy: "Every school listed now counts for every year shown, its history included (labelled).",
+  comparesOnly: "Compares only groups of the same type and a similar size band. A self-declared group is never ranked against official groups.",
+  missingListed: "Schools without published results (IGCSE-heavy schools, preps with no KS2, schools outside England) are listed and labelled, never left out silently.",
+  likelyWhyCh: "“Likely” means Companies House shows {group} controlling the school’s company, not yet confirmed by a second source.",
+  mixMatched: "Mix-matched: the comparison set reweighted to {group}’s phase and region mix, so the gap isn’t just geography.",
+  likeForLike: "Like for like: each year’s change over the schools with a roll in both years, so a school joining or leaving doesn’t move the line.",
+  outsideEngland: "{n} outside England: no DfE data, counted and listed, never added up.",
 } as const;
 
 /** A group note with its {placeholders} filled. */
