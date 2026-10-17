@@ -2342,3 +2342,28 @@ The round for `docs/v0.8/vicdata_0_8_consistency_claude_code_prompt_v1.md`, on `
 11. **Seen, not changed:**
     - GRP-S-GROWING's "▲ {n} of {m} growing" always shows ▲. It is a count, not a direction.
     - SMT's Scorecard column heading says "Since 2022/23", but the roll and boarders rows are since 2019/20 (footnoted).
+
+## 2026-10-17 — database load
+
+The app half of `docs/v0.8/vicdata_0_8_db_performance_claude_code_prompt_v1.md`, on `v0.8-db-performance` (report: `docs/v0.8/db_performance_report_v1.md`; ingest: `feat/db-performance`). Calls made, for Guy to confirm:
+
+1. **The app falls back until the ingest functions are applied** (Guy, 17 Oct). It reads `reference_data_lookup_all` and `reference_data_age_gender_totals_all` when they exist, and otherwise today's paged reads, rechecked every 10 minutes. The cache uses `reference_source_stamps()` when it exists, and otherwise the old one-hour TTL.
+2. **The cache is per process, keyed on the source's stamp.**
+   - Callers get copies of the rows.
+   - An answer over 50,000 rows isn't kept. The national KS2 read, at 46,859 rows, is kept.
+   - A caller's abort now stops only its own wait. The shared read carries on and is kept for the next caller, where before the abort cancelled the request.
+3. **The rank lookup needs no app change:** same function, same arguments, same answer.
+4. **Harnesses go through `scripts/rpc-proxy.mjs`:**
+   - at most 4 requests in flight;
+   - backoff on 5xx and timeouts;
+   - one cached answer per (function, arguments) per run, shared by both trees;
+   - counts per function.
+   
+   No harness code changed except the rule tests' `.env` loading. It now keys on the anon key, not the URL, so a run behind the proxy still finds the key.
+5. **Not changed: other heavy reads.**
+   - `academic_subject_headline_lookup` is the second-largest read by total time: 987 minutes since 24 Jul, 0.66 s average.
+   - `academic_headline_lookup` takes about 5 s for a national GCSE read (paged).
+   - Admissions' `subjectPlaces` has no outer cache.
+   
+   **Suggest:** the same one-call treatment for the academic lookups next round.
+6. **Merge waits for Guy's ingest steps,** then a production check of the app against the new functions: parity again, and the timings after.

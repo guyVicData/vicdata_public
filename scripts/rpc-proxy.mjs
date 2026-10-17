@@ -74,6 +74,15 @@ async function upstream(method, path, body, headers) {
   }
 }
 
+const sortKeys = (v) => (Array.isArray(v) ? v.map(sortKeys) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])])) : v);
+const canonical = (body) => {
+  try {
+    return JSON.stringify(sortKeys(JSON.parse(body)));
+  } catch {
+    return body;
+  }
+};
+
 const cache = new Map();
 http
   .createServer(async (req, res) => {
@@ -89,7 +98,8 @@ http
     count(fn, "received");
     const headers = { "Content-Type": "application/json" };
     for (const h of ["accept", "prefer", "range", "range-unit", "content-profile", "accept-profile"]) if (req.headers[h]) headers[h] = req.headers[h];
-    const key = `${req.method} ${req.url} ${JSON.stringify(headers)} ${body}`;
+    // The same arguments in another key order are the same request (the two trees' paged reads differ so).
+    const key = `${req.method} ${req.url} ${JSON.stringify(headers)} ${canonical(body)}`;
     try {
       let p = CACHE ? cache.get(key) : undefined;
       if (p) {
