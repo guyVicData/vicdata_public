@@ -110,6 +110,8 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
           <Dashboard member={state.member} dash={dash} theme={theme} onTheme={setTheme} reloadTick={inPlace.reloadTick} />
         ) : (
           <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
+            {/* 0.8 View as: the wrong-role message keeps the banner's Change and Back to me (nothing for anyone else). */}
+            <ViewAsBanner className="" />
             <AdmissionsTeacherNav schoolUrn={state.status === "ready" ? state.member.schoolUrn : null} theme={theme} onTheme={setTheme} />
             <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">
               {state.status === "loading" ? (

@@ -193,6 +193,8 @@ function Gate({ member, theme, onTheme, platformAdmin, onDash, reloadTick }: { m
   if (member.access === "none")
     return (
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
+        {/* 0.8 View as: the wrong-role message keeps the banner's Change and Back to me (nothing for anyone else). */}
+        <ViewAsBanner className="" />
         <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
         <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] leading-relaxed text-[var(--muted2)]">
           {member.viewAs ? (
