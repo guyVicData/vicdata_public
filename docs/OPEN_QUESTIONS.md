@@ -2308,3 +2308,37 @@ The round for `docs/v0.8/vicdata_0_8_year_rules_leftovers_claude_code_prompt_v1.
     - The direction words don't: groups' "Growing" uses 3 years (`GROWING_SPAN`); r3's Growing/Shrinking and the group home use last year; SMT's direction words use 2022/23 (`Lines.tsx` `direction`, the results rule); Admissions' Momentum uses 2022/23 and its entry tile 2019/20.
     - Teacher has no roll panel. No headcount rule test was added.
 11. **Seen, not changed: Teacher's Grade counts % change table measures counts from 2022/23** (`grade-spread.ts`). These are graded entries, so they follow the grades rule, but the table sits beside Candidates, which now runs from 2020/21.
+
+## 2026-10-17 — consistency
+
+The round for `docs/v0.8/vicdata_0_8_consistency_claude_code_prompt_v1.md`, on `v0.8-consistency`. Calls made, for Guy to confirm:
+
+1. **Groups didn't already use 3 years throughout.** GRP-S-GROWING, r3's Growing/Shrinking, the group home, the map colours and the schools-table trend used 1 year; the GRP-O-ROLL word used the 5-year like-for-like change (±1%). Guy (17 Oct): "all to 3 years". The 1/3/5-year change figures and the "Roll, 5 years" column stay as figures.
+2. **The groups' growing and shrinking counts come from the database** (`change["3"].growing`), which counts any rise, with no flat band. The group and its comparison rows are all counted there, so I kept those counts rather than recount the group alone in the app, which would put two rules in one table. The group home's count is computed in the app and follows the band. **Suggest:** an ingest change if the database counts should follow the band.
+3. **Arrows on a "since 2019/20" figure follow their figure** (Guy, 17 Oct): SMT's roll tile and SchoolTile, and Admissions' entry tile. They take the flat band but not the 3-year span, so a figure and its arrow can't disagree.
+4. **Not changed (Guy, 17 Oct: "leave both, log them"):**
+   - The Data View's roll statement, "Growing (+5% since 2019/20)", which follows the member's "since" control with a ±15% band.
+   - The threshold flags: Admissions' "Gaining pupils", "Losing pupils three years running" and "Year 7 shrinking", and SMT's "Roll falling three years running".
+5. **SMT's roll word reads the first line.** At a boarding school with no filter, that is the day line, as before. The word now uses the line's 3-year % change (an index's ratio equals the roll's), not index points.
+6. **A view keeps a wider steady band of its own where it had one:**
+   - Admissions' ranked-bars arrow: ±2%.
+   - The groups' roll % arrows: ±0.5%. The schools-table trend now uses ±0.5% too, so it agrees with the map colours.
+   - SMT's and Admissions' points arrows: ±0.05.
+   - The share flags: ±0.1 pp.
+   - The pool and births words: ±2%.
+   - The Data View's trend pill: ±15%.
+   
+   Only the arrows with no band, or one narrower than rounding, moved to the rounding band. Every steady mark is now "–".
+7. **Teacher's arrows are unchanged.** "↑ Growing / → Broadly stable" uses R-TREND-FLAT-4PCT (±4%), already wider than rounding. **Suggest:** the "→" could become "–" for one steady mark app-wide.
+8. **Other set "% change" figures, found and left (not small, or not the same measure):**
+   - Teacher's subject-ranking "Average across {population}" is the mean of each member's own change. It is computed by the database function and its app-side mirror; aligning it needs a migration.
+   - SMT's results flag uses the median of members' own changes (a flag threshold).
+   - The Data View's combined roll and Admissions' feeder "area" are changes in summed totals (a total, not an average).
+   - Admissions' `gapSince2223` is already the change in the rivals' yearly mean.
+   
+   Aligned: the Data View subject area's set side in both modes (Candidates and Results) and the KS2 domains' "Average across". Both are small changes and plainly the same measure.
+9. **A set change needs two different years.** A set with one year now shows no change; it showed 0% before.
+10. **Teacher's grade counts heading** now reads "…entries at each grade, change since 2022/23: 2022/23 against {latest}". The catalogue template, the views=v2 series and the view editor's wording all match.
+11. **Seen, not changed:**
+    - GRP-S-GROWING's "▲ {n} of {m} growing" always shows ▲. It is a count, not a direction.
+    - SMT's Scorecard column heading says "Since 2022/23", but the roll and boarders rows are since 2019/20 (footnoted).
