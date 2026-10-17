@@ -189,7 +189,12 @@ export async function discardDraft(supabase: SupabaseClient, dashboardId: string
   if (error) throw error;
 }
 
+// 0.8 View as (editing guarantee 6): every version says what changed. Every caller already
+// passes one (the editor's confirmed change summary, meetings', Copy this view's); a publish
+// without one is refused here, before anything is written. Writes go with the signed-in
+// person's own session (publish_dashboard's created_by = auth.uid()), never a viewed school's.
 export async function publish(supabase: SupabaseClient, dashboardId: string, config: DashboardConfig, label?: string, summary?: string): Promise<string> {
+  if (!summary?.trim()) throw new Error("A publish needs its change summary.");
   const { data, error } = await supabase.rpc("publish_dashboard", {
     p_dashboard: dashboardId,
     p_config: config,

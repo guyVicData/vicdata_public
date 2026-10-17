@@ -15,7 +15,7 @@ async function accountId(supabase: SupabaseClient, urn: string): Promise<string 
 
 /** The school's saved catchment in km, or null (none saved, or the caller can't read it). Head office
  * (an smtCaller already checked) reads it through the server. */
-export async function savedCatchmentKm(caller: { supabase: SupabaseClient; headOffice: unknown | null }, urn: string): Promise<number | null> {
+export async function savedCatchmentKm(caller: { supabase: SupabaseClient; headOffice: unknown | null; readOnly?: boolean }, urn: string): Promise<number | null> {
   const supabase = catchmentRights(caller).read === "server" ? createServiceRoleSupabaseClient() : caller.supabase;
   const id = await accountId(supabase, urn);
   if (!id) return null;

@@ -14,7 +14,7 @@
 //   listOnly     anyone a list is shared with who isn't one of the above: the list's school
 //                names only, never the computed views (decision 5)
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { pickMembership, resolveViewAs, viewAsMembership, type ViewAs } from "@/lib/view-as";
+import { fetchViewedSchool, pickMembership, resolvePeek, resolveViewAs, viewAsMembership, type ViewAs } from "@/lib/view-as";
 
 export type AdmissionsAccess = "lead" | "member" | "schoolAdmin" | "viewAs" | "listOnly" | "none";
 
@@ -69,10 +69,15 @@ export async function loadAdmissionsMember(): Promise<MemberState> {
   const { data: sessionData } = await supabase.auth.getSession();
   const session = sessionData.session;
   if (!session) return { status: "signed-out" };
-  const viewAs = await resolveViewAs(supabase);
+  // 0.8 View as: a View as, or the scripted read-only peek (?lookAs=&as=&peek=1), platform admins only.
+  const viewAs = (await resolveViewAs(supabase)) ?? (await resolvePeek(supabase));
   if (viewAs) {
-    const { data: account } = await supabase.from("school_accounts").select("id").eq("school_urn", viewAs.urn).maybeSingle<{ id: string }>();
-    if (!account) return { status: "no-school" };
+    // 0.8 View as: the viewed school's account comes from the server (the one caller helper reads it
+    // with the service role once it has confirmed a platform admin): the admin's own RLS shows nothing
+    // at a school they aren't a member of, which left SMT and Admissions saying "use View as" (17 Oct).
+    // Any school: one with no school account (or no members) still draws, with no saved state.
+    const viewed = await fetchViewedSchool(supabase, viewAs.urn);
+    const account = { id: viewed?.accountId ?? "" };
     const vm = viewAsMembership(viewAs.role);
     const base = { roles: vm.roles, isAdmin: vm.is_admin, isAccountHolder: false, lead: false };
     const access = accessOf(base, false);
@@ -84,7 +89,7 @@ export async function loadAdmissionsMember(): Promise<MemberState> {
         membershipId: null,
         schoolAccountId: account.id,
         schoolUrn: viewAs.urn,
-        schoolName: viewAs.schoolName,
+        schoolName: viewed?.name || viewAs.schoolName,
         ...base,
         // A platform admin reads everything through View as, read-only (decision 4); a View as
         // a Teacher sees what a Teacher sees (nothing, unless a list is shared with them).

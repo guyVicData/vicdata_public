@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchSubjectHeadlineForSchools, type KsStage } from "@/lib/academic-data-view";
@@ -57,23 +57,10 @@ export async function GET(request: NextRequest) {
   // Same membership gate as every other Teacher view route: an approved membership at the
   // school being viewed. The candidate's school needs no membership -- it is public
   // school-level data, exactly as it is everywhere else on the platform.
-  const { data: membership, error: membershipError } = await supabase
-    .from("school_memberships")
-    .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-    .eq("status", "approved")
-    .eq("school_accounts.school_urn", anchorUrn)
-    // Any approved row at this school proves membership: RLS shows colleagues only to members.
-    .limit(1)
-    .maybeSingle();
-  if (membershipError) {
-    return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  }
-  // 0.6 snag 4 (B): a platform admin too, after the member check (members' path
-  // unchanged) -- View as gets exactly what a member of this school gets (school-level
-  // data only; nothing personal or school-owned comes from this route).
-  if (!membership && !(await isPlatformAdmin(supabase))) {
-    return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
-  }
+  // 0.8 View as: the one caller helper (src/lib/view-as-server.ts) -- a member of this school (the
+  // query this route always made), a platform admin's View as or peek, read-only.
+  const caller = await resolveCaller(request, anchorUrn, { visibleRow: true, supabase, refusal: "Teacher view is available to verified school staff." });
+  if (caller instanceof NextResponse) return caller;
 
   const { data: schoolRows } = await supabase
     .from("schools")

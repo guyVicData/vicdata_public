@@ -3,7 +3,7 @@
 // VicData 0.8 SMT round 1 (B1-B5): the SMT dashboards -- Overview and Academic -- drawn entirely from
 // the shared shell (src/components/shell): Teacher's nav, ControlBar (the "S" badge, the switch, the
 // level chips in the subject chips' slot, the pills), the rows, RailPanel (CardBox: the icon row,
-// the notes, full screen as a focus mode), the phone's tabs, the footer's Edit · View as… and Copy
+// the notes, full screen as a focus mode), the phone's tabs, the footer's Edit (View as from the account menu, 0.8) and Copy
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
@@ -23,7 +23,7 @@ import { RailPanel, Tabs, type RailItem } from "@/components/shell/RailPanel";
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { HeadOfficeBanner } from "@/components/groups/HeadOfficeBanner";
-import { openViewAs } from "@/components/view-as/ViewAs";
+import { ViewAsWrongRole } from "@/components/view-as/ViewAs";
 import { AdmissionsTeacherNav, Divider } from "@/components/admissions/controls";
 import { Empty, EntryChip, FChip, Skeleton } from "@/components/admissions/ui";
 import { useWidth } from "@/components/admissions/views/charts";
@@ -35,8 +35,8 @@ import { SMT_DASHBOARDS, SMT_ACADEMIC_ID, SMT_CONTEXT_ID, SMT_OVERVIEW_ID, SMT_P
 import { ADMISSIONS_NOTES, SMT_NOTES, TREND_BASE_NOTE, smtNote } from "@/catalogue/notes";
 import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel, setLatestYears } from "@/catalogue/years";
 import type { DashboardConfig, DataviewInstance, PanelConfig } from "@/catalogue/types";
-import { loadPublishedVicData } from "@/lib/published-vicdata";
-import { editorWritesSettled, isPlatformAdminCached, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
+import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
+import { editorWritesSettled, useEditSwitch, isPlatformAdminCached, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parseLevel, pillsFor, setPhaseOf, type SmtLevel, type SmtPhase } from "@/lib/smt/levels";
 import { SMT_ONLY_MESSAGE } from "@/lib/smt/auth-rules";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
@@ -110,6 +110,8 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
           <Dashboard member={state.member} dash={dash} theme={theme} onTheme={setTheme} reloadTick={inPlace.reloadTick} />
         ) : (
           <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
+            {/* 0.8 View as: the wrong-role message keeps the banner's Change and Back to me (nothing for anyone else). */}
+            <ViewAsBanner className="" />
             <AdmissionsTeacherNav schoolUrn={state.status === "ready" ? state.member.schoolUrn : null} theme={theme} onTheme={setTheme} />
             <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">
               {state.status === "loading" ? (
@@ -123,13 +125,12 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
                   </Link>{" "}
                   to see the SMT dashboards.
                 </>
-              ) : platformAdmin && !(state.status === "ready" && state.member.viewAs) ? (
-                <span className="flex flex-wrap items-center gap-3">
-                  To see a school&rsquo;s SMT dashboards, use View as.
-                  <button type="button" onClick={() => openViewAs()} className="rounded-full border border-[var(--panel-border2)] px-3 py-1 text-[12px] font-bold text-[var(--fg)] hover:border-[var(--fg)]">
-                    View as&hellip;
-                  </button>
-                </span>
+              ) : state.status === "ready" && state.member.viewAs ? (
+                // 0.8 View as: a platform admin viewing the school as a role SMT isn't for.
+                <ViewAsWrongRole viewAs={state.member.viewAs} forWhom="SMT dashboards are for SMT and the School-Admin." to={{ role: "smt", label: "SMT" }} />
+              ) : platformAdmin ? (
+                // 0.8 View as: it starts from the account menu (no button here any more).
+                <>To see a school&rsquo;s SMT dashboards, use View as in your account menu.</>
               ) : (
                 SMT_ONLY_MESSAGE
               )}
@@ -222,15 +223,18 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const f: SmtFilters = { sex: s?.mixed ? filters.sex : "all", boarding: s?.boarding ? filters.boarding : "all" };
 
   // The published configs (the store's, else the code copy), re-read after editing.
+  const previewDraft = useEditSwitch(useMemo(() => createBrowserSupabaseClient(), [])).previewDraft;
   const [configs, setConfigs] = useState<Record<SmtDash, DashboardConfig>>({ overview: SMT_DASHBOARDS[0], academic: SMT_DASHBOARDS[1], pupils: SMT_DASHBOARDS[2], context: SMT_DASHBOARDS[3] });
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     (async () => {
       if (reloadTick > 0) await editorWritesSettled();
-      const [o, a, p, c] = await Promise.all(SMT_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d)));
+      // 0.8 View as: the banner's "Preview draft" draws the editor's draft here too, as on Teacher.
+      const load = previewDraft ? loadDraftVicData : loadPublishedVicData;
+      const [o, a, p, c] = await Promise.all(SMT_DASHBOARDS.map((d) => load(supabase, d.id, d)));
       setConfigs({ overview: o.config, academic: a.config, pupils: p.config, context: c.config });
     })();
-  }, [reloadTick]);
+  }, [reloadTick, previewDraft]);
 
   const set = sets.set;
   const body = set ? { urn: member.schoolUrn, set } : null;

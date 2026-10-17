@@ -1,0 +1,7627 @@
+{
+ "source": "READ-ONLY select on lnhulykjlxmoneappnsp, 2026-10-17: dashboards (owner_scope=vicdata, kind=dashboard) joined to their published dashboard_versions row",
+ "query": "select d.slug, d.name, d.kind, v.version, v.schema_version, v.config from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.owner_scope = 'vicdata' and d.kind = 'dashboard' order by d.slug",
+ "rows": [
+  {
+   "slug": "vicdata.admissions.market-share",
+   "name": "Admissions Market share",
+   "kind": "dashboard",
+   "version": 1,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "neutral"
+    },
+    "columns": [
+     {
+      "compare": null,
+      "data": {
+       "data": "admissions.market",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "entry_point"
+      },
+      "host": "admissions.market",
+      "icon": "context",
+      "id": "c1",
+      "title": "Entry point"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "admissions.market",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "entry_point"
+      },
+      "host": "admissions.market",
+      "icon": "context",
+      "id": "c2",
+      "title": "Rivals"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "admissions.market",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "entry_point"
+      },
+      "host": "admissions.market",
+      "icon": "rankings",
+      "id": "c3",
+      "title": "Trends"
+     }
+    ],
+    "features": {
+     "admissionsFilters": true,
+     "entryPointChips": true
+    },
+    "group": {
+     "id": "vicdata.admissions",
+     "label": "Admissions",
+     "order": 1
+    },
+    "id": "vicdata.admissions.market-share",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "independent",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "Admissions Market share",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-M-NOW",
+        "id": "vicdata.admissions.market-share.c1.now/DV-ADM-M-NOW",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-ADM-M-NOW",
+         "title": "Your place among the [rivals], at [entry]",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.market-share.c1.now/DV-ADM-M-NOW",
+      "id": "vicdata.admissions.market-share.c1.now",
+      "name": "Current",
+      "row": "now",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-M-DONUT",
+        "id": "vicdata.admissions.market-share.c2.now/DV-ADM-M-DONUT",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "DonutIcon",
+         "preset": "DV-ADM-M-DONUT",
+         "title": "Your share of [entry-age]-year-olds across this group",
+         "view": {
+          "kind": "donut",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-BARS",
+        "id": "vicdata.admissions.market-share.c2.now/DV-ADM-M-BARS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-ADM-M-BARS",
+         "title": "[entry-age]-year-olds by school, ranked, with where each sits in regional and national results rankings",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "bar",
+            "value",
+            "change"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-MAP",
+        "id": "vicdata.admissions.market-share.c2.now/DV-ADM-M-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-ADM-M-MAP",
+         "title": "Your rivals, sized by pupils aged [entry-age]",
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "value"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-TABLE",
+        "id": "vicdata.admissions.market-share.c2.now/DV-ADM-M-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-ADM-M-TABLE",
+         "title": "Your rivals at [entry]",
+         "view": {
+          "kind": "table",
+          "look": {
+           "extra": [
+            "change",
+            "rank"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-MOMENTUM",
+        "id": "vicdata.admissions.market-share.c2.now/DV-ADM-M-MOMENTUM",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "change",
+          "source": "admissions.rivals",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmScatterIcon",
+         "preset": "DV-ADM-M-MOMENTUM",
+         "title": "Who is gaining pupils, and whose results are rising?",
+         "view": {
+          "kind": "scatter",
+          "look": {
+           "labels": true,
+           "quadrantNames": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-STRENGTHS",
+        "id": "vicdata.admissions.market-share.c2.now/DV-ADM-M-STRENGTHS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "shownAs": "actual",
+          "source": "admissions.rivals",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmStrengthsIcon",
+         "preset": "DV-ADM-M-STRENGTHS",
+         "title": "Where you lead and trail your rivals, by subject area",
+         "variants": {
+          "entryPoint": [
+           "11+",
+           "16+",
+           "custom"
+          ]
+         },
+         "view": {
+          "kind": "strengths",
+          "look": {
+           "order": "gap",
+           "showFlags": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-SHAPE",
+        "id": "vicdata.admissions.market-share.c2.now/DV-ADM-M-SHAPE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmShapeIcon",
+         "preset": "DV-ADM-M-SHAPE",
+         "title": "Shape and size: your school and rivals' shapes",
+         "view": {
+          "kind": "shapes",
+          "look": {
+           "columns": 2
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.market-share.c2.now/DV-ADM-M-BARS",
+      "id": "vicdata.admissions.market-share.c2.now",
+      "name": "Rivals",
+      "row": "now",
+      "span": {
+       "cols": 2,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-M-VS-LINE",
+        "id": "vicdata.admissions.market-share.c1.trends/DV-ADM-M-VS-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-ADM-M-VS-LINE",
+         "title": "Your [entry-year] against the [rivals]",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-VS-BARS",
+        "id": "vicdata.admissions.market-share.c1.trends/DV-ADM-M-VS-BARS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-ADM-M-VS-BARS",
+         "title": "Your [entry-year] against the [rivals]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "vertical"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.market-share.c1.trends/DV-ADM-M-VS-LINE",
+      "id": "vicdata.admissions.market-share.c1.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-M-ACAD-RANK",
+        "id": "vicdata.admissions.market-share.c2.trends/DV-ADM-M-ACAD-RANK",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "shownAs": "actual",
+          "source": "admissions.rivals",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-ADM-M-ACAD-RANK",
+         "title": "Academic: your rank among the rivals",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "columns": [
+            "rank",
+            "value",
+            "change"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-ACAD-NUM",
+        "id": "vicdata.admissions.market-share.c2.trends/DV-ADM-M-ACAD-NUM",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.rivals",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmNumbersIcon",
+         "preset": "DV-ADM-M-ACAD-NUM",
+         "title": "Academic: the rivals' headline figures",
+         "view": {
+          "kind": "table",
+          "look": {
+           "extra": [
+            "rank"
+           ],
+           "highlight": true,
+           "sort": "latest",
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-ACAD-CHANGE",
+        "id": "vicdata.admissions.market-share.c2.trends/DV-ADM-M-ACAD-CHANGE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "change",
+          "source": "admissions.rivals",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "ChangeArrowIcon",
+         "preset": "DV-ADM-M-ACAD-CHANGE",
+         "title": "Academic: change since 2022/23",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.market-share.c2.trends/DV-ADM-M-ACAD-RANK",
+      "id": "vicdata.admissions.market-share.c2.trends",
+      "name": "Academic",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-M-SHARE-LINE",
+        "id": "vicdata.admissions.market-share.c3.trends/DV-ADM-M-SHARE-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-ADM-M-SHARE-LINE",
+         "title": "Your market share at [entry], year by year",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-SHARE-NUM",
+        "id": "vicdata.admissions.market-share.c3.trends/DV-ADM-M-SHARE-NUM",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "AdmNumbersIcon",
+         "preset": "DV-ADM-M-SHARE-NUM",
+         "title": "Your market share at [entry], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-SHARE-RANKS",
+        "id": "vicdata.admissions.market-share.c3.trends/DV-ADM-M-SHARE-RANKS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-ADM-M-SHARE-RANKS",
+         "title": "Your rank at [entry], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "extra": [
+            "rank"
+           ],
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-SHARE-CHANGE",
+        "id": "vicdata.admissions.market-share.c3.trends/DV-ADM-M-SHARE-CHANGE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "change",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "ChangeArrowIcon",
+         "preset": "DV-ADM-M-SHARE-CHANGE",
+         "title": "Change since 2019/20: your pupils and share at [entry]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-M-ROLL-LINE",
+        "id": "vicdata.admissions.market-share.c3.trends/DV-ADM-M-ROLL-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.market",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "AdmRollIcon",
+         "preset": "DV-ADM-M-ROLL-LINE",
+         "title": "Pupils in the entry point's age band: you and the [rivals]",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.market-share.c3.trends/DV-ADM-M-SHARE-LINE",
+      "id": "vicdata.admissions.market-share.c3.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "now",
+      "legacyPanelId": "current",
+      "name": "Now",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": true,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.admissions.pipelines",
+   "name": "Admissions Pipelines",
+   "kind": "dashboard",
+   "version": 2,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "neutral"
+    },
+    "columns": [
+     {
+      "compare": null,
+      "data": {
+       "data": "admissions.pupils",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "entry_point"
+      },
+      "host": "admissions.pipelines",
+      "icon": "context",
+      "id": "c1",
+      "title": "Entry point"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "admissions.pipeline",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "entry_point"
+      },
+      "host": "admissions.pipelines",
+      "icon": "context",
+      "id": "c2",
+      "title": "Pipeline"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "admissions.pipeline",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "entry_point"
+      },
+      "host": "admissions.pipelines",
+      "icon": "rankings",
+      "id": "c3",
+      "title": "Forward"
+     }
+    ],
+    "features": {
+     "admissionsFilters": true,
+     "entryPointChips": true
+    },
+    "group": {
+     "id": "vicdata.admissions",
+     "label": "Admissions",
+     "order": 0
+    },
+    "id": "vicdata.admissions.pipelines",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "independent",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "Admissions Pipelines",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-P-NOW",
+        "id": "vicdata.admissions.pipelines.c1.now/DV-ADM-P-NOW",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-ADM-P-NOW",
+         "title": "Your [entry] entry point now",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.pipelines.c1.now/DV-ADM-P-NOW",
+      "id": "vicdata.admissions.pipelines.c1.now",
+      "name": "Current",
+      "row": "now",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-P-PIPELINE",
+        "id": "vicdata.admissions.pipelines.c2.now/DV-ADM-P-PIPELINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pipeline",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "AdmPipelineIcon",
+         "preset": "DV-ADM-P-PIPELINE",
+         "title": "Children who will reach [entry-year] entry, by September",
+         "view": {
+          "kind": "pipeline",
+          "look": {
+           "pastPools": true,
+           "projection": "member",
+           "rungLabels": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-FUNNEL",
+        "id": "vicdata.admissions.pipelines.c2.now/DV-ADM-P-FUNNEL",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.pipeline",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmFunnelIcon",
+         "preset": "DV-ADM-P-FUNNEL",
+         "title": "From births to your [entry-year]",
+         "variants": {
+          "entryPoint": [
+           "11+",
+           "16+",
+           "custom"
+          ]
+         },
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-MAP",
+        "id": "vicdata.admissions.pipelines.c2.now/DV-ADM-P-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.pipeline",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-ADM-P-MAP",
+         "title": "Your feeders, sized by pupils aged [feeder-age], coloured by trend",
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-TABLE",
+        "id": "vicdata.admissions.pipelines.c2.now/DV-ADM-P-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.pipeline",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-ADM-P-TABLE",
+         "title": "Your feeders: pupils aged [feeder-age], trend and flags",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "listed",
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-SHAPE",
+        "id": "vicdata.admissions.pipelines.c2.now/DV-ADM-P-SHAPE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmShapeIcon",
+         "preset": "DV-ADM-P-SHAPE",
+         "title": "Shape and size: your school, the local shape, and rivals' shapes",
+         "view": {
+          "kind": "shapes",
+          "look": {
+           "columns": 2
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.pipelines.c2.now/DV-ADM-P-PIPELINE",
+      "id": "vicdata.admissions.pipelines.c2.now",
+      "name": "Pipeline",
+      "row": "now",
+      "span": {
+       "cols": 2,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-P-ENTRY-LINE",
+        "id": "vicdata.admissions.pipelines.c1.trends/DV-ADM-P-ENTRY-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-ADM-P-ENTRY-LINE",
+         "title": "Your [entry-year] cohort, year by year",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-ENTRY-BARS",
+        "id": "vicdata.admissions.pipelines.c1.trends/DV-ADM-P-ENTRY-BARS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-ADM-P-ENTRY-BARS",
+         "title": "Your [entry-year] cohort, year by year",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "vertical",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-ENTRY-TABLE",
+        "id": "vicdata.admissions.pipelines.c1.trends/DV-ADM-P-ENTRY-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-ADM-P-ENTRY-TABLE",
+         "title": "Your [entry-year] cohort, year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "extra": [
+            "change"
+           ],
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.pipelines.c1.trends/DV-ADM-P-ENTRY-LINE",
+      "id": "vicdata.admissions.pipelines.c1.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-P-POOL-INDEXED",
+        "id": "vicdata.admissions.pipelines.c2.trends/DV-ADM-P-POOL-INDEXED",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-ADM-P-POOL-INDEXED",
+         "title": "[feeder-age]-year-olds: your feeders, [la] and England",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-POOL-TABLE",
+        "id": "vicdata.admissions.pipelines.c2.trends/DV-ADM-P-POOL-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-ADM-P-POOL-TABLE",
+         "title": "[feeder-age]-year-olds: your feeders, [la] and England",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-AREA-POP",
+        "id": "vicdata.admissions.pipelines.c2.trends/DV-ADM-P-AREA-POP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pupils",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmPopulationIcon",
+         "preset": "DV-ADM-P-AREA-POP",
+         "title": "Population trends in the area (ages 5-15)",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "vertical"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.pipelines.c2.trends/DV-ADM-P-POOL-INDEXED",
+      "id": "vicdata.admissions.pipelines.c2.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-ADM-P-HOLD-LINE",
+        "id": "vicdata.admissions.pipelines.c3.trends/DV-ADM-P-HOLD-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pipeline",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-ADM-P-HOLD-LINE",
+         "title": "Share needed to hold numbers steady",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-ADM-P-HOLD-TABLE",
+        "id": "vicdata.admissions.pipelines.c3.trends/DV-ADM-P-HOLD-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "admissions.pipeline",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-ADM-P-HOLD-TABLE",
+         "title": "Share needed to hold numbers steady",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.admissions.pipelines.c3.trends/DV-ADM-P-HOLD-LINE",
+      "id": "vicdata.admissions.pipelines.c3.trends",
+      "name": "Forward",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "now",
+      "legacyPanelId": "current",
+      "name": "Now",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": true,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.ks4.candidates",
+   "name": "GCSE Candidates",
+   "kind": "dashboard",
+   "version": 6,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "ks4"
+    },
+    "columns": [
+     {
+      "compare": {
+       "kinds": [
+        "subjects"
+       ],
+       "subjects": "category"
+      },
+      "data": {
+       "data": "academic.candidates",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c1.candidates",
+      "icon": "candidates",
+      "id": "c1",
+      "legacyColumnKey": "candidates",
+      "title": "Candidates"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "subjects"
+       ],
+       "subjects": "pill"
+      },
+      "data": {
+       "data": "academic.candidates",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c2.context",
+      "icon": "context",
+      "id": "c2",
+      "legacyColumnKey": "context",
+      "title": "Context"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "academic.candidates",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c3.comparisons",
+      "icon": "rankings",
+      "id": "c3",
+      "legacyColumnKey": "rankings",
+      "title": "Comparisons"
+     }
+    ],
+    "features": {
+     "alignmentSpacer": true,
+     "resultsPill": false,
+     "subjectChips": true
+    },
+    "group": {
+     "id": "vicdata.ks4",
+     "label": "GCSE",
+     "order": 0
+    },
+    "id": "vicdata.ks4.candidates",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "auto-close",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "GCSE Candidates",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-CAND-CUR-TILES",
+        "id": "vicdata.ks4.candidates.c1.current/DV-C1-CAND-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C1-CAND-CUR-TILES",
+         "title": "[subject] Candidates: [year]",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.candidates.c1.current/DV-C1-CAND-CUR-TILES",
+      "id": "vicdata.ks4.candidates.c1.current",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks4:candidates:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-CUR-DONUT",
+        "id": "vicdata.ks4.candidates.c2.current/DV-C2-CUR-DONUT",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "DonutIcon",
+         "preset": "DV-C2-CUR-DONUT",
+         "title": "Entries in [subject] as a proportion of [comparison-group]",
+         "view": {
+          "kind": "donut",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-BARS",
+        "id": "vicdata.ks4.candidates.c2.current/DV-C2-CUR-BARS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-C2-CUR-BARS",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "vertical",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-LIST",
+        "id": "vicdata.ks4.candidates.c2.current/DV-C2-CUR-LIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C2-CUR-LIST",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "value"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-TABLE",
+        "id": "vicdata.ks4.candidates.c2.current/DV-C2-CUR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-CUR-TABLE",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "vs-comparison"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "memberSort": true,
+           "sort": "latest",
+           "value": false,
+           "yearColumns": "latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.candidates.c2.current/DV-C2-CUR-BARS",
+      "id": "vicdata.ks4.candidates.c2.current",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks4:context:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-CUR-TILES",
+        "id": "vicdata.ks4.candidates.c3.current/DV-C3-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C3-CUR-TILES",
+         "title": "[school]'s rank in the [set]: [measure]",
+         "variants": {
+          "comparator": [
+           "ranking"
+          ]
+         },
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-MAP",
+        "id": "vicdata.ks4.candidates.c3.current/DV-C3-CUR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-CUR-MAP",
+         "title": "[subject] [measure] by school, on the map",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "value"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-BAR",
+        "id": "vicdata.ks4.candidates.c3.current/DV-C3-CUR-BAR",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-CUR-BAR",
+         "title": "[Entries|Results] by school in the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-RANKING",
+        "id": "vicdata.ks4.candidates.c3.current/DV-C3-CUR-RANKING",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C3-CUR-RANKING",
+         "title": "Schools ranked by [subject] [measure] in the [set]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "sector",
+            "value",
+            "distance"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.candidates.c3.current/DV-C3-CUR-MAP",
+      "id": "vicdata.ks4.candidates.c3.current",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks4:rankings:current"
+       ],
+       "panelId": "current"
+      },
+      "override": {
+       "badge": "overridden: whole-school headline (ranking sets)",
+       "reason": "DV-C3-CUR-TILES shows the school's headline rank in a ranking set, not the focused subject."
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-CAND-TR-INDEXED",
+        "id": "vicdata.ks4.candidates.c1.trends/DV-C1-CAND-TR-INDEXED",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "indexed",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-C1-CAND-TR-INDEXED",
+         "title": "Entries in [category]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-ACTUAL",
+        "id": "vicdata.ks4.candidates.c1.trends/DV-C1-CAND-TR-ACTUAL",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-CAND-TR-ACTUAL",
+         "title": "Entries in [category]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-TABLE",
+        "id": "vicdata.ks4.candidates.c1.trends/DV-C1-CAND-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-CAND-TR-TABLE",
+         "title": "Entries in [category], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-GEO-CHART",
+        "id": "vicdata.ks4.candidates.c1.trends/DV-C1-CAND-TR-GEO-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "entries": "points-eligible",
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-CAND-TR-GEO-CHART",
+         "title": "[subject] against its LA and England, year by year",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-GEO-TABLE",
+        "id": "vicdata.ks4.candidates.c1.trends/DV-C1-CAND-TR-GEO-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "entries": "points-eligible",
+          "per": "year",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-CAND-TR-GEO-TABLE",
+         "title": "[subject]: change against its LA, region and England",
+         "view": {
+          "kind": "table",
+          "look": {
+           "changeLeads": "percent",
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "listed",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.candidates.c1.trends/DV-C1-CAND-TR-INDEXED",
+      "id": "vicdata.ks4.candidates.c1.trends",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks4:candidates:trend",
+        "ks4:candidates:change"
+       ],
+       "panelId": "trend"
+      },
+      "override": {
+       "badge": "overridden: LA, region, England",
+       "compare": {
+        "averages": [
+         "la",
+         "region",
+         "england"
+        ],
+        "kinds": [
+         "subjects",
+         "averages"
+        ],
+        "subjects": "category"
+       },
+       "reason": "Combinations doc F2: Column 1's Trends shows its subject against LA, region and England (Area chart, Change table)."
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-TR-INDEXED",
+        "id": "vicdata.ks4.candidates.c2.trends/DV-C2-TR-INDEXED",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "indexed",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-C2-TR-INDEXED",
+         "title": "Entries in [comparison-group]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "cardFocusVsAverage": "on-all-subjects",
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-ACTUAL",
+        "id": "vicdata.ks4.candidates.c2.trends/DV-C2-TR-ACTUAL",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C2-TR-ACTUAL",
+         "title": "Entries in [comparison-group]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "cardFocusVsAverage": "on-all-subjects",
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-TABLE",
+        "id": "vicdata.ks4.candidates.c2.trends/DV-C2-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-TABLE",
+         "title": "[Entries|Results] in [comparison-group], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGELIST",
+        "id": "vicdata.ks4.candidates.c2.trends/DV-C2-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C2-TR-CHANGELIST",
+         "title": "[Entries|Results] in [comparison-group]: [change-word] since [year], ranked",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGETABLE",
+        "id": "vicdata.ks4.candidates.c2.trends/DV-C2-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-CHANGETABLE",
+         "title": "[Entries|Results] in [comparison-group]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.candidates.c2.trends/DV-C2-TR-INDEXED",
+      "id": "vicdata.ks4.candidates.c2.trends",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks4:context:trend",
+        "ks4:context:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-TR-CHART",
+        "id": "vicdata.ks4.candidates.c3.trends/DV-C3-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C3-TR-CHART",
+         "title": "This school's [measure] against [versus], year by year",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "table",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-TABLE",
+        "id": "vicdata.ks4.candidates.c3.trends/DV-C3-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-TABLE",
+         "title": "Every school in the [set]: [measure], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-MAP",
+        "id": "vicdata.ks4.candidates.c3.trends/DV-C3-TR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "change": "absolute",
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-MAP",
+         "title": "Change in [measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGELIST",
+        "id": "vicdata.ks4.candidates.c3.trends/DV-C3-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-TR-CHANGELIST",
+         "title": "[change-of-measure] since [year], ranked against the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGETABLE",
+        "id": "vicdata.ks4.candidates.c3.trends/DV-C3-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-CHANGETABLE",
+         "title": "Every school in the [set]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGEMAP",
+        "id": "vicdata.ks4.candidates.c3.trends/DV-C3-TR-CHANGEMAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-CHANGEMAP",
+         "title": "[change-of-measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.candidates.c3.trends/DV-C3-TR-CHART",
+      "id": "vicdata.ks4.candidates.c3.trends",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks4:rankings:trend",
+        "ks4:rankings:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "current",
+      "legacyPanelId": "current",
+      "name": "Current",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": false,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.ks4.results",
+   "name": "GCSE Results",
+   "kind": "dashboard",
+   "version": 16,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "ks4"
+    },
+    "columns": [
+     {
+      "compare": {
+       "averages": [
+        "england"
+       ],
+       "kinds": [
+        "subjects",
+        "averages"
+       ],
+       "subjects": "category"
+      },
+      "data": {
+       "data": "academic.results",
+       "phase": "ks4",
+       "results": "pill"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c1.results",
+      "icon": "results",
+      "id": "c1",
+      "legacyColumnKey": "candidates",
+      "title": "Results"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "subjects"
+       ],
+       "subjects": "pill"
+      },
+      "data": {
+       "data": "academic.results",
+       "phase": "ks4",
+       "results": "pill"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c2.context",
+      "icon": "context",
+      "id": "c2",
+      "legacyColumnKey": "context",
+      "title": "Context"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "academic.results",
+       "phase": "ks4",
+       "results": "pill"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c3.comparisons",
+      "icon": "rankings",
+      "id": "c3",
+      "legacyColumnKey": "rankings",
+      "title": "Comparisons"
+     }
+    ],
+    "features": {
+     "alignmentSpacer": true,
+     "resultsPill": true,
+     "subjectChips": true
+    },
+    "group": {
+     "id": "vicdata.ks4",
+     "label": "GCSE",
+     "order": 1
+    },
+    "id": "vicdata.ks4.results",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "auto-close",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "GCSE Results",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-RES-CUR-TILES",
+        "id": "vicdata.ks4.results.c1.current/DV-C1-RES-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C1-RES-CUR-TILES",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-CUR-GRADES",
+        "id": "vicdata.ks4.results.c1.current/DV-C1-RES-CUR-GRADES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "GradesIcon",
+         "preset": "DV-C1-RES-CUR-GRADES",
+         "resultsMeasures": [
+          "bands"
+         ],
+         "title": "",
+         "view": {
+          "kind": "spread",
+          "look": {
+           "bands": "follows-page",
+           "memberSpan": "page-range",
+           "show": "percent"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-CUR-BAR",
+        "id": "vicdata.ks4.results.c1.current/DV-C1-RES-CUR-BAR",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C1-RES-CUR-BAR",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "spacious": true,
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-CUR-TABLE",
+        "id": "vicdata.ks4.results.c1.current/DV-C1-RES-CUR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C1-RES-CUR-TABLE",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category]",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "vs-comparison"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "vs-comparison",
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CNT-CUR-DIST",
+        "id": "vicdata.ks4.results.c1.current/DV-C1-CNT-CUR-DIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "GradesIcon",
+         "preset": "DV-C1-CNT-CUR-DIST",
+         "resultsMeasures": [
+          "counts"
+         ],
+         "title": "",
+         "view": {
+          "kind": "spread",
+          "look": {
+           "bands": "none",
+           "memberSpan": "highlight",
+           "show": "percent"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.results.c1.current/DV-C1-RES-CUR-TILES",
+      "id": "vicdata.ks4.results.c1.current",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks4:candidates:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-CUR-DONUT",
+        "id": "vicdata.ks4.results.c2.current/DV-C2-CUR-DONUT",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "DonutIcon",
+         "preset": "DV-C2-CUR-DONUT",
+         "title": "Entries in [subject] as a proportion of [comparison-group]",
+         "view": {
+          "kind": "donut",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-BARS",
+        "id": "vicdata.ks4.results.c2.current/DV-C2-CUR-BARS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-C2-CUR-BARS",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "vertical",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-LIST",
+        "id": "vicdata.ks4.results.c2.current/DV-C2-CUR-LIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C2-CUR-LIST",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "value"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-TABLE",
+        "id": "vicdata.ks4.results.c2.current/DV-C2-CUR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-CUR-TABLE",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "vs-comparison"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "memberSort": true,
+           "sort": "latest",
+           "value": false,
+           "yearColumns": "latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.results.c2.current/DV-C2-CUR-BARS",
+      "id": "vicdata.ks4.results.c2.current",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks4:context:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-CUR-TILES",
+        "id": "vicdata.ks4.results.c3.current/DV-C3-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C3-CUR-TILES",
+         "title": "[school]'s rank in the [set]: [measure]",
+         "variants": {
+          "comparator": [
+           "ranking"
+          ]
+         },
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-MAP",
+        "id": "vicdata.ks4.results.c3.current/DV-C3-CUR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-CUR-MAP",
+         "title": "[subject] [measure] by school, on the map",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "value"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-BAR",
+        "id": "vicdata.ks4.results.c3.current/DV-C3-CUR-BAR",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-CUR-BAR",
+         "title": "[Entries|Results] by school in the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-RANKING",
+        "id": "vicdata.ks4.results.c3.current/DV-C3-CUR-RANKING",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C3-CUR-RANKING",
+         "title": "Schools ranked by [subject] [measure] in the [set]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "sector",
+            "value",
+            "distance"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.results.c3.current/DV-C3-CUR-MAP",
+      "id": "vicdata.ks4.results.c3.current",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks4:rankings:current"
+       ],
+       "panelId": "current"
+      },
+      "override": {
+       "badge": "overridden: whole-school headline (ranking sets)",
+       "reason": "DV-C3-CUR-TILES shows the school's headline rank in a ranking set, not the focused subject."
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-RES-TR-CHART",
+        "id": "vicdata.ks4.results.c1.trends/DV-C1-RES-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-RES-TR-CHART",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category]: each subject's line",
+         "view": {
+          "kind": "line",
+          "look": {
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-TABLE",
+        "id": "vicdata.ks4.results.c1.trends/DV-C1-RES-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-RES-TR-TABLE",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-MAP",
+        "id": "vicdata.ks4.results.c1.trends/DV-C1-RES-TR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C1-RES-TR-MAP",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Change in [subject] [measure] since [year], by school",
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-GEO-CHART",
+        "id": "vicdata.ks4.results.c1.trends/DV-C1-RES-TR-GEO-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-RES-TR-GEO-CHART",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "[subject] against its LA and England, year by year",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-GEO-TABLE",
+        "id": "vicdata.ks4.results.c1.trends/DV-C1-RES-TR-GEO-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-RES-TR-GEO-TABLE",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "[subject]: change against its LA, region and England",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "listed",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CNT-TR-SPREAD",
+        "id": "vicdata.ks4.results.c1.trends/DV-C1-CNT-TR-SPREAD",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "GradesIcon",
+         "preset": "DV-C1-CNT-TR-SPREAD",
+         "resultsMeasures": [
+          "counts"
+         ],
+         "title": "[subject]'s spread of grades: [year] against [compare year], grade by grade",
+         "view": {
+          "kind": "spread",
+          "look": {
+           "bands": "none",
+           "show": "percent"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CNT-TR-CHANGETABLE",
+        "id": "vicdata.ks4.results.c1.trends/DV-C1-CNT-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-CNT-TR-CHANGETABLE",
+         "resultsMeasures": [
+          "counts"
+         ],
+         "title": "[subject]'s entries at each grade: [change year] against [year], with the change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "memberSort": true,
+           "sort": "listed",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.results.c1.trends/DV-C1-RES-TR-CHART",
+      "id": "vicdata.ks4.results.c1.trends",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks4:candidates:trend",
+        "ks4:candidates:change"
+       ],
+       "panelId": "trend"
+      },
+      "override": {
+       "badge": "overridden: LA, region, England; comparator schools",
+       "compare": {
+        "averages": [
+         "la",
+         "region",
+         "england"
+        ],
+        "kinds": [
+         "subjects",
+         "averages",
+         "schools"
+        ],
+        "schools": "saved-or-chooser",
+        "subjects": "category"
+       },
+       "reason": "Combinations doc F2 plus audit M4: Results Trends also carries the comparator-school Map, and Grade counts' Spread and Change table, which compare with nothing (they follow the Results pill into this panel)."
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-TR-CHART",
+        "id": "vicdata.ks4.results.c2.trends/DV-C2-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C2-TR-CHART",
+         "title": "Results in [comparison-group]: each subject's line",
+         "view": {
+          "kind": "line",
+          "look": {
+           "cardFocusVsAverage": "on-all-subjects",
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-TABLE",
+        "id": "vicdata.ks4.results.c2.trends/DV-C2-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-TABLE",
+         "title": "[Entries|Results] in [comparison-group], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGELIST",
+        "id": "vicdata.ks4.results.c2.trends/DV-C2-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C2-TR-CHANGELIST",
+         "title": "[Entries|Results] in [comparison-group]: [change-word] since [year], ranked",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGETABLE",
+        "id": "vicdata.ks4.results.c2.trends/DV-C2-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-CHANGETABLE",
+         "title": "[Entries|Results] in [comparison-group]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.results.c2.trends/DV-C2-TR-CHART",
+      "id": "vicdata.ks4.results.c2.trends",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks4:context:trend",
+        "ks4:context:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-TR-CHART",
+        "id": "vicdata.ks4.results.c3.trends/DV-C3-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C3-TR-CHART",
+         "title": "This school's [measure] against [versus], year by year",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "table",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-TABLE",
+        "id": "vicdata.ks4.results.c3.trends/DV-C3-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-TABLE",
+         "title": "Every school in the [set]: [measure], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-MAP",
+        "id": "vicdata.ks4.results.c3.trends/DV-C3-TR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "change": "absolute",
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-MAP",
+         "title": "Change in [measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGELIST",
+        "id": "vicdata.ks4.results.c3.trends/DV-C3-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-TR-CHANGELIST",
+         "title": "[change-of-measure] since [year], ranked against the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGETABLE",
+        "id": "vicdata.ks4.results.c3.trends/DV-C3-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-CHANGETABLE",
+         "title": "Every school in the [set]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGEMAP",
+        "id": "vicdata.ks4.results.c3.trends/DV-C3-TR-CHANGEMAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-CHANGEMAP",
+         "title": "[change-of-measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks4.results.c3.trends/DV-C3-TR-CHART",
+      "id": "vicdata.ks4.results.c3.trends",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks4:rankings:trend",
+        "ks4:rankings:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "current",
+      "legacyPanelId": "current",
+      "name": "Current",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": false,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.ks5.candidates",
+   "name": "Post-16 Candidates",
+   "kind": "dashboard",
+   "version": 2,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "ks5"
+    },
+    "columns": [
+     {
+      "compare": {
+       "kinds": [
+        "subjects"
+       ],
+       "subjects": "category"
+      },
+      "data": {
+       "data": "academic.candidates",
+       "phase": "ks5"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c1.candidates",
+      "icon": "candidates",
+      "id": "c1",
+      "legacyColumnKey": "candidates",
+      "title": "Candidates"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "subjects"
+       ],
+       "subjects": "pill"
+      },
+      "data": {
+       "data": "academic.candidates",
+       "phase": "ks5"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c2.context",
+      "icon": "context",
+      "id": "c2",
+      "legacyColumnKey": "context",
+      "title": "Context"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "academic.candidates",
+       "phase": "ks5"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c3.comparisons",
+      "icon": "rankings",
+      "id": "c3",
+      "legacyColumnKey": "rankings",
+      "title": "Comparisons"
+     }
+    ],
+    "features": {
+     "alignmentSpacer": true,
+     "resultsPill": false,
+     "subjectChips": true
+    },
+    "group": {
+     "id": "vicdata.ks5",
+     "label": "Post-16",
+     "order": 0
+    },
+    "id": "vicdata.ks5.candidates",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "auto-close",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "Post-16 Candidates",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-CAND-CUR-TILES",
+        "id": "vicdata.ks5.candidates.c1.current/DV-C1-CAND-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C1-CAND-CUR-TILES",
+         "title": "[subject] Candidates: [year]",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.candidates.c1.current/DV-C1-CAND-CUR-TILES",
+      "id": "vicdata.ks5.candidates.c1.current",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks5:candidates:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-CUR-DONUT",
+        "id": "vicdata.ks5.candidates.c2.current/DV-C2-CUR-DONUT",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "DonutIcon",
+         "preset": "DV-C2-CUR-DONUT",
+         "title": "Entries in [subject] as a proportion of [comparison-group]",
+         "view": {
+          "kind": "donut",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-BARS",
+        "id": "vicdata.ks5.candidates.c2.current/DV-C2-CUR-BARS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-C2-CUR-BARS",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "vertical",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-LIST",
+        "id": "vicdata.ks5.candidates.c2.current/DV-C2-CUR-LIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C2-CUR-LIST",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "value"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-TABLE",
+        "id": "vicdata.ks5.candidates.c2.current/DV-C2-CUR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-CUR-TABLE",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "vs-comparison"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "memberSort": true,
+           "sort": "latest",
+           "value": false,
+           "yearColumns": "latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.candidates.c2.current/DV-C2-CUR-BARS",
+      "id": "vicdata.ks5.candidates.c2.current",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks5:context:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-CUR-TILES",
+        "id": "vicdata.ks5.candidates.c3.current/DV-C3-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C3-CUR-TILES",
+         "title": "[school]'s rank in the [set]: [measure]",
+         "variants": {
+          "comparator": [
+           "ranking"
+          ]
+         },
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-MAP",
+        "id": "vicdata.ks5.candidates.c3.current/DV-C3-CUR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-CUR-MAP",
+         "title": "[subject] [measure] by school, on the map",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "value"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-BAR",
+        "id": "vicdata.ks5.candidates.c3.current/DV-C3-CUR-BAR",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-CUR-BAR",
+         "title": "[Entries|Results] by school in the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-RANKING",
+        "id": "vicdata.ks5.candidates.c3.current/DV-C3-CUR-RANKING",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C3-CUR-RANKING",
+         "title": "Schools ranked by [subject] [measure] in the [set]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "sector",
+            "value",
+            "distance"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.candidates.c3.current/DV-C3-CUR-MAP",
+      "id": "vicdata.ks5.candidates.c3.current",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks5:rankings:current"
+       ],
+       "panelId": "current"
+      },
+      "override": {
+       "badge": "overridden: whole-school headline (ranking sets)",
+       "reason": "DV-C3-CUR-TILES shows the school's headline rank in a ranking set, not the focused subject."
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-CAND-TR-INDEXED",
+        "id": "vicdata.ks5.candidates.c1.trends/DV-C1-CAND-TR-INDEXED",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "indexed",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-C1-CAND-TR-INDEXED",
+         "title": "Entries in [category]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-ACTUAL",
+        "id": "vicdata.ks5.candidates.c1.trends/DV-C1-CAND-TR-ACTUAL",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-CAND-TR-ACTUAL",
+         "title": "Entries in [category]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-TABLE",
+        "id": "vicdata.ks5.candidates.c1.trends/DV-C1-CAND-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-CAND-TR-TABLE",
+         "title": "Entries in [category], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-GEO-CHART",
+        "id": "vicdata.ks5.candidates.c1.trends/DV-C1-CAND-TR-GEO-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "entries": "points-eligible",
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-CAND-TR-GEO-CHART",
+         "title": "[subject] against its LA and England, year by year",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CAND-TR-GEO-TABLE",
+        "id": "vicdata.ks5.candidates.c1.trends/DV-C1-CAND-TR-GEO-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "entries": "points-eligible",
+          "per": "year",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-CAND-TR-GEO-TABLE",
+         "title": "[subject]: change against its LA, region and England",
+         "view": {
+          "kind": "table",
+          "look": {
+           "changeLeads": "percent",
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "listed",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.candidates.c1.trends/DV-C1-CAND-TR-INDEXED",
+      "id": "vicdata.ks5.candidates.c1.trends",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks5:candidates:trend",
+        "ks5:candidates:change"
+       ],
+       "panelId": "trend"
+      },
+      "override": {
+       "badge": "overridden: LA, region, England",
+       "compare": {
+        "averages": [
+         "la",
+         "region",
+         "england"
+        ],
+        "kinds": [
+         "subjects",
+         "averages"
+        ],
+        "subjects": "category"
+       },
+       "reason": "Combinations doc F2: Column 1's Trends shows its subject against LA, region and England (Area chart, Change table)."
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-TR-INDEXED",
+        "id": "vicdata.ks5.candidates.c2.trends/DV-C2-TR-INDEXED",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "indexed",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-C2-TR-INDEXED",
+         "title": "Entries in [comparison-group]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "cardFocusVsAverage": "on-all-subjects",
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-ACTUAL",
+        "id": "vicdata.ks5.candidates.c2.trends/DV-C2-TR-ACTUAL",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "academic.candidates",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C2-TR-ACTUAL",
+         "title": "Entries in [comparison-group]",
+         "view": {
+          "kind": "line",
+          "look": {
+           "cardFocusVsAverage": "on-all-subjects",
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-TABLE",
+        "id": "vicdata.ks5.candidates.c2.trends/DV-C2-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-TABLE",
+         "title": "[Entries|Results] in [comparison-group], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGELIST",
+        "id": "vicdata.ks5.candidates.c2.trends/DV-C2-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C2-TR-CHANGELIST",
+         "title": "[Entries|Results] in [comparison-group]: [change-word] since [year], ranked",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGETABLE",
+        "id": "vicdata.ks5.candidates.c2.trends/DV-C2-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-CHANGETABLE",
+         "title": "[Entries|Results] in [comparison-group]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.candidates.c2.trends/DV-C2-TR-INDEXED",
+      "id": "vicdata.ks5.candidates.c2.trends",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks5:context:trend",
+        "ks5:context:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-TR-CHART",
+        "id": "vicdata.ks5.candidates.c3.trends/DV-C3-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C3-TR-CHART",
+         "title": "This school's [measure] against [versus], year by year",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "table",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-TABLE",
+        "id": "vicdata.ks5.candidates.c3.trends/DV-C3-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-TABLE",
+         "title": "Every school in the [set]: [measure], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-MAP",
+        "id": "vicdata.ks5.candidates.c3.trends/DV-C3-TR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "change": "absolute",
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-MAP",
+         "title": "Change in [measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGELIST",
+        "id": "vicdata.ks5.candidates.c3.trends/DV-C3-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-TR-CHANGELIST",
+         "title": "[change-of-measure] since [year], ranked against the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGETABLE",
+        "id": "vicdata.ks5.candidates.c3.trends/DV-C3-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-CHANGETABLE",
+         "title": "Every school in the [set]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGEMAP",
+        "id": "vicdata.ks5.candidates.c3.trends/DV-C3-TR-CHANGEMAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-CHANGEMAP",
+         "title": "[change-of-measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.candidates.c3.trends/DV-C3-TR-CHART",
+      "id": "vicdata.ks5.candidates.c3.trends",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks5:rankings:trend",
+        "ks5:rankings:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "current",
+      "legacyPanelId": "current",
+      "name": "Current",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": false,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.ks5.results",
+   "name": "Post-16 Results",
+   "kind": "dashboard",
+   "version": 3,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "ks5"
+    },
+    "columns": [
+     {
+      "compare": {
+       "averages": [
+        "england"
+       ],
+       "kinds": [
+        "subjects",
+        "averages"
+       ],
+       "subjects": "category"
+      },
+      "data": {
+       "data": "academic.results",
+       "phase": "ks5",
+       "results": "pill"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c1.results",
+      "icon": "results",
+      "id": "c1",
+      "legacyColumnKey": "candidates",
+      "title": "Results"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "subjects"
+       ],
+       "subjects": "pill"
+      },
+      "data": {
+       "data": "academic.results",
+       "phase": "ks5",
+       "results": "pill"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c2.context",
+      "icon": "context",
+      "id": "c2",
+      "legacyColumnKey": "context",
+      "title": "Context"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "academic.results",
+       "phase": "ks5",
+       "results": "pill"
+      },
+      "focus": {
+       "kind": "subject",
+       "subject": {
+        "mode": "follow-chips"
+       }
+      },
+      "host": "teacher.c3.comparisons",
+      "icon": "rankings",
+      "id": "c3",
+      "legacyColumnKey": "rankings",
+      "title": "Comparisons"
+     }
+    ],
+    "features": {
+     "alignmentSpacer": true,
+     "resultsPill": true,
+     "subjectChips": true
+    },
+    "group": {
+     "id": "vicdata.ks5",
+     "label": "Post-16",
+     "order": 1
+    },
+    "id": "vicdata.ks5.results",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "auto-close",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "Post-16 Results",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-RES-CUR-TILES",
+        "id": "vicdata.ks5.results.c1.current/DV-C1-RES-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C1-RES-CUR-TILES",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-CUR-GRADES",
+        "id": "vicdata.ks5.results.c1.current/DV-C1-RES-CUR-GRADES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "GradesIcon",
+         "preset": "DV-C1-RES-CUR-GRADES",
+         "resultsMeasures": [
+          "bands"
+         ],
+         "title": "",
+         "view": {
+          "kind": "spread",
+          "look": {
+           "bands": "follows-page",
+           "memberSpan": "page-range",
+           "show": "percent"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-CUR-BAR",
+        "id": "vicdata.ks5.results.c1.current/DV-C1-RES-CUR-BAR",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C1-RES-CUR-BAR",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "spacious": true,
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-CUR-TABLE",
+        "id": "vicdata.ks5.results.c1.current/DV-C1-RES-CUR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C1-RES-CUR-TABLE",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category]",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "vs-comparison"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "vs-comparison",
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CNT-CUR-DIST",
+        "id": "vicdata.ks5.results.c1.current/DV-C1-CNT-CUR-DIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "GradesIcon",
+         "preset": "DV-C1-CNT-CUR-DIST",
+         "resultsMeasures": [
+          "counts"
+         ],
+         "title": "",
+         "view": {
+          "kind": "spread",
+          "look": {
+           "bands": "none",
+           "memberSpan": "highlight",
+           "show": "percent"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.results.c1.current/DV-C1-RES-CUR-TILES",
+      "id": "vicdata.ks5.results.c1.current",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks5:candidates:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-CUR-DONUT",
+        "id": "vicdata.ks5.results.c2.current/DV-C2-CUR-DONUT",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "DonutIcon",
+         "preset": "DV-C2-CUR-DONUT",
+         "title": "Entries in [subject] as a proportion of [comparison-group]",
+         "view": {
+          "kind": "donut",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-BARS",
+        "id": "vicdata.ks5.results.c2.current/DV-C2-CUR-BARS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-C2-CUR-BARS",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "vertical",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-LIST",
+        "id": "vicdata.ks5.results.c2.current/DV-C2-CUR-LIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C2-CUR-LIST",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "value"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-CUR-TABLE",
+        "id": "vicdata.ks5.results.c2.current/DV-C2-CUR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-CUR-TABLE",
+         "title": "[Entries|Results] by subject in [comparison-group]",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "vs-comparison"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "memberSort": true,
+           "sort": "latest",
+           "value": false,
+           "yearColumns": "latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.results.c2.current/DV-C2-CUR-BARS",
+      "id": "vicdata.ks5.results.c2.current",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks5:context:current"
+       ],
+       "panelId": "current"
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-CUR-TILES",
+        "id": "vicdata.ks5.results.c3.current/DV-C3-CUR-TILES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-C3-CUR-TILES",
+         "title": "[school]'s rank in the [set]: [measure]",
+         "variants": {
+          "comparator": [
+           "ranking"
+          ]
+         },
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-MAP",
+        "id": "vicdata.ks5.results.c3.current/DV-C3-CUR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-CUR-MAP",
+         "title": "[subject] [measure] by school, on the map",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "value"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-BAR",
+        "id": "vicdata.ks5.results.c3.current/DV-C3-CUR-BAR",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-CUR-BAR",
+         "title": "[Entries|Results] by school in the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-CUR-RANKING",
+        "id": "vicdata.ks5.results.c3.current/DV-C3-CUR-RANKING",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "RankListIcon",
+         "preset": "DV-C3-CUR-RANKING",
+         "title": "Schools ranked by [subject] [measure] in the [set]",
+         "view": {
+          "kind": "ranking",
+          "look": {
+           "alwaysSelf": true,
+           "columns": [
+            "rank",
+            "sector",
+            "value",
+            "distance"
+           ],
+           "show": "all"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.results.c3.current/DV-C3-CUR-MAP",
+      "id": "vicdata.ks5.results.c3.current",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks5:rankings:current"
+       ],
+       "panelId": "current"
+      },
+      "override": {
+       "badge": "overridden: whole-school headline (ranking sets)",
+       "reason": "DV-C3-CUR-TILES shows the school's headline rank in a ranking set, not the focused subject."
+      },
+      "row": "current",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-C1-RES-TR-CHART",
+        "id": "vicdata.ks5.results.c1.trends/DV-C1-RES-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-RES-TR-CHART",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category]: each subject's line",
+         "view": {
+          "kind": "line",
+          "look": {
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-TABLE",
+        "id": "vicdata.ks5.results.c1.trends/DV-C1-RES-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "category",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-RES-TR-TABLE",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Results in [category], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-MAP",
+        "id": "vicdata.ks5.results.c1.trends/DV-C1-RES-TR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C1-RES-TR-MAP",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "Change in [subject] [measure] since [year], by school",
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-GEO-CHART",
+        "id": "vicdata.ks5.results.c1.trends/DV-C1-RES-TR-GEO-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C1-RES-TR-GEO-CHART",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "[subject] against its LA and England, year by year",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-RES-TR-GEO-TABLE",
+        "id": "vicdata.ks5.results.c1.trends/DV-C1-RES-TR-GEO-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-RES-TR-GEO-TABLE",
+         "resultsMeasures": [
+          "points",
+          "threshold",
+          "bands"
+         ],
+         "title": "[subject]: change against its LA, region and England",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "listed",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CNT-TR-SPREAD",
+        "id": "vicdata.ks5.results.c1.trends/DV-C1-CNT-TR-SPREAD",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "latest": true,
+           "memberPick": true
+          }
+         },
+         "icon": "GradesIcon",
+         "preset": "DV-C1-CNT-TR-SPREAD",
+         "resultsMeasures": [
+          "counts"
+         ],
+         "title": "[subject]'s spread of grades: [year] against [compare year], grade by grade",
+         "view": {
+          "kind": "spread",
+          "look": {
+           "bands": "none",
+           "show": "percent"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C1-CNT-TR-CHANGETABLE",
+        "id": "vicdata.ks5.results.c1.trends/DV-C1-CNT-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C1-CNT-TR-CHANGETABLE",
+         "resultsMeasures": [
+          "counts"
+         ],
+         "title": "[subject]'s entries at each grade: [change year] against [year], with the change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "memberSort": true,
+           "sort": "listed",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.results.c1.trends/DV-C1-RES-TR-CHART",
+      "id": "vicdata.ks5.results.c1.trends",
+      "legacy": {
+       "columnKey": "candidates",
+       "noteKeys": [
+        "ks5:candidates:trend",
+        "ks5:candidates:change"
+       ],
+       "panelId": "trend"
+      },
+      "override": {
+       "badge": "overridden: LA, region, England; comparator schools",
+       "compare": {
+        "averages": [
+         "la",
+         "region",
+         "england"
+        ],
+        "kinds": [
+         "subjects",
+         "averages",
+         "schools"
+        ],
+        "schools": "saved-or-chooser",
+        "subjects": "category"
+       },
+       "reason": "Combinations doc F2 plus audit M4: Results Trends also carries the comparator-school Map, and Grade counts' Spread and Change table, which compare with nothing (they follow the Results pill into this panel)."
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-C2-TR-CHART",
+        "id": "vicdata.ks5.results.c2.trends/DV-C2-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "academic.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C2-TR-CHART",
+         "title": "Results in [comparison-group]: each subject's line",
+         "view": {
+          "kind": "line",
+          "look": {
+           "cardFocusVsAverage": "on-all-subjects",
+           "memberLegend": true,
+           "shortSpan": "change-bars",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-TABLE",
+        "id": "vicdata.ks5.results.c2.trends/DV-C2-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-TABLE",
+         "title": "[Entries|Results] in [comparison-group], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGELIST",
+        "id": "vicdata.ks5.results.c2.trends/DV-C2-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C2-TR-CHANGELIST",
+         "title": "[Entries|Results] in [comparison-group]: [change-word] since [year], ranked",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C2-TR-CHANGETABLE",
+        "id": "vicdata.ks5.results.c2.trends/DV-C2-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C2-TR-CHANGETABLE",
+         "title": "[Entries|Results] in [comparison-group]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.results.c2.trends/DV-C2-TR-CHART",
+      "id": "vicdata.ks5.results.c2.trends",
+      "legacy": {
+       "columnKey": "context",
+       "noteKeys": [
+        "ks5:context:trend",
+        "ks5:context:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-C3-TR-CHART",
+        "id": "vicdata.ks5.results.c3.trends/DV-C3-TR-CHART",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-C3-TR-CHART",
+         "title": "This school's [measure] against [versus], year by year",
+         "view": {
+          "kind": "line",
+          "look": {
+           "shortSpan": "table",
+           "trendLine": "member"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-TABLE",
+        "id": "vicdata.ks5.results.c3.trends/DV-C3-TR-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-TABLE",
+         "title": "Every school in the [set]: [measure], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "memberSort": true,
+           "sort": "latest",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-MAP",
+        "id": "vicdata.ks5.results.c3.trends/DV-C3-TR-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "change": "absolute",
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-MAP",
+         "title": "Change in [measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGELIST",
+        "id": "vicdata.ks5.results.c3.trends/DV-C3-TR-CHANGELIST",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-C3-TR-CHANGELIST",
+         "title": "[change-of-measure] since [year], ranked against the [set]",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "diverging": true,
+           "highlight": true,
+           "order": "highest",
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGETABLE",
+        "id": "vicdata.ks5.results.c3.trends/DV-C3-TR-CHANGETABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "rows": "follows-page",
+          "shownAs": "actual",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-C3-TR-CHANGETABLE",
+         "title": "Every school in the [set]: [year] against the latest year, ranked by change",
+         "view": {
+          "kind": "table",
+          "look": {
+           "colourChange": true,
+           "extra": [
+            "change"
+           ],
+           "highlight": true,
+           "leadingRank": true,
+           "sort": "change",
+           "yearColumns": "first-latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-C3-TR-CHANGEMAP",
+        "id": "vicdata.ks5.results.c3.trends/DV-C3-TR-CHANGEMAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "rows": "follows-page",
+          "shownAs": "change",
+          "source": "follows-page",
+          "subject": "follows-or-whole-school",
+          "years": {
+           "from": "first",
+           "memberPick": true,
+           "rollOn": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-C3-TR-CHANGEMAP",
+         "title": "[change-of-measure] since [year], coloured by school",
+         "variants": {
+          "comparator": [
+           "schools"
+          ]
+         },
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "change"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.ks5.results.c3.trends/DV-C3-TR-CHART",
+      "id": "vicdata.ks5.results.c3.trends",
+      "legacy": {
+       "columnKey": "rankings",
+       "noteKeys": [
+        "ks5:rankings:trend",
+        "ks5:rankings:change"
+       ],
+       "panelId": "trend"
+      },
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "current",
+      "legacyPanelId": "current",
+      "name": "Current",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": false,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.smt.academic",
+   "name": "SMT Academic",
+   "kind": "dashboard",
+   "version": 1,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "neutral"
+    },
+    "columns": [
+     {
+      "compare": null,
+      "data": {
+       "data": "smt.results",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.academic",
+      "icon": "context",
+      "id": "c1",
+      "title": "The level now"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.subjects",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.academic",
+      "icon": "results",
+      "id": "c2",
+      "title": "Subjects"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.subjects",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.academic",
+      "icon": "rankings",
+      "id": "c3",
+      "title": "Entries"
+     }
+    ],
+    "features": {
+     "levelChips": true
+    },
+    "group": {
+     "id": "vicdata.smt",
+     "label": "SMT",
+     "order": 1
+    },
+    "id": "vicdata.smt.academic",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "independent",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "SMT Academic",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-A-NOW",
+        "id": "vicdata.smt.academic.c1.now/DV-SMT-A-NOW",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-SMT-A-NOW",
+         "title": "[level] now",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.academic.c1.now/DV-SMT-A-NOW",
+      "id": "vicdata.smt.academic.c1.now",
+      "name": "Current",
+      "row": "now",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-A-AREAS",
+        "id": "vicdata.smt.academic.c2.now/DV-SMT-A-AREAS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "shownAs": "actual",
+          "source": "smt.subjects",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmStrengthsIcon",
+         "preset": "DV-SMT-A-AREAS",
+         "title": "Where [school] leads and trails [set], by subject area",
+         "view": {
+          "kind": "strengths",
+          "look": {
+           "order": "gap",
+           "showFlags": true
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-A-SUBJECTS",
+        "id": "vicdata.smt.academic.c2.now/DV-SMT-A-SUBJECTS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "shownAs": "actual",
+          "source": "smt.subjects",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-A-SUBJECTS",
+         "title": "Each subject, its rank, and where it's heading",
+         "view": {
+          "kind": "table",
+          "look": {
+           "extra": [
+            "rank",
+            "change"
+           ],
+           "sort": "listed",
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-A-VA",
+        "id": "vicdata.smt.academic.c2.now/DV-SMT-A-VA",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "subject",
+          "shownAs": "actual",
+          "source": "smt.value_added",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmNumbersIcon",
+         "preset": "DV-SMT-A-VA",
+         "title": "Value added",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-A-GRADES",
+        "id": "vicdata.smt.academic.c2.now/DV-SMT-A-GRADES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "grade",
+          "shownAs": "actual",
+          "source": "smt.subjects",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "HorizontalBarsIcon",
+         "preset": "DV-SMT-A-GRADES",
+         "title": "Grade profile",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "horizontal",
+           "values": true
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.academic.c2.now/DV-SMT-A-AREAS",
+      "id": "vicdata.smt.academic.c2.now",
+      "name": "Subjects",
+      "row": "now",
+      "span": {
+       "cols": 2,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-A-TREND-LINE",
+        "id": "vicdata.smt.academic.c1.trends/DV-SMT-A-TREND-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-SMT-A-TREND-LINE",
+         "title": "[level] results against [set]",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-A-TREND-TABLE",
+        "id": "vicdata.smt.academic.c1.trends/DV-SMT-A-TREND-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-A-TREND-TABLE",
+         "title": "[level] results against [set], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.academic.c1.trends/DV-SMT-A-TREND-LINE",
+      "id": "vicdata.smt.academic.c1.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-A-BANDS",
+        "id": "vicdata.smt.academic.c2.trends/DV-SMT-A-BANDS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-SMT-A-BANDS",
+         "title": "Top 25%, middle 50%, bottom 25%",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.academic.c2.trends/DV-SMT-A-BANDS",
+      "id": "vicdata.smt.academic.c2.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-A-MIX",
+        "id": "vicdata.smt.academic.c3.trends/DV-SMT-A-MIX",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.subjects",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-SMT-A-MIX",
+         "title": "Entries mix, year by year",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "vertical"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-A-MIX-TABLE",
+        "id": "vicdata.smt.academic.c3.trends/DV-SMT-A-MIX-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.subjects",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-A-MIX-TABLE",
+         "title": "Entries mix, year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.academic.c3.trends/DV-SMT-A-MIX",
+      "id": "vicdata.smt.academic.c3.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "now",
+      "legacyPanelId": "current",
+      "name": "Now",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": true,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.smt.context",
+   "name": "SMT Context",
+   "kind": "dashboard",
+   "version": 2,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "neutral"
+    },
+    "columns": [
+     {
+      "compare": null,
+      "data": {
+       "data": "smt.area",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.context",
+      "icon": "context",
+      "id": "c1",
+      "title": "The area now"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.area",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.context",
+      "icon": "results",
+      "id": "c2",
+      "title": "Map"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.area",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.context",
+      "icon": "rankings",
+      "id": "c3",
+      "title": "Area"
+     }
+    ],
+    "features": {
+     "levelChips": true
+    },
+    "group": {
+     "id": "vicdata.smt",
+     "label": "SMT",
+     "order": 3
+    },
+    "id": "vicdata.smt.context",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "independent",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "SMT Context",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-C-NOW",
+        "id": "vicdata.smt.context.c1.now/DV-SMT-C-NOW",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-SMT-C-NOW",
+         "title": "The area now",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.context.c1.now/DV-SMT-C-NOW",
+      "id": "vicdata.smt.context.c1.now",
+      "name": "Current",
+      "row": "now",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-C-MAP",
+        "id": "vicdata.smt.context.c2.now/DV-SMT-C-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-SMT-C-MAP",
+         "title": "Where the school-age children live",
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "value"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-C-BYAGE",
+        "id": "vicdata.smt.context.c2.now/DV-SMT-C-BYAGE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-SMT-C-BYAGE",
+         "title": "Children by single year of age",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "vertical"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-C-BIRTHS",
+        "id": "vicdata.smt.context.c2.now/DV-SMT-C-BIRTHS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-SMT-C-BIRTHS",
+         "title": "Births and projections",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-C-NEARBY",
+        "id": "vicdata.smt.context.c2.now/DV-SMT-C-NEARBY",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-SMT-C-NEARBY",
+         "title": "Children nearby over time",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.context.c2.now/DV-SMT-C-MAP",
+      "id": "vicdata.smt.context.c2.now",
+      "name": "Map",
+      "row": "now",
+      "span": {
+       "cols": 2,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-C-BIRTHS-INDEXED",
+        "id": "vicdata.smt.context.c1.trends/DV-SMT-C-BIRTHS-INDEXED",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-SMT-C-BIRTHS-INDEXED",
+         "title": "Births, indexed",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-C-BIRTHS-TABLE",
+        "id": "vicdata.smt.context.c1.trends/DV-SMT-C-BIRTHS-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-C-BIRTHS-TABLE",
+         "title": "Births, year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.context.c1.trends/DV-SMT-C-BIRTHS-INDEXED",
+      "id": "vicdata.smt.context.c1.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-C-PROJECTION",
+        "id": "vicdata.smt.context.c2.trends/DV-SMT-C-PROJECTION",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-SMT-C-PROJECTION",
+         "title": "School-age population, projected",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.context.c2.trends/DV-SMT-C-PROJECTION",
+      "id": "vicdata.smt.context.c2.trends",
+      "name": "Forward",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-C-AGES",
+        "id": "vicdata.smt.context.c3.trends/DV-SMT-C-AGES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.area",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "VerticalBarsIcon",
+         "preset": "DV-SMT-C-AGES",
+         "title": "Population by single year of age",
+         "view": {
+          "kind": "bar",
+          "look": {
+           "orientation": "vertical"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.context.c3.trends/DV-SMT-C-AGES",
+      "id": "vicdata.smt.context.c3.trends",
+      "name": "Area",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "now",
+      "legacyPanelId": "current",
+      "name": "Now",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": true,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.smt.overview",
+   "name": "SMT Overview",
+   "kind": "dashboard",
+   "version": 1,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "neutral"
+    },
+    "columns": [
+     {
+      "compare": null,
+      "data": {
+       "data": "smt.school",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.overview",
+      "icon": "context",
+      "id": "c1",
+      "title": "The school now"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.results",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.overview",
+      "icon": "results",
+      "id": "c2",
+      "title": "Scorecard"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.school",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.overview",
+      "icon": "rankings",
+      "id": "c3",
+      "title": "From Admissions"
+     }
+    ],
+    "features": {
+     "levelChips": true
+    },
+    "group": {
+     "id": "vicdata.smt",
+     "label": "SMT",
+     "order": 0
+    },
+    "id": "vicdata.smt.overview",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "independent",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "SMT Overview",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-O-NOW",
+        "id": "vicdata.smt.overview.c1.now/DV-SMT-O-NOW",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-SMT-O-NOW",
+         "title": "The school now",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.overview.c1.now/DV-SMT-O-NOW",
+      "id": "vicdata.smt.overview.c1.now",
+      "name": "Current",
+      "row": "now",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-O-SCORECARD",
+        "id": "vicdata.smt.overview.c2.now/DV-SMT-O-SCORECARD",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.results",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-O-SCORECARD",
+         "title": "How [school] compares, headline by headline",
+         "view": {
+          "kind": "table",
+          "look": {
+           "extra": [
+            "rank",
+            "change"
+           ],
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-O-MAP",
+        "id": "vicdata.smt.overview.c2.now/DV-SMT-O-MAP",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "MapPinIcon",
+         "preset": "DV-SMT-O-MAP",
+         "title": "[school] and [set]",
+         "view": {
+          "kind": "map",
+          "look": {
+           "colour": "value"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-O-FLAGS",
+        "id": "vicdata.smt.overview.c2.now/DV-SMT-O-FLAGS",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "change",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "FlagIcon",
+         "preset": "DV-SMT-O-FLAGS",
+         "title": "Flags: large and lasting changes at [school]",
+         "view": {
+          "kind": "flags",
+          "look": {
+           "show": "flagged"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.overview.c2.now/DV-SMT-O-SCORECARD",
+      "id": "vicdata.smt.overview.c2.now",
+      "name": "Scorecard",
+      "row": "now",
+      "span": {
+       "cols": 2,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-O-ROLL-LINE",
+        "id": "vicdata.smt.overview.c1.trends/DV-SMT-O-ROLL-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-SMT-O-ROLL-LINE",
+         "title": "Roll, indexed (2019/20 = 100)",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-O-ROLL-TABLE",
+        "id": "vicdata.smt.overview.c1.trends/DV-SMT-O-ROLL-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-O-ROLL-TABLE",
+         "title": "Roll, year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.overview.c1.trends/DV-SMT-O-ROLL-LINE",
+      "id": "vicdata.smt.overview.c1.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-O-RESULTS-LINE",
+        "id": "vicdata.smt.overview.c2.trends/DV-SMT-O-RESULTS-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-SMT-O-RESULTS-LINE",
+         "title": "Headline results against [set]",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-O-RESULTS-TABLE",
+        "id": "vicdata.smt.overview.c2.trends/DV-SMT-O-RESULTS-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.results",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-O-RESULTS-TABLE",
+         "title": "Headline results against [set], year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.overview.c2.trends/DV-SMT-O-RESULTS-LINE",
+      "id": "vicdata.smt.overview.c2.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-O-MARKET-LINE",
+        "id": "vicdata.smt.overview.c3.trends/DV-SMT-O-MARKET-LINE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TrendLineIcon",
+         "preset": "DV-SMT-O-MARKET-LINE",
+         "title": "Market share at 11+, against your rivals",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-O-MARKET-TABLE",
+        "id": "vicdata.smt.overview.c3.trends/DV-SMT-O-MARKET-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-O-MARKET-TABLE",
+         "title": "Market share at 11+, year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.overview.c3.trends/DV-SMT-O-MARKET-LINE",
+      "id": "vicdata.smt.overview.c3.trends",
+      "name": "From Admissions",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "now",
+      "legacyPanelId": "current",
+      "name": "Now",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": true,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  },
+  {
+   "slug": "vicdata.smt.pupils",
+   "name": "SMT Pupils",
+   "kind": "dashboard",
+   "version": 1,
+   "schema_version": 2,
+   "config": {
+    "colour": {
+     "key": "neutral"
+    },
+    "columns": [
+     {
+      "compare": null,
+      "data": {
+       "data": "smt.school",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.pupils",
+      "icon": "context",
+      "id": "c1",
+      "title": "Your pupils now"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.school",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.pupils",
+      "icon": "results",
+      "id": "c2",
+      "title": "Shape and size"
+     },
+     {
+      "compare": {
+       "kinds": [
+        "schools"
+       ],
+       "schools": "saved-or-chooser"
+      },
+      "data": {
+       "data": "smt.school",
+       "phase": "ks4"
+      },
+      "focus": {
+       "kind": "level"
+      },
+      "host": "smt.pupils",
+      "icon": "rankings",
+      "id": "c3",
+      "title": "Area"
+     }
+    ],
+    "features": {
+     "levelChips": true
+    },
+    "group": {
+     "id": "vicdata.smt",
+     "label": "SMT",
+     "order": 2
+    },
+    "id": "vicdata.smt.pupils",
+    "kind": "dashboard",
+    "layout": {
+     "accordion": "independent",
+     "preset": "3",
+     "tracks": [
+      1,
+      1,
+      1
+     ]
+    },
+    "name": "SMT Pupils",
+    "owner": "vicdata",
+    "panels": [
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-P-NOW",
+        "id": "vicdata.smt.pupils.c1.now/DV-SMT-P-NOW",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "TilesIcon",
+         "preset": "DV-SMT-P-NOW",
+         "title": "Your pupils now",
+         "view": {
+          "kind": "numbers",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.pupils.c1.now/DV-SMT-P-NOW",
+      "id": "vicdata.smt.pupils.c1.now",
+      "name": "Current",
+      "row": "now",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-P-SHAPE",
+        "id": "vicdata.smt.pupils.c2.now/DV-SMT-P-SHAPE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmShapeIcon",
+         "preset": "DV-SMT-P-SHAPE",
+         "title": "Pupils in each year group",
+         "view": {
+          "kind": "shapes",
+          "look": {
+           "columns": 1
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-P-ENTRIES",
+        "id": "vicdata.smt.pupils.c2.now/DV-SMT-P-ENTRIES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "school",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "latest": true
+          }
+         },
+         "icon": "AdmFunnelIcon",
+         "preset": "DV-SMT-P-ENTRIES",
+         "title": "Entry points at a glance",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "latest"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-P-LEAVING",
+        "id": "vicdata.smt.pupils.c2.now/DV-SMT-P-LEAVING",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "ChangeArrowIcon",
+         "preset": "DV-SMT-P-LEAVING",
+         "title": "Leaving at 16",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-P-MARKET",
+        "id": "vicdata.smt.pupils.c2.now/DV-SMT-P-MARKET",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "DonutIcon",
+         "preset": "DV-SMT-P-MARKET",
+         "title": "Market share at 11+, against your rivals",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.pupils.c2.now/DV-SMT-P-SHAPE",
+      "id": "vicdata.smt.pupils.c2.now",
+      "name": "Shape and size",
+      "row": "now",
+      "span": {
+       "cols": 2,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c1",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-P-PHASES",
+        "id": "vicdata.smt.pupils.c1.trends/DV-SMT-P-PHASES",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "IndexedLineIcon",
+         "preset": "DV-SMT-P-PHASES",
+         "title": "Roll by phase, indexed (2019/20 = 100)",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       },
+       {
+        "dataview": "DV-SMT-P-PHASES-TABLE",
+        "id": "vicdata.smt.pupils.c1.trends/DV-SMT-P-PHASES-TABLE",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "indexed",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "TableIcon",
+         "preset": "DV-SMT-P-PHASES-TABLE",
+         "title": "Roll by phase, year by year",
+         "view": {
+          "kind": "table",
+          "look": {
+           "yearColumns": "every",
+           "years": "down"
+          }
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.pupils.c1.trends/DV-SMT-P-PHASES",
+      "id": "vicdata.smt.pupils.c1.trends",
+      "name": "Trends",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c2",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-P-POOL",
+        "id": "vicdata.smt.pupils.c2.trends/DV-SMT-P-POOL",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "AdmPipelineIcon",
+         "preset": "DV-SMT-P-POOL",
+         "title": "The pool for your main entry point",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.pupils.c2.trends/DV-SMT-P-POOL",
+      "id": "vicdata.smt.pupils.c2.trends",
+      "name": "From Admissions",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     },
+     {
+      "column": "c3",
+      "dataviews": [
+       {
+        "dataview": "DV-SMT-P-AREA",
+        "id": "vicdata.smt.pupils.c3.trends/DV-SMT-P-AREA",
+        "kind": "view",
+        "spec": {
+         "compare": "follows-page",
+         "data": {
+          "per": "year",
+          "shownAs": "actual",
+          "source": "smt.school",
+          "subject": "follows",
+          "years": {
+           "from": "first",
+           "rollOn": true
+          }
+         },
+         "icon": "AdmPopulationIcon",
+         "preset": "DV-SMT-P-AREA",
+         "title": "The area's school-age population",
+         "view": {
+          "kind": "line",
+          "look": {}
+         }
+        }
+       }
+      ],
+      "defaultView": "vicdata.smt.pupils.c3.trends/DV-SMT-P-AREA",
+      "id": "vicdata.smt.pupils.c3.trends",
+      "name": "Area",
+      "row": "trends",
+      "span": {
+       "cols": 1,
+       "rows": 1
+      }
+     }
+    ],
+    "rows": [
+     {
+      "id": "now",
+      "legacyPanelId": "current",
+      "name": "Now",
+      "openByDefault": true,
+      "time": "latest"
+     },
+     {
+      "id": "trends",
+      "legacyPanelId": "trend",
+      "name": "Trends",
+      "openByDefault": true,
+      "time": "over_time"
+     }
+    ],
+    "schema_version": 2
+   }
+  }
+ ]
+}

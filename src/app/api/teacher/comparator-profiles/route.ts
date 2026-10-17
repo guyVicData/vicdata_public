@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { serializeAcademicProfile } from "@/lib/academic-data-view";
@@ -23,15 +23,10 @@ export async function GET(request: NextRequest) {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },
   });
-  const { data: membership, error: membershipError } = await supabase
-    .from("school_memberships")
-    .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-    .eq("status", "approved")
-    .eq("school_accounts.school_urn", anchorUrn)
-    .limit(1)
-    .maybeSingle();
-  if (membershipError) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  // 0.8 View as: the one caller helper (src/lib/view-as-server.ts) -- a member of this school (the
+  // query this route always made), a platform admin's View as or peek, read-only.
+  const caller = await resolveCaller(request, anchorUrn, { visibleRow: true, supabase, refusal: "Teacher view is available to verified school staff." });
+  if (caller instanceof NextResponse) return caller;
 
   // As academic-schools: the requested schools, the anchor added when missing.
   const urns = Array.from(new Set(urnsParam.split(",").map((u) => u.trim()).filter((u) => /^\d{5,7}$/.test(u)))).slice(0, MAX_URNS);

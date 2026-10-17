@@ -42,14 +42,13 @@ import {
   initialLens,
   KeyDashboardsEmpty,
   KeyDashboardTile,
-  LensSwitch,
   lensesOf,
   LibraryTile,
   readStoredLens,
-  storeLens,
   type Lens,
 } from "@/components/library/RoleHome";
 import { listMeetings } from "@/lib/meeting-store";
+import { LENS_EVENT } from "@/components/shell/RoleSwitch";
 import { shortDate } from "@/lib/meeting-ops";
 
 type Membership = {
@@ -96,10 +95,12 @@ export default function TeacherHomePage() {
   // 0.7 admissions r2 (D2): the School-Admin's Admissions tile on the Teacher lens (Admissions and
   // SMT get theirs on their own lens; a platform admin through View as as one of those roles).
   const [schoolAdmin, setSchoolAdmin] = useState(false);
-  const setLens = (l: Lens) => {
-    setLensState(l);
-    storeLens(l);
-  };
+  // 0.8 View as (B): the nav's role switch picks the home in place (it stores the choice itself).
+  useEffect(() => {
+    const on = (e: Event) => setLensState((e as CustomEvent<Lens>).detail);
+    window.addEventListener(LENS_EVENT, on);
+    return () => window.removeEventListener(LENS_EVENT, on);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -221,13 +222,8 @@ export default function TeacherHomePage() {
         {displayName && <h1 className="text-[22px] font-bold leading-tight">{displayName}</h1>}
         {schoolName && <p className="mt-0.5 text-[13px] text-[var(--muted)]">{schoolName}</p>}
       </div>
-      {/* 0.6: the role switch, only for people holding more than one role (HomeSMT.dc.html
-          puts it between the school and the question). */}
-      {v06 && !error && lenses.length > 1 && (
-        <div className="mt-[18px]">
-          <LensSwitch lenses={lenses} lens={lens} onLens={setLens} />
-        </div>
-      )}
+      {/* 0.8 View as (B): the role switch moved from here into the nav (NavRoleSwitch), which switches
+          this home in place (LENS_EVENT). */}
 
       <p className="mt-[22px] text-base font-semibold text-[var(--muted2)]">What would you like to look at?</p>
 

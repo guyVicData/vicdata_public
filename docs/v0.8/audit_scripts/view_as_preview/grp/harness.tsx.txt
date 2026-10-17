@@ -1,0 +1,7 @@
+import { createRoot } from "react-dom/client";
+import { GroupDashboard } from "@/components/groups/dash/GroupDashboard";
+import { GroupHome } from "@/components/groups/GroupHome";
+import Footer from "@/components/Footer";
+const P = new URLSearchParams(location.search);
+const page = P.get("page") ?? "overview";
+createRoot(document.getElementById("root")!).render(<div className="flex min-h-screen flex-col">{page === "home" ? <GroupHome /> : <GroupDashboard dash={page as never} />}<Footer /></div>);

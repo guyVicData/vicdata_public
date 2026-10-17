@@ -91,7 +91,81 @@ const EMPTY_PANEL = "a panel holds at least one dataview or placeholder";
 export function validateConfig(config: DashboardConfig): { problems: ConfigProblem[]; empty: string[] } {
   const all = validateCore(config, KNOWN);
   const empty = config.panels.filter((p) => p.dataviews.length === 0).map((p) => p.id);
-  return { problems: all.filter((p) => p.message !== EMPTY_PANEL), empty };
+  return { problems: [...all.filter((p) => p.message !== EMPTY_PANEL), ...familyProblems(config)], empty };
+}
+
+// 0.8 View as (editing guarantee 4): only views the panel can draw. Each column is drawn by a
+// registered host of one family -- Teacher, SMT or Admissions (ColumnHeader.host; a column
+// without one is Teacher's, as every custom dashboard's is) -- and a view goes only into a
+// panel of its own host's family. The catalogue's matching rule already keeps the picker to
+// the column's data (whose ids are family-prefixed); this is the same rule said outright, so
+// a config that breaks it can't be made by an op (checked) or published (publishBlockers).
+export type HostFamily = "teacher" | "smt" | "admissions";
+export const familyOfHost = (host: string | undefined | null): HostFamily => (host?.startsWith("smt.") ? "smt" : host?.startsWith("admissions.") ? "admissions" : "teacher");
+const familyOfData = (data: string): HostFamily => (data.startsWith("smt.") ? "smt" : data.startsWith("admissions.") ? "admissions" : "teacher");
+export const columnFamily = (col: Pick<ColumnHeader, "host" | "data">): HostFamily => (col.host ? familyOfHost(col.host) : familyOfData(col.data.data));
+const FAMILY_WORD: Record<HostFamily, string> = { teacher: "Teacher", smt: "SMT", admissions: "Admissions" };
+
+function familyProblems(config: DashboardConfig): ConfigProblem[] {
+  const out: ConfigProblem[] = [];
+  config.panels.forEach((panel, i) => {
+    const col = config.columns.find((c) => c.id === panel.column);
+    if (!col) return;
+    const want = columnFamily(col);
+    panel.dataviews.forEach((v, j) => {
+      if (v.kind !== "view") return;
+      const dv = dataviewById(v.dataview);
+      if (!dv) return; // validateCore reports it as unknown
+      const got = familyOfHost(dv.host.id);
+      if (got !== want) out.push({ path: `panels[${i}].dataviews[${j}]`, message: `${dv.id} is a ${FAMILY_WORD[got]} view; this panel draws ${FAMILY_WORD[want]} views` });
+    });
+  });
+  return out;
+}
+
+// 0.8 View as (editing guarantees 4 and 5): what holds Publish back, each as the line the
+// Publish dialog shows. Empty: nothing in the way.
+//   * every structural problem validateConfig finds (unregistered views, a view of another
+//     family, overlaps, a default that has gone ...);
+//   * a view the editor's live preview can't draw: the preview draws a registered view by its
+//     host's family renderer (LivePanelPreview: Teacher's SpecPreview, SmtViewPreview,
+//     AdmissionsViewPreview, each the member page's own view body); anything else would fall
+//     back to the data-free stand-in, so the editor never showed what members would get.
+//     src/lib/editor-guarantees.test.ts pins that every registered SMT and
+//     Admissions dataview has a case in its family's renderer.
+//   * empty panels (as before).
+export function previewGaps(config: DashboardConfig): { panelId: string; instanceId: string; dataview: string; message: string }[] {
+  const out: { panelId: string; instanceId: string; dataview: string; message: string }[] = [];
+  for (const p of config.panels) {
+    const col = config.columns.find((c) => c.id === p.column);
+    const row = config.rows.find((r) => r.id === p.row);
+    const where = `${p.name ?? row?.name ?? p.row} (${col?.title ?? p.column})`;
+    for (const v of p.dataviews) {
+      if (v.kind !== "view") continue;
+      const dv = dataviewById(v.dataview);
+      const title = v.title ?? dv?.label ?? v.dataview;
+      if (!dv) out.push({ panelId: p.id, instanceId: v.id, dataview: v.dataview, message: `The preview can't draw “${title}” in ${where}: ${v.dataview} isn't a registered view.` });
+      else if (col && familyOfHost(dv.host.id) !== columnFamily(col))
+        out.push({ panelId: p.id, instanceId: v.id, dataview: v.dataview, message: `The preview can't draw “${title}” in ${where}: it is a ${FAMILY_WORD[familyOfHost(dv.host.id)]} view on a ${FAMILY_WORD[columnFamily(col)]} panel.` });
+    }
+  }
+  return out;
+}
+
+export function publishBlockers(config: DashboardConfig, opts: { empty?: boolean } = {}): string[] {
+  const { problems, empty } = validateConfig(config);
+  const gaps = previewGaps(config);
+  const gapPaths = new Set(gaps.map((g) => g.instanceId));
+  const lines = gaps.map((g) => g.message);
+  for (const pr of problems) {
+    // A gap already names the view in words; don't say it twice.
+    const m = /^panels\[(\d+)\]\.dataviews\[(\d+)\]$/.exec(pr.path);
+    const inst = m ? config.panels[Number(m[1])]?.dataviews[Number(m[2])]?.id : undefined;
+    if (inst && gapPaths.has(inst) && /unknown dataview| view; this panel draws /.test(pr.message)) continue;
+    lines.push(`${pr.path}: ${pr.message}`);
+  }
+  if (empty.length && opts.empty !== false) lines.push(`${empty.length} empty panel${empty.length === 1 ? "" : "s"}: add a view or a placeholder, or delete ${empty.length === 1 ? "it" : "them"}, first.`);
+  return lines;
 }
 
 function checked(config: DashboardConfig): DashboardConfig {
@@ -236,8 +310,9 @@ export function copyRow(config: DashboardConfig, rowId: string): DashboardConfig
   if (i < 0) fail("That row has gone.");
   const src = c.rows[i];
   const id = nextRowId(c);
-  // A copy carries no legacy keys: its notes and open state are its own.
-  c.rows.splice(i + 1, 0, { id, name: `${src.name} (copy)`, time: src.time, openByDefault: src.openByDefault });
+  // A copy carries no legacy keys: its notes and open state are its own. 0.8 View as
+  // (guarantee 2): any other key the row holds (one this build doesn't know) is carried.
+  c.rows.splice(i + 1, 0, { id, name: `${src.name} (copy)`, time: src.time, openByDefault: src.openByDefault, ...unknownKeys(src, ROW_KEYS) });
   const taken = allIds(c);
   for (const p of rowPanels(config, rowId)) {
     const pid = freeId(c, panelBase(c, p.column, id), taken);
@@ -252,9 +327,18 @@ export function copyRow(config: DashboardConfig, rowId: string): DashboardConfig
     if (p.defaultViewByResults) copy.defaultViewByResults = { ...p.defaultViewByResults };
     if (p.defaultViewByState) copy.defaultViewByState = { ...p.defaultViewByState };
     remapStateDefaults(copy, (id) => views[p.dataviews.findIndex((v) => v.id === id)]?.id);
+    Object.assign(copy, unknownKeys(p, PANEL_KEYS));
     c.panels.push(copy);
   }
   return checked(c);
+}
+
+// The keys copyRow writes itself (or leaves off on purpose: legacy); anything else on a row
+// or panel is carried to the copy as it is.
+const ROW_KEYS = new Set(["id", "name", "time", "openByDefault", "legacyPanelId"]);
+const PANEL_KEYS = new Set(["id", "row", "column", "dataviews", "span", "name", "override", "defaultView", "defaultViewByResults", "defaultViewByState", "legacy"]);
+function unknownKeys(o: object, known: Set<string>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(o).filter(([k]) => !known.has(k)).map(([k, v]) => [k, clone(v)]));
 }
 
 export function deleteRow(config: DashboardConfig, rowId: string): DashboardConfig {
@@ -487,6 +571,13 @@ export function removeColumn(config: DashboardConfig, columnId: string): Dashboa
   const i = colIndex(c, columnId);
   if (i < 0) fail("That column has gone.");
   if (c.columns.length === 1) fail("A dashboard needs at least one column.");
+  // 0.8 View as (guarantee 3): a panel with views that spans this column would have to
+  // shrink. Refused, never done quietly: narrow or move it first.
+  const squeezed = c.panels.find((p) => {
+    const s = colIndex(c, p.column);
+    return p.dataviews.length > 0 && spanOf(p) > 1 && s <= i && s + spanOf(p) > i;
+  });
+  if (squeezed) fail(`“${squeezed.name ?? c.rows.find((r) => r.id === squeezed.row)?.name ?? squeezed.id}” spans ${spanOf(squeezed)} columns, across “${c.columns[i].title}”. Make it narrower or move it first.`);
   const next = c.columns[i + 1]?.id;
   c.panels = c.panels.flatMap((p) => {
     const s = colIndex(c, p.column);

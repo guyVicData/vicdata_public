@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSchoolTypeCategory, withKs5Results } from "@/lib/default-comparator-lists";
@@ -28,31 +28,10 @@ export async function GET(request: NextRequest) {
     { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
   );
 
-  const { data: approvedMembership, error: membershipError } = await supabase
-    .from("school_memberships")
-    .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-    .eq("status", "approved")
-    .eq("school_accounts.school_urn", urn)
-    // Any approved row at this school proves membership: RLS shows colleagues only to members.
-    .limit(1)
-    .maybeSingle();
-
-  // See default-lists/route.ts -- same discarded-query-error bug class, fixed the
-  // same way across every Data View route as part of this fix.
-  if (membershipError) {
-    console.error("[data-view/expand-nearest] membership check failed:", membershipError);
-    return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  }
-
-  // 0.6 snag 4 (B): a platform admin too, after the member check (members' path
-  // unchanged) -- View as gets exactly what a member of this school gets (school-level
-  // data only; nothing personal or school-owned comes from this route).
-  if (!approvedMembership && !(await isPlatformAdmin(supabase))) {
-    return NextResponse.json(
-      { error: "The Data View is available to verified school staff." },
-      { status: 403 },
-    );
-  }
+  // 0.8 View as: the one caller helper (src/lib/view-as-server.ts) -- a member of this school (the
+  // query this route always made), a platform admin's View as or peek, read-only.
+  const caller = await resolveCaller(request, urn, { visibleRow: true, supabase, refusal: "The Data View is available to verified school staff." });
+  if (caller instanceof NextResponse) return caller;
 
   const resolved = await resolveSchoolTypeCategory(urn);
   if (!resolved) {

@@ -4,47 +4,27 @@
 // with the Admissions or SMT role, its School-Admin, or a platform admin (View as). Teams or roles
 // a list is shared with read the lists through RLS (admissions_lists); the computed views stay
 // with the roles above until round 2 decides otherwise (logged).
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+//
+// 0.8 View as: resolved through the one caller helper (view-as-server.ts, resolveCaller). A platform
+// admin's View as of this school is the viewed role (Admissions, SMT or the School-Admin), read-only,
+// at any school: `reader` reads the school's lists with the service role once that is confirmed (a
+// member's reader is their own client, RLS as before). Writes go through `supabase` and are refused
+// for a read-only caller before they are tried.
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { isPlatformAdmin } from "../view-as";
+import { resolveCaller, type ResolvedCaller } from "../view-as-server";
 
-export type AdmissionsCaller = { supabase: SupabaseClient; userId: string; urn: string; lead: boolean; roles: string[] };
+export type AdmissionsCaller = { supabase: SupabaseClient; reader: SupabaseClient; userId: string; urn: string; lead: boolean; roles: string[]; access: ResolvedCaller["access"]; readOnly: boolean };
+
+export const ADMISSIONS_ONLY_MESSAGE = "Admissions is available to the school's Admissions and SMT staff.";
+
+export const canSeeAdmissions = (m: { roles: string[]; isAdmin: boolean }) => m.isAdmin || m.roles.includes("admissions") || m.roles.includes("smt");
 
 export async function admissionsCaller(request: NextRequest, urn: string | null): Promise<AdmissionsCaller | NextResponse> {
-  const auth = request.headers.get("authorization");
-  if (!auth || !urn || !/^\d{5,7}$/.test(urn)) return NextResponse.json({ error: "urn and Authorization are required" }, { status: 400 });
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: auth } },
-    auth: { persistSession: false },
-  });
-  const { data: user } = await supabase.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
-  const userId = user.user?.id;
-  if (!userId) return NextResponse.json({ error: "Sign in again." }, { status: 401 });
-  // admissions_lead exists once the 0.7 r1 migration is applied; read it only if it does.
-  let { data, error } = await supabase
-    .from("school_memberships")
-    .select("roles, is_admin, admissions_lead, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-    .eq("profile_id", userId)
-    .eq("status", "approved")
-    .eq("school_accounts.school_urn", urn)
-    .limit(1)
-    .maybeSingle();
-  if (error && /admissions_lead/.test(error.message)) {
-    ({ data, error } = await supabase
-      .from("school_memberships")
-      .select("roles, is_admin, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-      .eq("profile_id", userId)
-      .eq("status", "approved")
-      .eq("school_accounts.school_urn", urn)
-      .limit(1)
-      .maybeSingle());
-  }
-  if (error) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  const m = data as { roles?: string[] | null; is_admin?: boolean; admissions_lead?: boolean } | null;
-  const roles = m?.roles ?? [];
-  const allowed = !!m && (m.is_admin || roles.includes("admissions") || roles.includes("smt"));
-  if (!allowed && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Admissions is available to the school's Admissions and SMT staff." }, { status: 403 });
-  return { supabase, userId, urn, lead: !!m?.admissions_lead, roles };
+  if (!request.headers.get("authorization") || !urn || !/^\d{5,7}$/.test(urn)) return NextResponse.json({ error: "urn and Authorization are required" }, { status: 400 });
+  const c = await resolveCaller(request, urn, { allowed: canSeeAdmissions, refusal: ADMISSIONS_ONLY_MESSAGE });
+  if (c instanceof NextResponse) return c;
+  return { supabase: c.supabase, reader: c.reader, userId: c.userId, urn, lead: c.lead, roles: c.roles, access: c.access, readOnly: c.readOnly };
 }
 
 /** The school's saved lists for an entry point (RLS decides what the caller sees); [] before the

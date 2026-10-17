@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
@@ -44,15 +44,10 @@ export async function GET(request: NextRequest) {
     auth: { persistSession: false },
   });
   // Same gate as the dashboard route: approved staff of this school only.
-  const { data: membership } = await supabase
-    .from("school_memberships")
-    .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-    .eq("status", "approved")
-    .eq("school_accounts.school_urn", urn)
-    // Any approved row at this school proves membership: RLS shows colleagues only to members.
-    .limit(1)
-    .maybeSingle();
-  if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  // 0.8 View as: the one caller helper (src/lib/view-as-server.ts) -- a member of this school (the
+  // query this route always made), a platform admin's View as or peek, read-only.
+  const caller = await resolveCaller(request, urn, { visibleRow: true, supabase, refusal: "Teacher view is available to verified school staff." });
+  if (caller instanceof NextResponse) return caller;
 
   // 0.6.4 C2: the school's LA and region (public, kept an hour), read together.
   const [laName, regionName] = await Promise.all([

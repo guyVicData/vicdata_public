@@ -1,0 +1,47 @@
+applied 20261103090000_v06_s1_roles_teams_platform.sql
+applied 20261103100000_v06_s2_dashboards.sql
+PASS Guy is platform admin (S1 seed, by profile id) 
+PASS second admin is platform admin (the one insert) 
+PASS an SMT member is not 
+PASS 10 VicData dashboards seeded (Teacher 4, SMT 4, Admissions 2) 
+PASS seeded versions equal the live configs 
+PASS G1 round trip vicdata.admissions.market-share: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.admissions.market-share: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.admissions.pipelines: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.admissions.pipelines: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.ks4.candidates: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.ks4.candidates: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.ks4.results: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.ks4.results: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.ks5.candidates: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.ks5.candidates: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.ks5.results: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.ks5.results: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.smt.academic: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.smt.academic: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.smt.context: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.smt.context: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.smt.overview: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.smt.overview: a member draws v2, the same config source=store
+PASS G1 round trip vicdata.smt.pupils: v1 -> v2, config byte-identical summary="No changes." blockers=0 draft_by_guy=true
+PASS G1 vicdata.smt.pupils: a member draws v2, the same config source=store
+PASS G1: no drafts left after publishing 
+PASS G7: earlier versions can be listed (editor sees the whole history, newest first) v3,v2,v1
+PASS G7: a member lists only the published version 
+PASS G7: restoring v2 on SMT Context makes v4, byte-identical to it summary="Named a panel “Map”."
+PASS G7: the versions in between are kept (immutable history) 
+PASS R-EDIT-PUBLISH-ALL: the draft is written as the admin (updated_by) 
+PASS R-EDIT-PUBLISH-ALL: the publish gate is clear and the summary names the change 
+PASS R-EDIT-PUBLISH-ALL: published as v3 = n+1 (n = 2) 
+PASS R-EDIT-PUBLISH-ALL: created_by is the admin's own uid 
+PASS R-EDIT-PUBLISH-ALL: published_version_id moved to it 
+PASS R-EDIT-PUBLISH-ALL: no write names Leighton Park (no school-scoped row, no trial key) 
+PASS R-EDIT-PUBLISH-ALL: SMT at another school (Acland Burghley) loads v3 
+PASS R-EDIT-PUBLISH-ALL: SMT at Leighton Park loads the same version (one definition for all) 
+PASS R-EDIT-PUBLISH-ALL: RLS shows a member the new version only 
+PASS R-EDIT-PUBLISH-ALL: a Teacher (not SMT) can't read the SMT dashboard (code copy fallback) 
+PASS R-EDIT-PUBLISH-ALL: an SMT member can't publish 
+PASS R-EDIT-PUBLISH-ALL: an SMT member can't write a draft (RLS) 
+PASS R-EDIT-PUBLISH-ALL: either platform admin publishes (Guy then makes n+2) 
+PASS store: saveDraft / publish / listVersions don't read View as (no getActiveViewAs, stateKey or trial_key) 
+ALL 44 PASSED

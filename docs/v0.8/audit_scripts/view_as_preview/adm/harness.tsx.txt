@@ -1,0 +1,4 @@
+import { createRoot } from "react-dom/client";
+import { AdmissionsDashboard } from "@/components/admissions/AdmissionsDashboard";
+import Footer from "@/components/Footer";
+createRoot(document.getElementById("root")!).render(<div className="flex min-h-screen flex-col"><AdmissionsDashboard /><Footer /></div>);

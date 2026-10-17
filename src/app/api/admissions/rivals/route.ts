@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const ep = entryPoint(sp.get("entry") ?? "");
   if (!ep) return NextResponse.json({ error: "entry must be 4+, 11+, 16+ or age:2-17" }, { status: 400 });
   try {
-    const lists = await savedLists(caller.supabase, caller.urn, ep.id);
+    const lists = await savedLists(caller.reader, caller.urn, ep.id);
     return NextResponse.json(await rivalsView(caller.urn, ep, lists, { filters: filtersFrom(sp), subject: latestSubjectNameOrNull(sp.get("subject")), family: sp.get("family"), qual: sp.get("qual"), measure: sp.get("measure") }));
   } catch (err) {
     console.error("[admissions/rivals] failed:", err);

@@ -2367,3 +2367,63 @@ The app half of `docs/v0.8/vicdata_0_8_db_performance_claude_code_prompt_v1.md`,
    
    **Suggest:** the same one-call treatment for the academic lookups next round.
 6. **Merge waits for Guy's ingest steps,** then a production check of the app against the new functions: parity again, and the timings after.
+7. **The 750-school age-gender read is close to anon's 3 s limit when the cache is cold.** After the build, `reference_data_age_gender_totals_all` took 1.2–1.35 s warm over HTTP (paged: 3.3–3.6 s, the same rows), but the first call of the timings, on a cold cache, hit the 3 s timeout. Before this round the paged read failed outright there. Inside the database it's 1.07 s, half of it `regexp_match` parsing 31,840 breakdown names. **Suggest:** parse them with `split_part` / `like` (the same answer) in a later migration, which should roughly halve it.
+
+## 2026-10-17 — View as
+
+The round for `docs/v0.8/vicdata_0_8_view_as_claude_code_prompt_v1.md`, on `v0.8-view-as`. It ran unattended: every call below was **decided unattended, for Guy to confirm**. Report: `docs/v0.8/view_as_report_v1.md`.
+
+**Access**
+1. **The server helper, not a `school_accounts` policy.** `resolveCaller` (`src/lib/view-as-server.ts`) reads the viewed school's account, lists and catchment with the service role, only after it has confirmed a platform admin. A policy would widen what the admin's own browser client reads everywhere that joins through `school_accounts`. No migration.
+2. **Where the module lives.** The decision is `decideCaller` in `src/lib/view-as.ts`, the one module, pure and tested. The I/O is in `view-as-server.ts`, kept apart so the service-role client never sits in a module that client code imports.
+3. **Teacher's and the Data View's routes keep their own membership query** (any approved row the caller's RLS shows at the school), now inside the helper (`visibleRow`). A member's request makes the same calls as before. One small change: a membership query that errors now returns 502 on the two routes that used to ignore the error (`subject-geography`, `subject-grade-geography`).
+4. **A platform admin who is also a member, in View as of their own school, is the viewed role, read-only.** Before, their own membership won and they could save.
+5. **View as Teacher at SMT (or Admissions) is refused by the server, as a Teacher is.** Before, any platform admin passed. The page shows the wrong-role message instead.
+6. **Head office is a role in the one cookie** (`vicdata_view_as`, `{r: "head_office", g, n}`). groups r1's own cookie (`vicdata_view_as_group`) is ignored and cleared. `groupCaller` stays in `src/lib/groups/server.ts`, since it decides a group rather than a school, but it reads the same cookie (and the peek) through `view-as.ts`.
+7. **The head-office View as applies only where head office has access** (SMT's routes and the group routes). On Teacher's and the Data View's routes it is ignored, and the admin is a peek there.
+8. **The peek now works for every product** (`?lookAs=&as=&peek=1`; `as=head_office` with a group account id). The page's own `/api/` calls carry it in an `x-vicdata-peek` header, added by a fetch wrapper installed only when the address asks for a peek. The server honours it only for platform admins. In a peek, the wrong-role message's "Switch to SMT" starts a real View as.
+9. **The server's View as read covers the account and catchment.** People, Teams and Admissions' shared lists, team and grants pages still read under the admin's own RLS, so in View as at a school where the admin isn't a member they show nothing. School-Admin's People and Teams already use their own server route.
+
+**Logging**
+10. **View as is never usage.** `/api/usage` no longer writes a `platform_admin` row for a platform admin's View as or peek. Only a member's own views count.
+11. **One audit row per start or change** (`view_as` with role, `view_as_group` for head office), as before. The wrong-role message's Switch counts as a change.
+
+**The UI**
+12. **One way in: the account menu's "View as…"** (platform admins, in View as too) and the /account card.
+    - Removed: the footer's "View as…" and the SMT and Admissions messages' buttons.
+    - Platform's "Look at it as…" is now headed "View as…" and opens the switcher pre-filled.
+    - The group accounts' "View as head office" opens it pre-filled with the group.
+13. **The switcher puts Role first**, then School, or Group for head office. Head office picks a group account from the Platform list.
+14. **Start fresh moved off the banner.** It stays in the switcher: the tick box, and beside each recent View as. The banner reads "Viewing as SMT · Leighton Park School" with Edit, Preview draft, Change and Back to me.
+15. **Back to me goes to /teacher**, head office's included (groups r1 went to /platform).
+16. **The role switch is in the desktop nav only** (the phone's first row has no room). It shows only with the config renderer, the same gate the /teacher home's lenses always had.
+    - On /teacher it switches the home in place.
+    - On SMT, Admissions and the other pages it opens the /teacher home for that role.
+17. **The school picker is in the account menu**, for members of more than one school. It reloads the page with `?school=URN`, remembered as before.
+
+**Retired**
+18. **The destructive testing switcher.** `src/lib/testing-membership.ts` is deleted. Its route had gone in 0.6 S3b, and no UI was left. The search found one user: the preview-session sign-in, which used it only to grant a starter school to a preview profile with no membership. That grant is now a short, add-only function in the route.
+
+**Editing**
+19. **SMT and Admissions now honour "Preview draft"**, as Teacher does.
+20. **Not changed:**
+    - The editor's host for SMT and Admissions gets the school only (Teacher's also gets its pills).
+    - The editor has no large (fullscreen) preview: `SmtViewPreview` and `AdmissionsViewPreview` hard-code `fullscreen: false`.
+    - **Suggest:** an "Open large" in the editor's panel menu.
+21. The subagent's editing calls are in `docs/v0.8/view_as_editing_notes.md`:
+    - `removeColumn` refuses rather than shrinking a 2-wide panel.
+    - Publishing is blocked by config problems and preview gaps.
+    - A view from another family is a config problem.
+    - Publish needs a summary.
+    - `copyRow` carries unknown keys.
+    - No composite screenshots were taken.
+    - The read-only select ran from `~/dev/vicdata_public`.
+22. **Make the group dashboards config-driven** (for Guy). This would need:
+    - a `DV-GRP-*` registry entry per view: Overview GRP-O-NOW, -ROLL, -RESULTS, -AGAINST, -SHARE, -MAP, -JOINED; Academic GRP-A-NOW, -TREND, -RANKED, -BANDS, -AREAS, -POST16, -VA, -IMPROVING; Pupils GRP-P-NOW, -ROLL, -SHAPE, -GROWING, -LEAVING, -ENTRIES, -MARKET, -PROJECTION; Schools GRP-S-NOW, -TABLE, -GROWING, -SCATTER, -SHAPES;
+    - group hosts;
+    - four `dashboards` rows.
+    
+    Until then there is no Edit switch on them.
+
+**Not done here**
+23. **No harness file the database load round owns was edited** (`scripts/catalogue-rule-tests.ts`, `scripts/rpc-proxy.mjs`, `src/lib/vicdata-reference.ts`).
