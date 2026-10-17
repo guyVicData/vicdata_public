@@ -343,3 +343,64 @@ cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoyb
 It rebuilds only the stale stage's cases. After a migration that changes `subject_label_map` or `subject_families`, add `--fresh`.
 
 Then tell me. I rerun every parity harness against the live functions, take the timings after, and merge the app branch. **The app change goes live with a Render deploy after that merge.**
+
+## 8. After your steps (17 Oct, evening)
+
+**Production (read-only check):**
+- 4,174 rank cases are served from the table, 0 stale, 5,161,507 rows.
+- Built in 28 minutes (19:18–19:46 UTC).
+- The one-call functions are live.
+- `canonical_facts_current` was vacuumed at 18:35 and has 0 dead rows.
+- The snapshot index is kept (the optional drop wasn't run).
+
+**Timings, the same 10 heaviest calls** (ms, three runs each, no app cache, over HTTP as anon).
+- "Before" is this morning.
+- "Paged" is this evening with `--paged`, which is what `main` still does.
+- "After" is this branch on the live functions.
+
+| Call | Before | Paged (evening) | After |
+|---|---|---|---|
+| reference_data_lookup: census, 40 schools, every age, every year | 569 / 323 / 190 | 368 / 195 / 190 | 395 / 88 / 83 |
+| reference_data_lookup: KS2 headline, every school in England | 20310 / 18866 / 18944 | 18144 / 18839 / 18442 | **1256 / 816 / 788** |
+| reference_data_age_gender_totals: 750 schools (a map view) | 3088 / 4981 / 3626 (one failed) | 3360 / 3224 / 3535 | 3073 (failed, cold) / 2170 / 1126 |
+| academic_subject_headline_lookup: 20 schools | 60 / 49 / 143 | 138 / 44 / 74 | 74 / 53 / 48 |
+| academic_subject_grade_rollup_lookup: one school, GCSE | 128 / 124 / 102 | 123 / 110 / 122 | 96 / 145 / 104 |
+| academic_subject_qualification_headline_lookup: one school, Post-16 | 91 / 43 / 46 | 64 / 42 / 62 | 51 / 61 / 55 |
+| academic_subject_rank_lookup: The Chase GCSE History points, national (6,159 schools) | 640 / 338 / 359 | 217 / 248 / 234 | 233 / 233 / 266 |
+| academic_subject_family_lookup: 150 schools, GCSE | 522 / 333 / 308 | 328 / 318 / 349 | 490 / 315 / 400 |
+| academic_headline_lookup: every school in England, GCSE | 5247 / 5117 / 5810 | 5341 / 4903 / 5422 | 4780 / 4901 / 5216 |
+| area_projection: The Chase, 8 km | 229 / 118 / 119 | 110 / 103 / 117 | 224 / 102 / 101 |
+| area_context: The Chase, 8 km | 1121 / 180 / 135 | 132 / 140 / 141 | 1084 / 216 / 136 |
+
+- **The rank lookup** serves from the table for both columns. It is the same function on production either way, and is now 0.22–0.27 s where it was 0.34–0.64 s. Inside the database, the 258 verify cases took 41% of today's time on PGlite.
+- **The 750-school age-gender read:** the first call, on a cold cache, went past anon's 3 s. Six warm calls after it, alternating:
+
+  | One call | Paged |
+  |---|---|
+  | 1.20–1.35 s | 3.29–3.58 s |
+
+  The rows were identical (2,835). Inside the database it takes 1.07 s, half of it `regexp_match` on the breakdown names. It was failing before this round too. Logged (app call 7) with a suggested follow-up.
+- **Not in scope:** the 5 s national `academic_headline_lookup` is unchanged (§6, app call 5).
+
+**Parity, branch `7a87e3f` (which includes `main`'s View as round) against `main` `e8f621e`.** The branch reads through the live one-call functions and `main` reads paged. Both went through the cached proxy, with 0 retries and 0 failures.
+- **Every fixture is byte-identical between the trees, in every harness. No app figure changed.**
+- **Teacher:** 2,875 / 2,875.
+  - One chart PNG was first drawn before its layout settled, and was identical on 3 reshoots.
+  - Twice, a `SchoolMap.tsx` `getComputedStyle` error fired on an already-unmounted map. The file is the same in both trees.
+- **Public page SSR:** identical.
+- **Admissions:** 328 / 328.
+- **Data View:** 60 / 60.
+- **Groups:** identical after reshooting.
+  - One page was captured before `#root` drew, and was 14 / 14 on 3 reshoots.
+  - Two images differ by ≤2/255.
+- **SMT:** HTML identical everywhere; PNG noise only (the Context tab pill's edge; ≤2/255 elsewhere).
+- **Rule tests:** 107 pass, 0 fail, 0 errors.
+- **Proxy upstream calls** (of those received): Teacher 800 of 1,967; SMT 1,378 of 3,624; Admissions 529 of 1,869; groups 85 of 170; Data View 15 of 20; rule tests 1,319 of 1,819.
+
+**Checks on the merged branch:** all clean.
+- tsc, eslint (0 errors) and `next build`.
+- Unit tests: 491 / 491, run per file.
+  - `view-as-pages.test.ts`, from `main`, needs `--test-force-exit`, as its header says.
+- Catalogue tests: clean.
+- PGlite: 19 / 19.
+  - `v08_view_as_editing_pglite.mjs` runs with tsx, as its header says: 44 / 44.
