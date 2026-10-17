@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
 import { NextRequest, NextResponse } from "next/server";
 import { lookupAcademicLatestYears, lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
@@ -96,20 +96,10 @@ export async function GET(request: NextRequest) {
     { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
   );
 
-  const { data: approvedMembership, error: membershipError } = await supabase
-    .from("school_memberships")
-    .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-    .eq("status", "approved")
-    .eq("school_accounts.school_urn", urn)
-    // Any approved row at this school proves membership: RLS shows colleagues only to members.
-    .limit(1)
-    .maybeSingle();
-  if (membershipError) {
-    return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  }
-  if (!approvedMembership && !(await isPlatformAdmin(supabase))) {
-    return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
-  }
+  // 0.8 View as: the one caller helper (src/lib/view-as-server.ts) -- a member of this school (the
+  // query this route always made), a platform admin's View as or peek, read-only.
+  const caller = await resolveCaller(request, urn, { visibleRow: true, supabase, refusal: "Teacher view is available to verified school staff." });
+  if (caller instanceof NextResponse) return caller;
 
   // §5: KS2's "how many" question is the Year 6 cohort from roll data, NOT exam entries --
   // every pupil sits the same fixed tests, so there is no entries concept. Reuses

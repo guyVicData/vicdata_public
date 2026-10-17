@@ -24,7 +24,7 @@ import { ADMISSIONS_DASHBOARDS } from "@/catalogue/dashboards/admissions";
 import type { DashboardConfig, DataviewId, PanelConfig } from "@/catalogue/types";
 import type { ViewSpec } from "@/catalogue/viewspec";
 import { ADMISSIONS_VIEW_COMPARE, compareState, looksOf } from "@/catalogue/admissions-editor";
-import { loadPublishedVicData } from "@/lib/published-vicdata";
+import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { isBoardingSchool } from "@/lib/admissions/boarding";
 import { cleanLaNameForDisplay } from "@/lib/la-name-display";
@@ -36,9 +36,9 @@ import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, F
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { ControlBar } from "@/components/teacher/ControlBar";
-import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
+import { editorWritesSettled, useEditSwitch, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
-import { openViewAs } from "@/components/view-as/ViewAs";
+import { ViewAsWrongRole } from "@/components/view-as/ViewAs";
 import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
 import { Empty, EntryChip, FChip, Panel, Skeleton, Tabs, admissionsVars, fillHeight, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
 import { useWidth } from "./views/charts";
@@ -172,16 +172,10 @@ export function AdmissionsDashboard() {
   );
 }
 
-/** F5: a platform admin's empty state -- View as, not "join your school". */
+/** F5: a platform admin's empty state -- View as, not "join your school". 0.8 View as: it starts from
+ * the account menu (no button here any more). */
 function UseViewAs() {
-  return (
-    <span className="flex flex-wrap items-center gap-3">
-      To see a school&rsquo;s Admissions, use View as.
-      <button type="button" onClick={() => openViewAs()} className="rounded-full border border-[var(--panel-border2)] px-3 py-1 text-[12px] font-bold text-[var(--fg)] hover:border-[var(--fg)]">
-        View as&hellip;
-      </button>
-    </span>
-  );
+  return <>To see a school&rsquo;s Admissions, use View as in your account menu.</>;
 }
 
 function AdmissionsEditor({ slug: pageSlug, school }: { slug: string; school: { urn: string; name: string } }) {
@@ -199,9 +193,14 @@ function Gate({ member, theme, onTheme, platformAdmin, onDash, reloadTick }: { m
   if (member.access === "none")
     return (
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
+        {/* 0.8 View as: the wrong-role message keeps the banner's Change and Back to me (nothing for anyone else). */}
+        <ViewAsBanner className="" />
         <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
         <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] leading-relaxed text-[var(--muted2)]">
-          {platformAdmin && !member.viewAs ? <UseViewAs /> : <>Admissions is for the school&rsquo;s Admissions and SMT staff and its School-Admin. Ask your School-Admin if you need it; a list shared with you appears here.</>}
+          {member.viewAs ? (
+            // 0.8 View as: a platform admin viewing the school as a role Admissions isn't for.
+            <ViewAsWrongRole viewAs={member.viewAs} forWhom="Admissions dashboards are for Admissions, SMT and the School-Admin." to={{ role: "admissions", label: "Admissions" }} />
+          ) : platformAdmin ? <UseViewAs /> : <>Admissions is for the school&rsquo;s Admissions and SMT staff and its School-Admin. Ask your School-Admin if you need it; a list shared with you appears here.</>}
         </div>
       </div>
     );
@@ -226,16 +225,19 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   const phone = width > 0 && width < PHONE;
 
   // The published configs (the store's, else the code copy).
+  const previewDraft = useEditSwitch(useMemo(() => createBrowserSupabaseClient(), [])).previewDraft;
   const [configs, setConfigs] = useState<Record<DashKey, DashboardConfig>>({ pipelines: ADMISSIONS_DASHBOARDS[0], "market-share": ADMISSIONS_DASHBOARDS[1] });
   // After editing (reloadTick goes up), re-read them, once the editor's last write has landed.
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     (async () => {
       if (reloadTick > 0) await editorWritesSettled();
-      const [p, m] = await Promise.all(ADMISSIONS_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d)));
+      // 0.8 View as: the banner's "Preview draft" draws the editor's draft here too, as on Teacher.
+      const load = previewDraft ? loadDraftVicData : loadPublishedVicData;
+      const [p, m] = await Promise.all(ADMISSIONS_DASHBOARDS.map((d) => load(supabase, d.id, d)));
       setConfigs({ pipelines: p.config, "market-share": m.config });
     })();
-  }, [reloadTick]);
+  }, [reloadTick, previewDraft]);
 
   // The school's entry points and lists (the lists route; 503 before the r1 migration is applied).
   const [listsKey, setListsKey] = useState(0);

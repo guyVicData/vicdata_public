@@ -6,7 +6,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleSupabaseClient } from "../supabase";
-import { isPlatformAdmin } from "../view-as";
+import { isPlatformAdmin, parsePeekHeader, PEEK_HEADER } from "../view-as";
 import { canSeeSmt } from "../smt/auth-rules";
 import { parseViewAsGroupCookie } from "./view-as-group";
 import { groupMembers, type GroupMember } from "./production";
@@ -51,7 +51,9 @@ export async function officesOf(supabase: SupabaseClient, userId: string): Promi
 export async function groupCaller(request: NextRequest): Promise<GroupCaller | NextResponse> {
   const u = await userFrom(request);
   if (u instanceof NextResponse) return u;
-  const v = parseViewAsGroupCookie(request.headers.get("cookie"));
+  // The head-office View as (the one View as cookie), or a head-office peek (?lookAs={account}&as=head_office&peek=1).
+  const peek = parsePeekHeader(request.headers.get(PEEK_HEADER))?.group ?? null;
+  const v = parseViewAsGroupCookie(request.headers.get("cookie")) ?? peek;
   if (v && (await isPlatformAdmin(u.supabase))) {
     const { data, error } = await createServiceRoleSupabaseClient().from("group_accounts").select("id, group_id, display_name, status, preview_of").eq("id", v.accountId).maybeSingle<AccountRow>();
     if (error && !isMissing(error)) throw error;

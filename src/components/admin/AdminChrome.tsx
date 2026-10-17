@@ -14,7 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { DELTA_POSITIVE, ROLE_ACCENT, accentText } from "@/lib/teacher-view-theme";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
-import { getActiveViewAs } from "@/lib/view-as";
+import { fetchViewedSchool, getActiveViewAs } from "@/lib/view-as";
 import { pickMembership, viewAsMembership } from "@/lib/view-as";
 
 // ---------------------------------------------------------------------------------------
@@ -64,12 +64,11 @@ export async function loadAdminSchool(): Promise<AdminSchoolState> {
   if (!user) return { status: "signed-out" };
   const viewAs = getActiveViewAs();
   if (viewAs) {
-    const { data: account } = await supabase
-      .from("school_accounts")
-      .select("id, account_holder_membership_id")
-      .eq("school_urn", viewAs.urn)
-      .maybeSingle<{ id: string; account_holder_membership_id: string | null }>();
-    if (!account) return { status: "no-school" };
+    // 0.8 View as: the viewed school's account from the server (the one caller helper, after it has
+    // confirmed a platform admin); the admin's own RLS reads none at a school they aren't a member of.
+    // Any school: one with no account still opens, with nothing in it.
+    const viewed = await fetchViewedSchool(supabase, viewAs.urn);
+    const account = { id: viewed?.accountId ?? "", account_holder_membership_id: null as string | null };
     return {
       status: "ready",
       school: {

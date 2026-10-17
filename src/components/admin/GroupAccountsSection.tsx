@@ -7,11 +7,10 @@
 // (read-only, never in the usage log). Every power is a SECURITY DEFINER function that re-checks
 // platform admin and writes the audit log.
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { GROUP_NOTES, GROUP_SOURCE_LABELS } from "@/catalogue/notes";
 import { InviteLink, inviteLink } from "@/components/groups/InviteLink";
-import { startViewAsGroup } from "@/lib/groups/view-as-group";
+import { openViewAs } from "@/components/view-as/ViewAs";
 import { SearchBox, Switch } from "./AdminChrome";
 
 type Account = { id: string; group_id: string; display_name: string; status: "active" | "suspended"; created_at: string; admins: number; members: number; open_invitations: number; open_grants: number };
@@ -31,7 +30,6 @@ async function token(): Promise<string | null> {
 
 export function GroupAccountsSection() {
   const supabase = createBrowserSupabaseClient();
-  const router = useRouter();
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [missing, setMissing] = useState(false);
   const [q, setQ] = useState("");
@@ -105,12 +103,11 @@ export function GroupAccountsSection() {
       const { error: e } = await supabase.rpc("platform_set_group_account_status", { p_account: a.id, p_status: active ? "active" : "suspended" });
       return { error: e?.message ?? null };
     });
-  async function viewAs(a: Account) {
+  // 0.8 View as: head office is a role in the one View as switcher; this opens it with the group filled in
+  // (the switcher confirms platform admin, logs view_as_group and opens the head-office home).
+  function viewAs(a: Account) {
     setError(null);
-    const { error: e } = await supabase.rpc("log_platform_action", { p_action: "view_as_group", p_school_urn: null, p_detail: { group_account_id: a.id, group_id: a.group_id } });
-    if (e) return setError(`Could not start View as: ${e.message}`);
-    startViewAsGroup({ accountId: a.id, name: a.display_name });
-    router.push("/teacher/group");
+    openViewAs({ group: { accountId: a.id, name: a.display_name, groupId: a.group_id } });
   }
   const existing = new Set((accounts ?? []).map((a) => a.group_id));
 

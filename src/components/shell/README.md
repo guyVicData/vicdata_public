@@ -8,12 +8,12 @@ These files moved here in 0.8 (Part A) from `src/components/teacher/`, `src/comp
 
 | Part | File | What it is |
 |---|---|---|
-| Nav | `TeacherNav.tsx` | The VicData mark, the role home, the phase switch, the library and the account menu. The View as pill appears only while viewing as someone. |
+| Nav | `TeacherNav.tsx` | The VicData mark, the role home, the phase switch, the library and the account menu. The role switch (`RoleSwitch.tsx`) appears only for a member with more than one role; the View as pill only while viewing as someone. The account menu holds "View as…" (platform admins) and the school picker (members of more than one school). |
 | Theme | `TeacherChrome.tsx` | The dark/light toggle (`useTeacherTheme`, `ThemeToggle`); print is always light. |
 | Control bar | `ControlBar.tsx` | The badge and "{Product} — {school}", the dashboard switch, the focus chips with their ±, then the product's pills in the `chrome` slot. |
 | Dashboard switch | `GroupSwitcher.tsx` | The linked dashboards of one group (Candidates · Results; Pipelines · Market share; Overview · Academic). |
 | Pills | `FilterPills.tsx`, `PillMenu.tsx` | `FChip` (a filter pill), `MenuChip` (a pill with a one-choice menu), `EntryChip` (a pill-shaped focus chip), and `PillMenu` (Teacher's pill with a menu: "Compared against"). |
-| Edit bar | `EditSwitch.tsx` | The footer's **Edit** and **View as…**, for platform admins only, on a page that registers a VicData dashboard (`useInPlaceEdit`, `src/lib/edit-mode.ts`). |
+| Edit bar | `EditSwitch.tsx` | The footer's **Edit**, for platform admins only, on a page that registers a VicData dashboard (`useInPlaceEdit`, `src/lib/edit-mode.ts`). View as starts from the account menu (0.8 View as). |
 | Grid, Teacher | `DashboardGrid.tsx`, `DashboardColumn.tsx` | Three columns with dividers; each column is a card with its accent bar and question. |
 | Grid, Admissions/SMT | `Rows.tsx` | `ShellPage` (the frame), `ShellRow` (a collapsible row head, then a three-column grid), `RowHead`, `PhoneStack`. Column 1 is one panel; the large view is a `RailPanel` with `span={2}`. |
 | Panel | `CardBox.tsx` | Every panel: header, icon row, body, footer notes, full screen. |

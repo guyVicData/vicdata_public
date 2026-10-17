@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-safe";
-import { grantApprovedMembership } from "@/lib/testing-membership";
 import { isPreviewGroup, previewGroupEmail, seedPreviewGroup } from "@/lib/testing-group";
 
 // Passwordless preview access for automated browser agents
@@ -48,6 +48,27 @@ const PREVIEW_STARTER_URN = "100053";
 // is the one thing an unauthenticated caller must not be able to learn.
 function notFound(): NextResponse {
   return new NextResponse("Not found", { status: 404 });
+}
+
+// 0.8 View as: the starter school's membership, granted only to a preview profile with none (below).
+// It replaces the retired testing switcher's grant (src/lib/testing-membership.ts, gone), which DELETED
+// the caller's memberships and personal saved sets to "switch" school; this only ever adds: View as is
+// the way to see another school. Service role: a plain member can't self-approve.
+async function grantStarterMembership(admin: SupabaseClient, profileId: string, urn: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  let { data: account } = await admin.from("school_accounts").select("id, account_holder_membership_id").eq("school_urn", urn).maybeSingle<{ id: string; account_holder_membership_id: string | null }>();
+  if (!account) {
+    const { data, error } = await admin.from("school_accounts").insert({ school_urn: urn, tier: "individual" }).select("id, account_holder_membership_id").single<{ id: string; account_holder_membership_id: string | null }>();
+    if (error || !data) return { ok: false, error: "Could not create a school account for this school" };
+    account = data;
+  }
+  const { data: membership, error } = await admin
+    .from("school_memberships")
+    .insert({ school_account_id: account.id, profile_id: profileId, status: "approved", is_admin: true, approved_at: new Date().toISOString() })
+    .select("id")
+    .single<{ id: string }>();
+  if (error || !membership) return { ok: false, error: "Could not create a membership for this school" };
+  if (!account.account_holder_membership_id) await admin.from("school_accounts").update({ account_holder_membership_id: membership.id }).eq("id", account.id);
+  return { ok: true };
 }
 
 export async function GET(request: NextRequest) {
@@ -100,7 +121,7 @@ export async function GET(request: NextRequest) {
 
   // A starter school so /teacher has something real to show on arrival. Only granted when
   // this profile has no membership at all -- otherwise every visit would yank the account
-  // back to the starter school and break the school-switcher's whole purpose.
+  // back to the starter school. Another school is reached through View as (0.8).
   if (group) {
     const seeded = await seedPreviewGroup(admin, userId, group);
     if (!seeded.ok) {
@@ -115,7 +136,7 @@ export async function GET(request: NextRequest) {
       .eq("profile_id", userId)
       .limit(1);
     if (!existing || existing.length === 0) {
-      const granted = await grantApprovedMembership(admin, userId, PREVIEW_STARTER_URN);
+      const granted = await grantStarterMembership(admin, userId, PREVIEW_STARTER_URN);
       if (!granted.ok) console.error("[preview-session] starter membership failed:", granted.error);
     }
   }

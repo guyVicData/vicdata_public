@@ -44,7 +44,7 @@ export function parseUsageReport(body: unknown): UsageReport | null {
   };
 }
 
-/** One member event. `membershipId` null with role "platform_admin" for View as. */
+/** One member event (0.8 View as: never a platform admin's View as). */
 export async function writeUsageEvent(r: UsageReport, who: { membershipId: string | null; role: string | null }): Promise<void> {
   try {
     await createServiceRoleSupabaseClient().from("usage_events").insert({

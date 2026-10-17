@@ -130,8 +130,9 @@ export function Platform() {
     setBusy(false);
   }
 
-  // 0.6 snag 4 (A): "Look at it as…" opens View as (the nav pill's popover) with this
-  // school and role filled in -- the one mechanism; Start fresh and Open are there.
+  // 0.6 snag 4 (A): opens View as (the nav pill's popover) with this school and role filled in --
+  // the one mechanism; Start fresh and Open are there. 0.8 View as: no longer a way in of its own
+  // ("Look at it as…"): it opens the account menu's switcher, pre-filled.
   function lookAs(row: SchoolOverviewRow, role: VisibleRoleId) {
     setError(null);
     openViewAs({ urn: row.school_urn, name: row.school_name ?? row.school_urn, role: role as ViewAsRole });
@@ -228,7 +229,7 @@ export function Platform() {
               {selected.vc_sets_total === 0 && <span className="text-[12px] text-[var(--muted2)]">No VC sets yet</span>}
             </div>
 
-            <div className={`${HEADING} mt-1`}>Look at it as&hellip;</div>
+            <div className={`${HEADING} mt-1`}>View as&hellip;</div>
             <div className="flex flex-wrap gap-1.5">
               {VIEW_AS_ROLES.map((role) => (
                 <button key={role} type="button" onClick={() => lookAs(selected, role)} className={EBTN}>
@@ -237,7 +238,7 @@ export function Platform() {
               ))}
             </div>
             <div className="text-[11.5px] leading-[1.45] text-[var(--muted2)]">
-              Opens View as with this school and role filled in: their home page as a member with that one role. It saves as that member, never as you, and is logged.
+              Opens the View as switcher (the account menu&rsquo;s) with this school and role filled in. It saves as that member, never as you, and is logged.
             </div>
 
             <div className={`${HEADING} mt-1`}>Dashboards here</div>
