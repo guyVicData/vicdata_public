@@ -24,7 +24,7 @@ import { ADMISSIONS_DASHBOARDS } from "@/catalogue/dashboards/admissions";
 import type { DashboardConfig, DataviewId, PanelConfig } from "@/catalogue/types";
 import type { ViewSpec } from "@/catalogue/viewspec";
 import { ADMISSIONS_VIEW_COMPARE, compareState, looksOf } from "@/catalogue/admissions-editor";
-import { loadPublishedVicData } from "@/lib/published-vicdata";
+import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { isBoardingSchool } from "@/lib/admissions/boarding";
 import { cleanLaNameForDisplay } from "@/lib/la-name-display";
@@ -36,7 +36,7 @@ import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, F
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { ControlBar } from "@/components/teacher/ControlBar";
-import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
+import { editorWritesSettled, useEditSwitch, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
 import { ViewAsWrongRole } from "@/components/view-as/ViewAs";
 import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
@@ -223,16 +223,19 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   const phone = width > 0 && width < PHONE;
 
   // The published configs (the store's, else the code copy).
+  const previewDraft = useEditSwitch(useMemo(() => createBrowserSupabaseClient(), [])).previewDraft;
   const [configs, setConfigs] = useState<Record<DashKey, DashboardConfig>>({ pipelines: ADMISSIONS_DASHBOARDS[0], "market-share": ADMISSIONS_DASHBOARDS[1] });
   // After editing (reloadTick goes up), re-read them, once the editor's last write has landed.
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     (async () => {
       if (reloadTick > 0) await editorWritesSettled();
-      const [p, m] = await Promise.all(ADMISSIONS_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d)));
+      // 0.8 View as: the banner's "Preview draft" draws the editor's draft here too, as on Teacher.
+      const load = previewDraft ? loadDraftVicData : loadPublishedVicData;
+      const [p, m] = await Promise.all(ADMISSIONS_DASHBOARDS.map((d) => load(supabase, d.id, d)));
       setConfigs({ pipelines: p.config, "market-share": m.config });
     })();
-  }, [reloadTick]);
+  }, [reloadTick, previewDraft]);
 
   // The school's entry points and lists (the lists route; 503 before the r1 migration is applied).
   const [listsKey, setListsKey] = useState(0);

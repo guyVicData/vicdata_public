@@ -35,8 +35,8 @@ import { SMT_DASHBOARDS, SMT_ACADEMIC_ID, SMT_CONTEXT_ID, SMT_OVERVIEW_ID, SMT_P
 import { ADMISSIONS_NOTES, SMT_NOTES, TREND_BASE_NOTE, smtNote } from "@/catalogue/notes";
 import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel, setLatestYears } from "@/catalogue/years";
 import type { DashboardConfig, DataviewInstance, PanelConfig } from "@/catalogue/types";
-import { loadPublishedVicData } from "@/lib/published-vicdata";
-import { editorWritesSettled, isPlatformAdminCached, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
+import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
+import { editorWritesSettled, useEditSwitch, isPlatformAdminCached, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parseLevel, pillsFor, setPhaseOf, type SmtLevel, type SmtPhase } from "@/lib/smt/levels";
 import { SMT_ONLY_MESSAGE } from "@/lib/smt/auth-rules";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
@@ -221,15 +221,18 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const f: SmtFilters = { sex: s?.mixed ? filters.sex : "all", boarding: s?.boarding ? filters.boarding : "all" };
 
   // The published configs (the store's, else the code copy), re-read after editing.
+  const previewDraft = useEditSwitch(useMemo(() => createBrowserSupabaseClient(), [])).previewDraft;
   const [configs, setConfigs] = useState<Record<SmtDash, DashboardConfig>>({ overview: SMT_DASHBOARDS[0], academic: SMT_DASHBOARDS[1], pupils: SMT_DASHBOARDS[2], context: SMT_DASHBOARDS[3] });
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     (async () => {
       if (reloadTick > 0) await editorWritesSettled();
-      const [o, a, p, c] = await Promise.all(SMT_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d)));
+      // 0.8 View as: the banner's "Preview draft" draws the editor's draft here too, as on Teacher.
+      const load = previewDraft ? loadDraftVicData : loadPublishedVicData;
+      const [o, a, p, c] = await Promise.all(SMT_DASHBOARDS.map((d) => load(supabase, d.id, d)));
       setConfigs({ overview: o.config, academic: a.config, pupils: p.config, context: c.config });
     })();
-  }, [reloadTick]);
+  }, [reloadTick, previewDraft]);
 
   const set = sets.set;
   const body = set ? { urn: member.schoolUrn, set } : null;
