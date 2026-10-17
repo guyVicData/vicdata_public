@@ -3,7 +3,7 @@
 // every excluded school is the lookup's own, never recomputed here (R-GROUP-COUNTS). Rank WITHIN the
 // group (the Schools table's "In group") is the one ordering made here, over the lookup's own school
 // figures, ties sharing a place, IGCSE schools out at GCSE (the audit-fixes rules).
-import { periodLabel } from "@/catalogue/years";
+import { periodLabel, ROLL_DIRECTION_SPAN, rollDirection } from "@/catalogue/years";
 import { shapeOf } from "../admissions/shape";
 import { SHAPE_LABELS } from "../data-view-cards";
 import type { AgeGenderCounts } from "../roll-data";
@@ -56,8 +56,15 @@ export const MEASURE_PHASE: Record<string, Exclude<Phase, "all">> = { ks2_rwm: "
 export const HEADLINE: Record<Exclude<Phase, "all">, string> = { secondary: "ks4_a8", post16: "ks5_aps_alevel", primary: "ks2_rwm" };
 export const PHASE_NOUN: Record<Exclude<Phase, "all">, [string, string]> = { primary: ["primary", "primaries"], secondary: ["secondary", "secondaries"], post16: ["sixth form", "sixth forms"] };
 
-// "Growing" counts schools over three years (the wireframe's "since 2022/23" in the latest census).
-export const GROWING_SPAN = "3" as const;
+// "Growing" counts schools over three years: R-ROLL-WORDS-3YR (years.ts ROLL_DIRECTION_SPAN), the key
+// of the database's 1/3/5-year changes. Every groups roll word and arrow reads it.
+export const GROWING_SPAN = String(ROLL_DIRECTION_SPAN) as "3";
+
+/** A school's roll change over the longest span it has (fewer than 4 census years), ending at `census`. */
+function shorterSpan(rolls: { year: number; value: number | null }[], census: number): number | null {
+  const d = rollDirection(rolls.filter((r) => r.year <= census), 1);
+  return d && d.to === census ? Math.round(d.pct * 10) / 10 : null;
+}
 
 /** GIAS writes trust names in capitals ("HARRIS FEDERATION"): shown in title case, short words lower,
  * known acronyms kept. A name already in mixed case is left as it is. */
@@ -542,7 +549,9 @@ export function buildSchools(input: {
       national,
       va: vaM && vv !== undefined && vv !== null && vy !== null ? { measure: vaM, value: vv, year: vy } : null,
       vaNote: vaM && (vv === undefined || vv === null) ? (independent && vaM === "ks4_p8" ? "not published (independent)" : "not published") : null,
-      trend: f?.trend["1"] ?? null,
+      // R-ROLL-WORDS-3YR: the 3-year roll change; a school without a census three years back (no
+      // database figure) uses the longest span it has, from its own yearly rolls to this census.
+      trend: f?.trend[GROWING_SPAN] ?? shorterSpan(s.years.map((y) => ({ year: y.period, value: y.figures ? y.figures.roll : null })), census),
       rollsByYear: s.years.map((y) => ({ year: y.period, value: y.figures ? y.figures.roll : null })),
       rollByAge: byAge,
       basis: s.basis,

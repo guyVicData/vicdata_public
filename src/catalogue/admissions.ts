@@ -120,7 +120,7 @@ export const ADMISSIONS_RENDERERS: Renderer[] = [
   r("RD-ADM-LINE", "AdmLine", "views/Lines.tsx", "A series per line over census or entry years (actual or indexed).", "Fewer than two years: 'Not enough years yet'."),
   r("RD-ADM-BARS", "AdmBars", "views/Bars.tsx", "Bars per year or per school; ranked bars with share, trend and results ranks.", "No figures."),
   r("RD-ADM-DONUT", "ShareDonut", "views/Bars.tsx", "The school's share of this group at the entry age.", "No group total."),
-  r("RD-ADM-SCATTER", "MomentumScatter", "views/Momentum.tsx", `Pupil change (entry age) against results change since ${periodLabel(TREND_BASE_PERIOD)}, four quadrants, with the flag list.`, "Thresholds not loaded: 'flags not available yet'; a school without both changes is left off the scatter and said so."),
+  r("RD-ADM-SCATTER", "MomentumScatter", "views/Momentum.tsx", `Pupil change (entry age, over 3 census years) against results change since ${periodLabel(TREND_BASE_PERIOD)}, four quadrants, with the flag list.`, "Thresholds not loaded: 'flags not available yet'; a school without both changes is left off the scatter and said so."),
   r("RD-ADM-STRENGTHS", "StrengthsBars", "views/Strengths.tsx", `Per subject area: rank among the rivals with it, the gap to their average (diverging), its direction since ${periodLabel(TREND_BASE_PERIOD)}, and flags.`, "KS2 has no subject areas; no ranked areas: says so."),
   r("RD-ADM-FLAGS", "FlagList", "views/Momentum.tsx", "Each rival's momentum flags, each with the figures behind it on hover.", "Thresholds not loaded: 'flags not available yet'."),
 ];

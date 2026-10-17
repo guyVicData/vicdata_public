@@ -4,6 +4,7 @@
 // can't check -- the school must be a CURRENT member of the group in production -- at grant time and
 // at every read.
 import type { GroupMember } from "./production";
+import { flatBand } from "@/lib/signed-delta";
 
 export type GroupRole = "head_office_admin" | "head_office";
 // membersOf: whose member list the account reads -- its own group_id, or for a preview account (G6,
@@ -111,13 +112,14 @@ export function seeingCount(account: Pick<GroupAccount, "status">, members: Grou
   return { seeing: members.filter((m) => liveGrant(account, grants, m.urn, members)).length, of: members.length };
 }
 
-/** "{n} schools · roll ▲ x% · {g} growing": the combined roll this census against last, over the
- * schools with both years; growing = schools whose roll rose. */
+/** "{n} schools · roll ▲ x% over 3 years · {g} growing": the combined roll this census against 3
+ * years before (R-ROLL-WORDS-3YR; the caller picks the years), over the schools with both years;
+ * growing = schools whose roll rose by an amount that doesn't round to 0% (R-FLAT-BAND). */
 export function rollSummary(rolls: { urn: string; now: number | null; before: number | null }[]): { schools: number; changePct: number | null; growing: number; compared: number } {
   const both = rolls.filter((r) => r.now !== null && r.before !== null && r.before > 0);
   const now = both.reduce((s, r) => s + r.now!, 0);
   const before = both.reduce((s, r) => s + r.before!, 0);
-  return { schools: rolls.length, changePct: before > 0 ? ((now - before) / before) * 100 : null, growing: both.filter((r) => r.now! > r.before!).length, compared: both.length };
+  return { schools: rolls.length, changePct: before > 0 ? ((now - before) / before) * 100 : null, growing: both.filter((r) => flatBand(((r.now! - r.before!) / r.before!) * 100, 0) === "up").length, compared: both.length };
 }
 
 /** A school's own view of its groups: each group with an active VicData group account, whether the

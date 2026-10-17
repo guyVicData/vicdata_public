@@ -11,6 +11,7 @@ import { SMT_NOTES, smtNote } from "@/catalogue/notes";
 import type { StagePart } from "@/lib/smt/academic";
 import { MIN_SUBJECT_ENTRIES_UI } from "@/lib/smt/levels";
 import { Td, Th, dirClass, fmt, rankText } from "../ui";
+import { arrowed } from "@/lib/signed-delta";
 
 export function explorerHref(stage: "ks4" | "ks5", setUrns: string[], setLabel: string, subject?: string): string {
   const q = new URLSearchParams();
@@ -52,7 +53,7 @@ export function Subjects({ parts, setUrns, setLabel, phase }: { parts: StagePart
                 <Td className="font-bold text-[var(--fg)]">{s.ranked ? fmt(s.avg, unit) : "—"}</Td>
                 <Td title={s.reason === "small" ? smtNote("smallEntries", { min: MIN_SUBJECT_ENTRIES_UI }) : s.reason === "scale" ? `${s.qualification}: no GCSE or A-level points scale` : undefined}>{s.set ? `${s.set.tied ? "=" : ""}${s.set.rank} of ${s.set.of}` : <i className="text-[var(--muted2)]">{s.reason === "scale" ? SMT_NOTES.differentScale : "not ranked"}</i>}</Td>
                 <Td>{s.england ? rankText(s.england) : "—"}</Td>
-                <Td className={`font-bold ${dirClass(s.since)}`}>{s.since === null ? "—" : `${s.since > 0.05 ? "▲" : s.since < -0.05 ? "▼" : "▬"} ${Math.abs(s.since).toFixed(2)}`}</Td>
+                <Td className={`font-bold ${dirClass(s.since)}`}>{s.since === null ? "—" : arrowed(s.since, (x) => x.toFixed(2), 2, 0.05)}</Td>
                 <Td>
                   <Link href={explorerHref(p.stage, setUrns, setLabel, s.subject)} className="whitespace-nowrap text-[11.5px] font-bold text-[var(--adm-accent-text)]">
                     Subject explorer &rarr;

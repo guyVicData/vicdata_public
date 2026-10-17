@@ -13,13 +13,14 @@ import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { HomeCard, MeetingsGlyph, type TileColour } from "@/components/teacher/HomeCard";
 import { FEATURE_ACCENT, GROUP_ACCENT } from "@/lib/teacher-view-theme";
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
-import { periodLabel } from "@/catalogue/years";
+import { periodLabel, ROLL_DIRECTION_SPAN } from "@/catalogue/years";
 import { listMeetings } from "@/lib/meeting-store";
 import { shortDate } from "@/lib/meeting-ops";
 import type { HeadOffice } from "@/lib/groups/access-rules";
 import { groupVars } from "./ui";
 import { GroupViewAsBanner } from "./GroupViewAsBanner";
 import { useGroupOffices, type OfficesState } from "./useGroupOffices";
+import { arrowed } from "@/lib/signed-delta";
 
 const SCHOOLS_TILE: TileColour = { hex: "#a78bfa", rgb: "167,139,250" };
 const ACCESS_TILE: TileColour = { hex: "#fbbf24", rgb: "251,191,36" };
@@ -121,7 +122,7 @@ function Card({ colour, icon, title, description, edge, children, href, onClick,
 export function summaryLine(d: Pick<GroupHomeData, "summary">): string {
   const s = d.summary;
   const parts = [`${s.schools} schools`];
-  if (s.changePct !== null) parts.push(`roll ${s.changePct >= 0 ? "▲" : "▼"} ${Math.abs(s.changePct).toFixed(1)}%`);
+  if (s.changePct !== null) parts.push(`roll ${arrowed(s.changePct, (x) => `${x.toFixed(1)}%`, 1)} over 3 years`);
   parts.push(`${s.growing} growing`);
   return parts.join(" · ");
 }
@@ -209,7 +210,7 @@ function Body({ offices }: { offices: OfficesState }) {
           <span className="mt-3 flex flex-wrap gap-1.5">
             <GroupDashChips accountId={o.id} />
           </span>
-          <span className="mt-2.5 block text-[12px] text-[var(--muted)]" title={d?.summary.period ? groupNote("summary", { now: periodLabel(d.summary.period), before: periodLabel(d.summary.period - 1), n: d.summary.compared }) : undefined}>
+          <span className="mt-2.5 block text-[12px] text-[var(--muted)]" title={d?.summary.period ? groupNote("summary", { now: periodLabel(d.summary.period), before: periodLabel(d.summary.period - ROLL_DIRECTION_SPAN), n: d.summary.compared }) : undefined}>
             {d ? summaryLine(d) : "…"}
           </span>
         </Card>

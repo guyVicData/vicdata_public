@@ -7,19 +7,20 @@ import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import type { Load, MarketView, PipelineOk, RivalsView } from "../api";
 import { Empty, FlagPill, ViewTitle, cx, fmtN, fmtPct, fmtSigned, ordinal, yearLabel } from "../ui";
 import { cohortWord } from "../panels/EntryNow";
+import { ARROW, signedValue } from "@/lib/signed-delta";
 
 const TH = "px-1 py-1 text-[10.5px] font-normal text-[var(--muted)]";
 const TD = "px-1 py-[5px] text-[12px]";
 
 const flagFigures = (f: { figures: Record<string, number | string | null> }) =>
   Object.entries(f.figures)
-    .map(([k, v]) => `${k}: ${typeof v === "number" ? (Number.isInteger(v) ? v : v.toFixed(1)) : v ?? "—"}`)
+    .map(([k, v]) => `${k}: ${typeof v === "number" ? signedValue(v, Number.isInteger(v) ? 0 : 1) : v ?? "—"}`)
     .join("\n");
 
 export function FeederFlag({ flag, compact = false }: { flag: { id: string; label: string; figures: Record<string, number | string | null> } | null; compact?: boolean }) {
   if (!flag) return null;
   const up = flag.id === "feeder_focus";
-  if (compact) return <span title={flagFigures(flag)} className={cx("text-[10px] font-bold", up ? "text-[var(--adm-up-fg)]" : "text-[var(--adm-down-fg)]")}>{up ? (flag.label === "Stable" ? "▬ focus" : "▲ focus") : "▼ red flag"}</span>;
+  if (compact) return <span title={flagFigures(flag)} className={cx("text-[10px] font-bold", up ? "text-[var(--adm-up-fg)]" : "text-[var(--adm-down-fg)]")}>{up ? (flag.label === "Stable" ? `${ARROW.flat} focus` : `${ARROW.up} focus`) : `${ARROW.down} red flag`}</span>;
   return (
     <FlagPill tone={up ? "up" : "down"} small figures={flagFigures(flag)}>
       {up ? `Focus · ${flag.label.toLowerCase()}` : "Red flag"}

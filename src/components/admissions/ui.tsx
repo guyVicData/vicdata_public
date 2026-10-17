@@ -13,7 +13,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { productAccent } from "@/components/shell/accent";
 import { RailPanel } from "@/components/shell/RailPanel";
 import type { Theme } from "@/components/teacher/TeacherChrome";
-import { signedDelta } from "@/lib/signed-delta";
+import { ARROW, flatBand, signedDelta, signedValue } from "@/lib/signed-delta";
 
 const A = productAccent("admissions")!;
 
@@ -118,9 +118,10 @@ export function Skeleton() {
 
 // ------------------------------------------------------------------------- formats
 export const fmtN = (v: number | null | undefined) => (v === null || v === undefined ? "—" : Math.round(v).toLocaleString("en-GB"));
-export const fmtPct = (v: number | null | undefined, dp = 1) => (v === null || v === undefined ? "—" : `${v.toFixed(dp)}%`);
+export const fmtPct = (v: number | null | undefined, dp = 1) => (v === null || v === undefined ? "—" : `${signedValue(v, dp)}%`);
 export const fmtSigned = (v: number | null | undefined, dp = 1, unit = "%") => (v === null || v === undefined ? "—" : signedDelta(v, (x) => `${Math.abs(x).toFixed(dp)}${unit}`, { zero: "±" }));
-export const arrow = (v: number | null | undefined, flat = 0.5) => (v === null || v === undefined ? "" : v > flat ? "▲" : v < -flat ? "▼" : "▬");
+// R-FLAT-BAND: steady ("–") when the change rounds to 0 at the precision shown (`dp`), or within the view's own band.
+export const arrow = (v: number | null | undefined, flat = 0.5, dp = 2) => (v === null || v === undefined ? "" : ARROW[flatBand(v, dp, flat)]);
 export const yearLabel = (p: number) => `${p}/${String((p + 1) % 100).padStart(2, "0")}`;
 export const ordinal = (n: number | null | undefined) => {
   if (n === null || n === undefined) return "—";

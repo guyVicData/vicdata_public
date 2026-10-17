@@ -42,7 +42,8 @@ import { Card } from "./GraphsView";
 import SubjectAreaDivergingBarChart from "./SubjectAreaDivergingBarChart";
 import { academicYearLabel } from "./TrendPill";
 import type { AcademicSchoolProfile, AcademicHeadlineYear } from "@/lib/academic-data-view";
-import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
+import { signedDelta, signedValue, UNSIGNED_ZERO } from "@/lib/signed-delta";
+import { setAverageChange } from "@/lib/set-change";
 
 type Unit = "scaled" | "percent";
 
@@ -175,8 +176,8 @@ function DomainRows({
               {showSupporting && higher && <span>higher standard {higher.value.toFixed(1)}%</span>}
               {showSupporting && progress && (
                 <span>
-                  progress {signedDelta(progress.value, (x) => Math.abs(x).toFixed(1), HYPHEN_SIGN)}
-                  {low && high ? ` (${low.value.toFixed(1)} to ${high.value.toFixed(1)})` : ""}
+                  progress {signedDelta(progress.value, (x) => Math.abs(x).toFixed(1), UNSIGNED_ZERO)}
+                  {low && high ? ` (${signedValue(low.value, 1)} to ${signedValue(high.value, 1)})` : ""}
                   {` · ${academicYearLabel(progress.period)}`}
                 </span>
               )}
@@ -221,14 +222,13 @@ export default function Ks2DomainSection({
   const comparisonSchools = Math.max(0, ...Array.from(comparisonCount.values()));
 
   const ownTrend = KS2_DOMAINS.map((d) => ({ id: d.id, label: d.label, pctChange: pctChangeFor(own, d.id, d.metric) }));
+  // R-SET-CHANGE-AVERAGE (consistency): the change in the set's yearly average, from the set's first
+  // year to its latest. (It was the average of each school's own change, each from its own first year.)
   const comparisonTrend = KS2_DOMAINS.map((d) => {
-    const changes: number[] = [];
-    for (const p of comparableGroup) {
-      if (p.urn === profile.urn) continue;
-      const c = pctChangeFor(p.ks2 ?? [], d.id, d.metric);
-      if (c !== null) changes.push(c);
-    }
-    return { id: d.id, label: d.label, pctChange: changes.length ? changes.reduce((s, v) => s + v, 0) / changes.length : null };
+    const series = comparableGroup
+      .filter((p) => p.urn !== profile.urn)
+      .map((p) => (p.ks2 ?? []).map((y) => ({ period: y.period, value: y.measures[`${d.id}::${d.metric}`] })).filter((x): x is { period: number; value: number } => typeof x.value === "number"));
+    return { id: d.id, label: d.label, pctChange: series.some((s) => s.length >= 2) ? setAverageChange(series, "first") : null };
   });
   const trendableLabels = ownTrend.filter((t) => t.pctChange !== null).map((t) => t.label);
   const untrendableLabels = KS2_DOMAINS.filter((d) => !trendableLabels.includes(d.label)).map((d) => d.label);

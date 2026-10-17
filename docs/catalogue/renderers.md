@@ -354,7 +354,7 @@ Shape requirements only, no rules. 44 renderers.
 | Field | Content |
 | --- | --- |
 | File | src/components/admissions/views/Momentum.tsx |
-| Accepts | Pupil change (entry age) against results change since 2022/23, four quadrants, with the flag list. |
+| Accepts | Pupil change (entry age, over 3 census years) against results change since 2022/23, four quadrants, with the flag list. |
 | Empty | Thresholds not loaded: 'flags not available yet'; a school without both changes is left off the scatter and said so. |
 | Suppressed | — |
 | Partial | — |

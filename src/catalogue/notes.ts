@@ -297,7 +297,7 @@ export const GROUP_NOTES = {
   accessCard: "Which schools’ SMT see the group view: {n} of {m}",
   accessCount: "{n} of {m} schools see the group view",
   coming: "Coming in the next group rounds",
-  summary: "Combined roll from the school census, {now} against {before}, over the {n} schools with both years; growing = the roll rose.",
+  summary: "Combined roll from the school census, {now} against {before}, over the {n} schools with both years. Growing or shrinking compares this year's roll with three years ago; growing = the roll rose by at least 0.5%.",
   // Head office on a member school's SMT.
   headOfficeReadOnly: "{group} head office: read-only",
   admissionsPrivate: "Private to {school}. Its School-Admin can share its Admissions panels with head office.",

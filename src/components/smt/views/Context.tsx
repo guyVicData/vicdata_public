@@ -21,7 +21,7 @@ import type { ContextMap, MapLsoa, MapSchool } from "@/lib/smt/context-map";
 import type { Load } from "../api";
 import { fmt, shortYear } from "../ui";
 import { placeLine } from "@/lib/place-line";
-import { signedDelta } from "@/lib/signed-delta";
+import { arrowed, signedDelta } from "@/lib/signed-delta";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 const S = productAccent("smt")!;
@@ -38,7 +38,7 @@ const GREY = "#9ca3af";
 
 export type ShadeBy = "children" | "imd" | "idaci" | "fsm";
 
-const changeWord = (pct: number, dp = 0) => `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct).toFixed(dp)}%`;
+const changeWord = (pct: number, dp = 0) => arrowed(pct, (x) => `${x.toFixed(dp)}%`, dp);
 const signed = (v: number) => signedDelta(v, (x) => `${Math.abs(x).toFixed(1)}%`, { zero: "" });
 // "(range −8.1% to +3.4%) " -- the band at the tile's year, as change from the latest count.
 const rangeWord = (lo: number | null, hi: number | null) => (lo !== null && hi !== null ? `(range ${signed(lo)} to ${signed(hi)}) ` : "");
@@ -211,7 +211,7 @@ function Fsm({ c }: { c: Context }) {
         </span>
         {change !== null && f.first && (
           <span className="text-[var(--muted2)]">
-            {change >= 0 ? "▲" : "▼"} {Math.abs(change).toFixed(1)} points since {periodLabel(f.first.period)}
+            {arrowed(change, (x) => x.toFixed(1), 1)} points since {periodLabel(f.first.period)}
           </span>
         )}
       </span>

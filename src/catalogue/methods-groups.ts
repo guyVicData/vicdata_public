@@ -33,7 +33,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group's current member schools in England; schools outside England are listed beside the map",
     years: "The latest census, {census}",
     leftOut: ["Schools outside England, listed instead", "Schools with no recorded location"],
-    steps: ["Each current member school is drawn at its location, sized by its roll in the latest census.", "Its colour is its roll change over the last year: growing, steady (within 1%) or shrinking."],
+    steps: ["Each current member school is drawn at its location, sized by its roll in the latest census.", "Its colour is its roll change over three years: growing, steady (under 0.5%) or shrinking. Growing or shrinking compares this year's roll with three years ago. A school with fewer than four census years is measured from its first."],
     rounding: ["None"],
   },
   "GRP-O-JOINED": {
@@ -49,7 +49,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group and {setLabel}",
     years: "{from} to {census}, indexed: {base}",
     leftOut: ["Schools outside England"],
-    steps: [READING, "Each line is a like-for-like index: each year it moves by that year's change over the schools with a roll in both years, starting at 100 in the first year, so a school joining or leaving doesn't move the line.", "The group's line and the comparison set's are built the same way."],
+    steps: [READING, "Each line is a like-for-like index: each year it moves by that year's change over the schools with a roll in both years, starting at 100 in the first year, so a school joining or leaving doesn't move the line.", "The group's line and the comparison set's are built the same way.", "The word under the chart: Growing or shrinking compares this year's roll with three years ago. It reads the like-for-like change over three years, and is 'Steady' when that rounds to 0%."],
     rounding: ["Index to one decimal place"],
   },
   "GRP-O-RESULTS": {
@@ -89,7 +89,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "Every current member school, and the group",
     years: "{from} to {census}, each school indexed to its first year",
     leftOut: ["Schools without two census years"],
-    steps: ["Each school's roll, indexed to 100 in its first census year; the group's like-for-like line beside them.", "The count is the schools whose roll rose over the last year."],
+    steps: ["Each school's roll, indexed to 100 in its first census year; the group's like-for-like line beside them.", "The count is the schools whose roll rose over three years. Growing or shrinking compares this year's roll with three years ago."],
     rounding: ["Index to whole numbers"],
   },
   "GRP-S-SCATTER": {
@@ -231,9 +231,9 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
   "GRP-P-GROWING": {
     sources: [CENSUS],
     geography: "Every current member school with both years",
-    years: "{census} against the year before",
+    years: "{census} against three years before",
     leftOut: ["Schools without both years"],
-    steps: ["Each school's roll this January against last: growing if it rose, shrinking if it fell."],
+    steps: ["Each school's roll this January against three years before: growing if it rose, shrinking if it fell. Growing or shrinking compares this year's roll with three years ago."],
     rounding: ["None"],
   },
 };

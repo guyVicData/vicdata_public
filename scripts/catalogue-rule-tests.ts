@@ -1077,7 +1077,7 @@ const RUNNERS: Record<string, Runner> = {
   // there, never "−0" / "-0": the shared formatter in each style, the Data View's diverging bars (rendered),
   // SMT's, Admissions' and the change map's formatters; and no hand-rolled sign-then-toFixed is left in src.
   async noNegativeZero() {
-    const { signedDelta, HYPHEN_SIGN, HYPHEN_SIGN_PLUS_ZERO } = await import("../src/lib/signed-delta");
+    const { signedDelta, UNSIGNED_ZERO } = await import("../src/lib/signed-delta");
     const { createElement } = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
     const DBC = (await import("../src/components/data-view/DivergingBarChart")).default;
@@ -1089,8 +1089,7 @@ const RUNNERS: Record<string, Runner> = {
     const pct = (x: number) => `${Math.abs(x).toFixed(0)}%`;
     const printed: Record<string, string> = {
       teacher: signedDelta(-0.3, pct),
-      dataView: signedDelta(-0.3, pct, HYPHEN_SIGN),
-      dataViewPlusZero: signedDelta(-0.3, pct, HYPHEN_SIGN_PLUS_ZERO),
+      dataView: signedDelta(-0.3, pct, UNSIGNED_ZERO),
       bars: renderToStaticMarkup(createElement(DBC, { points: [{ urn: "1", name: "A", pctChange: -0.3, isTarget: true }, { urn: "2", name: "B", pctChange: 4, isTarget: false }] })),
       subjectBars: renderToStaticMarkup(createElement(SDBC, { items: [{ id: "a", label: "A", pctChange: -0.4 }, { id: "b", label: "B", pctChange: -3 }] })),
       smtVa: smt.fmt(-0.004, "va"),
@@ -1100,8 +1099,8 @@ const RUNNERS: Record<string, Runner> = {
     };
     const neg0 = /[−-]0(\.0+)?(%|pp| ?pts)?(?![.0-9])/;
     const bad = Object.entries(printed).filter(([, s]) => neg0.test(s.replace(/<[^>]+>/g, " "))).map(([k]) => k);
-    // Still signed where the change is real: −3% stays "-3%" in the Data View's bars, "−6pp" in Teacher's.
-    const real = printed.subjectBars.includes("-3%") && signedDelta(-6.5, (x) => `${Math.abs(Math.round(x))}pp`) === "−6pp";
+    // Still signed where the change is real: −3% stays "−3%" in the Data View's bars, "−6pp" in Teacher's.
+    const real = printed.subjectBars.includes("−3%") && signedDelta(-6.5, (x) => `${Math.abs(Math.round(x))}pp`) === "−6pp";
     const handRolled: string[] = [];
     const walk = (d: string) => {
       for (const f of readdirSync(d)) {
@@ -1113,6 +1112,167 @@ const RUNNERS: Record<string, Runner> = {
     walk(path.join(ROOT, "src"));
     const pass = bad.length === 0 && real && handRolled.length === 0;
     return { pass, detail: fmt({ negativeZero: bad.join(", ") || "none", stillSigned: real, handRolled: handRolled.join(", ") || "none", smtPp: printed.smtPp, admissions: printed.admissions, dataView: printed.dataView, teacher: printed.teacher }) };
+  },
+
+  // R-ROLL-WORDS-3YR (consistency): roll direction words compare the latest census with 3 years before,
+  // steady when the change rounds to 0% (R-FLAT-BAND). SMT's roll word on Wolverley (growing), Pershore
+  // (shrinking), Bewdley (steady) and Chilmington Green (only three census years: its longest span, 2
+  // years); Admissions' Momentum base year; the groups' span; the (i) sentence.
+  async rollWords3yr() {
+    const Y = await import("../src/catalogue/years");
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { RollDirectionWord } = await import("../src/components/smt/views/Lines");
+    const { GROWING_SPAN } = await import("../src/lib/groups/dash");
+    const { METHODS: M0 } = await import("../src/catalogue/methods");
+    const { METHODS_GROUPS } = await import("../src/catalogue/methods-groups");
+    const METHODS = { ...M0, ...METHODS_GROUPS };
+    const want: [string, string, string, boolean][] = [["135061", "Wolverley", "Growing", false], ["136925", "Pershore", "Shrinking", false], ["135035", "Bewdley", "Steady", false], ["149840", "Chilmington Green", "Growing", true]];
+    const out: string[] = [];
+    let pass = true;
+    for (const [urn, name, word, short] of want) {
+      const o = (await smtCase(urn)).overview;
+      const pts = o.trends.roll.lines[0]?.pts ?? [];
+      const d = Y.rollDirection(pts, 0);
+      const html = renderToStaticMarkup(createElement(RollDirectionWord, { pts }));
+      const text = html.replace(/<[^>]+>/g, "").trim();
+      const realYears = pts.filter((p) => p.value !== null).length;
+      const ok = !!d && d.word === word && d.short === short && text.endsWith(word) && (short ? d.span === realYears - 1 && realYears < 4 : d.span === Y.ROLL_DIRECTION_SPAN);
+      pass &&= ok;
+      out.push(`${name}: ${d ? `${Y.periodLabel(d.from)}-${Y.periodLabel(d.to)} ${d.pct.toFixed(2)}% "${text}"` : "none"} ${ok ? "ok" : "MISMATCH"}`);
+    }
+    const v = await import("../src/lib/admissions/views-api");
+    const m = await v.marketView("137625", v.entryPoint("11+")!, []);
+    const mine = m.extras.find((e) => e.urn === "137625")!;
+    const momentum = mine.entryBasePeriod === m.summary.latest - Y.ROLL_DIRECTION_SPAN;
+    const groups = GROWING_SPAN === String(Y.ROLL_DIRECTION_SPAN);
+    const sentence = "Growing or shrinking compares this year's roll with three years ago.";
+    const info = ["DV-SMT-O-ROLL-LINE", "DV-SMT-P-PHASES", "DV-ADM-M-MOMENTUM", "GRP-O-MAP", "GRP-O-ROLL", "GRP-S-GROWING", "GRP-P-GROWING"].filter((k) => !JSON.stringify((METHODS as Record<string, unknown>)[k] ?? "").includes(sentence));
+    pass &&= momentum && groups && info.length === 0;
+    return { pass, detail: `${out.join("; ")}; Momentum from ${mine.entryBasePeriod} (latest ${m.summary.latest}) ${momentum ? "ok" : "MISMATCH"}; groups span ${GROWING_SPAN}; (i) missing: ${info.join(", ") || "none"}` };
+  },
+
+  // R-SET-CHANGE-AVERAGE (consistency): a set's "% change" is the change in the set's yearly average, in
+  // both modes. The Chase 137625 GCSE and its 10 nearest: subject mode (History entries, from the rollup)
+  // and category mode (Humanities entries, family rows), each against a plain yearly-mean sum.
+  async setChangeAverage({ adv }) {
+    const { setAverageChange } = await import("../src/lib/set-change");
+    const SAS = await import("../src/components/data-view/SubjectAreaSection");
+    const Y = await import("../src/catalogue/years");
+    const { resolveDefaultNearest } = await import("../src/lib/chooser-sets");
+    const near = (await resolveDefaultNearest("137625", "ks4")).rows.map((r: { urn: string }) => r.urn);
+    const urns = Array.from(new Set(["137625", ...near]));
+    const head = await adv.fetchSubjectHeadlineForSchools(urns, "ks4");
+    const { byUrn, subjectFamilyMap } = await adv.fetchSubjectLevelDataForSchools(urns, "ks4");
+    const familyId = subjectFamilyMap["History"] ?? "";
+    const manual = (series: { period: number; value: number }[][]) => {
+      const by = new Map<number, number[]>();
+      for (const s of series) for (const x of s) by.set(x.period, [...(by.get(x.period) ?? []), x.value]);
+      const ps = [...by.keys()].sort((a, b) => a - b);
+      const mean = (p: number) => by.get(p)!.reduce((a, b) => a + b, 0) / by.get(p)!.length;
+      const from = Y.changeStartFor("entries", ps);
+      return ps.length > 1 ? ((mean(ps.at(-1)!) - mean(from)) / mean(from)) * 100 : null;
+    };
+    // Subject mode: each school's row as the page builds it, then the set's change.
+    const series = urns.map((u) => {
+      const bySubject = new Map<string, ReturnType<typeof head.get> & object>();
+      for (const h of head.get(u) ?? []) if (h.familyId === familyId) bySubject.set(h.subject, [...(bySubject.get(h.subject) ?? []), h]);
+      const sd = byUrn.get(u);
+      const rows = SAS.buildSubjectRows("ks4", familyId, sd ? { entries: sd.entries, valueAdded: sd.valueAdded ?? [], subjectFamilyMap } : null, bySubject, "qualification");
+      return rows.find((r) => r.subject === "History")?.candidatesSeries ?? [];
+    });
+    const subject = setAverageChange(series, "entries");
+    const subjectManual = manual(series);
+    // Category mode: the family rows (whole-school 'all' rows), through the page's own aggregateFamilyTrend.
+    const { lookupAcademicSubjectFamily } = await import("../src/lib/vicdata-reference");
+    const fam = (await lookupAcademicSubjectFamily({ entityIds: urns, ksStage: "ks4" })).filter((f) => (f.bucket ?? "all") === "all");
+    const yearsOf = (u: string) => fam.filter((f) => f.entity_id === u).map((f) => ({ familyId: f.family_id, familyLabel: f.family_label, period: f.period, entriesTotal: f.entries_total, entriesSharePercent: f.entries_share_percent, avgPointScore: f.avg_point_score, pointsCoveragePercent: f.points_coverage_percent }));
+    const profiles = urns.map((u) => ({ urn: u, ks4Families: yearsOf(u), ks5Families: [] })) as never[];
+    const famSeries = urns.map((u) => yearsOf(u).filter((y) => y.familyId === familyId && y.entriesTotal > 0).map((y) => ({ period: y.period, value: y.entriesTotal })));
+    const category = SAS.aggregateFamilyTrend(profiles, "ks4", familyId, (y) => (y.entriesTotal > 0 ? y.entriesTotal : null));
+    const categoryManual = manual(famSeries);
+    const near1 = (a: number | null, b: number | null) => a !== null && b !== null && Math.abs(a - b) < 1e-9;
+    const v = { schools: urns.length, subject: subject?.toFixed(2), subjectManual: subjectManual?.toFixed(2), category: category?.toFixed(2), categoryManual: categoryManual?.toFixed(2), startsAt: Y.changeStartFor("entries", series.flat().map((x) => x.period)) };
+    return { pass: near1(subject, subjectManual) && near1(category, categoryManual), detail: fmt(v) };
+  },
+
+  // R-MINUS-SIGN (consistency): no figure prints a hyphen-minus as its sign. The shared formatter's
+  // styles, the Data View's bars (rendered), SMT's and Admissions' percent formats and flag figures, and
+  // no hyphen style or hand-rolled hyphen sign left in src.
+  async minusSign() {
+    const { signedDelta, signedValue, UNSIGNED_ZERO } = await import("../src/lib/signed-delta");
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const DBC = (await import("../src/components/data-view/DivergingBarChart")).default;
+    const SDBC = (await import("../src/components/data-view/SubjectAreaDivergingBarChart")).default;
+    const smt = await import("../src/components/smt/ui");
+    const adm = await import("../src/components/admissions/ui");
+    const { figuresOf } = await import("../src/components/admissions/views/Momentum");
+    const { readdirSync, readFileSync, statSync } = await import("node:fs");
+    const pct = (x: number) => `${Math.abs(x).toFixed(0)}%`;
+    const printed: Record<string, string> = {
+      teacher: signedDelta(-3, pct),
+      unsignedZero: signedDelta(-3, pct, UNSIGNED_ZERO),
+      value: signedValue(-1.25, 1),
+      bars: renderToStaticMarkup(createElement(DBC, { points: [{ urn: "1", name: "A", pctChange: -12, isTarget: true }, { urn: "2", name: "B", pctChange: 4, isTarget: false }] })),
+      subjectBars: renderToStaticMarkup(createElement(SDBC, { items: [{ id: "a", label: "A", pctChange: -3 }] })),
+      smtPct: smt.fmt(-2.34, "pct"),
+      admissionsPct: adm.fmtPct(-2),
+      admissionsSigned: adm.fmtSigned(-2.5),
+      flagFigures: figuresOf({ label: "Losing pupils", figures: { changePct: -3.456, gap: -2 } } as never),
+    };
+    const text = (s: string) => s.replace(/<[^>]+>/g, " ");
+    const hyphen = Object.entries(printed).filter(([, s]) => /(^|[\s(:>])-\d/.test(text(s)) || !text(s).includes("−")).map(([k]) => k);
+    const offenders: string[] = [];
+    const walk = (d: string) => {
+      for (const f of readdirSync(d)) {
+        const p = path.join(d, f);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.tsx?$/.test(f) && !/\.test\./.test(f)) {
+          const src = readFileSync(p, "utf8");
+          if (/minus:\s*"-"|HYPHEN_SIGN|\? "\+" : ""|: "-"\s*\}|>= 0 \? "\+" : ""/.test(src)) offenders.push(path.relative(ROOT, p));
+        }
+      }
+    };
+    walk(path.join(ROOT, "src"));
+    return { pass: hyphen.length === 0 && offenders.length === 0, detail: fmt({ hyphenSigns: hyphen.join(", ") || "none", sourceOffenders: offenders.join(", ") || "none", bars: (text(printed.bars).match(/[−-]12%/) ?? [""])[0], smtPct: printed.smtPct, flagFigures: printed.flagFigures.replace(/\n/g, " | ") }) };
+  },
+
+  // R-FLAT-BAND (consistency): a change that rounds to 0 at the precision shown is steady: no ▲/▼, "–",
+  // neutral colour. The shared helper, SMT's tile and Scorecard formats, Admissions' arrow, the group home
+  // line and its growing count; and no "▬" or unbanded ▲/▼ left in src.
+  async flatBand() {
+    const S = await import("../src/lib/signed-delta");
+    const smt = await import("../src/components/smt/ui");
+    const adm = await import("../src/components/admissions/ui");
+    const { summaryLine } = await import("../src/components/groups/GroupHome");
+    const { rollSummary } = await import("../src/lib/groups/access-rules");
+    const { readdirSync, readFileSync, statSync } = await import("node:fs");
+    const p0 = (x: number) => `${x.toFixed(0)}%`;
+    const v = {
+      helper: S.arrowed(-0.4, p0, 0),
+      fall: S.arrowed(-0.6, p0, 0),
+      smtTile: smt.fmtChange({ change: -0.3, unit: "pct" }),
+      smtColour: smt.dirClass(-0.3, 0, 0),
+      smtArrow: smt.arrowOf(-0.003, 0.05),
+      admissions: adm.arrow(-0.3, 0, 0),
+      groupHome: summaryLine({ summary: { schools: 5, changePct: -0.04, growing: 0, compared: 5 } } as never),
+      groupGrowing: rollSummary([{ urn: "1", now: 1003, before: 1000 }, { urn: "2", now: 1010, before: 1000 }]).growing,
+    };
+    const offenders: string[] = [];
+    const walk = (d: string) => {
+      for (const f of readdirSync(d)) {
+        const p = path.join(d, f);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.tsx?$/.test(f) && !/\.test\./.test(f)) {
+          const src = readFileSync(p, "utf8");
+          if (/▬|>= 0 \? "▲" : "▼"|< 0 \? "▼" : "▲"/.test(src)) offenders.push(path.relative(ROOT, p));
+        }
+      }
+    };
+    walk(path.join(ROOT, "src"));
+    const pass = v.helper === "– 0%" && v.fall === "▼ 1%" && v.smtTile === "– 0%" && v.smtColour.includes("muted") && v.smtArrow === "–" && v.admissions === "–" && v.groupHome.includes("roll – 0.0%") && v.groupGrowing === 1 && offenders.length === 0;
+    return { pass, detail: fmt({ ...v, offenders: offenders.join(", ") || "none" }) };
   },
 
   // R-CURRENT-GRADES-FROM-2324: Acland Burghley 100053 GCSE Grade 4+ on its real four-year rows.
@@ -1636,7 +1796,8 @@ const RUNNERS: Record<string, Runner> = {
     const raw = (u: string, y: number) => facts.filter((f) => f.entity_id === u && f.period === y).reduce((a, f) => a + (f.value_numeric ?? 0), 0);
     const xOk = m.rivals.slice(0, 3).every((u) => {
       const e = m.extras.find((x) => x.urn === u)!;
-      return e.entryBase === null || (e.entryBase === raw(u, 2022) && e.entryNow === raw(u, 2025));
+      // R-ROLL-WORDS-3YR (consistency): the base is 3 census years back (2022/23 for 2025/26).
+      return e.entryBase === null || (e.entryBasePeriod === 2022 && e.entryBase === raw(u, e.entryBasePeriod) && e.entryNow === raw(u, 2025));
     });
     const none = await buildRivals("137625", ep, { thresholds: null });
     const guessed = none.rows.some((x) => x.momentum.some((f) => f.id !== "shape_changed"));

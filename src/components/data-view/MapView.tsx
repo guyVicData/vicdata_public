@@ -46,7 +46,7 @@ import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
 import { CENSUS_FIRST_PERIOD } from "@/catalogue/years";
-import { HYPHEN_SIGN_PLUS_ZERO, signedDelta } from "@/lib/signed-delta";
+import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
 const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
   ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
@@ -754,7 +754,7 @@ export default function MapView({
           : colourMode === "trend"
             ? `${entry.currentTotal.toLocaleString()}${
                 pctChange !== null && entry.anchorPeriod !== null
-                  ? ` (${signedDelta(pctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN_PLUS_ZERO)} since ${academicYearLabel(entry.anchorPeriod)})`
+                  ? ` (${signedDelta(pctChange, (x) => `${Math.abs(x).toFixed(0)}%`)} since ${academicYearLabel(entry.anchorPeriod)})`
                   : ""
               }`
             : `${entry.currentTotal.toLocaleString()} pupils`;
@@ -974,7 +974,7 @@ export default function MapView({
           colour = colourMode === "trend" ? trendColour(pctChange) : s.profile.sector ? tagColour(s.profile.sector) : "#9ca3af";
           radius = radiusFor(current, minV, maxV);
           const statsLine = `${current.toLocaleString()}${
-            anchor !== null ? ` (${signedDelta(pctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN_PLUS_ZERO)} since ${academicYearLabel(filters.startPeriod)})` : ""
+            anchor !== null ? ` (${signedDelta(pctChange, (x) => `${Math.abs(x).toFixed(0)}%`)} since ${academicYearLabel(filters.startPeriod)})` : ""
           }`;
           tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${statsLine}</div>`;
           // UX round (2026-09-14), Part 2, per direct instruction: the target's own
@@ -1341,7 +1341,7 @@ function TrendColourKey({ box }: { box: { top: number; height: number } | null }
             <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
               <div className="h-px w-full bg-white/80" />
               <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
-                {s.pct > 0 ? `+${s.pct}%` : `${s.pct}%`}
+                {signedDelta(s.pct, (x) => `${Math.abs(x)}%`, UNSIGNED_ZERO)}
               </span>
             </div>
           );

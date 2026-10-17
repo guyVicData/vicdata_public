@@ -207,7 +207,7 @@ export function GradeCountsPanels({
       ) : (
         <>
           <ViewTitle>
-            {subjectLabel}&rsquo;s entries at each grade: {academicYearLabel(chgYear)} against {yearText}, with the change
+            {subjectLabel}&rsquo;s entries at each grade, change since {academicYearLabel(chgYear)}: {academicYearLabel(chgYear)} against {yearText}
           </ViewTitle>
           <YearTable data={changeData} measure={ENTRIES_MEASURE} focusKey={null} fullscreen={fullscreen} nameHeading="Grade" showRank={false} />
         </>

@@ -61,6 +61,7 @@ import { useBoardingSchool } from "./useBoardingSchool";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { contextFromPanel } from "@/catalogue/pick";
 import { CENSUS_FIRST_PERIOD, CURRENT_CENSUS_PERIOD, TREND_BASE_PERIOD } from "@/catalogue/years";
+import { arrowed } from "@/lib/signed-delta";
 
 const PHONE = 768;
 // The entry-point chips' colour in Teacher's subject-chip slot: the Admissions accent.
@@ -623,7 +624,9 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     const years = p ? `entry years ${p.ladder.past[0]?.entryYear ?? ""}–${p.ladder.future[p.ladder.future.length - 1]?.entryYear ?? ""}` : "";
     return { tag: dv === "DV-ADM-P-PIPELINE" ? "Pipeline" : (dataviewById(dv)?.label ?? "Pipeline"), context: ep && ep.age >= 16 ? `16+ · ${years}` : years };
   }
-  if (dv === "DV-ADM-M-MOMENTUM" || dv === "DV-ADM-M-FLAGS") return { tag: "Rivals’ momentum", context: `change since ${yearLabel(TREND_BASE_PERIOD)}` };
+  // R-ROLL-WORDS-3YR: the scatter's pupils change over 3 census years; its results since 2022/23.
+  if (dv === "DV-ADM-M-MOMENTUM") return { tag: "Rivals’ momentum", context: `pupils over 3 years · results since ${yearLabel(TREND_BASE_PERIOD)}` };
+  if (dv === "DV-ADM-M-FLAGS") return { tag: "Rivals’ momentum", context: `change since ${yearLabel(TREND_BASE_PERIOD)}` };
   if (dv === "DV-ADM-M-STRENGTHS") return { tag: "Strengths and weaknesses", context: r ? `${STAGE_WORD[r.stage]} ${r.resultsPeriod ? resultsYearLabel(r) : ""} · average points` : "" };
   if (dv === "DV-ADM-M-SHAPE") return { tag: "Shape and size", context: `Data ${yearLabel(census)} · pupils by age` };
   if (panel.row === "now") return { tag: "Rivals", context: `Data ${yearLabel(census)} · pupils aged ${ep?.age ?? ""}` };
@@ -903,7 +906,7 @@ function phoneView(dv: string, c: Ctx, spec?: ViewSpec): ReactNode {
       <>
         <PipelineChart p={p} projection={false} height={150} compact pastPools={looksOf(dv, spec?.view.look).pastPools as boolean} rungLabels={looksOf(dv, spec?.view.look).rungLabels as boolean} />
         <div className="text-[11px] text-[var(--muted2)]">
-          {p.change && p.changeYear ? `Pool ${p.change.pct < 0 ? "▼" : "▲"} ${Math.abs(p.change.pct).toFixed(0)}% by ${p.changeYear}. ` : ""}The pool, not who will join.
+          {p.change && p.changeYear ? `Pool ${arrowed(p.change.pct, (x) => `${x.toFixed(0)}%`, 0)} by ${p.changeYear}. ` : ""}The pool, not who will join.
         </div>
       </>
     ));

@@ -9,7 +9,7 @@ import { accentVars, productAccent } from "@/components/shell/accent";
 import { admissionsVars, cx } from "@/components/admissions/ui";
 import type { Theme } from "@/components/shell/TeacherChrome";
 import { periodLabel, withProvisional, type YearFamily } from "@/catalogue/years";
-import { signedDelta } from "@/lib/signed-delta";
+import { ARROW, arrowed, type Direction, flatBand, signedDelta, signedValue } from "@/lib/signed-delta";
 
 const S = productAccent("smt")!;
 
@@ -36,7 +36,8 @@ export function fmt(v: number | null | undefined, unit: Unit, key?: string): str
       return Math.round(v).toLocaleString("en-GB");
     case "pct":
     case "share":
-      return `${v.toFixed(1).replace(/\.0$/, "")}%`;
+      // R-MINUS-SIGN: a negative (a roll change) carries "−".
+      return `${signedValue(v, 1).replace(/\.0$/, "")}%`;
     case "va":
       return signedDelta(v, (x) => Math.abs(x).toFixed(2), { zero: "" });
     case "grade":
@@ -51,11 +52,17 @@ export function fmtChange(c: { change: number; unit: "pct" | "points" | "pp" } |
   if (!c) return "—";
   const v = c.change;
   const s = `${Math.abs(v).toFixed(c.unit === "pct" ? 0 : dp)}`;
-  return c.unit === "pct" ? `${v > 0.5 ? "▲" : v < -0.5 ? "▼" : "▬"} ${s}%` : signedDelta(v, () => `${s} ${c.unit === "pp" ? "pp" : "pts"}`, { zero: "±" });
+  return c.unit === "pct" ? arrowed(v, (x) => `${x.toFixed(0)}%`, 0) : signedDelta(v, () => `${s} ${c.unit === "pp" ? "pp" : "pts"}`, { zero: "±" });
 }
 
-export const dirClass = (v: number | null | undefined, flat = 0.05) => (v === null || v === undefined ? "text-[var(--muted2)]" : v > flat ? "text-[var(--adm-up-fg)]" : v < -flat ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]");
-export const arrowOf = (v: number | null | undefined, flat = 0.05) => (v === null || v === undefined ? "" : v > flat ? "▲" : v < -flat ? "▼" : "▬");
+/** The precision fmtChange prints a change at: whole percents, `dp` places otherwise. */
+export const changeDp = (c: { unit: "pct" | "points" | "pp" }, dp = 1) => (c.unit === "pct" ? 0 : dp);
+
+// R-FLAT-BAND: steady (neutral, "–") when the change rounds to 0 at the precision shown (`dp`), or
+// within a view's own wider band (`flat`).
+const DIR_CLASS: Record<Direction, string> = { up: "text-[var(--adm-up-fg)]", down: "text-[var(--adm-down-fg)]", flat: "text-[var(--muted2)]" };
+export const dirClass = (v: number | null | undefined, flat = 0.05, dp = 2) => (v === null || v === undefined ? DIR_CLASS.flat : DIR_CLASS[flatBand(v, dp, flat)]);
+export const arrowOf = (v: number | null | undefined, flat = 0.05, dp = 2) => (v === null || v === undefined ? "" : ARROW[flatBand(v, dp, flat)]);
 
 export const ord = (n: number) => {
   const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";

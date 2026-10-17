@@ -10,6 +10,7 @@ import { CENSUS_FIRST_PERIOD, periodLabel } from "@/catalogue/years";
 import { SMT_NOTES } from "@/catalogue/notes";
 import type { Overview, SmtSchool } from "../api";
 import { NoteTile, fmt, rankText, yearOf } from "../ui";
+import { arrowed } from "@/lib/signed-delta";
 
 export function SizeByPhase({ sizes, school, caption = true }: { sizes: Overview["now"]["sizes"]; school: SmtSchool; caption?: boolean }) {
   if (!sizes.length) return null;
@@ -41,7 +42,7 @@ export function SchoolNow({ o, school, compact = false }: { o: Overview; school:
   const a8 = row("attainment8_average");
   const aps = row("A level::aps_per_entry");
   const ks2 = o.rows.find((r) => r.stage === "ks2");
-  const change = n.changePct === null ? "—" : `${n.changePct >= 0 ? "▲" : "▼"} ${Math.abs(n.changePct).toFixed(0)}% since ${periodLabel(CENSUS_FIRST_PERIOD)}`;
+  const change = n.changePct === null ? "—" : `${arrowed(n.changePct, (x) => `${x.toFixed(0)}%`, 0)} since ${periodLabel(CENSUS_FIRST_PERIOD)}`;
   const tiles = [
     <Tile key="roll" label="Roll" value={fmt(n.roll, "pupils")} sub={change} accent />,
     n.boarding ? (

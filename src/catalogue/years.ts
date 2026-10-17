@@ -16,7 +16,10 @@
 // Periods: P is the academic year P/(P+1) -- 2024 is 2024/25 (the summer-2025 exams; for the
 // census, the January 2026 count).
 //
-// This file imports nothing, so anything (catalogue, lib, components, scripts) can read it.
+// This file imports only the flat band (lib/signed-delta.ts, which imports nothing), so anything
+// (catalogue, lib, components, scripts) can read it.
+
+import { flatBand, type Direction } from "../lib/signed-delta";
 
 // "2022/23" for 2022: the app's usual academic-year label, for the rule wording below.
 export const periodLabel = (p: number): string => `${p}/${String((p + 1) % 100).padStart(2, "0")}`;
@@ -58,6 +61,35 @@ export function entriesFirstPeriod(periodsWithData: Iterable<number>): number | 
 // else from 2022/23 (R-TREND-FROM-2223).
 export function changeStartFor(kind: "entries" | "results", periodsWithData: Iterable<number>): number {
   return kind === "entries" ? (entriesFirstPeriod(periodsWithData) ?? TREND_BASE_PERIOD) : TREND_BASE_PERIOD;
+}
+
+// R-ROLL-WORDS-3YR (Guy, 17 Oct 2026: consistency): a roll or headcount direction word ("Growing",
+// "Shrinking", "Steady", and any arrow that words one) compares the latest census year with 3 years
+// earlier, everywhere. A school with fewer than 4 census years uses the longest span it has. Steady is
+// R-FLAT-BAND: the 3-year change rounds to 0 at the precision shown. The "since" figures are separate
+// (from the first census year, CENSUS_FIRST_PERIOD) and an arrow on one follows its own figure.
+export const ROLL_DIRECTION_SPAN = 3;
+
+export type RollWord = "Growing" | "Shrinking" | "Steady";
+export const ROLL_WORD: Record<Direction, RollWord> = { up: "Growing", down: "Shrinking", flat: "Steady" };
+
+export type RollDirection = { dir: Direction; word: RollWord; from: number; to: number; span: number; pct: number; short: boolean };
+
+/** The roll direction from a yearly series (a roll, or an index of it: the ratio is the same). */
+export function rollDirection(points: readonly { year: number; value: number | null }[], dp = 0): RollDirection | null {
+  const real = points.filter((p): p is { year: number; value: number } => p.value !== null && Number.isFinite(p.value)).sort((a, b) => a.year - b.year);
+  const to = real.at(-1);
+  if (!to) return null;
+  const base = real.find((p) => p.year >= to.year - ROLL_DIRECTION_SPAN && p.value > 0);
+  if (!base || base.year >= to.year) return null;
+  const pct = ((to.value - base.value) / base.value) * 100;
+  const dir = flatBand(pct, dp);
+  return { dir, word: ROLL_WORD[dir], from: base.year, to: to.year, span: to.year - base.year, pct, short: to.year - base.year < ROLL_DIRECTION_SPAN };
+}
+
+/** The roll word for a 3-year % change already computed (the groups' database figures). */
+export function rollDirectionOfPct(pct: number, dp = 0): Direction {
+  return flatBand(pct, dp);
 }
 
 // ---------------------------------------------- RULES: where the sources start (source facts)

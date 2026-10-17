@@ -49,12 +49,12 @@ import { MethodNote } from "@/components/shell/MethodNote";
 import { freshToken } from "@/components/admissions/member";
 import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
-import { smtVars, yearOf } from "./ui";
+import { arrowOf, dirClass, smtVars, yearOf } from "./ui";
 import { SchoolNow } from "./views/Now";
 import { Scorecard } from "./views/Scorecard";
 import { SetMap } from "./views/SetMap";
 import { SchoolFlags } from "./views/Flags";
-import { Direction, IndexedLines, MarketLine, PlainLine, PoolLine, ResultsBand, RollIndexed } from "./views/Lines";
+import { Direction, IndexedLines, MarketLine, PlainLine, PoolLine, ResultsBand, RollDirectionWord, RollIndexed } from "./views/Lines";
 import { BandTable, MarketTable, MixTable, RollTable } from "./views/Tables";
 import { AcademicNow } from "./views/AcademicNow";
 import { SubjectAreas } from "./views/Areas";
@@ -804,13 +804,13 @@ function captionOf(dv: string, c: Ctx): ReactNode {
   return null;
 }
 
-/** The direction word at a trend panel's foot (the wireframes' "▲ Growing", "▬ Steady"). */
+/** The direction word at a trend panel's foot (the wireframes' "▲ Growing", "– Steady"). */
 function flagOf(dv: string, c: Ctx): ReactNode {
   if (c.dash === "overview" && c.overview.status === "ready") {
     const o = c.overview.data;
     if (dv === "DV-SMT-O-ROLL-LINE") {
       const l = o.trends.roll.lines[0];
-      return l ? <Direction pts={l.pts} flat={2} up="Growing" down="Shrinking" /> : null;
+      return l ? <RollDirectionWord pts={l.pts} /> : null;
     }
     if (dv === "DV-SMT-O-RESULTS-LINE") {
       const t = o.trends.results[0];
@@ -820,14 +820,14 @@ function flagOf(dv: string, c: Ctx): ReactNode {
   }
   if (c.dash === "pupils" && c.pupils.status === "ready") {
     const p = c.pupils.data;
-    if (dv === "DV-SMT-P-PHASES" && p.trends.phases[0]) return <Direction pts={p.trends.phases[0].pts} flat={2} up="Growing" down="Shrinking" />;
+    if (dv === "DV-SMT-P-PHASES" && p.trends.phases[0]) return <RollDirectionWord pts={p.trends.phases[0].pts} />;
     if (dv === "DV-SMT-P-POOL" && p.trends.pool.status === "ready") {
       const all = [...p.trends.pool.counted, ...p.trends.pool.births];
       const now = p.trends.pool.counted.at(-1)?.value ?? null;
       const end = all.at(-1)?.value ?? null;
       if (now && end !== null) {
         const pct = ((end - now) / now) * 100;
-        return <span className={`text-[12px] font-bold ${pct > 2 ? "text-[var(--adm-up-fg)]" : pct < -2 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{pct > 2 ? "▲ Pool rising" : pct < -2 ? "▼ Pool falling" : "▬ Pool steady"}</span>;
+        return <span className={`text-[12px] font-bold ${dirClass(pct, 2, 0)}`}>{arrowOf(pct, 2, 0)} {pct > 2 ? "Pool rising" : pct < -2 ? "Pool falling" : "Pool steady"}</span>;
       }
     }
   }
@@ -837,7 +837,7 @@ function flagOf(dv: string, c: Ctx): ReactNode {
     const b = [...l].reverse().find((x) => x.value !== null)?.value ?? null;
     if (a && b !== null) {
       const pct = ((b - a) / a) * 100;
-      return <span className={`text-[12px] font-bold ${pct > 2 ? "text-[var(--adm-up-fg)]" : pct < -2 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{pct > 2 ? "▲ Rising" : pct < -2 ? "▼ Falling" : "▬ Steady"}</span>;
+      return <span className={`text-[12px] font-bold ${dirClass(pct, 2, 0)}`}>{arrowOf(pct, 2, 0)} {pct > 2 ? "Rising" : pct < -2 ? "Falling" : "Steady"}</span>;
     }
   }
   if (dv === "DV-SMT-A-TREND-LINE" && c.academic.status === "ready" && c.academic.data.parts[0]) return <Direction pts={c.academic.data.parts[0].trend.school} flat={c.level.area ? 0.05 : 0.5} />;

@@ -90,7 +90,7 @@ import AggregateTrendChart, {
   AGGREGATE_SECTOR_COLOUR,
   type AggregateChartSeries,
 } from "./AggregateTrendChart";
-import { HYPHEN_SIGN, HYPHEN_SIGN_PLUS_ZERO, signedDelta } from "@/lib/signed-delta";
+import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
 // 2026-09-08, per direct request: a short prose trend statement for the Combined
 // Roll chart ("growing/declining/broadly stable"), reusing trendBadge()'s own
@@ -107,7 +107,7 @@ function TrendStatement({ badge, startPeriod }: { badge: TrendBadge; startPeriod
     badge.direction === "up" ? "text-blue-600 dark:text-blue-400" : badge.direction === "down" ? "text-red-600 dark:text-red-400" : "text-neutral-500";
   return (
     <p className={`mt-2 text-xs font-medium ${colour}`}>
-      {word} ({signedDelta(badge.pctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN_PLUS_ZERO)} since {academicYearLabel(startPeriod)})
+      {word} ({signedDelta(badge.pctChange, (x) => `${Math.abs(x).toFixed(0)}%`)} since {academicYearLabel(startPeriod)})
     </p>
   );
 }
@@ -791,11 +791,11 @@ export default function GraphsView({
               <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`} onOpenAddSubtract={onOpenMainAddSubtract}>
                 {isSectorFallback && sectorFallbackGrowthPoints ? (
                   <>
-                    <DivergingBarChart points={sectorFallbackGrowthPoints} formatValue={(v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(1)}pp`, HYPHEN_SIGN)} />
+                    <DivergingBarChart points={sectorFallbackGrowthPoints} formatValue={(v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(1)}pp`, UNSIGNED_ZERO)} />
                     <SectorFallbackNote />
                   </>
                 ) : (
-                  <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(1)}pp`, HYPHEN_SIGN)} />
+                  <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(1)}pp`, UNSIGNED_ZERO)} />
                 )}
               </Card>
               <Card title={combinedRollTitle} onOpenAddSubtract={onOpenMainAddSubtract}>

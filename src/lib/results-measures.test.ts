@@ -150,6 +150,6 @@ test("history compare says measure changes in plain words", () => {
   const off = ops.setViewResults(gcse(), `${C2T}/DV-C2-TR-TABLE`, ["points", "threshold"]);
   assert.match(ops.changeSummary(gcse(), off), /Grade bands, Grade counts: removed \*Results in its category, year by year\* from Context · Trends/);
   const def = ops.setDefaultView(gcse(), C1T, `${C1T}/DV-C1-CNT-TR-CHANGETABLE`, "counts");
-  assert.match(ops.changeSummary(gcse(), def), /Grade counts: \*This subject's entries at each grade: .* against .*, with the change\* is now the default in Results · Trends/);
+  assert.match(ops.changeSummary(gcse(), def), /Grade counts: \*This subject's entries at each grade, change since .*: .* against .*\* is now the default in Results · Trends/);
   assert.match(ops.changeSummary(gcse(), ops.removeView(gcse(), `${C1T}/DV-C1-CNT-TR-SPREAD`)), /^Grade counts: removed \*This subject's spread of grades: /);
 });

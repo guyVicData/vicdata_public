@@ -5,7 +5,7 @@
 // improved, each school's main entry cohort and Year 12 against Year 11.
 import { TREND_BASE_PERIOD } from "@/catalogue/years";
 import type { ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, SchoolYearRow, SubjectArea } from "./aggregates";
-import { buildOverview, chosenSets, fig, firstCensus, latestCensus, latestFor, MEASURE_LABEL, MEASURE_PHASE, rankWithin, reasonWords, setsFor, type CompareKey, type Focus, type GroupOverview } from "./dash";
+import { buildOverview, chosenSets, fig, firstCensus, GROWING_SPAN, latestCensus, latestFor, MEASURE_LABEL, MEASURE_PHASE, rankWithin, reasonWords, setsFor, type CompareKey, type Focus, type GroupOverview } from "./dash";
 
 type Pt = { year: number; value: number | null };
 type Ph = Exclude<Phase, "all">;
@@ -220,7 +220,7 @@ export type GroupPupils = {
   entries: EntryCohort[];
   leaving: LeavingRow[];
   market: { label: string; rows: MarketRow[] };
-  growing: { growing: number; shrinking: number; of: number; from: number };
+  growing: { growing: number; shrinking: number; of: number; from: number; to: number };
 };
 
 /** A school's main entry age: the age with the largest rise in pupils over the age below (Reception
@@ -302,7 +302,7 @@ export function buildPupils(input: { agg: GroupAggregate; comps: ComparisonRow[]
     .filter((x): x is MarketRow => !!x)
     .sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0));
 
-  const ch = (focus === "all" ? all : (agg.rows.find((r) => r.period === census && r.phase === focus)?.figures ?? all)).change?.["1"];
+  const ch = (focus === "all" ? all : (agg.rows.find((r) => r.period === census && r.phase === focus)?.figures ?? all)).change?.[GROWING_SPAN];
   return {
     kind: "pupils",
     overview,
@@ -314,6 +314,6 @@ export function buildPupils(input: { agg: GroupAggregate; comps: ComparisonRow[]
     entries,
     leaving,
     market: { label: "Share of its LA's places in its main phase", rows: market },
-    growing: { growing: ch?.growing ?? 0, shrinking: ch?.shrinking ?? 0, of: ch?.same_schools ?? 0, from: census - 1 },
+    growing: { growing: ch?.growing ?? 0, shrinking: ch?.shrinking ?? 0, of: ch?.same_schools ?? 0, from: census - Number(GROWING_SPAN), to: census },
   };
 }

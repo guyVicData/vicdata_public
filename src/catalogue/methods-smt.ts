@@ -40,7 +40,7 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school, its local authority, and England (the nine regions summed)",
     years: "Every census year from 2019/20 to the school's latest",
     leftOut: ["England in a year when not all nine regions are held", "Pupils outside ages 5-15 in the LA and England lines"],
-    steps: ["We take the school's roll in each January census from 2019/20 (after any Pupils or Day and boarding filter). A boarding school with no boarding filter shows a day line and a boarding line instead.", "For the local authority and England we add up pupils aged 5 to 15 in the census aggregates each year (England is the nine regions added together).", "We find the first year every line has a figure and set each line to 100 in that year.", "Each later year is that year's figure divided by the base year's, times 100.", "The word under the chart compares the school's line in 2022/23 with its latest year: more than 2 points up is 'Growing', more than 2 down 'Shrinking', otherwise 'Steady'."],
+    steps: ["We take the school's roll in each January census from 2019/20 (after any Pupils or Day and boarding filter). A boarding school with no boarding filter shows a day line and a boarding line instead.", "For the local authority and England we add up pupils aged 5 to 15 in the census aggregates each year (England is the nine regions added together).", "We find the first year every line has a figure and set each line to 100 in that year.", "Each later year is that year's figure divided by the base year's, times 100.", "Growing or shrinking compares this year's roll with three years ago. The word is 'Growing' or 'Shrinking' when the change rounds to at least 1%, otherwise 'Steady'. A school with fewer than four census years is measured from its first."],
     rounding: ["Index values to whole numbers"],
   },
   "DV-SMT-O-ROLL-TABLE": {
@@ -208,7 +208,7 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school's phases and England (the nine regions summed)",
     years: "Every census year from 2019/20 to the latest",
     leftOut: ["Phases with no pupils in the latest census", "England in a year when not all nine regions are held"],
-    steps: ["For each phase the school has, we add up its pupils in that age band each year: Primary 5-10, Senior 11-15, 16+ 16-18 (girls or boys only if that filter is on).", "England is pupils aged 5 to 15 in the census aggregates, the nine regions added together.", "We set every line to 100 in the first year all lines have a figure, and show each year against it.", "The word under the chart compares the first line in 2022/23 with the latest year: more than 2 points up is 'Growing', down 'Shrinking'."],
+    steps: ["For each phase the school has, we add up its pupils in that age band each year: Primary 5-10, Senior 11-15, 16+ 16-18 (girls or boys only if that filter is on).", "England is pupils aged 5 to 15 in the census aggregates, the nine regions added together.", "We set every line to 100 in the first year all lines have a figure, and show each year against it.", "Growing or shrinking compares this year's roll with three years ago. The word is 'Growing' or 'Shrinking' when the change rounds to at least 1%, otherwise 'Steady'. A school with fewer than four census years is measured from its first."],
     rounding: ["Index values to whole numbers"],
   },
   "DV-SMT-P-PHASES-TABLE": {

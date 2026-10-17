@@ -3,6 +3,7 @@ import { accountGrants, groupCaller, NOT_FOUND, officeFor, schoolAccounts } from
 import { groupMembers } from "@/lib/groups/production";
 import { canManageAccess, membersOf, rollSummary, seeingCount } from "@/lib/groups/access-rules";
 import { cachedCensus } from "@/lib/admissions/data";
+import { ROLL_DIRECTION_SPAN } from "@/catalogue/years";
 
 // VicData 0.8 groups r1 (G3): the head-office home. The group's one-line summary (from the production
 // lookups and the census: no new aggregate yet), its member schools (each opening that school's SMT
@@ -25,7 +26,8 @@ export async function GET(request: NextRequest) {
       for (const v of ag.values()) t += v.male + v.female;
       return t;
     };
-    const summary = rollSummary(urns.map((u) => ({ urn: u, now: rollIn(u, P), before: rollIn(u, P - 1) })));
+    // R-ROLL-WORDS-3YR: the combined roll this census against 3 years before, over the schools with both.
+    const summary = rollSummary(urns.map((u) => ({ urn: u, now: rollIn(u, P), before: rollIn(u, P - ROLL_DIRECTION_SPAN) })));
     return NextResponse.json({
       office,
       viewAs: caller.viewAs,

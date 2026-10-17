@@ -1036,12 +1036,77 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-ROLL-WORDS-3YR",
+    statement:
+      "Every roll or headcount direction word ('Growing', 'Shrinking', 'Steady') and every arrow or colour that words one compares the latest census year with 3 years earlier (years.ts ROLL_DIRECTION_SPAN, rollDirection); a school with fewer than 4 census years uses the longest span it has, and the (i) says so. Steady is R-FLAT-BAND: the change rounds to 0%. The (i) states the rule: 'Growing or shrinking compares this year's roll with three years ago.' The 'since' figures don't change (from the first census year), and an arrow on one follows its own figure.",
+    why: "Guy, 17 Oct 2026 (consistency, 1): SMT's words used 2022/23 (the results rule) on an index with a ±2-point band, Admissions' Momentum 2022/23, the groups 1, 3 or 5 years.",
+    appliesTo: "SMT's roll and phases words; Admissions' Momentum (x and its (i)); the groups' roll flag, map colours, schools-table trend, Growing/Shrinking counts and the group home line",
+    enforcedIn: [
+      "src/catalogue/years.ts:ROLL_DIRECTION_SPAN, rollDirection, rollDirectionOfPct",
+      "src/components/smt/views/Lines.tsx:RollDirectionWord",
+      "src/lib/admissions/screens.ts:rivalExtras (entryBasePeriod)",
+      "src/lib/groups/dash.ts:GROWING_SPAN",
+      "src/components/groups/dash/GroupDashboard.tsx:flagOf",
+      "src/components/groups/dash/views.tsx:map, SchoolRow",
+      "src/app/api/group/home/route.ts, src/lib/groups/access-rules.ts:rollSummary",
+    ],
+    testCase: {
+      urn: "135061",
+      school: "Wolverley CofE Secondary School; Pershore High (136925); The Bewdley School (135035); Chilmington Green School (149840)",
+      phase: "ks4",
+      expect: "SMT's roll word: Wolverley 'Growing', Pershore 'Shrinking', Bewdley 'Steady' (−0.3% over 2022/23-2025/26), Chilmington Green (three census years) 'Growing' over its 2-year span; The Chase's Momentum base is 3 years before the latest census; the groups' span is 3; every roll (i) carries the sentence.",
+      check: "rollWords3yr",
+    },
+    origin: "Consistency (17 Oct 2026)",
+    status: "active",
+  },
+  {
+    id: "R-SET-CHANGE-AVERAGE",
+    statement:
+      "A comparison set's '% change' is the change in the set's yearly average (each year, the average over the schools with a figure that year), from its start year to its latest: entries from the first year with entries (changeStartFor), points from the baseline year. One helper, src/lib/set-change.ts setAverageChange, in both modes of the Data View's subject area section, and for the KS2 domains' set.",
+    why: "Guy, 17 Oct 2026 (consistency, 2), matching his audit-fix call ('change in the yearly average'): category mode had used the set's summed entries, subject mode the average of each comparator's own change.",
+    appliesTo: "The Data View: 'Candidates, % change' and 'Results, % change' (the set's side, both modes); KS2 domains' 'Average across'",
+    enforcedIn: ["src/lib/set-change.ts:setAverageChange", "src/components/data-view/SubjectAreaSection.tsx:aggregateFamilyTrend, subjectSeriesFor", "src/components/data-view/Ks2DomainSection.tsx:comparisonTrend"],
+    testCase: {
+      urn: "137625",
+      school: "The Chase",
+      phase: "ks4",
+      subject: "History",
+      expect: "The Chase and its 10 nearest: subject mode (History entries) and category mode (Humanities entries) each equal a plain change in the yearly mean from the first year with entries.",
+      check: "setChangeAverage",
+    },
+    origin: "Consistency (17 Oct 2026)",
+    status: "active",
+  },
+  {
+    id: "R-MINUS-SIGN",
+    statement:
+      "No figure prints a hyphen-minus as its sign: every negative change or value prints '−' (U+2212), through src/lib/signed-delta.ts (signedDelta, signedValue). The Data View and the SMT, Admissions and group tooltips that printed '-3%' print '−3%'.",
+    why: "Guy, 17 Oct 2026 (consistency, 3).",
+    appliesTo: "Every signed figure",
+    enforcedIn: ["src/lib/signed-delta.ts:MINUS, signedDelta, signedValue", "src/components/smt/ui.tsx:fmt", "src/components/admissions/ui.tsx:fmtPct"],
+    testCase: { urn: "", school: "(formatters)", phase: "ks4", expect: "−3% prints '−3%' in every style; the Data View's bars (rendered), SMT's and Admissions' percents and the flag figures print '−'; no hyphen style or hand-rolled hyphen sign is left in src.", check: "minusSign" },
+    origin: "Consistency (17 Oct 2026)",
+    status: "active",
+  },
+  {
+    id: "R-FLAT-BAND",
+    statement:
+      "An arrowed change whose size rounds to 0 at the precision shown (under 0.5% for whole percents, under 0.05 for one decimal place) is steady: no ▲ or ▼, a '–', the zero in that view's own style, and a neutral colour. One helper beside signedDelta (flatBand, arrowed, ARROW); a view may keep a wider steady band of its own, never a narrower one. Roll direction words follow the same band.",
+    why: "Guy, 17 Oct 2026 (consistency, 4): '▼ 0%' read as a fall; SMT's Scorecard arrow and its colour used different bands.",
+    appliesTo: "SMT's Now, Pupils, SchoolTile, Context, Scorecard, Subjects, Areas; Admissions' entry, market, pool, academic and bars arrows; the groups' arrows and home line; the Data View's trend pill",
+    enforcedIn: ["src/lib/signed-delta.ts:flatBand, arrowed, ARROW", "src/components/smt/ui.tsx:dirClass, arrowOf, fmtChange", "src/components/admissions/ui.tsx:arrow"],
+    testCase: { urn: "", school: "(formatters)", phase: "ks4", expect: "−0.4% prints '– 0%' (SMT tile, the helper), −0.6% '▼ 1%'; the colour is neutral; the group home reads 'roll – 0.0%'; a +0.3% school isn't counted as growing; no old steady-bar glyph or unbanded ▲/▼ is left in src.", check: "flatBand" },
+    origin: "Consistency (17 Oct 2026)",
+    status: "active",
+  },
+  {
     id: "R-NO-NEGATIVE-ZERO",
     statement:
-      "A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's true minus and '+0'; the hyphen and an unsigned zero where a view has always printed them).",
+      "A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's '+0'; an unsigned zero where a view has always printed one; the minus is always '−': R-MINUS-SIGN).",
     why: "Guy, 16 Oct 2026 (year rules leftovers, item 2): '−0%' reads as a fall that didn't happen. Teacher's 0.8 fix (signedDelta) hadn't reached the Data View or the other dashboards.",
     appliesTo: "Every signed change or gap: Teacher, the Data View, SMT, Admissions, the group dashboards, the narrative",
-    enforcedIn: ["src/lib/signed-delta.ts:signedDelta, HYPHEN_SIGN, HYPHEN_SIGN_PLUS_ZERO", `${TVP}:formatChange, formatDelta`],
+    enforcedIn: ["src/lib/signed-delta.ts:signedDelta, UNSIGNED_ZERO, VALUE_SIGN", `${TVP}:formatChange, formatDelta`],
     testCase: {
       urn: "",
       school: "(formatters)",
@@ -1445,7 +1510,7 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-VIEW-MOMENTUM",
     statement:
-      "The momentum scatter plots each rival's change at the entry age (census, since 2022/23, %) against its whole-school headline change (points, same years); flags come only from the national thresholds, and with none loaded the view says flags are not available yet.",
+      "The momentum scatter plots each rival's change at the entry age (census, %, over 3 census years: R-ROLL-WORDS-3YR) against its whole-school headline change (points, since 2022/23); flags come only from the national thresholds, and with none loaded the view says flags are not available yet.",
     why: "Never a guessed flag.",
     appliesTo: "DV-ADM-M-MOMENTUM",
     enforcedIn: ["src/components/admissions/views/Momentum.tsx", "src/lib/admissions/views-api.ts:rivalsView"],

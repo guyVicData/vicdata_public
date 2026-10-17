@@ -10,6 +10,7 @@ import { SHAPE_LABELS } from "@/components/dashboard/ShapeIcon";
 import type { ShapeLabel } from "@/lib/shape-classifier";
 import type { PipelineOk, ShapeView } from "../api";
 import { Lbl, Tile, cx, fmtN, fmtPct, yearLabel } from "../ui";
+import { arrowed } from "@/lib/signed-delta";
 
 const yearWord = (age: number) => (age === 4 ? "Reception" : age >= 5 && age <= 17 ? `Year ${age - 4}` : `Age ${age}`);
 export const cohortWord = (age: number) => (age === 4 ? "Reception" : `Year ${age - 4}`);
@@ -92,7 +93,7 @@ export function EntryNow({ p, shape, compact = false }: { p: PipelineOk; shape: 
       <div className="text-[12.5px] font-bold text-[var(--fg)]">Your {p.entry.label.replace(/ \(.*\)$/, "")} entry point now</div>
       <div className="grid grid-cols-2 gap-2">
         <Tile label={`${word} now`} value={fmtN(n.cohort)} sub={`pupils aged ${p.entry.age}`} accent />
-        <Tile label={`Since ${yearLabel(n.base.period)}`} value={n.changePct === null ? "—" : `${n.changePct >= 0 ? "▲" : "▼"} ${Math.abs(n.changePct).toFixed(0)}%`} sub={`${word} cohort (${fmtN(n.base.cohort)} then)`} />
+        <Tile label={`Since ${yearLabel(n.base.period)}`} value={n.changePct === null ? "—" : arrowed(n.changePct, (x) => `${x.toFixed(0)}%`, 0)} sub={`${word} cohort (${fmtN(n.base.cohort)} then)`} />
         {!compact && <Tile small label="Girls · boys" value={girlsPct === null ? "—" : `${girlsPct.toFixed(0)}% · ${(boysPct ?? 0).toFixed(0)}%`} sub={`in ${word}`} />}
         {/* 0.7 r3 (F2): one tile, the same place, either way. A boarding school sees day and
             boarding; a day school sees Day only -- the day count, no boarding half, no label. */}
