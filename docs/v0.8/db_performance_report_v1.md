@@ -1,6 +1,6 @@
 # VicData 0.8: database load
 
-Report for `docs/v0.8/vicdata_0_8_db_performance_claude_code_prompt_v1.md`, 17 Oct 2026. Branches: app `v0.8-db-performance` (from `824e2fb`), ingest `feat/db-performance` (from `f08af75`). Worktrees `~/dev/vicdata_public_dbperf`, `~/dev/vicdata_dbperf`. **Production was read-only throughout:** read-only transactions, `EXPLAIN ANALYZE` only inside them, no DDL.
+Report for `docs/v0.8/vicdata_0_8_db_performance_claude_code_prompt_v1.md`, 17 Oct 2026. Branches: app `v0.8-db-performance` (from `824e2fb`), ingest `feat/db-performance` (from `f08af75`), then `feat/rank-figures-by-case` after the first build failed (§3 B, follow-up). Worktrees `~/dev/vicdata_public_dbperf`, `~/dev/vicdata_dbperf`. **Production was read-only throughout:** read-only transactions, `EXPLAIN ANALYZE` only inside them, no DDL.
 
 **In one line:**
 - Reference reads become one call each, where today they re-run the whole query for every 1,000 rows. The national KS2 read drops from 47 executions (about 19 s) to one (about 0.5 s).
@@ -16,9 +16,9 @@ Report for `docs/v0.8/vicdata_0_8_db_performance_claude_code_prompt_v1.md`, 17 O
 | App unit tests | **448 / 448** (including the new cache tests); catalogue **77 / 77** |
 | App PGlite (RLS, usage log, every `supabase/tests/*.mjs`) | **17 / 17** |
 | Rule tests (production, read-only, through the cached proxy) | **107 pass, 0 fail, 0 errors** (MANUAL 15, NONE 19, SUPERSEDED 4) |
-| Ingest Python unit tests | **134 / 134** |
+| Ingest Python unit tests | **152 / 152** (18 new for the case-by-case build) |
 | Ingest PGlite: reference reads | the one-call reads return exactly the paged functions' rows, in order, over 8 cases (3 pages; lineage fallback; national); the stamps are right; anon reads no table |
-| Ingest PGlite: rank figures | **258 / 258 cases identical** to today's function (§3), migration applied twice; anon can only call the lookup |
+| Ingest PGlite: rank figures | **258 / 258 cases identical** to today's function (§3) with the table half built, fully built, with KS4 stale, and after KS4 is rebuilt in place; migrations applied twice; anon can only call the lookup |
 | Parity (both trees through one fresh proxy session per harness, back to back) | Teacher 2,875 / 2,875; public page SSR identical; Admissions 328 / 328; Data View 60 / 60; groups 175 / 176 (one PNG at 1 / 255); SMT HTML identical everywhere (PNG noise on the tab pill's edge, as last round). **No app figure changed.** |
 
 ## 1. The callers found
@@ -126,20 +126,20 @@ Every repeat read is then served from the app's cache until the source's next pr
   - `academic_subject_rank_figure_sets` has one row per case: stage, subject group (`subject_label_variants`), family filter, qualification, measure, and a fingerprint of the rate parameters.
   - `academic_subject_rank_figures` holds that case's rows: `ord`, urn, period, value, n.
   - RLS is on, nothing is granted to anon, and there's an index on `(set_id, urn)` covering the rest.
-- **Built by** `academic_subject_rank_figures_rebuild(non_grades, modern_from)` for every school in the rollups plus every lineage successor, about 20,000 URNs. It uses `academic_subject_rank_figures_compute`, which is the function's own figure chain (`members` .. `fig`) **copied by a script from the current definition** (`tests/rank_figures/gen_migration.py`), never retyped.
+- **Built** (first version: `academic_subject_rank_figures_rebuild`, one transaction; now case by case, see the follow-up below) for every school in the rollups plus every lineage successor, about 20,000 URNs. It uses `academic_subject_rank_figures_compute`, which is the function's own figure chain (`members` .. `fig`) **copied by a script from the current definition** (`tests/rank_figures/gen_migration.py`), never retyped.
 - **The cases built:**
   - GCSE points and entries per subject (no family filter, and the subject's family);
   - Post-16 points and entries per subject and qualification;
   - rates per subject, for every qualification and for each one.
   
-  That's about 4,500 cases on production. Bands, and calls with other parameters, compute per call, as today.
+  That's 4,174 cases on production. Bands, and calls with other parameters, compute per call, as today.
 - **The lookup** finds the case (`academic_subject_rank_figure_set`) and reads its rows for the schools given, in `ord` order; otherwise it computes them. Ranking, ties, windows, the change list and the JSON are untouched. Today's function stays as `academic_subject_rank_lookup_v1`, service role only, for the proof.
 - **Kept current:**
-  - **After a subject promote:** the promote hook clears the figures in one savepoint and rebuilds them in another, after the subject rollups. If the rebuild fails, the lookup computes per call (correct, as before), never serving stale figures.
-  - **On a `gias_links` promote:** the figures are cleared (`school_lineage` drives the predecessor fallback).
-  - **Manual rebuilds:** `rebuild_ks4.py` rebuilds them, and `rebuild_rank_figures.py` is the build on its own.
+  - **After a KS4 or Post-16 subject promote:** the promote marks that stage's cases stale (fast), and the lookup computes them per call (correct, as before) until `rebuild_rank_figures.py` rebuilds them, run as its own step.
+  - **On a `gias_links` promote:** every stage's cases are marked stale (`school_lineage` drives the predecessor fallback).
+  - **`rebuild_ks4.py`** marks every stage stale and prints the build command.
   
-  Rebuild after any migration that changes `subject_label_map` or `subject_families`.
+  After any migration that changes `subject_label_map` or `subject_families`: `rebuild_rank_figures.py --fresh`.
 
 **The proof (PGlite, real production rows exported read-only, 258 cases):**
 - **Coverage:** GCSE and Post-16; national, regional and the 10 nearest; points, entries, Grade 4+ / A*–E, and bands (computed path); IGCSE schools (Leighton Park, King's); 223 with ties in the window.
@@ -152,7 +152,44 @@ Every repeat read is then served from the app's cache until the source's next pr
   - The figures are stored in the chain's own order (`ord`), which is why most cases match exactly. The proof compares those three fields to 1e-12 and everything else exactly.
   - The app shows averages rounded, and parity found no difference.
 - **Speed (PGlite):** 252 of the 258 were served from the table, at 41% of today's time.
-- **The build (PGlite):** 449 cases and 1.9 million rows for 11 subjects in 2.3–2.5 minutes. On production I estimate 30–60 minutes for about 4,500 cases (a logged call: it lengthens a subject promote by that much).
+- **The build (PGlite):** 449 cases and 1.9 million rows for 11 subjects in about 37 s, case by case.
+
+**Follow-up, 17 Oct: the first build failed, and the build is now case by case** (ingest 20261017150000, `feat/rank-figures-by-case`, merged to `main` as `e1dee4e`).
+- **What happened:** your `rebuild_rank_figures.py` run hit its own 90-minute statement timeout and rolled back. Production had 0 cases, and the lookup computed per call throughout.
+- **Why (timed on production, read-only):** most cases compute in under a second. But small points/entries cases with a family filter or an uncommon qualification took 3–100 s each. For example, KS4 Hairdressing Services with the health_care family took 100 s for 329 rows.
+  - The cause is the lineage step. Over the whole country the planner expects 7 subject rows and 12 lineage successors, and gets 326 and 10,609.
+  - So it picks a nested loop that re-scans the successors once per subject row: 4 million index probes. An app call asks about far fewer schools and never meets it.
+  - At those speeds the whole build would have taken about 10.7 hours.
+- **The fix:** `academic_subject_rank_figures_build_case` builds one case per transaction, with nested loops off for that call only.
+  - That case now takes 0.5 s, and the slowest of the 50 measured takes 1.7 s (KS4 Combined Science rates).
+  - The setting changes how the rows are found, not which: on PGlite, 245 of 258 cases are now byte-identical (was 225), and the rest are within 1.2e-15 on a set average.
+- **Production timings (read-only, the compute alone, nested loops off):**
+
+| Case | Rows | Today's plan | Nested loops off |
+|---|---|---|---|
+| KS4 Mathematics points | 26,385 | 0.8 s | 0.4 s |
+| KS4 Combined Science points, sciences_maths | 23,795 | 0.6 s | 0.6 s |
+| KS4 History entries | 22,920 | 0.6 s | 0.5 s |
+| KS4 Combined Science Grade 4+, all qualifications (the most grade rows) | 19,000 | 11.6 s | 1.7 s |
+| KS4 Mathematics Grade 4+, GCSE (9-1) Full Course | 20,541 | 6.2 s | 1.2 s |
+| KS5 Mathematics points, GCE A level | 10,190 | 0.7 s | 0.3 s |
+| KS5 Biology entries, GCE A level, sciences_maths | 9,947 | 0.6 s | 0.4 s |
+| KS5 Mathematics A*–E, all qualifications | 9,372 | 1.4 s | 0.7 s |
+| KS5 Mathematics A*–E, GCE A level | 9,246 | 0.6 s | 0.6 s |
+| KS5 Psychology points, Pre-U (the smallest) | 1 | 0.5 s | 0.4 s |
+| KS4 Hairdressing Services points, health_care | 329 | 99.6 s | 0.2–0.5 s |
+| KS5 Nutrition / Diet entries, VRQ Level 3, health_care | 814 | 98.2 s | 0.2–0.3 s |
+| KS5 Speech and Drama entries, BTEC Extended Diploma, arts_media_design | 105 | 13.2 s | 0.3 s |
+| KS5 Business Studies points, OCR Extended Diploma, business_law | 78 | 10.4 s | 0.3 s |
+
+  Bands aren't built: they compute per call, as today.
+- **The estimate:** 40 random cases, stratified by stage and measure, give a mean of 0.31–0.68 s a case. That's about **25 minutes of compute** for the 4,174 cases (KS4 180 + 180 + 287; KS5 1,440 + 1,440 + 647), plus the writes of about 5.5 million rows. **Expect 30–40 minutes.**
+- **How it runs now:**
+  - Each case is its own transaction: no statement over 5 minutes (`statement_timeout`). A case that runs over is reported, by name, and left to compute per call; the run carries on.
+  - Resumable: a case already built, not stale, and built at its stage's current source stamp is skipped, so after a stop the same command carries on. `--fresh` rebuilds everything.
+  - Progress at least every minute: cases done of the total, rows, the time so far and the time to go. At the end, the 5 slowest cases.
+  - A part-built table is safe: the lookup serves only built, non-stale cases, and a case's rows and its row in the case table commit together. Proved on PGlite: all 258 cases are identical with half the cases built.
+  - The old one-transaction rebuild function is dropped, and promotes no longer build.
 
 ### C. The harnesses (app `scripts/rpc-proxy.mjs`)
 
@@ -238,14 +275,17 @@ Logged under "2026-10-17 — database load" in both repos' `docs/OPEN_QUESTIONS.
 **Ingest:**
 1. Figures, not national ranks (your call).
 2. "Identical" means everything except the set averages' last digits, which today's function varies itself.
-3. The build takes 30–60 min inside a subject promote; it could move out of the hook.
-4. A `gias_links` promote clears the figures. Add `rebuild_rank_figures.py` to the GIAS runbook.
+3. The build is 4,174 cases (see 11–13).
+4. A `gias_links` promote marks the figures stale. Add `rebuild_rank_figures.py` to the GIAS runbook.
 5. No new index.
 6. The optional snapshot-index drop makes a retraction slower.
 7. The rate parameters are copied into `academic_aggregates.py`. If the app changes them, the lookup computes per call: slower, never wrong.
 8. `_v1` stays for the proof; drop it later.
 9. The compute already looks upgraded.
 10. The paged functions stay.
+11. The build is case by case and runs after a promote, not inside it. A promote marks its stage stale.
+12. The 90 minutes came from a plan, not the volume: the build runs with nested loops off.
+13. Stale marking, not truncation. A truncate inside a promote would have held the lookup's table lock until the promote committed.
 
 **App:**
 1. The fallback until you apply.
@@ -262,26 +302,31 @@ Logged under "2026-10-17 — database load" in both repos' `docs/OPEN_QUESTIONS.
 
 ## 7. Your commands, in order
 
-Each is one chain with the project-ref check. The ingest branch is merged to `main`, so these run from `~/dev/vicdata`.
+Each is one chain with the project-ref check. The ingest branch is merged to `main` (`e1dee4e`), so these run from `~/dev/vicdata`. You've already applied 20261017120000 and 20261017130000 (the first version of this section's step 1).
 
-**1. The ingest migrations.** Reference reads and stamps, then the rank figures. Both are quick.
+**1. Pull, and apply the case-by-case migration** (quick). It drops the one-transaction rebuild function.
 ```
-cd ~/dev/vicdata && git checkout main && git pull https://github.com/guyVicData/vicdata.git main && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && supabase db query --linked -f supabase/migrations/20261017120000_reference_data_lookup_all.sql && supabase migration repair --status applied 20261017120000 --linked && supabase db query --linked -f supabase/migrations/20261017130000_academic_subject_rank_figures.sql && supabase migration repair --status applied 20261017130000 --linked && supabase db query --linked "select count(*) as cases_built from academic_subject_rank_figure_sets"
+cd ~/dev/vicdata && git checkout main && git pull https://github.com/guyVicData/vicdata.git main && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && supabase db query --linked -f supabase/migrations/20261017150000_academic_subject_rank_figures_by_case.sql && supabase migration repair --status applied 20261017150000 --linked && supabase db query --linked "select to_regprocedure('academic_subject_rank_figures_build_case(text, text, text, text, text, text[], integer, text[], timestamptz)') is not null as build_case, to_regprocedure('academic_subject_rank_figures_rebuild(text[], integer, text[])') is null as old_rebuild_gone, (select count(*) from academic_subject_rank_figure_sets) as cases_built"
 ```
-`cases_built` is 0 until step 2. Until then the lookup computes every call, exactly as today.
+Expect `true`, `true`, `0`.
 
-**2. The rank figures build** (one transaction; estimated 30–60 minutes).
+**2. Build the rank figures.** First a dry run (read-only: about 40 s, it counts the cases), then the build: about 30–40 minutes, with a progress line at least every minute.
 ```
-cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && caffeinate -dims .venv/bin/python rebuild_rank_figures.py
+cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && .venv/bin/python rebuild_rank_figures.py --dry-run && caffeinate -dims .venv/bin/python rebuild_rank_figures.py
 ```
+- **The dry run** should say 4,174 cases (give or take, if anything was promoted since), with all of them to build.
+- **The build** ends with "done in …: N cases served from the table … 0 stale", then the slowest cases, and exits 0.
+- **If it stops** (Ctrl-C, a lost connection, a sleeping Mac), run the second command again: it carries on from where it was.
+- **If any case says FAILED,** the run carries on, and that case is computed per call. Send me the line.
+- **Stop and tell me** if any case takes more than a minute, or the estimate goes past an hour.
 
-**3. Verify** (read-only). The 258 cases, new lookup against `_v1`, then the stamps.
+**3. Verify** (read-only). The 258 cases, the new lookup against `_v1`, then the stamps.
 ```
 cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && caffeinate -dims .venv/bin/python verify_rank_figures.py tests/rank_figures/cases.json.gz && supabase db query --linked "select source_id, stamp from reference_source_stamps() order by stamp desc limit 5"
 ```
-Expect "… byte-identical; … more identical but for the last digits of a set average", exit 0, and Leighton Park Biology at rank 851 of 3433.
+Expect "built: 4174 cases served from the table … 0 stale", "… byte-identical; … more identical but for the last digits of a set average", exit 0, and Leighton Park Biology at rank 851 of 3433.
 
-**4. The vacuums** (the site can stay up; about 30–80 minutes in all). Dry run first.
+**4. The vacuums, if you haven't run them** (the site can stay up; about 30–80 minutes in all). Dry run first.
 ```
 cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && .venv/bin/python vacuum_reference.py --dry-run && caffeinate -dims .venv/bin/python vacuum_reference.py
 ```
@@ -290,5 +335,11 @@ cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoyb
 ```
 cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && .venv/bin/python run_sql_autocommit.py supabase/migrations/20261017140000_drop_canonical_facts_current_snapshot_id_idx.sql && supabase migration repair --status applied 20261017140000 --linked
 ```
+
+**From now on, after a KS4 or Post-16 subject promote, a `gias_links` promote or `rebuild_ks4.py`:**
+```
+cd ~/dev/vicdata && test "$(cat supabase/.temp/project-ref)" = "hrqrbvrrhlidpoybezhs" && caffeinate -dims .venv/bin/python rebuild_rank_figures.py
+```
+It rebuilds only the stale stage's cases. After a migration that changes `subject_label_map` or `subject_families`, add `--fresh`.
 
 Then tell me. I rerun every parity harness against the live functions, take the timings after, and merge the app branch. **The app change goes live with a Render deploy after that merge.**
