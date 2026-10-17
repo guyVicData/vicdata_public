@@ -7,6 +7,7 @@
 import type { GradeRollupRow } from "./grade-rows";
 import { latestYearsFromRows, type LatestYears } from "../catalogue/years";
 import { latestBreakdown, latestSubjectName, latestSubjectNameOrNull } from "./subject-latest-names";
+import { makeReferenceCache, makeSourceStamps, type StampMap } from "./reference-cache";
 
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
@@ -63,6 +64,44 @@ async function fetchPage(
 // (dfe_ks5_subject_value_added spells subjects its own way and has no rows in the map.)
 const SUBJECT_SOURCES = new Set(["dfe_ks4_subject_entries", "dfe_ks4_subject_entries_historic", "dfe_ks5_subject_results", "dfe_ks5_subject_results_historic"]);
 
+// VicData 0.8 database load: the one-call reads (ingest 20261017120000: reference_data_lookup_all,
+// reference_data_age_gender_totals_all, reference_source_stamps). Each answers a read in ONE execution as
+// one json value, where the paged functions re-run the whole query for every 1,000 rows. Until they are
+// applied (or if one goes missing) the paged functions answer, re-checked every 10 minutes.
+const ABSENT_RECHECK_MS = 10 * 60_000;
+const oneCall = new Map<string, number>(); // function -> when it was found missing
+let pagedOnly = false;
+/** For scripts/db-timings.ts: today's paged reads only (the "before" figures). */
+export const forcePagedReads = (on: boolean) => {
+  pagedOnly = on;
+};
+async function readAll(fn: string, body: Record<string, unknown>): Promise<unknown[] | null> {
+  if (pagedOnly) return null;
+  const since = oneCall.get(fn);
+  if (since !== undefined && Date.now() - since < ABSENT_RECHECK_MS) return null;
+  try {
+    const out = await fetchPage(fn, body);
+    oneCall.delete(fn);
+    return (out ?? []) as unknown[];
+  } catch (e) {
+    if (!isMissingFunction(e)) throw e;
+    if (since === undefined) console.info(`[${fn}] not applied yet: paged reads instead (re-checked every 10 minutes)`);
+    oneCall.set(fn, Date.now());
+    return null;
+  }
+}
+
+// Reads are kept until their source is promoted or retracted again (reference-cache.ts).
+const sourceStamp = makeSourceStamps(async () => {
+  const rows = (await fetchPage("reference_source_stamps", {})) as { source_id: string; stamp: string | null }[];
+  const out: StampMap = {};
+  for (const r of rows) if (r.stamp) out[r.source_id] = r.stamp;
+  return out;
+});
+const referenceCache = makeReferenceCache({ stamp: sourceStamp });
+/** For tests and scripts: forget every cached reference read. */
+export const clearReferenceReads = () => referenceCache.clear();
+
 export async function lookupReferenceData(params: {
   sourceId: string;
   entityIds?: string[];
@@ -71,32 +110,34 @@ export async function lookupReferenceData(params: {
   breakdowns?: string[];
   signal?: AbortSignal;
 }): Promise<ReferenceFact[]> {
-  const rows: ReferenceFact[] = [];
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const batch = (await fetchPage(
-      "reference_data_lookup",
-      {
-        p_source_id: params.sourceId,
-        p_entity_ids: params.entityIds ?? null,
-        p_period_min: params.periodMin ?? null,
-        p_period_max: params.periodMax ?? null,
-        p_limit: PAGE_SIZE,
-        p_offset: page * PAGE_SIZE,
-        p_breakdowns: params.breakdowns ?? null,
-      },
-      params.signal,
-    )) as ReferenceFact[];
-    rows.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
-    // 0.6.2 S1: the cap used to stop the read silently, dropping whole schools from a big
-    // batched read. It still stops (no figure changes here), but now says so.
-    if (page === MAX_PAGES - 1) console.warn(`[reference_data_lookup] ${params.sourceId}: stopped at ${MAX_PAGES} pages (${rows.length} rows) for ${params.entityIds?.length ?? "all"} entities; later rows were not read`);
-  }
+  const args = {
+    p_source_id: params.sourceId,
+    p_entity_ids: params.entityIds ?? null,
+    p_period_min: params.periodMin ?? null,
+    p_period_max: params.periodMax ?? null,
+    p_breakdowns: params.breakdowns ?? null,
+  };
+  const rows = await referenceCache.get(params.sourceId, `lookup${JSON.stringify(args)}`, () => readReferenceFacts(args), params.signal);
   if (!SUBJECT_SOURCES.has(params.sourceId)) return rows;
   return rows.map((r) => {
     const breakdown = latestBreakdown(r.breakdown);
     return breakdown === r.breakdown ? r : { ...r, breakdown };
   });
+}
+
+async function readReferenceFacts(args: { p_source_id: string; p_entity_ids: string[] | null; p_period_min: number | null; p_period_max: number | null; p_breakdowns: string[] | null }): Promise<ReferenceFact[]> {
+  const all = await readAll("reference_data_lookup_all", args);
+  if (all) return all as ReferenceFact[];
+  const rows: ReferenceFact[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage("reference_data_lookup", { ...args, p_limit: PAGE_SIZE, p_offset: page * PAGE_SIZE })) as ReferenceFact[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    // 0.6.2 S1: the cap used to stop the read silently, dropping whole schools from a big
+    // batched read. It still stops (no figure changes here), but now says so.
+    if (page === MAX_PAGES - 1) console.warn(`[reference_data_lookup] ${args.p_source_id}: stopped at ${MAX_PAGES} pages (${rows.length} rows) for ${args.p_entity_ids?.length ?? "all"} entities; later rows were not read`);
+  }
+  return rows;
 }
 
 // 0.6.2: academic_subject_grade_rollup through the PROPOSED anon RPC
@@ -202,23 +243,18 @@ export async function lookupAgeGenderTotals(params: {
   period: number;
   signal?: AbortSignal;
 }): Promise<AgeGenderTotal[]> {
-  const rows: AgeGenderTotal[] = [];
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const batch = (await fetchPage(
-      "reference_data_age_gender_totals",
-      {
-        p_source_id: params.sourceId,
-        p_entity_ids: params.entityIds,
-        p_period: params.period,
-        p_limit: PAGE_SIZE,
-        p_offset: page * PAGE_SIZE,
-      },
-      params.signal,
-    )) as AgeGenderTotal[];
-    rows.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
-  }
-  return rows;
+  const args = { p_source_id: params.sourceId, p_entity_ids: params.entityIds, p_period: params.period };
+  return referenceCache.get(params.sourceId, `agegender${JSON.stringify(args)}`, async () => {
+    const all = await readAll("reference_data_age_gender_totals_all", args);
+    if (all) return all as AgeGenderTotal[];
+    const rows: AgeGenderTotal[] = [];
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const batch = (await fetchPage("reference_data_age_gender_totals", { ...args, p_limit: PAGE_SIZE, p_offset: page * PAGE_SIZE })) as AgeGenderTotal[];
+      rows.push(...batch);
+      if (batch.length < PAGE_SIZE) break;
+    }
+    return rows;
+  }, params.signal);
 }
 
 // Academic Results RPC bridge (docs/vicdata_phase3_academic_results_rpc_bridge_brief_v1.md
