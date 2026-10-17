@@ -67,8 +67,8 @@ Routes moved to it:
 |---|---|
 | tsc | clean |
 | eslint | 0 errors. 2 warnings, both in files this round doesn't touch (`PeerTrendChart.tsx`, `SchoolMap.tsx`), as on `main` |
-| `next build` | clean |
-| Unit (`find src -name '*.test.ts'`, group fixtures env, `--test-force-exit`) | **485 / 485** (+ the page-loader file below) |
+| `next build` | clean (on the final tip) |
+| Unit (`find src -name '*.test.ts'`, group fixtures env, `--test-force-exit`) | **486 / 486** (59 files) |
 | Catalogue unit | 77 / 77 |
 | Rules (`scripts/catalogue-rule-tests.ts`) | **107 pass, 0 fail** (15 manual, 19 without a check, 4 superseded) |
 | PGlite / RLS (all 19 suites in `supabase/tests`) | **all pass**: v06 RLS, v07 Admissions RLS, groups r1 (102), usage log, catchment 31/31, the editing suite 44/44, … |
@@ -150,7 +150,26 @@ In `docs/v0.8/view_as_screenshots/` (README there). They were drawn from the bra
 
 ## Parity
 
-(Filled in from `docs/v0.8/view_as_parity.md`.)
+Full detail is in `docs/v0.8/view_as_parity.md`. Base is `824e2fb`. Fixtures came from each tree's own code and were byte-identical in every pair.
+
+| Harness | Pairs | Result |
+|---|---|---|
+| Teacher walker (all 7 case sets) | 2,875 | 2,874 identical, 1 render noise, 0 unexpected (3 error files: the README's known flake, on both trees) |
+| Teacher import graph: Data View, public page | — | 0 changed files in either graph |
+| Public page SSR (137625, 117037) | 2 | identical |
+| Teacher nav, account menu, footer (added check) | 16 | identical |
+| Admissions | 328 | identical |
+| SMT pages | 312 files | DOM all identical; 26 PNGs at 1–15/255, cleared on recheck |
+| SMT homes | 20 | 12 identical; 8 differ **only by the allowed role switch** moving from the /teacher home into the nav (the harness's `multi` member) |
+| SMT builders, field by field | 32,956 fields | identical |
+| Groups dashboards | 192 files | 191 identical; 1 PNG differs by 2 px, identical on 2 rechecks |
+
+- **Not exercised by any harness:**
+  - the platform-admin messages (no harness signs in as a platform admin);
+  - the multi-school account-menu rows (no stub member has two schools).
+- **Committed after the parity run:** the wrong-role screens now draw the View as banner too.
+  - Only a platform admin's View as sees it: the banner draws nothing without the cookie.
+  - The screenshots' review found it missing: `04` was shot before the fix.
 
 ## Migration
 
