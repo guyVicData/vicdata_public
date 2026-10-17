@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   if (!ep) return NextResponse.json({ error: "entry must be 4+, 11+, 16+ or age:2-17" }, { status: 400 });
   const sex = sp.get("sex") === "male" || sp.get("sex") === "female" ? (sp.get("sex") as "male" | "female") : "all";
   try {
-    const lists = await savedLists(caller.supabase, caller.urn, ep.id);
+    const lists = await savedLists(caller.reader, caller.urn, ep.id);
     return NextResponse.json(await pipelineView(caller.urn, ep, lists, { filters: filtersFrom(sp), sex, projection: sp.get("projection") === "1" }));
   } catch (err) {
     console.error("[admissions/pipeline] failed:", err);

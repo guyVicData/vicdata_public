@@ -38,7 +38,7 @@ import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usag
 import { ControlBar } from "@/components/teacher/ControlBar";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
-import { openViewAs } from "@/components/view-as/ViewAs";
+import { ViewAsWrongRole } from "@/components/view-as/ViewAs";
 import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
 import { Empty, EntryChip, FChip, Panel, Skeleton, Tabs, admissionsVars, fillHeight, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
 import { useWidth } from "./views/charts";
@@ -172,16 +172,10 @@ export function AdmissionsDashboard() {
   );
 }
 
-/** F5: a platform admin's empty state -- View as, not "join your school". */
+/** F5: a platform admin's empty state -- View as, not "join your school". 0.8 View as: it starts from
+ * the account menu (no button here any more). */
 function UseViewAs() {
-  return (
-    <span className="flex flex-wrap items-center gap-3">
-      To see a school&rsquo;s Admissions, use View as.
-      <button type="button" onClick={() => openViewAs()} className="rounded-full border border-[var(--panel-border2)] px-3 py-1 text-[12px] font-bold text-[var(--fg)] hover:border-[var(--fg)]">
-        View as&hellip;
-      </button>
-    </span>
-  );
+  return <>To see a school&rsquo;s Admissions, use View as in your account menu.</>;
 }
 
 function AdmissionsEditor({ slug: pageSlug, school }: { slug: string; school: { urn: string; name: string } }) {
@@ -201,7 +195,10 @@ function Gate({ member, theme, onTheme, platformAdmin, onDash, reloadTick }: { m
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
         <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
         <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] leading-relaxed text-[var(--muted2)]">
-          {platformAdmin && !member.viewAs ? <UseViewAs /> : <>Admissions is for the school&rsquo;s Admissions and SMT staff and its School-Admin. Ask your School-Admin if you need it; a list shared with you appears here.</>}
+          {member.viewAs ? (
+            // 0.8 View as: a platform admin viewing the school as a role Admissions isn't for.
+            <ViewAsWrongRole viewAs={member.viewAs} forWhom="Admissions dashboards are for Admissions, SMT and the School-Admin." to={{ role: "admissions", label: "Admissions" }} />
+          ) : platformAdmin ? <UseViewAs /> : <>Admissions is for the school&rsquo;s Admissions and SMT staff and its School-Admin. Ask your School-Admin if you need it; a list shared with you appears here.</>}
         </div>
       </div>
     );

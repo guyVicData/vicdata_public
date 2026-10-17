@@ -3,7 +3,7 @@
 // VicData 0.8 SMT round 1 (B1-B5): the SMT dashboards -- Overview and Academic -- drawn entirely from
 // the shared shell (src/components/shell): Teacher's nav, ControlBar (the "S" badge, the switch, the
 // level chips in the subject chips' slot, the pills), the rows, RailPanel (CardBox: the icon row,
-// the notes, full screen as a focus mode), the phone's tabs, the footer's Edit · View as… and Copy
+// the notes, full screen as a focus mode), the phone's tabs, the footer's Edit (View as from the account menu, 0.8) and Copy
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
@@ -23,7 +23,7 @@ import { RailPanel, Tabs, type RailItem } from "@/components/shell/RailPanel";
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { HeadOfficeBanner } from "@/components/groups/HeadOfficeBanner";
-import { openViewAs } from "@/components/view-as/ViewAs";
+import { ViewAsWrongRole } from "@/components/view-as/ViewAs";
 import { AdmissionsTeacherNav, Divider } from "@/components/admissions/controls";
 import { Empty, EntryChip, FChip, Skeleton } from "@/components/admissions/ui";
 import { useWidth } from "@/components/admissions/views/charts";
@@ -123,13 +123,12 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
                   </Link>{" "}
                   to see the SMT dashboards.
                 </>
-              ) : platformAdmin && !(state.status === "ready" && state.member.viewAs) ? (
-                <span className="flex flex-wrap items-center gap-3">
-                  To see a school&rsquo;s SMT dashboards, use View as.
-                  <button type="button" onClick={() => openViewAs()} className="rounded-full border border-[var(--panel-border2)] px-3 py-1 text-[12px] font-bold text-[var(--fg)] hover:border-[var(--fg)]">
-                    View as&hellip;
-                  </button>
-                </span>
+              ) : state.status === "ready" && state.member.viewAs ? (
+                // 0.8 View as: a platform admin viewing the school as a role SMT isn't for.
+                <ViewAsWrongRole viewAs={state.member.viewAs} forWhom="SMT dashboards are for SMT and the School-Admin." to={{ role: "smt", label: "SMT" }} />
+              ) : platformAdmin ? (
+                // 0.8 View as: it starts from the account menu (no button here any more).
+                <>To see a school&rsquo;s SMT dashboards, use View as in your account menu.</>
               ) : (
                 SMT_ONLY_MESSAGE
               )}

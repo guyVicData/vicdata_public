@@ -3,6 +3,7 @@ import { smtCaller } from "@/lib/smt/auth";
 import { smtSchool } from "@/lib/smt/school";
 import { catchmentCapKm, catchmentRights, catchmentDefaultKm, catchmentPresets, clampKm } from "@/lib/smt/catchment";
 import { canSaveCatchment, saveCatchment, savedCatchmentKm } from "@/lib/smt/catchment-server";
+import { VIEW_AS_READ_ONLY } from "@/lib/view-as";
 
 // VicData 0.8 SMT r4 (R3): the school's usual catchment. GET ?urn -> { savedKm, defaultKm, capKm,
 // presets, canSave }. PUT ?urn { km: number | null } saves or clears it (the School-Admin only; the
@@ -21,6 +22,7 @@ export async function PUT(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await smtCaller(request, sp.get("urn"));
   if (caller instanceof NextResponse) return caller;
+  if (caller.readOnly && !caller.headOffice) return NextResponse.json({ error: VIEW_AS_READ_ONLY }, { status: 403 });
   if (!catchmentRights(caller).mayTrySave) return NextResponse.json({ error: "Head office reads this school's dashboards; its School-Admin sets the catchment." }, { status: 403 });
   const school = await smtSchool(caller.urn);
   if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });

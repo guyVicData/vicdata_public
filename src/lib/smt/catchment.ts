@@ -80,6 +80,8 @@ export const kmWord = (km: number) => `${km} km`;
 // server once smtCaller has checked its access (as Admissions' shared reads do). Only the school's
 // School-Admin or account holder saves it; head office never does, though it may change the radius
 // for its own view (?km=).
-export type CatchmentCaller = { headOffice: unknown | null };
+// 0.8 View as: a platform admin's View as (or peek) reads it the same way, through the server, and never
+// saves it (read-only).
+export type CatchmentCaller = { headOffice: unknown | null; readOnly?: boolean };
 export const catchmentRights = (c: CatchmentCaller): { read: "own-token" | "server"; mayTrySave: boolean } =>
-  c.headOffice ? { read: "server", mayTrySave: false } : { read: "own-token", mayTrySave: true };
+  c.headOffice || c.readOnly ? { read: "server", mayTrySave: false } : { read: "own-token", mayTrySave: true };

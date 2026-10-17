@@ -19,19 +19,22 @@
 // schools · previewing as SMT at …").
 //
 // Item B: on a page showing a VicData dashboard (src/lib/edit-mode.ts) the banner adds
-// the footer's Edit switch and a "Preview draft" switch (Guy only, this tab only):
+// the footer's Edit switch and a "Preview draft" switch (Guy only, this tab only).
 //
-//   Viewing as SMT at Croydon College · Edit · Preview draft · Change · Start fresh · Back to me
-//   Editing the VicData dashboard for all schools · previewing as SMT at Croydon College · Edit · …
-import { Fragment, useState, type ReactNode } from "react";
+// 0.8 View as: one banner for every View as, head office's included (the same cookie):
+//
+//   Viewing as SMT · Leighton Park · Edit · Preview draft · Change · Back to me
+//   Viewing as Head office · Harris Federation · View as: read-only · Change · Back to me
+//   Editing the VicData dashboard for all schools · previewing as SMT · Leighton Park · Edit · …
+//
+// Start fresh moved off the banner into the switcher (Change), beside each recent View as.
+import { Fragment, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { VISIBLE_ROLE_LABELS } from "@/lib/roles";
-import { startViewAs, type ViewAs } from "@/lib/view-as";
+import { VIEW_AS_READ_ONLY, type ViewAs } from "@/lib/view-as";
 import { setEditOn, setPreviewDraft, useEditSwitch } from "@/lib/edit-mode";
 import { SwitchButton } from "@/components/edit-mode/EditSwitch";
-import { backToMe, openViewAs, useViewAsNow } from "./ViewAs";
+import { backToMe, openViewAs, useViewAsGroupNow, useViewAsNow, viewAsGroupLabel, viewAsLabel } from "./ViewAs";
 
-const roleLabel = (t: Pick<ViewAs, "role">) => VISIBLE_ROLE_LABELS[t.role];
 
 const ACTION = "font-semibold text-[var(--fg)] underline-offset-2 hover:underline disabled:opacity-50";
 
@@ -49,22 +52,9 @@ export function ViewAsBanner({
 }) {
   const supabase = createBrowserSupabaseClient();
   const viewAs = useViewAsNow();
+  const group = useViewAsGroupNow();
   const edit = useEditSwitch(supabase);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  if (!viewAs) return null;
-
-  async function startFresh(t: ViewAs) {
-    setBusy(true);
-    setError(null);
-    const r = await startViewAs(supabase, { urn: t.urn, role: t.role, fresh: true, schoolName: t.schoolName });
-    if (!r.ok) {
-      setError(r.error);
-      setBusy(false);
-      return;
-    }
-    window.location.reload();
-  }
+  if (!viewAs && !group) return null;
 
   const editItems: ReactNode[] = edit.shown
     ? [
@@ -78,13 +68,20 @@ export function ViewAsBanner({
     : [];
   const items: ReactNode[] = [
     ...editItems,
+    ...(viewAs ? [] : [<span key="ro">{VIEW_AS_READ_ONLY}</span>]),
     ...(actions ?? []),
-    <button key="change" type="button" onClick={() => openViewAs({ urn: viewAs.urn, name: viewAs.schoolName, role: viewAs.role })} className={ACTION}>Change</button>,
-    <button key="fresh" type="button" onClick={() => startFresh(viewAs)} disabled={busy} className={ACTION}>
-      {busy ? "Starting fresh…" : "Start fresh"}
+    <button
+      key="change"
+      type="button"
+      data-view-as-change=""
+      onClick={() => openViewAs(viewAs ? { urn: viewAs.urn, name: viewAs.schoolName, role: viewAs.role } : { group: group! })}
+      className={ACTION}
+    >
+      Change
     </button>,
     <button key="back" type="button" onClick={backToMe} className={ACTION}>Back to me</button>,
   ];
+  const label = viewAs ? viewAsLabel(viewAs) : viewAsGroupLabel(group!);
   return (
     <div
       role="status"
@@ -96,12 +93,12 @@ export function ViewAsBanner({
       }
     >
       <span className={plain ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-semibold text-[var(--fg)]"}>
-        {headline ? (
+        {headline && viewAs ? (
           headline(viewAs)
         ) : edit.on ? (
-          <>Editing the VicData dashboard for all schools · previewing as {roleLabel(viewAs)} at {viewAs.schoolName}</>
+          <>Editing the VicData dashboard for all schools · previewing as {label}</>
         ) : (
-          <>Viewing as {roleLabel(viewAs)} at {viewAs.schoolName}</>
+          <>Viewing as {label}</>
         )}
       </span>
       {items.map((item, i) => (
@@ -110,7 +107,6 @@ export function ViewAsBanner({
           {item}
         </Fragment>
       ))}
-      {error && <span role="alert" className="basis-full text-[12px]">{error}</span>}
     </div>
   );
 }

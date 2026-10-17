@@ -8,6 +8,7 @@
 // also counts Post-16 results; logged).
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { fetchViewedSchool, getActiveViewAs } from "@/lib/view-as";
 import { catchmentCapKm, catchmentDefaultKm, type CatchmentSchool } from "./catchment";
 
 export type SchoolCatchment = { km: number; saved: boolean; capKm: number };
@@ -28,7 +29,11 @@ export function useSchoolCatchment(urn: string): SchoolCatchment | null {
         phases: { post16: false },
       };
       let saved: number | null = null;
-      if (acct?.id) {
+      // 0.8 View as: the platform admin's own RLS reads no other school's account or catchment; the one
+      // caller helper reads them on the server once it has confirmed a platform admin.
+      const viewing = getActiveViewAs();
+      if (viewing && viewing.urn === urn) saved = (await fetchViewedSchool(supabase, urn))?.catchmentKm ?? null;
+      else if (acct?.id) {
         const { data, error } = await supabase.from("school_catchment").select("km").eq("school_account_id", acct.id).maybeSingle<{ km: number }>();
         if (!error) saved = data?.km ?? null;
       }

@@ -68,6 +68,80 @@ export function serializeViewAsCookie(v: ViewAsCookie): string {
   return encodeURIComponent(JSON.stringify({ u: v.urn, r: v.role, n: v.schoolName }));
 }
 
+// 0.8 View as: head office of a group is a View as role too, in the SAME cookie (groups r1 kept its
+// own, vicdata_view_as_group, now retired). A group is not a school, so the cookie names the group
+// account instead: {r: "head_office", g: account id, n: name}. parseViewAsCookie reads it as "no
+// school View as"; parseViewAsGroup reads it. One cookie, so only one View as is ever active.
+export const HEAD_OFFICE_ROLE = "head_office";
+export const LEGACY_VIEW_AS_GROUP_COOKIE = "vicdata_view_as_group";
+export type ViewAsGroup = { accountId: string; name: string };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function parseViewAsGroup(cookieHeader: string | null | undefined): ViewAsGroup | null {
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(";")) {
+    const i = part.indexOf("=");
+    if (i < 0 || part.slice(0, i).trim() !== VIEW_AS_COOKIE) continue;
+    try {
+      const s = JSON.parse(decodeURIComponent(part.slice(i + 1).trim())) as { r?: unknown; g?: unknown; n?: unknown };
+      if (s.r !== HEAD_OFFICE_ROLE || typeof s.g !== "string" || !UUID.test(s.g)) return null;
+      return { accountId: s.g.toLowerCase(), name: typeof s.n === "string" && s.n ? s.n.slice(0, 160) : "the group" };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export function serializeViewAsGroup(g: ViewAsGroup): string {
+  return encodeURIComponent(JSON.stringify({ r: HEAD_OFFICE_ROLE, g: g.accountId, n: g.name }));
+}
+
+// ------------------------------------------------------------------ who is this request for?
+
+// 0.8 View as: THE decision every route makes about its caller, through the one server helper
+// (view-as-server.ts, resolveCaller). Pure, so it is tested on its own.
+//
+//   member      the caller's own approved membership at this school, with a role the product allows
+//   viewAs      a platform admin whose View as names this school: the viewed role's membership,
+//               read-only (whether or not they are also a member here)
+//   headOffice  head office of a group reading a member school (or a platform admin viewing as that
+//               head office), read-only, where the product allows head office
+//   peek        a platform admin with no View as for this school (the Catalogue's ?peek=1 frames,
+//               scripts and harnesses): read-only
+//
+// A member's path never changes: without a View as cookie their request is decided by their own
+// membership, and the platform-admin check is only asked when there is a cookie or no membership.
+export type CallerAccess = "member" | "viewAs" | "headOffice" | "peek";
+export type CallerRoles = { roles: string[]; isAdmin: boolean; isAccountHolder: boolean };
+export type CallerDecision = CallerRoles & { access: CallerAccess; readOnly: boolean; viewAsRole: ViewAsRole | null };
+
+export function decideCaller(input: {
+  urn: string;
+  viewAs: ViewAsCookie | null;
+  group: ViewAsGroup | null;
+  platformAdmin: boolean;
+  member: CallerRoles | null;
+  // Which roles this product is for (Teacher: any approved member; SMT: SMT or the School-Admin...).
+  allowed: (r: CallerRoles) => boolean;
+  // Only for products head office reads, and only once it is known: may head office (the caller's own,
+  // or the group a platform admin is viewing as) read this school?
+  headOffice: boolean | null;
+}): CallerDecision | null {
+  const { urn, viewAs, group, platformAdmin, member, allowed, headOffice } = input;
+  if (platformAdmin && viewAs && viewAs.urn === urn) {
+    const m = viewAsMembership(viewAs.role);
+    const r = { roles: m.roles, isAdmin: m.is_admin, isAccountHolder: false };
+    return allowed(r) ? { ...r, access: "viewAs", readOnly: true, viewAsRole: viewAs.role } : null;
+  }
+  // Viewing as head office, where the product has head office: exactly what that head office sees.
+  if (platformAdmin && group && headOffice !== null) return headOffice ? { roles: [], isAdmin: false, isAccountHolder: false, access: "headOffice", readOnly: true, viewAsRole: null } : null;
+  if (member && allowed(member)) return { ...member, access: "member", readOnly: false, viewAsRole: null };
+  if (platformAdmin) return { roles: [], isAdmin: false, isAccountHolder: false, access: "peek", readOnly: true, viewAsRole: null };
+  if (headOffice) return { roles: [], isAdmin: false, isAccountHolder: false, access: "headOffice", readOnly: true, viewAsRole: null };
+  return null;
+}
+
 // The membership a real single-membership member of `role` holds: Teacher, SMT and
 // Admissions hold that one role; a School-Admin holds Teacher (memberships default to it)
 // plus is_admin. What the pages' role offers and home are worked out from.
@@ -170,12 +244,22 @@ function readCookie(): ViewAsCookie | null {
   }
 }
 
-function writeCookie(v: ViewAsCookie | null) {
+function readGroupCookie(): ViewAsGroup | null {
+  try {
+    return parseViewAsGroup(document.cookie);
+  } catch {
+    return null;
+  }
+}
+
+function writeCookie(value: string | null) {
   try {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = v
-      ? `${VIEW_AS_COOKIE}=${serializeViewAsCookie(v)}; Path=/; SameSite=Lax${secure}`
+    document.cookie = value
+      ? `${VIEW_AS_COOKIE}=${value}; Path=/; SameSite=Lax${secure}`
       : `${VIEW_AS_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+    // groups r1's own head-office cookie, retired: cleared whenever View as starts or ends.
+    document.cookie = `${LEGACY_VIEW_AS_GROUP_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
   } catch {
     // Not in a browser.
   }
@@ -185,20 +269,34 @@ function writeCookie(v: ViewAsCookie | null) {
 // ending View as changes the cookie, never this page's state: a page drawn as a member
 // keeps saving as that member (and a page drawn as Guy as Guy) until it reloads --
 // followViewAsAcrossTabs reloads it when the tab is next looked at. Peek frames never are.
-let pinned: { value: ViewAsCookie | null } | null = null;
+let pinned: { value: ViewAsCookie | null; group: ViewAsGroup | null } | null = null;
+
+function pin() {
+  if (!pinned) {
+    const peek = new URLSearchParams(window.location.search).get("peek") === "1";
+    pinned = { value: peek ? null : readCookie(), group: peek ? null : readGroupCookie() };
+  }
+  return pinned;
+}
 
 // The cookie as this page holds it (a stable object until it changes): what the banner and
 // the pill draw from straight away, before the platform-admin check comes back.
 export function viewAsSnapshot(): ViewAsCookie | null {
   if (typeof window === "undefined") return null;
-  if (!pinned) pinned = { value: new URLSearchParams(window.location.search).get("peek") === "1" ? null : readCookie() };
-  return pinned.value;
+  return pin().value;
 }
 
-function setViewAs(v: ViewAsCookie | null) {
-  writeCookie(v);
-  pinned = { value: v };
+// The head-office View as this page is in (the same cookie, role head_office), or null.
+export function viewAsGroupSnapshot(): ViewAsGroup | null {
+  if (typeof window === "undefined") return null;
+  return pin().group;
+}
+
+function setViewAs(v: ViewAsCookie | null, group: ViewAsGroup | null = null) {
+  writeCookie(v ? serializeViewAsCookie(v) : group ? serializeViewAsGroup(group) : null);
+  pinned = { value: v, group: v ? null : group };
   resolved = null;
+  resolvedGroup = null;
   try {
     window.dispatchEvent(new Event(VIEW_AS_EVENT));
   } catch {
@@ -208,6 +306,7 @@ function setViewAs(v: ViewAsCookie | null) {
 
 export const toViewAs = (v: ViewAsCookie): ViewAs => ({ ...v, stateKey: viewAsStateKey(v.urn, v.role) });
 const same = (a: ViewAsCookie | null, b: ViewAsCookie | null) => (a?.urn ?? "") === (b?.urn ?? "") && (a?.role ?? "") === (b?.role ?? "");
+const sameGroup = (a: ViewAsGroup | null, b: ViewAsGroup | null) => (a?.accountId ?? "") === (b?.accountId ?? "");
 
 // Cross-tab: when this tab comes back into view and View as changed in another tab (a new
 // school or role, or Back to me), reload, so no page ever shows one state under the other's
@@ -215,7 +314,8 @@ const same = (a: ViewAsCookie | null, b: ViewAsCookie | null) => (a?.urn ?? "") 
 export function followViewAsAcrossTabs(): () => void {
   const check = () => {
     if (document.visibilityState === "hidden") return;
-    if (!same(viewAsSnapshot(), readCookie())) window.location.reload();
+    if (new URLSearchParams(window.location.search).get("peek") === "1") return;
+    if (!same(viewAsSnapshot(), readCookie()) || !sameGroup(viewAsGroupSnapshot(), readGroupCookie())) window.location.reload();
   };
   window.addEventListener("focus", check);
   document.addEventListener("visibilitychange", check);
@@ -247,6 +347,22 @@ export function resolveViewAs(supabase: SupabaseClient): Promise<ViewAs | null> 
     return toViewAs(v);
   })();
   return resolved;
+}
+
+// The same for head office's View as: anyone not a platform admin loses the cookie.
+let resolvedGroup: Promise<ViewAsGroup | null> | null = null;
+export function resolveViewAsGroup(supabase: SupabaseClient): Promise<ViewAsGroup | null> {
+  if (resolvedGroup) return resolvedGroup;
+  resolvedGroup = (async () => {
+    const g = viewAsGroupSnapshot();
+    if (!g) return null;
+    if (!(await confirmPlatformAdmin(supabase))) {
+      setViewAs(null);
+      return null;
+    }
+    return g;
+  })();
+  return resolvedGroup;
 }
 
 // 2. The school_urn to write per-user state under: the state key while viewing this school
@@ -318,16 +434,50 @@ export async function startViewAs(
   return { ok: true, viewAs: toViewAs(v) };
 }
 
-// Back to me.
+// View as head office of a group (0.8 View as: the same switcher and cookie as a school's).
+// Confirms platform admin and writes one audit row (view_as_group), as groups r1 did.
+export async function startViewAsHeadOffice(supabase: SupabaseClient, g: ViewAsGroup & { groupId?: string }): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!(await confirmPlatformAdmin(supabase))) return { ok: false, error: "Only platform admins can view VicData as a head office." };
+  const { error } = await supabase.rpc("log_platform_action", { p_action: "view_as_group", p_school_urn: null, p_detail: { group_account_id: g.accountId, group_id: g.groupId ?? null } });
+  if (error) return { ok: false, error: `Could not start View as: ${error.message}` };
+  setViewAs(null, { accountId: g.accountId, name: g.name });
+  return { ok: true };
+}
+
+// Back to me (a school's View as or head office's: one cookie).
 export function exitViewAs(): void {
   setViewAs(null);
+}
+
+// The caller as the one server helper decides it (GET /api/view-as/caller, resolveCaller): what a
+// page in View as needs about the viewed school that the platform admin's own RLS can't read --
+// its school account (any school: one with no account, or no members, gets ""), and its saved
+// catchment. Read with the service role, only after the server confirms platform admin.
+export type ViewedSchool = { urn: string; name: string; accountId: string; catchmentKm: number | null; roles: string[]; access: CallerAccess; readOnly: boolean };
+
+const viewedCache = new Map<string, Promise<ViewedSchool | null>>();
+
+export function fetchViewedSchool(supabase: SupabaseClient, urn: string): Promise<ViewedSchool | null> {
+  const hit = viewedCache.get(urn);
+  if (hit) return hit;
+  const p = (async () => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return null;
+    const res = await fetch(`/api/view-as/caller?urn=${encodeURIComponent(urn)}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+    if (!res || !res.ok) return null;
+    return (await res.json()) as ViewedSchool;
+  })();
+  viewedCache.set(urn, p);
+  p.then((v) => { if (!v) viewedCache.delete(urn); }, () => viewedCache.delete(urn));
+  return p;
 }
 
 // The viewed school as the member pages need it: its name, and its school account if it
 // has one (read only: which school dashboards and sets a member of it would see).
 export async function viewAsSchool(supabase: SupabaseClient, v: ViewAs): Promise<{ urn: string; name: string; accountId: string }> {
-  const { data } = await supabase.from("school_accounts").select("id").eq("school_urn", v.urn).maybeSingle<{ id: string }>();
-  return { urn: v.urn, name: v.schoolName, accountId: data?.id ?? "" };
+  const s = await fetchViewedSchool(supabase, v.urn);
+  return { urn: v.urn, name: s?.name || v.schoolName, accountId: s?.accountId ?? "" };
 }
 
 // ------------------------------------------------------------------ Recently viewed as

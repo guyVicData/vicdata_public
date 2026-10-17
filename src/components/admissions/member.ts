@@ -14,7 +14,7 @@
 //   listOnly     anyone a list is shared with who isn't one of the above: the list's school
 //                names only, never the computed views (decision 5)
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { pickMembership, resolveViewAs, viewAsMembership, type ViewAs } from "@/lib/view-as";
+import { fetchViewedSchool, pickMembership, resolveViewAs, viewAsMembership, type ViewAs } from "@/lib/view-as";
 
 export type AdmissionsAccess = "lead" | "member" | "schoolAdmin" | "viewAs" | "listOnly" | "none";
 
@@ -71,8 +71,11 @@ export async function loadAdmissionsMember(): Promise<MemberState> {
   if (!session) return { status: "signed-out" };
   const viewAs = await resolveViewAs(supabase);
   if (viewAs) {
-    const { data: account } = await supabase.from("school_accounts").select("id").eq("school_urn", viewAs.urn).maybeSingle<{ id: string }>();
-    if (!account) return { status: "no-school" };
+    // 0.8 View as: the viewed school's account comes from the server (the one caller helper reads it
+    // with the service role once it has confirmed a platform admin): the admin's own RLS shows nothing
+    // at a school they aren't a member of, which left SMT and Admissions saying "use View as" (17 Oct).
+    // Any school: one with no school account (or no members) still draws, with no saved state.
+    const account = { id: (await fetchViewedSchool(supabase, viewAs.urn))?.accountId ?? "" };
     const vm = viewAsMembership(viewAs.role);
     const base = { roles: vm.roles, isAdmin: vm.is_admin, isAccountHolder: false, lead: false };
     const access = accessOf(base, false);

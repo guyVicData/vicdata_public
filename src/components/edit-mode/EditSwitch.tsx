@@ -5,5 +5,4 @@ export {
   MiniSwitch,
   SwitchButton,
   FooterEditSwitch,
-  FooterViewAs,
 } from "@/components/shell/EditSwitch";

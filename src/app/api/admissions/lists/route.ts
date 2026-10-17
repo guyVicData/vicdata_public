@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { admissionsCaller } from "@/lib/admissions/auth";
+import { VIEW_AS_READ_ONLY } from "@/lib/view-as";
 import { entryPoint } from "@/lib/admissions/entry-points";
 
 // VicData 0.7 admissions r1 (A5): the school's entry points and shared lists (school-level).
@@ -16,8 +17,10 @@ const KINDS = new Set(["day_feeders", "boarding_feeders", "rivals", "rung"]);
 const URN = /^\d{5,7}$/;
 const notSetUp = (msg: string) => /admissions_(lists|entry_points)|does not exist|schema cache/i.test(msg);
 
-async function accountId(caller: { supabase: import("@supabase/supabase-js").SupabaseClient; urn: string }): Promise<string | null> {
-  const { data } = await caller.supabase.from("school_accounts").select("id").eq("school_urn", caller.urn).maybeSingle();
+// 0.8 View as: read with the caller's reader -- their own client for a member (RLS, as before), the
+// service role for a platform admin's View as, once resolveCaller has confirmed it.
+async function accountId(caller: { reader: import("@supabase/supabase-js").SupabaseClient; urn: string }): Promise<string | null> {
+  const { data } = await caller.reader.from("school_accounts").select("id").eq("school_urn", caller.urn).maybeSingle();
   return (data as { id: string } | null)?.id ?? null;
 }
 
@@ -25,13 +28,15 @@ export async function GET(request: NextRequest) {
   const caller = await admissionsCaller(request, request.nextUrl.searchParams.get("urn"));
   if (caller instanceof NextResponse) return caller;
   const acc = await accountId(caller);
+  // View as works at any school: one with no school account has nothing saved.
+  if (!acc && caller.readOnly) return NextResponse.json({ lead: false, entryPoints: [], lists: [], names: {} });
   if (!acc) return NextResponse.json({ error: "No school account." }, { status: 404 });
   // 0.7 r2b (E1): updated_by_kind ("lead" | "school_admin") once the r2b migration is applied;
   // before it, read without it. (Typed as "*": the column list is chosen at run time.)
   const read = (kind: ", updated_by_kind" | "") =>
     Promise.all([
-      caller.supabase.from("admissions_entry_points").select(("entry_point, sort_order, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc).order("sort_order"),
-      caller.supabase.from("admissions_lists").select(("id, entry_point, kind, rung, members, fuzzy, la_blend, confirmed, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc),
+      caller.reader.from("admissions_entry_points").select(("entry_point, sort_order, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc).order("sort_order"),
+      caller.reader.from("admissions_lists").select(("id, entry_point, kind, rung, members, fuzzy, la_blend, confirmed, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc),
     ]);
   let [eps, lists] = await read(", updated_by_kind");
   if (/updated_by_kind/.test(eps.error?.message ?? lists.error?.message ?? "")) [eps, lists] = await read("");
@@ -42,7 +47,7 @@ export async function GET(request: NextRequest) {
   const ids = Array.from(new Set([...(eps.data ?? []), ...(lists.data ?? [])].map((r) => (r as { updated_by: string | null }).updated_by).filter((x): x is string => !!x)));
   const names: Record<string, string> = {};
   if (ids.length) {
-    const { data: people } = await caller.supabase.from("profiles").select("id, full_name, email").in("id", ids);
+    const { data: people } = await caller.reader.from("profiles").select("id, full_name, email").in("id", ids);
     for (const p of (people ?? []) as { id: string; full_name: string | null; email: string | null }[]) names[p.id] = p.full_name || p.email || "a colleague";
   }
   return NextResponse.json({ lead: caller.lead, entryPoints: eps.data, lists: lists.data, names });
@@ -53,6 +58,8 @@ type ListBody = { entry_point: string; kind: string; rung?: string; members?: st
 export async function PUT(request: NextRequest) {
   const caller = await admissionsCaller(request, request.nextUrl.searchParams.get("urn"));
   if (caller instanceof NextResponse) return caller;
+  // View as and peek are read-only: refused before any write is tried.
+  if (caller.readOnly) return NextResponse.json({ error: VIEW_AS_READ_ONLY }, { status: 403 });
   const body = (await request.json().catch(() => null)) as { entryPoints?: string[]; list?: ListBody } | null;
   const acc = await accountId(caller);
   if (!acc || !body) return NextResponse.json({ error: "A body and a school account are required." }, { status: 400 });

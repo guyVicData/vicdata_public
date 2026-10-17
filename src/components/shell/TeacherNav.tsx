@@ -24,7 +24,9 @@ import { ChevronDown } from "./PanelIcons";
 import { MeasureToggle, type FocusSubject, type SharedMeasure } from "./ControlBar";
 import { ThemeToggle, type Theme } from "./TeacherChrome";
 import { loadAdminSchool } from "@/components/admin/AdminChrome";
-import { ViewAsPill } from "@/components/view-as/ViewAs";
+import { openViewAs, ViewAsPill } from "@/components/view-as/ViewAs";
+import { isPlatformAdminCached } from "@/lib/edit-mode";
+import { NavRoleSwitch, showSchool, useMemberSchools } from "./RoleSwitch";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
@@ -105,6 +107,8 @@ export function TeacherNav({
         </div>
         <Divider />
         <div className="flex items-center gap-2.5">
+          {/* 0.8 View as (B): a member's own role switch, only with more than one role; never in View as. */}
+          <NavRoleSwitch />
           {/* 0.6 snag 4 (A): platform admins only; nothing at all for anyone else. */}
           <ViewAsPill tone="teacher" />
           <AccountMenu />
@@ -207,6 +211,10 @@ export function AccountMenu() {
   // in the one menu every Teacher view page carries.
   const [canManage, setCanManage] = useState(false);
   const [platformAdmin, setPlatformAdmin] = useState(false);
+  // 0.8 View as: the one place View as starts, for platform admins (in View as too: it changes it).
+  const [staff, setStaff] = useState(false);
+  // 0.8 View as (B): a member with approved memberships at more than one school picks one here.
+  const memberSchools = useMemberSchools();
   useEffect(() => {
     (async () => {
       const supabase = createBrowserSupabaseClient();
@@ -223,6 +231,7 @@ export function AccountMenu() {
       ]);
       setCanManage(school.status === "ready" && school.school.canManage);
       setPlatformAdmin(!admin.error && admin.data === true);
+      setStaff(await isPlatformAdminCached(supabase));
     })();
   }, []);
 
@@ -248,7 +257,7 @@ export function AccountMenu() {
         {ACCOUNT_ICON}
       </button>
       {open && (
-        <PanelMenu label="Account" align="right" width={180}>
+        <PanelMenu label="Account" align="right" width={memberSchools ? 240 : 180}>
           {signedIn === false ? (
             <Link href="/login" className={rowClass} onClick={() => setOpen(false)}>Log in</Link>
           ) : (
@@ -261,6 +270,23 @@ export function AccountMenu() {
                 </>
               )}
               {platformAdmin && <Link href="/platform" className={rowClass} onClick={() => setOpen(false)}>Platform</Link>}
+              {staff && (
+                <button type="button" className={rowClass} data-view-as-open="" onClick={() => { setOpen(false); openViewAs(); }}>
+                  View as&hellip;
+                </button>
+              )}
+              {memberSchools && (
+                <>
+                  <MenuDivider />
+                  <p className="px-2.5 pb-0.5 pt-1 text-[10.5px] font-bold uppercase tracking-[0.04em] text-[var(--muted3)]">School</p>
+                  {memberSchools.schools.map((sch) => (
+                    <button key={sch.urn} type="button" data-school-pick={sch.urn} aria-current={sch.urn === memberSchools.shownUrn ? "true" : undefined} className={`${rowClass} ${sch.urn === memberSchools.shownUrn ? "font-bold" : ""}`} onClick={() => { setOpen(false); if (sch.urn !== memberSchools.shownUrn) showSchool(sch.urn); }}>
+                      {sch.name}
+                    </button>
+                  ))}
+                  <MenuDivider />
+                </>
+              )}
               <button type="button" onClick={logOut} disabled={loggingOut || signedIn === null} className={rowClass}>
                 {loggingOut ? "Logging out…" : "Log Out"}
               </button>

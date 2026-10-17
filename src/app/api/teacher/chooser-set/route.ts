@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
 import { headOfficeAccess } from "@/lib/groups/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -36,16 +36,10 @@ export async function POST(request: NextRequest) {
     auth: { persistSession: false },
   });
   // Same gate as every Teacher view route: approved staff of this school only.
-  const { data: membership, error: membershipError } = await supabase
-    .from("school_memberships")
-    .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-    .eq("status", "approved")
-    .eq("school_accounts.school_urn", body.urn)
-    // Any approved row at this school proves membership: RLS shows colleagues only to members.
-    .limit(1)
-    .maybeSingle();
-  if (membershipError) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  if (!membership && !(await isPlatformAdmin(supabase)) && !(await headOfficeMayRead(supabase, authHeader, body.urn))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  // 0.8 View as: the one caller helper (src/lib/view-as-server.ts) -- a member of this school (the
+  // query this route always made), a platform admin's View as or peek, read-only.
+  const caller = await resolveCaller(request, body.urn, { visibleRow: true, supabase, refusal: "Teacher view is available to verified school staff." });
+  if (caller instanceof NextResponse && !(caller.status === 403 && (await headOfficeMayRead(supabase, authHeader, body.urn)))) return caller;
 
   // 0.6.7 B1: at GCSE and Post-16 the answer carries the set's lean school details too
   // (teacher-comparator-profiles.ts), for exactly the schools the page would otherwise ask
