@@ -1,0 +1,5 @@
+export const useRouter = () => ({ push() {}, replace() {}, refresh() {}, back() {} });
+export const usePathname = () => (window as unknown as { __PATH?: string }).__PATH ?? "/teacher/admissions";
+export const useSearchParams = () => new URLSearchParams(window.location.search);
+export const useParams = () => ({});
+export const redirect = () => {};

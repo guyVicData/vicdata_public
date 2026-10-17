@@ -1,0 +1,10 @@
+import { createRoot } from "react-dom/client";
+import { SmtDashboard } from "@/components/smt/SmtDashboard";
+import { AdmissionsDashboard } from "@/components/admissions/AdmissionsDashboard";
+import TeacherHome from "@/app/teacher/page";
+import Footer from "@/components/Footer";
+const P = new URLSearchParams(location.search);
+const el = document.getElementById("root")!;
+const page = P.get("page") ?? "overview";
+const body = page === "home" ? <TeacherHome /> : page === "pipelines" ? <AdmissionsDashboard /> : <SmtDashboard dash={page === "academic" ? "academic" : "overview"} />;
+createRoot(el).render(<div className="flex min-h-screen flex-col">{body}<Footer /></div>);
