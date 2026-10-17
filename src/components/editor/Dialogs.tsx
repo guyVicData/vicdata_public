@@ -400,6 +400,7 @@ export function PublishDialog({
   summary,
   audience,
   empty,
+  blockers = [],
   available,
   busy,
   error,
@@ -410,6 +411,9 @@ export function PublishDialog({
   summary: string;
   audience: string;
   empty: number;
+  // 0.8 View as (editing guarantees 4-5): what else holds Publish back, one line each
+  // (editor-ops publishBlockers): a view the panel or the preview can't draw, an unregistered one.
+  blockers?: string[];
   available: boolean;
   busy: boolean;
   error: string | null;
@@ -426,7 +430,7 @@ export function PublishDialog({
       footer={
         <>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-          <PrimaryButton disabled={busy || empty > 0 || !available} onClick={() => onPublish(label.trim())}>
+          <PrimaryButton disabled={busy || empty > 0 || blockers.length > 0 || !available} onClick={() => onPublish(label.trim())}>
             {busy ? "Publishing…" : "Publish"}
           </PrimaryButton>
         </>
@@ -440,6 +444,9 @@ export function PublishDialog({
       </label>
       <Note>A new version is made and kept; it never overwrites one. Publishing a VicData dashboard is an upgrade for everyone using it: notes and open rows carry over where panels survive; changed panels open at their new default.</Note>
       {empty > 0 && <ErrorLine>{empty} empty panel{empty === 1 ? "" : "s"}: add a view or a placeholder, or delete {empty === 1 ? "it" : "them"}, first.</ErrorLine>}
+      {blockers.map((b) => (
+        <ErrorLine key={b}>{b}</ErrorLine>
+      ))}
       {!available && <ErrorLine>Saving needs the database update.</ErrorLine>}
       {error && <ErrorLine>{error}</ErrorLine>}
     </Dialog>

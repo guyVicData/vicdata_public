@@ -1,0 +1,386 @@
+{
+ "vicdata.ks4.candidates": [
+  {
+   "step": "open (no change)",
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | No changes."
+  },
+  {
+   "step": "rename panel",
+   "out": "a76cf1aafb5062c236bfe8db99705ded9ea16dc51104cb6681d8c54de2b114b3 | Named a panel “Pinned name”."
+  },
+  {
+   "step": "clear panel name",
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Cleared a panel's name."
+  },
+  {
+   "step": "copy view to next panel",
+   "out": "80d11021b7b79246170cb8a394c30200c1fd715c2c5c7c028404403a53c03d0a | Added *This subject Candidates: 2024/25* to Context · Current."
+  },
+  {
+   "step": "move view back",
+   "out": "d86102cd797c8102044ef3b03bd196b33d5a8a62f63f2ffddeb9c299ed71de8d | Added *This subject Candidates: 2024/25* to Candidates · Current; removed *This subject Candidates: 2024/25* from Context · Current."
+  },
+  {
+   "step": "remove that view",
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Removed *This subject Candidates: 2024/25* from Candidates · Current."
+  },
+  {
+   "step": "swap two panels (move)",
+   "out": "49763beee731687f978b06298f0cb966302c6c4367cdb76087dcf8107dd3dc3a | Moved a panel to Candidates · Trends; moved a panel to Candidates · Current."
+  },
+  {
+   "step": "swap them back",
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Moved a panel to Candidates · Current; moved a panel to Candidates · Trends."
+  },
+  {
+   "step": "widen a filled panel (refused)",
+   "out": "refused: A panel with views is in the way. Move or delete it first."
+  },
+  {
+   "step": "add a row",
+   "out": "52a494bc43f73e4ba321643e60a5779b605aeb1463d22d04648dcf1e4fa96a03 | Added row “Extra”."
+  },
+  {
+   "step": "rename that row",
+   "out": "680c50560852387f4ab84e53dc9efceefc6823be8a312ddbfce7392a3490dd5e | Renamed row “Extra” to “Extra 2”; row “Extra 2” now shows the latest year; row “Extra 2” starts closed by default."
+  },
+  {
+   "step": "move it up",
+   "out": "a3e7c8e6a340683db85c46e95d9a8391016c34fcae2805e7326f8e8a60ef5b72 | Reordered rows."
+  },
+  {
+   "step": "copy a row",
+   "out": "4fe5f40a26178f0299b2f2b3b547e2691b5f16e2e1e243faaf5429f40a2b547f | Added *This subject Candidates: 2024/25* to Candidates · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: candidates* to Comparisons · Current (copy); added *This subject candidates by school, on the map* to Comparisons · Current (copy); added *Entries by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject candidates in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+  },
+  {
+   "step": "delete the copy",
+   "out": "a3e7c8e6a340683db85c46e95d9a8391016c34fcae2805e7326f8e8a60ef5b72 | Deleted row “Current (copy)”; deleted the panel at Candidates · Current (copy); deleted the panel at Context · Current (copy); deleted the panel at Comparisons · Current (copy)."
+  },
+  {
+   "step": "restructure the extra row",
+   "out": "e628144d102006a3f37b1b3bfde71519af70432f61f0736983807bcc4d9e0da7 | Candidates · Extra 2 now spans 1 column; moved a panel to Context · Extra 2."
+  },
+  {
+   "step": "delete the extra row",
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Deleted row “Extra 2”."
+  },
+  {
+   "step": "add a column",
+   "out": "0fd17f1146bc25256f8da8cb2f522ec03ca0c51cc8db8c618c22693b7d094150 | Added column “Four”."
+  },
+  {
+   "step": "remove it",
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Removed column “Four”."
+  },
+  {
+   "step": "settings",
+   "out": "eee5f045180af7477a408d920a5f0d71e2dfe1668ff489350062c8a12a36d900 | Rows now stay open."
+  },
+  {
+   "step": "settings back",
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Rows now close the others."
+  },
+  {
+   "step": "validate",
+   "out": "{\"problems\":[],\"empty\":[]}"
+  },
+  {
+   "step": "summary vs start",
+   "out": "No changes."
+  }
+ ],
+ "vicdata.ks4.results": [
+  {
+   "step": "open (no change)",
+   "out": "97eda2aa40fb5d7c3cb0e374c75cfb901a9e1f833ae68d73aca7c508d6c0fc6b | No changes."
+  },
+  {
+   "step": "rename panel",
+   "out": "737ddafc8110da3ed04a759e7397e8f5843232fc857e35dcbcb8f3afcc4a4444 | Named a panel “Pinned name”."
+  },
+  {
+   "step": "clear panel name",
+   "out": "97eda2aa40fb5d7c3cb0e374c75cfb901a9e1f833ae68d73aca7c508d6c0fc6b | Cleared a panel's name."
+  },
+  {
+   "step": "set default view",
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | *This subject: grade distribution* is now the default view in Results · Current."
+  },
+  {
+   "step": "reorder views",
+   "out": "d891926408fdf5ab1cc5b4a76b8ab63b46bec6a173f3837c21e23f1e4db1c49e | Reordered the views in Results · Current."
+  },
+  {
+   "step": "move view down",
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Reordered the views in Results · Current."
+  },
+  {
+   "step": "copy view to next panel",
+   "out": "4a0cbe1ac42a9585163d6e45655fc389b22a992714f76c5b91305de3d7ef7657 | Average points, Grade 4+ rate, Grade bands: added *This subject: number tiles* to Context · Current."
+  },
+  {
+   "step": "move view back",
+   "out": "c0239573df1692a13aa6a8a14e14522e8794b79a8be6fe33e106a80d93e54bb8 | Average points, Grade 4+ rate, Grade bands: added *This subject: number tiles* to Results · Current; Average points, Grade 4+ rate, Grade bands: removed *This subject: number tiles* from Context · Current."
+  },
+  {
+   "step": "remove that view",
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Average points, Grade 4+ rate, Grade bands: removed *This subject: number tiles* from Results · Current."
+  },
+  {
+   "step": "swap two panels (move)",
+   "out": "430e3d04b950dfa4db4335084b7dc795639ce380c365b2b182f82d489857cf3a | Moved a panel to Results · Trends; moved a panel to Results · Current."
+  },
+  {
+   "step": "swap them back",
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Moved a panel to Results · Current; moved a panel to Results · Trends."
+  },
+  {
+   "step": "widen a filled panel (refused)",
+   "out": "refused: A panel with views is in the way. Move or delete it first."
+  },
+  {
+   "step": "add a row",
+   "out": "16ad6c9650e172aca9a3cc286aca9f3841e113d5fff5713668f61660af52caaf | Added row “Extra”."
+  },
+  {
+   "step": "rename that row",
+   "out": "adfd005c7ac6d86e984c197b73d0cb278e9bdc9ef53958ce4c19dc713f58d439 | Renamed row “Extra” to “Extra 2”; row “Extra 2” now shows the latest year; row “Extra 2” starts closed by default."
+  },
+  {
+   "step": "move it up",
+   "out": "df0cba8001b66391351c6ecf3124cfdded9b66c8f67032ecbaf67c8bb6381ed4 | Reordered rows."
+  },
+  {
+   "step": "copy a row",
+   "out": "657fc32ece17ac4ef0caaf6e979db03211b7d6cf6669beddb73a6f16ca21a7e0 | Average points, Grade 4+ rate, Grade bands: added *This subject: number tiles* to Results · Current (copy); Grade bands: added *This subject: grade distribution* to Results · Current (copy); Average points, Grade 4+ rate, Grade bands: added *Results in its category* to Results · Current (copy); Average points, Grade 4+ rate, Grade bands: added *Results in its category* to Results · Current (copy); Grade counts: added *This subject: grade distribution* to Results · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: average points* to Comparisons · Current (copy); added *This subject average points by school, on the map* to Comparisons · Current (copy); added *Results by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject average points in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+  },
+  {
+   "step": "delete the copy",
+   "out": "df0cba8001b66391351c6ecf3124cfdded9b66c8f67032ecbaf67c8bb6381ed4 | Deleted row “Current (copy)”; deleted the panel at Results · Current (copy); deleted the panel at Context · Current (copy); deleted the panel at Comparisons · Current (copy)."
+  },
+  {
+   "step": "restructure the extra row",
+   "out": "1ba03c9fd1e3d6e6c03efa5a6dca953ac1fdb937e593957929425753ca96533a | Results · Extra 2 now spans 1 column; moved a panel to Context · Extra 2."
+  },
+  {
+   "step": "delete the extra row",
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Deleted row “Extra 2”."
+  },
+  {
+   "step": "add a column",
+   "out": "15c05823f6cdd9aaac3061bad1a7a69d669fd2417cea15b6655efe88d667e547 | Added column “Four”."
+  },
+  {
+   "step": "remove it",
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Removed column “Four”."
+  },
+  {
+   "step": "settings",
+   "out": "7400704a66cf4a7031b61c00bed476dc47f16267980b34ec9cb105cc5107b46b | Rows now stay open."
+  },
+  {
+   "step": "settings back",
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Rows now close the others."
+  },
+  {
+   "step": "validate",
+   "out": "{\"problems\":[],\"empty\":[]}"
+  },
+  {
+   "step": "summary vs start",
+   "out": "*This subject: grade distribution* is now the default view in Results · Current."
+  }
+ ],
+ "vicdata.ks5.candidates": [
+  {
+   "step": "open (no change)",
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | No changes."
+  },
+  {
+   "step": "rename panel",
+   "out": "b4415c0c89e9510927bce84b5859075e908e045860611aeec87247721d3d7d21 | Named a panel “Pinned name”."
+  },
+  {
+   "step": "clear panel name",
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Cleared a panel's name."
+  },
+  {
+   "step": "copy view to next panel",
+   "out": "e4c6f9b0ecd312ffc2667ed3af18513e105da7d35fd95199e4a2c492cc0713dc | Added *This subject Candidates: 2024/25* to Context · Current."
+  },
+  {
+   "step": "move view back",
+   "out": "7c567645fe2b55284f521ae22275fbb9d61a4dd32a54203424d994631dd9a154 | Added *This subject Candidates: 2024/25* to Candidates · Current; removed *This subject Candidates: 2024/25* from Context · Current."
+  },
+  {
+   "step": "remove that view",
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Removed *This subject Candidates: 2024/25* from Candidates · Current."
+  },
+  {
+   "step": "swap two panels (move)",
+   "out": "a6e6cd7a442d84964d5919e6e7e38798905df5807ddc3ceb05e6e662addd7684 | Moved a panel to Candidates · Trends; moved a panel to Candidates · Current."
+  },
+  {
+   "step": "swap them back",
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Moved a panel to Candidates · Current; moved a panel to Candidates · Trends."
+  },
+  {
+   "step": "widen a filled panel (refused)",
+   "out": "refused: A panel with views is in the way. Move or delete it first."
+  },
+  {
+   "step": "add a row",
+   "out": "86f3df259bcf6e9c149c953d91d908ab82b4d5e8e97d8fd4957fb3c149644754 | Added row “Extra”."
+  },
+  {
+   "step": "rename that row",
+   "out": "e085b7f69398f99d88d0ddf4fdca79cb5f07ca8dcbcec0ac4ae5021a51e7a681 | Renamed row “Extra” to “Extra 2”; row “Extra 2” now shows the latest year; row “Extra 2” starts closed by default."
+  },
+  {
+   "step": "move it up",
+   "out": "c966133caac9ac5561b49c84a1a72082fa786ab6c3152cab9cb121c0848a1f58 | Reordered rows."
+  },
+  {
+   "step": "copy a row",
+   "out": "265c1b14ff352795363edfe0c3dcbce0b5dc300c5d53a1e9f750a876992eacc3 | Added *This subject Candidates: 2024/25* to Candidates · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: candidates* to Comparisons · Current (copy); added *This subject candidates by school, on the map* to Comparisons · Current (copy); added *Entries by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject candidates in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+  },
+  {
+   "step": "delete the copy",
+   "out": "c966133caac9ac5561b49c84a1a72082fa786ab6c3152cab9cb121c0848a1f58 | Deleted row “Current (copy)”; deleted the panel at Candidates · Current (copy); deleted the panel at Context · Current (copy); deleted the panel at Comparisons · Current (copy)."
+  },
+  {
+   "step": "restructure the extra row",
+   "out": "840c4c791a605e2825650f9f5bcaf57eb1283807361a6622a38e278b310a8393 | Candidates · Extra 2 now spans 1 column; moved a panel to Context · Extra 2."
+  },
+  {
+   "step": "delete the extra row",
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Deleted row “Extra 2”."
+  },
+  {
+   "step": "add a column",
+   "out": "523fedbfa1ea5244672c09a63ba51894dea9e66306bef5cb1f19710fe5ae8b53 | Added column “Four”."
+  },
+  {
+   "step": "remove it",
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Removed column “Four”."
+  },
+  {
+   "step": "settings",
+   "out": "ac0f2d47afe48d1ae140a7c8cda3091ac4fb0d4fd66723034874d250d3eea6f9 | Rows now stay open."
+  },
+  {
+   "step": "settings back",
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Rows now close the others."
+  },
+  {
+   "step": "validate",
+   "out": "{\"problems\":[],\"empty\":[]}"
+  },
+  {
+   "step": "summary vs start",
+   "out": "No changes."
+  }
+ ],
+ "vicdata.ks5.results": [
+  {
+   "step": "open (no change)",
+   "out": "6df853cf4edb23f1381913a003051256e186cdc62082e39709ff69cf245d20d3 | No changes."
+  },
+  {
+   "step": "rename panel",
+   "out": "73e94cf80ba78d9e60764e574fc013a6ac1029528eb18353102a261eba968951 | Named a panel “Pinned name”."
+  },
+  {
+   "step": "clear panel name",
+   "out": "6df853cf4edb23f1381913a003051256e186cdc62082e39709ff69cf245d20d3 | Cleared a panel's name."
+  },
+  {
+   "step": "set default view",
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | *This subject: grade distribution* is now the default view in Results · Current."
+  },
+  {
+   "step": "reorder views",
+   "out": "162503f022516ad3784c7096f9de1007b0228ca408c9ecbc3f223b095a2373eb | Reordered the views in Results · Current."
+  },
+  {
+   "step": "move view down",
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Reordered the views in Results · Current."
+  },
+  {
+   "step": "copy view to next panel",
+   "out": "e945abe5d510342f10d318325161c55d54c9032c5197136dd8bab54010979d44 | Average points, A*–E rate, Grade bands: added *This subject: number tiles* to Context · Current."
+  },
+  {
+   "step": "move view back",
+   "out": "789313f1ffef230b0737be82eeadb28d870b7c681c1f0691b802d0ab430bf202 | Average points, A*–E rate, Grade bands: added *This subject: number tiles* to Results · Current; Average points, A*–E rate, Grade bands: removed *This subject: number tiles* from Context · Current."
+  },
+  {
+   "step": "remove that view",
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Average points, A*–E rate, Grade bands: removed *This subject: number tiles* from Results · Current."
+  },
+  {
+   "step": "swap two panels (move)",
+   "out": "6525392cb559ae149e063bb89ab74ff6b80b42ab19fd45c12590f6ed7aff251b | Moved a panel to Results · Trends; moved a panel to Results · Current."
+  },
+  {
+   "step": "swap them back",
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Moved a panel to Results · Current; moved a panel to Results · Trends."
+  },
+  {
+   "step": "widen a filled panel (refused)",
+   "out": "refused: A panel with views is in the way. Move or delete it first."
+  },
+  {
+   "step": "add a row",
+   "out": "1fe78def3cd2b9cbcdeb709e8d7c5a0579a976349e166edcd3817907f2c90e63 | Added row “Extra”."
+  },
+  {
+   "step": "rename that row",
+   "out": "bab76400d877b09c00fde232e10a037877b240f7634b77a8fb55d5468bd760de | Renamed row “Extra” to “Extra 2”; row “Extra 2” now shows the latest year; row “Extra 2” starts closed by default."
+  },
+  {
+   "step": "move it up",
+   "out": "8be994b1c68d1a18009b9d2cf7a90a10e218119ca90f099343f870f5077512f7 | Reordered rows."
+  },
+  {
+   "step": "copy a row",
+   "out": "2b60910026326c2e0c6aadc8ac4354f656caae638caf555d07d30dd3c476d87d | Average points, A*–E rate, Grade bands: added *This subject: number tiles* to Results · Current (copy); Grade bands: added *This subject: grade distribution* to Results · Current (copy); Average points, A*–E rate, Grade bands: added *Results in its category* to Results · Current (copy); Average points, A*–E rate, Grade bands: added *Results in its category* to Results · Current (copy); Grade counts: added *This subject: grade distribution* to Results · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: average points* to Comparisons · Current (copy); added *This subject average points by school, on the map* to Comparisons · Current (copy); added *Results by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject average points in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+  },
+  {
+   "step": "delete the copy",
+   "out": "8be994b1c68d1a18009b9d2cf7a90a10e218119ca90f099343f870f5077512f7 | Deleted row “Current (copy)”; deleted the panel at Results · Current (copy); deleted the panel at Context · Current (copy); deleted the panel at Comparisons · Current (copy)."
+  },
+  {
+   "step": "restructure the extra row",
+   "out": "a2893f6344259a84f394dfd5cfc21240e282d1df4ffe5c61305b68a1ac1728d7 | Results · Extra 2 now spans 1 column; moved a panel to Context · Extra 2."
+  },
+  {
+   "step": "delete the extra row",
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Deleted row “Extra 2”."
+  },
+  {
+   "step": "add a column",
+   "out": "c4e7180bd6937bf6e14ae07052044860c01764f613f30baaecd075809f5b8018 | Added column “Four”."
+  },
+  {
+   "step": "remove it",
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Removed column “Four”."
+  },
+  {
+   "step": "settings",
+   "out": "097d77f112edbe4fee24b04d4fd8e81c796cdf194b611ffad319d294f7ae0e96 | Rows now stay open."
+  },
+  {
+   "step": "settings back",
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Rows now close the others."
+  },
+  {
+   "step": "validate",
+   "out": "{\"problems\":[],\"empty\":[]}"
+  },
+  {
+   "step": "summary vs start",
+   "out": "*This subject: grade distribution* is now the default view in Results · Current."
+  }
+ ]
+}

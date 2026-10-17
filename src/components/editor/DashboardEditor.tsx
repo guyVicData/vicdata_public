@@ -336,6 +336,9 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   const ready = useMemo(() => ops.readyToSwap(config), [config]);
   const planned = useMemo(() => ops.plannedCount(config), [config]);
   const { empty } = useMemo(() => ops.validateConfig(config), [config]);
+  // 0.8 View as (editing guarantees 4-5): views the panel or the preview can't draw hold Publish
+  // back, named (empty panels keep their own line, as before).
+  const blockers = useMemo(() => ops.publishBlockers(config, { empty: false }), [config]);
   const dirty = JSON.stringify(config) !== JSON.stringify(published.config);
   const hex = colourHex(config.colour);
   const assignedLine = assignedTo(assign);
@@ -495,6 +498,11 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   };
 
   const doPublish = async (label: string) => {
+    const held = ops.publishBlockers(config);
+    if (held.length) {
+      setDialogError(held[0]);
+      return;
+    }
     setBusy(true);
     setDialogError(null);
     try {
@@ -995,6 +1003,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           summary={summary.replace(/\*([^*]+)\*/g, "$1")}
           audience={assign.length ? `${assignedLine[0].toUpperCase()}${assignedLine.slice(1)} see it straight away.` : "Not assigned yet: only editors see it."}
           empty={empty.length}
+          blockers={blockers}
           available={available}
           busy={busy}
           error={dialogError}
