@@ -20,7 +20,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleSupabaseClient } from "./supabase";
-import { confirmPlatformAdmin, decideCaller, parseViewAsCookie, parseViewAsGroup, type CallerAccess, type CallerRoles, type ViewAsRole } from "./view-as";
+import { confirmPlatformAdmin, decideCaller, parsePeekHeader, parseViewAsCookie, parseViewAsGroup, PEEK_HEADER, type CallerAccess, type CallerRoles, type ViewAsRole } from "./view-as";
 
 export type ResolvedCaller = {
   supabase: SupabaseClient;
@@ -116,8 +116,12 @@ export async function resolveCaller<H = unknown>(request: NextRequest, urn: stri
   }
   const allowed = opts.allowed ?? (() => true);
   const cookie = request.headers.get("cookie");
-  const viewAs = parseViewAsCookie(cookie);
-  const group = opts.headOffice ? parseViewAsGroup(cookie) : null;
+  // A peek (PEEK_HEADER, the page's own ?lookAs=&as=&peek=1) is decided as a View as of that school and
+  // role, or that head office, and then called a peek: read-only and never logged, as View as is.
+  const peek = parsePeekHeader(request.headers.get(PEEK_HEADER));
+  const peekSchool = peek?.school && peek.school.urn === urn ? { urn, role: peek.school.role, schoolName: urn } : null;
+  const viewAs = parseViewAsCookie(cookie) ?? peekSchool;
+  const group = opts.headOffice ? (parseViewAsGroup(cookie) ?? (peek?.group ? { accountId: peek.group.accountId, name: "" } : null)) : null;
 
   const own = opts.visibleRow ? await visibleRow(supabase!, urn) : await ownMembership(supabase!, userId!, urn);
   if (own.error) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
@@ -142,6 +146,8 @@ export async function resolveCaller<H = unknown>(request: NextRequest, urn: stri
 
   const d = decideCaller({ urn, viewAs, group: asGroup, platformAdmin, member, allowed, headOffice });
   if (!d) return NextResponse.json({ error: opts.refusal }, { status: 403 });
+  const peeked = (d.access === "viewAs" && !!peekSchool && !parseViewAsCookie(cookie)) || (d.access === "headOffice" && !!asGroup && !parseViewAsGroup(cookie));
+  if (peeked) d.access = "peek";
   const reader = d.access === "member" ? supabase! : createServiceRoleSupabaseClient();
   return {
     supabase: supabase!,

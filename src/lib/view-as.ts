@@ -231,6 +231,59 @@ export function peekHref(urn: string, phase: string, role: ViewAsRole = "teacher
   return `/teacher/${phase}?lookAs=${encodeURIComponent(urn)}&as=${role}&peek=1`;
 }
 
+// 0.8 View as: the peek is the scripted, read-only way in for every product, not only Teacher's frames
+// (AGENTS.md has an example for each): `?lookAs={urn}&as={role}&peek=1` on a Teacher, SMT or Admissions
+// page, and `?lookAs={group account id}&as=head_office&peek=1` on the head-office pages. The page's own
+// API calls carry it in this header (installPeekHeader), so the server decides the caller from it --
+// honoured only for a platform admin, always read-only, never logged. Anyone else's peek does nothing.
+export const PEEK_HEADER = "x-vicdata-peek";
+export type PeekGroup = { accountId: string };
+
+export function readPeekGroup(params: URLSearchParams): PeekGroup | null {
+  if (params.get("peek") !== "1" || params.get("as") !== HEAD_OFFICE_ROLE) return null;
+  const id = params.get("lookAs")?.trim();
+  return id && UUID.test(id) ? { accountId: id.toLowerCase() } : null;
+}
+
+/** The peek a request carries (PEEK_HEADER: the page's own query string), or null. */
+export function parsePeekHeader(value: string | null | undefined): { school: Peek | null; group: PeekGroup | null } | null {
+  if (!value) return null;
+  const params = new URLSearchParams(value);
+  const school = readPeek(params);
+  const group = readPeekGroup(params);
+  return school || group ? { school, group } : null;
+}
+
+// In a peek, the page's same-origin API calls carry it. Installed once per page, in the browser only,
+// and only when the address asks for a peek.
+let peekInstalled = false;
+export function installPeekHeader(): void {
+  if (peekInstalled || typeof window === "undefined" || typeof window.fetch !== "function") return;
+  peekInstalled = true;
+  const params = new URLSearchParams(window.location.search);
+  if (!readPeek(params) && !readPeekGroup(params)) return;
+  const value = `peek=1&lookAs=${encodeURIComponent(params.get("lookAs") ?? "")}&as=${encodeURIComponent(params.get("as") ?? "")}`;
+  const original = window.fetch.bind(window);
+  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const local = url.startsWith("/api/") || url.startsWith(`${window.location.origin}/api/`);
+    if (!local) return original(input, init);
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+    headers.set(PEEK_HEADER, value);
+    return original(input, { ...init, headers });
+  };
+}
+installPeekHeader();
+
+/** This page's peek as the member pages need it (SMT, Admissions): the school and role, read-only,
+ * once the page has confirmed a platform admin. Its state key is never written (read-only). */
+export async function resolvePeek(supabase: SupabaseClient): Promise<ViewAs | null> {
+  if (typeof window === "undefined") return null;
+  const p = readPeek(new URLSearchParams(window.location.search));
+  if (!p || !(await confirmPlatformAdmin(supabase))) return null;
+  return { urn: p.urn, role: p.role, schoolName: p.urn, stateKey: viewAsStateKey(p.urn, p.role) };
+}
+
 // ------------------------------------------------------------------ this page's View as (client)
 
 // Fired on window whenever this tab starts or ends View as.

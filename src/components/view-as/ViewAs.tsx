@@ -35,6 +35,8 @@ import {
   followViewAsAcrossTabs,
   hasViewedAs,
   listRecentViewAs,
+  resolveViewAs,
+  resolveViewAsGroup,
   startViewAs,
   startViewAsHeadOffice,
   VIEW_AS_ROLES,
@@ -405,6 +407,13 @@ export function ViewAsPill({ tone }: { tone: "teacher" | "site" }) {
   // The cookie is only ever written for a confirmed platform admin, so a View as already
   // showing needs no wait; at rest the pill waits for the check.
   const shown = !!current || !!currentGroup || admin === true;
+  // Every page's nav re-confirms the cookie: anyone not a platform admin loses it here, and the banner
+  // (drawn from the cookie straight away) goes with it, on pages that don't resolve it themselves.
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    if (current) void resolveViewAs(supabase);
+    if (currentGroup) void resolveViewAsGroup(supabase);
+  }, [current, currentGroup]);
 
   useEffect(() => {
     if (!shown) return;

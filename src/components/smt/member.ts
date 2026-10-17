@@ -11,7 +11,7 @@
 //                ?headOffice=URN from the group home and confirmed by the server (/api/group/school-access)
 //   none         anyone else (a Teacher): the page says who SMT is for
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { fetchViewedSchool, pickMembership, resolveViewAs, viewAsMembership, type ViewAs } from "@/lib/view-as";
+import { fetchViewedSchool, pickMembership, resolvePeek, resolveViewAs, viewAsMembership, type ViewAs } from "@/lib/view-as";
 import { canSeeSmt } from "@/lib/smt/auth-rules";
 
 export type SmtAccess = "member" | "schoolAdmin" | "viewAs" | "headOffice" | "none";
@@ -65,17 +65,19 @@ export async function loadSmtMember(): Promise<SmtMemberState> {
   const { data: sessionData } = await supabase.auth.getSession();
   const session = sessionData.session;
   if (!session) return { status: "signed-out" };
-  const viewAs = await resolveViewAs(supabase);
+  // 0.8 View as: a View as, or the scripted read-only peek (?lookAs=&as=&peek=1), platform admins only.
+  const viewAs = (await resolveViewAs(supabase)) ?? (await resolvePeek(supabase));
   if (viewAs) {
     // 0.8 View as: the viewed school's account comes from the server (the one caller helper reads it
     // with the service role once it has confirmed a platform admin): the admin's own RLS shows nothing
     // at a school they aren't a member of, which left SMT and Admissions saying "use View as" (17 Oct).
     // Any school: one with no school account (or no members) still draws, with no saved state.
-    const account = { id: (await fetchViewedSchool(supabase, viewAs.urn))?.accountId ?? "" };
+    const viewed = await fetchViewedSchool(supabase, viewAs.urn);
+    const account = { id: viewed?.accountId ?? "" };
     const vm = viewAsMembership(viewAs.role);
     const base = { roles: vm.roles, isAdmin: vm.is_admin, isAccountHolder: false };
     const access = smtAccessOf(base);
-    return { status: "ready", member: { userId: session.user.id, token: session.access_token, membershipId: null, schoolAccountId: account.id, schoolUrn: viewAs.urn, schoolName: viewAs.schoolName, ...base, access: access === "none" ? "none" : "viewAs", readOnly: true, viewAs } };
+    return { status: "ready", member: { userId: session.user.id, token: session.access_token, membershipId: null, schoolAccountId: account.id, schoolUrn: viewAs.urn, schoolName: viewed?.name || viewAs.schoolName, ...base, access: access === "none" ? "none" : "viewAs", readOnly: true, viewAs } };
   }
   const asked = new URLSearchParams(window.location.search).get("headOffice");
   if (asked && /^\d{5,7}$/.test(asked)) return headOfficeMember(asked, session);
