@@ -42,3 +42,8 @@ test("R-ENTRIES-FIRST-YEAR: entries start at the first year with data; results a
   assert.equal(changeStartFor("entries", []), TREND_BASE_PERIOD);
   assert.equal(changeStartFor("results", [2020, 2021]), TREND_BASE_PERIOD);
 });
+
+test("R-FLAT-BAND: a change inside a view's wider band is steady but keeps its size", () => {
+  assert.equal(arrowed(0.03, (x) => x.toFixed(2), 2, 0.05), "– 0.03");
+  assert.equal(arrowed(-0.004, (x) => x.toFixed(2), 2, 0.05), "– 0.00");
+});

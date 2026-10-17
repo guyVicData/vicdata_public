@@ -54,8 +54,9 @@ export function flatBand(d: number, dp: number, band = 0): Direction {
 
 export const ARROW: Record<Direction, string> = { up: "▲", down: "▼", flat: "–" };
 
-/** An arrowed change: "▲ 16%", "▼ 2.4 pts", or "– 0%" when it is steady. `body` prints the unsigned size. */
+/** An arrowed change: "▲ 16%", "▼ 2.4 pts", or "– 0%" when it is steady. `body` prints the unsigned size.
+ * A change inside a view's own wider band but not rounding to 0 is steady and keeps its size ("– 0.03"). */
 export function arrowed(d: number, body: (abs: number) => string, dp: number, band = 0): string {
   const dir = flatBand(d, dp, band);
-  return `${ARROW[dir]} ${body(dir === "flat" ? 0 : Math.abs(d))}`;
+  return `${ARROW[dir]} ${body(roundsToZero(d, dp) ? 0 : Math.abs(d))}`;
 }
