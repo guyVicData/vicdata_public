@@ -32,6 +32,7 @@ import SubjectAreaBarChart from "./SubjectAreaBarChart";
 import SubjectAreaDivergingBarChart from "./SubjectAreaDivergingBarChart";
 import { Card } from "./GraphsView";
 import { entriesFirstPeriod, withProvisional } from "@/catalogue/years";
+import { setAverageChange } from "@/lib/set-change";
 
 function pctChange(first: number | null, last: number | null): number | null {
   if (first === null || last === null || first === 0) return null;
@@ -57,6 +58,14 @@ function entriesChange(years: readonly { period: number; entriesTotal: number | 
   return pctChange(withData.find((y) => y.period === from)!.entriesTotal, last.entriesTotal);
 }
 
+// A series of real yearly figures, ascending.
+function seriesOf<T extends { period: number }>(rows: readonly T[], value: (r: T) => number | null): { period: number; value: number }[] {
+  return rows
+    .map((r) => ({ period: r.period, value: value(r) }))
+    .filter((r): r is { period: number; value: number } => r.value !== null)
+    .sort((a, b) => a.period - b.period);
+}
+
 export type SubjectRow = {
   id: string;
   label: string;
@@ -70,6 +79,10 @@ export type SubjectRow = {
   results: number | null;
   candidatesPctChange: number | null;
   resultsPctChange: number | null;
+  // Subject mode: the yearly figures behind the two changes (entries; points), so a set's change can
+  // be the change in its yearly average (R-SET-CHANGE-AVERAGE). Category rows read familyYearsFor.
+  candidatesSeries?: { period: number; value: number }[];
+  resultsSeries?: { period: number; value: number }[];
   // Which bucket the points figure came from, when it was resolved by fallback rather
   // than an explicit TYPE selection. Drives the "(IB)" style label on the card.
   pointsBucket?: Ks5Bucket | null;
@@ -275,6 +288,7 @@ export function buildSubjectRows(
 
     let results: number | null = null;
     let resultsPctChange: number | null = null;
+    let resultsSeries: { period: number; value: number }[] = [];
     if (stage === "ks5") {
       // Value-added used to own this card, because before the bucket-aware points
       // rollup it was the only real KS5 figure at SUBJECT grain. That is no longer
@@ -312,6 +326,7 @@ export function buildSubjectRows(
       if (years.length > 0) {
         results = years[years.length - 1].avgPointScore;
         resultsPctChange = pointsChangeSince(years, TREND_BASELINE_PERIOD[stage]);
+        resultsSeries = seriesOf(years, (h) => h.avgPointScore);
       }
     } else {
       // headlineBySubject comes from the rollup, which has no qualification dimension,
@@ -322,6 +337,7 @@ export function buildSubjectRows(
       if (years.length > 0) {
         results = years[years.length - 1].avgPointScore;
         resultsPctChange = pointsChangeSince(years, TREND_BASELINE_PERIOD[stage]);
+        resultsSeries = seriesOf(years, (h) => h.avgPointScore);
       }
     }
 
@@ -336,9 +352,11 @@ export function buildSubjectRows(
     const rollupEntries = stage === "ks5"
       ? (headlineBySubject.get(name) ?? []).filter((h) => (h.bucket ?? "all") === (groupKey ?? "all"))
       : qualificationType === null || !needsSuffix ? (headlineBySubject.get(name) ?? []) : [];
-    const candidatesPctChange = rollupEntries.some((h) => h.entriesTotal > 0)
-      ? entriesChange(rollupEntries)
-      : pctChange(candidatesFirst, candidates);
+    const fromRollup = rollupEntries.some((h) => h.entriesTotal > 0);
+    const candidatesPctChange = fromRollup ? entriesChange(rollupEntries) : pctChange(candidatesFirst, candidates);
+    const candidatesSeries = fromRollup
+      ? seriesOf(rollupEntries, (h) => (h.entriesTotal > 0 ? h.entriesTotal : null))
+      : periods.map((p) => ({ period: p, value: entryRows.filter((e) => e.period === p).reduce((sum, e) => sum + e.entries, 0) }));
     return {
       id: qualificationType === null ? name : key,
       // At KS5 a row can cover several qualifications inside one bucket, so the
@@ -357,69 +375,42 @@ export function buildSubjectRows(
       results,
       candidatesPctChange,
       resultsPctChange,
+      candidatesSeries,
+      resultsSeries,
     };
   });
 }
 
-// Real aggregate-trend helper shared by Row B's %-change column (sum of real entries
-// across the set, first real period vs latest) and Row D's %-change column (average
+// Real aggregate-trend helper shared by Row B's %-change column (average of real entries
+// across the set, first real period vs latest: R-SET-CHANGE-AVERAGE) and Row D's %-change column (average
 // of real avgPointScore across the set, first vs latest) -- same "first/last real
 // period WITH a value" methodology every other trend figure on this page already
 // uses, just applied to a per-period AGGREGATE across profiles instead of one
 // profile's own history. A profile with no real value for a given period simply
 // doesn't contribute to that period's aggregate (never treated as a real zero).
-function aggregateFamilyTrend(
+export function aggregateFamilyTrend(
   profiles: AcademicSchoolProfile[],
   stage: KsStage,
   familyId: string,
   pick: (y: AcademicFamilyYear) => number | null,
-  combine: (values: number[]) => number,
   // Which bucket's family history to walk. Omitted or "alevel" reads the pre-existing
   // 'all' rows, exactly as before. Passing a real bucket is what stops this helper
   // averaging A-level points under a non-A-level selection -- the borrowed-points bug
   // the previous round fixed by suppression, now fixable with real data instead.
   bucket?: Ks5Bucket | null,
-  // Where the change starts: omitted for entries (the first real period, as before); the baseline
-  // year for points (R-TREND-FROM-2223, year rules follow-ups).
+  // Where the change starts: omitted for entries (the first year with entries, changeStartFor); the
+  // baseline year for points (R-TREND-FROM-2223, year rules follow-ups).
   from?: number,
 ): number | null {
   const useBucket = bucket && bucket !== "alevel" && stage === "ks5";
-  const byPeriod = new Map<number, number[]>();
-  for (const p of profiles) {
-    const years = useBucket
-      ? (p.ks5FamiliesByBucket?.[bucket] ?? []).filter((y) => y.familyId === familyId)
-      : familyYearsFor(p, stage, familyId);
-    for (const y of years) {
-      const v = pick(y);
-      if (v === null) continue;
-      const existing = byPeriod.get(y.period);
-      if (existing) existing.push(v);
-      else byPeriod.set(y.period, [v]);
-    }
-  }
-  const periods = Array.from(byPeriod.keys()).sort((a, b) => a - b);
-  if (periods.length === 0) return null;
-  const last = periods[periods.length - 1];
-  if (from !== undefined) {
-    const base = byPeriod.get(from);
-    return base && last > from ? pctChange(combine(base), combine(byPeriod.get(last)!)) : null;
-  }
-  return pctChange(combine(byPeriod.get(periods[0])!), combine(byPeriod.get(last)!));
-}
-
-// Subject deep-dive round, Part 1: the same real aggregate-trend shape as
-// aggregateFamilyTrend above, but over a Map<urn, SubjectRow[]> (subject mode's own
-// real data shape, one entry per comparator per subject) instead of re-deriving from
-// familyYearsFor -- subject-mode rows don't have a per-period history to walk the
-// same way (each row is already "latest" plus a pre-computed pctChange), so this
-// aggregates the REAL first/last VALUES each row already carries (candidates or
-// results) via each comparator's own row for this one subject id.
-function aggregateSubjectTrend(rowsByUrn: Map<string, SubjectRow[]>, id: string, pick: (r: SubjectRow) => number | null, combine: (values: number[]) => number): number | null {
-  const values = Array.from(rowsByUrn.values())
-    .map((rows) => rows.find((r) => r.id === id))
-    .map((r) => (r ? pick(r) : null))
-    .filter((v): v is number => v !== null);
-  return values.length > 0 ? combine(values) : null;
+  // R-SET-CHANGE-AVERAGE: the change in the set's yearly average (setAverageChange), the same helper
+  // subject mode uses. A profile with no real value for a year simply doesn't count that year.
+  const series = profiles.map((p) =>
+    (useBucket ? (p.ks5FamiliesByBucket?.[bucket] ?? []).filter((y) => y.familyId === familyId) : familyYearsFor(p, stage, familyId))
+      .map((y) => ({ period: y.period, value: pick(y) }))
+      .filter((y): y is { period: number; value: number } => y.value !== null),
+  );
+  return setAverageChange(series, from ?? "entries");
 }
 
 const sum = (values: number[]) => values.reduce((s, v) => s + v, 0);
@@ -634,6 +625,10 @@ export default function SubjectAreaSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- headlineBySubjectFor, same reasoning as `rows` above.
   }, [comparableGroup, profile.urn, rows, categoryMode, stage, familyId, comparatorSubjectByUrn, comparatorSubjectHeadlineByUrn, subjectData]);
 
+  // Subject mode: each comparator's yearly series for one subject row (R-SET-CHANGE-AVERAGE).
+  const subjectSeriesFor = (id: string, pick: (r: SubjectRow) => { period: number; value: number }[] | undefined) =>
+    Array.from(comparatorRowsByUrn.values()).map((rs) => pick(rs.find((r) => r.id === id) ?? ({} as SubjectRow)) ?? []);
+
   // Selector options exclude the target itself -- comparing a school against its own
   // figure has no real meaning here.
   const comparatorOptions = comparableGroup.filter((p) => p.urn !== profile.urn);
@@ -652,22 +647,22 @@ export default function SubjectAreaSection({
   });
 
   // Row B, right, % change -- STATED ASSUMPTION, not confirmed with Guy (carried over
-  // from the prior round's own flag): the comparison-set's entries % change, computed
-  // the same total-based way -- sum of real comparableGroup entries at the earliest
-  // real period vs the latest real period. Category mode aggregates from each
-  // profile's own familyYearsFor history (aggregateFamilyTrend); subject mode
-  // averages each comparator's own change from its already-computed SubjectRow
-  // (aggregateSubjectTrend; year rules leftovers: it used to sum the comparators'
-  // latest entries and draw the sum as a %). When a specific comparator is
-  // selected, shows THAT school's own real %-change instead.
+  // from the prior round's own flag): the comparison-set's entries % change.
+  // R-SET-CHANGE-AVERAGE (Guy, 17 Oct 2026: consistency): the change in the set's
+  // YEARLY AVERAGE entries, from the first year with entries to the latest, in both
+  // modes -- category mode from each profile's familyYearsFor history
+  // (aggregateFamilyTrend, averaged; it was the set's summed entries), subject mode
+  // from each comparator's own yearly series (setAverageChange; it was the average of
+  // each comparator's own change). When a specific comparator is selected, shows THAT
+  // school's own real %-change instead.
   const candidatesTrendComparisonItems = order.map((id) => ({
     id,
     label: labelById.get(id) ?? id,
     pctChange: selectedRows
       ? (selectedRows.find((r) => r.id === id)?.candidatesPctChange ?? null)
       : categoryMode
-        ? aggregateFamilyTrend(comparableGroup, stage, id, (y) => (y.entriesTotal > 0 ? y.entriesTotal : null), sum, ks5Bucket)
-        : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => r.candidatesPctChange, average),
+        ? aggregateFamilyTrend(comparableGroup, stage, id, (y) => (y.entriesTotal > 0 ? y.entriesTotal : null), ks5Bucket)
+        : setAverageChange(subjectSeriesFor(id, (r) => r.candidatesSeries), "entries"),
   }));
 
   // Row C, right: AVERAGE avg point score / value-added across comparableGroup
@@ -690,7 +685,7 @@ export default function SubjectAreaSection({
   // own real %-change. Inherits the EXACT SAME omission the school side already
   // applies (resultsTrendItems above) -- KS4 subject level now has a real trend
   // (this round); KS5 subject level's value-added stays omitted (resultsPctChange is
-  // already null on every KS5 SubjectRow, so aggregateSubjectTrend naturally finds no
+  // already null on every KS5 SubjectRow, so setAverageChange naturally finds no
   // real values to aggregate and correctly returns null too -- the omission is
   // enforced by the DATA, not a separate mode check here).
   const resultsTrendComparisonItems = order.map((id) => ({
@@ -722,13 +717,14 @@ export default function SubjectAreaSection({
             // to the same bucket, so a set mixing IB and A-level schools suppresses
             // rather than averaging across two scales.
             aggregateFamilyTrend(
-              comparableGroup, stage, id, (y) => y.avgPointScore, average,
+              comparableGroup, stage, id, (y) => y.avgPointScore,
               ks5Bucket ?? agreedScoredBucketFor(comparableGroup, id),
               TREND_BASELINE_PERIOD[stage],
             )
-        : // Year rules follow-ups: the set's change since 2022/23 is the average of each comparator's
-          // own change since then. (It was the average of their latest RESULTS, drawn as a % change.)
-          aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => r.resultsPctChange, average),
+        : // Consistency (R-SET-CHANGE-AVERAGE): the change in the set's yearly average points since
+          // 2022/23, as category mode measures it. (Year rules follow-ups had made it the average of
+          // each comparator's own change; before that, the average of their latest RESULTS as a %.)
+          setAverageChange(subjectSeriesFor(id, (r) => r.resultsSeries), TREND_BASELINE_PERIOD[stage]),
   }));
 
   return (

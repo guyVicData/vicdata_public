@@ -77,7 +77,7 @@ import {
   type KsStage,
   type Ks5Bucket,
 } from "@/lib/academic-data-view";
-import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
+import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
@@ -210,7 +210,7 @@ function TrendColourKey({ box, title, range }: { box: { top: number; height: num
   const min = stops[0].pct;
   const max = stops[stops.length - 1].pct;
   const labelFor = (pct: number) =>
-    !range ? (pct > 0 ? `+${pct}%` : `${pct}%`) : pct === min ? range.format(range.min) : pct === 0 ? "0" : pct === max ? range.format(range.max) : null;
+    !range ? signedDelta(pct, (x) => `${Math.abs(x)}%`, UNSIGNED_ZERO) : pct === min ? range.format(range.min) : pct === 0 ? "0" : pct === max ? range.format(range.max) : null;
   const gradient = [...stops].reverse().map((s) => s.hex).join(",");
   const barHeight = Math.max(0, box.height - TREND_KEY_TITLE_HEIGHT);
   return (
@@ -1069,7 +1069,7 @@ export default function AcademicMapView({
           // number.
           const wording = trendWordingFor(stage, data.avgValue, data.anchorValue);
           if (wording) {
-            const signed = signedDelta(wording.magnitude.value, (x) => Math.abs(x).toFixed(0), HYPHEN_SIGN);
+            const signed = signedDelta(wording.magnitude.value, (x) => Math.abs(x).toFixed(0), UNSIGNED_ZERO);
             lines.push(`${wording.label} <strong>${signed}${wording.magnitude.unit}</strong> in ${TREND_STAT_LABEL[stage]} since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`);
           } else {
             lines.push(`No real ${academicYearLabel(TREND_BASELINE_PERIOD[stage])} comparison`);

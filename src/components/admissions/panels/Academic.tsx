@@ -10,6 +10,7 @@ import { Empty, Muted, cx, fmtSigned, ordinal, arrow } from "../ui";
 import { DivergingBar } from "../views/charts";
 import { overallLine } from "../views/Strengths";
 import { periodLabel as yearLabel, TREND_BASE_PERIOD } from "@/catalogue/years";
+import { arrowed } from "@/lib/signed-delta";
 
 export const STAGE_WORD = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" } as const;
 
@@ -32,7 +33,7 @@ export function AcademicRanking({ r }: { r: RivalsView }) {
       <div className="mb-[2px] text-[12.5px] font-bold text-[var(--fg)]">{line?.split(" · ")[0] ?? `No ranked ${STAGE_WORD[r.stage]} headline for this school`}</div>
       <Muted className="mb-1">
         {r.overall?.national ? `${ordinal(r.overall.national.rank)} of ${r.overall.national.of.toLocaleString("en-GB")} in England` : "Not ranked in England"}
-        {r.overall?.change != null ? ` · ${arrow(r.overall.change, 0.05)} ${Math.abs(r.overall.change).toFixed(1)} since ${yearLabel(TREND_BASE_PERIOD)}` : ""}
+        {r.overall?.change != null ? ` · ${arrowed(r.overall.change, (x) => x.toFixed(1), 1, 0.05)} since ${yearLabel(TREND_BASE_PERIOD)}` : ""}
       </Muted>
       {r.stage !== "ks2" && lead.length > 0 && <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-up-fg)]">Where you lead the rivals</div>}
       {lead.map((a) => (

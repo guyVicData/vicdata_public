@@ -9,10 +9,11 @@
 import Link from "next/link";
 import { Empty, Key, LineSwatch, fillHeight } from "@/components/admissions/ui";
 import { LineChart, extent, path, scale, useWidth } from "@/components/admissions/views/charts";
-import { GRADING_2122_PERIOD, TREND_BASE_PERIOD, TREND_LINE_MIN_YEARS, periodLabel } from "@/catalogue/years";
+import { GRADING_2122_PERIOD, periodLabel, rollDirection, TREND_BASE_PERIOD, TREND_LINE_MIN_YEARS } from "@/catalogue/years";
 import { TREND_BASE_NOTE } from "@/catalogue/notes";
 import type { Overview } from "../api";
-import { dirClass, fmt, shortYear, type Unit } from "../ui";
+import { arrowOf, dirClass, fmt, shortYear, type Unit } from "../ui";
+import { ARROW } from "@/lib/signed-delta";
 
 type Pt = { year: number; value: number | null };
 type Band = { year: number; p25: number | null; p75: number | null; n: number };
@@ -32,7 +33,19 @@ export function Direction({ pts, flat, up = "Rising", down = "Falling" }: { pts:
   const d = direction(pts, flat);
   if (!d.word) return null;
   const word = d.word === "Rising" ? up : d.word === "Falling" ? down : "Steady";
-  return <span className={`text-[12px] font-bold ${dirClass(d.change, flat)}`} data-direction="">{d.change! > flat ? "▲" : d.change! < -flat ? "▼" : "▬"} {word}</span>;
+  return <span className={`text-[12px] font-bold ${dirClass(d.change, flat)}`} data-direction="">{arrowOf(d.change, flat)} {word}</span>;
+}
+
+/** A roll's direction word (R-ROLL-WORDS-3YR): Growing / Shrinking / Steady over 3 census years (the
+ * longest span the school has, if shorter), steady when the change rounds to 0% (R-FLAT-BAND). */
+export function RollDirectionWord({ pts }: { pts: Pt[] }) {
+  const d = rollDirection(pts, 0);
+  if (!d) return null;
+  return (
+    <span className={`text-[12px] font-bold ${dirClass(d.pct, 0, 0)}`} data-direction="" title={`${periodLabel(d.from)} to ${periodLabel(d.to)}`}>
+      {ARROW[d.dir]} {d.word}
+    </span>
+  );
 }
 
 export function RollIndexed({ o, fullscreen, room }: { o: Overview; fullscreen: boolean; room?: number }) {

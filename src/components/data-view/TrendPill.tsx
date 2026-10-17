@@ -5,6 +5,7 @@
 // copies that could drift. GraphsView.tsx now imports this instead of its own local
 // copy; its own rendering/behaviour is byte-for-byte unchanged by the move.
 import type { TrendBadge } from "@/lib/data-view-cards";
+import { ARROW } from "@/lib/signed-delta";
 
 export function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
@@ -12,7 +13,7 @@ export function academicYearLabel(period: number): string {
 
 export default function TrendPill({ badge, startPeriod }: { badge: TrendBadge; startPeriod: number }) {
   if (!badge) return <span className="text-xs text-neutral-400">no {academicYearLabel(startPeriod)} comparison</span>;
-  const arrow = badge.direction === "up" ? "▲" : badge.direction === "down" ? "▼" : "▬";
+  const arrow = ARROW[badge.direction === "up" ? "up" : badge.direction === "down" ? "down" : "flat"];
   const colour =
     badge.direction === "up" ? "text-blue-600 dark:text-blue-400" : badge.direction === "down" ? "text-red-600 dark:text-red-400" : "text-neutral-500";
   return (

@@ -102,7 +102,7 @@ export function buildGrades(spec: ViewSpec, f: GradesFrame): ViewSeries | null {
     return {
       kind: "table",
       heading: null,
-      title: [f.subjectLabel, "’s entries at each grade: ", academicYearLabel(g.chgYear), " against ", yearText, ", with the change"],
+      title: [f.subjectLabel, "’s entries at each grade, change since ", academicYearLabel(g.chgYear), ": ", academicYearLabel(g.chgYear), " against ", yearText],
       leaf: {
         leaf: "yearTable",
         data: g.changeDataIn(f.colour),

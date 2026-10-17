@@ -61,6 +61,7 @@ import { useBoardingSchool } from "./useBoardingSchool";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { contextFromPanel } from "@/catalogue/pick";
 import { CENSUS_FIRST_PERIOD, CURRENT_CENSUS_PERIOD, TREND_BASE_PERIOD } from "@/catalogue/years";
+import { arrowed } from "@/lib/signed-delta";
 
 const PHONE = 768;
 // The entry-point chips' colour in Teacher's subject-chip slot: the Admissions accent.
@@ -903,7 +904,7 @@ function phoneView(dv: string, c: Ctx, spec?: ViewSpec): ReactNode {
       <>
         <PipelineChart p={p} projection={false} height={150} compact pastPools={looksOf(dv, spec?.view.look).pastPools as boolean} rungLabels={looksOf(dv, spec?.view.look).rungLabels as boolean} />
         <div className="text-[11px] text-[var(--muted2)]">
-          {p.change && p.changeYear ? `Pool ${p.change.pct < 0 ? "▼" : "▲"} ${Math.abs(p.change.pct).toFixed(0)}% by ${p.changeYear}. ` : ""}The pool, not who will join.
+          {p.change && p.changeYear ? `Pool ${arrowed(p.change.pct, (x) => `${x.toFixed(0)}%`, 0)} by ${p.changeYear}. ` : ""}The pool, not who will join.
         </div>
       </>
     ));

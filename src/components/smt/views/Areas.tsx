@@ -10,9 +10,9 @@ import { DivergingBar } from "@/components/admissions/views/charts";
 import { TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import type { StagePart } from "@/lib/smt/academic";
 import { ord } from "../ui";
-import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
+import { ARROW, flatBand, signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
-const dir = (v: number | null) => (v === null ? "—" : v > 0.05 ? "▲ rising" : v < -0.05 ? "▼ falling" : "▬ steady");
+const dir = (v: number | null) => (v === null ? "—" : `${ARROW[flatBand(v, 2, 0.05)]} ${{ up: "rising", down: "falling", flat: "steady" }[flatBand(v, 2, 0.05)]}`);
 const FLAG_WORD: Record<string, string> = { strength: "Strength", strength_growing: "Strength, growing", weakness: "Weakness", weakness_widening: "Weakness, widening" };
 
 export function SubjectAreas({ parts, setLabel, onArea, area }: { parts: StagePart[]; setLabel: string; onArea?: (stage: "ks4" | "ks5", id: string) => void; area: string | null }) {
@@ -48,10 +48,10 @@ export function SubjectAreas({ parts, setLabel, onArea, area }: { parts: StagePa
                   <span>
                     {ord(a.rank)} of {a.of}
                   </span>
-                  <span title={`You ${a.mine.toFixed(2)}; the set's average ${(a.mine - a.gap).toFixed(2)} (gap ${signedDelta(a.gap, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts)`}>
+                  <span title={`You ${a.mine.toFixed(2)}; the set's average ${(a.mine - a.gap).toFixed(2)} (gap ${signedDelta(a.gap, (x) => Math.abs(x).toFixed(2), UNSIGNED_ZERO)} pts)`}>
                     <DivergingBar value={a.gap} max={max} />
                   </span>
-                  <span title={a.gapSince2223 === null ? `No ${periodLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${signedDelta(a.gapSince2223, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts since ${periodLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
+                  <span title={a.gapSince2223 === null ? `No ${periodLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${signedDelta(a.gapSince2223, (x) => Math.abs(x).toFixed(2), UNSIGNED_ZERO)} pts since ${periodLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
                   <span className="flex flex-wrap gap-1">
                     {a.flags
                       .filter((f) => !(f.id === "strength" && a.flags.some((g) => g.id === "strength_growing")) && !(f.id === "weakness" && a.flags.some((g) => g.id === "weakness_widening")))

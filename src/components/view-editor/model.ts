@@ -313,7 +313,7 @@ export function generatedTitle(spec: ViewSpec, data: PickPanelContext["data"]): 
     return spec.compare !== "follows-page" && spec.compare.length > 1 ? `[subject] ${noun} from [from-year], compared` : `[subject] ${noun} from [from-year]`;
   }
   if (per === "subject") return shownAs === "change" ? `${Noun} in ${group}: [change-word] since [from-year], ranked` : `${Noun} by subject in ${group}`;
-  if (per === "grade") return shownAs === "change" ? `[subject]'s entries at each grade: [from-year] against the latest year` : `[subject] grades, [year]`;
+  if (per === "grade") return shownAs === "change" ? `[subject]'s entries at each grade, change since [from-year]: [from-year] against the latest year` : `[subject] grades, [year]`;
   return shownAs === "change" ? `[change-of-measure] since [from-year], ranked against the [set]` : `Schools by [subject] [measure] in the [set]`;
 }
 

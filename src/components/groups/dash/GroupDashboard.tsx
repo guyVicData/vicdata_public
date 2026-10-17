@@ -26,14 +26,16 @@ import { groupVars } from "@/components/groups/ui";
 import { useSmt } from "@/components/smt/api";
 import { GROUP_NOTES, groupNote } from "@/catalogue/notes";
 import { groupMethodOf } from "@/catalogue/methods-groups";
-import { periodLabel } from "@/catalogue/years";
+import { periodLabel, ROLL_WORD, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexBaseWords } from "@/lib/index-base";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
-import { FOCI, FOCUS_LABEL, MEASURE_LABEL, parseCompare, type CompareKey, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
+import { FOCI, FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, parseCompare, type CompareKey, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
 import type { Reading } from "@/lib/groups/aggregates";
 import { AcademicNow, BandsReserved, EntryCohorts, GroupShape, GrowingShrinking, ImprovingDeclining, LeavingAt16, MarketShare, ProjectionPerSchool, PupilsNow, SchoolsRanked, SubjectAreasAcross, ValueAddedPanel, type ProjectionRow } from "./views-r3";
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { AgainstOthers, dateText, MAIN_ROWS, GroupMap, GroupNow, JoinedLeft, ResultsTrend, RollTrend, SchoolsNow, SchoolsTable, ShareOfPlaces, Shapes, SizeAndResults, WhoIsGrowing, shareFlag, sourcesWord, type MapSchool, type MembershipRow } from "./views";
+import { arrowOf, dirClass } from "@/components/smt/ui";
+import { ARROW, arrowed } from "@/lib/signed-delta";
 
 export type GroupDash = "overview" | "schools" | "academic" | "pupils";
 export const GROUP_DASHES: { key: GroupDash; label: string; live: boolean }[] = [
@@ -564,12 +566,17 @@ function flagOf(id: ViewId, c: Ctx): ReactNode {
     if (g === null || g === undefined) return null;
     if (id === "GRP-O-AGAINST" && peer !== null && peer !== undefined) {
       const dd = g - peer;
-      return <span className={`text-[12px] font-bold ${dd > 0.5 ? "text-[var(--adm-up-fg)]" : dd < -0.5 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{dd > 0.5 ? "▲ Growing faster than peers" : dd < -0.5 ? "▼ Growing slower than peers" : "▬ In line with peers"}</span>;
+      return <span className={`text-[12px] font-bold ${dirClass(dd, 0.5, 1)}`}>{arrowOf(dd, 0.5, 1)} {dd > 0.5 ? "Growing faster than peers" : dd < -0.5 ? "Growing slower than peers" : "In line with peers"}</span>;
     }
-    return <span className={`text-[12px] font-bold ${g > 1 ? "text-[var(--adm-up-fg)]" : g < -1 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{g > 1 ? "▲ Growing" : g < -1 ? "▼ Shrinking" : "▬ Steady"}</span>;
+    // R-ROLL-WORDS-3YR: the group's roll word is its like-for-like change over 3 census years, steady
+    // when it rounds to 0% (R-FLAT-BAND). (It was the 5-year change with a ±1% band.)
+    const g3 = c.o.now.change[GROWING_SPAN].sameSchools;
+    if (g3 === null || g3 === undefined) return null;
+    const d = rollDirectionOfPct(g3, 0);
+    return <span className={`text-[12px] font-bold ${dirClass(g3, 0, 0)}`}>{ARROW[d]} {ROLL_WORD[d]}</span>;
   }
   if (id === "GRP-S-GROWING") {
-    const ch = c.o.now.change["1"];
+    const ch = c.o.now.change[GROWING_SPAN];
     return <span className="text-[12px] font-bold text-[var(--muted2)]">▲ {ch.growing} of {ch.of} growing</span>;
   }
   return null;
@@ -683,7 +690,7 @@ function PhoneAgainst({ o }: { o: GroupOverview }) {
         <div key={r.key} className="flex items-baseline justify-between gap-2 border-b border-[var(--panel-border)] py-1.5 last:border-0">
           <span className={i === 0 ? "font-bold text-[var(--adm-accent-text)]" : ""}>{r.label}</span>
           <span className={i === 0 ? "font-bold" : ""}>
-            {r.roll.pct === null ? "—" : `${r.roll.pct > 0.5 ? "▲" : r.roll.pct < -0.5 ? "▼" : "▬"} ${Math.abs(r.roll.pct).toFixed(1)}%`} · {m ? `${MEASURE_LABEL[m] === "Attainment 8" ? "A8" : MEASURE_LABEL[m]} ${r.cells[m]?.value?.toFixed(1) ?? "—"}` : ""}
+            {r.roll.pct === null ? "—" : arrowed(r.roll.pct, (x) => `${x.toFixed(1)}%`, 1, 0.5)} · {m ? `${MEASURE_LABEL[m] === "Attainment 8" ? "A8" : MEASURE_LABEL[m]} ${r.cells[m]?.value?.toFixed(1) ?? "—"}` : ""}
           </span>
         </div>
       ))}

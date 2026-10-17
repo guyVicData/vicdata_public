@@ -12,10 +12,11 @@ import { LineChart, useWidth } from "@/components/admissions/views/charts";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
 import { productAccent } from "@/components/shell/accent";
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
-import { periodLabel } from "@/catalogue/years";
+import { periodLabel, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexedLabel } from "@/lib/index-base";
 import { FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, ordinal, PHASE_NOUN, type GroupOverview, type GroupSchools, type SchoolRow } from "@/lib/groups/dash";
 import { arrowOf, dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
+import { ARROW, arrowed, flatBand } from "@/lib/signed-delta";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 const ACCENT = productAccent("groups")!.hex;
@@ -204,11 +205,12 @@ export function GroupMap({ name, schools, highlight, fullscreen, room }: { name:
   const h = fullscreen && room ? fillHeight(room, 80, 560) : null;
   const colour = (urn: string) => {
     const t = trend.get(urn);
-    return t === null || t === undefined ? GREY : t > 1 ? UP : t < -1 ? DOWN : GREY;
+    // R-ROLL-WORDS-3YR + R-FLAT-BAND: the 3-year change; steady when it rounds to 0%.
+    return t === null || t === undefined ? GREY : { up: UP, down: DOWN, flat: GREY }[rollDirectionOfPct(t, 0)];
   };
   return (
     <>
-      <div className="text-[13px] font-bold text-[var(--fg)]">{name}&rsquo;s schools, sized by roll, coloured by the last year&rsquo;s change</div>
+      <div className="text-[13px] font-bold text-[var(--fg)]">{name}&rsquo;s schools, sized by roll, coloured by the change over three years</div>
       <div className="flex min-h-0 gap-3">
         <div className="min-w-0 flex-1" style={h ? { height: h } : undefined}>
           <ConsortiumMap
@@ -233,7 +235,7 @@ export function GroupMap({ name, schools, highlight, fullscreen, room }: { name:
       </div>
       <div className="flex flex-wrap gap-3">
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: UP }} />}>Growing</Key>
-        <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: GREY }} />}>Steady (within 1%)</Key>
+        <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: GREY }} />}>Steady (under 0.5%)</Key>
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: DOWN }} />}>Shrinking</Key>
       </div>
     </>
@@ -384,7 +386,7 @@ export function shareFlag(series: Pt[]): ReactNode {
   const v = series.filter((p) => p.value !== null);
   if (v.length < 2) return null;
   const d = v[v.length - 1].value! - v[0].value!;
-  return <span className={`text-[12px] font-bold ${d > 0.1 ? "text-[var(--adm-up-fg)]" : d < -0.1 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{d > 0.1 ? "▲ Gaining share" : d < -0.1 ? "▼ Losing share" : "▬ Steady share"}</span>;
+  return <span className={`text-[12px] font-bold ${d > 0.1 ? "text-[var(--adm-up-fg)]" : d < -0.1 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{ARROW[flatBand(d, 1, 0.1)]} {d > 0.1 ? "Gaining share" : d < -0.1 ? "Losing share" : "Steady share"}</span>;
 }
 
 // ----------------------------------------------------------------------------------- Schools
@@ -492,7 +494,7 @@ function SchoolTr({ r, on, onHighlight }: { r: SchoolRow; on: boolean; onHighlig
       <Td>{r.inGroup ? `${ordinal(r.inGroup.rank, r.inGroup.tied)} of ${r.inGroup.of}` : "—"}</Td>
       <Td>{r.national ? `${ordinal(r.national.rank, r.national.tied)} of ${r.national.of.toLocaleString("en-GB")}` : "—"}</Td>
       <Td>{r.va ? fmt(r.va.value, "va") : <span className="text-[var(--muted2)]" title={r.vaNote ?? undefined}>{r.vaNote ? "not published" : "—"}</span>}</Td>
-      <Td className={`whitespace-nowrap ${dirClass(r.trend, 1)}`}>{r.trend === null ? "—" : `${arrowOf(r.trend, 1)} ${Math.abs(r.trend).toFixed(1)}%`}</Td>
+      <Td className={`whitespace-nowrap ${dirClass(r.trend, 0.5, 1)}`}>{r.trend === null ? "—" : arrowed(r.trend, (x) => `${x.toFixed(1)}%`, 1, 0.5)}</Td>
       <Td className="text-[var(--muted2)]">{r.joined ? dateText(r.joined) : r.basis === "assumed" ? "undated" : "—"}</Td>
     </tr>
   );

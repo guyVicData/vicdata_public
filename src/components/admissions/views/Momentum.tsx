@@ -1,8 +1,8 @@
 "use client";
 
 // VicData 0.7 admissions r2 (D4): Rivals' momentum (RivalMomentum.dc.html) -- a scatter of each
-// rival's change in pupils at the entry age (x, census, %) against its results change (y, the
-// whole-school headline in points), both since 2022/23, in four quadrants; and the flag list. Each
+// rival's change in pupils at the entry age (x, census, %, over 3 census years: R-ROLL-WORDS-3YR)
+// against its results change (y, the whole-school headline in points, since 2022/23), in four quadrants; and the flag list. Each
 // flag shows its figures on hover. With the national thresholds missing it says "flags not
 // available yet" and never guesses (R-ADM-VIEW-MOMENTUM, R-ADM-VIEW-FLAGS, R-ADM-FLAG-MOMENTUM).
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
@@ -12,6 +12,7 @@ import type { MarketView, RivalsView } from "../api";
 import { Empty, FlagPill, Muted, cx, fillHeight, fmtSigned, yearLabel, type FlagTone } from "../ui";
 import { useWidth } from "./charts";
 import { TREND_BASE_PERIOD } from "@/catalogue/years";
+import { signedValue } from "@/lib/signed-delta";
 
 type Flag = RivalsView["rows"][number]["momentum"][number];
 const TONE: Record<string, FlagTone> = { results_rising_fast: "up", gaining_pupils: "up", losing_pupils_3y: "down", entry_year_shrinking: "down", new_sixth_form: "note", shape_changed: "note" };
@@ -20,7 +21,7 @@ const MARK: Record<string, string> = { results_rising_fast: "▲ ", gaining_pupi
 export const figuresOf = (f: Flag) =>
   `${f.label}\n` +
   Object.entries(f.figures)
-    .map(([k, v]) => `${k}: ${typeof v === "number" ? (Number.isInteger(v) ? v : v.toFixed(2)) : (v ?? "—")}`)
+    .map(([k, v]) => `${k}: ${typeof v === "number" ? signedValue(v, Number.isInteger(v) ? 0 : 2) : (v ?? "—")}`)
     .join("\n");
 
 const shapeWord = (s: unknown) => SHAPE_LABELS[s as ShapeLabel] ?? String(s);
@@ -60,7 +61,7 @@ export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: 
                   </span>
                 )}
               </span>
-              <span className="text-right tabular-nums" title={e ? `${e.entryBase ?? "—"} → ${e.entryNow ?? "—"} aged ${m.entry.age}, ${yearLabel(TREND_BASE_PERIOD)} to ${yearLabel(m.summary.latest)}` : undefined}>
+              <span className="text-right tabular-nums" title={e ? `${e.entryBase ?? "—"} → ${e.entryNow ?? "—"} aged ${m.entry.age}, ${e.entryBasePeriod === null ? "—" : yearLabel(e.entryBasePeriod)} to ${yearLabel(m.summary.latest)}` : undefined}>
                 {fmtSigned(e?.entryChangePctAll, 0)}
               </span>
               <span className="text-right tabular-nums" title={rc ? `${rc.from ?? "—"} → ${rc.to ?? "—"}` : undefined}>
@@ -137,7 +138,7 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
                 const down = x.momentum.some((f) => TONE[f.id] === "down");
                 const size = me ? 14 : 11;
                 return (
-                  <span key={x.urn} title={`${x.name}: pupils aged ${m.entry.age} ${fmtSigned(e!.entryChangePctAll, 1)}, ${results} ${fmtSigned(rc!.points, 1, " pts")} (since ${yearLabel(TREND_BASE_PERIOD)})${x.momentum.length ? `\n${x.momentum.map(flagText).join(" · ")}` : ""}`}>
+                  <span key={x.urn} title={`${x.name}: pupils aged ${m.entry.age} ${fmtSigned(e!.entryChangePctAll, 1)} since ${e!.entryBasePeriod === null ? "—" : yearLabel(e!.entryBasePeriod)}, ${results} ${fmtSigned(rc!.points, 1, " pts")} since ${yearLabel(TREND_BASE_PERIOD)}${x.momentum.length ? `\n${x.momentum.map(flagText).join(" · ")}` : ""}`}>
                     <span
                       className={cx("absolute rounded-full", me && "border-2 border-white")}
                       style={{ left: sx(e!.entryChangePctAll!) - size / 2, top: sy(rc!.points!) - size / 2, width: size, height: size, boxSizing: "border-box", background: me ? "var(--accent)" : up ? "var(--adm-amber)" : down ? "var(--adm-down-fg)" : "var(--adm-grey-line)" }}
@@ -152,7 +153,7 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
               })}
               <div className="absolute bottom-[6px] left-[10px] right-[10px] flex justify-between text-[10.5px] text-[var(--muted)]">
                 <span>&larr; losing pupils</span>
-                <span>pupils aged {m.entry.age}, % change</span>
+                <span>pupils aged {m.entry.age}, % change over 3 years</span>
                 <span>gaining &rarr;</span>
               </div>
               <div className="absolute whitespace-nowrap text-[10.5px] text-[var(--muted)]" style={{ left: 9, top: "50%", transform: "translate(-50%, -50%) rotate(-90deg)" }}>

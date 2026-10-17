@@ -10,14 +10,14 @@
 // row order as its paired absolute-value chart above it, rather than re-sorting
 // itself by pctChange.
 import { trendColour } from "@/lib/trend-colours";
-import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
+import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
 // Subject deep-dive round, Part 3: `onItemClick`, same real click-target addition as
 // SubjectAreaBarChart's own (see that file's own comment) -- optional and additive.
 export default function SubjectAreaDivergingBarChart({
   items,
   order,
-  formatValue = (v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN),
+  formatValue = (v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(0)}%`, UNSIGNED_ZERO),
   onItemClick,
 }: {
   items: { id: string; label: string; pctChange: number | null }[];

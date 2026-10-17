@@ -18,6 +18,7 @@ import { sizePlaces } from "./ranks";
 import { shapeOf } from "./shape";
 import { indexTo } from "../index-base";
 import type { SchoolTraits } from "./traits";
+import { ROLL_DIRECTION_SPAN } from "@/catalogue/years";
 
 const P = CURRENT_CENSUS_PERIOD;
 type Pt = { year: number; value: number | null };
@@ -301,15 +302,16 @@ export function areaByAge(): Promise<{ scope: string; key: string; period: numbe
 
 // ---------------------------------------------------------------------------------------------
 // Market share and rivals: what the round 1 shares and ranks don't carry -- each school's whole
-// roll (and its rank by it), its traits for "this group", and its change since 2022/23 at the
-// entry age (the momentum scatter's x; the results change, its y, is from the same headline
-// population the flags read).
+// roll (and its rank by it), its traits for "this group", and its change at the entry age over 3
+// census years (R-ROLL-WORDS-3YR; the momentum scatter's x; the results change, its y, since 2022/23,
+// is from the same headline population the flags read).
 export type RivalExtra = {
   urn: string;
   roll: number | null;
   rollRank: number | null;
   entryNow: number | null;
-  entryBase: number | null; // 2022/23
+  entryBase: number | null;
+  entryBasePeriod: number | null; // 3 census years back, or the school's first if fewer (R-ROLL-WORDS-3YR)
   entryChangePct: number | null;
   // Girls and boys together whatever the filter: the momentum scatter, which sets pupils against
   // results (never split by sex), reads these (0.8 audit fixes, 6).
@@ -327,16 +329,20 @@ export function rivalExtras(urn: string, urns: string[], census: Map<string, Sch
     const c = census.get(u);
     const t = traits.get(u);
     const roll = rolls.find((x) => x.u === u)!.r;
-    const now = cohortAt(c?.table ?? new Map(), ep.age, P, sex);
-    const base = cohortAt(c?.table ?? new Map(), ep.age, TREND_BASE_PERIOD, sex);
+    const table = c?.table ?? new Map();
+    const now = cohortAt(table, ep.age, P, sex);
+    // R-ROLL-WORDS-3YR: 3 census years back, or the longest span the school has.
+    const from = [...table.keys()].filter((y) => y >= P - ROLL_DIRECTION_SPAN && y < P && cohortAt(table, ep.age, y) !== null).sort((a, b) => a - b)[0] ?? null;
+    const base = from === null ? null : cohortAt(table, ep.age, from, sex);
     return {
       urn: u,
       roll,
       rollRank: roll === null ? null : 1 + rolls.filter((x) => x.r !== null && x.r > roll).length,
       entryNow: now,
       entryBase: base,
+      entryBasePeriod: from,
       entryChangePct: pctChange(base, now),
-      entryChangePctAll: pctChange(cohortAt(c?.table ?? new Map(), ep.age, TREND_BASE_PERIOD), cohortAt(c?.table ?? new Map(), ep.age, P)),
+      entryChangePctAll: from === null ? null : pctChange(cohortAt(table, ep.age, from), cohortAt(table, ep.age, P)),
       traits: t ? { sector: t.sector, gender: t.gender, boarding: t.boarding, laName: t.laName, easting: t.easting, northing: t.northing } : null,
       distanceKm: u === urn ? 0 : distanceKm(me, t),
       shape: c ? shapeOf(c.ageGender) : null,

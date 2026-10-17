@@ -30,7 +30,7 @@ import { displayPopulationTrendPct } from "./population-trend";
 import type { SixthFormSectorTotals } from "./sixth-form-sector-aggregates";
 import type { FeParticipationDistribution } from "./fe-participation-distributions";
 import { sizeBadgeForValue } from "./age-band-distributions";
-import { HYPHEN_SIGN_PLUS_ZERO, signedDelta } from "./signed-delta";
+import { signedDelta } from "./signed-delta";
 
 // ---------------------------------------------------------------------------
 // Cross-cutting: word-form numerals for "one of X" framing only (spec §1) --
@@ -1429,7 +1429,7 @@ export function boardingCatchmentClause(
 }
 
 function formatSignedPct(pct: number): string {
-  return signedDelta(pct, (x) => Math.abs(x).toFixed(1), HYPHEN_SIGN_PLUS_ZERO);
+  return signedDelta(pct, (x) => Math.abs(x).toFixed(1));
 }
 
 // General comparative form (round 4, §5/§7 item 9) -- built out for every real

@@ -7,6 +7,7 @@
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import type { MarketView } from "../api";
 import { Lbl, Tile, fmtN, fmtPct, yearLabel } from "../ui";
+import { arrowed } from "@/lib/signed-delta";
 
 export function MarketNow({ m, setLabel, compact = false }: { m: MarketView; setLabel: string; compact?: boolean }) {
   const f = m.summary;
@@ -26,7 +27,7 @@ export function MarketNow({ m, setLabel, compact = false }: { m: MarketView; set
       <div className="grid grid-cols-2 gap-2">
         <Tile label={`Rank at age ${age}`} value={f.rank ? `${f.rank} of ${f.of}` : "—"} sub={`by Year ${age - 4} size`} accent />
         <Tile label="Market share" value={fmtPct(f.share)} sub={`of ${age}-year-olds in this group`} />
-        {!compact && <Tile label={`Since ${yearLabel(f.first)}`} value={f.changePts === null ? "—" : `${f.changePts >= 0 ? "▲" : "▼"} ${Math.abs(f.changePts).toFixed(1)} pts`} sub="share change" />}
+        {!compact && <Tile label={`Since ${yearLabel(f.first)}`} value={f.changePts === null ? "—" : arrowed(f.changePts, (x) => `${x.toFixed(1)} pts`, 1)} sub="share change" />}
         {!compact && <Tile small label="Whole school" value={f.rollRank ? `${f.rollRank} of ${f.rollOf}` : "—"} sub="by total roll" />}
       </div>
       {!compact && (

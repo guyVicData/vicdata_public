@@ -12,7 +12,7 @@ import { Empty, FlagPill, Muted, ordinal, yearLabel } from "../ui";
 import { DivergingBar } from "./charts";
 import { figuresOf } from "./Momentum";
 import { TREND_BASE_PERIOD } from "@/catalogue/years";
-import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
+import { ARROW, flatBand, signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
 export function overallLine(r: RivalsView): string | null {
   const o = r.overall;
@@ -20,7 +20,7 @@ export function overallLine(r: RivalsView): string | null {
   return `Overall: ${ordinal(o.rank)} of ${o.of} on ${o.measure}${o.national ? ` · ${ordinal(o.national.rank)} of ${o.national.of.toLocaleString("en-GB")} in England` : ""}`;
 }
 
-const dir = (v: number | null) => (v === null ? "—" : v > 0.05 ? "▲ rising" : v < -0.05 ? "▼ falling" : "▬ steady");
+const dir = (v: number | null) => (v === null ? "—" : `${ARROW[flatBand(v, 2, 0.05)]} ${{ up: "rising", down: "falling", flat: "steady" }[flatBand(v, 2, 0.05)]}`);
 const FLAG_WORD: Record<string, string> = { strength: "Strength", strength_growing: "Strength, growing", weakness: "Weakness", weakness_widening: "Weakness, widening" };
 
 // 0.7 admissions editor s2: `order` -- "gap" (where you lead most first; the preset) or "az"; and
@@ -58,10 +58,10 @@ export function Strengths({ r, explorerHref, fullscreen, order = "gap", showFlag
             <span>
               {ordinal(a.rank)} of {a.of}
             </span>
-            <span title={`You ${a.mine.toFixed(2)}; the rivals' average ${(a.mine - a.gap).toFixed(2)} (gap ${signedDelta(a.gap, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts)`}>
+            <span title={`You ${a.mine.toFixed(2)}; the rivals' average ${(a.mine - a.gap).toFixed(2)} (gap ${signedDelta(a.gap, (x) => Math.abs(x).toFixed(2), UNSIGNED_ZERO)} pts)`}>
               <DivergingBar value={a.gap} max={max} />
             </span>
-            <span title={a.gapSince2223 === null ? `No ${yearLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${signedDelta(a.gapSince2223, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts since ${yearLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
+            <span title={a.gapSince2223 === null ? `No ${yearLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${signedDelta(a.gapSince2223, (x) => Math.abs(x).toFixed(2), UNSIGNED_ZERO)} pts since ${yearLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
             {showFlags && (
             <span className="flex flex-wrap gap-1">
               {a.flags

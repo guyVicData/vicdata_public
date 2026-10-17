@@ -175,7 +175,7 @@ test("Grade counts' change table (DV-C1-CNT-TR-CHANGETABLE): each grade's count,
     assert.equal(leaf.showRank, false);
     assert.equal(leaf.focusKey, null);
     assert.equal(leaf.centred, null, "no scroll box, as the host draws it");
-    assert.deepEqual(s.title, [f.subjectLabel, "’s entries at each grade: ", academicYearLabel(first), " against ", academicYearLabel(latest), ", with the change"]);
+    assert.deepEqual(s.title, [f.subjectLabel, "’s entries at each grade, change since ", academicYearLabel(first), ": ", academicYearLabel(first), " against ", academicYearLabel(latest)]);
     // The grade order is the spread's.
     assert.deepEqual(leaf.data.series.map((x) => x.key), spreadOf(build(preset("DV-C1-CNT-CUR-DIST"), f)).rows.map((x) => x.grade));
   }

@@ -13,6 +13,7 @@ import { setPhaseOf } from "@/lib/smt/levels";
 import { useSmt, type Overview, type SmtSchool } from "./api";
 import { loadSmtMember, type SmtMember } from "./member";
 import { useSmtSet } from "./useSmtSet";
+import { arrowed } from "@/lib/signed-delta";
 
 const S = productAccent("smt")!;
 // 0.8 SMT round 2: all four are live.
@@ -35,7 +36,7 @@ const SchoolGlyph = (
 /** "Roll ▲ 16% · Attainment 8 2nd of 11 · 1 flag": the Overview's own figures, never new ones. */
 export function summaryLine(o: Overview): string {
   const parts: string[] = [];
-  if (o.now.changePct !== null) parts.push(`Roll ${o.now.changePct >= 0 ? "▲" : "▼"} ${Math.abs(o.now.changePct).toFixed(0)}% since ${periodLabel(CENSUS_FIRST_PERIOD)}`);
+  if (o.now.changePct !== null) parts.push(`Roll ${arrowed(o.now.changePct, (x) => `${x.toFixed(0)}%`, 0)} since ${periodLabel(CENSUS_FIRST_PERIOD)}`);
   const head = o.rows.find((r) => r.stage && r.stage !== "ks2" && r.unit === "points" && r.set);
   if (head?.set) parts.push(`${head.label === "A level: points per entry" ? "A-level points" : head.label} ${head.set.rank} of ${head.set.of}`);
   parts.push(o.flags.length === 1 ? "1 flag" : `${o.flags.length} flags`);

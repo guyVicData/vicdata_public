@@ -9,7 +9,7 @@ import { FlagPill } from "@/components/admissions/ui";
 import { figuresOf } from "@/components/admissions/views/Momentum";
 import { CENSUS_FIRST_PERIOD, periodLabel, TREND_BASE_PERIOD } from "@/catalogue/years";
 import type { Overview, SmtSchool } from "../api";
-import { Td, Th, dirClass, fmt, fmtChange, rankText } from "../ui";
+import { Td, Th, arrowOf, changeDp, dirClass, fmt, fmtChange, rankText } from "../ui";
 
 export function Scorecard({ o, school, phone = false }: { o: Overview; school: SmtSchool; phone?: boolean }) {
   const region = o.rows.find((r) => r.region)?.region?.name ?? school.regionName;
@@ -22,7 +22,7 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
             <div key={r.key} className="flex items-center justify-between border-b border-[var(--panel-border)] py-[7px] text-[12.5px]">
               <span className="text-[var(--chip-fg)]">{r.label}</span>
               <span className="font-bold text-[var(--fg)]">
-                {r.note === "igcse" ? <i className="font-normal text-[var(--muted2)]">not ranked</i> : r.set ? `${r.set.rank} of ${r.set.of}` : "—"} <span className={dirClass(r.since?.change)}>{r.since ? (r.since.change > 0.05 ? "▲" : r.since.change < -0.05 ? "▼" : "▬") : ""}</span>
+                {r.note === "igcse" ? <i className="font-normal text-[var(--muted2)]">not ranked</i> : r.set ? `${r.set.rank} of ${r.set.of}` : "—"} <span className={r.since ? dirClass(r.since.change, 0, changeDp(r.since)) : dirClass(null)}>{r.since ? arrowOf(r.since.change, 0, changeDp(r.since)) : ""}</span>
               </span>
             </div>
           ))}
@@ -56,7 +56,7 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
                   <Td title={r.set ? `${rankText(r.set)} ${r.set.label}` : undefined}>{igcse ? <i className="text-[var(--muted2)]">not ranked</i> : r.set ? `${r.set.rank} of ${r.set.of}` : "—"}</Td>
                   <Td>{igcse ? "—" : r.region ? `${r.region.rank.toLocaleString("en-GB")} of ${r.region.of.toLocaleString("en-GB")}` : "—"}</Td>
                   <Td>{igcse ? "—" : r.england ? `${r.england.rank.toLocaleString("en-GB")} of ${r.england.of.toLocaleString("en-GB")}` : "—"}</Td>
-                  <Td className={`font-bold ${dirClass(since?.change)}`} title={since ? `since ${periodLabel(since.from)}` : r.unit === "va" ? "Value added has two published years: no change is measured" : undefined}>
+                  <Td className={`font-bold ${since ? dirClass(since.change, 0, changeDp(since)) : dirClass(null)}`} title={since ? `since ${periodLabel(since.from)}` : r.unit === "va" ? "Value added has two published years: no change is measured" : undefined}>
                     {igcse ? "—" : fmtChange(since)}
                   </Td>
                 </tr>

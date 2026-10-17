@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 141 rules: 137 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -63,7 +63,11 @@ What a number is allowed to be. 141 rules: 137 active, 4 superseded; 22 must lif
 | R-RANKING-MEASURE | active | With a subject in focus, a national or regional ranking ranks EVERY school in the filtered population on the measure in view: the focused subject (the exact qualification at Post-16; at GCSE a rate is the focus's qualification), on entries, average points, Grade 4+ / A*–E, a band or a Grade counts selection, in the panel's year (a rate's latest from 2023/24). A school needs 5 entries (graded entries on a rate) to be ranked (R-MIN-ENTRIES; entries rank from 1); ties share a rank (R-RANK-TIES); a school its own filters exclude is placed against the population and says so. The table draws a window at real ranks -- the card the top 3 and 5 either side (one block when the school is in the top 8), full screen the top 10, 10 either side and the bottom 3; the change list is the whole population's in the same window: points and rates from 2022/23, entries from the first year with data (R-RANKING-ENTRIES-CHANGE). No subject in focus: the headline ranking, unchanged. | no | auto: rankingOnMeasure | — |
 | R-RANKING-ENTRIES-CHANGE | active | The subject ranking measures its change in entries from the first year with data (the earliest year any school in the ranking has a figure), in %; never from 2022/23. Points and rates keep 2022/23 (R-TREND-FROM-2223). The database function takes one start year, so for entries the app reads the years in its answer and asks again from the first; the app-side fallback applies the same rule (changeFrom). | no | auto: rankingEntriesChange | — |
 | R-ENTRIES-FIRST-YEAR | active | Every view that draws or measures entries (Candidates) starts at the first year with entries in the data, per phase and measure, read through one helper (years.ts entriesFirstPeriod / changeStartFor): 2020/21 for GCSE subjects, the teacher-assessed year (entry totals, no grades). Teacher's Candidates panels, the subject ranking's entries change, the Data View's 'Candidates, % change' (category and subject mode, and the set's average) and the SMT entries mix all start there. Grades and points keep R-TREND-FROM-2223 (change from 2022/23, drawn from 2021/22 with the note). Area comparisons (LA, region, England) start where the area entry totals do (2021/22). | no | auto: entriesFirstYear | — |
-| R-NO-NEGATIVE-ZERO | active | A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's true minus and '+0'; the hyphen and an unsigned zero where a view has always printed them). | no | auto: noNegativeZero | — |
+| R-ROLL-WORDS-3YR | active | Every roll or headcount direction word ('Growing', 'Shrinking', 'Steady') and every arrow or colour that words one compares the latest census year with 3 years earlier (years.ts ROLL_DIRECTION_SPAN, rollDirection); a school with fewer than 4 census years uses the longest span it has, and the (i) says so. Steady is R-FLAT-BAND: the change rounds to 0%. The (i) states the rule: 'Growing or shrinking compares this year's roll with three years ago.' The 'since' figures don't change (from the first census year), and an arrow on one follows its own figure. | no | auto: rollWords3yr | — |
+| R-SET-CHANGE-AVERAGE | active | A comparison set's '% change' is the change in the set's yearly average (each year, the average over the schools with a figure that year), from its start year to its latest: entries from the first year with entries (changeStartFor), points from the baseline year. One helper, src/lib/set-change.ts setAverageChange, in both modes of the Data View's subject area section, and for the KS2 domains' set. | no | auto: setChangeAverage | — |
+| R-MINUS-SIGN | active | No figure prints a hyphen-minus as its sign: every negative change or value prints '−' (U+2212), through src/lib/signed-delta.ts (signedDelta, signedValue). The Data View and the SMT, Admissions and group tooltips that printed '-3%' print '−3%'. | no | auto: minusSign | — |
+| R-FLAT-BAND | active | An arrowed change whose size rounds to 0 at the precision shown (under 0.5% for whole percents, under 0.05 for one decimal place) is steady: no ▲ or ▼, a '–', the zero in that view's own style, and a neutral colour. One helper beside signedDelta (flatBand, arrowed, ARROW); a view may keep a wider steady band of its own, never a narrower one. Roll direction words follow the same band. | no | auto: flatBand | — |
+| R-NO-NEGATIVE-ZERO | active | A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's '+0'; an unsigned zero where a view has always printed one; the minus is always '−': R-MINUS-SIGN). | no | auto: noNegativeZero | — |
 | R-ADM-LADDER | active | An entry point's pool for a future September is traced back through the schools holding those children now: counted from the census (full-time pupils from age 4; full- plus part-time at nursery ages) at the rung age E - (Y - P), births below age 4, ONS age-10 projections for 11+ only and off by default. Past pools (2020 to next September) are the age E-1 rung in the census a year before. Horizons: 10 years for 11+ and 16+; Reception to its last birth year (two more only with projections we don't hold). | no | auto: admLadder | — |
 | R-ADM-BIRTH-SPLIT | active | A school year runs September to August, so a pool from calendar-year births is 8/12 of year X plus 4/12 of year X-1 (X = entry year - entry age), in the LA blend; births have no sex split, so a girls' or boys' pool from births is 49% / 51% of it, labelled an estimate. | no | auto: admBirthSplit | — |
 | R-ADM-DRIFT-RANGE | active | Beyond the counted rung a pool is a range, never a single point: the set's observed year-on-year cohort ratios 2019/20-2025/26 (schools with a census in both years only; within one kind of school; handovers between kinds measured on their own), their 10th-90th percentile applied for each year still to go, so the range widens with distance. | no | auto: admDriftRange | — |
@@ -98,7 +102,7 @@ What a number is allowed to be. 141 rules: 137 active, 4 superseded; 22 must lif
 | R-ADM-VIEW-SHAPES | active | Shape and size shows the school's profile by gender, the feeders' local shape and the rivals' shapes as small multiples in the rival set's own order, with no rank, score or sort by shape. | no | auto: admViewShapes | — |
 | R-ADM-VIEW-TRENDS | active | Pool trends index the feeders' past pools and the same age across the LA and England (age_profile_aggregates: LA rows, England the sum of the nine regions) to their first common year; a year the aggregates don't hold is a gap, never filled. | no | auto: admViewTrends | — |
 | R-ADM-VIEW-MARKET | active | Market views are shares of this group: each school's pupils at the entry age over the group's total, summing to 100% in a year; ranks within the set; the whole-school rank is by total roll. | no | auto: admViewMarket | — |
-| R-ADM-VIEW-MOMENTUM | active | The momentum scatter plots each rival's change at the entry age (census, since 2022/23, %) against its whole-school headline change (points, same years); flags come only from the national thresholds, and with none loaded the view says flags are not available yet. | no | auto: admViewMomentum | — |
+| R-ADM-VIEW-MOMENTUM | active | The momentum scatter plots each rival's change at the entry age (census, %, over 3 census years: R-ROLL-WORDS-3YR) against its whole-school headline change (points, since 2022/23); flags come only from the national thresholds, and with none loaded the view says flags are not available yet. | no | auto: admViewMomentum | — |
 | R-ADM-VIEW-STRENGTHS | active | Strengths and weaknesses rank the school only among rivals with that subject area (and at least the minimum entries), show the gap to their average and its move since 2022/23, and flag Strength / Weakness by the top or bottom third (R-ADM-FLAG-STRENGTHS). | no | auto: admViewStrengths | — |
 | R-ADM-VIEW-FLAGS | active | A flag list shows each rival's momentum flags with the figures behind each one on hover, never a flag without its figures. | no | auto: admViewFlags | — |
 | R-ADM-VIEW-ACADEMIC | active | The academic panel follows the entry point: 4+ reads KS2, 11+ GCSE, 16+ Post-16; a rival with no published results or an IGCSE-heavy one is listed and not ranked, with the reason. | no | auto: admViewAcademic | — |
@@ -1032,14 +1036,78 @@ What a number is allowed to be. 141 rules: 137 active, 4 superseded; 22 must lif
 | Open issue | — |
 | Fixed | — |
 
+### R-ROLL-WORDS-3YR
+
+| Field | Content |
+| --- | --- |
+| Statement | Every roll or headcount direction word ('Growing', 'Shrinking', 'Steady') and every arrow or colour that words one compares the latest census year with 3 years earlier (years.ts ROLL_DIRECTION_SPAN, rollDirection); a school with fewer than 4 census years uses the longest span it has, and the (i) says so. Steady is R-FLAT-BAND: the change rounds to 0%. The (i) states the rule: 'Growing or shrinking compares this year's roll with three years ago.' The 'since' figures don't change (from the first census year), and an arrow on one follows its own figure. |
+| Why | Guy, 17 Oct 2026 (consistency, 1): SMT's words used 2022/23 (the results rule) on an index with a ±2-point band, Admissions' Momentum 2022/23, the groups 1, 3 or 5 years. |
+| Applies to | SMT's roll and phases words; Admissions' Momentum (x and its (i)); the groups' roll flag, map colours, schools-table trend, Growing/Shrinking counts and the group home line |
+| Enforced in | - src/catalogue/years.ts:ROLL_DIRECTION_SPAN, rollDirection, rollDirectionOfPct<br>- src/components/smt/views/Lines.tsx:RollDirectionWord<br>- src/lib/admissions/screens.ts:rivalExtras (entryBasePeriod)<br>- src/lib/groups/dash.ts:GROWING_SPAN<br>- src/components/groups/dash/GroupDashboard.tsx:flagOf<br>- src/components/groups/dash/views.tsx:map, SchoolRow<br>- src/app/api/group/home/route.ts, src/lib/groups/access-rules.ts:rollSummary |
+| Tagged at | - src/app/api/group/home/route.ts<br>- src/components/admissions/views/Momentum.tsx<br>- src/components/groups/dash/GroupDashboard.tsx<br>- src/components/groups/dash/views.tsx<br>- src/components/smt/views/Lines.tsx<br>- src/lib/admissions/screens.ts<br>- src/lib/groups/access-rules.ts<br>- src/lib/groups/dash.ts |
+| Test case | Wolverley CofE Secondary School; Pershore High (136925); The Bewdley School (135035); Chilmington Green School (149840) (135061), ks4: SMT's roll word: Wolverley 'Growing', Pershore 'Shrinking', Bewdley 'Steady' (−0.3% over 2022/23-2025/26), Chilmington Green (three census years) 'Growing' over its 2-year span; The Chase's Momentum base is 3 years before the latest census; the groups' span is 3; every roll (i) carries the sentence. [runner: rollWords3yr] |
+| Origin | Consistency (17 Oct 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SET-CHANGE-AVERAGE
+
+| Field | Content |
+| --- | --- |
+| Statement | A comparison set's '% change' is the change in the set's yearly average (each year, the average over the schools with a figure that year), from its start year to its latest: entries from the first year with entries (changeStartFor), points from the baseline year. One helper, src/lib/set-change.ts setAverageChange, in both modes of the Data View's subject area section, and for the KS2 domains' set. |
+| Why | Guy, 17 Oct 2026 (consistency, 2), matching his audit-fix call ('change in the yearly average'): category mode had used the set's summed entries, subject mode the average of each comparator's own change. |
+| Applies to | The Data View: 'Candidates, % change' and 'Results, % change' (the set's side, both modes); KS2 domains' 'Average across' |
+| Enforced in | - src/lib/set-change.ts:setAverageChange<br>- src/components/data-view/SubjectAreaSection.tsx:aggregateFamilyTrend, subjectSeriesFor<br>- src/components/data-view/Ks2DomainSection.tsx:comparisonTrend |
+| Tagged at | - src/components/data-view/Ks2DomainSection.tsx<br>- src/components/data-view/SubjectAreaSection.tsx<br>- src/lib/set-change.ts |
+| Test case | The Chase (137625), ks4, History: The Chase and its 10 nearest: subject mode (History entries) and category mode (Humanities entries) each equal a plain change in the yearly mean from the first year with entries. [runner: setChangeAverage] |
+| Origin | Consistency (17 Oct 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-MINUS-SIGN
+
+| Field | Content |
+| --- | --- |
+| Statement | No figure prints a hyphen-minus as its sign: every negative change or value prints '−' (U+2212), through src/lib/signed-delta.ts (signedDelta, signedValue). The Data View and the SMT, Admissions and group tooltips that printed '-3%' print '−3%'. |
+| Why | Guy, 17 Oct 2026 (consistency, 3). |
+| Applies to | Every signed figure |
+| Enforced in | - src/lib/signed-delta.ts:MINUS, signedDelta, signedValue<br>- src/components/smt/ui.tsx:fmt<br>- src/components/admissions/ui.tsx:fmtPct |
+| Tagged at | - src/components/smt/ui.tsx<br>- src/lib/signed-delta.test.ts<br>- src/lib/signed-delta.ts |
+| Test case | (formatters) (), ks4: −3% prints '−3%' in every style; the Data View's bars (rendered), SMT's and Admissions' percents and the flag figures print '−'; no hyphen style or hand-rolled hyphen sign is left in src. [runner: minusSign] |
+| Origin | Consistency (17 Oct 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FLAT-BAND
+
+| Field | Content |
+| --- | --- |
+| Statement | An arrowed change whose size rounds to 0 at the precision shown (under 0.5% for whole percents, under 0.05 for one decimal place) is steady: no ▲ or ▼, a '–', the zero in that view's own style, and a neutral colour. One helper beside signedDelta (flatBand, arrowed, ARROW); a view may keep a wider steady band of its own, never a narrower one. Roll direction words follow the same band. |
+| Why | Guy, 17 Oct 2026 (consistency, 4): '▼ 0%' read as a fall; SMT's Scorecard arrow and its colour used different bands. |
+| Applies to | SMT's Now, Pupils, SchoolTile, Context, Scorecard, Subjects, Areas; Admissions' entry, market, pool, academic and bars arrows; the groups' arrows and home line; the Data View's trend pill |
+| Enforced in | - src/lib/signed-delta.ts:flatBand, arrowed, ARROW<br>- src/components/smt/ui.tsx:dirClass, arrowOf, fmtChange<br>- src/components/admissions/ui.tsx:arrow |
+| Tagged at | - src/components/admissions/ui.tsx<br>- src/components/groups/dash/GroupDashboard.tsx<br>- src/components/groups/dash/views.tsx<br>- src/components/smt/ui.tsx<br>- src/components/smt/views/Lines.tsx<br>- src/lib/groups/access-rules.ts<br>- src/lib/signed-delta.test.ts<br>- src/lib/signed-delta.ts |
+| Test case | (formatters) (), ks4: −0.4% prints '– 0%' (SMT tile, the helper), −0.6% '▼ 1%'; the colour is neutral; the group home reads 'roll – 0.0%'; a +0.3% school isn't counted as growing; no old steady-bar glyph or unbanded ▲/▼ is left in src. [runner: flatBand] |
+| Origin | Consistency (17 Oct 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
 ### R-NO-NEGATIVE-ZERO
 
 | Field | Content |
 | --- | --- |
-| Statement | A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's true minus and '+0'; the hyphen and an unsigned zero where a view has always printed them). |
+| Statement | A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's '+0'; an unsigned zero where a view has always printed one; the minus is always '−': R-MINUS-SIGN). |
 | Why | Guy, 16 Oct 2026 (year rules leftovers, item 2): '−0%' reads as a fall that didn't happen. Teacher's 0.8 fix (signedDelta) hadn't reached the Data View or the other dashboards. |
 | Applies to | Every signed change or gap: Teacher, the Data View, SMT, Admissions, the group dashboards, the narrative |
-| Enforced in | - src/lib/signed-delta.ts:signedDelta, HYPHEN_SIGN, HYPHEN_SIGN_PLUS_ZERO<br>- src/lib/teacher-view-panels.ts:formatChange, formatDelta |
+| Enforced in | - src/lib/signed-delta.ts:signedDelta, UNSIGNED_ZERO, VALUE_SIGN<br>- src/lib/teacher-view-panels.ts:formatChange, formatDelta |
 | Tagged at | - src/lib/signed-delta.test.ts<br>- src/lib/signed-delta.ts |
 | Test case | (formatters) (), ks4: −0.3% prints '+0%' (Teacher), '0%' (the Data View's bars, rendered), '±0.0 pp' (SMT), '±0.0%' (Admissions); −3% stays '-3%'; no hand-rolled sign-then-toFixed is left in src. [runner: noNegativeZero] |
 | Origin | Year rules leftovers (16 Oct 2026) |
@@ -1596,7 +1664,7 @@ What a number is allowed to be. 141 rules: 137 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | The momentum scatter plots each rival's change at the entry age (census, since 2022/23, %) against its whole-school headline change (points, same years); flags come only from the national thresholds, and with none loaded the view says flags are not available yet. |
+| Statement | The momentum scatter plots each rival's change at the entry age (census, %, over 3 census years: R-ROLL-WORDS-3YR) against its whole-school headline change (points, since 2022/23); flags come only from the national thresholds, and with none loaded the view says flags are not available yet. |
 | Why | Never a guessed flag. |
 | Applies to | DV-ADM-M-MOMENTUM |
 | Enforced in | - src/components/admissions/views/Momentum.tsx<br>- src/lib/admissions/views-api.ts:rivalsView |

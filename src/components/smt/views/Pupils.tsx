@@ -16,6 +16,7 @@ import type { Pupils } from "@/lib/smt/pupils";
 import type { SmtSchool } from "../api";
 import { Td, Th, fmt } from "../ui";
 import { SizeByPhase } from "./Now";
+import { arrowed } from "@/lib/signed-delta";
 
 export const shapeName = (s: string | null) => (s ? (SHAPE_LABELS[s as ShapeLabel] ?? s) : "—");
 const inLevel = inLevelAges;
@@ -29,7 +30,7 @@ export function PupilsNow({ p, school, compact = false }: { p: Pupils; school: S
   const context = main && main.badge && main.laMean !== null && main.englandMean !== null ? `${main.badge} for ${school.laName ?? "the LA"}: ${comparisonCaption(main.total, main.laMean, school.laName, main.englandMean).replace(/^(\w)/, (m) => m.toLowerCase())}` : null;
   const tiles = [
     <Tile key="roll" label="Roll" value={fmt(n.roll, "pupils")} sub={ages} accent />,
-    <Tile key="since" label={`Since ${periodLabel(CENSUS_FIRST_PERIOD)}`} value={n.changePct === null ? "—" : `${n.changePct >= 0 ? "▲" : "▼"} ${Math.abs(n.changePct).toFixed(0)}%`} sub="whole school" />,
+    <Tile key="since" label={`Since ${periodLabel(CENSUS_FIRST_PERIOD)}`} value={n.changePct === null ? "—" : arrowed(n.changePct, (x) => `${x.toFixed(0)}%`, 0)} sub="whole school" />,
     ...(school.mixed ? [<Tile key="gb" small label="Girls · boys" value={n.girls !== null && n.boys !== null && n.girls + n.boys ? `${Math.round((n.girls / (n.girls + n.boys)) * 100)}% · ${Math.round((n.boys / (n.girls + n.boys)) * 100)}%` : "—"} sub="whole school" />] : []),
     ...(n.boarding ? [<Tile key="db" small label="Day · boarding" value={`${fmt(n.boarding.day, "pupils")} · ${fmt(n.boarding.boarders, "pupils")}`} sub="whole school" />] : []),
     ...(n.stayingOn ? [<Tile key="stay" small label={SMT_NOTES.y12Label} value={`${Math.round(n.stayingOn.pct)}%`} sub={SMT_NOTES.y12AgainstY11} />] : []),

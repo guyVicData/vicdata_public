@@ -160,7 +160,7 @@ export const METHODS_TEACHER: Record<string, ViewMethod> = {
     geography: "The school only: your subject, grade by grade.",
     years: "Every year with grades from 2021/22 (or your 'From' year) to the latest; the change is measured from 2022/23 at the earliest.",
     leftOut: ["Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share."],
-    steps: ["We take your school's entries at each grade for each year with grades.", "Each grade is one row, in grade order, with its count in each year.", "The change column is the change in entries at that grade from the change year (2022/23 or later) to the latest year, with the percentage change beneath."],
+    steps: ["We take your school's entries at each grade for each year with grades.", "Each grade is one row, in grade order, with its count in each year.", "The change column is the change in entries at that grade from the change year (2022/23 or later) to the latest year, with the percentage change beneath.", "It starts later than Candidates (which runs from the first year with entries, 2020/21) because these are grades: grade changes are measured from 2022/23, as 2021/22's grades were awarded more generously."],
     rounding: ["Counts as whole numbers; percentage change as a whole number."],
   },
   "DV-C2-CUR-DONUT": {

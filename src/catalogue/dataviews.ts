@@ -589,7 +589,7 @@ export const DATAVIEWS: Dataview[] = [
       viewType: "table",
     },
     params: ["changeFrom"],
-    titleTemplate: "[subject]'s entries at each grade: [change year] against [year], with the change",
+    titleTemplate: "[subject]'s entries at each grade, change since [change year]: [change year] against [year]",
     requires: GRADES_YEARS + " A second year is needed to measure a change.",
     renderer: "RD-YEAR-TABLE",
     host: c1cnt("trend", "Change table"),

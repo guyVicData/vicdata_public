@@ -11,7 +11,7 @@ import { MEASURE_LABEL, MEASURE_UNIT, ordinal, PEER_PLURAL, PHASE_NOUN } from "@
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
 import { reasonWords } from "@/lib/groups/dash";
-import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
+import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
 const unitOf = (m: string): Unit => (MEASURE_UNIT[m] === "pct" ? "pct" : MEASURE_UNIT[m] === "va" ? "va" : "points");
 const f = (v: number | null | undefined, m: string) => fmt(v ?? null, unitOf(m), m.startsWith("ks5_aps") ? "aps_per_entry" : undefined);
@@ -404,7 +404,7 @@ export function ProjectionPerSchool({ rows, fullscreen }: { rows: ProjectionRow[
               <Td className="max-w-[160px] truncate">{r.name}</Td>
               <Td className="text-[var(--muted2)]">{r.km} km{r.from === "saved" ? " (saved)" : ""}, ages {r.ages}</Td>
               <Td>{fmt(r.now, "pupils")}</Td>
-              <Td className={dirClass(r.pct, 1)}>{r.end === null ? "—" : `${fmt(r.end, "pupils")} by ${r.endYear} (${r.pct === null ? "—" : signedDelta(r.pct, (x) => `${Math.abs(x).toFixed(1)}%`, HYPHEN_SIGN)})`}</Td>
+              <Td className={dirClass(r.pct, 1)}>{r.end === null ? "—" : `${fmt(r.end, "pupils")} by ${r.endYear} (${r.pct === null ? "—" : signedDelta(r.pct, (x) => `${Math.abs(x).toFixed(1)}%`, UNSIGNED_ZERO)})`}</Td>
             </tr>
           ))}
         </tbody>
@@ -433,7 +433,7 @@ export function GrowingShrinking({ p }: { p: GroupPupils }): ReactNode {
           <div className="text-[11.5px] text-[var(--muted2)]">no change</div>
         </div>
       </div>
-      <div className="text-[11px] text-[var(--muted2)]">Each school&rsquo;s roll, {periodLabel(g.from)} against {periodLabel(g.from + 1)}, {g.of} schools with both years.</div>
+      <div className="text-[11px] text-[var(--muted2)]">Each school&rsquo;s roll, {periodLabel(g.to)} against {periodLabel(g.from)} (three years), {g.of} schools with both years.</div>
     </>
   );
 }
