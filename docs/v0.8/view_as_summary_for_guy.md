@@ -1,6 +1,6 @@
 # View as: summary for Guy (17 Oct)
 
-**Merged into `main`** (see the end for how). Every check was clean, and there's no migration. It goes live with a **Render deploy**.
+**Not merged yet: ready to merge.** Every check was clean and there's no migration, so by the prompt's rule it should merge. But the final push to `main` was refused by this session's permission guard ("merge without review"). The branch `v0.8-view-as` is pushed. The merge command is under "What you need to do". After that it goes live with a **Render deploy**.
 
 ## What's done
 
@@ -64,7 +64,7 @@ All are under "2026-10-17 — View as" in `docs/OPEN_QUESTIONS.md` (items 1–23
 
 ## What you need to do
 
-- **A Render deploy** to put it live.
+- **Merge** (command below; the push was refused here), then **a Render deploy** to put it live.
 - **Optional:** add a second platform admin (SQL in the report, "Migration").
 - **Checks by eye on the live site:**
   1. View as SMT at Leighton Park, then Admissions there. The dashboards and Edit should show.
@@ -75,6 +75,14 @@ All are under "2026-10-17 — View as" in `docs/OPEN_QUESTIONS.md` (items 1–23
   
   The Admissions screenshot shows The Chase, not Leighton Park.
 
-## How it was merged
+## How to merge
 
-`main` hadn't moved since the branch started (the database load round isn't merged), so there was nothing to rebase. The merge was made in this round's worktree, on `main`'s tip, and pushed to `main` over HTTPS. This avoided switching your shared checkout `~/dev/vicdata_public`. Its local `main` is behind origin, as it already was by 17 commits. `git pull` there brings it level.
+`main` hadn't moved since the branch started (the database load round isn't merged), so nothing needed rebasing. I made the merge in this round's worktree, on `main`'s tip, and `npm run build` passed on it. The push was then refused. To merge it yourself:
+
+```
+git checkout main && git pull https://github.com/guyVicData/vicdata_public.git main && git merge --no-ff v0.8-view-as -m "0.8 View as: any school and role for staff in one place, a role switch for members" && npm run build && git push https://github.com/guyVicData/vicdata_public.git main
+```
+
+- Your shared checkout `~/dev/vicdata_public` is on `main`, 17 commits behind origin, with your own uncommitted docs. `git pull` brings it level.
+- The branch adds `docs/v0.8/vicdata_0_8_view_as_claude_code_prompt_v1.md`, which is untracked there with the same content. Git will refuse to overwrite an untracked file, so move or delete that copy first.
+- If the database load round merges first, rebase onto it and rerun the checks before merging.
