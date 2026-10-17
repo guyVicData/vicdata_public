@@ -18,7 +18,9 @@ import { RULES, ruleById, type Rule } from "../src/catalogue";
 const ROOT = path.resolve(__dirname, "..");
 for (const f of [".env.local", ".env"]) {
   const file = path.join(ROOT, f);
-  if (!process.env.VICDATA_API_URL && existsSync(file)) process.loadEnvFile(file);
+  // Keyed on the key, not the URL, so a run through scripts/rpc-proxy.mjs (VICDATA_API_URL set in the
+  // shell) still reads the key from .env; loadEnvFile never overrides a variable already set.
+  if (!process.env.VICDATA_ANON_KEY && existsSync(file)) process.loadEnvFile(file);
 }
 
 // Lib modules, loaded after the env (supabase.ts reads it at call time; loaded lazily so
