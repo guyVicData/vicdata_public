@@ -18,7 +18,7 @@ The scripted, read-only way in is the **peek**: add `?lookAs=…&as=…&peek=1` 
 | Teacher (Post-16) | `/teacher/ks5?lookAs=110110&as=teacher&peek=1` |
 | SMT | `/teacher/smt?lookAs=110110&as=smt&peek=1` (also `/teacher/smt/academic`, `/pupils`, `/context`) |
 | Admissions | `/teacher/admissions?lookAs=110110&as=admissions&peek=1` |
-| School-Admin | `/teacher?lookAs=110110&as=school_admin&peek=1` |
+| School-Admin | `/teacher/smt?lookAs=110110&as=school_admin&peek=1` or `/teacher/admissions?…&as=school_admin&peek=1` (the role homes, People and Teams aren't peeked: use View as) |
 | Head office | `/teacher/group?lookAs={group account id}&as=head_office&peek=1`; a member school's SMT as that head office: `/teacher/smt?headOffice={urn}&lookAs={group account id}&as=head_office&peek=1` |
 
 `as` is one of `teacher`, `smt`, `admissions`, `school_admin`, `head_office`. A role the page isn't for gets what that role would get (a Teacher peek at SMT is refused). Group account ids are on Platform → Group accounts.
