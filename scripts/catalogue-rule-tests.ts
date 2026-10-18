@@ -2803,6 +2803,25 @@ const RUNNERS: Record<string, Runner> = {
     const pass = m.status === "ready" && m.rivals === c.set.urns.length && m.setRivals === c.set.label && Math.abs((latest?.value ?? NaN) - share) < 1e-6 && html.includes(`against ${c.set.label}`);
     return { pass, detail: fmt({ rivals: m.status === "ready" ? m.rivals : null, set: c.set.urns.length, share: round(latest?.value ?? null, 2), recomputed: round(share, 2), titled: html.includes(`against ${c.set.label}`) }) };
   },
+  async feedbackPage() {
+    const { feedbackPayload } = await import("../src/components/feedback/FeedbackWindow");
+    const { feedbackRow } = await import("../src/lib/feedback-server");
+    const st = await import("../src/components/feedback/store");
+    const { pageKey, feedbackColour, scopeKey } = await import("../src/lib/view-ref");
+    const c = await smtCase("110110");
+    const surface = { product: "smt" as const, dashboard: { id: "vicdata.smt.overview", name: "SMT Overview", versionId: null }, scope: { kind: "school" as const, urn: "110110", name: c.school.name }, role: "smt", viewAs: true, peek: false, noteScope: "110110", state: { set: c.set.label, level: "whole" } };
+    st.resetFeedbackStore({ status: "ready", allowed: true, items: [] });
+    st.openPageFeedback(surface);
+    const t = st.feedbackSnapshot().target!;
+    const p = feedbackPayload(surface, t, { kinds: ["layout"], importance: null, scope: null, applies: null, where: [], area: ["set_bar"], saw: "", expected: "", text: "The set bar" }, { path: "/teacher/smt", search: "", width: 1440, theme: "dark" });
+    const row = feedbackRow(p, "test");
+    const refused = "error" in feedbackRow({ ...p, panel_id: "p" }, "test");
+    st.addOwnItem({ id: "x", number: 1, created_at: "", view_key: t.viewKey, school_urn: "110110", school_name: null, group_id: null, group_name: null, status: "new", looks_good: false, kinds: ["layout"], has_text: true, excerpt: "" });
+    const colour = feedbackColour(st.marksFor(st.feedbackSnapshot().items, pageKey("vicdata.smt.overview")), scopeKey(surface.scope));
+    st.closeFeedback();
+    const pass = t.page === true && t.viewKey === "page:vicdata.smt.overview" && "row" in row && row.row.panel_id === null && JSON.stringify(row.row.area) === '["set_bar"]' && row.row.view_as === true && refused && colour === "open";
+    return { pass, detail: fmt({ key: t.viewKey, panel: "row" in row ? String(row.row.panel_id) : "-", area: "row" in row ? JSON.stringify(row.row.area) : "-", shapeHeld: refused, colour }) + " (the database half: supabase/tests/v08_feedback_page_pglite.mjs)" };
+  },
 };
 
 // --------------------------------------------------------------------------- main

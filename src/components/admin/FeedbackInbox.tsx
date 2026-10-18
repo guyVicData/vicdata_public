@@ -18,6 +18,7 @@ import { DASHBOARDS } from "@/catalogue/dashboards";
 import { dataviewById } from "@/catalogue/dataviews";
 import {
   FEEDBACK_APPLIES,
+  FEEDBACK_AREAS,
   FEEDBACK_IMPORTANCE,
   FEEDBACK_KINDS,
   FEEDBACK_PRIORITIES,
@@ -27,6 +28,8 @@ import {
   FEEDBACK_TYPES,
   FEEDBACK_TYPE_LABEL,
   FEEDBACK_WHERE,
+  isPageKey,
+  pageKey,
   feedbackOpenHref,
   parseFeedbackNumber,
   type FeedbackStatus,
@@ -56,6 +59,8 @@ export type TriageRow = {
   dataview_id: string | null;
   view_label: string | null;
   view_key: string;
+  // 0.8 SMT feedback round 2 (section 6): a page item's areas (absent before the migration is applied).
+  area?: string[];
   state: Record<string, unknown>;
   page_path: string | null;
   page_query: string | null;
@@ -99,16 +104,21 @@ async function api(path: string, init?: RequestInit) {
   return { ok: res.ok, json };
 }
 
+/** Section 6: an item about a whole page (no panel; its key "page:…"). */
+export const isPageItem = (r: Pick<TriageRow, "panel_id" | "view_key">) => !r.panel_id || isPageKey(r.view_key);
+const areasOf = (r: Pick<TriageRow, "area">) => (r.area ?? []).map((a) => labelOf(FEEDBACK_AREAS, a)).join(", ");
+
 /** One item as Markdown, for the to-do list (docs/FEEDBACK.md). */
 export function itemMarkdown(r: TriageRow, origin = ""): string {
   const triage = [r.type ? FEEDBACK_TYPE_LABEL[r.type as keyof typeof FEEDBACK_TYPE_LABEL] : null, r.priority, `${FEEDBACK_STATUS_LABEL[r.status]}${r.status === "planned" && r.planned_version ? ` (${r.planned_version})` : ""}${r.status === "done" && r.resolved_commit ? ` (${r.resolved_commit})` : ""}`].filter(Boolean).join(" · ");
-  const hints = [r.kinds.map((k) => labelOf(FEEDBACK_KINDS, k)).join(", "), labelOf(FEEDBACK_IMPORTANCE, r.importance), labelOf(FEEDBACK_SCOPE, r.scope), labelOf(FEEDBACK_APPLIES, r.applies_to), r.where_in_view.length ? `where: ${r.where_in_view.map((w) => labelOf(FEEDBACK_WHERE, w)).join(", ")}` : ""].filter(Boolean).join(" · ");
+  const hints = [r.kinds.map((k) => labelOf(FEEDBACK_KINDS, k)).join(", "), labelOf(FEEDBACK_IMPORTANCE, r.importance), labelOf(FEEDBACK_SCOPE, r.scope), labelOf(FEEDBACK_APPLIES, r.applies_to), r.where_in_view.length ? `where: ${r.where_in_view.map((w) => labelOf(FEEDBACK_WHERE, w)).join(", ")}` : "", areasOf(r) ? `area: ${areasOf(r)}` : ""].filter(Boolean).join(" · ");
   const state = Object.entries(r.state ?? {}).filter(([, v]) => v !== null && v !== "").map(([k, v]) => `${k}=${String(v)}`).join(", ");
   const href = feedbackOpenHref(r);
+  const page = isPageItem(r);
   const lines = [
     `### ${r.ref} · ${triage}`,
     `- **When:** ${r.created_london} · ${r.author_name}${r.view_as ? ` (View as ${r.role ?? ""})` : ""} · ${r.device ?? ""}${r.theme ? `, ${r.theme}` : ""} · app ${r.app_version ?? "?"}`,
-    `- **Where:** ${r.product} · ${r.dashboard_name ?? r.dashboard_id} › ${r.panel_name ? `${r.panel_name} › ` : ""}${r.view_label ?? r.view_instance_id ?? ""}${r.dataview_id ? ` (${r.dataview_id})` : ""} · ${r.school_or_group ?? ""} (${r.school_urn ?? r.group_id ?? ""})`,
+    `- **Where:** ${r.product} · ${r.dashboard_name ?? r.dashboard_id} › ${page ? "Page" : `${r.panel_name ? `${r.panel_name} › ` : ""}${r.view_label ?? r.view_instance_id ?? ""}${r.dataview_id ? ` (${r.dataview_id})` : ""}`} · ${r.school_or_group ?? ""} (${r.school_urn ?? r.group_id ?? ""})`,
     state ? `- **State:** ${state}` : "",
     hints ? `- **Author's hints:** ${hints}` : "",
     r.saw || r.expected ? `- **Figure:** I see ${r.saw ?? "?"} · I expected ${r.expected ?? "?"}` : "",
@@ -149,8 +159,9 @@ export function FeedbackInboxScreen() {
   return <Inbox />;
 }
 
-type Filters = { status: string[]; type: string; priority: string; product: string; dashboard: string; school: string; author: string; hideLooksGood: boolean; q: string };
-const NO_FILTERS: Filters = { status: ["new", "triaged", "planned"], type: "", priority: "", product: "", dashboard: "", school: "", author: "", hideLooksGood: false, q: "" };
+// `kind`: section 6's page items, or view items, or both.
+type Filters = { status: string[]; type: string; priority: string; product: string; dashboard: string; school: string; author: string; hideLooksGood: boolean; q: string; kind: string };
+const NO_FILTERS: Filters = { status: ["new", "triaged", "planned"], type: "", priority: "", product: "", dashboard: "", school: "", author: "", hideLooksGood: false, q: "", kind: "" };
 
 function Inbox() {
   const [theme] = useTeacherTheme();
@@ -204,6 +215,7 @@ function Inbox() {
         (!filters.school || (r.school_urn ?? r.group_id) === filters.school) &&
         (!filters.author || r.author_id === filters.author) &&
         (!filters.hideLooksGood || r.is_open || !r.looks_good) &&
+        (!filters.kind || (filters.kind === "page") === isPageItem(r)) &&
         (!q || n !== null || `${r.body} ${r.view_label} ${r.dashboard_name} ${r.school_or_group} ${r.triage_note ?? ""}`.toLowerCase().includes(q)),
     );
   }, [rows, filters]);
@@ -278,6 +290,7 @@ function Inbox() {
             <Select label="Dashboard" value={filters.dashboard} onChange={(dashboard) => setFilters({ ...filters, dashboard })} options={options.dashboard} />
             <Select label="School or group" value={filters.school} onChange={(school) => setFilters({ ...filters, school })} options={options.school} />
             <Select label="Author" value={filters.author} onChange={(author) => setFilters({ ...filters, author })} options={options.author} />
+            <Select label="Items" value={filters.kind} onChange={(kind) => setFilters({ ...filters, kind })} options={[["page", "Pages"], ["view", "Views"]]} />
             <label className="flex flex-col gap-1">
               <span className={label}>Search or F-number</span>
               <input value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} className={field} placeholder="F-12, or words" />
@@ -392,7 +405,7 @@ function ItemRow({ r, picked, onPick, open, onOpen, rows, onPatch }: { r: Triage
           <div className="text-[11px]">{r.author_name}{r.view_as ? ` · View as ${r.role ?? ""}` : ""}</div>
         </td>
         <td className="p-2">
-          <div className="font-semibold">{r.view_label ?? r.view_instance_id}</div>
+          <div className="font-semibold" data-fb-row-kind={isPageItem(r) ? "page" : "view"}>{isPageItem(r) ? "Page" : (r.view_label ?? r.view_instance_id)}</div>
           <div className="text-[11px] text-[var(--muted2)]">{r.product} · {r.dashboard_name ?? r.dashboard_id}</div>
         </td>
         <td className="p-2">{r.school_or_group}</td>
@@ -439,11 +452,12 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
         <Detail k="Text">{r.body.trim() ? <span className="whitespace-pre-wrap">{r.body}</span> : r.looks_good ? "Looks good" : null}</Detail>
         <Detail k="Author's hints">{[r.kinds.map((k) => labelOf(FEEDBACK_KINDS, k)).join(", "), labelOf(FEEDBACK_IMPORTANCE, r.importance), labelOf(FEEDBACK_SCOPE, r.scope), labelOf(FEEDBACK_APPLIES, r.applies_to)].filter(Boolean).join(" · ")}</Detail>
         <Detail k="Where in the view">{r.where_in_view.map((w) => labelOf(FEEDBACK_WHERE, w)).join(", ")}</Detail>
+        <Detail k="Area">{areasOf(r) || null}</Detail>
         <Detail k="I see / I expected">{r.saw || r.expected ? `${r.saw ?? "?"} / ${r.expected ?? "?"}` : null}</Detail>
         <Detail k="Who">{`${r.author_name}${r.view_as ? ` · View as ${r.role ?? ""}` : r.role ? ` · ${r.role}` : ""}`}</Detail>
         <Detail k="School or group">{`${r.school_or_group ?? ""} (${r.school_urn ?? r.group_id ?? ""})`}</Detail>
         <Detail k="Dashboard">{`${r.dashboard_name ?? ""} · ${r.dashboard_id}${r.dashboard_version_id ? ` · version ${r.dashboard_version_id}` : " · code copy"}`}</Detail>
-        <Detail k="Panel and view">{`${r.panel_name ?? ""} ${r.panel_id ?? ""} › ${r.view_label ?? ""} ${r.view_instance_id ?? ""}${r.dataview_id ? ` (${r.dataview_id}${dvLabel ? `, ${dvLabel}` : ""})` : ""}`}</Detail>
+        <Detail k="Panel and view">{isPageItem(r) ? "Page (the whole page)" : `${r.panel_name ?? ""} ${r.panel_id ?? ""} › ${r.view_label ?? ""} ${r.view_instance_id ?? ""}${r.dataview_id ? ` (${r.dataview_id}${dvLabel ? `, ${dvLabel}` : ""})` : ""}`}</Detail>
         <Detail k="State">{Object.entries(r.state ?? {}).filter(([, v]) => v !== null && v !== "").map(([k, v]) => `${k}: ${String(v)}`).join(" · ")}</Detail>
         <Detail k="Page">{`${r.page_path ?? ""}${r.page_query ? `?${r.page_query}` : ""}`}</Detail>
         <Detail k="Device">{`${r.device ?? ""} ${r.viewport_width ?? ""}px · ${r.theme ?? ""} · app ${r.app_version ?? ""}`}</Detail>
@@ -560,25 +574,28 @@ function Coverage() {
   const known = DASHBOARDS.map((d) => ({
     id: d.id,
     name: d.name,
-    views: d.panels.flatMap((p) => p.dataviews.flatMap((v) => (v.kind === "view" ? [{ key: `${d.id}:${p.id}:${v.id}`, panel: p.name ?? p.id, label: dataviewById(v.dataview)?.label ?? v.dataview }] : []))),
+    // Section 6: the page itself first, counted apart from its views.
+    views: [{ key: pageKey(d.id), panel: "the whole page", label: "Page", page: true }, ...d.panels.flatMap((p) => p.dataviews.flatMap((v) => (v.kind === "view" ? [{ key: `${d.id}:${p.id}:${v.id}`, panel: p.name ?? p.id, label: dataviewById(v.dataview)?.label ?? v.dataview, page: false }] : [])))],
   }));
   const extra = Array.from(new Set((rows ?? []).map((r) => r.dashboard_id))).filter((id) => !known.some((k) => k.id === id));
   const dashboards = [
     ...known,
     ...extra.map((id) => {
       const mine = (rows ?? []).filter((r) => r.dashboard_id === id);
-      return { id, name: mine[0]?.dashboard_name ?? id, views: Array.from(new Map(mine.map((r) => [r.view_key, { key: r.view_key, panel: r.panel_id ?? "", label: r.view_label ?? r.view_instance_id ?? "" }])).values()) };
+      return { id, name: mine[0]?.dashboard_name ?? id, views: Array.from(new Map(mine.map((r) => [r.view_key, { key: r.view_key, panel: isPageKey(r.view_key) ? "the whole page" : (r.panel_id ?? ""), label: isPageKey(r.view_key) ? "Page" : (r.view_label ?? r.view_instance_id ?? ""), page: isPageKey(r.view_key) }])).values()) };
     }),
   ];
   const at = (key: string) => (rows ?? []).filter((r) => r.view_key === key && (!scope || r.scope_id === scope));
-  const total = dashboards.reduce((n, d) => n + d.views.length, 0);
-  const seen = dashboards.reduce((n, d) => n + d.views.filter((v) => at(v.key).length > 0).length, 0);
+  const total = dashboards.reduce((n, d) => n + d.views.filter((v) => !v.page).length, 0);
+  const seen = dashboards.reduce((n, d) => n + d.views.filter((v) => !v.page && at(v.key).length > 0).length, 0);
+  const pages = dashboards.reduce((n, d) => n + d.views.filter((v) => v.page).length, 0);
+  const pagesSeen = dashboards.reduce((n, d) => n + d.views.filter((v) => v.page && at(v.key).length > 0).length, 0);
   return (
     <section data-fb-coverage="" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-3">
         <Select label="School or group" value={scope} onChange={setScope} options={scopes} />
         <p className="text-[12px] text-[var(--muted2)]">
-          {seen} of {total} views have feedback{scope ? " at this school or group" : ""}; the rest are unseen.
+          {seen} of {total} views, and {pagesSeen} of {pages} pages, have feedback{scope ? " at this school or group" : ""}; the rest are unseen.
           <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[var(--fb-good)]" /> looks good
           <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[var(--fb-open)]" /> open
           <span className="ml-2 inline-block h-2 w-2 rounded-full border border-[var(--panel-border2)]" /> unseen

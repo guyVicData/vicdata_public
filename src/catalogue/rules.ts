@@ -2176,5 +2176,17 @@ export const RULES: Rule[] = [
     origin: "0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md)",
     status: "active",
   },
-];// Every ID a type-level template allows, checked at runtime by the unit tests.
+  {
+    id: "R-FEEDBACK-PAGE",
+    statement:
+      "Feedback can be on a whole page (section 6): \"Feedback on this page\" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window (\"This page: SMT Overview · Leighton Park School\"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as \"Page\", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views.",
+    why: "Menus, the bar, pills and layout belong to no one view; without a page item that feedback had nowhere to go but a separate document.",
+    appliesTo: "the feedback system, every page",
+    enforcedIn: ["src/components/feedback/PageFeedback.tsx", "src/components/feedback/FeedbackWindow.tsx:feedbackPayload", "src/lib/feedback-server.ts:feedbackRow", "src/components/admin/FeedbackInbox.tsx", "supabase/migrations/20261118090000_v08_feedback_page.sql", "supabase/tests/v08_feedback_page_pglite.mjs", "src/lib/smt-fb2.test.ts"],
+    testCase: { urn: "110110", school: "Leighton Park, SMT Overview in View as (unit, PGlite and browser tests)", phase: "ks5", expect: "The page item carries the full context with no panel or view and its areas; the server takes it and refuses a page key with a panel; the button turns yellow; the inbox row reads Page; in PGlite (17 checks) feedback_for_triage shows is_page and area and feedback_coverage a page row.", check: "feedbackPage" },
+    origin: "0.8 SMT feedback round 2, section 6 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v2.md)",
+    status: "active",
+  },
+];
+// Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

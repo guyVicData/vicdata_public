@@ -19,6 +19,9 @@ import { shortDate } from "@/lib/meeting-ops";
 import type { HeadOffice } from "@/lib/groups/access-rules";
 import { groupVars } from "./ui";
 import { GroupViewAsBanner } from "./GroupViewAsBanner";
+import { PageSurface } from "@/components/feedback/PageFeedback";
+import { groupSurface } from "@/components/feedback/surface";
+import { membersOf } from "@/lib/groups/access-rules";
 import { useGroupOffices, type OfficesState } from "./useGroupOffices";
 import { arrowed } from "@/lib/signed-delta";
 
@@ -186,6 +189,8 @@ function Body({ offices }: { offices: OfficesState }) {
   const d = data.status === "ready" ? data.data : null;
   return (
     <>
+      {/* 0.8 SMT feedback round 2 (section 6): feedback on the group home as a whole. */}
+      <PageSurface surface={groupSurface({ product: "home", dashboard: { id: "home:head_office", name: "Group home" }, groupId: membersOf(o), ref: o.id, name: o.name, state: {} })} />
       <div className="mt-6">
         {!offices.viewAs && name && <h1 className="text-[22px] font-bold leading-tight">{name}</h1>}
         {offices.viewAs && <h1 className="text-[22px] font-bold leading-tight">Head office</h1>}

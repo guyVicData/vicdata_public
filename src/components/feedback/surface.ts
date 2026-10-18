@@ -35,12 +35,13 @@ export function schoolSurface(o: { product: ViewProduct; dashboard: Dash; urn: s
 
 /** A head office's page: a group's dashboards. `ref` is what a peek or View as names it by (the group
  * account id, or "group:{group id}" for a group without an account). */
-export function groupSurface(o: { dashboard: Dash; groupId: string; ref: string; name: string; role?: string; state: State }): ViewSurface {
+export function groupSurface(o: { dashboard: Dash; groupId: string; ref: string; name: string; role?: string; state: State; product?: ViewProduct }): ViewSurface {
   const sp = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
   const peeking = sp?.get("peek") === "1" && sp.get("as") === "head_office";
   const viewAs = !peeking && !!viewAsGroupSnapshot();
   return {
-    product: "group",
+    // The group home is "home" (section 6); the group's dashboards are "group".
+    product: o.product ?? "group",
     dashboard: { id: o.dashboard.id, name: o.dashboard.name, versionId: o.dashboard.versionId ?? null },
     scope: { kind: "group", id: o.groupId, name: o.name, ref: o.ref },
     role: o.role ?? "head_office",

@@ -46,6 +46,25 @@ Every item has a short number, **F-12**.
 
 Authors can't edit or delete an item once sent; they add another. Nobody changes what was recorded: the database allows changes to the triage fields only. Members' items are read by platform admins only, never by their school or group. Feedback is never counted as usage.
 
+## Page items (feedback on a whole page)
+
+Since 0.8 SMT feedback round 2 (section 6; migration `20261118090000_v08_feedback_page`), an item can be about a whole page rather than one view: its menus and nav, the comparison-set bar, the level chips and pills, the layout, the banner, a home page. It goes into the same system and the same inbox.
+
+- **Where:** "Feedback on this page", in the site footer next to Edit. It is shown on every page that has views (Teacher, SMT, Admissions, the group dashboards), and on the Data View, the role homes and the group home. Only people the feedback setting lets in see it.
+- **Its colour** follows the view icon's rules: yellow while you have open page feedback, green once you've marked the page "Looks good", monochrome otherwise.
+- **What it records:** the same context as a view item, with no panel or view. `panel_id`, `view_instance_id` and `dataview_id` are empty, and `view_key` is `page:<dashboard or page id>` (for example `page:vicdata.smt.overview`, `page:home:smt`, `page:dataview`). The role homes and the group home record the product `home`; the Data View records `dataview`.
+- **The Area chip** (tick any): navigation and menus · comparison-set bar · level chips and pills · layout · banner · home page · account · other. It is stored in `area`. The other chips work as for a view, except that "Applies to: all similar" means every dashboard of this kind.
+- **In the inbox:** a page item reads "Page". The Items filter picks pages or views, and Open goes to the page with its address and state.
+- **In the two views:** `feedback_for_triage` has `area` and `is_page`, and `feedback_coverage` has `kind` (`page` or `view`), so a page counts apart from its views.
+
+```sql
+-- Open page items, newest first
+select ref, created_london, dashboard_name, school_or_group, area, kinds, body, state, page_path, page_query
+from feedback_for_triage
+where is_page and is_open
+order by created_at desc;
+```
+
 ## Reading the items (Claude, read-only)
 
 Check the project ref first (`lnhulykjlxmoneappnsp`, the app database). Then read through the two views. Never write with SQL; triage goes through the inbox.

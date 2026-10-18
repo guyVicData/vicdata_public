@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 154 rules: 150 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -162,6 +162,7 @@ What a number is allowed to be. 154 rules: 150 active, 4 superseded; 22 must lif
 | R-SMT-SET-DRIVES-OVERVIEW | active | The comparison set chosen in the bar drives every comparison on SMT Overview (Guy, 18 Oct; F-9 to F-11), and the set's name says so: the Scorecard's set ranks and market share row, The school now's ranks and size by phase, the map, the flags' set comparisons, the results trend and table (the set's middle half), the roll lines and table (the set's averages), and market share. The one exception is the Scorecard's regional and England ranks (R-SCORECARD-ROWS-BY-TYPE), which are ranks, not comparison lines. The flags' entry-year threshold stays the national one (a rule, not a comparison). | no | auto: setDrivesOverview | — |
 | R-ROLL-INDEXED-SET | active | SMT Overview's Roll, indexed (and its table) draws the school's line (day and boarding at a boarding school), the selected set's average day roll, and -- where the set has boarders -- its average boarding roll as a grey dotted line (F-11). No England or LA line. The averages are over the set's schools with a figure in every year shown, indexed from the same base year as the school's lines, under the same filters. | no | auto: rollIndexedSet | — |
 | R-MARKET-FOLLOWS-SET | active | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). | no | auto: marketFollowsSet | — |
+| R-FEEDBACK-PAGE | active | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. | no | auto: feedbackPage | — |
 
 ## Cards
 
@@ -2624,6 +2625,22 @@ What a number is allowed to be. 154 rules: 150 active, 4 superseded; 22 must lif
 | Tagged at | - src/lib/smt/overview.ts |
 | Test case | Leighton Park (110110), ks5: The rivals are exactly the set's schools; the latest share equals the school's Year 7 over the Year 7s of the school and the set (census, recomputed); the title names the set. [runner: marketFollowsSet] |
 | Origin | 0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEEDBACK-PAGE
+
+| Field | Content |
+| --- | --- |
+| Statement | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. |
+| Why | Menus, the bar, pills and layout belong to no one view; without a page item that feedback had nowhere to go but a separate document. |
+| Applies to | the feedback system, every page |
+| Enforced in | - src/components/feedback/PageFeedback.tsx<br>- src/components/feedback/FeedbackWindow.tsx:feedbackPayload<br>- src/lib/feedback-server.ts:feedbackRow<br>- src/components/admin/FeedbackInbox.tsx<br>- supabase/migrations/20261118090000_v08_feedback_page.sql<br>- supabase/tests/v08_feedback_page_pglite.mjs<br>- src/lib/smt-fb2.test.ts |
+| Tagged at | - src/components/feedback/FeedbackWindow.tsx<br>- src/components/feedback/PageFeedback.tsx<br>- src/components/feedback/store.ts<br>- src/lib/feedback-server.ts<br>- src/lib/smt-fb2.test.ts<br>- src/lib/view-ref.ts |
+| Test case | Leighton Park, SMT Overview in View as (unit, PGlite and browser tests) (110110), ks5: The page item carries the full context with no panel or view and its areas; the server takes it and refuses a page key with a panel; the button turns yellow; the inbox row reads Page; in PGlite (17 checks) feedback_for_triage shows is_page and area and feedback_coverage a page row. [runner: feedbackPage] |
+| Origin | 0.8 SMT feedback round 2, section 6 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v2.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

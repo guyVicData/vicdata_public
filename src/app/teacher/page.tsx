@@ -21,6 +21,8 @@
 // whatever the flag, that member's lens, no role switch.
 import { checkPlatformAdmin, resolveViewAs } from "@/lib/view-as";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
+import { PageSurface } from "@/components/feedback/PageFeedback";
+import { schoolSurface } from "@/components/feedback/surface";
 import { pickMembership, viewAsMembership } from "@/lib/view-as";
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -50,6 +52,8 @@ import {
 import { listMeetings } from "@/lib/meeting-store";
 import { LENS_EVENT } from "@/components/shell/RoleSwitch";
 import { shortDate } from "@/lib/meeting-ops";
+
+const HOME_NAME: Record<Lens, string> = { teacher: "Teacher home", smt: "SMT home", admissions: "Admissions home" };
 
 type Membership = {
   id: string;
@@ -218,6 +222,8 @@ export default function TeacherHomePage() {
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
       <ViewAsBanner />
+      {/* 0.8 SMT feedback round 2 (section 6): feedback on this home as a whole. */}
+      {schoolUrn && <PageSurface surface={schoolSurface({ product: "home", dashboard: { id: `home:${lens}`, name: HOME_NAME[lens] }, urn: schoolUrn, name: schoolName ?? schoolUrn, role: lens, state: { lens } })} />}
       {/* No phase switcher here (phases={[]}): the tile list below already is the phase
           picker, and a richer one than the nav's. */}
       <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />

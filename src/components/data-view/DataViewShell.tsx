@@ -8,6 +8,8 @@
 // (/account, /sets, /sets/[id]) -- there's no server-side session/middleware in this
 // codebase to gate on instead.
 
+import { PageSurface } from "@/components/feedback/PageFeedback";
+import { schoolSurface } from "@/components/feedback/surface";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -1491,6 +1493,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // layout or adding any height on top of it.
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
+      {/* 0.8 SMT feedback round 2 (section 6): feedback on the Data View as a whole. */}
+      <PageSurface surface={schoolSurface({ product: "dataview", dashboard: { id: "dataview", name: "Data View" }, urn: target.urn, name: target.name, role: "member", state: { topic: String(activeTopic) } })} />
       <TopicTabs
         schoolName={target.name}
         activeTopic={activeTopic}

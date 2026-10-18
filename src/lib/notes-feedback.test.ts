@@ -152,7 +152,7 @@ test("R-FEEDBACK-COLOURS: yellow, green, yellow wins, monochrome once done", () 
 
 // ----------------------------------------------------------------------------------- the item
 
-const FORM: FormState = { kinds: ["wrong_figure"], importance: "before_demo", scope: "this_school", applies: "this_view", where: ["figure"], saw: "62%", expected: "about 58%", text: "Chemistry's share looks high" };
+const FORM: FormState = { kinds: ["wrong_figure"], importance: "before_demo", scope: "this_school", applies: "this_view", where: ["figure"], area: [], saw: "62%", expected: "about 58%", text: "Chemistry's share looks high" };
 
 test("R-FEEDBACK-CONTEXT: the item carries every recorded field, and Open restores the address", () => {
   const p = feedbackPayload(SURFACE, { view: { panelId: "p-large", panelName: "Large view", instanceId: "v-subjects", dataview: "DV-SMT-A-SUBJECTS", label: "Subjects" }, viewKey: viewKey("vicdata.smt.academic", "p-large", "v-subjects") }, FORM, { path: "/teacher/smt/academic", search: "?level=gcse&area=sciences&fb=F-1&lookAs=1&as=smt&peek=1", width: 1440, theme: "dark" });

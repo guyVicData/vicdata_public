@@ -29,7 +29,9 @@
    (docs/vicdata_phase3_teacher_view_design_reference_v1.md). Scoped to #teacher-root
    and keyed on its own data-theme, the same way the dark variant above is, so it never
    reaches the rest of the site and the existing toggle drives it with no new mechanism. */
-#teacher-root {
+/* 0.8 SMT feedback round 2 (section 6): a feedback window opened on a page without #teacher-root (the Data
+   View) is portalled straight into <body>; it takes the same tokens. */
+#teacher-root, body > [data-feedback-window] {
   --bg: #f7f7f8; --fg: #17171b; --muted: #6b6b72; --muted2: #55555c; --muted3: #9a9aa2;
   --border: #e6e6ea; --panel-bg: #ffffff; --panel-border: #e2e2e7; --panel-border2: #d8d8dd;
   --box-bg: #f7f7f9; --source: #8d8d95;
@@ -48,7 +50,7 @@
   --note-on: #2f6fdb; --fb-open: #b7860b; --fb-good: #1f8a4c;
 }
 @media (prefers-color-scheme: dark) {
-  #teacher-root:not([data-theme="light"]) {
+  #teacher-root:not([data-theme="light"]), body > [data-feedback-window] {
     --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
     --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
     --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
