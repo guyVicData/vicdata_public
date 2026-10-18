@@ -2579,3 +2579,48 @@ This is the round for `docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_pro
 **The feedback system**
 17. **F-5, "Move to":** when the panel's rail changes, the window shows a strip ("The panel now shows Flags. This feedback is still on Map.") with a "Move to Flags" button. It never moves on its own. Moving keeps the draft (text and chips).
 18. **F-1's "dev":** `RENDER_GIT_COMMIT` is read on the server for each item, and Render sets it: F-2 to F-8 carry `9af574369ae6`. F-1 was most likely sent from a local server (the row can't say which). The version now reads "unknown" anywhere without the variable, and "dev" only under `next dev`.
+
+## 2026-10-18 — SMT feedback round 2
+
+This is the round for `docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v2.md` (F-9 to F-11, and section 6: feedback on a whole page), on `v0.8-smt-fb2`. Every call below was **decided unattended, for Guy to confirm**, and is tagged with its item. The report is `docs/v0.8/smt_fb2_report_v1.md`.
+
+**Market share (F-9)**
+1. **F-9: SMT market share follows the selected set, not Admissions' chosen set.** On SMT Overview, the rivals are the comparison set chosen in the bar, even where the school's Admissions team has chosen its own. This applies to From Admissions, its table and the Scorecard's "Market share at 11+" row. Round 1's default (Admissions' 10 nearest teaching Year 7) no longer applies on Overview.
+2. **F-9, schools without a Year 7:** a set school without a Year 7 (a sixth-form college, an 11 to 16 school's absent intake) adds nothing to the total, and the (i) says so (`SMT_NOTES.marketSet`).
+3. **F-9, Pupils:** Pupils' Market share is unchanged: Admissions' saved rivals, else its default (R-MARKET-DEFAULT-RIVALS). The round covers SMT Overview. Say if Pupils should follow the set too.
+4. **F-9, a head office:** a head office reading a school whose Admissions is private still sees the "private" note, as before. Strictly, the set's shares need no Admissions data.
+
+**Size by phase (F-10)**
+5. **F-10, the form:** Overview now shows each phase's place by size in the set ("5th largest of 11") and the set's median, not XS to XL. Fifths of a 10-school set are two schools each, which reads as more precise than it is. Pupils keeps the school page's XS to XL.
+6. **F-10, who has a sixth form:** a set school counts at 16+ only when GIAS's top age is 17 or more, as Pupils' staying on does. An 11 to 16 school's census can hold a few pupils aged 16. Without this, The Chase's set median at 16+ read 37 pupils.
+7. **F-10, the tiles:** "national rank 424th of 2,536" under The school now's results tiles became "7th of 10 in 10 nearest". Those were comparisons, not the Scorecard's explicit rank columns.
+
+**Roll, indexed (F-11)**
+8. **F-11, the average:**
+   - It is the set's mean roll each year, over its schools with a census in every year shown, indexed to 100 in the same base year as the school's lines. A school opening or closing doesn't move it.
+   - Day is a day school's whole roll, or a boarding school's day pupils.
+   - Boarding is boarders, at the schools with boarders in every year.
+   - The alternative is the mean of each school's own index, which gives a 90-pupil school the same weight as a 1,200-pupil one.
+9. **F-11, filters:** the same as the school's lines. "Day only" drops the boarding average, and "Boarding only" drops the day average. With Girls or Boys chosen, the day and boarding split isn't by sex: the census doesn't hold one, as was already true of the school's own lines.
+10. **F-11, labels:** "<short set name> average, day" and "… average, boarding"; just "… average" when neither the school nor the set has boarders. The set's lines are grey: day solid, boarding dotted.
+
+**The audit (item 4)**
+11. **Flags:** they compare the school's results with the set's middle change (already the set), its own roll (no comparison) and the entry-year threshold. The threshold stays national: it is a rule, not a comparison line.
+12. **The exception:** the Scorecard's South East and England ranks stay, as Guy asked. Every other comparison is now the set's (the report's audit table).
+
+**Tidy-ups (item 5)**
+13. **The cross-references:** the entry tiles read "Year 7 +21% since 2019/20" and "Year 12 +10% since 2019/20". Overview's (i) for Net change at 16 names this year's Leaving at 16. Pupils' (i) for Leaving at 16 names Overview's Net change at 16, for an independent school only, because only those have the tile.
+
+**Feedback on a whole page (section 6)**
+14. **Where the button lives:** in the site footer, next to Edit, on every page. It shows only once a page has said what it is:
+    - every page with views (its ViewSurfaceProvider: Teacher, SMT, Admissions, the group dashboards, custom dashboards, the meeting editor);
+    - the Data View, the role homes and the group home (PageSurface).
+15. **Products and ids:**
+    - the role homes and the group home record the product `home` (`home:teacher`, `home:smt`, `home:admissions`, `home:head_office`);
+    - the Data View records `dataview` (`dataview`);
+    - the state is the lens on a role home and the topic on the Data View;
+    - the Data View records the role "member", or the View as role.
+16. **The database holds the shape** (`feedback_items_page_shape`): an item has no panel exactly when its key is `page:…`, and only a page item carries areas. Every live item (F-1 to F-11) already fits, so the check is added validated.
+17. **"Applies to"** on a page reads "this page only" or "every dashboard of this kind". These are the same stored values as for a view.
+18. **Coverage:** the inbox lists a "Page" row for each catalogue dashboard, counted apart from its views. A home or the Data View appears once it has an item.
+19. **Before the migration is applied,** sending a page item says "Page feedback needs the database update (20261118090000_v08_feedback_page)". View feedback works as before: view items send no `area`.
