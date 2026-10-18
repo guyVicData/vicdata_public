@@ -488,11 +488,13 @@ describe("dashboard config", () => {
 });
 
 describe("notes and preferences resolve through legacy keys (S3)", () => {
-  it("every seeded panel's first note key is the key the page reads today", async () => {
+  // 0.8 notes and feedback: notes are per VIEW now ("view:{dashboard}:{panel}:{instance}", view-ref.ts), and
+  // the per-panel keys -- legacy.noteKeys -- are retired with the notes written under them (Guy's call). The
+  // legacy column keys stay load-bearing: without a plan, ColumnPanels finds a card's config panel by them.
+  it("every seeded panel's legacy keys still name the page's own column keys (notes are per view)", async () => {
     const { readFileSync } = await import("node:fs");
-    const data = readFileSync(new URL("../src/lib/teacher-view-data.ts", import.meta.url), "utf8");
-    // The page's own key shape; if it changes, this test must change with it.
-    assert.match(data, /export const panelNoteKey = \(phase: string, columnId: string, panelId: string\) => `\$\{phase\}:\$\{columnId\}:\$\{panelId\}`;/);
+    const ref = readFileSync(new URL("../src/lib/view-ref.ts", import.meta.url), "utf8");
+    assert.match(ref, /export const viewNoteKey = \(dashboardId: string, panelId: string, instanceId: string\) => `view:\$\{dashboardId\}:\$\{panelId\}:\$\{instanceId\}`;/);
     // 0.6 E: the page's body (and its column keys) moved into TeacherDashboard.
     const page = readFileSync(new URL("../src/components/dashboard-config/TeacherDashboard.tsx", import.meta.url), "utf8");
     for (const d of (await seededDashboards()).filter(teacherOnly)) {
@@ -500,9 +502,9 @@ describe("notes and preferences resolve through legacy keys (S3)", () => {
       for (const p of d.panels) {
         assert.ok(p.legacy, `${p.id} has legacy keys`);
         assert.equal(p.legacy!.noteKeys[0], `${phase}:${p.legacy!.columnKey}:${p.legacy!.panelId}`);
-        // The column key is one the page actually passes to its hosts (open panels, notes).
+        // The column key is one the page actually passes to its hosts (open panels; the views' ids).
         const key = p.legacy!.columnKey;
-        assert.ok(key === "candidates" ? /const COL1 = "candidates"/.test(page) : page.includes(`notesFor("${key}")`), `${p.id}: page uses column key ${key}`);
+        assert.ok(key === "candidates" ? /const COL1 = "candidates"/.test(page) : page.includes(`columnId="${key}"`), `${p.id}: page uses column key ${key}`);
       }
     }
   });
