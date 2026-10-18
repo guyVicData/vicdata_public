@@ -6,7 +6,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleSupabaseClient } from "../supabase";
-import { isPlatformAdmin, parsePeekHeader, PEEK_HEADER } from "../view-as";
+import { checkPlatformAdmin, noAccountGroupId, parsePeekHeader, PEEK_HEADER } from "../view-as";
 import { canSeeSmt } from "../smt/auth-rules";
 import { parseViewAsGroupCookie } from "./view-as-group";
 import { groupMembers, type GroupMember } from "./production";
@@ -54,11 +54,28 @@ export async function groupCaller(request: NextRequest): Promise<GroupCaller | N
   // The head-office View as (the one View as cookie), or a head-office peek (?lookAs={account}&as=head_office&peek=1).
   const peek = parsePeekHeader(request.headers.get(PEEK_HEADER))?.group ?? null;
   const v = parseViewAsGroupCookie(request.headers.get("cookie")) ?? peek;
-  if (v && (await isPlatformAdmin(u.supabase))) {
-    const { data, error } = await createServiceRoleSupabaseClient().from("group_accounts").select("id, group_id, display_name, status, preview_of").eq("id", v.accountId).maybeSingle<AccountRow>();
+  // 0.8 View as fixes: a check that can't be answered is "try again", never "you're not an admin" (which
+  // would show the admin their own head office, or none, in the viewed group's place).
+  const check = v ? await checkPlatformAdmin(u.supabase, 1) : "no";
+  if (check === "unknown") return NextResponse.json({ error: "Could not confirm View as. Try again." }, { status: 502 });
+  if (v && check === "yes") {
+    const sb = createServiceRoleSupabaseClient();
+    const groupId = noAccountGroupId(v.accountId);
+    const { data, error } = groupId
+      ? await sb.from("group_accounts").select("id, group_id, display_name, status, preview_of").eq("group_id", groupId).eq("preview", false).maybeSingle<AccountRow>()
+      : await sb.from("group_accounts").select("id, group_id, display_name, status, preview_of").eq("id", v.accountId).maybeSingle<AccountRow>();
     if (error && !isMissing(error)) throw error;
     // View as is read-only whatever the role: canManageAccess refuses it.
-    return { ...u, offices: data ? [{ ...toAccount(data), role: "head_office_admin" }] : [], viewAs: true };
+    if (data) return { ...u, offices: [{ ...toAccount(data), role: "head_office_admin" }], viewAs: true };
+    // 0.8 View as fixes (item 3): a group with no group account, by its production group id -- its head
+    // office as the group lookups give it (current members), read-only, with no account behind it: no
+    // grants, no Access page, no account features (noAccount). A group with no current members is none.
+    if (groupId && (await groupMembers(groupId).catch(() => [])).length) {
+      const given = (v as { name?: string }).name;
+      const name = given && given !== "the group" ? given : groupId;
+      return { ...u, offices: [{ id: v.accountId, groupId, name, status: "active", role: "head_office", noAccount: true }], viewAs: true };
+    }
+    return { ...u, offices: [], viewAs: true };
   }
   return { ...u, offices: await officesOf(u.supabase, u.userId), viewAs: false };
 }
@@ -73,6 +90,8 @@ export function officeFor(caller: GroupCaller, accountId: string | null): HeadOf
 
 /** An account's grants, history included (service role: the caller's office is already checked). */
 export async function accountGrants(accountId: string): Promise<Grant[]> {
+  // A group without an account (View as, "group:{id}") has made no grants.
+  if (noAccountGroupId(accountId)) return [];
   const { data, error } = await createServiceRoleSupabaseClient().from("group_view_grants").select("school_urn, granted_at, revoked_at, likely_member").eq("group_account_id", accountId).order("granted_at");
   if (error) {
     if (isMissing(error)) return [];
@@ -131,7 +150,10 @@ export async function headOfficeAccess(supabase: SupabaseClient, userId: string,
   const r = headOfficeSchoolAccess(offices, byGroup, urn, accounts.has(urn));
   if (!r.ok) return r;
   const schoolName = byGroup.get(membersOf(r.office))?.find((m) => m.urn === urn)?.name ?? urn;
-  const { data } = await createServiceRoleSupabaseClient().from("group_admissions_shares").select("shared, set_at").eq("school_account_id", accounts.get(urn)!.accountId).eq("group_account_id", r.office.id).maybeSingle<{ shared: boolean; set_at: string }>();
+  // A group without an account (View as) has no shares: every member school's Admissions reads as private.
+  const { data } = r.office.noAccount
+    ? { data: null }
+    : await createServiceRoleSupabaseClient().from("group_admissions_shares").select("shared, set_at").eq("school_account_id", accounts.get(urn)!.accountId).eq("group_account_id", r.office.id).maybeSingle<{ shared: boolean; set_at: string }>();
   // A share set before the school's current membership began (it left and rejoined) is a decision about
   // a different membership: not shared until the School-Admin decides again.
   const joined = byGroup.get(membersOf(r.office))?.find((m) => m.urn === urn)?.joined ?? null;

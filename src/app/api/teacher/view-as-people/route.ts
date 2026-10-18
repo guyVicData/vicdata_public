@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
-import { viewAsForRequest } from "@/lib/view-as";
+import { viewAsForRequest, ViewAsUnconfirmed } from "@/lib/view-as";
 
 // 0.6 snag 4 (B): People and Teams, READ-ONLY, for a platform admin viewing a school as its
 // School-Admin. A School-Admin reads these straight from the tables under RLS; Guy isn't a
@@ -17,7 +17,13 @@ export async function GET(request: NextRequest) {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },
   });
-  const viewAs = await viewAsForRequest(supabase, request, urn);
+  let viewAs: Awaited<ReturnType<typeof viewAsForRequest>>;
+  try {
+    viewAs = await viewAsForRequest(supabase, request, urn);
+  } catch (e) {
+    if (e instanceof ViewAsUnconfirmed) return NextResponse.json({ error: e.message }, { status: 502 });
+    throw e;
+  }
   if (!viewAs || viewAs.role !== "school_admin") return NextResponse.json({ error: "Only your School-Admin can manage people." }, { status: 403 });
 
   const svc = createServiceRoleSupabaseClient();

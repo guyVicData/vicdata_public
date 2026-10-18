@@ -33,7 +33,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { VIEW_AS_READ_ONLY, type ViewAs } from "@/lib/view-as";
 import { setEditOn, setPreviewDraft, useEditSwitch } from "@/lib/edit-mode";
 import { SwitchButton } from "@/components/edit-mode/EditSwitch";
-import { backToMe, openViewAs, useViewAsGroupNow, useViewAsNow, viewAsGroupLabel, viewAsLabel } from "./ViewAs";
+import { backToMe, openViewAs, useViewAsGroupNow, useViewAsNow, useViewAsUnconfirmed, viewAsGroupLabel, viewAsLabel } from "./ViewAs";
 
 
 const ACTION = "font-semibold text-[var(--fg)] underline-offset-2 hover:underline disabled:opacity-50";
@@ -54,6 +54,7 @@ export function ViewAsBanner({
   const viewAs = useViewAsNow();
   const group = useViewAsGroupNow();
   const edit = useEditSwitch(supabase);
+  const unconfirmed = useViewAsUnconfirmed();
   if (!viewAs && !group) return null;
 
   const editItems: ReactNode[] = edit.shown
@@ -67,6 +68,14 @@ export function ViewAsBanner({
       ]
     : [];
   const items: ReactNode[] = [
+    // 0.8 View as fixes: the platform-admin check couldn't be answered on this load. View as is kept
+    // (never the admin's own school); the data routes say "try again" until it can be.
+    ...(unconfirmed
+      ? [
+          <span key="unconfirmed" data-view-as-unconfirmed="">Couldn&rsquo;t confirm View as just now</span>,
+          <button key="retry" type="button" data-view-as-retry="" onClick={() => window.location.reload()} className={ACTION}>Retry</button>,
+        ]
+      : []),
     ...editItems,
     ...(viewAs ? [] : [<span key="ro">{VIEW_AS_READ_ONLY}</span>]),
     ...(actions ?? []),

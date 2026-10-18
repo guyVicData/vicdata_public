@@ -10,6 +10,7 @@ import {
   serializeViewAsCookie,
   VIEW_AS_COOKIE,
   viewAsForRequest,
+  ViewAsUnconfirmed,
   viewAsMembership,
   viewAsSetsKey,
   viewAsStateKey,
@@ -36,7 +37,8 @@ const req = (c?: string) => new Request("http://x/api/teacher/dashboard?urn=1376
 test("only a platform admin can be in View as (server side)", async () => {
   assert.deepEqual(await viewAsForRequest(client(true), req(cookie("137625", "teacher")), "137625"), { urn: "137625", role: "teacher", stateKey: "137625~trial~teacher" });
   assert.equal(await viewAsForRequest(client(false), req(cookie("137625", "teacher")), "137625"), null, "a planted cookie does nothing for anyone else");
-  assert.equal(await viewAsForRequest(client("error"), req(cookie("137625", "teacher")), "137625"), null, "an error reads as no");
+  // 0.8 View as fixes: an error is never "no" (which served the admin's own data); the route says try again.
+  await assert.rejects(viewAsForRequest(client("error"), req(cookie("137625", "teacher")), "137625"), ViewAsUnconfirmed, "an error is 'try again', not no");
   assert.equal(await viewAsForRequest(client(true), req(cookie("137625", "teacher")), "100053"), null, "only for the school it names");
   assert.equal(await viewAsForRequest(client(true), req(), "137625"), null);
 });

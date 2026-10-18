@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     const caller = await groupCaller(request);
     if (caller instanceof NextResponse) return caller;
     const office = officeFor(caller, request.nextUrl.searchParams.get("account"));
-    if (!office || (office.role !== "head_office_admin" && !caller.viewAs)) return NOT_FOUND();
+    // A group without a group account (View as) has no Access page.
+    if (!office || office.noAccount || (office.role !== "head_office_admin" && !caller.viewAs)) return NOT_FOUND();
     const members = await groupMembers(membersOf(office));
     const grants = await accountGrants(office.id);
     const urns = Array.from(new Set([...members.map((m) => m.urn), ...grants.map((g) => g.schoolUrn)]));
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
     const caller = await groupCaller(request);
     if (caller instanceof NextResponse) return caller;
     const office = officeFor(caller, body.account);
-    if (!office) return NOT_FOUND();
+    // A group without a group account (View as) has no Access page.
+    if (!office || office.noAccount) return NOT_FOUND();
     if (!canManageAccess(office, caller.viewAs)) return NextResponse.json({ error: caller.viewAs ? "View as: read-only" : office.status !== "active" ? "This group account is suspended." : "Only the group's head-office admin can change access." }, { status: 403 });
     const members = await groupMembers(membersOf(office));
     const accounts = await schoolAccounts(members.map((m) => m.urn));

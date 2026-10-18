@@ -9,7 +9,9 @@ import { flatBand } from "@/lib/signed-delta";
 export type GroupRole = "head_office_admin" | "head_office";
 // membersOf: whose member list the account reads -- its own group_id, or for a preview account (G6,
 // group_id 'preview:<id>') the real group it borrows. A school ever matches only group_id.
-export type GroupAccount = { id: string; groupId: string; name: string; status: "active" | "suspended"; membersOf?: string };
+// noAccount (0.8 View as fixes): a platform admin's View as of a group with no group account -- its id
+// is "group:{group_id}", it reads the group's dashboards and member schools, and has nothing else.
+export type GroupAccount = { id: string; groupId: string; name: string; status: "active" | "suspended"; membersOf?: string; noAccount?: boolean };
 export const membersOf = (a: Pick<GroupAccount, "groupId" | "membersOf">): string => a.membersOf ?? a.groupId;
 export type HeadOffice = GroupAccount & { role: GroupRole };
 export type Grant = { schoolUrn: string; grantedAt: string; revokedAt: string | null; likely: boolean };

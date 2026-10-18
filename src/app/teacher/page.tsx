@@ -19,7 +19,7 @@
 // 0.6 snag 2/4: in View as (src/lib/view-as.ts) this is the role home exactly as a real
 // single-membership member of that role at that school lands on it: config renderer
 // whatever the flag, that member's lens, no role switch.
-import { resolveViewAs } from "@/lib/view-as";
+import { checkPlatformAdmin, resolveViewAs } from "@/lib/view-as";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { pickMembership, viewAsMembership } from "@/lib/view-as";
 import { useEffect, useState } from "react";
@@ -186,6 +186,11 @@ export default function TeacherHomePage() {
           const offices = g?.ok ? ((await g.json()) as { offices: unknown[] }).offices : [];
           if (offices.length) {
             window.location.replace("/teacher/group");
+            return;
+          }
+          // 0.8 View as fixes (item 4): a platform admin needs no membership; their home is Platform.
+          if ((await checkPlatformAdmin(supabase, 1)) === "yes") {
+            window.location.replace("/platform");
             return;
           }
         }

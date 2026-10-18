@@ -138,7 +138,7 @@ export function GroupAccess() {
   const token = offices.status === "ready" ? offices.token : null;
 
   const load = useCallback(async () => {
-    if (!office || !token) return;
+    if (!office || !token || office.noAccount) return;
     const res = await fetch(`/api/group/access?account=${office.id}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
     if (!res || !res.ok) setData({ status: "error", message: res?.status === 404 ? "Not found." : "Could not load access. Try again." });
     else setData({ status: "ready", data: (await res.json()) as AccessData });
@@ -170,7 +170,10 @@ export function GroupAccess() {
       <div className="mx-auto flex max-w-[1440px] flex-col gap-[14px] px-4 py-4 sm:px-[26px] sm:py-[22px]">
         <GroupViewAsBanner className="" />
         <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
-        {offices.status === "loading" || (office && data.status === "loading") ? (
+        {office?.noAccount ? (
+          // 0.8 View as fixes (item 3): head office of a group with no group account has no Access page.
+          <p className="text-[13px] text-[var(--muted2)]" data-group-no-account="">No group account yet, so no Access: which schools let head office see their SMT dashboards comes with a group account.</p>
+        ) : offices.status === "loading" || (office && data.status === "loading") ? (
           <p className="text-sm text-[var(--muted)]">Loading…</p>
         ) : !office || data.status === "error" ? (
           <p className="text-[13px] text-[var(--muted2)]">{data.status === "error" ? data.message : "Not found."}</p>

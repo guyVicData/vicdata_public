@@ -33,6 +33,8 @@ import { isPlatformAdminCached } from "@/lib/edit-mode";
 import {
   exitViewAs,
   followViewAsAcrossTabs,
+  NO_ACCOUNT_PREFIX,
+  ownHome,
   hasViewedAs,
   listRecentViewAs,
   resolveViewAs,
@@ -44,6 +46,7 @@ import {
   VIEW_AS_EVENT,
   viewAsGroupSnapshot,
   viewAsSnapshot,
+  viewAsUnconfirmed,
   type RecentViewAs,
   type ViewAs,
   type ViewAsGroup,
@@ -82,11 +85,13 @@ export const HEAD_OFFICE_LABEL = "Head office";
 export const viewAsLabel = (t: Pick<ViewAs, "role" | "schoolName">) => `${VISIBLE_ROLE_LABELS[t.role]} · ${t.schoolName}`;
 export const viewAsGroupLabel = (g: Pick<ViewAsGroup, "name">) => `${HEAD_OFFICE_LABEL} · ${g.name}`;
 
-export function backToMe() {
+// 0.8 View as fixes (item 4): back to the admin's own VicData -- their school's home, head office's,
+// or Platform for a platform admin with no membership (ownHome), never a school they don't belong to.
+export async function backToMe() {
   exitViewAs();
+  const home = await ownHome(createBrowserSupabaseClient()).catch(() => HOME);
   // A full load on purpose (see HOME), not a client-side push.
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-  window.location.assign(HOME);
+  window.location.assign(home);
 }
 
 // ------------------------------------------------------------------ hooks
@@ -119,23 +124,47 @@ export function useViewAsGroupNow(): ViewAsGroup | null {
   );
 }
 
-// ------------------------------------------------------------------ head office's accounts
-
-type GroupAccountRow = { id: string; group_id: string; display_name: string; status: string };
-
-function useGroupAccounts(on: boolean): GroupAccountRow[] | null {
-  const [rows, setRows] = useState<GroupAccountRow[] | null>(null);
-  useEffect(() => {
-    if (!on || rows) return;
-    let live = true;
-    (async () => {
-      const { data, error } = await createBrowserSupabaseClient().rpc("platform_group_accounts_overview");
-      if (live) setRows(error ? [] : ((data as GroupAccountRow[] | null) ?? []));
-    })();
-    return () => { live = false; };
-  }, [on, rows]);
-  return rows;
+// True while this page couldn't confirm its View as (resolveViewAs): the banner offers Retry.
+export function useViewAsUnconfirmed(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      window.addEventListener(VIEW_AS_EVENT, cb);
+      return () => window.removeEventListener(VIEW_AS_EVENT, cb);
+    },
+    viewAsUnconfirmed,
+    () => false,
+  );
 }
+
+// ------------------------------------------------------------------ head office's groups
+
+// 0.8 View as fixes (item 3): every group in the groups data, searched by name or id on the server
+// (/api/platform/groups, platform admins only: the Platform page's own search), each with its group
+// account where it has one. A group without one is viewed by its group id (NO_ACCOUNT_PREFIX).
+export type GroupHit = { groupId: string; name: string; type: string; schools: number; accountId: string | null; status: string | null };
+
+function useGroupSearch(on: boolean, query: string): { hits: GroupHit[]; state: "idle" | "loading" | "ready" | "error" } {
+  const [out, setOut] = useState<{ q: string; hits: GroupHit[]; state: "loading" | "ready" | "error" } | null>(null);
+  const q = query.trim();
+  useEffect(() => {
+    if (!on || q.length < 2) return;
+    let live = true;
+    const t = setTimeout(async () => {
+      setOut({ q, hits: [], state: "loading" });
+      const { data } = await createBrowserSupabaseClient().auth.getSession();
+      const res = await fetch(`/api/platform/groups?q=${encodeURIComponent(q)}`, { headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` } }).catch(() => null);
+      if (!live) return;
+      if (!res || !res.ok) return setOut({ q, hits: [], state: "error" });
+      const body = (await res.json()) as { groups: GroupHit[] };
+      setOut({ q, hits: body.groups ?? [], state: "ready" });
+    }, 250);
+    return () => { live = false; clearTimeout(t); };
+  }, [on, q]);
+  if (!on || q.length < 2) return { hits: [], state: "idle" };
+  return out && out.q === q ? { hits: out.hits, state: out.state } : { hits: [], state: "loading" };
+}
+
+export const groupRefOf = (g: Pick<GroupHit, "groupId" | "accountId">) => g.accountId ?? `${NO_ACCOUNT_PREFIX}${g.groupId}`;
 
 // ------------------------------------------------------------------ the panel
 
@@ -162,7 +191,7 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const headOffice = role === "head_office";
-  const groups = useGroupAccounts(headOffice);
+  const search = useGroupSearch(headOffice, groupQuery);
 
   const loadRecent = useCallback(async () => {
     setRecent(await listRecentViewAs(supabase, 5).catch(() => []));
@@ -216,8 +245,6 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
     : "mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500";
   const text = compact ? "text-[12.5px]" : "text-sm";
   const link = "text-xs underline disabled:opacity-50";
-  const q = groupQuery.trim().toLowerCase();
-  const groupHits = (groups ?? []).filter((g) => !q || g.display_name.toLowerCase().includes(q) || g.group_id.toLowerCase().includes(q)).slice(0, 8);
 
   return (
     <div data-view-as-panel="" className={compact ? "flex flex-col gap-1 px-1 pb-1" : ""}>
@@ -253,25 +280,41 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
             type="search"
             value={groupQuery}
             onChange={(e) => setGroupQuery(e.target.value)}
-            placeholder="Find a group account"
-            aria-label="Find a group account"
+            placeholder="Search groups by name or id"
+            aria-label="Find a group"
+            data-view-as-group-search=""
             className={`rounded-md border border-[var(--panel-border2)] bg-transparent px-2 py-1.5 ${text}`}
           />
-          {groups === null ? (
-            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>Loading group accounts…</p>
-          ) : groups.length === 0 ? (
-            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>No group accounts yet. Platform makes them.</p>
+          {search.state === "idle" ? (
+            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>Any group: trusts, federations, Club ISS and Companies House groups. Type two letters or more.</p>
+          ) : search.state === "loading" ? (
+            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>Searching…</p>
+          ) : search.state === "error" ? (
+            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>Couldn&rsquo;t search the groups just now. Try again.</p>
+          ) : search.hits.length === 0 ? (
+            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>No group matches &ldquo;{groupQuery.trim()}&rdquo;.</p>
           ) : (
             <ul className={`${compact ? "px-1" : "mt-2"} space-y-1`}>
-              {groupHits.map((g) => (
-                <li key={g.id}>
-                  <button type="button" onClick={() => setGroup({ accountId: g.id, name: g.display_name, groupId: g.group_id })} className={`${text} ${group?.accountId === g.id ? "font-semibold underline" : "hover:underline"}`}>
-                    {g.display_name}
-                  </button>
-                  {g.status !== "active" && <span className="ml-1.5 text-xs text-neutral-500">({g.status})</span>}
-                </li>
-              ))}
+              {search.hits.map((g) => {
+                const ref = groupRefOf(g);
+                return (
+                  <li key={g.groupId}>
+                    <button type="button" data-view-as-group={g.groupId} onClick={() => setGroup({ accountId: ref, name: g.name, groupId: g.groupId })} className={`${text} text-left ${group?.accountId === ref ? "font-semibold underline" : "hover:underline"}`}>
+                      {g.name}
+                    </button>
+                    <span className="ml-1.5 text-xs text-neutral-500">
+                      {g.schools} {g.schools === 1 ? "school" : "schools"} &middot; {g.accountId ? (g.status && g.status !== "active" ? `account (${g.status})` : "account") : "no account yet"}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
+          )}
+          {group && (
+            <p className={`${compact ? "px-1 pt-1" : "mt-2"} ${text}`}>
+              <span className="font-medium">{group.name}</span>
+              {group.accountId.startsWith(NO_ACCOUNT_PREFIX) && <span className="text-neutral-500"> &middot; no group account yet: its dashboards, read-only</span>}
+            </p>
           )}
           <div className={`${compact ? "mt-2 px-1" : "mt-4"} flex items-center gap-3`}>
             <button
