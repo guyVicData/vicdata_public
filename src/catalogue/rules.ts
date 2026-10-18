@@ -1837,7 +1837,7 @@ export const RULES: Rule[] = [
   {
     id: "R-METHOD-PRESENT",
     statement:
-      "Every catalogue view (Teacher, Admissions, SMT; groups' views are SMT's) has a method (src/catalogue/methods.ts): the sources with their editions, read from the data where it carries them; the area; the years used and any left out, with the reason; the calculation as numbered plain-English steps; and any rounding or suppression. The footer's source (i) shows it, the steps under a collapsible \"How it is calculated\", scrolling, never cut off, on the phone too. Where the code does something the (i) didn't say (a rounding, a filter, an exclusion, double award as two entries, a small-number rule), the method says it.",
+      "Every catalogue view (Teacher, Admissions, SMT; groups' views are SMT's) has a method (src/catalogue/methods.ts): the sources with their editions, read from the data where it carries them; the area; the years used and any left out, with the reason; the calculation as numbered plain-English steps; and any rounding or suppression. The footer's source (i) shows it -- after the view's \"What this shows\" line (its caption, moved into the (i) in 0.8 notes and feedback) -- the steps under a collapsible \"How it is calculated\", scrolling, never cut off, on the phone too. Where the code does something the (i) didn't say (a rounding, a filter, an exclusion, double award as two entries, a small-number rule), the method says it.",
     why: "A standing rule from 0.8 SMT r4: every chart says exactly how it was calculated.",
     appliesTo: "Every dataview",
     enforcedIn: ["src/catalogue/methods.ts, methods-teacher.ts, methods-admissions.ts, methods-smt.ts", "src/components/shell/MethodNote.tsx", "src/components/shell/PanelFooter.tsx:SourceNote", "src/components/teacher/ColumnPanels.tsx:withMethod", "src/components/admissions/AdmissionsDashboard.tsx:sourceOf", "src/components/smt/SmtDashboard.tsx:sourceOf"],
@@ -1948,7 +1948,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-NOTES",
     statement:
-      "SMT's honesty wording comes from one file, SMT_NOTES (src/catalogue/notes.ts), behind each panel's caption button or in the view's own space; no SMT component words a caveat of its own.",
+      "SMT's honesty wording comes from one file, SMT_NOTES (src/catalogue/notes.ts), in each view's (i) as its \"What this shows\" line (0.8 notes and feedback: the caption button is retired) or in the view's own space; no SMT component words a caveat of its own.",
     why: "One place to read and edit what SMT says about its figures, as ADMISSIONS_NOTES is for Admissions.",
     appliesTo: "Every SMT view",
     enforcedIn: ["src/catalogue/notes.ts:SMT_NOTES, smtNote", "src/components/smt/SmtDashboard.tsx:captionOf"],
@@ -2069,7 +2069,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-RESERVED",
     statement:
-      "Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body -- \"the top 25%, middle 50% and bottom 25% of entries\" (the bands are of entries, not pupils) -- and no figure.",
+      "Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its body (0.8 notes and feedback: no longer also its caption -- the (i)'s method says it) -- \"the top 25%, middle 50% and bottom 25% of entries\" (the bands are of entries, not pupils) -- and no figure.",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-BANDS",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],

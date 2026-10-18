@@ -25,7 +25,7 @@ import { answerLine, englandShare, nextSelection, notRangeEndReason, rangeEndGra
 import { gradeCounts } from "@/lib/grade-spread";
 import type { FrameSetGrades, GradesFrame } from "@/lib/view-series/frames";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
-import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { GradeDistribution } from "./GradeDistribution";
 import { GradesIcon, IconButton, Pill, TableIcon } from "./PanelIcons";
@@ -42,7 +42,6 @@ export function GradeCountsPanels({
   colour,
   panels,
   onPanelsChange,
-  notes,
   question,
   source,
   controls,
@@ -59,7 +58,6 @@ export function GradeCountsPanels({
   colour: string;
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
-  notes?: PanelNotes;
   question: string;
   source: (span?: string) => ReactNode;
   controls?: ReactNode;
@@ -248,5 +246,5 @@ export function GradeCountsPanels({
     state: { compareFrom, changeFrom, highlight: selection ? { range, pending, onGradeClick: click, clickable, clickTitle } : { range: null, pending: null, onGradeClick: () => {}, clickable: () => false } },
   };
 
-  return <ColumnPanels columnId={columnId} host="teacher.c1.counts" panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current: { ...current, frame }, trend: { ...trend, frame } }} />;
+  return <ColumnPanels columnId={columnId} host="teacher.c1.counts" panels={panels} onPanelsChange={onPanelsChange} controls={controls} render={{ current: { ...current, frame }, trend: { ...trend, frame } }} />;
 }

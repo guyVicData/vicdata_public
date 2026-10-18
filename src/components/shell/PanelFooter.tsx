@@ -3,6 +3,11 @@
 // Teacher view, round 8 §§4-6: the three controls that live in every panel's pinned
 // footer -- the source citation, the private note, and Export.
 //
+// 0.8 notes and feedback: the footer on every panel is now, bottom left, the (i) -- which opens on the
+// view's "What this shows" line (the caption, retired as a button of its own) above the sources and
+// "How it is calculated" -- then the private note, then feedback; bottom right, the three-dots menu
+// (moved down from the header's icon row), with any flag just left of it.
+//
 // All three were previously either a printed sentence taking two lines of the panel
 // (the citation), a link under the whole column rather than the panel (the note), or
 // page-level only (print). Grouped here so a panel's metadata and its actions sit
@@ -22,7 +27,28 @@ const CopyViewDialog = lazy(() => import("@/components/copy-view/CopyViewDialog"
 // The citation, compacted from a printed sentence to an "i" that opens it (§1: Guy's
 // "1 word, pop up"). The text itself is unchanged -- this is the same `source` node
 // CardBox has always been given, just no longer printed at 9.5px under every panel.
-export function SourceNote({ children }: { children: ReactNode }) {
+// 0.8 notes and feedback (decision 1): the view's caption -- "What this shows" -- opens the (i), above the
+// sources and "How it is calculated". Dynamic captions ("Mathematics has grown the most…") are computed
+// as before and appear here the same way.
+export function WhatThisShows({ children, line = false }: { children: ReactNode; line?: boolean }) {
+  if (!children) return null;
+  if (line)
+    // Full screen and "Print this graph": the same line, printed.
+    return (
+      <p data-what-this-shows="" className="text-[11.5px] leading-snug text-[var(--muted2)]">
+        <span className="font-semibold text-[var(--muted)]">What this shows: </span>
+        {children}
+      </p>
+    );
+  return (
+    <span data-what-this-shows="" className="mb-2 block border-b border-[var(--panel-border)] pb-2">
+      <span className="block text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">What this shows</span>
+      <span className="mt-0.5 block text-[11.5px] text-[var(--fg)]">{children}</span>
+    </span>
+  );
+}
+
+export function SourceNote({ children, what }: { children: ReactNode; what?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const popRef = useRef<HTMLSpanElement | null>(null);
   const ref = useDismiss(open, () => setOpen(false), popRef);
@@ -37,7 +63,7 @@ export function SourceNote({ children }: { children: ReactNode }) {
     window.addEventListener("resize", close);
     return () => window.removeEventListener("resize", close);
   }, [open]);
-  if (!children) return null;
+  if (!children && !what) return null;
   const toggle = () => {
     if (open) return setOpen(false);
     const r = buttonRef.current?.getBoundingClientRect();
@@ -69,48 +95,10 @@ export function SourceNote({ children }: { children: ReactNode }) {
             className="fixed z-[1600] block w-[20rem] max-w-[86vw] overflow-y-auto rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-3 text-[11px] leading-relaxed text-[var(--muted2)] shadow-[0_10px_24px_rgba(0,0,0,0.3)]"
             style={{ left: anchor.left, bottom: anchor.bottom, maxHeight: anchor.maxHeight }}
           >
+            <WhatThisShows>{what}</WhatThisShows>
             {children}
           </span>,
         )}
-    </span>
-  );
-}
-
-// ------------------------------------------------------------- caption (round 2 §8)
-
-const CaptionIcon = (
-  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z" />
-    <path d="M7 8h6M7 10.5h4" />
-  </svg>
-);
-
-// The panel's one-line conclusion ("Additional Maths has grown the most…"), moved out of
-// the panel body into the footer behind a button, closed by default. A real button rather
-// than a hover tooltip: hover does not exist on the phone layout this dashboard also
-// serves, and it keeps Escape/click-outside dismissal the same as the "i" beside it.
-export function CaptionNote({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
-  if (!children) return null;
-  return (
-    <span className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        aria-label="What this shows"
-        title="What this shows"
-        className={`flex h-[17px] w-[17px] items-center justify-center rounded-[5px] ${open ? "text-[var(--fg)]" : "text-[var(--muted)]"} hover:text-[var(--fg)]`}
-      >
-        {CaptionIcon}
-      </button>
-      {open && (
-        // Opens upward, like the source note: the footer is pinned to the panel's bottom.
-        <span className="absolute bottom-6 left-0 z-30 block w-[18rem] max-w-[80vw] rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-2 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
-          {children}
-        </span>
-      )}
     </span>
   );
 }
@@ -171,12 +159,15 @@ export function PanelNote({
         onClick={openNote}
         aria-expanded={open}
         aria-label={has ? "Your private note" : "Add a private note"}
-        title={has ? "Your private note" : "Add a private note"}
+        title={disabled ? "Notes aren't kept while looking as someone (read-only)" : has ? "Your private note" : "Add a private note"}
+        data-note-button={has ? "on" : "off"}
         className={[
           variant === "rail"
             ? "flex items-center gap-1.5 rounded-md border border-[var(--panel-border2)] px-2 py-1 text-[11.5px] font-semibold"
             : "flex h-[17px] w-[17px] items-center justify-center rounded-[5px]",
-          has ? "text-[var(--accent,var(--fg))]" : "text-[var(--muted)]",
+          // 0.8 notes and feedback: in colour when there is a note (one shared token, light and dark),
+          // monochrome when not.
+          has ? "text-[var(--note-on)]" : "text-[var(--muted)]",
           disabled ? "cursor-not-allowed opacity-40" : "hover:text-[var(--fg)]",
         ].join(" ")}
       >
@@ -223,6 +214,7 @@ export const ExportIcon = (
 
 // 0.7 admissions r3 (F1): the panel menu's mark -- three dots, the icon row's first slot
 // (PanelIconRow). It replaced the footer's ExportIcon on every panel, Teacher and Admissions.
+// 0.8 notes and feedback: back in the footer, at its right.
 export const MoreIcon = (
   <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
     <circle cx="4.5" cy="10" r="1.6" />
@@ -257,6 +249,10 @@ export type PanelMenuItem = { label: string; onClick: () => void; disabled?: boo
 // #teacher-root (where the theme lives) at the button's own position, so no panel, card or
 // slide transform can clip it (0.6 snag 1 item 01). Right-aligned to the button, left-aligned
 // when that would run off the screen's left edge. Scrolling or resizing closes it.
+//
+// 0.8 notes and feedback (decision 2): the menu moved down again, to the footer's right -- so it now
+// opens ABOVE the button, as the footer's other popovers do, unless the button is too near the top of
+// the screen for that.
 const EXPORT_MENU_WIDTH = 212;
 
 // Into #teacher-root, so the theme variables still apply (Q15: the theme is an attribute on
@@ -266,13 +262,14 @@ function portalTo(node: ReactNode) {
   return createPortal(node, document.getElementById("teacher-root") ?? document.body);
 }
 const EXPORT_MENU_GAP = 6; // px between the button's bottom and the menu
+const EXPORT_MENU_ROOM = 200; // px above the button the menu needs to open upward
 
 export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => void; onCopy?: () => void; extra?: PanelMenuItem[] }) {
   const [open, setOpen] = useState(false);
   const [copying, setCopying] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const [anchor, setAnchor] = useState<{ left: number; top: number; align: "left" | "right" } | null>(null);
+  const [anchor, setAnchor] = useState<{ left: number; top: number; align: "left" | "right"; placement: "above" | "below" } | null>(null);
   const ref = useDismiss(open, () => setOpen(false), menuRef);
   useEffect(() => {
     if (!open) return;
@@ -289,7 +286,8 @@ export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => vo
     const r = buttonRef.current?.getBoundingClientRect();
     if (r) {
       const fitsRight = r.right - EXPORT_MENU_WIDTH >= 8;
-      setAnchor({ left: fitsRight ? r.right : r.left, top: r.bottom + EXPORT_MENU_GAP, align: fitsRight ? "right" : "left" });
+      const above = r.top > EXPORT_MENU_ROOM;
+      setAnchor({ left: fitsRight ? r.right : r.left, top: above ? r.top : r.bottom + EXPORT_MENU_GAP, align: fitsRight ? "right" : "left", placement: above ? "above" : "below" });
     }
     setOpen(true);
   };
@@ -309,13 +307,15 @@ export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => vo
         aria-haspopup="menu"
         aria-label="Export this panel"
         title="Export"
-        className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
+        data-panel-menu=""
+        // The footer's row is 17px tall (the (i), note and feedback icons).
+        className="flex h-[17px] w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
       >
         {MoreIcon}
       </button>
       {open && anchor && portalTo(
         <div ref={menuRef} className="fixed z-[1600] h-0 w-0" style={{ left: anchor.left, top: anchor.top }}>
-          <PanelMenu label="Export" width={EXPORT_MENU_WIDTH} align={anchor.align}>
+          <PanelMenu label="Export" width={EXPORT_MENU_WIDTH} align={anchor.align} placement={anchor.placement}>
             <MenuRow label="Print this graph" onClick={() => { setOpen(false); onPrint(); }} />
             {onCopy ? (
               <MenuRow label="Copy this view…" onClick={() => { setOpen(false); onCopy(); }} />

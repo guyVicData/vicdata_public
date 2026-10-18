@@ -2456,3 +2456,53 @@ The round for `docs/v0.8/vicdata_0_8_view_as_fixes_claude_code_prompt_v1.md`, on
 **Not changed**
 11. **SMT and Admissions with no membership** still show the platform admin the "use View as" message, not Platform. They don't fall back to a school, so they meet the rule.
 12. **The browser tests use a stub identity, not a real session.** Minting a session for Guy's account was refused by the session's safety checks. The pages, routes and data are real (the local production build, the app database read-only). Only the admin's identity, its admin check and every write are stubbed (`docs/v0.8/audit_scripts/view_as_fixes/`).
+
+## 2026-10-18 — notes and feedback
+
+This is the round for `docs/v0.8/vicdata_0_8_notes_feedback_claude_code_prompt_v1.md`, on `v0.8-notes-feedback`. Every call below was **decided unattended, for Guy to confirm**. The report is `docs/v0.8/notes_feedback_report_v1.md`.
+
+**Captions into the (i)**
+1. **Where the caption goes.** It is the (i)'s first line, headed "What this shows", above the sources and "How it is calculated". A view with a caption and no source still gets the (i). Full screen and "Print this graph" print it as "What this shows: …".
+2. **What was dropped.** I dropped only the captions whose every word the (i) already says (`docs/v0.8/notes_feedback_caption_inventory.md`):
+   - SMT: 3 views, plus the not-ready or district state of 5 more;
+   - groups: 11 views;
+   - Admissions: 5 views;
+   - Teacher: 1 caveat.
+   
+   I kept the four judgement calls (Admissions' pool map and table, and Market share's donut and map), and the groups' "this source is undated" line.
+3. **What stays on the card.** The always-visible line (`visibleCaption`) is unchanged: Admissions' LA context, the subject explorer link and Teacher's answer lines. It was never the caption button.
+
+**The footer**
+4. **The order is the same everywhere.** Bottom left: the (i), the note, feedback, then a panel's own leading control (Trend's "Trend line" toggle, which used to come first). Bottom right: any flag, then the three-dots menu. The menu now opens upward from the footer. The header keeps full screen and the reserved collapse slot only.
+5. **Full screen.** The rail keeps the note, as before, and the footer has feedback and the menu. In focus mode (SMT, Admissions, groups) the footer also has the (i).
+
+**Notes**
+6. **The key.** It is `teacher_view_notes.chart_key = "view:{dashboard}:{panel}:{view instance}"`, at the school (`school_urn`, the View as state key in View as). There is no schema change, and RLS stays as it was. A group's notes go under `grp:{group id}` (or `grp:{group id}~trial~head_office` in View as).
+7. **Without the config renderer** (an unflagged Teacher page), a card finds its ids through the code config's legacy column and panel keys. A note is therefore the same note under either renderer.
+8. **Meeting slides keep their own notes** (`meeting:{meeting}:{view}`). I didn't map them to the new scheme: a slide isn't a panel's rail, and its notes keep working as they are. Slides do get the feedback icon.
+9. **A peek can't keep notes** (it's read-only). The pencil shows, disabled, with a tooltip saying why.
+10. **Not covered:** KS2's boxes and Teacher's empty states have no rail and no dashboard config, so they have no note or feedback. The Data View doesn't use the shared footer, so it is unchanged.
+11. **The old notes migration** (`20261117090000`) deletes every row that isn't a View as set, a meeting note or a new view note. Today that is exactly the 3 old notes. A second run, even after the deploy, deletes nothing new.
+
+**Feedback**
+12. **Who can give it.** `app_settings.feedback_audience` is `admins`, `beta` or `all`. An unknown value reads as `admins`. Beta testers go in `feedback_beta_testers` (0.14). The database decides (`feedback_allowed()`): the routes ask it, and RLS enforces it on insert.
+13. **"Open" and "Looks good".** Open feedback is anything more than a bare "Looks good" that isn't done or won't do.
+    - **The icon:** yellow (open) wins over green (a "Looks good" at this school). Once every item on the view is done, the icon goes monochrome, and that includes a done "Looks good".
+    - **Coverage** still counts a done "Looks good" as checked, because it records proofing, not open work.
+14. **Who can change what.** Authors can't edit or delete an item. Platform admins change the triage fields only: a trigger refuses anything else, even through SQL. `triaged_by` and `triaged_at` are kept, and `resolved_at` is stamped when an item is marked done.
+15. **The app version** is Render's `RENDER_GIT_COMMIT`, read by the server when the item is sent (first 12 characters), and "dev" elsewhere. No build step was needed.
+16. **The window.**
+    - **Desktop:** docked right. The page and any full screen give it its room (`--fb-dock-right`), so it never covers the view. Dragging its header floats it, and it can then be resized; "Dock" puts it back.
+    - **Phone:** a bottom sheet at half the screen. Its handle pulls it up to 85% and back down to half.
+    - Esc inside it closes it, not the full screen behind.
+17. **The Open link.** It is the recorded page and address, looked at through a **peek** as the recorded school or group and role. It is read-only, never sets the View as cookie, and is never logged as usage. It adds `fbPanel` and `fbView` (the panel opens, and its rail switches to that view) and `fb` (the banner).
+    - **What the address restores** and **what only the banner shows** are listed per product in the report and in `src/lib/view-ref.ts` (`RESTORED_BY_ADDRESS`).
+18. **Coverage.** The inbox's Coverage tab lists every view of the catalogue's dashboards (Teacher, SMT, Admissions). Group dashboards, custom dashboards and meetings appear once they have feedback, because their views aren't in the catalogue.
+19. **Privacy.** Feedback is never shown to the author's school or group, never counted as usage, and holds no screenshot. The report says what the privacy page should add (0.12).
+
+**Tests**
+20. **The browser tests use the same stub identity as the View as fixes round,** for the reason given there. They also fake the feedback routes, and the notes, onboarding and preference rows, in memory. The routes and RLS are tested separately: in the unit tests against a stand-in Supabase, and in PGlite against the real migrations. Nothing was written to any database.
+
+**Guy's answers (18 Oct)**
+21. **Deleting items.** Guy's own requests to delete need only his confirmation in the next build. Anyone else's request goes into triage. Either way, the deletion is a migration in the next build, because nobody deletes through the app. This is written into `docs/FEEDBACK.md` and the report's privacy text.
+22. **How long items are kept: proposed, not yet confirmed.** Keep open items; delete items 2 years after they are closed. An item from a deleted account stays without the author's name. The clear-out query is in `docs/FEEDBACK.md`.

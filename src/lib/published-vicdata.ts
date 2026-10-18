@@ -16,8 +16,14 @@ export type PublishedLoad = { config: DashboardConfig; source: "store" | "code";
 
 const KNOWN = new Set<DataviewId>(DATAVIEWS.map((d) => d.id));
 
+// 0.8 notes and feedback: the published version each dashboard was last drawn from on this page (by
+// slug), for a feedback item to record. Absent = the copy in code (or a draft) was drawn.
+const drawnVersion = new Map<string, string>();
+export const publishedVersionIdOf = (slug: string): string | null => drawnVersion.get(slug) ?? null;
+
 export async function loadPublishedVicData(supabase: SupabaseClient, slug: string, fallback: DashboardConfig): Promise<PublishedLoad> {
   const fall = (reason: string): PublishedLoad => {
+    drawnVersion.delete(slug);
     console.warn(`[dashboards] ${slug}: drawing the copy in code (${reason})`);
     return { config: fallback, source: "code", version: null, reason };
   };
@@ -50,6 +56,7 @@ export async function loadPublishedVicData(supabase: SupabaseClient, slug: strin
     const config: DashboardConfig = { ...latestNamesInSaved(version.config), id: slug };
     const problems = validateConfig(config, KNOWN);
     if (problems.length) return fall(`invalid config: ${problems.map((p) => `${p.path} ${p.message}`).join("; ")}`);
+    drawnVersion.set(slug, row.published_version_id);
     return { config, source: "store", version: version.version };
   } catch (e) {
     return fall(`load error: ${e instanceof Error ? e.message : String(e)}`);
@@ -71,6 +78,7 @@ export async function loadDraftVicData(supabase: SupabaseClient, slug: string, f
     if (!draft?.config || draft.config.schema_version !== CONFIG_SCHEMA_VERSION) return loadPublishedVicData(supabase, slug, fallback);
     const config: DashboardConfig = { ...latestNamesInSaved(draft.config), id: slug };
     if (validateConfig(config, KNOWN).length) return loadPublishedVicData(supabase, slug, fallback);
+    drawnVersion.delete(slug);
     return { config, source: "store", version: null, reason: "draft" };
   } catch {
     return loadPublishedVicData(supabase, slug, fallback);

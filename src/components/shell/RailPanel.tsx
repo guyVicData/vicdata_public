@@ -5,8 +5,10 @@
 // CardBox (the header, PanelIconRow, the footer notes, full screen as a focus mode) with a tag line,
 // an optional span of two columns and a rail of views; on a phone the rail becomes tabs (Tabs).
 // Moved here from src/components/admissions/ui.tsx, whose Panel is a thin wrapper round it.
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { CardBox } from "./CardBox";
+import { useReopenRequest } from "@/components/feedback/reopen";
+import type { ViewRef } from "@/lib/view-ref";
 import { PanelExport, type PanelMenuItem } from "./PanelFooter";
 import * as Icons from "./PanelIcons";
 
@@ -54,7 +56,7 @@ export type PanelMenuAction = PanelMenuItem;
 
 /** One panel or large view (Admissions' and SMT's). 0.7 r3 (F1): Teacher's own CardBox -- the same header
  * and icon row (PanelIconRow: the menu, full screen, a reserved collapse slot), the same rail,
- * the same footer notes (the source "i", the caption behind its button, the flag at the right)
+ * the same footer (the (i) with the view's "What this shows", the note, feedback, the flag and menu at the right)
  * and the same full screen. Only the size differs: Admissions' rows are 470 and 330 tall, and
  * the large view spans two columns. Admissions' own header line (tag · context) is the tag, its
  * chips sit right-aligned before the icon row. */
@@ -78,6 +80,7 @@ export function RailPanel({
   id,
   onCopy,
   focusBar,
+  view,
 }: {
   tag: string;
   context?: ReactNode;
@@ -87,7 +90,7 @@ export function RailPanel({
   railActive?: string;
   onRail?: (id: string) => void;
   source?: ReactNode;
-  // The panel's honesty note, behind the footer's caption button (Teacher's CaptionNote).
+  // The panel's honesty note: the view's "What this shows", at the top of its (i) (0.8).
   caption?: ReactNode;
   // A line the panel shows without a click (CardBox's visibleCaption): the LA context, a link.
   visibleCaption?: ReactNode;
@@ -106,12 +109,26 @@ export function RailPanel({
   // panel -- the rail, the panel's chips, the notes, the menu and this bar (the entry-point chips),
   // so a member can change view and entry point without leaving it.
   focusBar?: ReactNode;
+  // 0.8 notes and feedback: the view this panel is showing (its panel and view instance ids), for the
+  // footer's private note and feedback icon. `label` defaults to the panel's title.
+  view?: (Omit<ViewRef, "label"> & { label?: string }) | null;
 }) {
+  // A feedback item's Open link for this panel: switch the rail to its view, and show the panel.
+  const reopen = useReopenRequest();
+  const panelId = view?.panelId;
+  useEffect(() => {
+    if (!panelId || !reopen.take(panelId)) return;
+    if (reopen.view && reopen.view !== railActive && rail?.some((r) => r.id === reopen.view)) onRail?.(reopen.view);
+    reopen.reveal(`[data-view-panel="${CSS.escape(panelId)}"]`);
+    // Once, when the panel first draws.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelId]);
   return (
     <section
       id={id}
       aria-label={title}
       data-adm-panel={id}
+      data-view-panel={view?.panelId}
       className="min-w-0 [&>div]:!mt-0"
       style={{ gridColumn: span === 2 ? "span 2" : undefined }}
     >
@@ -134,6 +151,7 @@ export function RailPanel({
         height={height === "auto" ? undefined : height}
         menu={({ print }) => <PanelExport onPrint={print} onCopy={onCopy} extra={menu} />}
         focus={{ bar: focusBar }}
+        view={view ? { ...view, label: view.label ?? title } : null}
       >
         {({ fullscreen }) =>
           fullscreen ? (

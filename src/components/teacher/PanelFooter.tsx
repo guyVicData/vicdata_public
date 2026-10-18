@@ -3,7 +3,7 @@
 // nothing that imports the old path has to change.
 export {
   SourceNote,
-  CaptionNote,
+  WhatThisShows,
   PanelNote,
   ExportIcon,
   MoreIcon,

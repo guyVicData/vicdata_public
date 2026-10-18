@@ -8,7 +8,6 @@
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
 import { indexBaseWords, indexedLabel } from "@/lib/index-base";
-import { flagsRuleText } from "@/lib/smt/flags-rules";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -36,6 +35,8 @@ import { ADMISSIONS_NOTES, SMT_NOTES, TREND_BASE_NOTE, smtNote } from "@/catalog
 import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel, setLatestYears } from "@/catalogue/years";
 import type { DashboardConfig, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
+import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
+import { flatState, schoolSurface } from "@/components/feedback/surface";
 import { editorWritesSettled, useEditSwitch, isPlatformAdminCached, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parseLevel, pillsFor, setPhaseOf, type SmtLevel, type SmtPhase } from "@/lib/smt/levels";
 import { SMT_ONLY_MESSAGE } from "@/lib/smt/auth-rules";
@@ -405,8 +406,19 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, pupils, context, contextMap, shade, onShade: setShade, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
   const switcher = <GroupSwitcher dashboards={DASHES.map((d) => configs[d])} activeId={config.id} onSwitch={(d) => go(DASHES.find((x) => configs[x].id === d.id) ?? "overview")} />;
 
+  // 0.8 notes and feedback: each view's private note and feedback icon, with what the page is showing.
+  const surface = schoolSurface({
+    product: "smt",
+    dashboard: { id: config.id, name: config.name },
+    urn: member.schoolUrn,
+    name: member.schoolName,
+    role: member.headOffice ? "head_office" : "smt",
+    state: { level: level.phase, area: level.area ?? null, set: set?.label ?? null, setKind: set?.kind ?? null, ...flatState(f as unknown as Record<string, unknown>, "filters"), ...(dash === "context" ? { near: area, km: viewKm ?? null } : {}) },
+  });
+
   return (
     <UsageScopeContext.Provider value={quiet ? null : usage}>
+      <ViewSurfaceProvider surface={surface} config={config}>
       <ShellPage phone={phone} rootRef={rootRef}>
         <ViewAsBanner />
         <div className={phone ? "px-4 pt-4" : undefined}>
@@ -466,6 +478,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
           </Suspense>
         )}
       </ShellPage>
+      </ViewSurfaceProvider>
     </UsageScopeContext.Provider>
   );
 }
@@ -566,6 +579,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
         focusBar={c.focusBar}
         onCopy={c.member.viewAs || c.member.access === "headOffice" || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)}
         flag={flagOf(dv, c)}
+        view={{ panelId: panel.id, panelName: panel.name ?? null, instanceId: active, dataview: dv || null }}
       >
         {({ fullscreen, height: room }) => <ViewBody dv={dv} c={c} fullscreen={fullscreen} room={room} />}
       </RailPanel>
@@ -737,7 +751,10 @@ function sourceOf(dv: string, c?: Ctx): ReactNode {
   );
 }
 
-/** The honesty note behind each panel's caption button: SMT_NOTES only (R-SMT-NOTES). */
+/** The honesty note: each view's "What this shows" line, at the top of its (i) -- SMT_NOTES only
+ * (R-SMT-NOTES). 0.8 notes and feedback: where it only repeated the (i) (the source and the method),
+ * it is dropped -- O-FLAGS, A-BANDS, C-PROJECTION, and the not-ready / district states of P-AREA,
+ * C-MAP and C-BIRTHS (docs/v0.8/notes_feedback_report_v1.md lists each). */
 function captionOf(dv: string, c: Ctx): ReactNode {
   const set = c.set.label;
   const igcse = c.school.phases.igcse ? ` ${smtNote("igcseView", { school: c.school.name })}` : "";
@@ -750,7 +767,8 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-O-SCORECARD":
       return `${SMT_NOTES.ranks} ${smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) })}${igcse}`;
     case "DV-SMT-O-FLAGS":
-      return flagsRuleText(c.school.phases);
+      // The method's steps give every clause of the rule.
+      return null;
     case "DV-SMT-O-ROLL-LINE":
     case "DV-SMT-O-ROLL-TABLE":
       return c.overview.status === "ready" ? `${c.overview.data.notes.rollIndexed} ${SMT_NOTES.rollAreaUndercount}` : null;
@@ -773,7 +791,8 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-A-MIX-TABLE":
       return SMT_NOTES.entriesMix;
     case "DV-SMT-A-BANDS":
-      return SMT_NOTES.bandReserved;
+      // The view's own body says it, and so does its method.
+      return null;
     case "DV-SMT-P-NOW":
     case "DV-SMT-P-SHAPE":
       return `${SMT_NOTES.size} ${SMT_NOTES.shapesAround} ${SMT_NOTES.levelAges}`;
@@ -788,11 +807,11 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-P-PHASES-TABLE":
       return smtNote("rollByPhase", { base: c.pupils.status === "ready" ? indexBaseWords(c.pupils.data.trends.base) : "the first year every line shares" });
     case "DV-SMT-P-AREA":
-      return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : SMT_NOTES.areaResidentsCaption;
+      return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : null;
     case "DV-SMT-C-NOW":
       return c.context.status === "ready" ? `${c.context.data.notes.children} ${c.context.data.notes.births} ${c.context.data.notes.projection} ${SMT_NOTES.wDeciles} ${smtNote("mixInfo", { radius: c.context.data.radius })} ${SMT_NOTES.fsmInfo}` : null;
     case "DV-SMT-C-MAP":
-      return c.contextMap.status === "ready" && c.contextMap.data.state === "lsoa" && c.context.status === "ready" && c.context.data.area === "around" ? `${SMT_NOTES.mapNeighbourhoods}. ${smtNote("mapRing", { radius: c.contextMap.data.radius, ring: `${c.contextMap.data.ringKm} km` })} ${SMT_NOTES.wDeciles}` : SMT_NOTES.shadeByDistrict;
+      return c.contextMap.status === "ready" && c.contextMap.data.state === "lsoa" && c.context.status === "ready" && c.context.data.area === "around" ? `${SMT_NOTES.mapNeighbourhoods}. ${smtNote("mapRing", { radius: c.contextMap.data.radius, ring: `${c.contextMap.data.ringKm} km` })} ${SMT_NOTES.wDeciles}` : null;
     case "DV-SMT-C-BYAGE":
     case "DV-SMT-C-AGES":
       return c.context.status === "ready" ? `${c.context.data.notes.popByAge} ${smtNote("wResidents", { radius: c.context.data.radius })}` : null;
@@ -801,9 +820,10 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-C-BIRTHS":
     case "DV-SMT-C-BIRTHS-INDEXED":
     case "DV-SMT-C-BIRTHS-TABLE":
-      return c.context.status === "ready" ? `${c.context.data.notes.births} ${c.context.data.notes.projection}` : SMT_NOTES.births;
+      return c.context.status === "ready" ? `${c.context.data.notes.births} ${c.context.data.notes.projection}` : null;
     case "DV-SMT-C-PROJECTION":
-      return c.context.status === "ready" ? `${c.context.data.notes.population} ${c.context.data.notes.projection}` : null;
+      // Its generated method (projectionMethod) says both lines.
+      return null;
   }
   return null;
 }
@@ -1067,12 +1087,12 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
   return (
     <>
       {now && (
-        <RailPanel tag={title} title={title} height="auto" source={sourceOf(nowDv, c)} caption={captionOf(nowDv, c)} focusBar={c.focusBar}>
+        <RailPanel tag={title} title={title} height="auto" source={sourceOf(nowDv, c)} caption={captionOf(nowDv, c)} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.defaultView ?? "", dataview: nowDv || null }}>
           {({ fullscreen }) => <ViewBody dv={nowDv} c={c} fullscreen={fullscreen} />}
         </RailPanel>
       )}
       {large && (
-        <RailPanel tag={dataviewById(largeDv)?.label ?? ""} title={dataviewById(largeDv)?.label ?? ""} height="auto" source={sourceOf(largeDv, c)} caption={captionOf(largeDv, c)} chips={chipsOf(largeDv, c)} controls={<Tabs items={railOf(large)} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar}>
+        <RailPanel tag={dataviewById(largeDv)?.label ?? ""} title={dataviewById(largeDv)?.label ?? ""} height="auto" source={sourceOf(largeDv, c)} caption={captionOf(largeDv, c)} chips={chipsOf(largeDv, c)} controls={<Tabs items={railOf(large)} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
           {({ fullscreen, height }) => (
             <div className="flex min-h-[200px] flex-col gap-2">
               <ViewBody dv={largeDv} c={c} fullscreen={fullscreen} room={height} />
@@ -1081,7 +1101,7 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
         </RailPanel>
       )}
       {trendPanel && (
-        <RailPanel tag={tabLabel(trendPanel)} title={tabLabel(trendPanel)} height="auto" source={sourceOf(trendDv, c)} caption={captionOf(trendDv, c)} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: tabLabel(t), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} flag={flagOf(trendDv, c)}>
+        <RailPanel tag={tabLabel(trendPanel)} title={tabLabel(trendPanel)} height="auto" source={sourceOf(trendDv, c)} caption={captionOf(trendDv, c)} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: tabLabel(t), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} flag={flagOf(trendDv, c)} view={{ panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: trendPanel.defaultView ?? "", dataview: trendDv || null }}>
           {({ fullscreen, height }) => (
             <div className="flex min-h-[160px] flex-col gap-2">
               <ViewBody dv={trendDv} c={c} fullscreen={fullscreen} room={height} />

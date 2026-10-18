@@ -17,7 +17,7 @@ import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import { DIRECTION_ARROW, DIRECTION_WORD, ENTRIES_MEASURE, percentChange, periodsWithData, sliceFrom, trimToData, trendSentence, type PanelData, type PanelId, moversSentence, signedDelta } from "@/lib/teacher-view-panels";
-import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, DataDate, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
@@ -52,7 +52,6 @@ export function CandidatesPanels({
   periods,
   panels,
   onPanelsChange,
-  notes,
   question,
   source,
   currentLabel,
@@ -71,7 +70,6 @@ export function CandidatesPanels({
   periods: number[];
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
-  notes?: PanelNotes;
   question: string;
   source: (span?: string) => ReactNode;
   // §4: the Current tag names the column ("Candidates 2024/25") -- see SubjectPanels.
@@ -367,11 +365,8 @@ export function CandidatesPanels({
         fullscreen={fullscreen}
       />
     ) : null;
-  // Honest labelling (these are not every entry) -- in the panel's caption, behind the
-  // footer's "What this shows" button, rather than printed under the figure: micro fix
-  // Part 3, so the chart gets that height back.
-  const pointsEligibleCaveat =
-    "All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.";
+  // Honest labelling (these are not every entry) was the geography views' caption. 0.8 notes and
+  // feedback: dropped -- their (i)'s method already says it under "Left out" (methods-teacher.ts).
 
   const changeHalf: PanelRender = {
     tag: "% Change",
@@ -418,11 +413,9 @@ export function CandidatesPanels({
         </CentredOnTarget>
         </>
       ),
-    // With the geography views the caption is their caveat (the category's biggest and
-    // smallest movers are not what either view shows at GCSE any more).
-    summary: geography ? (
-      <PanelSummary>{pointsEligibleCaveat}</PanelSummary>
-    ) :
+    // With the geography views there is no caption: the category's biggest and smallest movers
+    // are not what either view shows at GCSE, and their caveat is the method's (above).
+    summary: geography ? undefined :
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
           {moversSentence({ label: best.label, printed: signedDelta(best.value!, (x) => `${Math.abs(Math.round(x))}%`) }, { label: worst.label, printed: signedDelta(worst.value!, (x) => `${Math.abs(Math.round(x))}%`) }, changeSince)}
@@ -489,7 +482,7 @@ export function CandidatesPanels({
       host="teacher.c1.candidates"
       panels={panels}
       onPanelsChange={onPanelsChange}
-      notes={notes}
+     
       // Current titles its one view itself (ViewTitle), as Trends titles each of its views;
       // the geography views carry their own heading, as before.
       render={{ current: { ...current, frame }, trend: { ...trend, frame } }}

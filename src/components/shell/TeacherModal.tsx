@@ -111,6 +111,9 @@ export function TeacherModal({
   return (
     <div
       className={`fixed inset-0 z-[1500] ${printable ? "teacher-print-target" : "print:hidden"}`}
+      // 0.8 notes and feedback: a docked feedback window (FeedbackWindow) sits beside the modal, not
+      // over it -- the modal gives it the room it takes (0 when there is none).
+      style={{ right: "var(--fb-dock-right, 0px)", bottom: "var(--fb-dock-bottom, 0px)" }}
       role="dialog"
       aria-modal="true"
       aria-label={label}

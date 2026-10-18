@@ -14,7 +14,7 @@
 import { createContext, isValidElement, useCallback, useContext, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import type { SlideConfig } from "@/catalogue/types";
 import { CardBox, FullscreenReport } from "@/components/teacher/CardBox";
-import { PanelExport, PanelNote } from "@/components/teacher/PanelFooter";
+import { PanelExport } from "@/components/teacher/PanelFooter";
 import * as PanelIcons from "@/components/teacher/PanelIcons";
 import { FEATURE_ACCENT } from "@/lib/teacher-view-theme";
 import {
@@ -290,7 +290,8 @@ function ViewSlotBox({ slot, cell }: { slot: SlideConfig["slots"][number]; cell:
         }
         source={citation ? <>Source: {citation}{pinned.year ? `, ${pinned.year}` : ""}.</> : null}
         note={note}
-        footerActions={({ fullscreen }) => <>{note && !fullscreen && <PanelNote body={note.body} onSave={note.onSave} />}</>}
+        // 0.8 notes and feedback: the slot's view, for its feedback icon (its note is the slot's own).
+        view={{ panelId: slot.id, panelName: null, instanceId: viewId, dataview: dv?.id ?? null, label: title }}
         // 0.7 admissions r3 (F1): Export in the icon row's menu, as on every panel.
         menu={({ print }) => <PanelExport onPrint={print} />}
       >

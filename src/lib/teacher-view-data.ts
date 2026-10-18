@@ -196,7 +196,11 @@ export function resetColumn(columns: ColumnState, columnId: string): ColumnState
 // been since the original Teacher-view persistence migration, with creator-only RLS. The
 // brief's check was scoped to src/components/teacher, and the note UI lived in the phase
 // page, so it read as absent. Round 8 relocates and re-keys it; it does not build it.
-export const panelNoteKey = (phase: string, columnId: string, panelId: string) => `${phase}:${columnId}:${panelId}`;
+//
+// 0.8 notes and feedback (decision 3): a note now attaches to one VIEW in a panel's rail --
+// "view:{dashboard}:{panel}:{view instance}" (src/lib/view-ref.ts viewNoteKey), read and written
+// through ViewSurfaceProvider. The per-panel keys ("ks4:candidates:trend") are gone, and so are the 3
+// notes written under them (20261117090000_v08_notes_per_view, Guy's call).
 
 // Scoped by school for the same reason onboarding is: chart_key is only a phase and a
 // card ("ks5:results"), so it does not identify a school on its own. Without the scope a

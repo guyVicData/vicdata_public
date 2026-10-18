@@ -15,6 +15,8 @@ import { ControlBar, type FocusSubject } from "@/components/shell/ControlBar";
 import { PillMenu } from "@/components/shell/PillMenu";
 import { MenuDivider, MenuRow } from "@/components/shell/PanelMenu";
 import { MenuChip } from "@/components/shell/FilterPills";
+import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
+import { groupSurface } from "@/components/feedback/surface";
 import { RailPanel, Tabs, type RailItem } from "@/components/shell/RailPanel";
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { MethodNote } from "@/components/shell/MethodNote";
@@ -278,8 +280,19 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
           ? `pupil-weighted, by phase, against ${cmp.label}`
           : `indexed, like for like, against ${cmp.label}`;
 
+  // 0.8 notes and feedback: each view's private note and feedback icon, with what the page is showing.
+  const surface = groupSurface({
+    dashboard: { id: DASH_ID[dash], name: `${GROUP_DASHES.find((x) => x.key === dash)?.label ?? dash} (groups)` },
+    groupId: d.viewer.groupId,
+    ref: d.viewer.accountId,
+    name: o.group.name,
+    role: d.viewer.as === "school" ? "school" : "head_office",
+    state: { focus: params.focus, reading: params.reading, compare: params.compare, school: params.school, weighting: average ? "average" : "pupil" },
+  });
+
   return (
     <UsageScopeContext.Provider value={quiet ? null : usage}>
+      <ViewSurfaceProvider surface={surface}>
       <ShellPage phone={phone} rootRef={rootRef}>
         <GroupViewAsBanner />
         <div className={phone ? "px-4 pt-4" : undefined}>
@@ -325,6 +338,7 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
           </>
         )}
       </ShellPage>
+      </ViewSurfaceProvider>
     </UsageScopeContext.Provider>
   );
 }
@@ -439,6 +453,7 @@ function Cell({ cell, c, height, onAverage }: { cell: CellDef; c: Ctx; height: n
       title={GROUP_VIEWS[active].label}
       focusBar={c.focusBar}
       flag={flagOf(active, c)}
+      view={{ panelId: cell.id, panelName: null, instanceId: active, dataview: active }}
     >
       {({ fullscreen, height: room }) => <ViewBody id={active} c={c} fullscreen={fullscreen} room={room} />}
     </RailPanel>
@@ -535,14 +550,21 @@ function sourceOf(id: ViewId, c: Ctx): ReactNode {
   );
 }
 
+// 0.8 notes and feedback: each view's "What this shows" line, at the top of its (i). Where it only
+// repeated the (i) it is dropped: the reading sentence on the views whose method has the READING step,
+// and Schools' table's "missing are listed" -- but an undated source's reading is kept, since the (i)
+// doesn't say this group's source is undated.
+const READING_IN_METHOD: ViewId[] = ["GRP-O-NOW", "GRP-S-NOW", "GRP-A-NOW", "GRP-P-NOW", "GRP-P-SHAPE", "GRP-O-ROLL", "GRP-O-RESULTS", "GRP-A-TREND", "GRP-A-POST16", "GRP-P-ROLL"];
 function captionOf(id: ViewId, c: Ctx): ReactNode {
   const undated = !c.o.group.sources.includes("gias_groups") && !c.o.group.sources.includes("gias");
   const reading = c.params.reading === "at_time" ? (undated ? groupNote("combinedUndated", { source: sourcesWord(c.o.group.sources) }) : GROUP_NOTES.combinedAtTime) : GROUP_NOTES.combined;
+  if (READING_IN_METHOD.includes(id)) return c.params.reading === "at_time" && undated ? reading : null;
   switch (id) {
     case "GRP-O-AGAINST":
       return `${GROUP_NOTES.comparesOnly} ${GROUP_NOTES.missingListed}${c.params.compare === "mix_matched" ? ` ${groupNote("mixMatched", { group: c.o.group.name })}` : ""}`;
     case "GRP-S-TABLE":
-      return GROUP_NOTES.missingListed;
+      // Its method says the missing schools are listed.
+      return null;
     case "GRP-O-ROLL":
       return `${reading} ${GROUP_NOTES.likeForLike} ${groupNote("comparedAgainst", { set: c.o.compare.label })}`;
     case "GRP-S-GROWING":
@@ -660,17 +682,17 @@ function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: Ce
   const trendItems: RailItem[] = layout.trends.map((t) => ({ id: t.views[0].id, label: SHORT[t.views[0].id] ?? t.views[0].label, icon: "" }));
   return (
     <>
-      <RailPanel tag={`The group now · ${periodLabel(c.o.years.census)}`} title="The group now" height="auto" source={sourceOf(now, c)} caption={captionOf(now, c)} focusBar={c.focusBar}>
+      <RailPanel tag={`The group now · ${periodLabel(c.o.years.census)}`} title="The group now" height="auto" source={sourceOf(now, c)} caption={captionOf(now, c)} focusBar={c.focusBar} view={{ panelId: layout.now[0].id, panelName: null, instanceId: now, dataview: now }}>
         {({ fullscreen }) => <ViewBody id={now} c={c} fullscreen={fullscreen} />}
       </RailPanel>
-      <RailPanel tag={GROUP_VIEWS[tab].label} title={GROUP_VIEWS[tab].label} height="auto" source={sourceOf(tab, c)} caption={captionOf(tab, c)} controls={<Tabs items={large.views.map((x) => ({ id: x.id, label: x.id === "GRP-O-JOINED" ? "Joined" : x.label, icon: x.icon }))} active={tab} onPick={(x) => setTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(tab, c)}>
+      <RailPanel tag={GROUP_VIEWS[tab].label} title={GROUP_VIEWS[tab].label} height="auto" source={sourceOf(tab, c)} caption={captionOf(tab, c)} controls={<Tabs items={large.views.map((x) => ({ id: x.id, label: x.id === "GRP-O-JOINED" ? "Joined" : x.label, icon: x.icon }))} active={tab} onPick={(x) => setTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(tab, c)} view={{ panelId: large.id, panelName: null, instanceId: tab, dataview: tab }}>
         {({ fullscreen, height }) => (
           <div className="flex min-h-[200px] flex-col gap-2">
             {tab === "GRP-O-AGAINST" && !fullscreen ? <PhoneAgainst o={c.o} /> : <ViewBody id={tab} c={c} fullscreen={fullscreen} room={height} />}
           </div>
         )}
       </RailPanel>
-      <RailPanel tag={GROUP_VIEWS[trendTab].label} title={GROUP_VIEWS[trendTab].label} height="auto" source={sourceOf(trendTab, c)} caption={captionOf(trendTab, c)} controls={<Tabs items={trendItems} active={trendTab} onPick={(x) => setTrendTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(trendTab, c)}>
+      <RailPanel tag={GROUP_VIEWS[trendTab].label} title={GROUP_VIEWS[trendTab].label} height="auto" source={sourceOf(trendTab, c)} caption={captionOf(trendTab, c)} controls={<Tabs items={trendItems} active={trendTab} onPick={(x) => setTrendTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(trendTab, c)} view={{ panelId: layout.trends.find((t) => t.views[0].id === trendTab)?.id ?? trendTab, panelName: null, instanceId: trendTab, dataview: trendTab }}>
         {({ fullscreen, height }) => (
           <div className="flex min-h-[160px] flex-col gap-2">
             <ViewBody id={trendTab} c={c} fullscreen={fullscreen} room={height} />

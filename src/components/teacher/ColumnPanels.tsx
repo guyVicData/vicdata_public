@@ -20,7 +20,7 @@ import { isValidElement, useEffect, useRef, useState, type ReactNode } from "rea
 import { CardBox } from "./CardBox";
 import { PillRowSpacer } from "./PillMenu";
 import { ChevronDown, IconButton } from "./PanelIcons";
-import { PanelExport, PanelNote } from "./PanelFooter";
+import { PanelExport } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
 import { ActiveViewContext, usePlanColumn } from "@/components/dashboard-config/plan";
 import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
@@ -38,16 +38,16 @@ import { instanceRail, isPresetInstance, liveOwnView, ownDefault, shownInstance,
 import { trendNoteFor, specYears } from "@/catalogue/notes";
 import type { ViewSpec } from "@/catalogue/viewspec";
 import { MethodNote } from "@/components/shell/MethodNote";
+import { useViewSurface } from "@/components/feedback/ViewSurface";
+import { useReopenRequest } from "@/components/feedback/reopen";
+import type { ViewRef } from "@/lib/view-ref";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
 
-// Round 8 §6: one private note per person per panel. The page owns the school and the
-// Supabase client, so it supplies the reader and the writer and this only routes them.
-export type PanelNotes = {
-  bodyFor: (panelId: PanelId) => string | null;
-  onSave: (panelId: PanelId, body: string) => Promise<void> | void;
-};
+// Round 8 §6 kept one private note per person per panel, routed through here from the page. 0.8 notes
+// and feedback: a note now belongs to one VIEW in a panel's rail -- each card says which view it is
+// showing (`view` below) and CardBox takes that view's note from the page's ViewSurfaceProvider.
 
 export type PanelRender = {
   // The pill at the top-left of the panel: "Current — 2024/25", "Candidates — 2021/22 to
@@ -141,7 +141,6 @@ export function ColumnPanels({
   panels,
   onPanelsChange,
   controls,
-  notes,
   render,
 }: {
   columnId: string;
@@ -153,9 +152,6 @@ export function ColumnPanels({
   // The column's own data controls -- Results' measure pill, Context's and Comparisons'
   // pills. They sit under the card header, above the panels.
   controls?: ReactNode;
-  // Round 8 §6: the private note, one per person per PANEL. Owned by the page, which holds
-  // the school and the Supabase client; this just gives each panel its own slot.
-  notes?: PanelNotes;
   render: Partial<Record<PanelId, PanelRender>>;
 }) {
   // VicData 0.6: under ?renderer=config the dashboard's config decides the rows -- their
@@ -185,6 +181,10 @@ export function ColumnPanels({
   const chooseOwn = (panelId: string) => (id: string | null) => setOwnChosen((cur) => (cur[panelId] === id ? cur : { ...cur, [panelId]: id }));
   const stateOf = (cfg: PanelConfig): VariantState | null => (planned && page ? panelState(planned.plan.config, cfg, page) : null);
   const pendingDefaults: { key: string; first: RailEntry | null; off: RailEntry | null; settled: boolean; own?: { panel: string; id: string; entry: RailEntry | null } }[] = [];
+  // 0.8 notes and feedback: a feedback item's Open link names the panel and view to open (?fbPanel=,
+  // ?fbView=): the panel is opened and its rail switched to that view, once.
+  const reopen = useReopenRequest();
+  const reopenHits: { panelId: string; open: boolean; openIt: () => void; entry: RailEntry | null }[] = [];
   if (planned && host) {
     const seen = new Set<PanelId>();
     for (const { row, panel: cfg } of planned.column.rows) {
@@ -195,6 +195,14 @@ export function ColumnPanels({
       seen.add(id);
       const entries = railEntries(raw.actions, host, id);
       const state = stateOf(cfg);
+      // 0.8 notes and feedback: an Open link for a view in this panel -- open the panel, then switch its
+      // rail to that view (acted on below, once).
+      if (reopen.panel === cfg.id) {
+        const wanted = cfg.dataviews.find((v) => v.id === reopen.view);
+        const wantedDv = wanted && wanted.kind === "view" ? wanted.dataview : null;
+        const independent = planned.plan.config.layout.accordion === "independent";
+        reopenHits.push({ panelId: cfg.id, open: panels.includes(id), openIt: () => onPanelsChange(independent ? [...panels, id] : togglePanel(panels, id)), entry: wantedDv ? (entries.find((e) => e.dataview === wantedDv) ?? null) : null });
+      }
       // A state with its own default opens on it the first time that state shows.
       const ownKey = state && stateDefault(cfg, state) ? `${cfg.id}:${stateKey(state)}` : cfg.id;
       const first = defaultEntry(entries, cfg, state);
@@ -236,8 +244,22 @@ export function ColumnPanels({
   // 0.6.1 S2 (D10): `activeId`, the instance the panel is showing, so the body's leaves read
   // that view's own params (ActiveViewContext; null = no plan, as before).
   const withView = (activeId: string | null, body: ReactNode) => (activeId ? <ActiveViewContext.Provider value={activeId}>{body}</ActiveViewContext.Provider> : body);
+  // 0.8 notes and feedback: which view a card is showing, for its note and feedback icon. Under a plan,
+  // the config's panel and the instance its rail has on; without one (the unflagged page), the same
+  // ids through the code config's legacy keys (columnKey, panelId) and the host's active rail button,
+  // so a note made on one renderer is the same note on the other.
+  const surface = useViewSurface();
+  const viewOf = (cfg: PanelConfig | null | undefined, id: PanelId, panel: PanelRender, instanceId: string | null, dataview: string | null): ViewRef | null => {
+    const pc = cfg ?? surface?.config?.panels.find((p) => p.legacy?.columnKey === columnId && p.legacy.panelId === id) ?? null;
+    if (!pc) return null;
+    const dv = dataview ?? shownDataview(host, id, panel.actions);
+    const inst = instanceId ?? pc.dataviews.find((v) => v.kind === "view" && v.dataview === dv)?.id ?? null;
+    if (!inst) return null;
+    const label = (dv && DATAVIEWS.find((d) => d.id === dv)?.label) || panel.tag;
+    return { panelId: pc.id, panelName: pc.name ?? panel.tag, instanceId: inst, dataview: dv, label };
+  };
   // `spec`: under v2, the view the panel shows (its own years can differ from the host's).
-  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null, activeId: string | null = null, spec: ViewSpec | null = null) => {
+  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null, activeId: string | null = null, spec: ViewSpec | null = null, view: ViewRef | null = null) => {
         const open = panels.includes(id);
         const toggle = toggleOverride ?? (() => onPanelsChange(togglePanel(panels, id)));
         return (
@@ -273,17 +295,10 @@ export function ColumnPanels({
             controls={panel.controls}
             caption={panel.summary}
             source={withMethod(withTrendNote(panel.source, specYears(spec, panel.gradingYears)), spec?.preset ?? shownDataview(host, id, panel.actions))}
-            footerActions={({ fullscreen }) => (
-              <>
-                {/* In fullscreen the note has its own place in the side rail (Part 4). */}
-                {notes && !fullscreen && (
-                  <PanelNote body={notes.bodyFor(id)} onSave={(body) => notes.onSave(id, body)} />
-                )}
-              </>
-            )}
-            // 0.7 admissions r3 (F1): Export moved from the footer to the icon row's menu.
+            // 0.7 admissions r3 (F1): Export moved from the footer to the icon row's menu; 0.8 back
+            // to the footer's right. The note (in full screen, the side rail's) is the view's.
             menu={({ print }) => <PanelExport onPrint={print} />}
-            note={notes ? { body: notes.bodyFor(id), onSave: (body) => notes.onSave(id, body) } : undefined}
+            view={view ?? viewOf(null, id, panel, null, null)}
             // Round 8 §2: every panel the same height, so the three columns read as one
             // 3x3 grid rather than three ragged stacks.
             fixedHeight
@@ -292,6 +307,15 @@ export function ColumnPanels({
           </CardBox>
         );
   };
+
+  // The Open link's panel (found above), acted on once it has been drawn.
+  useEffect(() => {
+    const hit = reopenHits[0];
+    if (!hit || !reopen.take(hit.panelId)) return;
+    if (!hit.open) hit.openIt();
+    if (hit.entry && !hit.entry.active) hit.entry.onClick?.();
+    reopen.reveal(`[data-panel-id="${hit.panelId}"]`);
+  });
 
   if (planned) {
     const { plan, column } = planned;
@@ -351,10 +375,11 @@ export function ColumnPanels({
             : undefined;
           const copy = runtime && host && instance ? copyValueFor(plan.config, cfg, instance, runtime) : null;
           const shownSpec = v2 && instance ? instance.spec : null;
+          const view = viewOf(cfg, id, panel, activeId, instance && "dataview" in instance ? instance.dataview : null);
           return (
             <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
               <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title, activeId, shownSpec)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title, activeId, shownSpec)}
+                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title, activeId, shownSpec, view)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title, activeId, shownSpec, view)}
               </PanelBoundary>
             </div>
           );
