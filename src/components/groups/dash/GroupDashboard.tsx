@@ -550,14 +550,21 @@ function sourceOf(id: ViewId, c: Ctx): ReactNode {
   );
 }
 
+// 0.8 notes and feedback: each view's "What this shows" line, at the top of its (i). Where it only
+// repeated the (i) it is dropped: the reading sentence on the views whose method has the READING step,
+// and Schools' table's "missing are listed" -- but an undated source's reading is kept, since the (i)
+// doesn't say this group's source is undated.
+const READING_IN_METHOD: ViewId[] = ["GRP-O-NOW", "GRP-S-NOW", "GRP-A-NOW", "GRP-P-NOW", "GRP-P-SHAPE", "GRP-O-ROLL", "GRP-O-RESULTS", "GRP-A-TREND", "GRP-A-POST16", "GRP-P-ROLL"];
 function captionOf(id: ViewId, c: Ctx): ReactNode {
   const undated = !c.o.group.sources.includes("gias_groups") && !c.o.group.sources.includes("gias");
   const reading = c.params.reading === "at_time" ? (undated ? groupNote("combinedUndated", { source: sourcesWord(c.o.group.sources) }) : GROUP_NOTES.combinedAtTime) : GROUP_NOTES.combined;
+  if (READING_IN_METHOD.includes(id)) return c.params.reading === "at_time" && undated ? reading : null;
   switch (id) {
     case "GRP-O-AGAINST":
       return `${GROUP_NOTES.comparesOnly} ${GROUP_NOTES.missingListed}${c.params.compare === "mix_matched" ? ` ${groupNote("mixMatched", { group: c.o.group.name })}` : ""}`;
     case "GRP-S-TABLE":
-      return GROUP_NOTES.missingListed;
+      // Its method says the missing schools are listed.
+      return null;
     case "GRP-O-ROLL":
       return `${reading} ${GROUP_NOTES.likeForLike} ${groupNote("comparedAgainst", { set: c.o.compare.label })}`;
     case "GRP-S-GROWING":

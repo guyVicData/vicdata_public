@@ -63,8 +63,11 @@ export async function loadFeedback(force = false): Promise<void> {
   }
 }
 
+// The server's snapshot is the store as it stands: on a real page it is only ever filled in the browser
+// (loadFeedback runs in an effect), so a server render draws no icon, as before; a unit test's server
+// render sees what the test put in it.
 export function useFeedbackState(): State {
-  return useSyncExternalStore(subscribe, () => state, () => SERVER);
+  return useSyncExternalStore(subscribe, () => state, () => state);
 }
 
 export function openFeedback(target: Omit<FeedbackTarget, "openedAt">) {

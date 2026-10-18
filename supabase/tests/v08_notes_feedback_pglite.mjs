@@ -98,9 +98,13 @@ const left = (await q(`select chart_key from public.teacher_view_notes order by 
 check("the 3 old notes are deleted", !left.some((k) => /^ks[45]:/.test(k)), left.join(","));
 check("View as' ~sets rows are untouched", left.includes("set:abc") && left.includes("ranking:def"));
 check("meeting slide notes and new per-view notes stay", left.includes("meeting:m1:v1") && left.includes("view:vicdata.smt.overview:p-now:v-now"));
-const before = left.length;
+// R-NOTE-PER-VIEW's database half: a view's note is its author's only (the table's RLS, unchanged).
+await asUser(GUY, () => q(`insert into public.teacher_view_notes (profile_id, school_urn, chart_key, body) values ($1, '110110~trial~smt', 'view:vicdata.smt.academic:p-large:v-subjects', 'mine')`, [GUY]));
+check("R-NOTE-PER-VIEW: another member can't read a view's note", (await asUser(MEMBER, () => q(`select count(*)::int n from public.teacher_view_notes where profile_id = '${GUY}'`))).rows[0].n === 0);
+check("R-NOTE-PER-VIEW: nor write one as its author", (await refused(() => asUser(MEMBER, () => q(`insert into public.teacher_view_notes (profile_id, school_urn, chart_key, body) values ('${GUY}', '110110', 'view:x:y:z', 'forged')`)))) === true);
+const before = (await q(`select count(*)::int n from public.teacher_view_notes`)).rows[0].n;
 await ex(NOTES);
-check("a second run does nothing more", (await q(`select count(*)::int n from public.teacher_view_notes`)).rows[0].n === before);
+check("a second run does nothing more (the new view note stays too)", (await q(`select count(*)::int n from public.teacher_view_notes`)).rows[0].n === before);
 
 // ---------------------------------------------------------------------------- the feedback migration
 await ex(FEEDBACK);

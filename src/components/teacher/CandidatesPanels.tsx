@@ -365,11 +365,8 @@ export function CandidatesPanels({
         fullscreen={fullscreen}
       />
     ) : null;
-  // Honest labelling (these are not every entry) -- in the panel's caption, behind the
-  // footer's "What this shows" button, rather than printed under the figure: micro fix
-  // Part 3, so the chart gets that height back.
-  const pointsEligibleCaveat =
-    "All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.";
+  // Honest labelling (these are not every entry) was the geography views' caption. 0.8 notes and
+  // feedback: dropped -- their (i)'s method already says it under "Left out" (methods-teacher.ts).
 
   const changeHalf: PanelRender = {
     tag: "% Change",
@@ -416,11 +413,9 @@ export function CandidatesPanels({
         </CentredOnTarget>
         </>
       ),
-    // With the geography views the caption is their caveat (the category's biggest and
-    // smallest movers are not what either view shows at GCSE any more).
-    summary: geography ? (
-      <PanelSummary>{pointsEligibleCaveat}</PanelSummary>
-    ) :
+    // With the geography views there is no caption: the category's biggest and smallest movers
+    // are not what either view shows at GCSE, and their caveat is the method's (above).
+    summary: geography ? undefined :
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
           {moversSentence({ label: best.label, printed: signedDelta(best.value!, (x) => `${Math.abs(Math.round(x))}%`) }, { label: worst.label, printed: signedDelta(worst.value!, (x) => `${Math.abs(Math.round(x))}%`) }, changeSince)}

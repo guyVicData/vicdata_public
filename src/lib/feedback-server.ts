@@ -19,7 +19,9 @@ const PRODUCTS: ViewProduct[] = ["teacher", "smt", "admissions", "group", "meeti
 /** Postgres / PostgREST's "the table or function isn't there": the migration isn't applied. */
 export function feedbackMissing(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error) return false;
-  return error.code === "42P01" || error.code === "42883" || error.code === "PGRST202" || error.code === "PGRST205" || /feedback_items|feedback_allowed|does not exist|schema cache/i.test(error.message ?? "");
+  // By code, or PostgREST's wording for a relation or function it doesn't know -- never by the table's
+  // name alone: an RLS refusal names the table too.
+  return error.code === "42P01" || error.code === "42883" || error.code === "PGRST202" || error.code === "PGRST205" || /(relation|function) .* does not exist|in the schema cache/i.test(error.message ?? "");
 }
 
 const str = (v: unknown, max: number): string | null => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);

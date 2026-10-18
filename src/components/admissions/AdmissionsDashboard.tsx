@@ -660,15 +660,16 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
  * the subject-explorer link) is CardBox's visible caption, as on Teacher. */
 function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode } {
   if (dv === "DV-ADM-P-NOW") return { visible: laContext(c.shape.status === "ready" ? c.shape.data : null) ?? undefined };
-  if (dv === "DV-ADM-M-NOW") return { caption: ADMISSIONS_NOTES.groupShort };
-  if (dv === "DV-ADM-P-FUNNEL") return { caption: ADMISSIONS_NOTES.funnelNote };
-  if (dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-P-MAP" || dv === "DV-ADM-P-TABLE") return { caption: ADMISSIONS_NOTES.poolShort };
+  // 0.8 notes and feedback: the caption is each view's "What this shows" line, at the top of its (i).
+  // Dropped where it only repeated the (i)'s method: M-NOW, P-FUNNEL, P-PIPELINE, M-BARS, M-TABLE.
+  if (dv === "DV-ADM-M-NOW" || dv === "DV-ADM-P-FUNNEL" || dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE") return {};
+  if (dv === "DV-ADM-P-MAP" || dv === "DV-ADM-P-TABLE") return { caption: ADMISSIONS_NOTES.poolShort };
   if (dv.endsWith("-SHAPE")) return { caption: SHAPES_NOTE };
   if (dv.startsWith("DV-ADM-P-ENTRY")) return { caption: ADMISSIONS_NOTES.cohortShort };
   if (dv.startsWith("DV-ADM-P-POOL") || dv === "DV-ADM-P-AREA-POP") return { caption: <>Also: the school page&rsquo;s area population trend (ages 5&ndash;15)</> };
   if (dv.startsWith("DV-ADM-P-HOLD")) return { caption: ADMISSIONS_NOTES.requirement };
   if (dv.startsWith("DV-ADM-M-ACAD")) return { visible: <AcademicFooter explorerHref={explorerHref(c)} /> };
-  if (dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE" || dv === "DV-ADM-M-DONUT" || dv === "DV-ADM-M-MAP")
+  if (dv === "DV-ADM-M-DONUT" || dv === "DV-ADM-M-MAP")
     return { caption: "Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools" };
   if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "The entry age band's roll sits on the same rail" };
   return {};

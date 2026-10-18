@@ -2079,7 +2079,7 @@ const RUNNERS: Record<string, Runner> = {
     text += " " + chase.notes.sources;
     const rules: Record<string, string> = { "1 deprivation": SMT_NOTES.wDeprivation, "2 independent FSM": SMT_NOTES.wIndependentFsm, "2 draw": smtNote("wIndependentDraw", { radius: lp.radius }), "4 deciles": SMT_NOTES.wDeciles, "5 projection": SMT_NOTES.wProjection };
     const missing = Object.entries(rules).filter(([, v]) => !text.includes(v)).map(([k]) => k);
-    // Rule 3 lives in the captions (the (i) behind the caption button): checked on the notes the panels show.
+    // Rule 3 lives in the captions (each view's "What this shows" line, in its (i)): checked on the notes the panels show.
     const rule3 = chase.notes.children.includes(smtNote("wResidents", { radius: chase.radius }));
     const rule6 = /ONS mid-year population estimates for LSOAs \(mid-\d{4}\)/.test(chase.notes.sources) && /English Indices of Deprivation \d{4}/.test(chase.notes.sources) && /\(\d{4}\/\d{2}\)\.$/.test(chase.notes.sources);
     // No "pupils" beside a deprivation figure: the social block's deprivation lines, less the rule's own words.

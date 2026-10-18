@@ -8,7 +8,6 @@
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
 import { indexBaseWords, indexedLabel } from "@/lib/index-base";
-import { flagsRuleText } from "@/lib/smt/flags-rules";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -752,7 +751,10 @@ function sourceOf(dv: string, c?: Ctx): ReactNode {
   );
 }
 
-/** The honesty note behind each panel's caption button: SMT_NOTES only (R-SMT-NOTES). */
+/** The honesty note: each view's "What this shows" line, at the top of its (i) -- SMT_NOTES only
+ * (R-SMT-NOTES). 0.8 notes and feedback: where it only repeated the (i) (the source and the method),
+ * it is dropped -- O-FLAGS, A-BANDS, C-PROJECTION, and the not-ready / district states of P-AREA,
+ * C-MAP and C-BIRTHS (docs/v0.8/notes_feedback_report_v1.md lists each). */
 function captionOf(dv: string, c: Ctx): ReactNode {
   const set = c.set.label;
   const igcse = c.school.phases.igcse ? ` ${smtNote("igcseView", { school: c.school.name })}` : "";
@@ -765,7 +767,8 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-O-SCORECARD":
       return `${SMT_NOTES.ranks} ${smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) })}${igcse}`;
     case "DV-SMT-O-FLAGS":
-      return flagsRuleText(c.school.phases);
+      // The method's steps give every clause of the rule.
+      return null;
     case "DV-SMT-O-ROLL-LINE":
     case "DV-SMT-O-ROLL-TABLE":
       return c.overview.status === "ready" ? `${c.overview.data.notes.rollIndexed} ${SMT_NOTES.rollAreaUndercount}` : null;
@@ -788,7 +791,8 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-A-MIX-TABLE":
       return SMT_NOTES.entriesMix;
     case "DV-SMT-A-BANDS":
-      return SMT_NOTES.bandReserved;
+      // The view's own body says it, and so does its method.
+      return null;
     case "DV-SMT-P-NOW":
     case "DV-SMT-P-SHAPE":
       return `${SMT_NOTES.size} ${SMT_NOTES.shapesAround} ${SMT_NOTES.levelAges}`;
@@ -803,11 +807,11 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-P-PHASES-TABLE":
       return smtNote("rollByPhase", { base: c.pupils.status === "ready" ? indexBaseWords(c.pupils.data.trends.base) : "the first year every line shares" });
     case "DV-SMT-P-AREA":
-      return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : SMT_NOTES.areaResidentsCaption;
+      return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : null;
     case "DV-SMT-C-NOW":
       return c.context.status === "ready" ? `${c.context.data.notes.children} ${c.context.data.notes.births} ${c.context.data.notes.projection} ${SMT_NOTES.wDeciles} ${smtNote("mixInfo", { radius: c.context.data.radius })} ${SMT_NOTES.fsmInfo}` : null;
     case "DV-SMT-C-MAP":
-      return c.contextMap.status === "ready" && c.contextMap.data.state === "lsoa" && c.context.status === "ready" && c.context.data.area === "around" ? `${SMT_NOTES.mapNeighbourhoods}. ${smtNote("mapRing", { radius: c.contextMap.data.radius, ring: `${c.contextMap.data.ringKm} km` })} ${SMT_NOTES.wDeciles}` : SMT_NOTES.shadeByDistrict;
+      return c.contextMap.status === "ready" && c.contextMap.data.state === "lsoa" && c.context.status === "ready" && c.context.data.area === "around" ? `${SMT_NOTES.mapNeighbourhoods}. ${smtNote("mapRing", { radius: c.contextMap.data.radius, ring: `${c.contextMap.data.ringKm} km` })} ${SMT_NOTES.wDeciles}` : null;
     case "DV-SMT-C-BYAGE":
     case "DV-SMT-C-AGES":
       return c.context.status === "ready" ? `${c.context.data.notes.popByAge} ${smtNote("wResidents", { radius: c.context.data.radius })}` : null;
@@ -816,9 +820,10 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-C-BIRTHS":
     case "DV-SMT-C-BIRTHS-INDEXED":
     case "DV-SMT-C-BIRTHS-TABLE":
-      return c.context.status === "ready" ? `${c.context.data.notes.births} ${c.context.data.notes.projection}` : SMT_NOTES.births;
+      return c.context.status === "ready" ? `${c.context.data.notes.births} ${c.context.data.notes.projection}` : null;
     case "DV-SMT-C-PROJECTION":
-      return c.context.status === "ready" ? `${c.context.data.notes.population} ${c.context.data.notes.projection}` : null;
+      // Its generated method (projectionMethod) says both lines.
+      return null;
   }
   return null;
 }
