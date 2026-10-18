@@ -2502,3 +2502,7 @@ This is the round for `docs/v0.8/vicdata_0_8_notes_feedback_claude_code_prompt_v
 
 **Tests**
 20. **The browser tests use the same stub identity as the View as fixes round,** for the reason given there. They also fake the feedback routes, and the notes, onboarding and preference rows, in memory. The routes and RLS are tested separately: in the unit tests against a stand-in Supabase, and in PGlite against the real migrations. Nothing was written to any database.
+
+**Guy's answers (18 Oct)**
+21. **Deleting items.** Guy's own requests to delete need only his confirmation in the next build. Anyone else's request goes into triage. Either way, the deletion is a migration in the next build, because nobody deletes through the app. This is written into `docs/FEEDBACK.md` and the report's privacy text.
+22. **How long items are kept: proposed, not yet confirmed.** Keep open items; delete items 2 years after they are closed. An item from a deleted account stays without the author's name. The clear-out query is in `docs/FEEDBACK.md`.
