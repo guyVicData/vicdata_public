@@ -271,7 +271,9 @@ function WindowFor({ target, items }: { target: FeedbackTarget; items: OwnItem[]
       ? { right: DOCK_GAP, top: DOCK_GAP, bottom: DOCK_GAP, width: mode.width }
       : mode.kind === "float"
         ? { left: mode.x, top: mode.y, width: mode.w, height: mode.h }
-        : { left: 0, right: 0, bottom: 0, height: mode.tall ? "85dvh" : "50dvh" };
+        : // The visible screen's width, not the page's: a page wider than the phone (its own overflow) would
+          // otherwise stretch the sheet past the screen's edge.
+          { left: 0, width: window.visualViewport?.width ?? window.innerWidth, bottom: 0, height: mode.tall ? "85dvh" : "50dvh" };
   const sc = surface.scope;
   const where = [view.panelName && view.panelName !== view.label ? view.panelName : null, surface.dashboard.name, sc.name].filter(Boolean).join(" · ");
   const wrong = form.kinds.includes("wrong_figure");

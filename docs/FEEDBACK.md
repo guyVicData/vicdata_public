@@ -89,7 +89,7 @@ Guy confirms. The confirmed fields are set in the inbox (`/platform/feedback`: o
 
 When the fix is deployed (merged to `main`, Render deployed):
 1. Set the item to **done**, with the **commit** that fixed it. The date is stamped if none is given. In the inbox: tick the items, then "Set ticked to: Done" with the commit.
-2. The author's icon on that view goes back to monochrome, unless they have other open items there.
+2. The author's icon on that view goes back to monochrome, unless they have other open items there (or a "Looks good" there not yet done). Coverage still counts a done "Looks good" as checked.
 3. A **won't do** needs a reason. The author sees the status in their list on that view; the reason stays in the inbox.
 
 **Proofing:** the inbox's Coverage tab shows every view of every VicData dashboard. For a chosen school or group it marks each view checked ("Looks good"), open, or unseen. Group dashboards, custom dashboards and meetings appear there once they have feedback.

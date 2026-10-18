@@ -140,6 +140,7 @@ test("R-FEEDBACK-COLOURS: yellow, green, yellow wins, monochrome once done", () 
   assert.equal(feedbackColour([mark({ hasText: false, looksGood: true, kinds: ["looks_good"] })], here), "good", "a bare Looks good: green");
   assert.equal(feedbackColour([mark({ hasText: false, looksGood: true, kinds: ["looks_good"] }), mark({})], here), "open", "both: yellow wins");
   assert.equal(feedbackColour([mark({ status: "done" }), mark({ status: "wont_do" })], here), "none", "everything done: monochrome");
+  assert.equal(feedbackColour([mark({ hasText: false, looksGood: true, kinds: ["looks_good"], status: "done" })], here), "none", "a Looks good marked done: monochrome too");
   assert.equal(feedbackColour([mark({ schoolKey: "school:137625" })], here), "open", "open feedback on any school");
   assert.equal(feedbackColour([mark({ hasText: false, looksGood: true, kinds: ["looks_good"], schoolKey: "school:137625" })], here), "none", "Looks good is per school");
   assert.equal(isOpenFeedback(mark({ hasText: true, looksGood: true, kinds: ["looks_good"] })), true, "Looks good with words is open");

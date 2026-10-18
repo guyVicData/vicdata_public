@@ -116,10 +116,12 @@ export function isOpenFeedback(m: Pick<FeedbackMark, "status" | "looksGood" | "h
 }
 
 /** The feedback icon's colour on one view (Guy, 18 Oct): yellow with open feedback (on any school),
- * green with a "Looks good" at this school and nothing open, else monochrome. Yellow wins. */
+ * green with a "Looks good" at this school and nothing open, else monochrome. Yellow wins. Like open
+ * feedback, a "Looks good" counts until it is done (or won't do): once every item on the view is done,
+ * the icon is monochrome (R-FEEDBACK-COLOURS). Coverage still counts a done "Looks good" as checked. */
 export function feedbackColour(marks: FeedbackMark[], schoolKey: string): "open" | "good" | "none" {
   if (marks.some(isOpenFeedback)) return "open";
-  if (marks.some((m) => m.looksGood && m.schoolKey === schoolKey && m.status !== "wont_do")) return "good";
+  if (marks.some((m) => m.looksGood && m.schoolKey === schoolKey && m.status !== "done" && m.status !== "wont_do")) return "good";
   return "none";
 }
 

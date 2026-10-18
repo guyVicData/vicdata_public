@@ -95,6 +95,8 @@ async function info(page, panelSel) {
   await panel.locator('[aria-label="Where this figure comes from"]').first().click();
   const pop = page.locator("[data-source-note]").first();
   await pop.waitFor({ timeout: 5000 });
+  // The method is loaded when the (i) opens (MethodNote): wait for it before reading.
+  await pop.locator("[data-method-steps-toggle]").first().waitFor({ timeout: 10000 }).catch(() => {});
   const what = (await pop.locator("[data-what-this-shows]").count()) ? await pop.locator("[data-what-this-shows]").first().textContent() : null;
   const all = await pop.textContent();
   return { what, all };
@@ -103,16 +105,16 @@ async function info(page, panelSel) {
   const h = await open("smt");
   const r = await info(h.page, '[data-view-panel$=".c1.now"]');
   await h.page.screenshot({ path: `${OUT}/caption_smt_overview.png` });
-  pass("R-CAPTION-IN-INFO SMT Overview: its caption ('XS to XL …') is the (i)'s first line, above the sources", !!r.what && r.what.includes("XS to XL") && r.all.indexOf("XS to XL") < r.all.indexOf("How it is calculated"), JSON.stringify(r).slice(0, 300));
+  pass("R-CAPTION-IN-INFO SMT Overview: its caption ('XS to XL …') is the (i)'s first line, above the sources", !!r.what && r.what.includes("XS to XL") && r.all.startsWith("What this shows") && r.all.indexOf("XS to XL") < r.all.indexOf("Sources."), JSON.stringify(r).slice(0, 300));
   await h.context.close();
 }
 {
   const h = await open("admissions");
   const now = await info(h.page, '[data-view-panel$=".c1.now"]');
   await h.page.keyboard.press("Escape");
-  const share = await info(h.page, '[data-view-panel$=".c3.trends"], [data-view-panel*="share"]');
+  const share = await info(h.page, '[data-view-panel$=".c3.trends"]');
   await h.page.screenshot({ path: `${OUT}/caption_admissions_market.png` });
-  pass("R-CAPTION-IN-INFO Admissions Market share: 'Your share now' drops its caption (it only repeated the method: listed); the share trend keeps its line in the (i)", now.what === null && now.all.includes("How it is calculated") && !!share.what, JSON.stringify({ now: now.what, share: share.what }));
+  pass("R-CAPTION-IN-INFO Admissions Market share: 'Your share now' drops its caption (it only repeated the method: listed); the share trend keeps its line in the (i)", now.what === null && now.all.includes("Sources.") && !!share.what && share.what.includes("roll sits on the same rail"), JSON.stringify({ now: now.what, share: share.what }));
   await h.context.close();
 }
 {
@@ -150,7 +152,6 @@ async function academic(o = {}) {
   }
   return h;
 }
-const railButtons = (page, sel) => page.locator(`${sel} [aria-pressed]`);
 const viewKeyOf = (page, sel) => page.locator(`${sel} [data-view-key]`).first().getAttribute("data-view-key");
 
 // ------------------------------------------------------------------------------ R-NOTE-PER-VIEW
@@ -163,8 +164,9 @@ const viewKeyOf = (page, sel) => page.locator(`${sel} [data-view-key]`).first().
   await page.getByRole("button", { name: "Save" }).first().click();
   await page.waitForTimeout(600);
   const onA = await page.locator(`${LARGE} [data-note-button]`).first().getAttribute("data-note-button");
-  const other = railButtons(page, LARGE).nth(1);
-  await other.click();
+  // The rail's other view: the first button not pressed (with an area chosen the panel opens on Subjects).
+  const firstLabel = await page.locator(`${LARGE} [aria-pressed="true"]`).first().getAttribute("aria-label");
+  await page.locator(`${LARGE} [aria-pressed="false"]`).first().click();
   await page.waitForTimeout(1500);
   const keyB = await viewKeyOf(page, LARGE);
   const offB = await page.locator(`${LARGE} [data-note-button]`).first().getAttribute("data-note-button");
@@ -173,8 +175,9 @@ const viewKeyOf = (page, sel) => page.locator(`${sel} [data-view-key]`).first().
   await page.getByRole("button", { name: "Save" }).first().click();
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${OUT}/note_per_view.png` });
-  await railButtons(page, LARGE).nth(0).click();
+  await page.locator(`${LARGE} [aria-label="${firstLabel}"]`).first().click();
   await page.waitForTimeout(1500);
+  const colour = await page.locator(`${LARGE} [data-note-button="on"]`).first().evaluate((el) => getComputedStyle(el).color).catch(() => null);
   await page.locator(`${LARGE} [data-note-button]`).first().click();
   const backA = await page.locator(`${LARGE} textarea`).first().inputValue();
   const posts = h.writes.filter((w) => w.startsWith("POST teacher_view_notes")).map((w) => JSON.parse(w.slice("POST teacher_view_notes ".length)));
@@ -182,7 +185,6 @@ const viewKeyOf = (page, sel) => page.locator(`${sel} [data-view-key]`).first().
   pass("R-NOTE-PER-VIEW: two views in one rail hold two notes, keyed by view", keyA !== keyB && keys.length === 2 && keys[0] === `view:${keyA}` && keys[1] === `view:${keyB}`, JSON.stringify({ keyA, keyB, keys }));
   pass("R-NOTE-PER-VIEW: the icon colours on the view with a note, not on the other", onA === "on" && offB === "off" && backA === "Check Art and Design's rank", JSON.stringify({ onA, offB, backA }));
   pass("R-NOTE-PER-VIEW: in View as the note goes under the View as key (110110~trial~smt)", posts.every((p) => p.school_urn === "110110~trial~smt"), JSON.stringify(posts.map((p) => p.school_urn)));
-  const colour = await page.locator(`${LARGE} [data-note-button="on"]`).first().evaluate((el) => getComputedStyle(el).color).catch(() => null);
   pass("R-NOTE-PER-VIEW: the note's colour is the shared token", !!colour && colour !== "rgb(107, 107, 114)", String(colour));
   await h.context.close();
 }
@@ -292,7 +294,7 @@ feedback.posted.length = 0;
   const w = await rectOf(win);
   const p = await rectOf(panel);
   await page.screenshot({ path: `${OUT}/feedback_window_phone.png` });
-  pass("R-FEEDBACK-WINDOW phone: a bottom sheet, half the screen, the view in sight above it", (await win.getAttribute("data-feedback-window")) === "sheet" && Math.abs(w.h - PHONE.height / 2) < 40 && p.y >= -2 && p.y < w.y, JSON.stringify({ w, p }));
+  pass("R-FEEDBACK-WINDOW phone: a bottom sheet, half the screen and no wider than it, the view in sight above it", (await win.getAttribute("data-feedback-window")) === "sheet" && Math.abs(w.h - PHONE.height / 2) < 40 && w.x >= 0 && w.right <= PHONE.width + 1 && p.y >= -2 && p.y < w.y, JSON.stringify({ w, p }));
   await page.locator("[data-fb-handle]").click();
   await page.waitForTimeout(500);
   const tall = await rectOf(win);
