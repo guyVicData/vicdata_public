@@ -2427,3 +2427,32 @@ The round for `docs/v0.8/vicdata_0_8_view_as_claude_code_prompt_v1.md`, on `v0.8
 
 **Not done here**
 23. **No harness file the database load round owns was edited** (`scripts/catalogue-rule-tests.ts`, `scripts/rpc-proxy.mjs`, `src/lib/vicdata-reference.ts`).
+
+## 2026-10-18 — View as fixes
+
+The round for `docs/v0.8/vicdata_0_8_view_as_fixes_claude_code_prompt_v1.md`, on `v0.8-view-as-fixes`. It ran unattended: every call below was **decided unattended, for Guy to confirm**. Report: `docs/v0.8/view_as_fixes_report_v1.md`.
+
+**The cause, and the rule it gives**
+1. **Only a definite "no" ends View as.** `checkPlatformAdmin` (`src/lib/view-as.ts`) answers yes, no or unknown. An error, a timeout or a cancelled request is unknown, asked twice more, and then keeps View as with a Retry in the banner. Before, any of them read as "no" and cleared the cookie, which is what sent Guy to Acland Burghley. `confirmPlatformAdmin` (true only on yes) is still what grants things.
+2. **Keeping View as on an unknown answer exposes nothing.** Every route re-checks platform admin itself. With a View as cookie or a peek, an unknown answer is now a 502 ("Could not confirm View as. Try again.") from `resolveCaller`, `groupCaller` and the two `viewAsForRequest` routes. Before, it was served as the admin's own membership. Usage isn't logged while the check can't be answered.
+3. **No second check right after a start.** `startViewAs` and `startViewAsHeadOffice` have just confirmed the admin, so the page they leave doesn't ask again. That second check was the one the navigation cancelled.
+
+**Any group**
+4. **A group without an account is named `group:{group_id}`** in the cookie and the peek, where an account's uuid would go. The server (`groupCaller`) builds that group's head office from the group lookups, read-only. It has no grants and no Access page (the route answers 404), every member school's Admissions reads as private, and it has no meetings or dashboards. Whether there is an account is decided again on every request: a group that gets an account later opens as that account.
+5. **The switcher searches every group** through Platform's own search (`/api/platform/groups`, platform admins only), which now also returns each group's account, if it has one. The list says "account" or "no account yet". The first search after a server start builds the group index (about 30 s), as Platform's search already did.
+6. **The name shown** is the one the switcher had: the search's display name. A peek shows the group id.
+
+**Platform admins without memberships**
+7. **Back to me goes to the admin's own VicData** (`ownHome`): their school's home with an approved membership, head office's with a group membership, otherwise **Platform** for a platform admin, otherwise `/teacher`. `/teacher` with nothing to show sends a platform admin to Platform. SMT's and Admissions' "use View as" messages stay as they were, since they don't show a school.
+8. **The preview sign-in's starter school (100053) is never granted to a platform admin.** If `PREVIEW_ACCESS_EMAIL` were ever Guy's address, his Acland membership would come back the first time he used it. I didn't read `.env` to check, so the route guards it in code.
+9. **The migration removes only the membership** (`20261116090000_v08_view_as_fixes_admin_membership.sql`, idempotent, only for a platform admin):
+   - it deletes his 27 usage rows (they would otherwise stay counted as Acland's, anonymous);
+   - his 13 sign-ins and 1 Admissions grant go with it, by cascade.
+   - If anyone ever relies on it, it clears that link (approved_by, account holder) and keeps the other member. If it owns saved sets, it stops.
+10. **Acland Burghley's test set-up is removed too** (Guy, 18 Oct: "they were for testing only and should not be seen by a member of their staff"). The migration deletes the 4 admissions lists and 2 entry points. It only deletes rows Guy wrote, and only while nobody else belongs to the account.
+    - **Kept: the 3 teams.** They are the automatic All staff, SMT and Admissions teams, made once when a school account is created and never again, so a real member who joins later needs them. They have no members and hold nothing from testing.
+    - **Kept: the "school dashboard".** It is in fact Guy's personal meeting deck ("Autumn department meeting", `owner_scope` user). It is tied to the account, but no member of staff can see it.
+
+**Not changed**
+11. **SMT and Admissions with no membership** still show the platform admin the "use View as" message, not Platform. They don't fall back to a school, so they meet the rule.
+12. **The browser tests use a stub identity, not a real session.** Minting a session for Guy's account was refused by the session's safety checks. The pages, routes and data are real (the local production build, the app database read-only). Only the admin's identity, its admin check and every write are stubbed (`docs/v0.8/audit_scripts/view_as_fixes/`).
