@@ -28,7 +28,7 @@ Every item has a short number, **F-12**.
 - the panel, and the view (instance id, dataview id, label);
 - the page's state: subject, level, comparison set, year, phase, filters and pills;
 - the address;
-- the app version (Render's commit);
+- the app version (Render's commit; "unknown" if it is missing, "dev" only on a local dev server);
 - phone or desktop;
 - light or dark theme.
 

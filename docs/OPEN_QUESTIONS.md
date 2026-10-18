@@ -2506,3 +2506,76 @@ This is the round for `docs/v0.8/vicdata_0_8_notes_feedback_claude_code_prompt_v
 **Guy's answers (18 Oct)**
 21. **Deleting items.** Guy's own requests to delete need only his confirmation in the next build. Anyone else's request goes into triage. Either way, the deletion is a migration in the next build, because nobody deletes through the app. This is written into `docs/FEEDBACK.md` and the report's privacy text.
 22. **How long items are kept (Guy, 18 Oct: "2 years is fine").** Keep open items; delete items 2 years after they are closed. An item from a deleted account stays without the author's name. The clear-out query is in `docs/FEEDBACK.md`.
+
+## 2026-10-18 — SMT feedback round 1
+
+This is the round for `docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md` (F-1 to F-8, Leighton Park), on `v0.8-smt-fb1`. Every call below was **decided unattended, for Guy to confirm**, and is tagged with its item. The report is `docs/v0.8/smt_fb1_report_v1.md`.
+
+**Scorecard (F-3, F-4)**
+1. **F-3, "boarding schools need rankings":** I read this as the boarders row getting ranks. It is ranked among the boarding schools in the set, in the region (named: South East) and in England. A boarding school is GIAS's "Boarding school" with a census boarders count above 0. The Roll row is still ranked among all schools of its phase. The alternative was to rank the boarding school's roll among boarding schools only.
+2. **F-3, Progress 8 as a row:** the prompt names a Progress 8 cell, so a state school with published Progress 8 now has that row, ranked as Attainment 8 is. Its trend runs from 2022/23 to 2023/24 (R-TREND-FROM-2223), not from 2021/22. Independent schools have no row.
+3. **F-3, IGCSE rows:** an IGCSE school's Attainment 8 and grade 5+ rows are left out, not shown as "not ranked". Its (i) keeps the IGCSE sentence (`SMT_NOTES.igcseView`).
+4. **F-3, short names (`setShortName`):**
+   - "N nearest …" becomes "N nearest".
+   - "Schools in X" becomes "X".
+   - Any other name stays as it is up to 16 characters; a longer one is cut at a word, with "…".
+   
+   The short name is used in the Scorecard's set column and the phone's "Rank in …". The full name is the column's tooltip and the first line of the (i). No other SMT header overflowed at 1440, so none of the others changed.
+5. **F-3, F-4, trend periods:**
+   - Results and the market share read "since {year}". Market share runs from its first entry year.
+   - Value added and Progress 8 read "{first} → {last}", because DfE's series stop and start.
+   - KS2 still has no trend (unchanged).
+   - Value added's first year is `SIXTH_FORM_VA_FROM` (2023/24) in `years.ts`. Its last is read from the data, so 2025/26 extends the cell with no code change (unit test).
+   - The flags line no longer says "roll and boarders since 2019/20", because each cell says it now.
+
+**Independent entry tiles (F-8)**
+6. **F-8, what "+40% since 2019/20" is measured on:** the % change in that year group's roll since the 2019/20 census, which was the prompt's suggestion. That is Year 7 at 11, and Year 12 at 16. Leighton Park: Year 7 57 against 47, +21%; Year 12 90 against 82, +10%. The alternatives, for Guy:
+   - (a) the change in the net figure itself. Net change at 16 needs the census before, so it could only run from 2020/21.
+   - (b) the net as a % of last year's Year 11 (+3%). That is "Year 12 against Year 11" less 100, which Pupils already shows.
+   - (c) the change in the whole phase's roll (Years 7 to 11, or the sixth form).
+7. **F-8, "first year is Year 7":** decided by GIAS's statutory low age (11 or more), not the census. Leighton Park's 2024/25 census holds one pupil aged 10, which isn't a Year 6. A through-school (King's Worcester, ages 2 to 19) gets "Net change at 11": +27.
+8. **F-8, which tiles give way:**
+   - The IGCSE note and the unpublished GCSE tile.
+   - The Progress 8 note. Its reason stays in the view's (i).
+   - An independent school with a published, ranked Attainment 8 keeps that tile.
+   - The phone's compact card still shows its first four tiles, so the entry tiles are on the phone's full screen only.
+9. **F-8, one calculation:** the tiles are whole school, day and boarding, both sexes, full-time, as Pupils' Leaving at 16. The Pupils and Day/boarding pills don't change them. Leaving at 16 now calls the same function (`yearOnYear`), and R-INDEP-ENTRY-TILES pins the two together (Leighton Park: +3 and −3).
+
+**Map (F-2)**
+10. **F-2, "labels":** I read these as the dots' hover labels: the name, the whole-school roll with its year, and the trend word and % over 3 years, in the trend's colour. With 11 schools close together, labels shown all the time would overlap. Say if you want names on the map.
+11. **F-2, colours and size:**
+    - Green is Growing, amber Steady, red Shrinking (`rollDirection`: `ROLL_DIRECTION_SPAN` and the flat band). A school with no trend is grey.
+    - The focus school is filled with its own trend's colour and ringed in SMT's purple.
+    - Dots are sized by the square root of the roll, between the smallest and largest drawn: the maps' existing scale, now in `lib/map-radius.ts`.
+    - The size key shows the smallest and largest roll.
+
+**Empty views (F-6, F-5)**
+12. **F-6, what "nothing to show" means:** no data for the school (no flags, no located schools, too few years to draw a line). Some views keep their icon:
+    - views that explain something the reader needs or can act on: rivals not chosen yet, "Flags not available yet", a level the view isn't for, the IGCSE note, a reserved view;
+    - any view still loading.
+    
+    With nothing anywhere, the first view stays, so the panel can say why.
+13. **F-6, which products:**
+    - SMT, Admissions and Groups: each has its own `hasContent`.
+    - Teacher: unchanged. Its hosts already offer a view's button only when it has data.
+    - The phone's trend tabs: unchanged. They are panels, one view each.
+14. **F-6, hidden today** (SMT on the default set, and Admissions with its defaults):
+    - Leighton Park: SMT Overview → Flags.
+    - The Chase: SMT Overview → Flags.
+    - King's Worcester: Admissions Pipelines at 4+ → the pool trend, indexed.
+
+**Market share (F-7)**
+15. **F-7, the default:** Admissions' own default rivals (`defaultRivals`: the 10 nearest schools teaching Year 7, either sector), the same schools Admissions' Market share draws before rivals are chosen. The panel says so in three places: its tag ("rivals: the 10 nearest (default)"), its title and its (i). It also applies when the reader can't read Admissions' lists. A head office reading a school whose Admissions is private still sees the "private" note. Pupils' Market share follows too.
+
+**Boxed tiles (F-1)**
+16. **F-1, where:** every paired tile now draws through one `PairTile`, each figure boxed with its own label:
+    - Admissions' Entry point now (Girls, Boys "in Year 12"; Day, Boarding "in whole school");
+    - SMT Overview's and SMT Pupils' Day/Boarding and Girls/Boys tiles, now "in whole school";
+    - Groups' Overview Day/Boarding;
+    - Groups' Pupils Day/Boarding, and Growing/Shrinking.
+    
+    Groups' "By phase" is unchanged: it has three figures with a three-part caption.
+
+**The feedback system**
+17. **F-5, "Move to":** when the panel's rail changes, the window shows a strip ("The panel now shows Flags. This feedback is still on Map.") with a "Move to Flags" button. It never moves on its own. Moving keeps the draft (text and chips).
+18. **F-1's "dev":** `RENDER_GIT_COMMIT` is read on the server for each item, and Render sets it: F-2 to F-8 carry `9af574369ae6`. F-1 was most likely sent from a local server (the row can't say which). The version now reads "unknown" anywhere without the variable, and "dev" only under `next dev`.
