@@ -14,18 +14,25 @@
 --   usage_events                                      27 rows        deleted here: his own testing, which
 --                                                                    would otherwise stay counted as the
 --                                                                    school's (on delete set null)
--- Kept, because they belong to the school account or to Guy, not to the membership:
---   the school account itself; its 3 teams, 4 admissions lists, 2 entry points and 1 school dashboard
---   (all made by Guy while testing; no other member exists); Guy's personal dashboards, meetings and
---   jobs; his teacher_view_* rows under '100053' (no longer reached) and every View as state
---   ('100053~trial~…'). The leftover school-wide rows are logged in docs/OPEN_QUESTIONS.md as a call.
+-- Also removed (Guy, 18 Oct: "they were for testing only and should not be seen by a member of their
+-- staff"): the school's Admissions set-up he made while testing -- 4 admissions lists (11+ and 16+
+-- rivals and day feeders) and 2 entry points (11+, 16+). Only rows he wrote, and only while nobody else
+-- belongs to the school account; with any other member they are left alone.
+-- Kept:
+--   the school account and its 3 automatic teams (All staff, SMT, Admissions: made for every school
+--   account when it is created and never again, so a real member who joins later needs them; no
+--   members, no test content);
+--   Guy's own things, which no member of staff sees: his personal meeting deck tied to the account
+--   ("Autumn department meeting", owner_scope user), his other dashboards, meetings and jobs, his
+--   teacher_view_* rows under '100053' (no longer reached) and his View as state ('100053~trial~…').
 --
--- Safe to run twice: the second run finds no membership and does nothing. Only for a platform admin.
+-- Safe to run twice: the second run finds nothing left and does nothing. Only for a platform admin.
 do $$
 declare
   v_profile constant uuid := '52a08818-9132-48a0-8665-8362361eff11';
   v_urn constant text := '100053';
   v_ids uuid[];
+  v_accounts uuid[];
   v_n int;
 begin
   if not exists (select 1 from public.platform_admins where profile_id = v_profile) then
@@ -35,8 +42,22 @@ begin
   select coalesce(array_agg(m.id), '{}') into v_ids
   from public.school_memberships m join public.school_accounts a on a.id = m.school_account_id
   where m.profile_id = v_profile and a.school_urn = v_urn;
+  select coalesce(array_agg(a.id), '{}') into v_accounts from public.school_accounts a where a.school_urn = v_urn;
+
+  -- The Admissions set-up made while testing: only the admin's own rows, only with no other member.
+  if not exists (select 1 from public.school_memberships m where m.school_account_id = any (v_accounts) and m.profile_id <> v_profile) then
+    delete from public.admissions_lists where school_account_id = any (v_accounts) and updated_by = v_profile;
+    get diagnostics v_n = row_count;
+    raise notice 'view_as_fixes: % admissions lists removed', v_n;
+    delete from public.admissions_entry_points where school_account_id = any (v_accounts) and updated_by = v_profile;
+    get diagnostics v_n = row_count;
+    raise notice 'view_as_fixes: % admissions entry points removed', v_n;
+  else
+    raise notice 'view_as_fixes: the school has other members; its admissions lists and entry points are kept';
+  end if;
+
   if cardinality(v_ids) = 0 then
-    raise notice 'view_as_fixes: no membership at % for the platform admin; nothing to do', v_urn;
+    raise notice 'view_as_fixes: no membership at % for the platform admin; nothing more to do', v_urn;
     return;
   end if;
 

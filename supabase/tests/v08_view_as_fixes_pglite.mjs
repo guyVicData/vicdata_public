@@ -2,8 +2,9 @@
 // VicData 0.8 View as fixes (item 4): 20261116090000_v08_view_as_fixes_admin_membership.sql over a stub of
 // the live tables that point at school_memberships, with the live foreign keys and delete rules (read from
 // the app database's catalogue on 18 Oct 2026). Local only (WASM Postgres); never touches a real database.
-// Checks: Guy's membership at 100053 goes with its sign-ins, Admissions grant, team places and usage rows;
-// the school account and its school-wide rows stay; nobody else's rows change; a second run does nothing;
+// Checks: Guy's membership at 100053 goes with its sign-ins, Admissions grant, team places and usage rows,
+// and the school's test admissions lists and entry points (his, with no other member) go too; the school
+// account and its automatic teams stay; nobody else's rows change; a second run does nothing;
 // another member approved by him, or the account held by him, is kept with the link cleared; owned saved
 // sets stop it; a profile that isn't a platform admin is never touched.
 import { PGlite } from "@electric-sql/pglite";
@@ -45,6 +46,7 @@ async function fresh({ admin = true, extra = "" } = {}) {
     create table public.admissions_grants (membership_id uuid primary key references public.school_memberships (id) on delete cascade, school_account_id uuid);
     create table public.usage_events (id serial primary key, membership_id uuid references public.school_memberships (id) on delete set null, school_urn text);
     create table public.admissions_lists (id serial primary key, school_account_id uuid, updated_by uuid);
+    create table public.admissions_entry_points (id serial primary key, school_account_id uuid, updated_by uuid);
 
     insert into public.profiles values ('${GUY}'), ('${OTHER}');
     ${admin ? `insert into public.platform_admins values ('${GUY}');` : ""}
@@ -61,6 +63,9 @@ async function fresh({ admin = true, extra = "" } = {}) {
     insert into public.usage_events (membership_id, school_urn) select '${GUY_M}', '100053' from generate_series(1, 27);
     insert into public.usage_events (membership_id, school_urn) values ('${OTHER_M}', '137625'), ('${GUY_CHASE_M}', '137625');
     insert into public.admissions_lists (school_account_id, updated_by) select '${ACLAND}', '${GUY}' from generate_series(1, 4);
+    insert into public.admissions_entry_points (school_account_id, updated_by) values ('${ACLAND}', '${GUY}'), ('${ACLAND}', '${GUY}');
+    insert into public.admissions_lists (school_account_id, updated_by) values ('${CHASE}', '${GUY}'), ('${CHASE}', '${OTHER}');
+    insert into public.admissions_entry_points (school_account_id, updated_by) values ('${CHASE}', '${GUY}');
     ${extra}
   `);
   return db;
@@ -78,7 +83,9 @@ const count = (db, sql) => one(db, `select count(*)::int from ${sql}`);
   check("his team places go; the teams stay", (await count(db, "public.team_members")) === 0 && (await count(db, "public.teams")) === 3);
   check("his 27 usage rows at 100053 are removed, not left anonymous", (await count(db, "public.usage_events where school_urn = '100053'")) === 0);
   check("the school account stays", (await count(db, `public.school_accounts where id = '${ACLAND}'`)) === 1);
-  check("its admissions lists stay", (await count(db, "public.admissions_lists")) === 4);
+  check("its 4 test admissions lists and 2 entry points are removed", (await count(db, `public.admissions_lists where school_account_id = '${ACLAND}'`)) === 0 && (await count(db, `public.admissions_entry_points where school_account_id = '${ACLAND}'`)) === 0);
+  check("its automatic teams stay", (await count(db, `public.teams where school_account_id = '${ACLAND}'`)) === 3);
+  check("another school's lists and entry points are untouched, Guy's own there included", (await count(db, `public.admissions_lists where school_account_id = '${CHASE}'`)) === 2 && (await count(db, `public.admissions_entry_points where school_account_id = '${CHASE}'`)) === 1);
   check("Guy's other membership (another school) is untouched", (await count(db, `public.school_memberships where id = '${GUY_CHASE_M}'`)) === 1);
   check("his usage at the other school is untouched", (await count(db, `public.usage_events where membership_id = '${GUY_CHASE_M}'`)) === 1);
   check("another member's rows are untouched", (await count(db, `public.school_memberships where id = '${OTHER_M}'`)) === 1 && (await count(db, `public.sign_in_events where membership_id = '${OTHER_M}'`)) === 1 && (await count(db, `public.admissions_grants where membership_id = '${OTHER_M}'`)) === 1 && (await count(db, `public.usage_events where membership_id = '${OTHER_M}'`)) === 1);
@@ -102,6 +109,7 @@ const count = (db, sql) => one(db, `select count(*)::int from ${sql}`);
       update public.school_accounts set account_holder_membership_id = '${GUY_M}', pending_account_holder_membership_id = '${GUY_M}' where id = '${ACLAND}';`,
   });
   await db.exec(migration);
+  check("with another member at the school, its lists and entry points are kept", (await count(db, `public.admissions_lists where school_account_id = '${ACLAND}'`)) === 4 && (await count(db, `public.admissions_entry_points where school_account_id = '${ACLAND}'`)) === 2);
   check("a member he approved is kept, approved_by cleared", (await one(db, "select approved_by is null from public.school_memberships where id = '00000000-0000-0000-0000-0000000000a3'")) === true);
   check("the account he held is kept, holder and pending holder cleared", (await one(db, `select account_holder_membership_id is null and pending_account_holder_membership_id is null from public.school_accounts where id = '${ACLAND}'`)) === true);
   check("and his membership is gone", (await count(db, `public.school_memberships where id = '${GUY_M}'`)) === 0);
@@ -117,14 +125,14 @@ const count = (db, sql) => one(db, `select count(*)::int from ${sql}`);
     err = e;
   }
   check("owned saved sets stop the migration", /saved sets or rankings/.test(err?.message ?? ""), err?.message);
-  check("and nothing was removed", (await count(db, `public.school_memberships where id = '${GUY_M}'`)) === 1 && (await count(db, "public.usage_events")) === 29);
+  check("and nothing was removed", (await count(db, `public.school_memberships where id = '${GUY_M}'`)) === 1 && (await count(db, "public.usage_events")) === 29 && (await count(db, `public.admissions_lists where school_account_id = '${ACLAND}'`)) === 4);
 }
 
 // 4. Not a platform admin: nothing.
 {
   const db = await fresh({ admin: false });
   await db.exec(migration);
-  check("a profile that isn't a platform admin is never touched", (await count(db, `public.school_memberships where id = '${GUY_M}'`)) === 1 && (await count(db, "public.usage_events")) === 29);
+  check("a profile that isn't a platform admin is never touched", (await count(db, `public.school_memberships where id = '${GUY_M}'`)) === 1 && (await count(db, "public.usage_events")) === 29 && (await count(db, `public.admissions_lists where school_account_id = '${ACLAND}'`)) === 4);
 }
 
 console.log(`\n${pass} PASS, ${fail} FAIL`);
