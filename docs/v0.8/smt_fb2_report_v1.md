@@ -132,8 +132,50 @@ There is no England or Reading line. Each average is over the set's schools with
 
 ## Parity
 
-PARITY_PENDING
+**Parity against `main` (`d443414`): no unexpected difference.** Every difference is an allowed SMT Overview change: F-9, F-10, F-11 and item 5. Teacher, Admissions, groups, the Data View and the public page are unchanged. The run used branch `2353cbf`, and Teacher was rerun on `947f33d`. Every read went through the read-only proxy.
+
+| Harness | Pairs | Identical | Allowed only | Noise | Unexpected |
+|---|---|---|---|---|---|
+| Teacher panel views | 2,853 | 2,851; the two ranking sets 497/497 on a rerun | — | 1 render | 0 |
+| Public page SSR (137625, 117037) | 2 | 2 | — | 0 | 0 |
+| SMT dashboards and homes | 108 states | 68 | 40, all Overview | 0 | 0 |
+| SMT group sets | 56 states | 28 | 28, all Overview | 0 | 0 |
+| SMT subjects | 16 cells | 16 | — | 0 | 0 |
+| Admissions | 324 states | 324 (text and picture) | — | 0 | 0 |
+| Groups dashboards | 68 states | 68 (text and picture, on a rerun) | — | 0 | 0 |
+| Data View | 60 files | 60 | — | 0 | 0 |
+
+**Explained, not unexpected:**
+- **Teacher's first run:** main's walker crashed on one ranking case, and one change map varied, as in round 1. A rerun of both sets was identical.
+- **SMT Context at Leighton Park:** six pictures differ by 5 to 9 pixels in one strip, with identical text: render noise.
+- **Groups:** one empty branch capture; on a rerun, identical.
+
+**The footer's "Feedback on this page"** isn't in these harnesses, which don't render the site footer. The browser test covers it, and it shows only to platform admins.
+
+**Worth knowing:** the branch's Overview reads more. It needs each set school's census for the roll averages, and the set's census for the sizes, all cached for an hour. While the Teacher harness was loading the proxy, the branch's Overview capture hit a database statement timeout (57014) four times before passing on a retry. It is fine on its own, but it is the round's one cost on the database.
 
 ## Guy's commands, in order
 
-GUY_PENDING
+**1. Apply the page-feedback migration** (it writes; project-ref check first). Run it from the branch's worktree, which holds the file:
+
+```
+cd ~/dev/vicdata_public_smtfb1 && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && supabase db query --linked -f supabase/migrations/20261118090000_v08_feedback_page.sql && supabase migration repair --status applied 20261118090000 --linked && supabase db query --linked "select (select count(*) from feedback_items) as items, (select count(*) from feedback_items where area <> '{}') as with_area, (select count(*) from feedback_for_triage where is_page) as page_items, (select count(*) from feedback_coverage where kind = 'page') as page_rows, (select string_agg(conname, ', ' order by conname) from pg_constraint where conrelid = 'public.feedback_items'::regclass and conname in ('feedback_items_area_check', 'feedback_items_product_check', 'feedback_items_page_shape')) as checks"
+```
+
+Expect: `items` is today's count (11 or more), `with_area` 0, `page_items` 0, `page_rows` 0, and all three checks listed.
+
+**2. Merge and push** (after step 1). This runs in the worktree, on a detached main, so `~/dev/vicdata_public` isn't touched:
+
+```
+cd ~/dev/vicdata_public_smtfb1 && git fetch https://github.com/guyVicData/vicdata_public.git main && git checkout --detach FETCH_HEAD && git merge --no-ff v0.8-smt-fb2 -m "0.8 SMT feedback round 2: the selected comparison set drives SMT Overview" && npm run build && git push https://github.com/guyVicData/vicdata_public.git HEAD:main
+```
+
+It goes live with a Render deploy.
+
+**3. Then mark F-1 to F-11 done** (it writes). Run it from the same worktree straight after step 2, so `HEAD` is the merge commit. F-1 to F-8 use `41c4d26`, F-9 to F-11 this merge:
+
+```
+cd ~/dev/vicdata_public_smtfb1 && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && M=$(git rev-parse --short=7 HEAD) && supabase db query --linked "update public.feedback_items set status = 'done', resolved_commit = case when number <= 8 then '41c4d26' else '$M' end, resolved_at = now() where number between 1 and 11 and status <> 'done'" && supabase db query --linked "select ref, status, resolved_commit, resolved_at::date from feedback_for_triage where number between 1 and 11 order by number"
+```
+
+**4. Try a page item on the live site:** "Feedback on this page" at the foot of SMT Overview in View as Leighton Park. Its row reads "Page" in `/platform/feedback`.
