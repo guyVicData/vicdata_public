@@ -106,6 +106,7 @@ King's Worcester (ages 2 to 19, with a Year 6): Net change at 11 **+27**, Net ch
 | Leighton Park | SMT Overview → Scorecard panel → **Flags** (no flags). Its phone tabs read Scorecard, Map. |
 | The Chase | SMT Overview → **Flags** (no flags in 2025/26) |
 | King's Worcester | Admissions Pipelines at 4+ → Trends → **Pool, indexed** (fewer than two past pools) |
+| Beaudesert Park (115786), from parity | Admissions Market share at 11+ → **Strengths and weaknesses** (no area with rivals to compare); Pipelines at 4+ → **Pool, indexed** |
 
 ## F-7: SMT Overview, From Admissions → Market share
 
@@ -154,7 +155,7 @@ Groups' three-figure "By phase" tile is unchanged.
 | tsc | clean |
 | eslint | 0 errors (the 2 old warnings, `PeerTrendChart.tsx` and `SchoolMap.tsx`). Main's `notes-feedback.test.ts` had 4 `react/no-children-prop` errors; that file now turns the rule off, with the reason (`next build`'s type check needs the render-function children as a prop). |
 | `next build` | clean |
-| Unit (`src/**/*.test.ts`, `--env-file=.env`) | **514 / 514** (508 + 6 new in `src/lib/smt-fb1.test.ts`) |
+| Unit (`src/**/*.test.ts`, `--env-file=.env`) | **514 / 514** (508 + 6 new in `src/lib/smt-fb1.test.ts`; rerun after the short-name change) |
 | Catalogue unit tests | **77 / 77** |
 | Rule tests (real data, read-only) | **113 PASS, 0 FAIL** (107 + the 6 new; MANUAL 15, NONE 19, SUPERSEDED 4) |
 | PGlite, all 21 suites (RLS, usage log) | all pass (PostGIS ones with `PGLITE_DIR`; `v08_view_as_editing` 44/44 through tsx) |
@@ -177,7 +178,28 @@ Groups' three-figure "By phase" tile is unchanged.
 
 ## Parity
 
-PARITY_PENDING
+**Parity against `main` (`9af5743`), branch `49d8978`: no unexpected difference.** Every difference is one of this round's allowed changes: F-1, F-2, F-3/F-4, F-6, F-7 and F-8. Teacher, the Data View, the public page SSR and SMT subjects are unchanged. Nothing was written to any database: every read went through the read-only proxy.
+
+**How it was run:** last round's pipeline, on a fresh base worktree at `9af5743`. On SMT and Admissions, F-6 removes rail icons, so every later shot in a walk shifts by one. Those shots were re-paired by the state each one shows.
+
+| Harness | Pairs | Identical | Allowed changes only | Noise | Unexpected |
+|---|---|---|---|---|---|
+| Teacher (panel views) | 2,875 | 2,873 | 0 | 2 | 0 |
+| Public page SSR (137625, 117037) | 2 | 2 | — | 0 | 0 |
+| SMT dashboards and homes (re-paired by state) | 112 main / 108 branch states, 96 paired | 60 (Academic, Context, homes) | 36 paired, plus 16 main-only / 12 branch-only Flags states (F-6) | 0 | 0 |
+| SMT group sets | 56 states | 28 | 28 | 0 | 0 |
+| SMT subjects | 16 cells | 16 | — | 0 | 0 |
+| Admissions (paired by shown state) | 318 paired | 240 text, 226 PNG | the rest; 10 unpaired states (F-6) | 0 | 0 |
+| Groups dashboards | 68 states | 36 text, 34 PNG | 32 | 2 | 0 |
+| Data View | 60 files | 60 | — | 0 | 0 |
+
+**Notes:**
+- **Teacher noise:** the walker scored one change map as unexpected: 137625, ranking pending. Its text is identical. The branch picture is byte-identical to last round's capture of the same case, and that code is now main. Main's picture this run differs from all 7 earlier runs, so the map draws a little differently each run. The other Teacher difference is one render-noise picture.
+- **Two more views hidden at Beaudesert Park** (115786, boarding prep), both right under F-6:
+  - the 11+ Market share rail loses Strengths and weaknesses (no subject area has rivals to compare with);
+  - the 4+ Pipelines trend panel loses Pool, indexed, so it opens on its table.
+- **Short names:** parity showed 16 characters cut group sets too hard ("All Dukes schools" became "All Dukes…"). After the parity run, `setShortName` was loosened: up to 22 characters, dropping a trailing " schools" first, so "All Harris Federation schools" reads "All Harris Federation". This changes only the set column's header text on those group sets.
+
 
 ## Closing the loop
 

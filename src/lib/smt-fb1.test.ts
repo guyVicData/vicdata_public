@@ -23,8 +23,10 @@ test("F-3: every set has a short name for a tight header", () => {
   assert.equal(setShortName("15 nearest schools"), "15 nearest");
   assert.equal(setShortName("Schools in Reading"), "Reading");
   assert.equal(setShortName("Rivals"), "Rivals");
+  assert.equal(setShortName("All Dukes schools"), "All Dukes schools");
+  assert.equal(setShortName("All Harris Federation schools"), "All Harris Federation");
   const long = setShortName("Our independent day and boarding rivals in Berkshire");
-  assert.ok(long.length <= 16 && long.endsWith("…"), long);
+  assert.ok(long.length <= 22 && long.endsWith("…"), long);
 });
 
 test("R-TREND-PERIOD-PER-CELL: each cell says its own years; value added grows to a third year from the data", () => {

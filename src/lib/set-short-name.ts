@@ -4,9 +4,10 @@
 //   "10 nearest with a sixth form or 16+ provision"  -> "10 nearest"
 //   "10 nearest schools"                             -> "10 nearest"
 //   "Schools in Reading"                             -> "Reading"
-//   anything else (a saved set's or a ranking's own name): as it is when short, else its first
-//   words to SET_SHORT_MAX characters, with an ellipsis.
-export const SET_SHORT_MAX = 16;
+//   "All Harris Federation schools"                  -> "All Harris Federation"
+//   anything else (a saved set's or a ranking's own name): as it is when short (a trailing " schools"
+//   dropped), else its first words to SET_SHORT_MAX characters, with an ellipsis.
+export const SET_SHORT_MAX = 22;
 
 export function setShortName(label: string): string {
   const t = label.trim().replace(/\s+/g, " ");
@@ -15,7 +16,9 @@ export function setShortName(label: string): string {
   const inLa = /^Schools in (.+)$/i.exec(t);
   if (inLa && inLa[1].length <= SET_SHORT_MAX) return inLa[1];
   if (t.length <= SET_SHORT_MAX) return t;
-  const words = t.split(" ");
+  const bare = t.replace(/ schools$/i, "");
+  if (bare.length <= SET_SHORT_MAX) return bare;
+  const words = bare.split(" ");
   let out = "";
   for (const w of words) {
     const next = out ? `${out} ${w}` : w;

@@ -2518,7 +2518,7 @@ This is the round for `docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_pro
 4. **F-3, short names (`setShortName`):**
    - "N nearest …" becomes "N nearest".
    - "Schools in X" becomes "X".
-   - Any other name stays as it is up to 16 characters; a longer one is cut at a word, with "…".
+   - Any other name stays as it is up to 22 characters. A longer one first drops a trailing " schools" ("All Harris Federation schools" becomes "All Harris Federation"), then is cut at a word, with "…". Parity found that 16 characters cut the group sets too hard ("All Dukes…").
    
    The short name is used in the Scorecard's set column and the phone's "Rank in …". The full name is the column's tooltip and the first line of the (i). No other SMT header overflowed at 1440, so none of the others changed.
 5. **F-3, F-4, trend periods:**
