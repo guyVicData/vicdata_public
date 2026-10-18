@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { userFrom } from "@/lib/groups/server";
+import { isMissing, userFrom } from "@/lib/groups/server";
+import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { groupIndex, groupMembers } from "@/lib/groups/production";
 import { isPlatformAdmin } from "@/lib/view-as";
 
@@ -19,7 +20,16 @@ export async function GET(request: NextRequest) {
     const idx = await groupIndex();
     const hits = idx.filter((g) => g.groupId.toLowerCase() === q || g.groupId.toLowerCase().includes(q) || g.name.toLowerCase().includes(q));
     hits.sort((a, b) => Number(b.name.toLowerCase().startsWith(q)) - Number(a.name.toLowerCase().startsWith(q)) || b.schools - a.schools);
-    return NextResponse.json({ groups: hits.slice(0, 20) });
+    const top = hits.slice(0, 20);
+    // 0.8 View as fixes: each group's account where it has one (the View as switcher opens that; a group
+    // without one opens read-only from the group lookups). Platform's own search ignores the extra fields.
+    const accounts = new Map<string, { id: string; status: string }>();
+    if (top.length) {
+      const { data, error } = await createServiceRoleSupabaseClient().from("group_accounts").select("id, group_id, status").eq("preview", false).in("group_id", top.map((g) => g.groupId));
+      if (error && !isMissing(error)) throw error;
+      for (const a of (data ?? []) as { id: string; group_id: string; status: string }[]) accounts.set(a.group_id, { id: a.id, status: a.status });
+    }
+    return NextResponse.json({ groups: top.map((g) => ({ ...g, accountId: accounts.get(g.groupId)?.id ?? null, status: accounts.get(g.groupId)?.status ?? null })) });
   } catch (err) {
     console.error("[platform/groups] search failed:", err);
     return NextResponse.json({ error: "Could not search groups." }, { status: 502 });

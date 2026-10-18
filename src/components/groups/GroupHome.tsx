@@ -201,6 +201,13 @@ function Body({ offices }: { offices: OfficesState }) {
         </div>
       )}
       {o.status === "suspended" && <p className="mt-4 text-[13px] text-[var(--muted2)]">This group account is suspended. VicData can tell you why.</p>}
+      {/* 0.8 View as fixes (item 3): head office of a group with no group account -- its dashboards from the
+          group lookups, read-only; no Access, nothing an account holds. */}
+      {o.noAccount && (
+        <p className="mt-4 text-[13px] text-[var(--muted2)]" data-group-no-account="">
+          <span className="font-bold text-[var(--fg)]">No group account yet.</span> These are the group&rsquo;s dashboards from the published data, read-only. Access and everything else a group account holds come with one (Platform makes it).
+        </p>
+      )}
 
       <p className="mt-[22px] text-base font-semibold text-[var(--muted2)]">What would you like to look at?</p>
       {data.status === "error" && <p className="mt-4 text-[13px] text-[var(--muted2)]">{data.message}</p>}
@@ -233,13 +240,13 @@ function Body({ offices }: { offices: OfficesState }) {
           )}
         </div>
 
-        <Card
+        {!o.noAccount && <Card
           colour={ACCESS_TILE}
           icon={<LockGlyph />}
           title="Access"
           description={d ? groupNote("accessCard", { n: d.access.seeing, m: d.access.of }) : "…"}
           href={d && (d.canManage || d.viewAs) ? `/teacher/group/access${offices.all.length > 1 ? `?account=${o.id}` : ""}` : undefined}
-        />
+        />}
 
         {!offices.viewAs && (
           <>

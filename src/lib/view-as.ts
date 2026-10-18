@@ -77,6 +77,22 @@ export const LEGACY_VIEW_AS_GROUP_COOKIE = "vicdata_view_as_group";
 export type ViewAsGroup = { accountId: string; name: string };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// 0.8 View as fixes (item 3): head office of ANY group, account or not. A group with no group account is
+// named by its production group id in the account's place: "group:{group_id}" ("group:3320",
+// "group:club_iss:dukes-education", "group:ch:01234567"). Only a platform admin's View as or peek ever
+// carries one; the server builds that group's read-only head office from the group lookups
+// (groups/server.ts, groupCaller), with no Access page and no account features.
+export const NO_ACCOUNT_PREFIX = "group:";
+const GROUP_REF = /^group:[A-Za-z0-9_:.-]{1,80}$/;
+/** An account id, or a group without an account ("group:{group_id}"); null if neither. */
+export function viewAsGroupRef(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (UUID.test(value)) return value.toLowerCase();
+  return GROUP_REF.test(value) ? value : null;
+}
+/** The production group id of a "group:{group_id}" reference, or null for an account id. */
+export const noAccountGroupId = (ref: string): string | null => (ref.startsWith(NO_ACCOUNT_PREFIX) ? ref.slice(NO_ACCOUNT_PREFIX.length) : null);
+
 export function parseViewAsGroup(cookieHeader: string | null | undefined): ViewAsGroup | null {
   if (!cookieHeader) return null;
   for (const part of cookieHeader.split(";")) {
@@ -84,8 +100,9 @@ export function parseViewAsGroup(cookieHeader: string | null | undefined): ViewA
     if (i < 0 || part.slice(0, i).trim() !== VIEW_AS_COOKIE) continue;
     try {
       const s = JSON.parse(decodeURIComponent(part.slice(i + 1).trim())) as { r?: unknown; g?: unknown; n?: unknown };
-      if (s.r !== HEAD_OFFICE_ROLE || typeof s.g !== "string" || !UUID.test(s.g)) return null;
-      return { accountId: s.g.toLowerCase(), name: typeof s.n === "string" && s.n ? s.n.slice(0, 160) : "the group" };
+      const ref = s.r === HEAD_OFFICE_ROLE ? viewAsGroupRef(s.g) : null;
+      if (!ref) return null;
+      return { accountId: ref, name: typeof s.n === "string" && s.n ? s.n.slice(0, 160) : "the group" };
     } catch {
       return null;
     }
@@ -149,16 +166,33 @@ export function viewAsMembership(role: ViewAsRole): { roles: string[]; role: str
   return role === "school_admin" ? { roles: ["teacher"], role: "teacher", is_admin: true, isAccountHolder: false } : { roles: [role], role, is_admin: false, isAccountHolder: false };
 }
 
-// True only when the signed-in caller is a platform admin; any error reads as "no". Pages
-// ask before honouring View as; routes ask after their member check (isPlatformAdmin), so
-// a member's path is unchanged.
-export async function confirmPlatformAdmin(supabase: SupabaseClient): Promise<boolean> {
-  try {
-    const { data, error } = await supabase.rpc("is_platform_admin");
-    return !error && data === true;
-  } catch {
-    return false;
+// 0.8 View as fixes: is the signed-in caller a platform admin? "yes" and "no" are the database's own
+// answer; "unknown" is anything else -- an error, a timeout, or a request the browser cancelled because
+// the page was being left. The cause of Guy's View as landing on his own school (18 Oct): the nav's
+// re-check after "Open their home page" was cancelled by that very navigation, read as "no", and
+// cleared the cookie. Only a definite "no" may ever end View as. An unknown answer is asked again
+// (`retries`, a short wait between) before it is returned.
+export type AdminCheck = "yes" | "no" | "unknown";
+export async function checkPlatformAdmin(supabase: SupabaseClient, retries = 0): Promise<AdminCheck> {
+  for (let attempt = 0; ; attempt++) {
+    let answer: AdminCheck = "unknown";
+    try {
+      const { data, error } = await supabase.rpc("is_platform_admin");
+      if (!error && typeof data === "boolean") answer = data ? "yes" : "no";
+    } catch {
+      answer = "unknown";
+    }
+    if (answer !== "unknown" || attempt >= retries) return answer;
+    await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
   }
+}
+
+// True only when the signed-in caller is confirmed a platform admin; "no" and "unknown" both read as
+// false. For deciding whether to GRANT something (start View as, a route's admin read); never for
+// taking View as away (resolveViewAs uses checkPlatformAdmin). Routes ask after their member check
+// (isPlatformAdmin), so a member's path is unchanged.
+export async function confirmPlatformAdmin(supabase: SupabaseClient): Promise<boolean> {
+  return (await checkPlatformAdmin(supabase)) === "yes";
 }
 export const isPlatformAdmin = confirmPlatformAdmin;
 
@@ -172,8 +206,17 @@ export async function viewAsForRequest(
 ): Promise<{ urn: string; role: ViewAsRole; stateKey: string } | null> {
   const v = parseViewAsCookie(request.headers.get("cookie"));
   if (!v || v.urn !== urn) return null;
-  if (!(await confirmPlatformAdmin(supabase))) return null;
+  const check = await checkPlatformAdmin(supabase, 1);
+  // 0.8 View as fixes: unanswerable is "try again" (the route answers 502), never the admin's own data.
+  if (check === "unknown") throw new ViewAsUnconfirmed();
+  if (check === "no") return null;
   return { urn: v.urn, role: v.role, stateKey: viewAsStateKey(v.urn, v.role) };
+}
+
+export class ViewAsUnconfirmed extends Error {
+  constructor() {
+    super("Could not confirm View as. Try again.");
+  }
 }
 
 // ------------------------------------------------------------------ which school is shown
@@ -241,8 +284,8 @@ export type PeekGroup = { accountId: string };
 
 export function readPeekGroup(params: URLSearchParams): PeekGroup | null {
   if (params.get("peek") !== "1" || params.get("as") !== HEAD_OFFICE_ROLE) return null;
-  const id = params.get("lookAs")?.trim();
-  return id && UUID.test(id) ? { accountId: id.toLowerCase() } : null;
+  const ref = viewAsGroupRef(params.get("lookAs")?.trim());
+  return ref ? { accountId: ref } : null;
 }
 
 /** The peek a request carries (PEEK_HEADER: the page's own query string), or null. */
@@ -345,11 +388,14 @@ export function viewAsGroupSnapshot(): ViewAsGroup | null {
   return pin().group;
 }
 
-function setViewAs(v: ViewAsCookie | null, group: ViewAsGroup | null = null) {
+// `confirmed`: the caller was confirmed a platform admin just now (startViewAs, the switcher's own
+// check), so this page needs no second check -- one that the navigation to the new home would cancel.
+function setViewAs(v: ViewAsCookie | null, group: ViewAsGroup | null = null, confirmed = false) {
   writeCookie(v ? serializeViewAsCookie(v) : group ? serializeViewAsGroup(group) : null);
   pinned = { value: v, group: v ? null : group };
-  resolved = null;
-  resolvedGroup = null;
+  resolved = confirmed && v ? Promise.resolve(toViewAs(v)) : null;
+  resolvedGroup = confirmed && !v && group ? Promise.resolve(group) : null;
+  unconfirmed = false;
   try {
     window.dispatchEvent(new Event(VIEW_AS_EVENT));
   } catch {
@@ -385,37 +431,59 @@ export function getActiveViewAs(): ViewAs | null {
   return v ? toViewAs(v) : null;
 }
 
-// Re-confirmed on every page load: anyone not a platform admin loses it here (and the
-// banner and pill, which drew from the cookie, go with it). Shared per page load.
+// Re-confirmed on every page load: anyone the database says is NOT a platform admin loses it here
+// (and the banner and pill, which drew from the cookie, go with it). Shared per page load.
+// 0.8 View as fixes: a check that can't be answered (an error, a timeout, a cancelled request) is
+// asked twice more; still unanswered, View as is KEPT -- the page draws the viewed school, never the
+// admin's own -- and the banner offers Retry (viewAsUnconfirmed). Nothing is exposed by keeping it:
+// every route re-checks platform admin itself and refuses (502, "try again") while it can't.
 let resolved: Promise<ViewAs | null> | null = null;
 export function resolveViewAs(supabase: SupabaseClient): Promise<ViewAs | null> {
   if (resolved) return resolved;
   resolved = (async () => {
     const v = viewAsSnapshot();
     if (!v) return null;
-    if (!(await confirmPlatformAdmin(supabase))) {
+    const check = await checkPlatformAdmin(supabase, 2);
+    if (check === "no") {
       setViewAs(null);
       return null;
     }
+    if (check === "unknown") markUnconfirmed();
     return toViewAs(v);
   })();
   return resolved;
 }
 
-// The same for head office's View as: anyone not a platform admin loses the cookie.
+// The same for head office's View as: anyone the database says is not a platform admin loses the cookie.
 let resolvedGroup: Promise<ViewAsGroup | null> | null = null;
 export function resolveViewAsGroup(supabase: SupabaseClient): Promise<ViewAsGroup | null> {
   if (resolvedGroup) return resolvedGroup;
   resolvedGroup = (async () => {
     const g = viewAsGroupSnapshot();
     if (!g) return null;
-    if (!(await confirmPlatformAdmin(supabase))) {
+    const check = await checkPlatformAdmin(supabase, 2);
+    if (check === "no") {
       setViewAs(null);
       return null;
     }
+    if (check === "unknown") markUnconfirmed();
     return g;
   })();
   return resolvedGroup;
+}
+
+// This page couldn't confirm its View as (above): the banner says so and offers Retry (a reload).
+let unconfirmed = false;
+function markUnconfirmed() {
+  unconfirmed = true;
+  try {
+    window.dispatchEvent(new Event(VIEW_AS_EVENT));
+  } catch {
+    // Not in a browser.
+  }
+}
+export function viewAsUnconfirmed(): boolean {
+  return unconfirmed;
 }
 
 // 2. The school_urn to write per-user state under: the state key while viewing this school
@@ -483,7 +551,7 @@ export async function startViewAs(
   await touchRecent(supabase, input.urn, input.role);
   const schoolName = input.schoolName ?? (await schoolNameOf(supabase, input.urn));
   const v = { urn: input.urn, role: input.role, schoolName };
-  setViewAs(v);
+  setViewAs(v, null, true);
   return { ok: true, viewAs: toViewAs(v) };
 }
 
@@ -491,15 +559,33 @@ export async function startViewAs(
 // Confirms platform admin and writes one audit row (view_as_group), as groups r1 did.
 export async function startViewAsHeadOffice(supabase: SupabaseClient, g: ViewAsGroup & { groupId?: string }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!(await confirmPlatformAdmin(supabase))) return { ok: false, error: "Only platform admins can view VicData as a head office." };
-  const { error } = await supabase.rpc("log_platform_action", { p_action: "view_as_group", p_school_urn: null, p_detail: { group_account_id: g.accountId, group_id: g.groupId ?? null } });
+  const groupId = noAccountGroupId(g.accountId);
+  const { error } = await supabase.rpc("log_platform_action", { p_action: "view_as_group", p_school_urn: null, p_detail: { group_account_id: groupId ? null : g.accountId, group_id: groupId ?? g.groupId ?? null } });
   if (error) return { ok: false, error: `Could not start View as: ${error.message}` };
-  setViewAs(null, { accountId: g.accountId, name: g.name });
+  setViewAs(null, { accountId: g.accountId, name: g.name }, true);
   return { ok: true };
 }
 
 // Back to me (a school's View as or head office's: one cookie).
 export function exitViewAs(): void {
   setViewAs(null);
+}
+
+// 0.8 View as fixes (item 4): where the signed-in person's own VicData is, once View as ends: their
+// school's home if they hold an approved school membership, head office's if they hold a group one,
+// else Platform for a platform admin (who needs no membership), else /teacher (which explains).
+// Their own rows only (RLS). A read that fails sends them to /teacher, which decides for itself.
+export async function ownHome(supabase: SupabaseClient): Promise<string> {
+  const { data: s } = await supabase.auth.getSession();
+  const uid = s.session?.user.id;
+  if (!uid) return "/teacher";
+  const [school, group] = await Promise.all([
+    supabase.from("school_memberships").select("id").eq("profile_id", uid).eq("status", "approved").limit(1),
+    supabase.from("group_memberships").select("id").eq("profile_id", uid).limit(1),
+  ]);
+  if (school.error || (school.data ?? []).length > 0) return "/teacher";
+  if (!group.error && (group.data ?? []).length > 0) return "/teacher/group";
+  return (await checkPlatformAdmin(supabase, 1)) === "yes" ? "/platform" : "/teacher";
 }
 
 // The caller as the one server helper decides it (GET /api/view-as/caller, resolveCaller): what a

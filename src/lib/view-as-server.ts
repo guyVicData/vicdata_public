@@ -20,7 +20,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleSupabaseClient } from "./supabase";
-import { confirmPlatformAdmin, decideCaller, parsePeekHeader, parseViewAsCookie, parseViewAsGroup, PEEK_HEADER, type CallerAccess, type CallerRoles, type ViewAsRole } from "./view-as";
+import { checkPlatformAdmin, decideCaller, parsePeekHeader, parseViewAsCookie, parseViewAsGroup, PEEK_HEADER, type CallerAccess, type CallerRoles, type ViewAsRole } from "./view-as";
 
 export type ResolvedCaller = {
   supabase: SupabaseClient;
@@ -130,7 +130,13 @@ export async function resolveCaller<H = unknown>(request: NextRequest, urn: stri
 
   // A member with no View as cookie for here is decided by their membership alone: no extra call.
   const needsAdmin = (viewAs?.urn === urn) || !!group || !member || !allowed(member);
-  const platformAdmin = needsAdmin ? await confirmPlatformAdmin(supabase!) : false;
+  // 0.8 View as fixes: with a View as (or a peek) for here, an admin check that can't be answered is
+  // "try again" (502), never "not an admin" -- which would serve the platform admin as their own
+  // membership, or refuse them, in the viewed role's place. Without one, it reads as before (no).
+  const asked = viewAs?.urn === urn || !!group;
+  const check = needsAdmin ? await checkPlatformAdmin(supabase!, asked ? 1 : 0) : "no";
+  if (check === "unknown" && asked) return NextResponse.json({ error: "Could not confirm View as. Try again." }, { status: 502 });
+  const platformAdmin = check === "yes";
 
   // Anyone else's head-office cookie is ignored, as a school one is.
   const asGroup = platformAdmin ? group : null;

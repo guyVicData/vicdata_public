@@ -5,7 +5,7 @@ import { isIndependent, type PoolSchool } from "@/lib/teacher-view-rankings";
 import { neighbourPool, rankFixedSets, type NeighbourRow } from "@/lib/teacher-view-comparator-series";
 import { PERSONAL_COMPARATOR_CAP, readViewAsStore, type SavedRanking } from "@/lib/teacher-view-saved-sets";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
-import { viewAsForRequest, viewAsMembership } from "@/lib/view-as";
+import { viewAsForRequest, viewAsMembership, ViewAsUnconfirmed } from "@/lib/view-as";
 import { schoolGroupSets } from "@/lib/groups/school-sets";
 
 // Teacher view, accordion round Part 3: the saved comparator sets a teacher can compare
@@ -69,7 +69,13 @@ export async function GET(request: NextRequest) {
   // viewed member's (a School-Admin's is true), so the page draws exactly as theirs; the
   // chooser then refuses any save that would write a shared set (no school-wide writes in
   // View as). A member's path below is unchanged.
-  const viewAs = await viewAsForRequest(supabase, request, urn);
+  let viewAs: Awaited<ReturnType<typeof viewAsForRequest>>;
+  try {
+    viewAs = await viewAsForRequest(supabase, request, urn);
+  } catch (e) {
+    if (e instanceof ViewAsUnconfirmed) return NextResponse.json({ error: e.message }, { status: 502 });
+    throw e;
+  }
   let ctx: { membershipId: string; schoolAccountId: string; canEditShared: boolean; rows: SetRow[]; vcRows: VcRow[]; rankings?: SavedRanking[] };
   if (viewAs) {
     const svc = createServiceRoleSupabaseClient();

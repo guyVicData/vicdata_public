@@ -135,7 +135,9 @@ export async function GET(request: NextRequest) {
       .select("id")
       .eq("profile_id", userId)
       .limit(1);
-    if (!existing || existing.length === 0) {
+    // 0.8 View as fixes: never to a platform admin, who needs no membership (View as reaches any school).
+    const { data: admin0 } = await admin.from("platform_admins").select("profile_id").eq("profile_id", userId).maybeSingle();
+    if ((!existing || existing.length === 0) && !admin0) {
       const granted = await grantStarterMembership(admin, userId, PREVIEW_STARTER_URN);
       if (!granted.ok) console.error("[preview-session] starter membership failed:", granted.error);
     }

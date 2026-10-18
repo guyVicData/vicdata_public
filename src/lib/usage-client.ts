@@ -5,13 +5,14 @@
 // forget: no await, no error, no retry, nothing drawn.
 import { createContext, createElement, useContext, useEffect, useRef, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "./supabase";
-import { getActiveViewAs } from "./view-as";
+import { getActiveViewAs, viewAsGroupSnapshot } from "./view-as";
 import type { UsageReport } from "./usage";
 import { createPageViewGate, pageViewKey, type PageViewScope } from "./usage-gate";
 
 export function reportUsage(r: UsageReport): void {
-  // A platform admin viewing as someone is not the school's usage: never logged.
-  if (typeof window === "undefined" || getActiveViewAs()) return;
+  // A platform admin viewing as someone (a school's View as, head office's, or a peek) is not the
+  // school's usage: never logged. The server refuses it too (/api/usage logs members only).
+  if (typeof window === "undefined" || getActiveViewAs() || viewAsGroupSnapshot() || new URLSearchParams(window.location.search).get("peek") === "1") return;
   void (async () => {
     try {
       const { data } = await createBrowserSupabaseClient().auth.getSession();
