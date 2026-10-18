@@ -1604,7 +1604,7 @@ const RUNNERS: Record<string, Runner> = {
       if (!boarding) {
         const leaks = [...own, ...setup].map(text).filter((x) => BOARD.test(x)).map((x) => x.match(BOARD)![0]);
         const marketControls = market.map(text).some((x) => /Rivals with boarders|Boarding only/.test(x));
-        const tile = /Day · boarding/.test(text(html)) === false && />Day</.test(html);
+        const tile = !/data-pair="Boarding"/.test(html) && />Day</.test(html);
         // The server ignores a boarding filter for a day school: the same pool as with none.
         const asked = await v.pipelineView(urn, ep, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
         const ignored = !("empty" in asked) && !("empty" in p) && JSON.stringify(asked.ladder) === JSON.stringify(p.ladder);
@@ -1615,7 +1615,8 @@ const RUNNERS: Record<string, Runner> = {
       } else {
         const T = text(html);
         const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
-        const tile = /Day · boarding/.test(T);
+        // 0.8 SMT feedback round 1 (F-1): the tile is a PairTile, each figure boxed with its own label.
+        const tile = /data-pair="Day"/.test(html) && /data-pair="Boarding"/.test(html);
         const isc = ep.age > 4 ? /International boarders/.test(T) : true;
         const setupOk = /Day and boarding/.test(text(setup[0])) && /Your boarding feeders/.test(text(setup[2])) && /Step 3 of 4/.test(setup[2]) && /Step 4 of 4/.test(setup[3]) && /Boarding only/.test(text(setup[3]));
         // The boarding feeder list end to end: setup's search returns preps with boarders, kept as a
@@ -1940,10 +1941,11 @@ const RUNNERS: Record<string, Runner> = {
     const P = c.school.census.at(-1)!.period;
     const pct = (cohortAt(t, 16, P)! / cohortAt(t, 15, P - 1)!) * 100;
     const lp = await smtPupilsCase("110110");
-    const html = textOf(await smtRender("137625", "DV-SMT-P-NOW", undefined, { pupils: p }));
-    const lpHtml = textOf(await smtRender("110110", "DV-SMT-P-NOW", undefined, { pupils: lp }));
-    const pass = p.now.roll === c.school.census.at(-1)!.totalRoll && Math.abs((p.now.stayingOn?.pct ?? -1) - pct) < 1e-9 && p.now.boarding === null && !/Day · boarding/.test(html) && /Day · boarding/.test(lpHtml) && /Girls · boys/.test(html);
-    return { pass, detail: fmt({ roll: p.now.roll, stayingOn: round(p.now.stayingOn?.pct, 1), recomputed: round(pct, 1), chaseBoardingTile: /Day · boarding/.test(html), leightonBoardingTile: /Day · boarding/.test(lpHtml) }) };
+    const html = await smtRender("137625", "DV-SMT-P-NOW", undefined, { pupils: p });
+    const lpHtml = await smtRender("110110", "DV-SMT-P-NOW", undefined, { pupils: lp });
+    const pass = p.now.roll === c.school.census.at(-1)!.totalRoll && Math.abs((p.now.stayingOn?.pct ?? -1) - pct) < 1e-9 && p.now.boarding === null && !/data-pair="Boarding"/.test(html) && /data-pair="Boarding"/.test(lpHtml) && /data-pair="Girls"/.test(html);
+    // 0.8 SMT feedback round 1 (F-1): the paired tiles box each figure with its label (data-pair).
+    return { pass, detail: fmt({ roll: p.now.roll, stayingOn: round(p.now.stayingOn?.pct, 1), recomputed: round(pct, 1), chaseBoardingTile: /data-pair="Boarding"/.test(html), leightonBoardingTile: /data-pair="Boarding"/.test(lpHtml) }) };
   },
   async smtY12AgainstY11() {
     const { SMT_NOTES } = await import("../src/catalogue/notes");
@@ -2435,8 +2437,9 @@ const RUNNERS: Record<string, Runner> = {
     // 0.8 IGCSE subjects: only the whole-school views keep the note (value added; the headline trend).
     const html = textOf(await smtRender("110110", "DV-SMT-A-VA", academic));
     const sc = textOf(await smtRender("110110", "DV-SMT-O-SCORECARD"));
-    const pass = g.length === 2 && g.every((r) => r.note === "igcse" && r.value === null && r.set === null && r.england === null) && !!a?.set && setPhaseOf(c.school.phases) === "ks5" && html.includes(smtNote("igcseView", { school: c.school.name })) && /IGCSE not ranked/.test(sc) && !!SMT_NOTES.igcseChip;
-    return { pass, detail: fmt({ gcseRows: g.map((r) => `${r.label}:${r.note}`).join("/"), alevelRank: a?.set && `${a.set.rank} of ${a.set.of}`, setPhase: setPhaseOf(c.school.phases), gcseViewSaysWhy: html.includes("sits IGCSEs"), scorecardNotRanked: /IGCSE not ranked/.test(sc) }) };
+    // 0.8 SMT feedback round 1 (R-SCORECARD-ROWS-BY-TYPE): the Scorecard leaves the GCSE rows out.
+    const pass = g.length === 0 && c.overview.igcse && !!a?.set && setPhaseOf(c.school.phases) === "ks5" && html.includes(smtNote("igcseView", { school: c.school.name })) && !/Attainment 8|IGCSE not ranked/.test(sc) && !!SMT_NOTES.igcseChip;
+    return { pass, detail: fmt({ gcseRows: g.length, alevelRank: a?.set && `${a.set.rank} of ${a.set.of}`, setPhase: setPhaseOf(c.school.phases), gcseViewSaysWhy: html.includes("sits IGCSEs"), scorecardGcse: /Attainment 8|IGCSE not ranked/.test(sc) }) };
   },
   async smtP8() {
     const chase = (await smtCase("137625")).overview.p8;
@@ -2541,8 +2544,13 @@ const RUNNERS: Record<string, Runner> = {
       const src = readFileSync(f, "utf8");
       for (const [k, v] of Object.entries(SMT_NOTES)) if (v.length > 40 && src.includes(v.slice(0, 40))) copies.push(`${path.basename(f)}:${k}`);
     }
-    const pass = /for independent schools/.test(html) && /IGCSE school/.test(html) && copies.length === 0;
-    return { pass, detail: fmt({ p8Reason: /for independent schools/.test(html), igcseTile: /IGCSE school/.test(html), copiedSentences: copies.join(" ") || "none" }) };
+    // 0.8 SMT feedback round 1 (R-INDEP-ENTRY-TILES): an independent school's Progress 8 and IGCSE tiles give
+    // way to its entry tiles; the Progress 8 reason is the (i)'s (captionOf, from p8.text), and the IGCSE
+    // line is the Scorecard's (i) (SMT_NOTES.igcseView).
+    const c = await smtCase("110110");
+    const entry = /data-entry-tile="join11"/.test(await smtRender("110110", "DV-SMT-O-NOW")) && /data-entry-tile="net16"/.test(await smtRender("110110", "DV-SMT-O-NOW"));
+    const pass = c.overview.p8.text === SMT_NOTES.p8Independent && entry && !/Not published|IGCSE school/.test(html) && copies.length === 0;
+    return { pass, detail: fmt({ p8Reason: c.overview.p8.text === SMT_NOTES.p8Independent, entryTiles: entry, oldTilesGone: !/Not published|IGCSE school/.test(html), copiedSentences: copies.join(" ") || "none" }) };
   },
   async smtSubjects() {
     const a = await smtAcademicCase("137625", "gcse", "sciences_maths");
@@ -2629,6 +2637,101 @@ const RUNNERS: Record<string, Runner> = {
     const exact = SMT_NOTES.bandReserved === "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of entries.";
     const pass = exact && !/pupils/.test(SMT_NOTES.bandReserved) && html.includes(SMT_NOTES.bandReserved) && !/\d+(\.\d+)?%/.test(html.replace(SMT_NOTES.bandReserved, "").replace(/Top 25%, middle 50%, bottom 25%/, ""));
     return { pass, detail: fmt({ captionOfEntries: exact, shown: html.includes(SMT_NOTES.bandReserved), noFigures: pass }) };
+  },
+
+  // ------------------------------------------------------------ 0.8 SMT feedback round 1
+  async scorecardRows() {
+    const lp = await smtCase("110110");
+    const chase = await smtCase("137625");
+    const { boardersByUrn } = await import("../src/lib/smt/overview");
+    const { englandSchools, rankIn } = await import("../src/lib/admissions/ranks");
+    const P = lp.school.census.at(-1)!.period;
+    const b = lp.overview.rows.find((r) => r.key === "boarders");
+    const all = await boardersByUrn(P);
+    const own = lp.school.census.at(-1)!.boarding!.boarders;
+    const eng = rankIn([...Array.from(all).filter(([u]) => u !== "110110").map(([, v]) => v), own], own);
+    const region = (await englandSchools()).get("110110")?.regionName;
+    const sc = await smtRender("110110", "DV-SMT-O-SCORECARD");
+    const ks4 = (o: typeof lp.overview) => o.rows.filter((r) => r.stage === "ks4").map((r) => r.key);
+    const pass = ks4(lp.overview).length === 0 && !!b && !!b.set && b.region?.name === region && region === "South East" && b.england?.rank === eng.rank && b.england?.of === eng.of && /<th[^>]*title="10 nearest with a sixth form or 16\+ provision"[^>]*>10 nearest<\/th>|<th[^>]*>10 nearest<\/th>/.test(sc.replace(/10 nearest schools/, "")) &&
+      ["Attainment 8", "Grade 5+ in English and maths", "Progress 8"].every((l) => chase.overview.rows.some((r) => r.label === l && r.stage === "ks4")) && !chase.overview.rows.some((r) => r.key === "boarders");
+    return { pass, detail: fmt({ leightonGcseRows: ks4(lp.overview).length, boarders: b && `${b.value}: set ${b.set?.rank}/${b.set?.of}, ${b.region?.name} ${b.region?.rank}/${b.region?.of}, England ${b.england?.rank}/${b.england?.of}`, recomputedEngland: `${eng.rank}/${eng.of}`, header: lp.overview.set.short, chaseRows: chase.overview.rows.map((r) => r.label).join("/") }) };
+  },
+  async trendPerCell() {
+    const c = await smtCase("137625");
+    const { population, figure, SMT_MEASURES } = await import("../src/lib/smt/population");
+    const ks5 = await population("ks5");
+    const row = (l: string) => c.overview.rows.find((r) => r.label === l);
+    const va = row("A-level value added");
+    const v = (p: number) => figure(ks5, "137625", p, SMT_MEASURES.ks5.va);
+    const vaOk = !!va?.since && va.since.period === "2023/24 → 2024/25" && Math.abs(va.since.change - (v(2024)! - v(2023)!)) < 1e-9;
+    const html = await smtRender("137625", "DV-SMT-O-SCORECARD");
+    const pass = row("Attainment 8")?.since?.period === "since 2022/23" && vaOk && row("Progress 8")?.since?.period === "2022/23 → 2023/24" && row("Roll")?.since?.period === "since 2019/20" && />Trends</.test(html) && !/Since 2022\/23/.test(textOf(html)) && /2023\/24 → 2024\/25/.test(textOf(html));
+    return { pass, detail: fmt({ a8: row("Attainment 8")?.since?.period, va: va?.since && `${va.since.period} ${round(va.since.change, 2)}`, recomputed: round((v(2024) ?? 0) - (v(2023) ?? 0), 2), p8: row("Progress 8")?.since?.period, roll: row("Roll")?.since?.period, header: />Trends</.test(html) }) };
+  },
+  async indepEntryTiles() {
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const lp = await smtCase("110110");
+    const kw = await smtCase("117037");
+    const ch = await smtCase("137625");
+    const lpP = await smtPupilsCase("110110");
+    const P = lp.school.census.at(-1)!.period;
+    const t = (await cachedCensus(["110110"])).get("110110")!.table;
+    const tk = (await cachedCensus(["117037"])).get("117037")!.table;
+    const Pk = kw.school.census.at(-1)!.period;
+    const e = lp.overview.now.entry ?? [];
+    const j = e.find((x) => x.key === "join11");
+    const n16 = e.find((x) => x.key === "net16");
+    const leaving = lpP.leaving.at(-1)!;
+    const k11 = kw.overview.now.entry?.find((x) => x.key === "net11");
+    const chaseHtml = await smtRender("137625", "DV-SMT-O-NOW");
+    const pass = j?.value === cohortAt(t, 11, P) && n16?.value === cohortAt(t, 16, P)! - cohortAt(t, 15, P - 1)! && n16.value === -(leaving.leaving ?? NaN) && leaving.year === P &&
+      k11?.value === cohortAt(tk, 11, Pk)! - cohortAt(tk, 10, Pk - 1)! && ch.overview.now.entry === null && !/data-entry-tile/.test(chaseHtml) && /Attainment 8/.test(chaseHtml) && /Progress 8/.test(chaseHtml);
+    return { pass, detail: fmt({ leighton: e.map((x) => `${x.label} ${x.value} (${round(x.since?.pct ?? null, 0)}% since ${x.since?.base})`).join("; "), leavingAt16: leaving.leaving, kings: (kw.overview.now.entry ?? []).map((x) => `${x.label} ${x.value}`).join("; "), chase: ch.overview.now.entry === null ? "state, unchanged" : "tiles!" }) };
+  },
+  async railHidesEmpty() {
+    const { railHidden } = await import("../docs/v0.8/audit_scripts/smt_fb1/rail-hidden");
+    const out: string[] = [];
+    let pass = true;
+    for (const urn of ["110110", "137625", "117037"]) {
+      const r = await railHidden(urn);
+      const c = await smtCase(urn);
+      const flagsHidden = r.hidden.some((h) => h.dataview === "DV-SMT-O-FLAGS");
+      // Flags is hidden exactly when there are no flags and the thresholds loaded.
+      if (flagsHidden !== (c.overview.flags.length === 0 && c.overview.flagsLoaded)) pass = false;
+      out.push(`${urn}: ${r.hidden.map((h) => `${h.product}${h.entry ? ` ${h.entry}` : ""} ${h.dataview}`).join(", ") || "none"}`);
+    }
+    const { activeWithContent } = await import("../src/lib/rail-content");
+    pass = pass && activeWithContent([{ id: "s" }, { id: "m" }, { id: "f" }], "f", (id) => id !== "f") === "s";
+    return { pass, detail: out.join("; ") };
+  },
+  async marketDefaultRivals() {
+    const c = await smtCase("110110");
+    const m = c.overview.trends.market;
+    const { defaultRivals, nearbyCandidates } = await import("../src/lib/admissions/rungs");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const expect = defaultRivals(entryPoint("11+")!, await nearbyCandidates("110110")).filter((u) => u !== "110110");
+    const html = textOf(await smtRender("110110", "DV-SMT-O-MARKET-LINE"));
+    const pass = m.status === "ready" && m.defaultRivals && m.rivals === expect.length && expect.length === 10 && /10 nearest schools \(default rivals\)/.test(html);
+    return { pass, detail: fmt({ status: m.status, defaultRivals: m.status === "ready" && m.defaultRivals, rivals: m.status === "ready" ? m.rivals : null, expected: expect.length, titled: /default rivals/.test(html) }) };
+  },
+  async feedbackFollowsView() {
+    const st = await import("../src/components/feedback/store");
+    const { appVersion } = await import("../src/lib/feedback-server");
+    st.resetFeedbackStore({ status: "ready", allowed: true, items: [] });
+    const surface = { product: "smt", dashboard: { id: "vicdata.smt.overview", name: "SMT Overview" } } as never;
+    const v = (id: string, label: string) => ({ surface, view: { panelId: "p", panelName: null, instanceId: id, dataview: id, label }, viewKey: `d:p:${id}`, anchor: null });
+    st.setPanelView(v("map", "Map"));
+    st.openFeedback(v("map", "Map"));
+    st.setPanelView(v("flags", "Flags"));
+    const offer = st.movedView(st.feedbackSnapshot())?.view.label;
+    const at = st.feedbackSnapshot().target!.openedAt;
+    st.moveFeedback(st.movedView(st.feedbackSnapshot())!);
+    const after = st.feedbackSnapshot().target!;
+    st.closeFeedback();
+    const pass = offer === "Flags" && after.view.label === "Flags" && after.openedAt === at && appVersion({ NODE_ENV: "production" }) === "unknown" && appVersion({ RENDER_GIT_COMMIT: "abc", NODE_ENV: "production" }) === "abc";
+    return { pass, detail: fmt({ offer, movedTo: after.view.label, draftKept: after.openedAt === at, versionWithout: appVersion({ NODE_ENV: "production" }) }) };
   },
 };
 

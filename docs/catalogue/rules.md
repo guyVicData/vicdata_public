@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -135,8 +135,8 @@ What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lif
 | R-METHOD-SETTINGS | active | A view whose numbers come from stored settings has its method generated from them, never typed: the forward view's (projectionMethod) is built from area_projection's settings in the method note's (i) shape, so every setting value appears in the text and changing a setting changes it. | no | auto: methodSettings | — |
 | R-SMT-LEVEL-CHIPS | active | The level chips are Whole school (the default) then only the phases the school has, from the census as the school page's Roll by phase decides them (Primary, GCSE, Post-16); an IGCSE school's GCSE chip is shown, marked, with the reason in its tooltip. Subject areas sit under GCSE or Post-16 only, as a second row with All areas first; Whole school and Primary have none. The level is held in the address (?level=, &area=) and remembered for the user; a level the school can't show falls back, never errors. | no | auto: smtLevelChips | — |
 | R-SMT-SET-RANKS | active | One comparison set drives the whole SMT dashboard: Teacher's sets (10 nearest, the LA, saved sets, the school's sets, rankings), resolved by Teacher's own route. Every rank among the set is level-aware: only the set's schools with that result are ranked (IGCSE schools left out at GCSE), the school counted too, highest first, ties sharing a place, and the count says so ("2 of 11 with GCSE results"). Regional and England ranks are 0.6.6's whole-population ranks. | no | auto: smtSetRanks | — |
-| R-SMT-IGCSE-WORDING | active | An IGCSE school (R-IGCSE-EXCL) is never shown a whole-school GCSE zero or rank: its GCSE rows read "IGCSE · not ranked", its column-1 tile "IGCSE school, no comparable GCSE results", every whole-school GCSE view (value added; the results trend with no area chosen) says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. Its GCSE subjects, complete subject areas, grade profile and entries mix are drawn and ranked as any school's (R-IGCSE-SUBJECT; 0.8 IGCSE subjects). | no | auto: smtIgcse | — |
-| R-SMT-P8-REASON | active | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. | no | auto: smtP8 | — |
+| R-SMT-IGCSE-WORDING | active | An IGCSE school (R-IGCSE-EXCL) is never shown a whole-school GCSE zero or rank: the Scorecard leaves its GCSE rows out (0.8 SMT feedback round 1, R-SCORECARD-ROWS-BY-TYPE), its column-1 tile "IGCSE school, no comparable GCSE results", every whole-school GCSE view (value added; the results trend with no area chosen) says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. Its GCSE subjects, complete subject areas, grade profile and entries mix are drawn and ranked as any school's (R-IGCSE-SUBJECT; 0.8 IGCSE subjects). | no | auto: smtIgcse | — |
+| R-SMT-P8-REASON | active | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. 0.8 SMT feedback round 1 (R-INDEP-ENTRY-TILES): on Overview's "The school now" an independent school's tile gives way to its entry tiles, and the reason is said in the view's (i). | no | auto: smtP8 | — |
 | R-SMT-VA-HONEST | active | Value added is shown as DfE publishes it -- A-level value added by qualification type and by subject, with DfE's 95% interval and banding -- and worded from SMT_NOTES: 0 is the national average; a range crossing 0 isn't clearly different from average; GCSE value added by subject has never been published. | no | auto: smtVa | — |
 | R-SMT-YEARS | active | Every SMT year comes from the data or years.ts, never the code: each key stage's latest from academic_current_periods (with "(provisional)" where the ingest says so), change measured from TREND_BASE_PERIOD, the census from CENSUS_FIRST_PERIOD; Context's small-area, LA, projection and FSM years from what the lookups return. When GCSE's latest moves on and Post-16's doesn't, each view labels its own year; when ONS adds an LSOA year, Context moves to it. | no | auto: smtYears | — |
 | R-SMT-BOARDING-ONLY | active | SMT's filters are pills, only where they apply: Gender for a mixed school, Day + boarding for a boarding school (isBoardingSchool). A day school's request for boarding figures is ignored on the server; results aren't split by either, and the views say so. | no | auto: smtBoardingOnly | — |
@@ -153,6 +153,12 @@ What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lif
 | R-SMT-VIEW-GRADES | active | The grade profile bands the main qualification's latest graded entries (GCSE 9-7, 6-5, 4, 3-1; A level A*-A, B, C, D-U); the bands add up to all of them. | no | auto: smtGrades | — |
 | R-SMT-VIEW-MIX | active | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from the subject rollup's first year with entries (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, a year before the results trend beside it); entries count from the first year (not graded, so no 2021/22 note). | no | auto: smtMix | — |
 | R-SMT-VIEW-RESERVED | active | Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its body (0.8 notes and feedback: no longer also its caption -- the (i)'s method says it) -- "the top 25%, middle 50% and bottom 25% of entries" (the bands are of entries, not pupils) -- and no figure. | no | auto: smtReserved | — |
+| R-SCORECARD-ROWS-BY-TYPE | active | The SMT Scorecard's rows follow the school's type (F-3): an IGCSE school has no whole-school GCSE rows (Attainment 8, grade 5+ in English and maths), since it isn't ranked on them; the boarders row shows for a GIAS boarding school only, ranked among the boarding schools with a census boarders count in the set, in its region and in England (each named); Progress 8 is a row where DfE published it. The set's column wears the set's short name (setShortName: "10 nearest"), the full name in the (i). | no | auto: scorecardRows | — |
+| R-TREND-PERIOD-PER-CELL | active | The Scorecard's last column is "Trends", and each cell states its own period (F-3, F-4): results "since 2022/23" (R-TREND-FROM-2223); sixth-form value added from its first published year (SIXTH_FORM_VA_FROM, 2023/24) to its latest, "2023/24 → 2024/25"; Progress 8 its own years, ending PROGRESS8_LAST_PERIOD (2023/24); rolls since the first census year (2019/20). One (i) note says why the years differ, every year from years.ts. A later value-added year extends the cell from the data, with no code change. | no | auto: trendPerCell | — |
+| R-INDEP-ENTRY-TILES | active | On SMT Overview's "The school now", an independent school's GCSE note and Progress 8 note give way to its entry tiles (F-8): "Joining at 11" (Year 7, where GIAS's statutory low age is 11 or more) or "Net change at 11" (Year 7 this census minus Year 6 the census before), and "Net change at 16" (Year 12 minus last census's Year 11). Each tile is the label, this year's number and one change since 2019/20 (the % change in that year group's roll); the arithmetic is in the (i). The 16+ sum is SMT Pupils' Leaving at 16's, the other way round, from the same cohort table. State schools keep their tiles. | no | auto: indepEntryTiles | — |
+| R-RAIL-HIDES-EMPTY | active | A view with nothing to show for the school has no rail icon, and a panel that would open on it opens on the next view instead (F-6, F-5). One rule (src/lib/rail-content.ts: visibleRail, activeWithContent), with each product's hasContent per view (SMT, Admissions, Groups; Teacher's hosts already offer a view's button only with data). "Nothing to show" is no data for the school -- no flags, no located schools, too few years to draw; a view that explains something the reader needs or can act on (rivals not chosen, a level it isn't for, the IGCSE note, a reserved view) keeps its icon, and so does any view whose data is still loading. | no | auto: railHidesEmpty | — |
+| R-MARKET-DEFAULT-RIVALS | active | SMT's market share at 11+ (Overview's From Admissions, Pupils' Market share) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why. | no | auto: marketDefaultRivals | — |
+| R-FEEDBACK-FOLLOWS-VIEW | active | The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers "Move to <view>", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). A missing app version is recorded as "unknown", "dev" only on a local dev server (F-1). | no | auto: feedbackFollowsView | — |
 
 ## Cards
 
@@ -788,7 +794,7 @@ What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lif
 | Why | Schools sitting IGCSEs show artificially low DfE GCSE figures; ranking them against GCSE schools misleads. |
 | Applies to | Comparisons (all GCSE measures); comparator maps |
 | Enforced in | - src/lib/teacher-view-comparator-series.ts:130, 143, 159, 175, 186, 199<br>- src/components/teacher/RankingsMap.tsx:90<br>- src/lib/academic-data-view.ts:igcseExclusionLikely (679) |
-| Tagged at | - src/components/admissions/views/Bars.tsx<br>- src/components/smt/views/Scorecard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/igcse.ts<br>- src/lib/smt/levels.ts<br>- src/lib/smt/school.ts<br>- src/lib/teacher-view-comparator-series.ts |
+| Tagged at | - src/components/admissions/views/Bars.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/igcse.ts<br>- src/lib/smt/levels.ts<br>- src/lib/smt/school.ts<br>- src/lib/teacher-view-comparator-series.ts |
 | Test case | The King's School Worcester (117037), ks4: Malvern College / Malvern St James absent from the set (unconfirmed, content round report :152). [manual] |
 | Origin | Commit 514e285; content round S4 |
 | Status | active |
@@ -1764,7 +1770,7 @@ What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lif
 | Why | "Non-boarding schools must not have to think about boarders, but boarding schools must" (Guy, 12 Oct 2026). |
 | Applies to | Admissions: every view, the top bar, setup, the editor's compare options |
 | Enforced in | - src/lib/admissions/boarding.ts:isBoardingSchool<br>- src/lib/admissions/views-api.ts:pipelineView<br>- src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/admissions/setup/Setup.tsx<br>- src/components/view-editor/AdmissionsSteps.tsx |
-| Tagged at | - src/components/admissions/AdmissionsDashboard.tsx<br>- src/lib/admissions/boarding.ts |
+| Tagged at | - src/components/admissions/AdmissionsDashboard.tsx<br>- src/lib/admissions/boarding.ts<br>- src/lib/smt/overview.ts |
 | Test case | The Chase, Nunnery Wood High (137051), Beaudesert Park (115786) (137625), ks4: Every Pipelines view, column 1, the top bar's filters and every setup step rendered on real data: no boarding text or control for The Chase (11+, 16+) or Nunnery Wood (11+); every boarding surface present for Beaudesert Park (4+, 11+), whose boarding feeder search returns preps with boarders that make a non-empty boarding-only pool. The editor's 1 · Data for every feeder view offers the feeder set (Boarding feeders) for Beaudesert Park only (0.7 editor s2); a day school's previews ignore a boarding feeder spec (R-ADM-EDITOR-LOOKS-KEEP-NOTES). [runner: admBoardingOnly] |
 | Origin | 0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F2) |
 | Status | active |
@@ -2192,12 +2198,12 @@ What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | An IGCSE school (R-IGCSE-EXCL) is never shown a whole-school GCSE zero or rank: its GCSE rows read "IGCSE · not ranked", its column-1 tile "IGCSE school, no comparable GCSE results", every whole-school GCSE view (value added; the results trend with no area chosen) says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. Its GCSE subjects, complete subject areas, grade profile and entries mix are drawn and ranked as any school's (R-IGCSE-SUBJECT; 0.8 IGCSE subjects). |
+| Statement | An IGCSE school (R-IGCSE-EXCL) is never shown a whole-school GCSE zero or rank: the Scorecard leaves its GCSE rows out (0.8 SMT feedback round 1, R-SCORECARD-ROWS-BY-TYPE), its column-1 tile "IGCSE school, no comparable GCSE results", every whole-school GCSE view (value added; the results trend with no area chosen) says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. Its GCSE subjects, complete subject areas, grade profile and entries mix are drawn and ranked as any school's (R-IGCSE-SUBJECT; 0.8 IGCSE subjects). |
 | Why | Leighton Park and Sevenoaks sit IGCSEs: DfE's tables would read them as near zero. |
 | Applies to | Every SMT view at GCSE or Whole school |
 | Enforced in | - src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/academic.ts:stagePart<br>- src/components/smt/views/Scorecard.tsx<br>- src/components/smt/views/Now.tsx |
 | Tagged at | — |
-| Test case | Leighton Park (110110), ks4: Its Attainment 8 and grade 5+ rows have no value or rank and note igcse; its A-level rows are ranked; its set phase is Post-16; the whole-school GCSE views (value added) carry SMT_NOTES.igcseView. [runner: smtIgcse] |
+| Test case | Leighton Park (110110), ks4: Its Scorecard has no Attainment 8 or grade 5+ row (none ranked, none shown); its A-level rows are ranked; its set phase is Post-16; the whole-school GCSE views (value added) carry SMT_NOTES.igcseView. [runner: smtIgcse] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -2208,7 +2214,7 @@ What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. |
+| Statement | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. 0.8 SMT feedback round 1 (R-INDEP-ENTRY-TILES): on Overview's "The school now" an independent school's tile gives way to its entry tiles, and the reason is said in the view's (i). |
 | Why | Two different absences -- a school type and two lost cohorts -- read the same as a missing figure unless said. |
 | Applies to | DV-SMT-O-NOW, DV-SMT-A-NOW, DV-SMT-A-VA |
 | Enforced in | - src/lib/smt/overview.ts:p8Of<br>- src/components/smt/views/Now.tsx<br>- src/components/smt/views/ValueAdded.tsx |
@@ -2471,6 +2477,102 @@ What a number is allowed to be. 145 rules: 141 active, 4 superseded; 22 must lif
 | Tagged at | - src/components/smt/views/Reserved.tsx |
 | Test case | The Chase (137625), ks4: The panel draws SMT_NOTES.bandReserved and no number. [runner: smtReserved] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SCORECARD-ROWS-BY-TYPE
+
+| Field | Content |
+| --- | --- |
+| Statement | The SMT Scorecard's rows follow the school's type (F-3): an IGCSE school has no whole-school GCSE rows (Attainment 8, grade 5+ in English and maths), since it isn't ranked on them; the boarders row shows for a GIAS boarding school only, ranked among the boarding schools with a census boarders count in the set, in its region and in England (each named); Progress 8 is a row where DfE published it. The set's column wears the set's short name (setShortName: "10 nearest"), the full name in the (i). |
+| Why | A row that can only say "not ranked" asks the reader to look at nothing; a boarding school's boarders are a headline worth ranking; a long set name made the table scroll. |
+| Applies to | DV-SMT-O-SCORECARD |
+| Enforced in | - src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/overview.ts:boarderPlaces<br>- src/lib/set-short-name.ts<br>- src/components/smt/views/Scorecard.tsx |
+| Tagged at | - src/components/smt/views/Scorecard.tsx |
+| Test case | Leighton Park; The Chase 137625 (110110), ks4: Leighton Park: no GCSE row; a boarders row ranked in the set, South East and England, its England rank recomputed from every boarding school's census boarders; header "10 nearest". The Chase: Attainment 8, grade 5+ and Progress 8 rows, no boarders row. [runner: scorecardRows] |
+| Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-TREND-PERIOD-PER-CELL
+
+| Field | Content |
+| --- | --- |
+| Statement | The Scorecard's last column is "Trends", and each cell states its own period (F-3, F-4): results "since 2022/23" (R-TREND-FROM-2223); sixth-form value added from its first published year (SIXTH_FORM_VA_FROM, 2023/24) to its latest, "2023/24 → 2024/25"; Progress 8 its own years, ending PROGRESS8_LAST_PERIOD (2023/24); rolls since the first census year (2019/20). One (i) note says why the years differ, every year from years.ts. A later value-added year extends the cell from the data, with no code change. |
+| Why | One heading over rows measured from different years told the reader the wrong period for most of them; value added looked as if it had no trend. |
+| Applies to | DV-SMT-O-SCORECARD |
+| Enforced in | - src/lib/smt/overview.ts:trendOf<br>- src/lib/smt/overview.ts:vaTrend<br>- src/lib/smt/overview.ts:trendYearsNote<br>- src/catalogue/years.ts<br>- src/components/smt/views/Scorecard.tsx<br>- src/lib/smt-fb1.test.ts |
+| Tagged at | - src/components/smt/views/Scorecard.tsx<br>- src/lib/smt-fb1.test.ts<br>- src/lib/smt/overview.ts |
+| Test case | The Chase (137625), ks4: Attainment 8 "since 2022/23"; A-level value added "2023/24 → 2024/25" and its change recomputed from the two years' figures; Progress 8 "2022/23 → 2023/24"; roll "since 2019/20"; the rendered table heads "Trends" and no "Since 2022/23"; with a synthetic 2025/26 value added (unit test) the cell reads "2023/24 → 2025/26". [runner: trendPerCell] |
+| Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-INDEP-ENTRY-TILES
+
+| Field | Content |
+| --- | --- |
+| Statement | On SMT Overview's "The school now", an independent school's GCSE note and Progress 8 note give way to its entry tiles (F-8): "Joining at 11" (Year 7, where GIAS's statutory low age is 11 or more) or "Net change at 11" (Year 7 this census minus Year 6 the census before), and "Net change at 16" (Year 12 minus last census's Year 11). Each tile is the label, this year's number and one change since 2019/20 (the % change in that year group's roll); the arithmetic is in the (i). The 16+ sum is SMT Pupils' Leaving at 16's, the other way round, from the same cohort table. State schools keep their tiles. |
+| Why | Two tiles that only ever said "not published" told an independent school nothing; its intake at 11 and its sixth form's gain are what SMT watch. |
+| Applies to | DV-SMT-O-NOW, DV-SMT-P-LEAVING |
+| Enforced in | - src/lib/smt/entry-net.ts<br>- src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/pupils.ts:buildPupils<br>- src/components/smt/views/Now.tsx |
+| Tagged at | - src/components/smt/views/Now.tsx<br>- src/lib/smt-fb1.test.ts<br>- src/lib/smt/entry-net.ts |
+| Test case | Leighton Park; King's Worcester 117037 (with a Year 6); The Chase 137625 (state) (110110), ks4: Leighton Park: Joining at 11 and Net change at 16, which equals minus Pupils' latest Leaving at 16, each recomputed from the census; King's Worcester: Net change at 11 = its Year 7 minus last census's Year 6; The Chase: no entry tiles, its Attainment 8 and Progress 8 tiles drawn as before. [runner: indepEntryTiles] |
+| Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-RAIL-HIDES-EMPTY
+
+| Field | Content |
+| --- | --- |
+| Statement | A view with nothing to show for the school has no rail icon, and a panel that would open on it opens on the next view instead (F-6, F-5). One rule (src/lib/rail-content.ts: visibleRail, activeWithContent), with each product's hasContent per view (SMT, Admissions, Groups; Teacher's hosts already offer a view's button only with data). "Nothing to show" is no data for the school -- no flags, no located schools, too few years to draw; a view that explains something the reader needs or can act on (rivals not chosen, a level it isn't for, the IGCSE note, a reserved view) keeps its icon, and so does any view whose data is still loading. |
+| Why | No point asking people to look at a view that has nothing to say (Guy, F-6). |
+| Applies to | every railed panel: SMT, Admissions, Groups |
+| Enforced in | - src/lib/rail-content.ts<br>- src/components/smt/content.ts<br>- src/components/admissions/content.ts<br>- src/components/groups/dash/GroupDashboard.tsx:groupHasContent<br>- src/lib/smt-fb1.test.ts |
+| Tagged at | - src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/admissions/content.ts<br>- src/components/groups/dash/GroupDashboard.tsx<br>- src/components/smt/SmtDashboard.tsx<br>- src/components/smt/content.ts<br>- src/lib/rail-content.ts<br>- src/lib/smt-fb1.test.ts |
+| Test case | Leighton Park; The Chase 137625; King's Worcester 117037 (110110), ks4: Leighton Park and The Chase (no flags): Flags is hidden on SMT Overview, and the Scorecard panel opens on the Scorecard; King's Worcester: the hidden views listed in the report (Admissions 4+ pool trend). Every hidden view's own empty condition holds (no flags; too few points). [runner: railHidesEmpty] |
+| Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-MARKET-DEFAULT-RIVALS
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT's market share at 11+ (Overview's From Admissions, Pupils' Market share) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why. |
+| Why | "No rivals chosen" left the panel empty, when Admissions itself already draws the market against the nearest ten. |
+| Applies to | DV-SMT-O-MARKET-LINE, DV-SMT-O-MARKET-TABLE, DV-SMT-P-MARKET |
+| Enforced in | - src/lib/smt/overview.ts:marketAt11<br>- src/components/smt/SmtDashboard.tsx:headerOf<br>- src/components/smt/SmtDashboard.tsx:captionOf<br>- src/components/smt/views/Lines.tsx |
+| Tagged at | - src/lib/smt/overview.ts |
+| Test case | Leighton Park (110110), ks4: With no readable rivals list: market share drawn against 10 rivals, exactly defaultRivals' 10 nearest teaching Year 7 (as Admissions' Market share draws them); defaultRivals is true; the rendered view's title names the default. [runner: marketDefaultRivals] |
+| Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEEDBACK-FOLLOWS-VIEW
+
+| Field | Content |
+| --- | --- |
+| Statement | The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers "Move to <view>", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). A missing app version is recorded as "unknown", "dev" only on a local dev server (F-1). |
+| Why | An item recorded against the wrong view sends the fix to the wrong place. |
+| Applies to | the feedback window, every panel |
+| Enforced in | - src/components/feedback/store.ts:movedView<br>- src/components/feedback/FeedbackWindow.tsx<br>- src/components/shell/CardBox.tsx<br>- src/lib/feedback-server.ts:appVersion<br>- src/lib/smt-fb1.test.ts |
+| Tagged at | - src/components/feedback/FeedbackWindow.tsx<br>- src/components/feedback/store.ts<br>- src/lib/smt-fb1.test.ts |
+| Test case | Leighton Park, SMT Overview (store and browser tests) (110110), ks4: Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept; appVersion is the commit on Render, "unknown" without it in production. [runner: feedbackFollowsView] |
+| Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

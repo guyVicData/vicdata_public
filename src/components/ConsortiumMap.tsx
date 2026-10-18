@@ -1,5 +1,6 @@
 "use client";
 
+import { rollRadius } from "@/lib/map-radius";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import proj4 from "proj4";
@@ -32,18 +33,12 @@ const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
-const MIN_RADIUS = 6;
-const MAX_RADIUS = 20;
+// 0.8 SMT feedback round 1 (F-2): the dots' size scale lives in lib/map-radius.ts, shared with SMT's map
+// and its size key.
 // A single amber accent for every dot -- this map never compares sector/phase/gender
 // (every dot is, by construction, a constituent of the SAME group), so there's no
 // colour-mode question to answer, just "is this one bigger than that one."
 const MARKER_COLOUR = "#b45309";
-
-function rollRadius(roll: number | null, minRoll: number, maxRoll: number): number {
-  if (roll === null || !(maxRoll > minRoll)) return (MIN_RADIUS + MAX_RADIUS) / 2;
-  const t = (Math.sqrt(roll) - Math.sqrt(minRoll)) / (Math.sqrt(maxRoll) - Math.sqrt(minRoll));
-  return MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * t;
-}
 
 export type ConsortiumMapMember = {
   urn: string;

@@ -25,7 +25,7 @@ import {
   type ViewSurface,
 } from "@/lib/view-ref";
 import { publishedVersionIdOf } from "@/lib/published-vicdata";
-import { addOwnItem, closeFeedback, feedbackToken, useFeedbackState, type FeedbackTarget, type OwnItem } from "./store";
+import { addOwnItem, closeFeedback, feedbackToken, moveFeedback, movedView, useFeedbackState, type FeedbackTarget, type OwnItem, type PanelView } from "./store";
 
 const PHONE_MAX = 640;
 const DOCK_WIDTH = 360;
@@ -149,15 +149,17 @@ function portal(node: ReactNode) {
 }
 
 export function FeedbackWindow() {
-  const { target, items } = useFeedbackState();
+  const st = useFeedbackState();
+  const { target, items } = st;
   if (!target) return null;
-  // Keyed on the view and the opening, so a new view starts a fresh form.
-  return <WindowFor key={`${target.viewKey}@${target.openedAt}`} target={target} items={items.filter((i) => i.view_key === target.viewKey)} />;
+  // Keyed on the opening, so a new opening starts a fresh form; moving to the panel's new view (F-5)
+  // keeps the draft.
+  return <WindowFor key={`${target.openedAt}`} target={target} moved={movedView(st)} items={items.filter((i) => i.view_key === target.viewKey)} />;
 }
 
 type Mode = { kind: "dock"; width: number } | { kind: "float"; x: number; y: number; w: number; h: number } | { kind: "sheet"; tall: boolean };
 
-function WindowFor({ target, items }: { target: FeedbackTarget; items: OwnItem[] }) {
+function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: OwnItem[]; moved: PanelView | null }) {
   const { surface, view } = target;
   const [form, setForm] = useState<FormState>(EMPTY);
   const [sending, setSending] = useState(false);
@@ -327,6 +329,18 @@ function WindowFor({ target, items }: { target: FeedbackTarget; items: OwnItem[]
           </svg>
         </button>
       </div>
+      {moved && (
+        // F-5 (R-FEEDBACK-FOLLOWS-VIEW): the panel's rail has moved on; the window never silently keeps
+        // the old view.
+        <div data-fb-moved="" className="flex shrink-0 items-center gap-2 border-b border-[var(--panel-border)] bg-[var(--chip-bg)] px-3 py-2 text-[11.5px]">
+          <span className="min-w-0 flex-1">
+            The panel now shows <b>{moved.view.label}</b>. This feedback is still on <b>{view.label}</b>.
+          </span>
+          <button type="button" data-fb-move="" onClick={() => moveFeedback(moved)} className="shrink-0 rounded-md border border-[var(--panel-border2)] px-2 py-0.5 font-semibold text-[var(--fg)] hover:bg-[var(--chip-bg)]">
+            Move to {moved.view.label}
+          </button>
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2">
         <ItemList items={items} />
         <form

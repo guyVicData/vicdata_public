@@ -8,7 +8,7 @@ import { inLevelAges } from "@/lib/smt/levels";
 import Link from "next/link";
 import { SHAPE_LABELS } from "@/components/dashboard/ShapeIcon";
 import { comparisonCaption } from "@/components/dashboard/PhaseBreakdownCard";
-import { Empty, Lbl, Tile, cx } from "@/components/admissions/ui";
+import { Empty, Lbl, PairTile, Tile, cx } from "@/components/admissions/ui";
 import { ADMISSIONS_NOTES, SMT_NOTES } from "@/catalogue/notes";
 import { CENSUS_FIRST_PERIOD, periodLabel } from "@/catalogue/years";
 import type { ShapeLabel } from "@/lib/shape-classifier";
@@ -31,8 +31,8 @@ export function PupilsNow({ p, school, compact = false }: { p: Pupils; school: S
   const tiles = [
     <Tile key="roll" label="Roll" value={fmt(n.roll, "pupils")} sub={ages} accent />,
     <Tile key="since" label={`Since ${periodLabel(CENSUS_FIRST_PERIOD)}`} value={n.changePct === null ? "—" : arrowed(n.changePct, (x) => `${x.toFixed(0)}%`, 0)} sub="whole school" />,
-    ...(school.mixed ? [<Tile key="gb" small label="Girls · boys" value={n.girls !== null && n.boys !== null && n.girls + n.boys ? `${Math.round((n.girls / (n.girls + n.boys)) * 100)}% · ${Math.round((n.boys / (n.girls + n.boys)) * 100)}%` : "—"} sub="whole school" />] : []),
-    ...(n.boarding ? [<Tile key="db" small label="Day · boarding" value={`${fmt(n.boarding.day, "pupils")} · ${fmt(n.boarding.boarders, "pupils")}`} sub="whole school" />] : []),
+    ...(school.mixed ? [<PairTile key="gb" pairs={[{ label: "Girls", value: n.girls !== null && n.boys !== null && n.girls + n.boys ? `${Math.round((n.girls / (n.girls + n.boys)) * 100)}%` : "—" }, { label: "Boys", value: n.girls !== null && n.boys !== null && n.girls + n.boys ? `${Math.round((n.boys / (n.girls + n.boys)) * 100)}%` : "—" }]} sub="in whole school" />] : []),
+    ...(n.boarding ? [<PairTile key="db" pairs={[{ label: "Day", value: fmt(n.boarding.day, "pupils") }, { label: "Boarding", value: fmt(n.boarding.boarders, "pupils") }]} sub="in whole school" />] : []),
     ...(n.stayingOn ? [<Tile key="stay" small label={SMT_NOTES.y12Label} value={`${Math.round(n.stayingOn.pct)}%`} sub={SMT_NOTES.y12AgainstY11} />] : []),
   ];
   // An odd tile out spans both columns, so the grid has no gap (as the Academic board's four tiles).

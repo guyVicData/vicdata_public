@@ -161,7 +161,7 @@ export function MarketLine({ o, market, schoolName, fullscreen, room }: { o?: Ov
   const years = m.school.map((p) => p.year);
   return (
     <>
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+, against your rivals</div>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+, against {m.defaultRivals ? "the 10 nearest schools (default rivals)" : "your rivals"}</div>
       <LineChart
         height={fullscreen ? fillHeight(room, 150, 300) : 130}
         yFormat={(v) => `${v.toFixed(1)}%`}

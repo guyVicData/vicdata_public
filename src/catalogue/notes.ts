@@ -150,6 +150,15 @@ export const SMT_NOTES = {
   vaNotPublished: "No value added is published for this school at Post-16.",
   // Trends (R-TREND-FROM-2223 is the shared note; these are SMT's own lines).
   sinceBase: "Change is measured from {base}, the first year graded on the normal scale.",
+  // 0.8 SMT feedback round 1 (F-3, F-4): the Scorecard's Trends column, each cell over its own years.
+  trendYears: "Each trend covers the years its measure has. Results are measured from {base}: {grading} was graded more generously. Sixth-form value added starts in {vaFrom}: DfE published none for the two years before, because those students' GCSEs were teacher-assessed. Progress 8 stops at {p8Last}: there were no Key Stage 2 tests in 2020 or 2021, so later pupils have no baseline. Rolls run from the {census} census.",
+  setFullName: "Compared against: {setLabel}.",
+  // F-8: an independent school's entry tiles, the arithmetic and caveats in the (i) (R-INDEP-ENTRY-TILES).
+  join11Info: "Joining at 11: Year 7 in the {census} census ({now}). The school's first year is Year 7, so every Year 7 pupil joined at 11.",
+  net11Info: "Net change at 11: Year 7 in the {census} census ({now}) minus Year 6 in the census before ({before}). A plus means more joined at 11 than left after Year 6.",
+  net16Info: "Net change at 16: Year 12 in the {census} census ({now}) minus Year 11 in the census before ({before}). A plus means the sixth form gained on what came up from Year 11. It is the same sum as SMT Pupils' Leaving at 16, the other way round.",
+  entrySinceInfo: "The % beside each is the change in that year group's roll (Year 7, or Year 12) since the {base} census. Day and boarding pupils together, full-time, ages at 31 August; a net figure counts pupils who left and joined in the same year as no change.",
+  boardersRank: "Boarders are ranked among the boarding schools with a boarders count in the census, in {region} and in England.",
   middleHalf: "The band is the middle half of {setLabel} with results that year (the 25th to the 75th percentile). Schools without results are left out.",
   rollIndexed: "Each line is indexed to 100 in {base}. {la} and England count pupils aged 5 to 15 in every mainstream school (age_profile_aggregates), so they are a like-for-like trend for the area, not a total roll.",
   rollAreaUndercount: "Earlier area years count only schools still open, so they slightly undercount.",
@@ -159,6 +168,10 @@ export const SMT_NOTES = {
   marketNoLists: "The Admissions lead hasn't chosen rivals at 11+ yet, so there is no market share to show. Admissions sets them.",
   marketNoEntry: "This school has no 11+ entry, so it has no market share at 11+.",
   marketShort: "A share of the rivals Admissions chose: not a share of the local market.",
+  // F-7 (R-MARKET-DEFAULT-RIVALS): until Admissions chooses rivals at 11+, its default.
+  marketDefault: "Admissions hasn't chosen rivals at 11+, so these are its default: the 10 nearest schools teaching Year 7. A share of those schools, not of the local market. The Admissions lead can choose the rivals in Admissions.",
+  marketDefaultShort: "10 nearest (default rivals)",
+  marketDefaultTag: "rivals: the 10 nearest (default)",
   // Flags (R-SMT-FLAGS).
   // 0.8 audit fixes (3, S1): {gap} is the measure and its size ("2 Attainment 8 points"), filled by
   // flagsRuleText only, so every filled form reads as a sentence.

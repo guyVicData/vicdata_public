@@ -2,12 +2,14 @@
 
 // VicData 0.8 SMT r1: Overview's large view, Scorecard (the default; Main.dc.html). Each headline:
 // you, your rank among the comparison set's schools with that result (the count says how many),
-// in the region and in England (0.6.6's ranking), and the change since 2022/23 (years.ts). An IGCSE
-// school's GCSE rows say "not ranked", never a zero (R-IGCSE-EXCL). The flags line underneath.
+// in the region and in England (0.6.6's ranking), and its trend. The flags line underneath.
 // R-SMT-VIEW-SCORECARD, R-SMT-SET-RANKS.
+// 0.8 SMT feedback round 1: the rows follow the school's type (R-SCORECARD-ROWS-BY-TYPE: an IGCSE
+// school has no GCSE rows, a boarding school a ranked boarders row); the set column wears the set's
+// short name (the full name in the (i)); "Trends" replaces "Since 2022/23", each cell over its own
+// years (R-TREND-PERIOD-PER-CELL), the reasons in the (i).
 import { FlagPill } from "@/components/admissions/ui";
 import { figuresOf } from "@/components/admissions/views/Momentum";
-import { CENSUS_FIRST_PERIOD, periodLabel, TREND_BASE_PERIOD } from "@/catalogue/years";
 import type { Overview, SmtSchool } from "../api";
 import { Td, Th, arrowOf, changeDp, dirClass, fmt, fmtChange, rankText } from "../ui";
 
@@ -16,13 +18,13 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
   if (phone) {
     return (
       <>
-        <div className="text-[12.5px] font-bold text-[var(--fg)]">Rank in {o.set.label}</div>
+        <div className="text-[12.5px] font-bold text-[var(--fg)]" title={o.set.label}>Rank in {o.set.short}</div>
         <div className="flex flex-col">
           {o.rows.map((r) => (
             <div key={r.key} className="flex items-center justify-between border-b border-[var(--panel-border)] py-[7px] text-[12.5px]">
               <span className="text-[var(--chip-fg)]">{r.label}</span>
               <span className="font-bold text-[var(--fg)]">
-                {r.note === "igcse" ? <i className="font-normal text-[var(--muted2)]">not ranked</i> : r.set ? `${r.set.rank} of ${r.set.of}` : "—"} <span className={r.since ? dirClass(r.since.change, 0, changeDp(r.since)) : dirClass(null)}>{r.since ? arrowOf(r.since.change, 0, changeDp(r.since)) : ""}</span>
+                {r.set ? `${r.set.rank} of ${r.set.of}` : "—"} <span className={r.since ? dirClass(r.since.change, 0, changeDp(r.since)) : dirClass(null)}>{r.since ? arrowOf(r.since.change, 0, changeDp(r.since)) : ""}</span>
               </span>
             </div>
           ))}
@@ -39,25 +41,27 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
             <tr>
               <Th>Measure</Th>
               <Th>You</Th>
-              <Th>{o.set.label}</Th>
+              <Th title={o.set.label}>{o.set.short}</Th>
               <Th>{region ?? "Region"}</Th>
               <Th>England</Th>
-              <Th>Since {periodLabel(TREND_BASE_PERIOD)}</Th>
+              <Th>Trends</Th>
             </tr>
           </thead>
           <tbody>
             {o.rows.map((r) => {
-              const igcse = r.note === "igcse";
               const since = r.since;
               return (
                 <tr key={r.key} className="border-b border-[var(--panel-border)] last:border-0" data-score-row={r.key}>
                   <Td className="text-[var(--fg)]">{r.label}</Td>
-                  <Td className="font-bold text-[var(--fg)]">{igcse ? <i className="font-normal text-[var(--muted2)]">IGCSE</i> : fmt(r.value, r.unit === "share" ? "share" : r.unit, r.key)}</Td>
-                  <Td title={r.set ? `${rankText(r.set)} ${r.set.label}` : undefined}>{igcse ? <i className="text-[var(--muted2)]">not ranked</i> : r.set ? `${r.set.rank} of ${r.set.of}` : "—"}</Td>
-                  <Td>{igcse ? "—" : r.region ? `${r.region.rank.toLocaleString("en-GB")} of ${r.region.of.toLocaleString("en-GB")}` : "—"}</Td>
-                  <Td>{igcse ? "—" : r.england ? `${r.england.rank.toLocaleString("en-GB")} of ${r.england.of.toLocaleString("en-GB")}` : "—"}</Td>
-                  <Td className={`font-bold ${since ? dirClass(since.change, 0, changeDp(since)) : dirClass(null)}`} title={since ? `since ${periodLabel(since.from)}` : r.unit === "va" ? "Value added has two published years: no change is measured" : undefined}>
-                    {igcse ? "—" : fmtChange(since)}
+                  <Td className="font-bold text-[var(--fg)]">{fmt(r.value, r.unit === "share" ? "share" : r.unit, r.key)}</Td>
+                  <Td title={r.set ? `${rankText(r.set)} ${r.set.label}` : undefined}>{r.set ? `${r.set.rank} of ${r.set.of}` : "—"}</Td>
+                  <Td>{r.region ? `${r.region.rank.toLocaleString("en-GB")} of ${r.region.of.toLocaleString("en-GB")}` : "—"}</Td>
+                  <Td>{r.england ? `${r.england.rank.toLocaleString("en-GB")} of ${r.england.of.toLocaleString("en-GB")}` : "—"}</Td>
+                  <Td className="whitespace-nowrap" title={since ? undefined : r.unit === "va" ? "One published year so far: no change is measured" : undefined}>
+                    <span className={`font-bold ${since ? dirClass(since.change, 0, changeDp(since)) : dirClass(null)}`} data-trend={since?.period ?? ""}>
+                      {fmtChange(since)}
+                    </span>
+                    {since && <span className="ml-1 text-[11px] text-[var(--muted2)]">{since.period}</span>}
                   </Td>
                 </tr>
               );
@@ -76,7 +80,7 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
         ) : (
           <span className="text-[11.5px] text-[var(--muted2)]">{o.flagsLoaded ? "None" : "Not available yet"}</span>
         )}
-        <span className="text-[11px] text-[var(--muted)]">counts show how many schools in each set have that result; roll and boarders since {periodLabel(CENSUS_FIRST_PERIOD)}</span>
+        <span className="text-[11px] text-[var(--muted)]">counts show how many schools in each set have that result</span>
       </div>
     </>
   );

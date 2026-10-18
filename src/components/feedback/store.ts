@@ -27,9 +27,14 @@ export type OwnItem = {
 /** What the window is open on: the view, the page it is on, and the panel's element (to keep in view). */
 export type FeedbackTarget = { surface: ViewSurface; view: ViewRef; viewKey: string; anchor: HTMLElement | null; openedAt: number };
 
-type State = { status: "idle" | "loading" | "ready"; allowed: boolean; items: OwnItem[]; target: FeedbackTarget | null };
+// 0.8 SMT feedback round 1 (F-5, R-FEEDBACK-FOLLOWS-VIEW): the view each panel is showing now, keyed by
+// dashboard and panel (panelKey), so the window can see when its panel's rail has moved on.
+export type PanelView = Omit<FeedbackTarget, "openedAt">;
+export const panelKey = (surface: ViewSurface, panelId: string) => `${surface.dashboard.id}:${panelId}`;
 
-let state: State = { status: "idle", allowed: false, items: [], target: null };
+type State = { status: "idle" | "loading" | "ready"; allowed: boolean; items: OwnItem[]; target: FeedbackTarget | null; panels: Record<string, PanelView> };
+
+let state: State = { status: "idle", allowed: false, items: [], target: null, panels: {} };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 const setState = (next: Partial<State>) => {
@@ -40,7 +45,7 @@ const subscribe = (l: () => void) => {
   listeners.add(l);
   return () => listeners.delete(l);
 };
-const SERVER: State = { status: "idle", allowed: false, items: [], target: null };
+const SERVER: State = { status: "idle", allowed: false, items: [], target: null, panels: {} };
 
 export async function feedbackToken(): Promise<string | null> {
   const { data } = await createBrowserSupabaseClient().auth.getSession();
@@ -66,12 +71,42 @@ export async function loadFeedback(force = false): Promise<void> {
 // The server's snapshot is the store as it stands: on a real page it is only ever filled in the browser
 // (loadFeedback runs in an effect), so a server render draws no icon, as before; a unit test's server
 // render sees what the test put in it.
+/** The store as it stands, outside React (tests). */
+export function feedbackSnapshot(): State {
+  return state;
+}
+
 export function useFeedbackState(): State {
   return useSyncExternalStore(subscribe, () => state, () => state);
 }
 
 export function openFeedback(target: Omit<FeedbackTarget, "openedAt">) {
   setState({ target: { ...target, openedAt: Date.now() } });
+}
+/** F-5: the window moves to the view its panel shows now -- the same opening, so the draft is kept. */
+export function moveFeedback(to: PanelView) {
+  if (!state.target) return;
+  setState({ target: { ...to, openedAt: state.target.openedAt } });
+}
+/** A panel says which view it shows (CardBox, as its rail changes). Only a change is announced. */
+export function setPanelView(v: PanelView) {
+  const k = panelKey(v.surface, v.view.panelId);
+  const was = state.panels[k];
+  if (was && was.viewKey === v.viewKey && was.anchor === v.anchor && was.view.label === v.view.label) return;
+  setState({ panels: { ...state.panels, [k]: v } });
+}
+export function clearPanelView(v: PanelView) {
+  const k = panelKey(v.surface, v.view.panelId);
+  if (state.panels[k]?.viewKey !== v.viewKey) return;
+  const next = { ...state.panels };
+  delete next[k];
+  setState({ panels: next });
+}
+/** The view the target's panel shows now, when it isn't the one the window is on (else null). */
+export function movedView(s: Pick<State, "target" | "panels">): PanelView | null {
+  if (!s.target) return null;
+  const live = s.panels[panelKey(s.target.surface, s.target.view.panelId)];
+  return live && live.viewKey !== s.target.viewKey ? live : null;
 }
 export function closeFeedback() {
   setState({ target: null });
