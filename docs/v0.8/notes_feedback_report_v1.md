@@ -218,7 +218,42 @@ It explains:
 - R-FEEDBACK-AUDIENCE: no icon;
 - usage: none.
 
-**Parity against `main` (`f4814ac`):** PENDING.
+**Parity against `main` (`f4814ac`): no figure changed.** Every difference is one of the allowed changes: the footer, the header icons, and the caption moving into the (i). The fixtures were byte-identical between the two trees in every harness, and nothing was written to any database.
+
+| Harness | Pairs | Identical | Allowed changes only | Noise | Unexpected | Failed |
+|---|---|---|---|---|---|---|
+| Teacher (panel views) | 2,875 | 0 | 2,875 | 8 PNG | 0 | 0 |
+| Public page SSR (137625, 117037) | 2 | 2 | — | 0 | 0 | 0 |
+| SMT dashboards and homes | 156 HTML + 156 PNG | 8 PNG | the rest | 0 | 0 | 0 |
+| SMT group sets | 84 + 84 | 0 | all | 0 | 0 | 0 |
+| SMT subjects | 16 cells | 16 | — | 0 | 0 | 0 |
+| Admissions | 328 HTML + 328 PNG, 48 JSON | 48 JSON | 328 + 328 | 0 | 0 | 0 |
+| Groups dashboards (fixtures) | 88 + 88 | 0 | all | 0 | 0 | 0 |
+| Data View | 60 files | 60 | — | 0 | 0 | 0 |
+
+**Teacher, how "allowed only" was confirmed:**
+- **The panel text** is the same once the footer's own tokens are taken out. On 1,546 Trends panels, the only change is that "Trend line" now sits after the (i).
+- **The (i)** is exactly "What this shows" + main's caption + main's (i) text. The one exception is the 46 views whose dropped caption is the geography caveat; their (i) is otherwise unchanged.
+- **There is no caption control.**
+- **The pictures:** 2,867 of the 2,875 change only in the header icon band and the footer band.
+
+**SMT, Admissions and groups:** the HTML was compared with the footer and header-icon buttons, the (i) popover and the caption lines taken out.
+- **What is identical:** every page's text, chart SVG and table (156/156, 84/84, 328/328, 88/88).
+- **The pictures:** none changed size, and at most 0.43% of pixels differ. All of the change is in the header icon slot or the footer.
+- **Knock-ons of the icon row losing a slot:**
+  - Admissions' Pipeline header chips sit about one slot further right.
+  - A truncated header line on the SMT and group phone pages shows a few more characters.
+  - Flags sit left of the footer's menu.
+
+**Noise:** 8 Teacher pictures differ inside the figure area: six maps at 390 px, and the Post-16 bands sortable table at 1280 px dark (two pairs).
+- **Same content:** the text is equal, and no shift of up to ±4/±6 px reproduces either image.
+- **What it is:** every glyph edge in the panel, the title included, is re-drawn a fraction of a pixel off. That is the same content at a sub-pixel offset: the panel's fractional position after the footer and header change.
+- **The base is stable:** main's own shots match its two earlier runs exactly.
+
+**Also seen:**
+- **One unanswered request per branch page:** the new `/api/feedback` read, which the Teacher harness's stub doesn't answer. Members never see the icon either way.
+- **One branch-side error:** the known `SchoolMap` unmounted-map race, in a file this branch doesn't touch, seen before on either side.
+- **Edits during the run:** the parity bundles were built while I was still changing three files on the feedback path: the phone sheet width, the done-items colour rule, and `docs/FEEDBACK.md`. None of them touches a figure, and members never see the feedback icon.
 
 ## 11. Guy's commands, in order
 
