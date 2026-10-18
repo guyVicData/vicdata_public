@@ -17,7 +17,7 @@ import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import { DIRECTION_ARROW, DIRECTION_WORD, ENTRIES_MEASURE, percentChange, periodsWithData, sliceFrom, trimToData, trendSentence, type PanelData, type PanelId, moversSentence, signedDelta } from "@/lib/teacher-view-panels";
-import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, DataDate, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
@@ -52,7 +52,6 @@ export function CandidatesPanels({
   periods,
   panels,
   onPanelsChange,
-  notes,
   question,
   source,
   currentLabel,
@@ -71,7 +70,6 @@ export function CandidatesPanels({
   periods: number[];
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
-  notes?: PanelNotes;
   question: string;
   source: (span?: string) => ReactNode;
   // §4: the Current tag names the column ("Candidates 2024/25") -- see SubjectPanels.
@@ -489,7 +487,7 @@ export function CandidatesPanels({
       host="teacher.c1.candidates"
       panels={panels}
       onPanelsChange={onPanelsChange}
-      notes={notes}
+     
       // Current titles its one view itself (ViewTitle), as Trends titles each of its views;
       // the geography views carry their own heading, as before.
       render={{ current: { ...current, frame }, trend: { ...trend, frame } }}

@@ -31,7 +31,7 @@ import { directionCssVars } from "@/lib/trend-colours";
 import { cloneElement, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, NAV_LABELS_KEY, saveNavLabels, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, hasNewData, markPeriodSeen, NAV_LABELS_KEY, saveNavLabels, againstKey, chosenKey, measureKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { PhoneNav, TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
@@ -40,6 +40,8 @@ import { DashboardFrame, GroupSwitcher, PlannedPanel } from "@/components/dashbo
 import { accentVars, productAccent } from "@/components/shell/accent";
 import { UsageReporter, type UsageScope } from "@/lib/usage-client";
 import { buildPlan, configRendererRequested, DashboardPlanContext, type PlanEmbed } from "@/components/dashboard-config/plan";
+import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
+import { schoolSurface } from "@/components/feedback/surface";
 import { DashboardRuntimeContext, type DashboardRuntime } from "@/components/dashboard-config/runtime";
 import { VicDataUpdatesBySlug } from "@/components/editor/DashboardUpdates";
 import type { ResultsMeasure as ResultsMeasureId } from "@/catalogue/types";
@@ -300,9 +302,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // as the chooser's unsaved choice. Read on load, never saved; the chooser's next choice
   // drops it. null -- no parameter -- leaves the page exactly as it was.
   const [linkedSet, setLinkedSet] = useState<string | null>(null);
-  // Round 8 §6: every private note this person has for this school, keyed by chart_key and
-  // fetched once. Nine panels would otherwise be nine round trips on every load.
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  // Round 8 §6's notes (fetched once, keyed per panel) moved to ViewSurfaceProvider in 0.8: one
+  // read per page, one note per view.
   const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
   const subjectPickerCloseRef = useRef<HTMLButtonElement | null>(null);
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
@@ -393,7 +394,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // school's data rather than after it; they are applied in the same order as before.
       const memberReads = embed
         ? null
-        : Promise.all([fetchOnboardedPhases(supabase, urn), fetchPreferences(supabase, urn, phase), fetchNotes(supabase, urn)]);
+        : Promise.all([fetchOnboardedPhases(supabase, urn), fetchPreferences(supabase, urn, phase)]);
       memberReads?.catch(() => {});
       // Shared for 5 minutes with every other view of this school (fetch-cache.ts).
       const res = await cachedFetchJson<DashboardPayload>(`/api/teacher/dashboard?urn=${encodeURIComponent(urn)}&phase=${phase}`, { token });
@@ -440,16 +441,14 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             }),
           );
         }
-        if (props.frame !== "figure") setNotes(await fetchNotes(supabase, urn));
         setLoading(false);
         return;
       }
-      const [done, prefs, notes] = await memberReads!;
+      const [done, prefs] = await memberReads!;
       setOnboarded(done.includes(phase));
       setOnboardedPhases(done);
       setTicked(prefs.subjects);
       setColumns(prefs.columns);
-      setNotes(notes);
       const linked = parseLinkedSet(search);
       if (linked) {
         setLinkedSet(linkedSetChoice(linked));
@@ -1950,24 +1949,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Results and finding your Trend panel gone would read as a bug.
   const COL1 = "candidates";
 
-  // One note slot per column, keyed per panel. RLS on teacher_view_notes is
-  // profile_id = auth.uid(), so a note is only ever readable by the person who wrote it --
-  // the privacy bar the original brief §12 set, enforced at the database rather than here.
-  const notesFor = (columnId: string) => ({
-    bodyFor: (panelId: PanelId) => notes[panelNoteKey(phase, columnId, panelId)] ?? null,
-    onSave: async (panelId: PanelId, body: string) => {
-      if (!schoolUrn) return;
-      const key = panelNoteKey(phase, columnId, panelId);
-      await saveNote(supabase, schoolUrn, key, body);
-      setNotes((prev) => {
-        const next = { ...prev };
-        if (body.trim()) next[key] = body;
-        else delete next[key];
-        return next;
-      });
-    },
-  });
-
   const panelsOf = (columnId: string): PanelId[] => panelsFrom(columns[columnId]);
 
   // Every panel's source line. `span` is the real year range that panel is plotting, so a
@@ -2102,7 +2083,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         colour={colourOf(focusItem)}
         panels={panelsOf(COL1)}
         onPanelsChange={(next) => setPanels(COL1, next)}
-        notes={notesFor(COL1)}
         question={q.howWell}
         source={panelSource}
         // 0.6.1 S6: no pills of its own since S5; the spacer keeps its panels level with
@@ -2227,7 +2207,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         source={categorySource}
         panels={panelsOf(COL1)}
         onPanelsChange={(next) => setPanels(COL1, next)}
-        notes={notesFor(COL1)}
         emptyText="Pick a subject above to see its results."
         // Content round S3 (Redesign.dc.html v27): on average point score the Current
         // tag says what the figure is -- "Av. Points 2024/25" -- while the column
@@ -2283,7 +2262,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         onPanelsChange={(next) => setPanels(COL1, next)}
         question={q.howMany}
         source={categorySource}
-        notes={notesFor(COL1)}
         currentLabel={COLUMN_TITLE.candidates}
       />
     );
@@ -2410,7 +2388,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         source={categorySource}
         panels={panelsOf("context")}
         onPanelsChange={(next) => setPanels("context", next)}
-        notes={notesFor("context")}
         emptyText="Pick a subject above to see how it sits in the school."
         // S11: the tag names the live comparison group -- "Whole School Context
         // 2024/25" or "Selected Subjects Context 2024/25".
@@ -2501,7 +2478,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         theme={theme}
         panels={panelsOf("rankings")}
         onPanelsChange={(next) => setPanels("rankings", next)}
-        notes={notesFor("rankings")}
         question={q.wider}
         source={panelSource}
         headlineLabel={headlineLabel}
@@ -2841,7 +2817,33 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           </DashboardFrame>
         );
         // Flag off (no config): exactly the frame, no runtime context.
-        return dashboardConfig ? withRuntime(frame) : frame;
+        const drawn = dashboardConfig ? withRuntime(frame) : frame;
+        // 0.8 notes and feedback: each view's private note and feedback icon (ViewSurfaceProvider).
+        // Without the config renderer the ids are still the code config's (ColumnPanels maps them).
+        const surfaceConfig = dashboardConfig ?? (phase === "ks4" || phase === "ks5" ? teacherDashboardFor(phase, sharedMeasure) : null);
+        if (!schoolUrn || !surfaceConfig) return drawn;
+        const surface = schoolSurface({
+          product: "teacher",
+          dashboard: { id: surfaceConfig.id, name: surfaceConfig.name },
+          urn: schoolUrn,
+          name: schoolName ?? schoolUrn,
+          role: "teacher",
+          state: {
+            phase,
+            measure: sharedMeasure,
+            results: showingResults ? resultsMeasure.id : null,
+            subject: focusItem ? (phase === "ks5" ? focusItem.label : focusItem.subject) : null,
+            compareAgainst: contextAgainst,
+            set: activeSetLabel,
+            comparator: onRanking ? "ranking" : "schools",
+            year: latestPeriod === null ? null : academicYearLabel(latestPeriod),
+          },
+        });
+        return (
+          <ViewSurfaceProvider surface={surface} config={surfaceConfig}>
+            {drawn}
+          </ViewSurfaceProvider>
+        );
       })()}
 
       {/* The subject picker, as a popup from "±" rather than a permanent section of the

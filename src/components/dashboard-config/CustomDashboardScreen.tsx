@@ -44,6 +44,8 @@ import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { TeacherNav } from "@/components/teacher/TeacherNav";
 import { TeacherDashboard } from "./TeacherDashboard";
+import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
+import { schoolSurface } from "@/components/feedback/surface";
 import { GroupSwitcher } from "./ConfigDashboard";
 import { accentVars, productAccent } from "@/components/shell/accent";
 import { dashboardPhase } from "./embed";
@@ -237,7 +239,13 @@ export function CustomDashboardView({
           <DashboardUpdates key={reloadKey} dashboardId={extras.row.id} version={extras.version} schoolUrn={school.urn} />
         </div>
       )}
-      <TeacherDashboard mode="embed" phase={phase} school={school.urn} config={config} settingsFrom="saved" memberView={!!extras.vicData} />
+      {/* 0.8 notes and feedback: a private note and a feedback icon on each view, as on Teacher. */}
+      <ViewSurfaceProvider
+        surface={schoolSurface({ product: "custom", dashboard: { id: config.id, name: config.name, versionId: extras.row?.published_version_id ?? null }, urn: school.urn, name: school.name, role: "teacher", state: { phase } })}
+        config={config}
+      >
+        <TeacherDashboard mode="embed" phase={phase} school={school.urn} config={config} settingsFrom="saved" memberView={!!extras.vicData} />
+      </ViewSurfaceProvider>
     </main>
   );
 }

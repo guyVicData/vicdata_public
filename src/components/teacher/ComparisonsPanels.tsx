@@ -52,7 +52,7 @@ import {
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
-import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, DataDate, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
 import { ChangeList, ViewTitle, YearTable, type ChangeRow } from "./SeriesViews";
@@ -114,7 +114,6 @@ export function ComparisonsPanels({
   phase,
   panels,
   onPanelsChange,
-  notes,
   question,
   source,
   headlineLabel,
@@ -153,7 +152,6 @@ export function ComparisonsPanels({
   phase: KsStage;
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
-  notes?: PanelNotes;
   question: string;
   source: (span?: string) => ReactNode;
   headlineLabel: string;
@@ -1128,7 +1126,7 @@ export function ComparisonsPanels({
       host="teacher.c3.comparisons"
       panels={panels}
       onPanelsChange={onPanelsChange}
-      notes={notes}
+     
       controls={
         <div className="flex flex-col items-start gap-1.5">
           {/* The same PillMenu Context uses, so round 7 §8's "matching Comparisons'

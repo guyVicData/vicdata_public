@@ -148,6 +148,7 @@ export function Platform() {
         <span className="flex-grow" />
         <SearchBox value={query} onChange={setQuery} placeholder="Search schools" className="w-[282px] max-w-full rounded-lg px-2.5 py-[7px]" />
         <Link href="/platform/catalogue" className={EBTN}>Catalogue</Link>
+        <Link href="/platform/feedback" className={EBTN}>Feedback</Link>
         <button type="button" disabled title="Night 2" className={EBTN}>Planned views &amp; requests</button>
       </div>
 

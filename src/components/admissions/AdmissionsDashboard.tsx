@@ -25,6 +25,8 @@ import type { DashboardConfig, DataviewId, PanelConfig } from "@/catalogue/types
 import type { ViewSpec } from "@/catalogue/viewspec";
 import { ADMISSIONS_VIEW_COMPARE, compareState, looksOf } from "@/catalogue/admissions-editor";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
+import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
+import { flatState, schoolSurface } from "@/components/feedback/surface";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { isBoardingSchool } from "@/lib/admissions/boarding";
 import { cleanLaNameForDisplay } from "@/lib/la-name-display";
@@ -335,8 +337,19 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
       </FChip>
     ) : undefined;
 
+  // 0.8 notes and feedback: each view's private note and feedback icon, with what the page is showing.
+  const surface = schoolSurface({
+    product: "admissions",
+    dashboard: { id: config.id, name: config.name },
+    urn: member.schoolUrn,
+    name: member.schoolName,
+    role: "admissions",
+    state: { dashboard: dash, entry: entry ?? null, rivals: dash === "market-share" ? setLabel : null, projection, ...flatState(filters as unknown as Record<string, unknown>, "filters") },
+  });
+
   return (
     <UsageScopeContext.Provider value={usageScope}>
+    <ViewSurfaceProvider surface={surface} config={config}>
     <ShellPage phone={phone} rootRef={rootRef}>
       <ViewAsBanner />
       {/* F4: Teacher's nav, then Teacher's control bar -- the same components and places. */}
@@ -377,6 +390,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
         </>
       )}
     </ShellPage>
+    </ViewSurfaceProvider>
     </UsageScopeContext.Provider>
   );
 }
@@ -823,7 +837,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
   };
   return (
     <>
-    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} caption={notes.caption} visibleCaption={notes.visible} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title} focusBar={c.focusBar}>
+    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} caption={notes.caption} visibleCaption={notes.visible} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title} focusBar={c.focusBar} view={{ panelId: panel.id, panelName: panel.name ?? null, instanceId: active, dataview: dv || null }}>
       {({ fullscreen, height }) => <InstanceBody dv={dv} c={c} o={{ fullscreen, height, onRail: onRailDv, spec: instance?.kind === "view" ? instance.spec : undefined }} />}
     </Panel>
     {copying && instance?.kind === "view" && (
@@ -878,7 +892,7 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   return (
     <>
       {now && (
-        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv)} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar}>
+        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv)} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
           {() =>
             c.dash === "pipelines"
               ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
@@ -887,12 +901,12 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
         </Panel>
       )}
       {large && (
-        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv)} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar}>
+        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv)} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
           {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? <InstanceBody dv={largeDv} c={c} o={{ fullscreen, height, spec: specOf(large, largeTab) }} /> : phoneView(largeDv, c, specOf(large, largeTab))}</div>}
         </Panel>
       )}
       {trends.length > 0 && (
-        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv)} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar}>
+        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv)} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} view={trendPanel ? { panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "", dataview: trendDv || null } : null}>
           {({ fullscreen, height }) => <div className="flex min-h-[160px] flex-col gap-2"><InstanceBody dv={trendDv} c={c} o={{ fullscreen, height, spec: specOf(trendPanel, stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "") }} /></div>}
         </Panel>
       )}

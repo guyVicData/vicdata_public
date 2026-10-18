@@ -19,10 +19,13 @@
 //     controls go up to 1000 and the map card underneath must not show through.
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
-import { CaptionNote, PanelNote, SourceNote } from "./PanelFooter";
+import { PanelNote, SourceNote, WhatThisShows } from "./PanelFooter";
 import { ChevronDown } from "./PanelIcons";
 import { PanelIconRow } from "./PanelIconRow";
 import { reportUsage, useUsageScope } from "@/lib/usage-client";
+import { useViewMarks } from "@/components/feedback/ViewSurface";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import type { ViewRef } from "@/lib/view-ref";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
 // ColumnBuilder -- is fullscreen, without threading a callback through every level. The
@@ -114,6 +117,7 @@ export function CardBox({
   height,
   headerExtra,
   focus,
+  view,
   children,
 }: {
   title: string;
@@ -147,6 +151,9 @@ export function CardBox({
   // The mockups' two closing lines under every box's content: a one-line explanation
   // (11.5px, --muted2) and a source line (9.5px, --source). Optional because a pinned
   // axis view carries its own framing in its subtitle.
+  // 0.8 notes and feedback (decision 1): the explanation is the view's "What this shows" line, at the
+  // top of its (i) -- no longer a button of its own -- and printed as that line in full screen and
+  // "Print this graph".
   caption?: ReactNode;
   source?: ReactNode;
   // Round 8 §4: the footer's own controls -- the private note and Export -- beside the
@@ -157,17 +164,23 @@ export function CardBox({
   footerActions?: (tools: { print: () => void; fullscreen: boolean }) => ReactNode;
   // Part 4: the private note, for the fullscreen rail -- its text shown outright, and the
   // same editor as the card's footer icon. Absent = the panel has no note slot.
-  note?: { body: string | null; onSave: (body: string) => Promise<void> | void };
+  // 0.8 notes and feedback: a panel given a `view` takes its note from the page instead (one per view,
+  // useViewMarks); `note` stays for a meeting slide's own.
+  note?: { body: string | null; onSave: (body: string) => Promise<void> | void; disabled?: boolean };
+  // 0.8 notes and feedback (decision 3, 4): the view the panel is showing -- its panel and view instance
+  // ids -- so the footer carries that view's private note and its feedback icon. Absent (or outside a
+  // page's ViewSurfaceProvider) = neither, as before.
+  view?: ViewRef | null;
   // Column 3 round Part 1: a caption line shown WITHOUT a click, on the card only -- the
-  // counterpart to CaptionNote (which stays behind its button). Fullscreen does not show it:
+  // counterpart to the caption (which stays behind the (i)). Fullscreen does not show it:
   // there is nothing left to invite anyone into once they are there.
   visibleCaption?: ReactNode;
   // A built-in "Full screen" link on that line, opening this box's own fullscreen -- for
   // views that read far better with room (Comparisons' map). Off by default.
   suggestFullscreen?: boolean;
   // 0.7 admissions r3 (F1): the panel menu (PanelExport: Print this graph, Copy this view…),
-  // the first slot of the header's icon row (PanelIconRow), on the card and in the modal.
-  // Given `print`, as footerActions is. Absent = the slot stays empty and reserved.
+  // on the card and in the modal. Given `print`, as footerActions is.
+  // 0.8 notes and feedback (decision 2): at the footer's right (it was the header icon row's first slot).
   menu?: (tools: { print: () => void; fullscreen: boolean }) => ReactNode;
   // 0.7 admissions r3 (F1): a fixed-height box's own height, for Admissions' rows (470, 330).
   // Absent = PANEL_HEIGHT, as every Teacher panel.
@@ -210,6 +223,9 @@ export function CardBox({
   children: (mode: { fullscreen: boolean }) => ReactNode;
 }) {
   const [fullscreen, setFullscreen] = useState(useContext(OpenInFullscreen));
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const marks = useViewMarks(view);
+  const viewNote = note ?? marks?.note;
   // Round 8 §5: a panel print is the same fullscreen modal, opened for the print and
   // marked as the one subtree to paint. Tracked separately from `fullscreen` so closing
   // the print does not leave an ordinary fullscreen open behind it.
@@ -283,10 +299,9 @@ export function CardBox({
         {subtitle && <p className="text-[11px] text-neutral-500">{subtitle}</p>}
       </div>
       {(!isModal || focus) && headerExtra && <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 print:hidden">{headerExtra}</div>}
-      {/* 0.7 admissions r3 (F1): the one icon row (PanelIconRow) -- menu, full screen,
-          collapse -- in the same order and places on every Teacher and Admissions panel. */}
+      {/* 0.7 admissions r3 (F1): the one icon row (PanelIconRow) -- full screen, collapse --
+          in the same order and places on every panel. (0.8: the menu moved to the footer.) */}
       <PanelIconRow
-        menu={menu?.({ print: printPanel, fullscreen: isModal })}
         fullscreen={
           <button
             ref={isModal ? closeRef : undefined}
@@ -314,32 +329,45 @@ export function CardBox({
   // positioning rather than pushed there by flex order -- so a short chart and a long one
   // put their source, note and Export in exactly the same place. The panel reserves the
   // room for it in its own bottom padding.
+  //
+  // 0.8 notes and feedback (decision 2): the same on every panel -- bottom left the (i) (its "What this
+  // shows" line on top), the view's private note, then feedback, then the panel's own leading control
+  // (Trend's "Trend line"); bottom right the three-dots menu, with any flag just left of it.
+  const feedback = (isModal: boolean) => (marks ? <FeedbackButton surface={marks.surface} view={marks.view} viewKey={marks.viewKey} anchor={isModal ? undefined : boxRef} /> : null);
+  const menuAt = (isModal: boolean) => menu?.({ print: printPanel, fullscreen: isModal });
   const footerRow = (
     <div
+      data-panel-footer=""
       className={[
         fixedHeight ? "absolute inset-x-3 bottom-2.5" : "",
         "flex items-center gap-1.5 print:hidden",
       ].join(" ")}
     >
-      {footerLead}
       {/* §4: the citation is an icon that opens its own text, not a printed sentence. */}
-      <SourceNote>{source}</SourceNote>
-      {/* Round 2 §8: the caption is behind its own button too, beside the source. */}
-      <CaptionNote>{caption}</CaptionNote>
+      <SourceNote what={caption}>{source}</SourceNote>
+      {viewNote && <PanelNote body={viewNote.body} onSave={viewNote.onSave} disabled={viewNote.disabled} />}
+      {feedback(false)}
+      {footerLead}
       {footerActions?.({ print: printPanel, fullscreen: false })}
-      {flag && <span className="ml-auto min-w-0 truncate text-[11.5px] font-bold">{flag}</span>}
+      <span data-panel-footer-right="" className="ml-auto flex min-w-0 items-center gap-1.5">
+        {flag && <span className="min-w-0 truncate text-[11.5px] font-bold">{flag}</span>}
+        {menuAt(false)}
+      </span>
     </div>
   );
 
   // The caption is the panel's one-line conclusion. Round 2 §8 moved it out of the panel
-  // body into the footer's CaptionNote button; only the fullscreen modal still prints it.
-  const captionLine = caption ? <p className="text-[11.5px] leading-snug text-[var(--muted2)]">{caption}</p> : null;
+  // body into the footer; 0.8 put it at the top of the (i). Full screen and "Print this graph"
+  // print it, as the (i)'s "What this shows" line.
+  const captionLine = caption ? <WhatThisShows line>{caption}</WhatThisShows> : null;
 
   return (
     // Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap.
     // Fixed-height panels add bottom padding to reserve the footer's row and go
     // `relative` so it can be pinned there.
     <div
+      ref={boxRef}
+      data-view-key={marks?.viewKey}
       className={[
         "mt-3 flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3",
         fixedHeight ? "relative overflow-hidden pb-9" : "",
@@ -408,7 +436,7 @@ export function CardBox({
           {/* 0.6.2 S5: stacked (below lg) the area never shrinks below its content and the modal
               scrolls, rather than squeezing the figure under a long source line (the trend
               note) until a fixed-height chart spilled over its own caption. */}
-          <div className={`mt-1 grid min-h-0 flex-1 gap-4 max-lg:min-h-min ${legend || flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
+          <div className={`mt-1 grid min-h-0 flex-1 gap-4 max-lg:min-h-min ${legend || flag || viewNote ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
             <div className="flex min-h-0 min-w-0 flex-col gap-2">
               <div className="flex min-h-0 flex-1 items-stretch">
                 {actions && (
@@ -421,7 +449,7 @@ export function CardBox({
                   in both, rather than a print-only copy of what the card hides behind "i". */}
               {source && <p className={`text-[11px] leading-relaxed text-[var(--source)]${focus ? " hidden print:block" : ""}`}>{source}</p>}
             </div>
-            {(legend || flag || note) && (
+            {(legend || flag || viewNote) && (
               <aside className="flex min-h-0 flex-col gap-4 border-t border-[var(--panel-border)] pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
                 {legend && (
                   <section className="flex min-h-0 flex-col">
@@ -431,7 +459,7 @@ export function CardBox({
                 )}
                 {/* The flag and note sit below a rule, apart from the legend's controls --
                     the same panel-border line that divides the rail from the chart. */}
-                {(flag || note) && (
+                {(flag || viewNote) && (
                   <div className={`flex flex-col gap-4 ${legend ? "border-t border-[var(--panel-border)] pt-4" : ""}`}>
                     {flag && (
                       <section>
@@ -439,15 +467,15 @@ export function CardBox({
                         <p className="mt-1.5 text-[13px] font-bold">{flag}</p>
                       </section>
                     )}
-                    {note && (
+                    {viewNote && (
                       // Private to its author, so it stays off a printout that may be handed on.
                       <section className="print:hidden">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Your note &middot; private</h4>
-                          <PanelNote body={note.body} onSave={note.onSave} variant="rail" />
+                          <PanelNote body={viewNote.body} onSave={viewNote.onSave} disabled={viewNote.disabled} variant="rail" />
                         </div>
-                        <p className={`mt-1.5 whitespace-pre-wrap text-[12.5px] leading-relaxed ${note.body?.trim() ? "text-[var(--fg)]" : "italic text-[var(--muted3)]"}`}>
-                          {note.body?.trim() ? note.body : "No note on this panel yet."}
+                        <p className={`mt-1.5 whitespace-pre-wrap text-[12.5px] leading-relaxed ${viewNote.body?.trim() ? "text-[var(--fg)]" : "italic text-[var(--muted3)]"}`}>
+                          {viewNote.body?.trim() ? viewNote.body : view ? "No note on this view yet." : "No note on this panel yet."}
                         </p>
                       </section>
                     )}
@@ -456,13 +484,15 @@ export function CardBox({
               </aside>
             )}
           </div>
-          {/* What is left for the footer: Trend's line toggle and Export. The source is
-              above as text, the flag and note are in the rail. */}
-          <div className="flex items-center gap-1.5 print:hidden">
+          {/* What is left for the footer: the (i) in focus mode (elsewhere the source and "What
+              this shows" are above as text), feedback, Trend's line toggle, and the menu at the
+              right. The flag and note are in the rail. */}
+          <div data-panel-footer="modal" className="flex items-center gap-1.5 print:hidden">
+            {focus && <SourceNote what={caption}>{source}</SourceNote>}
+            {feedback(true)}
             {footerLead}
-            {focus && <SourceNote>{source}</SourceNote>}
-            {focus && <CaptionNote>{caption}</CaptionNote>}
             {footerActions?.({ print: printPanel, fullscreen: true })}
+            <span className="ml-auto flex items-center gap-1.5">{menuAt(true)}</span>
           </div>
         </TeacherModal>
       )}

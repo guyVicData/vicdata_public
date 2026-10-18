@@ -23,7 +23,7 @@ import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
-import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, DataDate, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { SelectionPrompt, withSelectionChip, type SelectionChipValue } from "./SelectionBits";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
@@ -81,7 +81,6 @@ export function SubjectPanels({
   source,
   panels,
   onPanelsChange,
-  notes,
   emptyText,
   note,
   limitNote,
@@ -160,7 +159,6 @@ export function SubjectPanels({
   source: (span?: string) => ReactNode;
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
-  notes?: PanelNotes;
   emptyText: string;
   // An honest limit worth saying -- e.g. the threshold measure only having 2023/24
   // onward. Content round S11 moved it from under every panel's figure (printed three
@@ -1121,7 +1119,7 @@ export function SubjectPanels({
       host={columnId === "context" ? "teacher.c2.context" : "teacher.c1.results"}
       panels={panels}
       onPanelsChange={onPanelsChange}
-      notes={notes}
+     
       controls={controls}
       // Title over Current's views (bar chart and table), only when there is a comparison
       // within the category -- a lone subject has nothing to name. Not over the number

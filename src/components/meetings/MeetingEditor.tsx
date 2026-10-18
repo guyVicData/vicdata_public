@@ -8,7 +8,7 @@
 // read-only but can still be presented and exported.
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { DashboardConfig, DataviewInstance, SlideConfig } from "@/catalogue/types";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchNotes, saveNote } from "@/lib/teacher-view-data";
@@ -21,6 +21,8 @@ import { friendlyMeetingError, loadMeeting, mySchool, NOT_APPLIED_LINE, publishM
 import { AddViewFallback } from "./AddViewFallback";
 import { EBtn, MeetingsTile, ROSE, ROSE_ROOT_STYLE, SlideThumb, usePrintLight } from "./MeetingChrome";
 import { SlideCanvas, SlotNotesContext, type SlotNotes } from "./SlideCanvas";
+import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
+import { schoolSurface } from "@/components/feedback/surface";
 import { useMeasure } from "./useMeasure";
 
 // S4's chooser plugs in here: open it for a slide, and call `add` with the picked view and
@@ -230,7 +232,12 @@ function MeetingEditor({ meeting, school, openAddView }: { meeting: LoadedMeetin
     window.print();
   };
 
-  return (
+  // 0.8 notes and feedback: a feedback icon on each slide's view. Its private notes stay the slot's own
+  // ("meeting:{id}:{view}", SlotNotesContext), so the surface keeps none.
+  const surface = school ? { ...schoolSurface({ product: "meeting", dashboard: { id: meeting.row.id, name: meeting.row.name }, urn: school.urn, name: school.name, role: "teacher", state: { meeting: meeting.row.name } }), noteScope: null } : null;
+  const withSurface = (node: ReactNode) => (surface ? <ViewSurfaceProvider surface={surface}>{node}</ViewSurfaceProvider> : node);
+
+  return withSurface(
     <SlotNotesContext.Provider value={slotNotes}>
       {/* Header (Meeting.dc.html: padding 14 24, border-bottom). */}
       <header className="flex flex-wrap items-center gap-3 border-b border-[var(--border)] px-6 py-3.5 print:hidden">
@@ -436,7 +443,7 @@ function MeetingEditor({ meeting, school, openAddView }: { meeting: LoadedMeetin
           }}
         />
       )}
-    </SlotNotesContext.Provider>
+    </SlotNotesContext.Provider>,
   );
 }
 
