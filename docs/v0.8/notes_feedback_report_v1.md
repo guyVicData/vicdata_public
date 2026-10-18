@@ -183,7 +183,7 @@ It explains:
 - **What it records**, besides your words and the chips you choose: which page, dashboard, panel and view you were looking at; the settings on screen (subject, level, comparison set, filters); the page's address; the time; phone or desktop; light or dark theme; and the app version. It records no screenshot and nothing else from your screen.
 - **It is separate from private notes.** Notes are yours alone; VicData's team can't read them.
 - **It isn't usage.** Giving feedback is never counted in usage figures.
-- **Retention and deletion.** Items are kept while open, and deleted 2 years after they are closed (done or won't do). *(Proposed; Guy to confirm the period.)* If an account is deleted, its items stay without the author's name. You can't edit an item once sent, but you can ask VicData to delete it: the request is triaged like any other feedback, and once agreed the item is deleted in the next release.
+- **Retention and deletion.** Items are kept while open, and deleted 2 years after they are closed (done or won't do). If an account is deleted, its items stay without the author's name. You can't edit an item once sent, but you can ask VicData to delete it: the request is triaged like any other feedback, and once agreed the item is deleted in the next release.
 
 ## 10. Checks and parity
 

@@ -94,10 +94,10 @@ When the fix is deployed (merged to `main`, Render deployed):
 
 ## Keeping and deleting items
 
-- **How long:** items are kept while open, and deleted 2 years after they are closed (done or won't do). *(Proposed 18 Oct; Guy to confirm.)* If an account is deleted, its items stay without the author's name (`author_id` set to null).
+- **How long:** items are kept while open, and deleted 2 years after they are closed (done or won't do) (Guy, 18 Oct). If an account is deleted, its items stay without the author's name (`author_id` set to null).
 - **Nobody deletes through the app:** there is no delete policy or grant. A deletion is a migration in the next build, applied by Guy.
 - **Guy's own requests** ("delete F-12"): Claude writes the migration into the next build, and Guy confirms it there. That's all the process they need.
 - **Anyone else's request** goes into triage like any item: the request is logged as an item (type "other", with a triage note naming the items it asks to delete). Once agreed, the deletion goes into the next build the same way, and the request is marked done with that commit.
-- **The 2-year clear-out**, once confirmed, is a periodic migration: `delete from feedback_items where status in ('done', 'wont_do') and coalesce(resolved_at, triaged_at, updated_at) < now() - interval '2 years'`. It runs under the database's own role, which RLS doesn't restrict.
+- **The 2-year clear-out** is a periodic migration: `delete from feedback_items where status in ('done', 'wont_do') and coalesce(resolved_at, triaged_at, updated_at) < now() - interval '2 years'`. It runs under the database's own role, which RLS doesn't restrict.
 
 **Proofing:** the inbox's Coverage tab shows every view of every VicData dashboard. For a chosen school or group it marks each view checked ("Looks good"), open, or unseen. Group dashboards, custom dashboards and meetings appear there once they have feedback.

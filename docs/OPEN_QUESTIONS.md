@@ -2505,4 +2505,4 @@ This is the round for `docs/v0.8/vicdata_0_8_notes_feedback_claude_code_prompt_v
 
 **Guy's answers (18 Oct)**
 21. **Deleting items.** Guy's own requests to delete need only his confirmation in the next build. Anyone else's request goes into triage. Either way, the deletion is a migration in the next build, because nobody deletes through the app. This is written into `docs/FEEDBACK.md` and the report's privacy text.
-22. **How long items are kept: proposed, not yet confirmed.** Keep open items; delete items 2 years after they are closed. An item from a deleted account stays without the author's name. The clear-out query is in `docs/FEEDBACK.md`.
+22. **How long items are kept (Guy, 18 Oct: "2 years is fine").** Keep open items; delete items 2 years after they are closed. An item from a deleted account stays without the author's name. The clear-out query is in `docs/FEEDBACK.md`.
