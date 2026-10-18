@@ -32,6 +32,8 @@ import { isBoardingSchool } from "@/lib/admissions/boarding";
 import { cleanLaNameForDisplay } from "@/lib/la-name-display";
 import { showsOnState, stateDefault } from "@/catalogue/variants";
 import type { EntryPointState } from "@/catalogue/types";
+import { admissionsHasContent } from "./content";
+import { activeWithContent, visibleRail } from "@/lib/rail-content";
 import { DEFAULT_FILTERS, getJson, query, useRoute, type Filters, type ListsAnswer, type Load, type MarketView, type PipelineOk, type PipelineView, type RivalsView, type ShapeView } from "./api";
 import { loadAdmissionsMember, type AdmissionsMember, type MemberState } from "./member";
 import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, FilterChips, PhoneHeader, type DashKey } from "./controls";
@@ -447,7 +449,7 @@ function Notes({ member, notSetUp, listsMissing }: { member: AdmissionsMember; n
 // ---------------------------------------------------------------------------------------------
 // The panels, by the config.
 
-type Ctx = {
+export type Ctx = {
   // 0.7 r3 (F2): GIAS says the school has boarding provision.
   boardingSchool: boolean;
   member: AdmissionsMember;
@@ -489,6 +491,10 @@ const dataviewOf = (panel: PanelConfig, instanceId: string) => {
 // defaultViewByState; it is honoured here. A pick made on one entry point gives way to another
 // entry point's own default when that entry point has one; otherwise it stays, as before.
 const NO_PANEL: PanelConfig = { id: "", row: "", column: "", dataviews: [] };
+// F-6 (R-RAIL-HIDES-EMPTY): the rail without the views that have nothing to show.
+const shownRail = (panel: PanelConfig, c: Ctx): RailItem[] => visibleRail(railOf(panel, c.entry), (id) => admissionsHasContent(dataviewOf(panel, id) ?? "", c));
+const withContent = (panel: PanelConfig, c: Ctx, active: string) => activeWithContent(railOf(panel, c.entry), active, (id) => admissionsHasContent(dataviewOf(panel, id) ?? "", c));
+
 function useActive(panel: PanelConfig, entry: string | null): [string, (id: string) => void] {
   const state = { entryPoint: entryState(entry) };
   const shown = panel.dataviews.filter((v) => showsOnState(v, state));
@@ -824,10 +830,12 @@ function RungCards({ p, c }: { p: PipelineOk; c: Ctx }) {
 }
 
 function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx; height: number | "auto"; config: DashboardConfig }) {
-  const [active, setActive] = useActive(panel, c.entry);
+  const [picked, setActive] = useActive(panel, c.entry);
+  // F-6: a panel that would open on an empty view opens on the next one instead.
+  const active = withContent(panel, c, picked);
   const [copying, setCopying] = useState(false);
   const instance = panel.dataviews.find((v) => v.id === active);
-  const rail = railOf(panel, c.entry);
+  const rail = shownRail(panel, c);
   const dv = dataviewOf(panel, active) ?? "";
   const h = headerOf(panel, dv, c);
   const title = dataviewById(dv)?.label ?? h.tag;
@@ -879,9 +887,10 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   const large = config.panels.find((p) => p.row === "now" && (p.span?.cols ?? 1) >= 2);
   const trends = config.panels.filter((p) => p.row === "trends");
   // 0.7 admissions editor s1 (gap 6): the large view opens on its default for this entry point.
-  const [largeTab, setLargeTab] = useActive(large ?? NO_PANEL, c.entry);
+  const [largePicked, setLargeTab] = useActive(large ?? NO_PANEL, c.entry);
+  const largeTab = large ? withContent(large, c, largePicked) : largePicked;
   const [trendTab, setTrendTab] = useState(trends[0]?.id ?? "");
-  const largeRail = large ? railOf(large, c.entry).map((r) => ({ ...r, label: shortTab(r.label) })) : [];
+  const largeRail = large ? shownRail(large, c).map((r) => ({ ...r, label: shortTab(r.label) })) : [];
   const largeDv = large ? (dataviewOf(large, largeTab) ?? dataviewOf(large, large.defaultView ?? "") ?? "") : "";
   const trendPanel = trends.find((t) => t.id === trendTab) ?? trends[0];
   const trendDv = trendPanel ? (dataviewOf(trendPanel, stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "") ?? "") : "";

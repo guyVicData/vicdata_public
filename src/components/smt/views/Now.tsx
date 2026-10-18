@@ -5,12 +5,24 @@
 // school); each phase's headline with its national rank; A-level value added; Progress 8 or the
 // reason it isn't there (R-SMT-P8-REASON); the school page's XS-XL by phase. R-SMT-VIEW-NOW.
 import { BADGE_ORDER, comparisonCaption } from "@/components/dashboard/PhaseBreakdownCard";
-import { Lbl, Tile, cx } from "@/components/admissions/ui";
+import { Lbl, PairTile, Tile, cx } from "@/components/admissions/ui";
 import { CENSUS_FIRST_PERIOD, periodLabel } from "@/catalogue/years";
 import { SMT_NOTES } from "@/catalogue/notes";
 import type { Overview, SmtSchool } from "../api";
 import { NoteTile, fmt, rankText, yearOf } from "../ui";
-import { arrowed } from "@/lib/signed-delta";
+import { arrowed, signedDelta } from "@/lib/signed-delta";
+import type { EntryTile } from "@/lib/smt/entry-net";
+
+/** F-8: one entry tile, kept very simple (Guy): "Net change at 16  +14,  +40% since 2019/20". */
+export function EntryTileView({ t }: { t: EntryTile }) {
+  const value = t.key === "join11" ? fmt(t.value, "pupils") : signedDelta(t.value, (x) => Math.abs(Math.round(x)).toLocaleString("en-GB"), { zero: "±" });
+  const sub = t.since ? `${signedDelta(t.since.pct, (x) => `${Math.abs(x).toFixed(0)}%`, { zero: "±" })} since ${periodLabel(t.since.base)}` : "—";
+  return (
+    <div data-entry-tile={t.key}>
+      <Tile small label={t.label} value={value} sub={sub} />
+    </div>
+  );
+}
 
 export function SizeByPhase({ sizes, school, caption = true }: { sizes: Overview["now"]["sizes"]; school: SmtSchool; caption?: boolean }) {
   if (!sizes.length) return null;
@@ -46,14 +58,14 @@ export function SchoolNow({ o, school, compact = false }: { o: Overview; school:
   const tiles = [
     <Tile key="roll" label="Roll" value={fmt(n.roll, "pupils")} sub={change} accent />,
     n.boarding ? (
-      <Tile key="db" small label="Day · boarding" value={`${fmt(n.boarding.day, "pupils")} · ${fmt(n.boarding.boarders, "pupils")}`} sub="whole school" />
+      <PairTile key="db" pairs={[{ label: "Day", value: fmt(n.boarding.day, "pupils") }, { label: "Boarding", value: fmt(n.boarding.boarders, "pupils") }]} sub="in whole school" />
     ) : (
-      <Tile key="gb" small label="Girls · boys" value={n.girls !== null && n.boys !== null && n.roll ? `${Math.round((n.girls / (n.girls + n.boys)) * 100)}% · ${Math.round((n.boys / (n.girls + n.boys)) * 100)}%` : "—"} sub={`${school.gender === "Mixed" ? "mixed" : (school.gender ?? "").toLowerCase()}${school.low !== null && school.high !== null ? `, ages ${school.low}–${school.high}` : ""}`} />
+      <PairTile key="gb" pairs={[{ label: "Girls", value: n.girls !== null && n.boys !== null && n.roll ? `${Math.round((n.girls / (n.girls + n.boys)) * 100)}%` : "—" }, { label: "Boys", value: n.girls !== null && n.boys !== null && n.roll ? `${Math.round((n.boys / (n.girls + n.boys)) * 100)}%` : "—" }]} sub={`${school.gender === "Mixed" ? "mixed" : (school.gender ?? "").toLowerCase()}${school.low !== null && school.high !== null ? `, ages ${school.low}–${school.high}` : ""}`} />
     ),
   ];
   if (school.phases.gcse) {
     tiles.push(
-      a8?.note === "igcse" ? (
+      o.igcse ? (
         <NoteTile key="a8" label="GCSE" title="IGCSE school" sub="no comparable GCSE results" />
       ) : (
         <Tile key="a8" small label="Attainment 8 · GCSE" value={fmt(a8?.value, "points")} sub={a8?.england ? `national rank ${rankText(a8.england)}` : `no published results`} />
@@ -64,6 +76,13 @@ export function SchoolNow({ o, school, compact = false }: { o: Overview; school:
   if (ks2) tiles.push(<Tile key="ks2" small label="KS2 · reading, writing, maths" value={fmt(ks2.value, "pct")} sub={ks2.england ? `national rank ${rankText(ks2.england)}` : "no published results"} />);
   if (school.phases.post16) tiles.push(o.va ? <Tile key="va" small label="A-level value added" value={fmt(o.va.value, "va")} sub={`DfE, ${yearOf(o.va.period)}`} /> : <NoteTile key="va" label="A-level value added" title="Not published" sub={SMT_NOTES.vaNotPublished} />);
   if (school.phases.gcse) tiles.push(o.p8.status === "published" ? <Tile key="p8" small label="Progress 8" value={fmt(o.p8.value, "va")} sub={`${yearOf(o.p8.period)}; none since (no KS2 baseline)`} /> : <NoteTile key="p8" label="Progress 8" title="Not published" sub={o.p8.status === "independent" ? "for independent schools" : o.p8.status === "no_baseline" ? o.p8.text.replace(/^Progress 8 is not published /, "") : o.p8.text} />);
+  // F-8 (R-INDEP-ENTRY-TILES): an independent school's GCSE note and Progress 8 note give way to its entry
+  // tiles -- the label, this year's number and one change since 2019/20; the arithmetic is in the (i).
+  if (n.entry) {
+    const drop = new Set(["p8", ...(o.igcse || !a8?.england ? ["a8"] : [])]);
+    for (let i = tiles.length - 1; i >= 0; i--) if (drop.has(String(tiles[i].key))) tiles.splice(i, 1);
+    for (const t of n.entry) tiles.push(<EntryTileView key={t.key} t={t} />);
+  }
   if (compact) {
     return (
       <>

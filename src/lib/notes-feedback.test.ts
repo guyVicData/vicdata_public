@@ -1,4 +1,7 @@
 // Run: npx -y tsx --test --test-force-exit src/lib/notes-feedback.test.ts
+// The panels' children are render functions, passed as the `children` prop so `next build`'s type check
+// accepts them (as a createElement argument it doesn't): react/no-children-prop is off for this file.
+/* eslint-disable react/no-children-prop */
 // VicData 0.8 notes and feedback: the round's rules that run without a browser or a database --
 //   R-FOOTER-LAYOUT       a panel's footer is (i), note, feedback bottom left and the menu bottom right;
 //                         the header's icon row keeps full screen (and the collapse slot) only; there is

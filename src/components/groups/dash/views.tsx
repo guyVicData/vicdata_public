@@ -7,7 +7,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
-import { Empty, Key, LineSwatch, Lbl, Tile, fillHeight } from "@/components/admissions/ui";
+import { Empty, Key, LineSwatch, Lbl, PairTile, Tile, fillHeight } from "@/components/admissions/ui";
 import { LineChart, useWidth } from "@/components/admissions/views/charts";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
 import { productAccent } from "@/components/shell/accent";
@@ -400,7 +400,7 @@ export function SchoolsNow({ o, membership, schools }: { o: GroupOverview; membe
       <div className="grid grid-cols-2 gap-2">
         <Stat label="Schools" value={<span className="text-[var(--accent)]">{o.group.confirmed + o.group.likely}</span>} sub={`${n.byPhase.primary} primary-age · ${n.byPhase.secondary} senior · ${n.byPhase.post16} sixth-form`} accent />
         <Stat label="Combined roll" value={fmt(n.roll, "pupils")} sub={n.sinceFirst !== null ? `${pctText(n.sinceFirst)} since ${periodLabel(o.years.first)}` : " "} />
-        <Stat label="Day · boarding" value={`${fmt(n.roll - n.boarders, "pupils")} · ${fmt(n.boarders, "pupils")}`} sub="pupils, latest census" />
+        <PairTile pairs={[{ label: "Day", value: fmt(n.roll - n.boarders, "pupils") }, { label: "Boarding", value: fmt(n.boarders, "pupils") }]} sub="pupils, latest census" />
         <Stat label="Outside England" value={outside} sub={outside ? "no DfE data: listed, not added" : "every school in England"} />
       </div>
       <div className="flex flex-col gap-1.5">

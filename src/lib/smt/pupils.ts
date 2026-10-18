@@ -21,6 +21,7 @@ import { englandSchools } from "../admissions/ranks";
 import { agesWordOf, levelAges, type SmtLevel } from "./levels";
 import { laAreaProjection, laPopulation } from "./area-data";
 import type { SmtSchool } from "./school";
+import { yearOnYear } from "./entry-net";
 import { marketAt11, rollAt, type Overview, type Pt, type SmtFilters, type SmtSet } from "./overview";
 
 // The ages each level highlights (R-SMT-PUPILS-LEVEL), first and last inclusive, as Context counts
@@ -173,7 +174,9 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
     ? years.slice(1).map((y) => {
         const y11 = cohortAt(mine.table, 15, y - 1);
         const y12 = cohortAt(mine.table, 16, y);
-        return { year: y, year11: y11, year12: y12, leaving: y11 !== null && y12 !== null ? y11 - y12 : null, stayingPct: y11 && y12 !== null ? (y12 / y11) * 100 : null };
+        // F-8: the one calculation Overview's "Net change at 16" reads too (entry-net.ts): leaving = -net.
+        const yy = yearOnYear(mine.table, 16, y);
+        return { year: y, year11: y11, year12: y12, leaving: yy ? -yy.net : null, stayingPct: y11 && y12 !== null ? (y12 / y11) * 100 : null };
       })
     : [];
 

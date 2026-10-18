@@ -117,9 +117,13 @@ export function triagePatch(input: unknown): { patch: Record<string, unknown> } 
   return { patch };
 }
 
-/** The deployed commit, from Render's own variable; "dev" elsewhere. */
-export function appVersion(): string {
-  return (process.env.RENDER_GIT_COMMIT ?? "").slice(0, 12) || "dev";
+/** The deployed commit, from Render's own variable (RENDER_GIT_COMMIT, set for every Render deploy and read
+ * here at request time, server-side); "dev" only on a local `next dev`; anywhere else without it (a local
+ * `next start`, a build without the variable), "unknown" (0.8 SMT feedback round 1: F-1 recorded "dev"). */
+export function appVersion(env: Record<string, string | undefined> = process.env): string {
+  const commit = (env.RENDER_GIT_COMMIT ?? "").trim().slice(0, 12);
+  if (commit) return commit;
+  return env.NODE_ENV === "development" ? "dev" : "unknown";
 }
 
 /** May the caller give feedback (the audience setting, decided by the database)? */

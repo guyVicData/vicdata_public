@@ -48,15 +48,17 @@ export function fmt(v: number | null | undefined, unit: Unit, key?: string): str
 }
 
 /** A change, signed, in its own unit: +2.5 pts, −0.7 pts, +6.1 pp, ▲ 16%. */
-export function fmtChange(c: { change: number; unit: "pct" | "points" | "pp" } | null | undefined, dp = 1): string {
+export function fmtChange(c: { change: number; unit: "pct" | "points" | "pp" | "va" } | null | undefined, dp = 1): string {
   if (!c) return "—";
   const v = c.change;
+  // F-4: a value-added change, in value added's own units (two places, as the figure).
+  if (c.unit === "va") return signedDelta(v, (x) => Math.abs(x).toFixed(2), { zero: "±" });
   const s = `${Math.abs(v).toFixed(c.unit === "pct" ? 0 : dp)}`;
   return c.unit === "pct" ? arrowed(v, (x) => `${x.toFixed(0)}%`, 0) : signedDelta(v, () => `${s} ${c.unit === "pp" ? "pp" : "pts"}`, { zero: "±" });
 }
 
 /** The precision fmtChange prints a change at: whole percents, `dp` places otherwise. */
-export const changeDp = (c: { unit: "pct" | "points" | "pp" }, dp = 1) => (c.unit === "pct" ? 0 : dp);
+export const changeDp = (c: { unit: "pct" | "points" | "pp" | "va" }, dp = 1) => (c.unit === "pct" ? 0 : c.unit === "va" ? 2 : dp);
 
 // R-FLAT-BAND: steady (neutral, "–") when the change rounds to 0 at the precision shown (`dp`), or
 // within a view's own wider band (`flat`).
@@ -86,8 +88,8 @@ export function NoteTile({ label, title, sub }: { label: string; title: string; 
   );
 }
 
-export function Th({ children, className }: { children: ReactNode; className?: string }) {
-  return <th className={cx("whitespace-nowrap px-2 py-[7px] text-left text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--muted2)]", className)}>{children}</th>;
+export function Th({ children, className, title }: { children: ReactNode; className?: string; title?: string }) {
+  return <th title={title} className={cx("whitespace-nowrap px-2 py-[7px] text-left text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--muted2)]", className)}>{children}</th>;
 }
 export function Td({ children, className, title }: { children: ReactNode; className?: string; title?: string }) {
   return (

@@ -51,6 +51,26 @@ export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 // src/components/shell/FilterPills.tsx.
 export { EntryChip, FChip } from "@/components/shell/FilterPills";
 
+/** 0.8 SMT feedback round 1 (F-1): a paired tile -- Day · boarding, Girls · boys -- with each figure boxed
+ * with its own label, so a label can't be read against the other number. The tile's `sub` (where the
+ * figures count: "in Year 12", "in whole school") sits under both boxes. Every paired tile in the app
+ * draws through this (Admissions, SMT, Groups). */
+export function PairTile({ pairs, sub }: { pairs: { label: string; value: ReactNode }[]; sub: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-[5px] rounded-[9px] border border-[var(--panel-border)] px-[8px] py-[7px]" data-pair-tile="">
+      <div className="flex gap-[5px]">
+        {pairs.map((x) => (
+          <div key={x.label} className="flex min-w-0 flex-1 flex-col gap-[1px] rounded-[7px] bg-[var(--adm-rail-on)] px-[7px] py-[4px]" data-pair={x.label}>
+            <span className="truncate text-[10.5px] text-[var(--muted2)]">{x.label}</span>
+            <span className="text-[15px] font-extrabold tabular-nums text-[var(--fg)]">{x.value}</span>
+          </div>
+        ))}
+      </div>
+      <span className="text-[10.5px] text-[var(--muted2)]">{sub}</span>
+    </div>
+  );
+}
+
 export function Tile({ label, value, sub, accent = false, small = false }: { label: string; value: ReactNode; sub: ReactNode; accent?: boolean; small?: boolean }) {
   return (
     <div className="flex flex-col gap-[2px] rounded-[9px] border border-[var(--panel-border)] px-[10px] py-2">

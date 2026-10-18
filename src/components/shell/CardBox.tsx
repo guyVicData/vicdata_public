@@ -25,6 +25,7 @@ import { PanelIconRow } from "./PanelIconRow";
 import { reportUsage, useUsageScope } from "@/lib/usage-client";
 import { useViewMarks } from "@/components/feedback/ViewSurface";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import { clearPanelView, setPanelView } from "@/components/feedback/store";
 import type { ViewRef } from "@/lib/view-ref";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
@@ -226,6 +227,17 @@ export function CardBox({
   const boxRef = useRef<HTMLDivElement | null>(null);
   const marks = useViewMarks(view);
   const viewNote = note ?? marks?.note;
+  // 0.8 SMT feedback round 1 (F-5): say which view this panel shows, so an open feedback window on it
+  // can offer "Move to <view>" when the rail changes.
+  const marksKey = marks ? `${marks.viewKey}|${marks.view.label}` : null;
+  useEffect(() => {
+    if (!marks) return;
+    const v = { surface: marks.surface, view: marks.view, viewKey: marks.viewKey, anchor: boxRef.current };
+    setPanelView(v);
+    return () => clearPanelView(v);
+    // The marks object is new each render; its key says when it changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marksKey]);
   // Round 8 §5: a panel print is the same fullscreen modal, opened for the print and
   // marked as the one subtree to paint. Tracked separately from `fullscreen` so closing
   // the print does not leave an ordinary fullscreen open behind it.

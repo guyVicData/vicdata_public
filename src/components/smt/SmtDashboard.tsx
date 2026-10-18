@@ -32,7 +32,7 @@ import { dataviewById } from "@/catalogue/dataviews";
 import { contextFromPanel } from "@/catalogue/pick";
 import { SMT_DASHBOARDS, SMT_ACADEMIC_ID, SMT_CONTEXT_ID, SMT_OVERVIEW_ID, SMT_PUPILS_ID } from "@/catalogue/dashboards/smt";
 import { ADMISSIONS_NOTES, SMT_NOTES, TREND_BASE_NOTE, smtNote } from "@/catalogue/notes";
-import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel, setLatestYears } from "@/catalogue/years";
+import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, periodLabel, setLatestYears } from "@/catalogue/years";
 import type { DashboardConfig, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
@@ -52,6 +52,8 @@ import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
 import { arrowOf, dirClass, smtVars, yearOf } from "./ui";
 import { SchoolNow } from "./views/Now";
+import { smtHasContent } from "./content";
+import { activeWithContent, visibleRail } from "@/lib/rail-content";
 import { Scorecard } from "./views/Scorecard";
 import { SetMap } from "./views/SetMap";
 import { SchoolFlags } from "./views/Flags";
@@ -534,8 +536,11 @@ const dvOf = (panel: PanelConfig, id: string) => {
   const v = panel.dataviews.find((x) => x.id === id);
   return v && v.kind === "view" ? v.dataview : "";
 };
-const railOf = (panel: PanelConfig): RailItem[] =>
+const allRailOf = (panel: PanelConfig): RailItem[] =>
   panel.dataviews.filter((v): v is Extract<DataviewInstance, { kind: "view" }> => v.kind === "view").map((v) => ({ id: v.id, label: dataviewById(v.dataview)?.label ?? v.dataview, icon: dataviewById(v.dataview)?.railIcon ?? "TilesIcon" }));
+// F-6 (R-RAIL-HIDES-EMPTY): a view with nothing to show has no rail icon.
+const hasOf = (panel: PanelConfig, c: Ctx) => (id: string) => smtHasContent(dvOf(panel, id), c);
+const railOf = (panel: PanelConfig, c: Ctx): RailItem[] => visibleRail(allRailOf(panel), hasOf(panel, c));
 
 // The large view opens on Subjects when an area is chosen (the wireframe's Academic board), else on
 // the panel's default.
@@ -550,7 +555,9 @@ function defaultOf(panel: PanelConfig, c: Ctx): string {
 function useActive(panel: PanelConfig, c: Ctx): [string, (id: string) => void] {
   const def = defaultOf(panel, c);
   const [picked, setPicked] = useState<{ for: string; id: string } | null>(null);
-  return [picked && picked.for === def ? picked.id : def, (id) => setPicked({ for: def, id })];
+  // F-6: a panel that would open on an empty view opens on the next one instead.
+  const active = activeWithContent(allRailOf(panel), picked && picked.for === def ? picked.id : def, hasOf(panel, c));
+  return [active, (id) => setPicked({ for: def, id })];
 }
 
 function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx; height: number; config: DashboardConfig }) {
@@ -567,7 +574,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
         id={panel.id}
         tag={h.tag}
         context={h.context}
-        rail={railOf(panel)}
+        rail={railOf(panel, c)}
         railActive={active}
         onRail={setActive}
         source={sourceOf(dv, c)}
@@ -631,7 +638,8 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     }
     case "DV-SMT-O-MARKET-LINE":
     case "DV-SMT-O-MARKET-TABLE":
-      return { tag: "From Admissions", context: "read-only" };
+      // F-7: the tag says when the rivals are Admissions' default.
+      return { tag: "From Admissions", context: c.overview.status === "ready" && c.overview.data.trends.market.status === "ready" && c.overview.data.trends.market.defaultRivals ? `read-only · ${SMT_NOTES.marketDefaultTag}` : "read-only" };
     case "DV-SMT-A-NOW":
       return { tag: "Current", context: levelLabel(c.level, areaLabelOf(c)) };
     case "DV-SMT-A-AREAS":
@@ -660,7 +668,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-P-LEAVING":
       return { tag: "Leaving at 16", context: "Year 11 to Year 12" };
     case "DV-SMT-P-MARKET":
-      return { tag: "Market share", context: "from Admissions, read-only" };
+      return { tag: "Market share", context: c.pupils.status === "ready" && c.pupils.data.market.status === "ready" && c.pupils.data.market.defaultRivals ? `from Admissions, read-only · ${SMT_NOTES.marketDefaultTag}` : "from Admissions, read-only" };
     case "DV-SMT-P-PHASES":
     case "DV-SMT-P-PHASES-TABLE":
       return { tag: "Trends", context: c.pupils.status === "ready" ? indexedLabel(c.pupils.data.trends.base) : "indexed" };
@@ -762,10 +770,19 @@ function captionOf(dv: string, c: Ctx): ReactNode {
   const areaNote = c.level.phase === "gcse" && c.level.area ? c.school.areas.gcse.find((a) => a.id === c.level.area)?.igcseNote : undefined;
   const withArea = (text: string) => (areaNote ? `${text} ${areaNote}` : text);
   switch (dv) {
-    case "DV-SMT-O-NOW":
-      return `${SMT_NOTES.size} ${c.overview.status === "ready" ? c.overview.data.p8.text : ""}`;
+    case "DV-SMT-O-NOW": {
+      // F-8: an independent school's entry tiles carry their arithmetic here; Progress 8's reason stays.
+      const o = c.overview.status === "ready" ? c.overview.data : null;
+      const census = o?.now.census !== null && o?.now.census !== undefined ? periodLabel(o.now.census) : "";
+      const entry = o?.now.entry?.length
+        ? ` ${o.now.entry.map((t) => smtNote(t.key === "join11" ? "join11Info" : t.key === "net11" ? "net11Info" : "net16Info", { census, now: t.now.toLocaleString("en-GB"), before: (t.before ?? 0).toLocaleString("en-GB") })).join(" ")} ${smtNote("entrySinceInfo", { base: periodLabel(CENSUS_FIRST_PERIOD) })}`
+        : "";
+      return `${SMT_NOTES.size} ${o ? o.p8.text : ""}${entry}`;
+    }
     case "DV-SMT-O-SCORECARD":
-      return `${SMT_NOTES.ranks} ${smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) })}${igcse}`;
+      // F-3, F-4: the set's full name (its column wears the short one), why the trends' years differ,
+      // and, at a boarding school, who the boarders are ranked among.
+      return `${smtNote("setFullName", { setLabel: set })} ${SMT_NOTES.ranks} ${c.overview.status === "ready" ? c.overview.data.notes.trendYears : ""}${c.school.boarding ? ` ${smtNote("boardersRank", { region: c.school.regionName ?? "the region" })}` : ""}${igcse}`;
     case "DV-SMT-O-FLAGS":
       // The method's steps give every clause of the rule.
       return null;
@@ -779,7 +796,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       return withArea(`${smtNote("middleHalf", { setLabel: set })} ${TREND_BASE_NOTE}${igcse}`);
     case "DV-SMT-O-MARKET-LINE":
     case "DV-SMT-O-MARKET-TABLE":
-      return SMT_NOTES.marketShort;
+      return c.overview.status === "ready" && c.overview.data.trends.market.status === "ready" && c.overview.data.trends.market.defaultRivals ? SMT_NOTES.marketDefault : SMT_NOTES.marketShort;
     case "DV-SMT-A-NOW":
     case "DV-SMT-A-AREAS":
       return withArea(`${SMT_NOTES.ranks}${igcse}`);
@@ -802,7 +819,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-P-LEAVING":
       return ADMISSIONS_NOTES.leaving16;
     case "DV-SMT-P-MARKET":
-      return SMT_NOTES.marketShort;
+      return c.pupils.status === "ready" && c.pupils.data.market.status === "ready" && c.pupils.data.market.defaultRivals ? SMT_NOTES.marketDefault : SMT_NOTES.marketShort;
     case "DV-SMT-P-PHASES":
     case "DV-SMT-P-PHASES-TABLE":
       return smtNote("rollByPhase", { base: c.pupils.status === "ready" ? indexBaseWords(c.pupils.data.trends.base) : "the first year every line shares" });
@@ -1077,7 +1094,8 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
   const trends = config.panels.filter((p) => p.row === "trends");
   const [largeTab, setLargeTab] = useState(large?.defaultView ?? "");
   const [trendTab, setTrendTab] = useState(trends[0]?.id ?? "");
-  const largeDv = large ? dvOf(large, largeTab) || dvOf(large, large.defaultView ?? "") : "";
+  const largeActive = large ? activeWithContent(allRailOf(large), largeTab || large.defaultView || "", hasOf(large, c)) : "";
+  const largeDv = large ? dvOf(large, largeActive) || dvOf(large, large.defaultView ?? "") : "";
   const trendPanel = trends.find((t) => t.id === trendTab) ?? trends[0];
   const trendDv = trendPanel ? dvOf(trendPanel, trendPanel.defaultView ?? "") : "";
   const nowDv = now ? dvOf(now, now.defaultView ?? "") : "";
@@ -1092,7 +1110,7 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
         </RailPanel>
       )}
       {large && (
-        <RailPanel tag={dataviewById(largeDv)?.label ?? ""} title={dataviewById(largeDv)?.label ?? ""} height="auto" source={sourceOf(largeDv, c)} caption={captionOf(largeDv, c)} chips={chipsOf(largeDv, c)} controls={<Tabs items={railOf(large)} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
+        <RailPanel tag={dataviewById(largeDv)?.label ?? ""} title={dataviewById(largeDv)?.label ?? ""} height="auto" source={sourceOf(largeDv, c)} caption={captionOf(largeDv, c)} chips={chipsOf(largeDv, c)} controls={<Tabs items={railOf(large, c)} active={largeActive} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeActive, dataview: largeDv || null }}>
           {({ fullscreen, height }) => (
             <div className="flex min-h-[200px] flex-col gap-2">
               <ViewBody dv={largeDv} c={c} fullscreen={fullscreen} room={height} />

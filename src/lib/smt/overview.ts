@@ -7,7 +7,12 @@
 // level-aware: only the set's schools with the figure are ranked, and the count says so.
 import { indexBaseWords } from "../index-base";
 import type { SmtAdmissionsReader } from "./auth-rules";
-import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
+import { CENSUS_FIRST_PERIOD, GRADING_2122_PERIOD, HISTORIC_GRADE_FROM, PROGRESS8_LAST_PERIOD, SIXTH_FORM_VA_FROM, TREND_BASE_PERIOD, periodLabel, rollDirection } from "@/catalogue/years";
+import { setShortName } from "../set-short-name";
+import { cachedReference } from "../server-cache";
+import { createServerAnonSupabaseClient } from "../supabase";
+import { lookupReferenceData } from "../vicdata-reference";
+import { BOARDING_SCHOOL_VALUE } from "../admissions/boarding";
 import { smtNote } from "@/catalogue/notes";
 import { lookupAgeBandDistributions } from "../age-band-distributions";
 import { AGE_BANDS, CURRENT_CENSUS_PERIOD, type RollSnapshot } from "../roll-data";
@@ -24,7 +29,8 @@ import { entryPoint } from "../admissions/entry-points";
 import { loadThresholds, phaseForEntryAge } from "../admissions/thresholds";
 import { percentile } from "../admissions/stats";
 import { figure, placesOn, population, setPlace, SMT_MEASURES, type Population } from "./population";
-import type { SmtSchool } from "./school";
+import { schoolCensus, type SmtSchool } from "./school";
+import { entryTiles, type EntryTile } from "./entry-net";
 import { entryShrinking, resultsAgainstSet, rollFalling, type SmtFlag } from "./flags";
 
 export type SmtSet = { kind: string; label: string; urns: string[] };
@@ -45,10 +51,21 @@ export type ScoreRow = {
   set: (Rank & { label: string }) | null;
   region: (Rank & { name: string }) | null;
   england: Rank | null;
-  since: { from: number; change: number; unit: "pct" | "points" | "pp" } | null;
-  // Why a row has no figure or rank: "igcse" (not ranked: IGCSE), "none" (no published results).
+  // 0.8 SMT feedback round 1 (F-3, R-TREND-PERIOD-PER-CELL): each row's trend over its own years --
+  // `period` words them ("since 2022/23"; value added and Progress 8 "2023/24 → 2024/25").
+  since: Trend | null;
+  // Why a row has no figure or rank: "none" (no published results). F-3: an IGCSE school's GCSE rows
+  // (never ranked) are left out of the table, not shown as "not ranked".
   note: "igcse" | "none" | null;
 };
+
+export type Trend = { from: number; to: number; change: number; unit: "pct" | "points" | "pp" | "va"; period: string };
+
+/** A row's trend from `from` to `to`: "since {from}" for a series that keeps growing from a fixed start
+ * (results, rolls), "{from} → {to}" for one bounded by what DfE published (value added, Progress 8). */
+export function trendOf(from: number, to: number, change: number, unit: Trend["unit"], bounded = false): Trend {
+  return { from, to, change, unit, period: bounded ? `${periodLabel(from)} → ${periodLabel(to)}` : `since ${periodLabel(from)}` };
+}
 
 export type Pt = { year: number; value: number | null };
 export type BandPt = { year: number; p25: number | null; p75: number | null; n: number };
@@ -59,9 +76,15 @@ export type P8 =
 
 export type Overview = {
   urn: string;
-  set: { kind: string; label: string; size: number };
+  // `short`: the set's short name (setShortName), for the Scorecard's column header (F-3).
+  set: { kind: string; label: string; short: string; size: number };
+  // F-3: the school sits IGCSEs (its GCSE rows are left out of the Scorecard).
+  igcse: boolean;
   // The school and the set's schools: names and locations (the map, the hovers).
   schools: Record<string, { name: string; easting: number | null; northing: number | null }>;
+  // F-2: the map's dots and labels -- each school's whole-school roll (latest census) and its roll
+  // direction (the shared 3-year rule, rollDirection: ROLL_DIRECTION_SPAN and the flat band).
+  rolls: Record<string, { roll: number | null; year: number | null; trend: { dir: "up" | "down" | "flat"; word: string; pct: number; from: number; to: number } | null }>;
   filters: SmtFilters;
   now: {
     census: number | null;
@@ -71,6 +94,8 @@ export type Overview = {
     girls: number | null;
     boys: number | null;
     boarding: { day: number; boarders: number } | null;
+    // F-8: an independent school's entry tiles (entry-net.ts), in place of GCSE and Progress 8's.
+    entry: EntryTile[] | null;
     // The school page's Roll by phase: the badge, and the means its caption compares with.
     sizes: { key: string; label: string; total: number; badge: string | null; laMean: number | null; englandMean: number | null }[];
     laName: string | null;
@@ -84,12 +109,59 @@ export type Overview = {
     // pts indexed to `base` = 100; actual the pupils behind them (the table shows both, 0.8 audit fixes, 3).
     roll: { lines: { key: string; label: string; pts: Pt[]; actual: Pt[] }[]; base: number | null; laName: string | null };
     results: { stage: "ks4" | "ks5"; label: string; school: Pt[]; band: BandPt[] }[];
-    market: { status: "ready"; school: Pt[]; rival: Pt[]; rivalName: string | null; rivals: number } | { status: "empty"; reason: string };
+    // F-7: `defaultRivals` -- Admissions hasn't chosen rivals at 11+, so they are its default, the 10
+    // nearest schools teaching Year 7 (defaultRivals, the same as Admissions' own Market share).
+    market: { status: "ready"; school: Pt[]; rival: Pt[]; rivalName: string | null; rivals: number; defaultRivals: boolean } | { status: "empty"; reason: string };
   };
-  notes: { since: string; middleHalf: string; rollIndexed: string };
+  notes: { since: string; middleHalf: string; rollIndexed: string; trendYears: string };
 };
 
-const LAST_P8_PERIOD = 2023; // 2023/24: the last cohort with a KS2 baseline (summer 2019)
+const LAST_P8_PERIOD = PROGRESS8_LAST_PERIOD;
+
+/** F-3: every GIAS boarding school's boarders in one census year (R-ADM-BOARDING-ONLY-WHERE-BOARDERS's
+ * one test), for the boarders row's regional and national ranks. Public data, cached. */
+export function boardersByUrn(period: number): Promise<Map<string, number>> {
+  return cachedReference(`smt:boarders:${period}`, async () => {
+    const supabase = createServerAnonSupabaseClient();
+    const urns: string[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase.from("schools").select("urn").eq("boarders_name", BOARDING_SCHOOL_VALUE).order("urn").range(from, from + 999);
+      if (error) throw error;
+      urns.push(...((data ?? []) as { urn: string }[]).map((r) => r.urn));
+      if (!data || data.length < 1000) break;
+    }
+    const facts = urns.length ? await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: urns, periodMin: period, periodMax: period, breakdowns: ["boarders_total"] }) : [];
+    const out = new Map<string, number>();
+    for (const f of facts) if (f.breakdown === "boarders_total" && f.value_numeric !== null && (f.value_numeric as number) > 0) out.set(String(f.entity_id), f.value_numeric as number);
+    return out;
+  }) as Promise<Map<string, number>>;
+}
+
+/** F-3: the boarders row's places -- among the set's boarding schools, in the region and in England. */
+export function boarderPlaces(boarders: Map<string, number>, england: Map<string, { regionCode: string; regionName: string }>, urn: string, setUrns: string[], own: number): { set: Rank | null; region: (Rank & { name: string }) | null; england: Rank } {
+  const all = new Map(boarders);
+  all.set(urn, own);
+  const reg = england.get(urn);
+  const vals = Array.from(all);
+  const set = setUrns.filter((u) => all.has(u));
+  return {
+    set: set.length ? rankIn([own, ...set.map((u) => all.get(u)!)], own) : null,
+    region: reg ? { ...rankIn(vals.filter(([u]) => england.get(u)?.regionCode === reg.regionCode).map(([, v]) => v), own), name: reg.regionName } : null,
+    england: rankIn(vals.map(([, v]) => v), own),
+  };
+}
+
+/** F-4: a value-added series' trend -- from its first published year (SIXTH_FORM_VA_FROM, or whatever
+ * the school has) to its latest, read from the data. Null with one year. */
+export function vaTrend(valueAt: (p: number) => number | null, latest: number, firstFrom = SIXTH_FORM_VA_FROM): Trend | null {
+  const to = valueAt(latest);
+  if (to === null) return null;
+  for (let p = firstFrom; p < latest; p++) {
+    const v = valueAt(p);
+    if (v !== null) return trendOf(p, latest, to - v, "va", true);
+  }
+  return null;
+}
 
 /** Progress 8: which reason applies (R-SMT-P8-REASON). Never a blank, never a zero. */
 export function p8Of(school: Pick<SmtSchool, "independent" | "phases" | "latest">, pop: Population, urn: string, igcse: boolean): P8 {
@@ -185,11 +257,15 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
     const nat = wholeRoll === null ? null : rankIn(pool.map(([, s]) => s.roll!), wholeRoll);
     const reg = wholeRoll === null || !region ? null : { ...rankIn(pool.filter(([, s]) => s.regionCode === region.regionCode).map(([, s]) => s.roll!), wholeRoll), name: region.regionName };
     const sr = wholeRoll === null ? null : setPlace(new Map([...rolls].map(([u, v]) => [u, u === urn ? wholeRoll : v])), urn);
-    rows.push({ key: "roll", label: ff.sex !== "all" || ff.boarding !== "all" ? `Roll (${ff.boarding !== "all" ? ff.boarding : ff.sex === "female" ? "girls" : "boys"})` : "Roll", stage: null, unit: "pupils", value: roll, period: P, set: sr ? { ...sr, label: setLabel } : null, region: ff.sex === "all" && ff.boarding === "all" ? reg : null, england: ff.sex === "all" && ff.boarding === "all" ? nat : null, since: baseRoll !== null && roll !== null ? { from: CENSUS_FIRST_PERIOD, change: pctChange(baseRoll, roll)!, unit: "pct" } : null, note: null });
+    rows.push({ key: "roll", label: ff.sex !== "all" || ff.boarding !== "all" ? `Roll (${ff.boarding !== "all" ? ff.boarding : ff.sex === "female" ? "girls" : "boys"})` : "Roll", stage: null, unit: "pupils", value: roll, period: P, set: sr ? { ...sr, label: setLabel } : null, region: ff.sex === "all" && ff.boarding === "all" ? reg : null, england: ff.sex === "all" && ff.boarding === "all" ? nat : null, since: baseRoll !== null && roll !== null && P !== null && pctChange(baseRoll, roll) !== null ? trendOf(CENSUS_FIRST_PERIOD, P, pctChange(baseRoll, roll)!, "pct") : null, note: null });
   }
-  if (school.boarding && now?.boarding) {
+  // F-3: the boarders row, for a boarding school only, ranked among boarding schools in the set, the
+  // region and England.
+  if (school.boarding && now?.boarding && P !== null) {
     const b0 = census.find((c) => c.period === CENSUS_FIRST_PERIOD)?.boarding?.boarders ?? null;
-    rows.push({ key: "boarders", label: "Boarders", stage: null, unit: "pupils", value: now.boarding.boarders, period: P, set: null, region: null, england: null, since: b0 !== null ? { from: CENSUS_FIRST_PERIOD, change: pctChange(b0, now.boarding.boarders)!, unit: "pct" } : null, note: null });
+    const bc = pctChange(b0, now.boarding.boarders);
+    const places = now.boarding.boarders > 0 ? boarderPlaces(await boardersByUrn(P), england, urn, setUrns, now.boarding.boarders) : null;
+    rows.push({ key: "boarders", label: "Boarders", stage: null, unit: "pupils", value: now.boarding.boarders, period: P, set: places?.set ? { ...places.set, label: `${setLabel} with boarders` } : null, region: places?.region ?? null, england: places?.england ?? null, since: bc !== null ? trendOf(CENSUS_FIRST_PERIOD, P, bc, "pct") : null, note: null });
   }
 
   const results: { stage: Stage; key: string; label: string; unit: Unit; pop: Population; trend: boolean }[] = [];
@@ -207,10 +283,8 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
     const period = school.latest[r.stage]?.period ?? null;
     if (period === null) continue;
     const exclude = r.stage === "ks4" ? igcse : new Set<string>();
-    if (r.stage === "ks4" && schoolIgcse) {
-      rows.push({ key: r.key, label: r.label, stage: r.stage, unit: r.unit, value: null, period, set: null, region: null, england: null, since: null, note: "igcse" });
-      continue;
-    }
+    // F-3: an IGCSE school isn't ranked on its whole-school GCSE figures, so the rows are left out.
+    if (r.stage === "ks4" && schoolIgcse) continue;
     // A-level value added: the latest year it is published (2023/24 and 2024/25 so far).
     const p = r.unit === "va" ? [period, period - 1].find((y) => figure(r.pop, urn, y, r.key) !== null) ?? period : period;
     const places = await placesOn(r.pop, p, r.key, [urn], exclude);
@@ -218,8 +292,17 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
     const values = new Map(all.map((u) => [u, figure(r.pop, u, p, r.key)]));
     const sr = setPlace(values, urn, exclude);
     const from = figure(r.pop, urn, TREND_BASE_PERIOD, r.key);
-    const since = r.unit !== "va" && r.stage !== "ks2" && place.value !== null && from !== null && p > TREND_BASE_PERIOD ? { from: TREND_BASE_PERIOD, change: place.value - from, unit: (r.unit === "pct" ? "pp" : "points") as "pp" | "points" } : null;
+    const since = r.unit === "va" ? vaTrend((y) => figure(r.pop, urn, y, r.key), p) : r.stage !== "ks2" && place.value !== null && from !== null && p > TREND_BASE_PERIOD ? trendOf(TREND_BASE_PERIOD, p, place.value - from, r.unit === "pct" ? "pp" : "points") : null;
     rows.push({ key: r.key, label: r.label, stage: r.stage, unit: r.unit, value: place.value, period: p, set: sr ? { ...sr, label: `${setLabel} with ${STAGE_LABEL[r.stage]} results` } : null, region: place.regional ? { rank: place.regional.rank, of: place.regional.of, name: place.regional.region } : null, england: place.national, since, note: place.value === null ? "none" : null });
+  }
+
+  // F-3: Progress 8, where DfE published it (state schools, to PROGRESS8_LAST_PERIOD), over its own years.
+  const p8 = p8Of(school, ks4, urn, schoolIgcse);
+  if (p8.status === "published") {
+    const key = SMT_MEASURES.ks4.p8;
+    const place = (await placesOn(ks4, p8.period, key, [urn], igcse)).get(urn)!;
+    const sr = setPlace(new Map(all.map((u) => [u, figure(ks4, u, p8.period, key)])), urn, igcse);
+    rows.push({ key, label: "Progress 8", stage: "ks4", unit: "va", value: p8.value, period: p8.period, set: sr ? { ...sr, label: `${setLabel} with GCSE results` } : null, region: place.regional ? { rank: place.regional.rank, of: place.regional.of, name: place.regional.region } : null, england: place.national, since: vaTrend((y) => figure(ks4, urn, y, key), p8.period, TREND_BASE_PERIOD), note: null });
   }
 
   // ------------------------------------------------------------ market share at 11+ (Admissions, read-only)
@@ -300,8 +383,10 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
 
   return {
     urn,
-    set: { kind: set.kind, label: setLabel, size: setUrns.length },
+    set: { kind: set.kind, label: setLabel, short: setShortName(setLabel), size: setUrns.length },
+    igcse: schoolIgcse,
     schools: await setNames(all),
+    rolls: await mapRolls(all),
     filters: ff,
     now: {
       census: P,
@@ -311,11 +396,12 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
       girls: now && now.gender.sumMatchesTotal ? now.gender.female : null,
       boys: now && now.gender.sumMatchesTotal ? now.gender.male : null,
       boarding: school.boarding && now?.boarding ? { day: now.boarding.day, boarders: now.boarding.boarders } : null,
+      entry: school.independent && own?.table && P !== null ? entryTiles(own.table, P, CENSUS_FIRST_PERIOD, school.low) : null,
       sizes,
       laName: school.laName,
     },
     rows,
-    p8: p8Of(school, ks4, urn, schoolIgcse),
+    p8,
     va,
     flags,
     flagsLoaded: !!thresholds,
@@ -324,8 +410,30 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
       since: smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) }),
       middleHalf: smtNote("middleHalf", { setLabel }),
       rollIndexed: smtNote("rollIndexed", { base: indexBaseWords(ix.base), la: school.laName ?? "The LA" }),
+      trendYears: trendYearsNote(),
     },
   };
+}
+
+/** F-2: each school's whole-school roll by census year (the school page's roll), its latest and its
+ * 3-year direction. */
+export async function mapRolls(urns: string[]): Promise<Overview["rolls"]> {
+  const out: Overview["rolls"] = {};
+  await Promise.all(
+    urns.map(async (u) => {
+      const census = await schoolCensus(u).catch(() => [] as RollSnapshot[]);
+      const pts = census.filter((c) => c.period >= CENSUS_FIRST_PERIOD).map((c) => ({ year: c.period, value: c.totalRoll > 0 ? c.totalRoll : null }));
+      const last = [...pts].reverse().find((p) => p.value !== null) ?? null;
+      const d = rollDirection(pts, 0);
+      out[u] = { roll: last?.value ?? null, year: last?.year ?? null, trend: d ? { dir: d.dir, word: d.word, pct: d.pct, from: d.from, to: d.to } : null };
+    }),
+  );
+  return out;
+}
+
+/** F-3, F-4: the one (i) note on why the Scorecard's trends cover different years, its years from years.ts. */
+export function trendYearsNote(): string {
+  return smtNote("trendYears", { base: periodLabel(TREND_BASE_PERIOD), grading: periodLabel(GRADING_2122_PERIOD), vaFrom: periodLabel(SIXTH_FORM_VA_FROM), p8Last: periodLabel(PROGRESS8_LAST_PERIOD), census: periodLabel(CENSUS_FIRST_PERIOD) });
 }
 
 // The school's info for the set (names), for the map and the hovers.
@@ -336,31 +444,33 @@ export async function setNames(urns: string[]): Promise<Record<string, { name: s
 
 
 /** Market share at 11+, from Admissions, read-only: the school's share against its saved 11+ rivals,
- * year by year, and the scorecard's row. Empty, with the reason, where the school has no 11+ entry or
- * Admissions has no saved rivals there. Shared by Overview and Pupils. */
+ * year by year, and the scorecard's row. Empty, with the reason, where the school has no 11+ entry.
+ * F-7 (R-MARKET-DEFAULT-RIVALS): where Admissions hasn't chosen rivals (or the caller can't read its
+ * lists), the rivals are Admissions' own default -- the 10 nearest schools teaching Year 7 -- and the
+ * panel says so. Shared by Overview and Pupils. */
 export async function marketAt11(school: SmtSchool, caller: SmtAdmissionsReader | null): Promise<{ trend: Overview["trends"]["market"]; row: ScoreRow | null }> {
   const urn = school.urn;
   let row: ScoreRow | null = null;
   const takes11 = (school.low ?? 99) <= 11 && (school.high ?? 0) >= 11 && school.phases.gcse;
   let market: Overview["trends"]["market"] = { status: "empty", reason: smtNote(takes11 ? "marketNoLists" : "marketNoEntry") };
   if (takes11 && caller?.privateNote) market = { status: "empty", reason: caller.privateNote };
-  else if (takes11 && caller?.supabase) {
+  else if (takes11) {
     const ep = entryPoint("11+")!;
-    const lists = await savedLists(caller.supabase, urn, ep.id);
+    const lists = caller?.supabase ? await savedLists(caller.supabase, urn, ep.id) : [];
     const rivals = rivalsFromLists(lists);
-    if (!rivals) market = { status: "empty", reason: smtNote("marketNoLists") };
-    else {
-      const m = await buildMarketShare(urn, ep, { rivals });
+    {
+      // No saved rivals: buildMarketShare's default (defaultRivals: the 10 nearest teaching Year 7).
+      const m = await buildMarketShare(urn, ep, rivals ? { rivals } : {});
       const byUrn = new Map<string, Pt[]>();
       for (const r of m.entryAge.rows) (byUrn.get(r.urn) ?? byUrn.set(r.urn, []).get(r.urn)!).push({ year: r.period, value: r.share });
       const latest = m.entryAge.periods.at(-1);
       const largest = m.entryAge.rows.filter((r) => r.urn !== urn && r.period === latest && r.share !== null).sort((a, b) => (b.share ?? 0) - (a.share ?? 0))[0];
-      market = { status: "ready", school: byUrn.get(urn) ?? [], rival: largest ? (byUrn.get(largest.urn) ?? []) : [], rivalName: largest ? (m.schools[largest.urn]?.name ?? largest.urn) : null, rivals: m.rivals.length };
+      market = { status: "ready", school: byUrn.get(urn) ?? [], rival: largest ? (byUrn.get(largest.urn) ?? []) : [], rivalName: largest ? (m.schools[largest.urn]?.name ?? largest.urn) : null, rivals: m.rivals.length, defaultRivals: !rivals };
       const mine = m.entryAge.rows.find((r) => r.urn === urn && r.period === latest);
       const first = m.entryAge.rows.find((r) => r.urn === urn && r.period === m.entryAge.periods[0]);
       // groupShare's shares are already per cent.
       const pct = (s: number | null | undefined) => (s === null || s === undefined ? null : s);
-      if (mine) row = ({ key: "market11", label: "Market share at 11+", stage: null, unit: "share", value: pct(mine.share), period: latest ?? null, set: mine.rank !== null ? { rank: mine.rank, of: m.rivals.length + 1, label: "Admissions' rivals" } : null, region: null, england: null, since: first && pct(first.share) !== null && pct(mine.share) !== null ? { from: m.entryAge.periods[0], change: pct(mine.share)! - pct(first.share)!, unit: "pp" } : null, note: null });
+      if (mine) row = ({ key: "market11", label: "Market share at 11+", stage: null, unit: "share", value: pct(mine.share), period: latest ?? null, set: mine.rank !== null ? { rank: mine.rank, of: m.rivals.length + 1, label: rivals ? "Admissions' rivals" : smtNote("marketDefaultShort") } : null, region: null, england: null, since: first && latest !== undefined && pct(first.share) !== null && pct(mine.share) !== null ? trendOf(m.entryAge.periods[0], latest, pct(mine.share)! - pct(first.share)!, "pp") : null, note: null });
     }
   }
 

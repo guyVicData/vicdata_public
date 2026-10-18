@@ -7,6 +7,7 @@
 //
 // Wireframes: docs/wireframes/groups (Main, Schools, Phone). Who sees it is the server's decision
 // (/api/group/dash, src/lib/groups/dash-access.ts); the page draws what it is given.
+import { activeWithContent, visibleRail } from "@/lib/rail-content";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -429,9 +430,41 @@ const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = {
   },
 };
 
+// 0.8 SMT feedback round 1 (F-6, R-RAIL-HIDES-EMPTY): which group views have something to show. Data
+// still loading has content; the reserved bands and "the map is on Overview" say something, and stay.
+function groupHasContent(id: string, c: Ctx): boolean {
+  const a = c.d.academic;
+  const p = c.d.pupils;
+  switch (id) {
+    case "GRP-O-MAP":
+      return !c.d.map || c.d.map.some((s) => !s.outside && s.easting !== null && s.northing !== null);
+    case "GRP-O-JOINED":
+      return c.d.membership.length > 0;
+    case "GRP-A-RANKED":
+      return !a || a.ranked.rows.length > 0;
+    case "GRP-A-AREAS":
+      return !a || !a.areas.stage || a.areas.rows.length > 0;
+    case "GRP-A-IMPROVING":
+      return !a || !!a.improving.of;
+    case "GRP-P-SHAPE":
+      return !p || p.shape.ages.some((n) => n > 0);
+    case "GRP-P-ENTRIES":
+      return !p || p.entries.some((e) => e.pts.filter((x) => x.value).length >= 2);
+    case "GRP-P-LEAVING":
+      return !p || p.leaving.length > 0;
+    case "GRP-P-MARKET":
+      return !p || p.market.rows.length > 0;
+  }
+  return true;
+}
+
 function Cell({ cell, c, height, onAverage }: { cell: CellDef; c: Ctx; height: number; onAverage: (a: boolean) => void }) {
-  const [active, setActive] = useState(cell.views[0].id);
-  const rail: RailItem[] = cell.views.map((x) => ({ id: x.id, label: x.label, icon: x.icon }));
+  const [picked, setActive] = useState(cell.views[0].id);
+  const all: RailItem[] = cell.views.map((x) => ({ id: x.id, label: x.label, icon: x.icon }));
+  const has = (id: string) => groupHasContent(id, c);
+  const rail = visibleRail(all, has);
+  // F-6: a cell that would open on an empty view opens on the next one instead.
+  const active = activeWithContent(all, picked, has) as ViewId;
   const h = headerOf(active, c);
   const weighting =
     active === "GRP-O-AGAINST" || active === "GRP-O-RESULTS" || active === "GRP-A-NOW" || active === "GRP-A-TREND" || active === "GRP-A-POST16" ? (
@@ -676,7 +709,8 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
 function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: CellDef[] } }) {
   const now = layout.now[0].views[0].id;
   const large = layout.now[1];
-  const [tab, setTab] = useState<ViewId>(large.views[0].id);
+  const [tabPicked, setTab] = useState<ViewId>(large.views[0].id);
+  const tab = activeWithContent(large.views, tabPicked, (id) => groupHasContent(id, c)) as ViewId;
   const [trendTab, setTrendTab] = useState<ViewId>(layout.trends[0].views[0].id);
   const SHORT: Partial<Record<ViewId, string>> = { "GRP-O-ROLL": "Roll", "GRP-O-RESULTS": "Results", "GRP-O-SHARE": "Share", "GRP-S-GROWING": "Growing", "GRP-S-SCATTER": "Size and results", "GRP-S-SHAPES": "Shapes", "GRP-A-TREND": "Results", "GRP-A-POST16": "Post-16", "GRP-A-IMPROVING": "By school", "GRP-P-ROLL": "Roll", "GRP-P-PROJECTION": "Forward", "GRP-P-GROWING": "Growing" };
   const trendItems: RailItem[] = layout.trends.map((t) => ({ id: t.views[0].id, label: SHORT[t.views[0].id] ?? t.views[0].label, icon: "" }));
@@ -685,7 +719,7 @@ function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: Ce
       <RailPanel tag={`The group now · ${periodLabel(c.o.years.census)}`} title="The group now" height="auto" source={sourceOf(now, c)} caption={captionOf(now, c)} focusBar={c.focusBar} view={{ panelId: layout.now[0].id, panelName: null, instanceId: now, dataview: now }}>
         {({ fullscreen }) => <ViewBody id={now} c={c} fullscreen={fullscreen} />}
       </RailPanel>
-      <RailPanel tag={GROUP_VIEWS[tab].label} title={GROUP_VIEWS[tab].label} height="auto" source={sourceOf(tab, c)} caption={captionOf(tab, c)} controls={<Tabs items={large.views.map((x) => ({ id: x.id, label: x.id === "GRP-O-JOINED" ? "Joined" : x.label, icon: x.icon }))} active={tab} onPick={(x) => setTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(tab, c)} view={{ panelId: large.id, panelName: null, instanceId: tab, dataview: tab }}>
+      <RailPanel tag={GROUP_VIEWS[tab].label} title={GROUP_VIEWS[tab].label} height="auto" source={sourceOf(tab, c)} caption={captionOf(tab, c)} controls={<Tabs items={visibleRail(large.views, (id) => groupHasContent(id, c)).map((x) => ({ id: x.id, label: x.id === "GRP-O-JOINED" ? "Joined" : x.label, icon: x.icon }))} active={tab} onPick={(x) => setTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(tab, c)} view={{ panelId: large.id, panelName: null, instanceId: tab, dataview: tab }}>
         {({ fullscreen, height }) => (
           <div className="flex min-h-[200px] flex-col gap-2">
             {tab === "GRP-O-AGAINST" && !fullscreen ? <PhoneAgainst o={c.o} /> : <ViewBody id={tab} c={c} fullscreen={fullscreen} room={height} />}

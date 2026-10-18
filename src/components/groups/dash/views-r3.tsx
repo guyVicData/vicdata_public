@@ -4,7 +4,7 @@
 // Phone.dc.html), on the same kit as round 2's (./views.tsx). Every figure and n arrives from
 // /api/group/dash (the group lookups, worded by src/lib/groups/dash-r3.ts).
 import { useState, type ReactNode } from "react";
-import { Empty, Key, LineSwatch, Lbl, Tile, fillHeight } from "@/components/admissions/ui";
+import { Empty, Key, LineSwatch, Lbl, PairTile, Tile, fillHeight } from "@/components/admissions/ui";
 import { LineChart } from "@/components/admissions/views/charts";
 import { periodLabel } from "@/catalogue/years";
 import { MEASURE_LABEL, MEASURE_UNIT, ordinal, PEER_PLURAL, PHASE_NOUN } from "@/lib/groups/dash";
@@ -248,7 +248,7 @@ export function PupilsNow({ p, compact }: { p: GroupPupils; compact: boolean }) 
         <Tile label="Combined roll" value={<span className="text-[var(--accent)]">{fmt(n.roll, "pupils")}</span>} sub={`${fmt(n.change["1"].combined, "pct")} on ${periodLabel(n.change["1"].from)}, combined`} accent />
         <Tile label="By phase" value={<span className="text-[15px]">{fmt(p.rollByPhase.primary, "pupils")} · {fmt(p.rollByPhase.secondary, "pupils")} · {fmt(p.rollByPhase.post16, "pupils")}</span>} sub={`pupils aged 5–10 · 11–15 · 16–18, in ${n.byPhase.primary} · ${n.byPhase.secondary} · ${n.byPhase.post16} schools`} />
         <Tile label="Year 12 against Year 11" value={so.pct === null ? "—" : `${so.pct.toFixed(1)}%`} sub={so.pct === null ? "no sixth form with both years" : `${fmt(so.y12, "pupils")} in Year 12 against ${fmt(so.y11, "pupils")} in Year 11 last year · ${so.schools} schools`} />
-        {p.boarding.boarders > 0 ? <Tile label="Day · boarding" value={`${fmt(p.boarding.day, "pupils")} · ${fmt(p.boarding.boarders, "pupils")}`} sub={`${p.boarding.schools} schools with boarders`} /> : <Tile label="Growing · shrinking" value={`${p.growing.growing} · ${p.growing.shrinking}`} sub={`of ${p.growing.of} schools, since ${periodLabel(p.growing.from)}`} />}
+        {p.boarding.boarders > 0 ? <PairTile pairs={[{ label: "Day", value: fmt(p.boarding.day, "pupils") }, { label: "Boarding", value: fmt(p.boarding.boarders, "pupils") }]} sub={`${p.boarding.schools} schools with boarders`} /> : <PairTile pairs={[{ label: "Growing", value: p.growing.growing }, { label: "Shrinking", value: p.growing.shrinking }]} sub={`of ${p.growing.of} schools, since ${periodLabel(p.growing.from)}`} />}
       </div>
       {!compact && (
         <div className="flex flex-col gap-0.5 text-[11.5px]">

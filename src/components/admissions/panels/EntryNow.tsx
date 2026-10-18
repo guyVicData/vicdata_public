@@ -9,7 +9,7 @@ import { BADGE_ORDER, comparisonCaption } from "@/components/dashboard/PhaseBrea
 import { SHAPE_LABELS } from "@/components/dashboard/ShapeIcon";
 import type { ShapeLabel } from "@/lib/shape-classifier";
 import type { PipelineOk, ShapeView } from "../api";
-import { Lbl, Tile, cx, fmtN, fmtPct, yearLabel } from "../ui";
+import { Lbl, PairTile, Tile, cx, fmtN, fmtPct, yearLabel } from "../ui";
 import { arrowed } from "@/lib/signed-delta";
 
 const yearWord = (age: number) => (age === 4 ? "Reception" : age >= 5 && age <= 17 ? `Year ${age - 4}` : `Age ${age}`);
@@ -94,10 +94,11 @@ export function EntryNow({ p, shape, compact = false }: { p: PipelineOk; shape: 
       <div className="grid grid-cols-2 gap-2">
         <Tile label={`${word} now`} value={fmtN(n.cohort)} sub={`pupils aged ${p.entry.age}`} accent />
         <Tile label={`Since ${yearLabel(n.base.period)}`} value={n.changePct === null ? "—" : arrowed(n.changePct, (x) => `${x.toFixed(0)}%`, 0)} sub={`${word} cohort (${fmtN(n.base.cohort)} then)`} />
-        {!compact && <Tile small label="Girls · boys" value={girlsPct === null ? "—" : `${girlsPct.toFixed(0)}% · ${(boysPct ?? 0).toFixed(0)}%`} sub={`in ${word}`} />}
+        {/* 0.8 SMT feedback round 1 (F-1): each figure boxed with its own label (PairTile). */}
+        {!compact && <PairTile pairs={[{ label: "Girls", value: girlsPct === null ? "—" : `${girlsPct.toFixed(0)}%` }, { label: "Boys", value: girlsPct === null ? "—" : `${(boysPct ?? 0).toFixed(0)}%` }]} sub={`in ${word}`} />}
         {/* 0.7 r3 (F2): one tile, the same place, either way. A boarding school sees day and
             boarding; a day school sees Day only -- the day count, no boarding half, no label. */}
-        {!compact && (p.school.boarding ? <Tile small label="Day · boarding" value={`${fmtN(day)} · ${fmtN(n.boarders)}`} sub="whole school (no age split)" /> : <Tile small label="Day" value={fmtN(day ?? n.roll)} sub="whole school" />)}
+        {!compact && (p.school.boarding ? <PairTile pairs={[{ label: "Day", value: fmtN(day) }, { label: "Boarding", value: fmtN(n.boarders) }]} sub="in whole school" /> : <Tile small label="Day" value={fmtN(day ?? n.roll)} sub="whole school" />)}
       </div>
       {shape && !compact && (
         <div className="flex flex-col gap-[6px] border-t border-[var(--panel-border)] pt-2">

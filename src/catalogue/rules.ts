@@ -1882,18 +1882,18 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-IGCSE-WORDING",
     statement:
-      "An IGCSE school (R-IGCSE-EXCL) is never shown a whole-school GCSE zero or rank: its GCSE rows read \"IGCSE · not ranked\", its column-1 tile \"IGCSE school, no comparable GCSE results\", every whole-school GCSE view (value added; the results trend with no area chosen) says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. Its GCSE subjects, complete subject areas, grade profile and entries mix are drawn and ranked as any school's (R-IGCSE-SUBJECT; 0.8 IGCSE subjects).",
+      "An IGCSE school (R-IGCSE-EXCL) is never shown a whole-school GCSE zero or rank: the Scorecard leaves its GCSE rows out (0.8 SMT feedback round 1, R-SCORECARD-ROWS-BY-TYPE), its column-1 tile \"IGCSE school, no comparable GCSE results\", every whole-school GCSE view (value added; the results trend with no area chosen) says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. Its GCSE subjects, complete subject areas, grade profile and entries mix are drawn and ranked as any school's (R-IGCSE-SUBJECT; 0.8 IGCSE subjects).",
     why: "Leighton Park and Sevenoaks sit IGCSEs: DfE's tables would read them as near zero.",
     appliesTo: "Every SMT view at GCSE or Whole school",
     enforcedIn: ["src/lib/smt/overview.ts:buildOverview", "src/lib/smt/academic.ts:stagePart", "src/components/smt/views/Scorecard.tsx", "src/components/smt/views/Now.tsx"],
-    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "Its Attainment 8 and grade 5+ rows have no value or rank and note igcse; its A-level rows are ranked; its set phase is Post-16; the whole-school GCSE views (value added) carry SMT_NOTES.igcseView.", check: "smtIgcse" },
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "Its Scorecard has no Attainment 8 or grade 5+ row (none ranked, none shown); its A-level rows are ranked; its set phase is Post-16; the whole-school GCSE views (value added) carry SMT_NOTES.igcseView.", check: "smtIgcse" },
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
   {
     id: "R-SMT-P8-REASON",
     statement:
-      "Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero.",
+      "Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. 0.8 SMT feedback round 1 (R-INDEP-ENTRY-TILES): on Overview's \"The school now\" an independent school's tile gives way to its entry tiles, and the reason is said in the view's (i).",
     why: "Two different absences -- a school type and two lost cohorts -- read the same as a missing figure unless said.",
     appliesTo: "DV-SMT-O-NOW, DV-SMT-A-NOW, DV-SMT-A-VA",
     enforcedIn: ["src/lib/smt/overview.ts:p8Of", "src/components/smt/views/Now.tsx", "src/components/smt/views/ValueAdded.tsx"],
@@ -2077,7 +2077,72 @@ export const RULES: Rule[] = [
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
+  {
+    id: "R-SCORECARD-ROWS-BY-TYPE",
+    statement:
+      "The SMT Scorecard's rows follow the school's type (F-3): an IGCSE school has no whole-school GCSE rows (Attainment 8, grade 5+ in English and maths), since it isn't ranked on them; the boarders row shows for a GIAS boarding school only, ranked among the boarding schools with a census boarders count in the set, in its region and in England (each named); Progress 8 is a row where DfE published it. The set's column wears the set's short name (setShortName: \"10 nearest\"), the full name in the (i).",
+    why: "A row that can only say \"not ranked\" asks the reader to look at nothing; a boarding school's boarders are a headline worth ranking; a long set name made the table scroll.",
+    appliesTo: "DV-SMT-O-SCORECARD",
+    enforcedIn: ["src/lib/smt/overview.ts:buildOverview", "src/lib/smt/overview.ts:boarderPlaces", "src/lib/set-short-name.ts", "src/components/smt/views/Scorecard.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625", phase: "ks4", expect: "Leighton Park: no GCSE row; a boarders row ranked in the set, South East and England, its England rank recomputed from every boarding school's census boarders; header \"10 nearest\". The Chase: Attainment 8, grade 5+ and Progress 8 rows, no boarders row.", check: "scorecardRows" },
+    origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-TREND-PERIOD-PER-CELL",
+    statement:
+      "The Scorecard's last column is \"Trends\", and each cell states its own period (F-3, F-4): results \"since 2022/23\" (R-TREND-FROM-2223); sixth-form value added from its first published year (SIXTH_FORM_VA_FROM, 2023/24) to its latest, \"2023/24 → 2024/25\"; Progress 8 its own years, ending PROGRESS8_LAST_PERIOD (2023/24); rolls since the first census year (2019/20). One (i) note says why the years differ, every year from years.ts. A later value-added year extends the cell from the data, with no code change.",
+    why: "One heading over rows measured from different years told the reader the wrong period for most of them; value added looked as if it had no trend.",
+    appliesTo: "DV-SMT-O-SCORECARD",
+    enforcedIn: ["src/lib/smt/overview.ts:trendOf", "src/lib/smt/overview.ts:vaTrend", "src/lib/smt/overview.ts:trendYearsNote", "src/catalogue/years.ts", "src/components/smt/views/Scorecard.tsx", "src/lib/smt-fb1.test.ts"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Attainment 8 \"since 2022/23\"; A-level value added \"2023/24 → 2024/25\" and its change recomputed from the two years' figures; Progress 8 \"2022/23 → 2023/24\"; roll \"since 2019/20\"; the rendered table heads \"Trends\" and no \"Since 2022/23\"; with a synthetic 2025/26 value added (unit test) the cell reads \"2023/24 → 2025/26\".", check: "trendPerCell" },
+    origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-INDEP-ENTRY-TILES",
+    statement:
+      "On SMT Overview's \"The school now\", an independent school's GCSE note and Progress 8 note give way to its entry tiles (F-8): \"Joining at 11\" (Year 7, where GIAS's statutory low age is 11 or more) or \"Net change at 11\" (Year 7 this census minus Year 6 the census before), and \"Net change at 16\" (Year 12 minus last census's Year 11). Each tile is the label, this year's number and one change since 2019/20 (the % change in that year group's roll); the arithmetic is in the (i). The 16+ sum is SMT Pupils' Leaving at 16's, the other way round, from the same cohort table. State schools keep their tiles.",
+    why: "Two tiles that only ever said \"not published\" told an independent school nothing; its intake at 11 and its sixth form's gain are what SMT watch.",
+    appliesTo: "DV-SMT-O-NOW, DV-SMT-P-LEAVING",
+    enforcedIn: ["src/lib/smt/entry-net.ts", "src/lib/smt/overview.ts:buildOverview", "src/lib/smt/pupils.ts:buildPupils", "src/components/smt/views/Now.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; King's Worcester 117037 (with a Year 6); The Chase 137625 (state)", phase: "ks4", expect: "Leighton Park: Joining at 11 and Net change at 16, which equals minus Pupils' latest Leaving at 16, each recomputed from the census; King's Worcester: Net change at 11 = its Year 7 minus last census's Year 6; The Chase: no entry tiles, its Attainment 8 and Progress 8 tiles drawn as before.", check: "indepEntryTiles" },
+    origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-RAIL-HIDES-EMPTY",
+    statement:
+      "A view with nothing to show for the school has no rail icon, and a panel that would open on it opens on the next view instead (F-6, F-5). One rule (src/lib/rail-content.ts: visibleRail, activeWithContent), with each product's hasContent per view (SMT, Admissions, Groups; Teacher's hosts already offer a view's button only with data). \"Nothing to show\" is no data for the school -- no flags, no located schools, too few years to draw; a view that explains something the reader needs or can act on (rivals not chosen, a level it isn't for, the IGCSE note, a reserved view) keeps its icon, and so does any view whose data is still loading.",
+    why: "No point asking people to look at a view that has nothing to say (Guy, F-6).",
+    appliesTo: "every railed panel: SMT, Admissions, Groups",
+    enforcedIn: ["src/lib/rail-content.ts", "src/components/smt/content.ts", "src/components/admissions/content.ts", "src/components/groups/dash/GroupDashboard.tsx:groupHasContent", "src/lib/smt-fb1.test.ts"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625; King's Worcester 117037", phase: "ks4", expect: "Leighton Park and The Chase (no flags): Flags is hidden on SMT Overview, and the Scorecard panel opens on the Scorecard; King's Worcester: the hidden views listed in the report (Admissions 4+ pool trend). Every hidden view's own empty condition holds (no flags; too few points).", check: "railHidesEmpty" },
+    origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-MARKET-DEFAULT-RIVALS",
+    statement:
+      "SMT's market share at 11+ (Overview's From Admissions, Pupils' Market share) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why.",
+    why: "\"No rivals chosen\" left the panel empty, when Admissions itself already draws the market against the nearest ten.",
+    appliesTo: "DV-SMT-O-MARKET-LINE, DV-SMT-O-MARKET-TABLE, DV-SMT-P-MARKET",
+    enforcedIn: ["src/lib/smt/overview.ts:marketAt11", "src/components/smt/SmtDashboard.tsx:headerOf", "src/components/smt/SmtDashboard.tsx:captionOf", "src/components/smt/views/Lines.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "With no readable rivals list: market share drawn against 10 rivals, exactly defaultRivals' 10 nearest teaching Year 7 (as Admissions' Market share draws them); defaultRivals is true; the rendered view's title names the default.", check: "marketDefaultRivals" },
+    origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDBACK-FOLLOWS-VIEW",
+    statement:
+      "The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers \"Move to <view>\", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). A missing app version is recorded as \"unknown\", \"dev\" only on a local dev server (F-1).",
+    why: "An item recorded against the wrong view sends the fix to the wrong place.",
+    appliesTo: "the feedback window, every panel",
+    enforcedIn: ["src/components/feedback/store.ts:movedView", "src/components/feedback/FeedbackWindow.tsx", "src/components/shell/CardBox.tsx", "src/lib/feedback-server.ts:appVersion", "src/lib/smt-fb1.test.ts"],
+    testCase: { urn: "110110", school: "Leighton Park, SMT Overview (store and browser tests)", phase: "ks4", expect: "Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept; appVersion is the commit on Render, \"unknown\" without it in production.", check: "feedbackFollowsView" },
+    origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
 ];
-
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

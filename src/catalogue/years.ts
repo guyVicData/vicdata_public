@@ -112,6 +112,16 @@ export const CENSUS_FIRST_PERIOD = 2019;
 // projection-join threshold are retired with ONS's line as the main projection.)
 export const SMT_PROJECTION_TILE_AHEAD = 5;
 
+// 0.8 SMT feedback round 1 (F-3, F-4): where two measures' published series start and stop, the
+// reasons the Scorecard's trend cells cover different years (R-TREND-PERIOD-PER-CELL).
+// Sixth-form value added: DfE published none for 2021/22 or 2022/23 (those students' GCSEs were
+// teacher-assessed in 2020 and 2021, so there is no prior-attainment baseline); 2023/24 is its first
+// year. Later years are read from the data, so 2025/26 (mid-November) extends the trend unaided.
+export const SIXTH_FORM_VA_FROM = 2023;
+// Progress 8: 2023/24 is the last cohort with a KS2 baseline (summer 2019); there were no KS2 tests
+// in 2020 or 2021, so none is published for 2024/25 or 2025/26.
+export const PROGRESS8_LAST_PERIOD = 2023;
+
 // Admissions' past pools start with September-2020 entry (the first entry year with a counted
 // rung, census 2019/20).
 export const PAST_FROM_ENTRY_YEAR = CENSUS_FIRST_PERIOD + 1;
