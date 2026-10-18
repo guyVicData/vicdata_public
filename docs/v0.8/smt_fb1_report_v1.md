@@ -203,11 +203,11 @@ Groups' three-figure "By phase" tile is unchanged.
 
 ## Closing the loop
 
-When the round is merged and deployed, mark F-1 to F-8 done in one statement, after the project-ref check. It writes: Guy runs it.
+Merged to main as `41c4d26` (`--no-ff`; tree identical to the branch). When it is deployed, mark F-1 to F-8 done in one statement, after the project-ref check. It writes: Guy runs it.
 
 ```sql
 update public.feedback_items
-set status = 'done', resolved_commit = 'MERGE_COMMIT', resolved_at = now()
+set status = 'done', resolved_commit = '41c4d26', resolved_at = now()
 where number between 1 and 8 and status <> 'done';
 ```
 
