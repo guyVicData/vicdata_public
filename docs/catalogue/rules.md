@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 154 rules: 150 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -143,10 +143,10 @@ What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lif
 | R-SMT-FLAGS | active | Flags on the school appear only for large and lasting changes, with the figures behind them: the roll falling three years running (Admissions' losingPupils), the entry cohort shrinking past the national threshold (entryYearShrinking), and results moving faster than the set's middle by at least SMT_FLAG_RULES.resultsGap over two years, with at least SMT_FLAG_RULES.resultsMinSchools set schools. The thresholds live in src/lib/smt/flags-rules.ts only. | no | auto: smtFlags | — |
 | R-SMT-NOTES | active | SMT's honesty wording comes from one file, SMT_NOTES (src/catalogue/notes.ts), in each view's (i) as its "What this shows" line (0.8 notes and feedback: the caption button is retired) or in the view's own space; no SMT component words a caveat of its own. | no | auto: smtNotes | — |
 | R-SMT-SMALL-ENTRIES | active | A subject with fewer than MIN_SUBJECT_ENTRIES (5) entries isn't ranked and says so; ranks come from Teacher's subjectRanking, so a subject's figures match the subject explorer's. | no | auto: smtSubjects | — |
-| R-SMT-VIEW-NOW | active | The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its national rank, A-level value added, Progress 8 or its reason, and the school page's XS-XL by phase -- never new words for size. | no | auto: smtViewNow | — |
-| R-SMT-VIEW-SCORECARD | active | The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its change since 2022/23 (roll since 2019/20); IGCSE rows say not ranked; the flags line follows. | no | auto: smtSetRanks | — |
+| R-SMT-VIEW-NOW | active | The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its rank in the selected set, A-level value added, Progress 8 or its reason (or an independent school's entry tiles), and size by phase against the set: each phase's place by size among the set's schools with it, and the set's median (0.8 SMT feedback round 2, F-10; R-SMT-SET-DRIVES-OVERVIEW). SMT Pupils keeps the school page's XS-XL by phase. | no | auto: smtViewNow | — |
+| R-SMT-VIEW-SCORECARD | active | The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its trend over its own period (R-TREND-PERIOD-PER-CELL); its rows follow the school's type (R-SCORECARD-ROWS-BY-TYPE); the flags line follows. | no | auto: smtSetRanks | — |
 | R-SMT-VIEW-MAP | active | The map draws the school and every located school in the comparison set; the school ringed. | no | auto: smtViewMap | — |
-| R-SMT-VIEW-TRENDS | active | Trends draw indexed rolls against the LA and England (pupils aged 5-15, said so), results against the set's middle half with 2021/22 shaded and the trend note, and market share from Admissions read-only (an empty state with the reason where the school has no 11+ rivals). | no | auto: smtViewTrends | — |
+| R-SMT-VIEW-TRENDS | active | Trends draw indexed rolls against the selected set's averages (0.8 SMT feedback round 2, R-ROLL-INDEXED-SET; no longer the LA and England), results against the set's middle half with 2021/22 shaded and the trend note, and market share at 11+ against the set (R-MARKET-FOLLOWS-SET; an empty state with the reason where the school has no 11+ entry). | no | auto: smtViewTrends | — |
 | R-SMT-VIEW-ACADEMIC-NOW | active | The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile. With a subject area chosen the tiles are four, as the Academic board draws them: entries, the average, the top grades, and the rank in the set as its own tile. | no | auto: smtAcademicNow | — |
 | R-SMT-VIEW-AREAS | active | Subject areas are Admissions' strengths and weaknesses (buildRivals), against the comparison set instead of the rivals. | no | auto: smtAreas | — |
 | R-SMT-VIEW-SUBJECTS | active | Subjects list the area's subjects with entries, average, rank in the set and England, since 2022/23, and the subject explorer link carrying ?set=. | no | auto: smtSubjects | — |
@@ -157,8 +157,11 @@ What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lif
 | R-TREND-PERIOD-PER-CELL | active | The Scorecard's last column is "Trends", and each cell states its own period (F-3, F-4): results "since 2022/23" (R-TREND-FROM-2223); sixth-form value added from its first published year (SIXTH_FORM_VA_FROM, 2023/24) to its latest, "2023/24 → 2024/25"; Progress 8 its own years, ending PROGRESS8_LAST_PERIOD (2023/24); rolls since the first census year (2019/20). One (i) note says why the years differ, every year from years.ts. A later value-added year extends the cell from the data, with no code change. | no | auto: trendPerCell | — |
 | R-INDEP-ENTRY-TILES | active | On SMT Overview's "The school now", an independent school's GCSE note and Progress 8 note give way to its entry tiles (F-8): "Joining at 11" (Year 7, where GIAS's statutory low age is 11 or more) or "Net change at 11" (Year 7 this census minus Year 6 the census before), and "Net change at 16" (Year 12 minus last census's Year 11). Each tile is the label, this year's number and one change since 2019/20 (the % change in that year group's roll); the arithmetic is in the (i). The 16+ sum is SMT Pupils' Leaving at 16's, the other way round, from the same cohort table. State schools keep their tiles. | no | auto: indepEntryTiles | — |
 | R-RAIL-HIDES-EMPTY | active | A view with nothing to show for the school has no rail icon, and a panel that would open on it opens on the next view instead (F-6, F-5). One rule (src/lib/rail-content.ts: visibleRail, activeWithContent), with each product's hasContent per view (SMT, Admissions, Groups; Teacher's hosts already offer a view's button only with data). "Nothing to show" is no data for the school -- no flags, no located schools, too few years to draw; a view that explains something the reader needs or can act on (rivals not chosen, a level it isn't for, the IGCSE note, a reserved view) keeps its icon, and so does any view whose data is still loading. | no | auto: railHidesEmpty | — |
-| R-MARKET-DEFAULT-RIVALS | active | SMT's market share at 11+ (Overview's From Admissions, Pupils' Market share) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why. | no | auto: marketDefaultRivals | — |
+| R-MARKET-DEFAULT-RIVALS | active | SMT Pupils' market share at 11+ (0.8 SMT feedback round 2: Overview's follows the selected set, R-MARKET-FOLLOWS-SET) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why. | no | auto: marketDefaultRivals | — |
 | R-FEEDBACK-FOLLOWS-VIEW | active | The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers "Move to <view>", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). A missing app version is recorded as "unknown", "dev" only on a local dev server (F-1). | no | auto: feedbackFollowsView | — |
+| R-SMT-SET-DRIVES-OVERVIEW | active | The comparison set chosen in the bar drives every comparison on SMT Overview (Guy, 18 Oct; F-9 to F-11), and the set's name says so: the Scorecard's set ranks and market share row, The school now's ranks and size by phase, the map, the flags' set comparisons, the results trend and table (the set's middle half), the roll lines and table (the set's averages), and market share. The one exception is the Scorecard's regional and England ranks (R-SCORECARD-ROWS-BY-TYPE), which are ranks, not comparison lines. The flags' entry-year threshold stays the national one (a rule, not a comparison). | no | auto: setDrivesOverview | — |
+| R-ROLL-INDEXED-SET | active | SMT Overview's Roll, indexed (and its table) draws the school's line (day and boarding at a boarding school), the selected set's average day roll, and -- where the set has boarders -- its average boarding roll as a grey dotted line (F-11). No England or LA line. The averages are over the set's schools with a figure in every year shown, indexed from the same base year as the school's lines, under the same filters. | no | auto: rollIndexedSet | — |
+| R-MARKET-FOLLOWS-SET | active | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). | no | auto: marketFollowsSet | — |
 
 ## Cards
 
@@ -2326,7 +2329,7 @@ What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its national rank, A-level value added, Progress 8 or its reason, and the school page's XS-XL by phase -- never new words for size. |
+| Statement | The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its rank in the selected set, A-level value added, Progress 8 or its reason (or an independent school's entry tiles), and size by phase against the set: each phase's place by size among the set's schools with it, and the set's median (0.8 SMT feedback round 2, F-10; R-SMT-SET-DRIVES-OVERVIEW). SMT Pupils keeps the school page's XS-XL by phase. |
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-O-NOW |
 | Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
@@ -2342,7 +2345,7 @@ What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its change since 2022/23 (roll since 2019/20); IGCSE rows say not ranked; the flags line follows. |
+| Statement | The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its trend over its own period (R-TREND-PERIOD-PER-CELL); its rows follow the school's type (R-SCORECARD-ROWS-BY-TYPE); the flags line follows. |
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-O-SCORECARD |
 | Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
@@ -2374,7 +2377,7 @@ What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | Trends draw indexed rolls against the LA and England (pupils aged 5-15, said so), results against the set's middle half with 2021/22 shaded and the trend note, and market share from Admissions read-only (an empty state with the reason where the school has no 11+ rivals). |
+| Statement | Trends draw indexed rolls against the selected set's averages (0.8 SMT feedback round 2, R-ROLL-INDEXED-SET; no longer the LA and England), results against the set's middle half with 2021/22 shaded and the trend note, and market share at 11+ against the set (R-MARKET-FOLLOWS-SET; an empty state with the reason where the school has no 11+ entry). |
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-O-*-LINE, DV-SMT-O-*-TABLE, DV-SMT-A-TREND-* |
 | Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
@@ -2550,12 +2553,12 @@ What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | SMT's market share at 11+ (Overview's From Admissions, Pupils' Market share) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why. |
+| Statement | SMT Pupils' market share at 11+ (0.8 SMT feedback round 2: Overview's follows the selected set, R-MARKET-FOLLOWS-SET) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why. |
 | Why | "No rivals chosen" left the panel empty, when Admissions itself already draws the market against the nearest ten. |
 | Applies to | DV-SMT-O-MARKET-LINE, DV-SMT-O-MARKET-TABLE, DV-SMT-P-MARKET |
 | Enforced in | - src/lib/smt/overview.ts:marketAt11<br>- src/components/smt/SmtDashboard.tsx:headerOf<br>- src/components/smt/SmtDashboard.tsx:captionOf<br>- src/components/smt/views/Lines.tsx |
 | Tagged at | - src/lib/smt/overview.ts |
-| Test case | Leighton Park (110110), ks4: With no readable rivals list: market share drawn against 10 rivals, exactly defaultRivals' 10 nearest teaching Year 7 (as Admissions' Market share draws them); defaultRivals is true; the rendered view's title names the default. [runner: marketDefaultRivals] |
+| Test case | Leighton Park (110110), ks4: Pupils, with no readable rivals list: market share drawn against 10 rivals, exactly defaultRivals' 10 nearest teaching Year 7 (as Admissions' Market share draws them); defaultRivals is true; the rendered Pupils view's title names the default. [runner: marketDefaultRivals] |
 | Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -2573,6 +2576,54 @@ What a number is allowed to be. 151 rules: 147 active, 4 superseded; 22 must lif
 | Tagged at | - src/components/feedback/FeedbackWindow.tsx<br>- src/components/feedback/store.ts<br>- src/lib/smt-fb1.test.ts |
 | Test case | Leighton Park, SMT Overview (store and browser tests) (110110), ks4: Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept; appVersion is the commit on Render, "unknown" without it in production. [runner: feedbackFollowsView] |
 | Origin | 0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-SET-DRIVES-OVERVIEW
+
+| Field | Content |
+| --- | --- |
+| Statement | The comparison set chosen in the bar drives every comparison on SMT Overview (Guy, 18 Oct; F-9 to F-11), and the set's name says so: the Scorecard's set ranks and market share row, The school now's ranks and size by phase, the map, the flags' set comparisons, the results trend and table (the set's middle half), the roll lines and table (the set's averages), and market share. The one exception is the Scorecard's regional and England ranks (R-SCORECARD-ROWS-BY-TYPE), which are ranks, not comparison lines. The flags' entry-year threshold stays the national one (a rule, not a comparison). |
+| Why | One dashboard, one comparison: a view that compares with Reading or England while the bar says "10 nearest" reads as the set's figure. |
+| Applies to | SMT Overview: every view |
+| Enforced in | - src/lib/smt/overview.ts:buildOverview<br>- src/components/smt/views/Now.tsx<br>- src/components/smt/SmtDashboard.tsx:captionOf<br>- src/components/smt/SmtDashboard.tsx:headerOf |
+| Tagged at | — |
+| Test case | Leighton Park (and The Chase 137625) (110110), ks5: With the set changed from the 10 nearest to Local rivals (its 5 nearest) to a saved set: every set rank's count, size by phase's place and median, the map's schools, the results band's schools, the roll lines' set averages and market share's rivals follow the set, each named by it; the South East and England ranks are the same under all three. [runner: setDrivesOverview] |
+| Origin | 0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ROLL-INDEXED-SET
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT Overview's Roll, indexed (and its table) draws the school's line (day and boarding at a boarding school), the selected set's average day roll, and -- where the set has boarders -- its average boarding roll as a grey dotted line (F-11). No England or LA line. The averages are over the set's schools with a figure in every year shown, indexed from the same base year as the school's lines, under the same filters. |
+| Why | The roll's trend is read against the schools the dashboard compares with, not an area the school doesn't compete in. |
+| Applies to | DV-SMT-O-ROLL-LINE, DV-SMT-O-ROLL-TABLE |
+| Enforced in | - src/lib/smt/overview.ts:setAverage<br>- src/lib/smt/overview.ts:buildOverview<br>- src/components/smt/views/Lines.tsx:RollIndexed |
+| Tagged at | - src/lib/smt-fb2.test.ts<br>- src/lib/smt/overview.ts |
+| Test case | Leighton Park; The Chase 137625 (110110), ks5: Leighton Park: Day, Boarding, the set's average day and its average boarding (grey, dotted), each average recomputed from the set's census; no England or LA line. The Chase (a day school whose 10 nearest have no boarders): its line and the set's average, no boarding line. [runner: rollIndexedSet] |
+| Origin | 0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-MARKET-FOLLOWS-SET
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). |
+| Why | The map and the tables compare with the set; a market share against other schools contradicted them. |
+| Applies to | DV-SMT-O-MARKET-LINE, DV-SMT-O-MARKET-TABLE, DV-SMT-O-SCORECARD |
+| Enforced in | - src/lib/smt/overview.ts:marketAt11<br>- src/components/smt/SmtDashboard.tsx:headerOf<br>- src/components/smt/SmtDashboard.tsx:captionOf<br>- src/components/smt/views/Lines.tsx |
+| Tagged at | - src/lib/smt/overview.ts |
+| Test case | Leighton Park (110110), ks5: The rivals are exactly the set's schools; the latest share equals the school's Year 7 over the Year 7s of the school and the set (census, recomputed); the title names the set. [runner: marketFollowsSet] |
+| Origin | 0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
