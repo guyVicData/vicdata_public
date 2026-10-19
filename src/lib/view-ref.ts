@@ -9,7 +9,9 @@
 // every per-user row), feedback in its own school_urn / group_id columns.
 
 /** The product a dashboard belongs to, as feedback records it. */
-export type ViewProduct = "teacher" | "smt" | "admissions" | "group" | "meeting" | "custom";
+// 0.8 SMT feedback round 2 (section 6): "home" (the role homes and the group home) and "dataview" (the Data
+// View), for page feedback.
+export type ViewProduct = "teacher" | "smt" | "admissions" | "group" | "meeting" | "custom" | "home" | "dataview";
 
 /** Where a view is being looked at: the page's dashboard, school or group, role and state. One
  * per page, provided by the dashboard (ViewSurfaceProvider). */
@@ -39,6 +41,11 @@ export const viewNoteKey = (dashboardId: string, panelId: string, instanceId: st
 
 /** The key feedback groups a view's items by (feedback_items.view_key). */
 export const viewKey = (dashboardId: string, panelId: string, instanceId: string) => `${dashboardId}:${panelId}:${instanceId}`;
+
+/** 0.8 SMT feedback round 2 (section 6, R-FEEDBACK-PAGE): the key a whole page's feedback groups by -- no panel
+ * or view, so it never meets a view's key. */
+export const pageKey = (dashboardId: string) => `page:${dashboardId}`;
+export const isPageKey = (key: string | null | undefined) => !!key && key.startsWith("page:");
 
 /** The key a group page keeps its notes under (teacher_view_notes.school_urn, free text). */
 export const groupNoteScope = (groupId: string, viewAs: boolean) => (viewAs ? `grp:${groupId}~trial~head_office` : `grp:${groupId}`);
@@ -96,6 +103,23 @@ export const FEEDBACK_WHERE = [
   { id: "legend", label: "legend" },
   { id: "info", label: "(i) text" },
   { id: "pills", label: "pills and chips" },
+] as const;
+
+// Section 6: a page item's "Area" chips (tick any). The ids are the database's (feedback_items_area_check).
+export const FEEDBACK_AREAS = [
+  { id: "navigation", label: "navigation and menus" },
+  { id: "set_bar", label: "comparison-set bar" },
+  { id: "level_pills", label: "level chips and pills" },
+  { id: "layout", label: "layout" },
+  { id: "banner", label: "banner" },
+  { id: "home", label: "home page" },
+  { id: "account", label: "account" },
+  { id: "other", label: "other" },
+] as const;
+// On a page, "Applies to" reads for pages: "all similar" is every dashboard of this kind (the same ids).
+export const FEEDBACK_APPLIES_PAGE = [
+  { id: "this_view", label: "this page only" },
+  { id: "similar_views", label: "every dashboard of this kind" },
 ] as const;
 
 /** The short human number: F-12. */
@@ -184,4 +208,6 @@ export const RESTORED_BY_ADDRESS: Record<ViewProduct, { restores: string[]; bann
   group: { restores: ["group and role (peek)", "dashboard (path)", "reading, compare, focus and school", "panel and view"], bannerOnly: ["weighting", "year"] },
   meeting: { restores: ["meeting (path)"], bannerOnly: ["slide and view", "pinned settings"] },
   custom: { restores: ["dashboard (path)", "school and role (peek)", "panel and view"], bannerOnly: ["subject", "pills", "year"] },
+  home: { restores: ["school or group and role (peek)", "the home (path)"], bannerOnly: ["lens"] },
+  dataview: { restores: ["school (path)", "school and role (peek)"], bannerOnly: ["topic", "filters", "year"] },
 };

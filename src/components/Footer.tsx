@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FooterEditSwitch } from "@/components/edit-mode/EditSwitch";
+import { FooterPageFeedback } from "@/components/feedback/PageFeedback";
 
 // Minimal site footer (round 16) -- same neutral palette/border convention as
 // NavBar.tsx, the only other piece of site-wide chrome. Exists mainly to give
@@ -16,6 +17,8 @@ export default function Footer() {
         Sources & methodology
       </Link>
       <FooterEditSwitch />
+      {/* 0.8 SMT feedback round 2 (section 6): feedback on the page as a whole, for those the setting lets in. */}
+      <FooterPageFeedback />
     </footer>
   );
 }

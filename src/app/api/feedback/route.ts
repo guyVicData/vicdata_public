@@ -1,3 +1,4 @@
+import { isPageKey } from "@/lib/view-ref";
 import { NextRequest, NextResponse } from "next/server";
 import { userFrom } from "@/lib/groups/server";
 import { appVersion, feedbackAllowed, feedbackMissing, feedbackRow } from "@/lib/feedback-server";
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
     const { data, error } = await u.supabase.from("feedback_items").insert({ ...built.row, author_id: u.userId }).select("id, number, created_at, status").single();
     if (error) {
       if (feedbackMissing(error)) return NextResponse.json({ error: "Feedback needs the database update (20261117100000_v08_feedback)." }, { status: 503 });
+      // 0.8 SMT feedback round 2 (section 6): a page item before its migration -- no area column, or the old
+      // product and shape checks.
+      if (isPageKey(String(built.row.view_key)) && (error.code === "PGRST204" || error.code === "42703" || error.code === "23514")) return NextResponse.json({ error: "Page feedback needs the database update (20261118090000_v08_feedback_page)." }, { status: 503 });
       if (error.code === "42501" || /row-level security/i.test(error.message)) return NextResponse.json({ error: "Feedback isn't open to you yet." }, { status: 403 });
       throw error;
     }

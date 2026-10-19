@@ -1970,7 +1970,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-NOW",
     statement:
-      "The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its national rank, A-level value added, Progress 8 or its reason, and the school page's XS-XL by phase -- never new words for size.",
+      "The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its rank in the selected set, A-level value added, Progress 8 or its reason (or an independent school's entry tiles), and size by phase against the set: each phase's place by size among the set's schools with it, and the set's median (0.8 SMT feedback round 2, F-10; R-SMT-SET-DRIVES-OVERVIEW). SMT Pupils keeps the school page's XS-XL by phase.",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-O-NOW",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
@@ -1981,7 +1981,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-SCORECARD",
     statement:
-      "The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its change since 2022/23 (roll since 2019/20); IGCSE rows say not ranked; the flags line follows.",
+      "The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its trend over its own period (R-TREND-PERIOD-PER-CELL); its rows follow the school's type (R-SCORECARD-ROWS-BY-TYPE); the flags line follows.",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-O-SCORECARD",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
@@ -2003,7 +2003,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-TRENDS",
     statement:
-      "Trends draw indexed rolls against the LA and England (pupils aged 5-15, said so), results against the set's middle half with 2021/22 shaded and the trend note, and market share from Admissions read-only (an empty state with the reason where the school has no 11+ rivals).",
+      "Trends draw indexed rolls against the selected set's averages (0.8 SMT feedback round 2, R-ROLL-INDEXED-SET; no longer the LA and England), results against the set's middle half with 2021/22 shaded and the trend note, and market share at 11+ against the set (R-MARKET-FOLLOWS-SET; an empty state with the reason where the school has no 11+ entry).",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-O-*-LINE, DV-SMT-O-*-TABLE, DV-SMT-A-TREND-*",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
@@ -2124,11 +2124,11 @@ export const RULES: Rule[] = [
   {
     id: "R-MARKET-DEFAULT-RIVALS",
     statement:
-      "SMT's market share at 11+ (Overview's From Admissions, Pupils' Market share) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why.",
+      "SMT Pupils' market share at 11+ (0.8 SMT feedback round 2: Overview's follows the selected set, R-MARKET-FOLLOWS-SET) uses Admissions' saved rivals, else Admissions' own default -- the 10 nearest schools teaching Year 7 (defaultRivals) -- and then says so in the panel's tag (SMT_NOTES.marketDefaultTag), its title and its (i) (SMT_NOTES.marketDefault) (F-7). A school with no 11+ entry still says why.",
     why: "\"No rivals chosen\" left the panel empty, when Admissions itself already draws the market against the nearest ten.",
     appliesTo: "DV-SMT-O-MARKET-LINE, DV-SMT-O-MARKET-TABLE, DV-SMT-P-MARKET",
     enforcedIn: ["src/lib/smt/overview.ts:marketAt11", "src/components/smt/SmtDashboard.tsx:headerOf", "src/components/smt/SmtDashboard.tsx:captionOf", "src/components/smt/views/Lines.tsx"],
-    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "With no readable rivals list: market share drawn against 10 rivals, exactly defaultRivals' 10 nearest teaching Year 7 (as Admissions' Market share draws them); defaultRivals is true; the rendered view's title names the default.", check: "marketDefaultRivals" },
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "Pupils, with no readable rivals list: market share drawn against 10 rivals, exactly defaultRivals' 10 nearest teaching Year 7 (as Admissions' Market share draws them); defaultRivals is true; the rendered Pupils view's title names the default.", check: "marketDefaultRivals" },
     origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
@@ -2141,6 +2141,50 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/components/feedback/store.ts:movedView", "src/components/feedback/FeedbackWindow.tsx", "src/components/shell/CardBox.tsx", "src/lib/feedback-server.ts:appVersion", "src/lib/smt-fb1.test.ts"],
     testCase: { urn: "110110", school: "Leighton Park, SMT Overview (store and browser tests)", phase: "ks4", expect: "Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept; appVersion is the commit on Render, \"unknown\" without it in production.", check: "feedbackFollowsView" },
     origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-SET-DRIVES-OVERVIEW",
+    statement:
+      "The comparison set chosen in the bar drives every comparison on SMT Overview (Guy, 18 Oct; F-9 to F-11), and the set's name says so: the Scorecard's set ranks and market share row, The school now's ranks and size by phase, the map, the flags' set comparisons, the results trend and table (the set's middle half), the roll lines and table (the set's averages), and market share. The one exception is the Scorecard's regional and England ranks (R-SCORECARD-ROWS-BY-TYPE), which are ranks, not comparison lines. The flags' entry-year threshold stays the national one (a rule, not a comparison).",
+    why: "One dashboard, one comparison: a view that compares with Reading or England while the bar says \"10 nearest\" reads as the set's figure.",
+    appliesTo: "SMT Overview: every view",
+    enforcedIn: ["src/lib/smt/overview.ts:buildOverview", "src/components/smt/views/Now.tsx", "src/components/smt/SmtDashboard.tsx:captionOf", "src/components/smt/SmtDashboard.tsx:headerOf"],
+    testCase: { urn: "110110", school: "Leighton Park (and The Chase 137625)", phase: "ks5", expect: "With the set changed from the 10 nearest to Local rivals (its 5 nearest) to a saved set: every set rank's count, size by phase's place and median, the map's schools, the results band's schools, the roll lines' set averages and market share's rivals follow the set, each named by it; the South East and England ranks are the same under all three.", check: "setDrivesOverview" },
+    origin: "0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-ROLL-INDEXED-SET",
+    statement:
+      "SMT Overview's Roll, indexed (and its table) draws the school's line (day and boarding at a boarding school), the selected set's average day roll, and -- where the set has boarders -- its average boarding roll as a grey dotted line (F-11). No England or LA line. The averages are over the set's schools with a figure in every year shown, indexed from the same base year as the school's lines, under the same filters.",
+    why: "The roll's trend is read against the schools the dashboard compares with, not an area the school doesn't compete in.",
+    appliesTo: "DV-SMT-O-ROLL-LINE, DV-SMT-O-ROLL-TABLE",
+    enforcedIn: ["src/lib/smt/overview.ts:setAverage", "src/lib/smt/overview.ts:buildOverview", "src/components/smt/views/Lines.tsx:RollIndexed"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625", phase: "ks5", expect: "Leighton Park: Day, Boarding, the set's average day and its average boarding (grey, dotted), each average recomputed from the set's census; no England or LA line. The Chase (a day school whose 10 nearest have no boarders): its line and the set's average, no boarding line.", check: "rollIndexedSet" },
+    origin: "0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-MARKET-FOLLOWS-SET",
+    statement:
+      "SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS).",
+    why: "The map and the tables compare with the set; a market share against other schools contradicted them.",
+    appliesTo: "DV-SMT-O-MARKET-LINE, DV-SMT-O-MARKET-TABLE, DV-SMT-O-SCORECARD",
+    enforcedIn: ["src/lib/smt/overview.ts:marketAt11", "src/components/smt/SmtDashboard.tsx:headerOf", "src/components/smt/SmtDashboard.tsx:captionOf", "src/components/smt/views/Lines.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks5", expect: "The rivals are exactly the set's schools; the latest share equals the school's Year 7 over the Year 7s of the school and the set (census, recomputed); the title names the set.", check: "marketFollowsSet" },
+    origin: "0.8 SMT feedback round 2 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDBACK-PAGE",
+    statement:
+      "Feedback can be on a whole page (section 6): \"Feedback on this page\" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window (\"This page: SMT Overview · Leighton Park School\"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as \"Page\", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views.",
+    why: "Menus, the bar, pills and layout belong to no one view; without a page item that feedback had nowhere to go but a separate document.",
+    appliesTo: "the feedback system, every page",
+    enforcedIn: ["src/components/feedback/PageFeedback.tsx", "src/components/feedback/FeedbackWindow.tsx:feedbackPayload", "src/lib/feedback-server.ts:feedbackRow", "src/components/admin/FeedbackInbox.tsx", "supabase/migrations/20261118090000_v08_feedback_page.sql", "supabase/tests/v08_feedback_page_pglite.mjs", "src/lib/smt-fb2.test.ts"],
+    testCase: { urn: "110110", school: "Leighton Park, SMT Overview in View as (unit, PGlite and browser tests)", phase: "ks5", expect: "The page item carries the full context with no panel or view and its areas; the server takes it and refuses a page key with a panel; the button turns yellow; the inbox row reads Page; in PGlite (17 checks) feedback_for_triage shows is_page and area and feedback_coverage a page row.", check: "feedbackPage" },
+    origin: "0.8 SMT feedback round 2, section 6 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v2.md)",
     status: "active",
   },
 ];

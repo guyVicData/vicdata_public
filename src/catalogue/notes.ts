@@ -156,11 +156,18 @@ export const SMT_NOTES = {
   // F-8: an independent school's entry tiles, the arithmetic and caveats in the (i) (R-INDEP-ENTRY-TILES).
   join11Info: "Joining at 11: Year 7 in the {census} census ({now}). The school's first year is Year 7, so every Year 7 pupil joined at 11.",
   net11Info: "Net change at 11: Year 7 in the {census} census ({now}) minus Year 6 in the census before ({before}). A plus means more joined at 11 than left after Year 6.",
-  net16Info: "Net change at 16: Year 12 in the {census} census ({now}) minus Year 11 in the census before ({before}). A plus means the sixth form gained on what came up from Year 11. It is the same sum as SMT Pupils' Leaving at 16, the other way round.",
+  net16Info: "Net change at 16: Year 12 in the {census} census ({now}) minus Year 11 in the census before ({before}). A plus means the sixth form gained on what came up from Year 11. SMT Pupils' Leaving at 16 counts the same pupils the other way round, as leavers: for this year it shows {leaving}, so a gain here is a minus there.",
+  // 0.8 SMT feedback round 2: Pupils' Leaving at 16 and Overview's Net change at 16, one fact two ways.
+  leavingVsNet: "SMT Overview's Net change at 16 is the same sum the other way round, as a gain: this year's Leaving at 16 of {leaving} is a Net change at 16 of {net} there.",
+  marketSet: "A share of {set}: the school's Year 7 against the Year 7s of the set's schools, as the rest of the dashboard compares with that set (not the rivals Admissions chose). A set school without a Year 7 adds nothing. Not a share of the local market.",
   entrySinceInfo: "The % beside each is the change in that year group's roll (Year 7, or Year 12) since the {base} census. Day and boarding pupils together, full-time, ages at 31 August; a net figure counts pupils who left and joined in the same year as no change.",
   boardersRank: "Boarders are ranked among the boarding schools with a boarders count in the census, in {region} and in England.",
   middleHalf: "The band is the middle half of {setLabel} with results that year (the 25th to the 75th percentile). Schools without results are left out.",
   rollIndexed: "Each line is indexed to 100 in {base}. {la} and England count pupils aged 5 to 15 in every mainstream school (age_profile_aggregates), so they are a like-for-like trend for the area, not a total roll.",
+  // 0.8 SMT feedback round 2 (F-11, R-ROLL-INDEXED-SET): the roll lines against the selected set.
+  rollIndexedSet: "Each line is indexed to 100 in {base}. The set's lines are the average roll of {set}: day pupils across its {day} schools with a census in every year shown{boarding}, so a school opening or closing doesn't move them.",
+  // F-10: size by phase against the set.
+  setSize: "Size by phase: each phase's pupils at this school, and its place by size among {set} with pupils in that phase (largest first; ties share), with the set's median. A small set gives a rough place, not a band.",
   rollAreaUndercount: "Earlier area years count only schools still open, so they slightly undercount.",
   // Entries (the year rules: change in entries counts from the first year).
   entriesMix: "Each subject's share of the entries, year by year. Entries change counts from the first year shown (entries aren't graded, so the 2021/22 note doesn't apply).",

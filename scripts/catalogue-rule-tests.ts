@@ -2708,11 +2708,13 @@ const RUNNERS: Record<string, Runner> = {
   },
   async marketDefaultRivals() {
     const c = await smtCase("110110");
-    const m = c.overview.trends.market;
+    // 0.8 SMT feedback round 2: Overview follows the set (R-MARKET-FOLLOWS-SET); Pupils keeps the default.
+    const m = (await smtPupilsCase("110110")).market;
+    void c;
     const { defaultRivals, nearbyCandidates } = await import("../src/lib/admissions/rungs");
     const { entryPoint } = await import("../src/lib/admissions/entry-points");
     const expect = defaultRivals(entryPoint("11+")!, await nearbyCandidates("110110")).filter((u) => u !== "110110");
-    const html = textOf(await smtRender("110110", "DV-SMT-O-MARKET-LINE"));
+    const html = textOf(await smtRender("110110", "DV-SMT-P-MARKET", undefined, { pupils: await smtPupilsCase("110110") }));
     const pass = m.status === "ready" && m.defaultRivals && m.rivals === expect.length && expect.length === 10 && /10 nearest schools \(default rivals\)/.test(html);
     return { pass, detail: fmt({ status: m.status, defaultRivals: m.status === "ready" && m.defaultRivals, rivals: m.status === "ready" ? m.rivals : null, expected: expect.length, titled: /default rivals/.test(html) }) };
   },
@@ -2732,6 +2734,93 @@ const RUNNERS: Record<string, Runner> = {
     st.closeFeedback();
     const pass = offer === "Flags" && after.view.label === "Flags" && after.openedAt === at && appVersion({ NODE_ENV: "production" }) === "unknown" && appVersion({ RENDER_GIT_COMMIT: "abc", NODE_ENV: "production" }) === "abc";
     return { pass, detail: fmt({ offer, movedTo: after.view.label, draftKept: after.openedAt === at, versionWithout: appVersion({ NODE_ENV: "production" }) }) };
+  },
+
+  // ------------------------------------------------------------ 0.8 SMT feedback round 2
+  async setDrivesOverview() {
+    const { threeSets, overviewFor } = await import("../docs/v0.8/audit_scripts/smt_fb2/sets");
+    const { school, sets } = await threeSets("110110");
+    const os = await Promise.all(sets.map((s) => overviewFor(school, s)));
+    const out: string[] = [];
+    let pass = true;
+    os.forEach((o, i) => {
+      const s = sets[i];
+      const n = s.urns.length;
+      const ranks = o.rows.filter((r) => r.set);
+      const ok =
+        ranks.every((r) => r.set!.of <= n + 1 && r.set!.label.startsWith(s.label)) &&
+        o.now.setSizes.every((b) => b.of <= n + 1) &&
+        Object.keys(o.schools).length === n + 1 && s.urns.every((u) => u in o.schools) &&
+        o.trends.results.every((t) => t.band.every((b) => b.n <= n)) &&
+        o.trends.roll.lines.filter((l) => l.key.startsWith("set-")).every((l) => l.label.startsWith(o.set.short)) &&
+        !o.trends.roll.lines.some((l) => l.key === "la" || l.key === "england") &&
+        o.trends.market.status === "ready" && o.trends.market.rivals === n && o.trends.market.setRivals === s.label;
+      if (!ok) pass = false;
+      out.push(`${s.label}: ${ok ? "follows" : "DOES NOT follow"} (A-level ${o.rows.find((r) => r.key === "A level::aps_per_entry")?.set?.rank}/${o.rows.find((r) => r.key === "A level::aps_per_entry")?.set?.of}, market ${o.trends.market.status === "ready" ? o.trends.market.school.at(-1)?.value?.toFixed(1) : "-"}%)`);
+    });
+    // The Scorecard's regional and England ranks don't move with the set.
+    const key = (o: (typeof os)[number]) => o.rows.map((r) => `${r.key}:${r.region?.rank}/${r.region?.of}:${r.england?.rank}/${r.england?.of}`).join("|");
+    const fixed = os.every((o) => key(o) === key(os[0]));
+    // The page names the set: The school now and the market title.
+    const c = await smtCase("110110");
+    const now = textOf(await smtRender("110110", "DV-SMT-O-NOW"));
+    const mk = textOf(await smtRender("110110", "DV-SMT-O-MARKET-LINE"));
+    const named = now.includes(`in ${c.overview.set.short}`) && mk.includes(c.overview.set.label) && !/Reading and nationally|national rank/.test(now);
+    pass = pass && fixed && named;
+    return { pass, detail: `${out.join("; ")}; region/England ranks fixed=${fixed}; named=${named}` };
+  },
+  async rollIndexedSet() {
+    const { schoolCensus } = await import("../src/lib/smt/school");
+    const lp = await smtCase("110110");
+    const ch = await smtCase("137625");
+    const L = lp.overview.trends.roll.lines;
+    const years = L[0].pts.map((p) => p.year);
+    // The set's average boarding, recomputed: the set's schools with boarders in every year shown.
+    const cs = await Promise.all(lp.set.urns.map((u) => schoolCensus(u)));
+    const b = cs.map((c) => years.map((y) => c.find((x) => x.period === y)?.boarding?.boarders ?? 0)).filter((s) => s.every((v) => v > 0));
+    const avg = years.map((_, i) => b.reduce((t, s) => t + s[i], 0) / b.length);
+    const sb = L.find((l) => l.key === "set-boarding");
+    const avgOk = !!sb && sb.actual!.every((p, i) => Math.abs((p.value ?? NaN) - avg[i]) < 1e-9);
+    const html = await smtRender("110110", "DV-SMT-O-ROLL-LINE");
+    const dotted = /stroke-dasharray="2 3"/.test(html);
+    const keys = (o: typeof lp.overview) => o.trends.roll.lines.map((l) => l.key);
+    const chaseBoarders = await Promise.all(ch.set.urns.map(async (u) => (await schoolCensus(u)).at(-1)?.boarding?.boarders ?? 0));
+    const pass = ["day", "boarding", "set-day", "set-boarding"].every((k) => keys(lp.overview).includes(k)) && avgOk && dotted && !keys(lp.overview).some((k) => k === "la" || k === "england") &&
+      chaseBoarders.every((v) => v === 0) && keys(ch.overview).join(",") === "school,set-day";
+    return { pass, detail: fmt({ leighton: keys(lp.overview).join("/"), boardingAvg: avgOk ? `${b.length} schools, recomputed` : "MISMATCH", dotted, chase: keys(ch.overview).join("/"), chaseSetBoarders: chaseBoarders.reduce((a, v) => a + v, 0) }) };
+  },
+  async marketFollowsSet() {
+    const c = await smtCase("110110");
+    const m = c.overview.trends.market;
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const all = ["110110", ...c.set.urns];
+    const census = await cachedCensus(all);
+    const latest = m.status === "ready" ? m.school.at(-1)! : null;
+    const y7 = (u: string) => (latest ? cohortAt(census.get(u)?.table ?? new Map(), 11, latest.year) ?? 0 : 0);
+    const share = (y7("110110") / all.reduce((t, u) => t + y7(u), 0)) * 100;
+    const html = textOf(await smtRender("110110", "DV-SMT-O-MARKET-LINE"));
+    const pass = m.status === "ready" && m.rivals === c.set.urns.length && m.setRivals === c.set.label && Math.abs((latest?.value ?? NaN) - share) < 1e-6 && html.includes(`against ${c.set.label}`);
+    return { pass, detail: fmt({ rivals: m.status === "ready" ? m.rivals : null, set: c.set.urns.length, share: round(latest?.value ?? null, 2), recomputed: round(share, 2), titled: html.includes(`against ${c.set.label}`) }) };
+  },
+  async feedbackPage() {
+    const { feedbackPayload } = await import("../src/components/feedback/FeedbackWindow");
+    const { feedbackRow } = await import("../src/lib/feedback-server");
+    const st = await import("../src/components/feedback/store");
+    const { pageKey, feedbackColour, scopeKey } = await import("../src/lib/view-ref");
+    const c = await smtCase("110110");
+    const surface = { product: "smt" as const, dashboard: { id: "vicdata.smt.overview", name: "SMT Overview", versionId: null }, scope: { kind: "school" as const, urn: "110110", name: c.school.name }, role: "smt", viewAs: true, peek: false, noteScope: "110110", state: { set: c.set.label, level: "whole" } };
+    st.resetFeedbackStore({ status: "ready", allowed: true, items: [] });
+    st.openPageFeedback(surface);
+    const t = st.feedbackSnapshot().target!;
+    const p = feedbackPayload(surface, t, { kinds: ["layout"], importance: null, scope: null, applies: null, where: [], area: ["set_bar"], saw: "", expected: "", text: "The set bar" }, { path: "/teacher/smt", search: "", width: 1440, theme: "dark" });
+    const row = feedbackRow(p, "test");
+    const refused = "error" in feedbackRow({ ...p, panel_id: "p" }, "test");
+    st.addOwnItem({ id: "x", number: 1, created_at: "", view_key: t.viewKey, school_urn: "110110", school_name: null, group_id: null, group_name: null, status: "new", looks_good: false, kinds: ["layout"], has_text: true, excerpt: "" });
+    const colour = feedbackColour(st.marksFor(st.feedbackSnapshot().items, pageKey("vicdata.smt.overview")), scopeKey(surface.scope));
+    st.closeFeedback();
+    const pass = t.page === true && t.viewKey === "page:vicdata.smt.overview" && "row" in row && row.row.panel_id === null && JSON.stringify(row.row.area) === '["set_bar"]' && row.row.view_as === true && refused && colour === "open";
+    return { pass, detail: fmt({ key: t.viewKey, panel: "row" in row ? String(row.row.panel_id) : "-", area: "row" in row ? JSON.stringify(row.row.area) : "-", shapeHeld: refused, colour }) + " (the database half: supabase/tests/v08_feedback_page_pglite.mjs)" };
   },
 };
 

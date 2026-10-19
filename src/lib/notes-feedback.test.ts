@@ -1,4 +1,6 @@
 // Run: npx -y tsx --test --test-force-exit src/lib/notes-feedback.test.ts
+// 0.8 SMT feedback round 2 (section 6): a view item carries its panel (a page item has none), so the items
+// below name one.
 // The panels' children are render functions, passed as the `children` prop so `next build`'s type check
 // accepts them (as a createElement argument it doesn't): react/no-children-prop is off for this file.
 /* eslint-disable react/no-children-prop */
@@ -152,7 +154,7 @@ test("R-FEEDBACK-COLOURS: yellow, green, yellow wins, monochrome once done", () 
 
 // ----------------------------------------------------------------------------------- the item
 
-const FORM: FormState = { kinds: ["wrong_figure"], importance: "before_demo", scope: "this_school", applies: "this_view", where: ["figure"], saw: "62%", expected: "about 58%", text: "Chemistry's share looks high" };
+const FORM: FormState = { kinds: ["wrong_figure"], importance: "before_demo", scope: "this_school", applies: "this_view", where: ["figure"], area: [], saw: "62%", expected: "about 58%", text: "Chemistry's share looks high" };
 
 test("R-FEEDBACK-CONTEXT: the item carries every recorded field, and Open restores the address", () => {
   const p = feedbackPayload(SURFACE, { view: { panelId: "p-large", panelName: "Large view", instanceId: "v-subjects", dataview: "DV-SMT-A-SUBJECTS", label: "Subjects" }, viewKey: viewKey("vicdata.smt.academic", "p-large", "v-subjects") }, FORM, { path: "/teacher/smt/academic", search: "?level=gcse&area=sciences&fb=F-1&lookAs=1&as=smt&peek=1", width: 1440, theme: "dark" });
@@ -187,11 +189,11 @@ test("R-FEEDBACK-CONTEXT: the item carries every recorded field, and Open restor
 test("an item needs text or Looks good; a bare Looks good is valid", () => {
   assert.equal(canSend({ ...FORM, text: "", kinds: [] }), false);
   assert.equal(canSend({ ...FORM, text: "", kinds: ["looks_good"] }), true);
-  const bare = feedbackRow({ product: "smt", dashboard_id: "d", view_key: "d:p:v", school_urn: "110110", body: "", kinds: ["looks_good"] }, "dev");
+  const bare = feedbackRow({ product: "smt", dashboard_id: "d", view_key: "d:p:v", panel_id: "p", school_urn: "110110", body: "", kinds: ["looks_good"] }, "dev");
   assert.ok("row" in bare && bare.row.looks_good === true);
-  assert.deepEqual(feedbackRow({ product: "smt", dashboard_id: "d", view_key: "d:p:v", school_urn: "110110", body: " ", kinds: [] }, "dev"), { error: "Write something, or choose Looks good." });
+  assert.deepEqual(feedbackRow({ product: "smt", dashboard_id: "d", view_key: "d:p:v", panel_id: "p", school_urn: "110110", body: " ", kinds: [] }, "dev"), { error: "Write something, or choose Looks good." });
   assert.ok("error" in feedbackRow({ product: "elsewhere", dashboard_id: "d", view_key: "k", school_urn: "1", body: "x" }, "dev"));
-  const noFigure = feedbackRow({ product: "smt", dashboard_id: "d", view_key: "k", school_urn: "1", body: "x", kinds: ["wording"], saw: "1", expected: "2" }, "dev");
+  const noFigure = feedbackRow({ product: "smt", dashboard_id: "d", view_key: "k", panel_id: "p", school_urn: "1", body: "x", kinds: ["wording"], saw: "1", expected: "2" }, "dev");
   assert.ok("row" in noFigure && noFigure.row.saw === null, "I see / I expected only with 'wrong figure'");
 });
 
@@ -232,7 +234,7 @@ const call = async (method: "GET" | "POST", who: string, body?: unknown) => {
   const req = new NextRequest("http://app.test/api/feedback", { method, headers: { authorization: `Bearer tok-${who}`, "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
   return method === "GET" ? r.GET(req) : r.POST(req);
 };
-const ITEM = { product: "smt", dashboard_id: "vicdata.smt.academic", view_key: "vicdata.smt.academic:p-large:v-subjects", school_urn: "110110", body: "", kinds: ["looks_good"] };
+const ITEM = { product: "smt", dashboard_id: "vicdata.smt.academic", view_key: "vicdata.smt.academic:p-large:v-subjects", panel_id: "p-large", school_urn: "110110", body: "", kinds: ["looks_good"] };
 
 test("R-FEEDBACK-AUDIENCE: at 'admins' a member gets no icon and the server refuses their item", async () => {
   audience = "admins";

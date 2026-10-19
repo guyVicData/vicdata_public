@@ -14,6 +14,7 @@ import type { DashboardConfig } from "@/catalogue/types";
 import { loadFeedback } from "./store";
 import { FeedbackWindow } from "./FeedbackWindow";
 import { FeedbackOpenBanner } from "./FeedbackOpenBanner";
+import { useRegisterPage } from "./PageFeedback";
 
 type NotesApi = { enabled: boolean; get: (key: string) => string | null; save: (key: string, body: string) => Promise<void> };
 type SurfaceValue = { surface: ViewSurface; config: DashboardConfig | null; notes: NotesApi };
@@ -34,7 +35,7 @@ const subscribeHosts = (l: () => void) => {
   return () => hostListeners.delete(l);
 };
 const firstHost = () => hosts[0] ?? 0;
-function useFirstHost(): boolean {
+export function useFirstHost(): boolean {
   const [id] = useState(() => nextHost++);
   useEffect(() => {
     hosts = [...hosts, id];
@@ -63,6 +64,8 @@ export function ViewSurfaceProvider({ surface, config = null, children }: { surf
     void loadFeedback();
   }, []);
   const host = useFirstHost();
+  // Section 6: the page's "Feedback on this page" is about the page the first surface is on.
+  useRegisterPage(surface, host);
 
   const map = notes && notes.scope === scope ? notes.map : null;
   const save = useCallback(

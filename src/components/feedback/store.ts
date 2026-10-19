@@ -6,7 +6,7 @@
 // shared by every panel, so a view's icon changes the moment an item is sent.
 import { useSyncExternalStore } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import type { FeedbackMark, FeedbackStatus, ViewRef, ViewSurface } from "@/lib/view-ref";
+import { pageKey, type FeedbackMark, type FeedbackStatus, type ViewRef, type ViewSurface } from "@/lib/view-ref";
 
 export type OwnItem = {
   id: string;
@@ -25,16 +25,20 @@ export type OwnItem = {
 };
 
 /** What the window is open on: the view, the page it is on, and the panel's element (to keep in view). */
-export type FeedbackTarget = { surface: ViewSurface; view: ViewRef; viewKey: string; anchor: HTMLElement | null; openedAt: number };
+// 0.8 SMT feedback round 2 (section 6): `page` -- the window is on the whole page (no panel or view; its
+// view is the page's name, its key pageKey).
+export type FeedbackTarget = { surface: ViewSurface; view: ViewRef; viewKey: string; anchor: HTMLElement | null; openedAt: number; page?: boolean };
 
 // 0.8 SMT feedback round 1 (F-5, R-FEEDBACK-FOLLOWS-VIEW): the view each panel is showing now, keyed by
 // dashboard and panel (panelKey), so the window can see when its panel's rail has moved on.
 export type PanelView = Omit<FeedbackTarget, "openedAt">;
 export const panelKey = (surface: ViewSurface, panelId: string) => `${surface.dashboard.id}:${panelId}`;
 
-type State = { status: "idle" | "loading" | "ready"; allowed: boolean; items: OwnItem[]; target: FeedbackTarget | null; panels: Record<string, PanelView> };
+// `page`: the page's own surface, for "Feedback on this page" (set by the page's ViewSurfaceProvider, or
+// PageSurface on a page without views).
+type State = { status: "idle" | "loading" | "ready"; allowed: boolean; items: OwnItem[]; target: FeedbackTarget | null; panels: Record<string, PanelView>; page: ViewSurface | null };
 
-let state: State = { status: "idle", allowed: false, items: [], target: null, panels: {} };
+let state: State = { status: "idle", allowed: false, items: [], target: null, panels: {}, page: null };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 const setState = (next: Partial<State>) => {
@@ -45,7 +49,7 @@ const subscribe = (l: () => void) => {
   listeners.add(l);
   return () => listeners.delete(l);
 };
-const SERVER: State = { status: "idle", allowed: false, items: [], target: null, panels: {} };
+const SERVER: State = { status: "idle", allowed: false, items: [], target: null, panels: {}, page: null };
 
 export async function feedbackToken(): Promise<string | null> {
   const { data } = await createBrowserSupabaseClient().auth.getSession();
@@ -108,6 +112,11 @@ export function movedView(s: Pick<State, "target" | "panels">): PanelView | null
   const live = s.panels[panelKey(s.target.surface, s.target.view.panelId)];
   return live && live.viewKey !== s.target.viewKey ? live : null;
 }
+/** Section 6: the page this is (only a change is announced). */
+export function setPageSurface(surface: ViewSurface | null) {
+  if (JSON.stringify(surface) === JSON.stringify(state.page)) return;
+  setState({ page: surface });
+}
 export function closeFeedback() {
   setState({ target: null });
 }
@@ -126,4 +135,9 @@ export function marksFor(items: OwnItem[], viewKey: string): FeedbackMark[] {
 export function resetFeedbackStore(next: Partial<State> = {}) {
   state = { ...SERVER, ...next };
   emit();
+}
+
+/** Section 6 (R-FEEDBACK-PAGE): open the window on the whole page. */
+export function openPageFeedback(surface: ViewSurface) {
+  openFeedback({ surface, view: { panelId: "", panelName: null, instanceId: "", dataview: null, label: surface.dashboard.name }, viewKey: pageKey(surface.dashboard.id), anchor: null, page: true });
 }

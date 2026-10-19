@@ -4,6 +4,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   FEEDBACK_APPLIES,
+  FEEDBACK_AREAS,
   FEEDBACK_IMPORTANCE,
   FEEDBACK_KINDS,
   FEEDBACK_PRIORITIES,
@@ -11,10 +12,11 @@ import {
   FEEDBACK_STATUSES,
   FEEDBACK_TYPES,
   FEEDBACK_WHERE,
+  isPageKey,
   type ViewProduct,
 } from "./view-ref";
 
-const PRODUCTS: ViewProduct[] = ["teacher", "smt", "admissions", "group", "meeting", "custom"];
+const PRODUCTS: ViewProduct[] = ["teacher", "smt", "admissions", "group", "meeting", "custom", "home", "dataview"];
 
 /** Postgres / PostgREST's "the table or function isn't there": the migration isn't applied. */
 export function feedbackMissing(error: { code?: string; message?: string } | null | undefined): boolean {
@@ -38,6 +40,11 @@ export function feedbackRow(input: unknown, appVersion: string | null): { row: R
   const dashboardId = str(b.dashboard_id, 200);
   const viewKey = str(b.view_key, 600);
   if (!product || !dashboardId || !viewKey) return { error: "Which view is this about? (product, dashboard and view are required)" };
+  // Section 6 (R-FEEDBACK-PAGE): a page item has no panel and a page key; a view item has a panel and a view key.
+  const panelId = str(b.panel_id, 200);
+  const page = isPageKey(viewKey);
+  if (page !== !panelId) return { error: page ? "A page item has no panel." : "Which panel is this view in?" };
+  const area = page ? picks(b.area, ids(FEEDBACK_AREAS)) : [];
   const schoolUrn = str(b.school_urn, 40);
   const groupId = str(b.group_id, 80);
   if (!schoolUrn && !groupId) return { error: "Which school or group is this about?" };
@@ -61,11 +68,11 @@ export function feedbackRow(input: unknown, appVersion: string | null): { row: R
       dashboard_id: dashboardId,
       dashboard_name: str(b.dashboard_name, 200),
       dashboard_version_id: str(b.dashboard_version_id, 80),
-      panel_id: str(b.panel_id, 200),
-      panel_name: str(b.panel_name, 200),
-      view_instance_id: str(b.view_instance_id, 200),
-      dataview_id: str(b.dataview_id, 120),
-      view_label: str(b.view_label, 300),
+      panel_id: page ? null : panelId,
+      panel_name: page ? null : str(b.panel_name, 200),
+      view_instance_id: page ? null : str(b.view_instance_id, 200),
+      dataview_id: page ? null : str(b.dataview_id, 120),
+      view_label: page ? null : str(b.view_label, 300),
       view_key: viewKey,
       state,
       page_path: str(b.page_path, 500),
@@ -82,7 +89,9 @@ export function feedbackRow(input: unknown, appVersion: string | null): { row: R
       applies_to: pick(b.applies_to, ids(FEEDBACK_APPLIES)),
       saw: kinds.includes("wrong_figure") ? str(b.saw, 500) : null,
       expected: kinds.includes("wrong_figure") ? str(b.expected, 500) : null,
-      where_in_view: picks(b.where_in_view, ids(FEEDBACK_WHERE)),
+      where_in_view: page ? [] : picks(b.where_in_view, ids(FEEDBACK_WHERE)),
+      // Only on a page item, so a view item is sent as before (and works before the migration is applied).
+      ...(page ? { area } : {}),
     },
   };
 }

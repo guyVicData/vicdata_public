@@ -15,6 +15,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { createPortal } from "react-dom";
 import {
   FEEDBACK_APPLIES,
+  FEEDBACK_APPLIES_PAGE,
+  FEEDBACK_AREAS,
   FEEDBACK_IMPORTANCE,
   FEEDBACK_KINDS,
   FEEDBACK_SCOPE,
@@ -47,8 +49,10 @@ function themeOf(): "light" | "dark" {
 }
 
 /** The item as the page records it (the server adds the app version, the author and the status). */
-export function feedbackPayload(surface: ViewSurface, target: Pick<FeedbackTarget, "view" | "viewKey">, form: FormState, page: { path: string; search: string; width: number; theme: "light" | "dark" }) {
+export function feedbackPayload(surface: ViewSurface, target: Pick<FeedbackTarget, "view" | "viewKey" | "page">, form: FormState, page: { path: string; search: string; width: number; theme: "light" | "dark" }) {
   const sc = surface.scope;
+  // Section 6 (R-FEEDBACK-PAGE): a page item records the same context with no panel or view, and its areas.
+  const whole = !!target.page;
   return {
     product: surface.product,
     view_as: surface.viewAs || surface.peek,
@@ -61,11 +65,11 @@ export function feedbackPayload(surface: ViewSurface, target: Pick<FeedbackTarge
     dashboard_id: surface.dashboard.id,
     dashboard_name: surface.dashboard.name,
     dashboard_version_id: surface.dashboard.versionId,
-    panel_id: target.view.panelId,
-    panel_name: target.view.panelName ?? null,
-    view_instance_id: target.view.instanceId,
-    dataview_id: target.view.dataview,
-    view_label: target.view.label,
+    panel_id: whole ? null : target.view.panelId,
+    panel_name: whole ? null : (target.view.panelName ?? null),
+    view_instance_id: whole ? null : target.view.instanceId,
+    dataview_id: whole ? null : target.view.dataview,
+    view_label: whole ? null : target.view.label,
     view_key: target.viewKey,
     state: surface.state,
     page_path: page.path,
@@ -81,12 +85,13 @@ export function feedbackPayload(surface: ViewSurface, target: Pick<FeedbackTarge
     applies_to: form.applies,
     saw: form.kinds.includes("wrong_figure") ? form.saw : null,
     expected: form.kinds.includes("wrong_figure") ? form.expected : null,
-    where_in_view: form.where,
+    where_in_view: whole ? [] : form.where,
+    ...(whole ? { area: form.area } : {}),
   };
 }
 
-export type FormState = { kinds: string[]; importance: string | null; scope: string | null; applies: string | null; where: string[]; saw: string; expected: string; text: string };
-const EMPTY: FormState = { kinds: [], importance: null, scope: null, applies: null, where: [], saw: "", expected: "", text: "" };
+export type FormState = { kinds: string[]; importance: string | null; scope: string | null; applies: string | null; where: string[]; area: string[]; saw: string; expected: string; text: string };
+const EMPTY: FormState = { kinds: [], importance: null, scope: null, applies: null, where: [], area: [], saw: "", expected: "", text: "" };
 
 /** An item needs text or "Looks good". */
 export const canSend = (f: FormState) => f.text.trim().length > 0 || f.kinds.includes("looks_good");
@@ -128,8 +133,8 @@ const fmtDate = (iso: string) => {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 };
 
-function ItemList({ items }: { items: OwnItem[] }) {
-  if (!items.length) return <p className="text-[11.5px] italic text-[var(--muted3)]">Nothing from you on this view yet.</p>;
+function ItemList({ items, page = false }: { items: OwnItem[]; page?: boolean }) {
+  if (!items.length) return <p className="text-[11.5px] italic text-[var(--muted3)]">Nothing from you on this {page ? "page" : "view"} yet.</p>;
   return (
     <ul data-fb-items="" className="flex flex-col gap-1.5">
       {items.map((i) => (
@@ -277,14 +282,18 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
           // otherwise stretch the sheet past the screen's edge.
           { left: 0, width: window.visualViewport?.width ?? window.innerWidth, bottom: 0, height: mode.tall ? "85dvh" : "50dvh" };
   const sc = surface.scope;
-  const where = [view.panelName && view.panelName !== view.label ? view.panelName : null, surface.dashboard.name, sc.name].filter(Boolean).join(" · ");
+  const whole = !!target.page;
+  const where = whole ? "" : [view.panelName && view.panelName !== view.label ? view.panelName : null, surface.dashboard.name, sc.name].filter(Boolean).join(" · ");
+  // Section 6: the page's header reads "This page: SMT Overview · Leighton Park School".
+  const title = whole ? `This page: ${surface.dashboard.name} · ${sc.name}` : view.label;
   const wrong = form.kinds.includes("wrong_figure");
 
   return portal(
     <div
       ref={root}
       role="dialog"
-      aria-label={`Feedback on ${view.label}`}
+      aria-label={`Feedback on ${whole ? "this page" : view.label}`}
+      data-fb-page={whole ? "" : undefined}
       data-feedback-window={mode.kind}
       data-fb-view={target.viewKey}
       onKeyDown={onKey}
@@ -315,8 +324,8 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
       >
         <div className="min-w-0 flex-1">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Feedback on</p>
-          <p data-fb-title="" className="truncate text-[13px] font-semibold">{view.label}</p>
-          <p className="truncate text-[11px] text-[var(--muted2)]">{where}</p>
+          <p data-fb-title="" className="truncate text-[13px] font-semibold">{title}</p>
+          {where && <p className="truncate text-[11px] text-[var(--muted2)]">{where}</p>}
         </div>
         {mode.kind === "float" && (
           <button type="button" onClick={() => setMode({ kind: "dock", width: DOCK_WIDTH })} className="rounded-md border border-[var(--panel-border2)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--muted)] hover:text-[var(--fg)]">
@@ -342,7 +351,7 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
         </div>
       )}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2">
-        <ItemList items={items} />
+        <ItemList items={items} page={whole} />
         <form
           className="mt-2"
           onSubmit={(e) => {
@@ -351,6 +360,7 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
           }}
         >
           <Chips label="What kind" options={FEEDBACK_KINDS} picked={form.kinds} onPick={(kinds) => setForm({ ...form, kinds })} multi />
+          {whole && <Chips label="Area" options={FEEDBACK_AREAS} picked={form.area} onPick={(area) => setForm({ ...form, area })} multi />}
           {wrong && (
             <div className="mt-2 grid grid-cols-2 gap-1.5">
               <input value={form.saw} onChange={(e) => setForm({ ...form, saw: e.target.value })} maxLength={500} placeholder="I see…" aria-label="I see" className="rounded-md border border-[var(--panel-border)] bg-transparent px-2 py-1 text-[12px]" />
@@ -375,8 +385,8 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
           />
           <Chips label="How much it matters" options={FEEDBACK_IMPORTANCE} picked={form.importance ? [form.importance] : []} onPick={(x) => setForm({ ...form, importance: x[0] ?? null })} />
           <Chips label="Scope" options={FEEDBACK_SCOPE} picked={form.scope ? [form.scope] : []} onPick={(x) => setForm({ ...form, scope: x[0] ?? null })} />
-          <Chips label="Applies to" options={FEEDBACK_APPLIES} picked={form.applies ? [form.applies] : []} onPick={(x) => setForm({ ...form, applies: x[0] ?? null })} />
-          <Chips label="Where in the view (optional)" options={FEEDBACK_WHERE} picked={form.where} onPick={(where) => setForm({ ...form, where })} multi />
+          <Chips label="Applies to" options={whole ? FEEDBACK_APPLIES_PAGE : FEEDBACK_APPLIES} picked={form.applies ? [form.applies] : []} onPick={(x) => setForm({ ...form, applies: x[0] ?? null })} />
+          {!whole && <Chips label="Where in the view (optional)" options={FEEDBACK_WHERE} picked={form.where} onPick={(where) => setForm({ ...form, where })} multi />}
           <div className="mt-3 flex items-center gap-2">
             <button
               type="submit"
@@ -386,7 +396,7 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
             >
               {sending ? "Sending…" : "Send"}
             </button>
-            <span className="text-[10.5px] text-[var(--muted3)]">Only VicData sees this, with the view and its settings.</span>
+            <span className="text-[10.5px] text-[var(--muted3)]">Only VicData sees this, with the {whole ? "page" : "view"} and its settings.</span>
           </div>
           {message && (
             <p role="status" data-fb-message={message.tone} className={cx("mt-2 text-[11.5px] font-semibold", message.tone === "ok" ? "text-[var(--fb-good)]" : "text-red-600")}>

@@ -51,8 +51,11 @@ export function RollDirectionWord({ pts }: { pts: Pt[] }) {
 export function RollIndexed({ o, fullscreen, room }: { o: Overview; fullscreen: boolean; room?: number }) {
   const lines = o.trends.roll.lines;
   if (!lines.length || lines[0].pts.filter((p) => p.value !== null).length < 2) return <Empty>Not enough census years to draw a trend.</Empty>;
-  const colour = (k: string) => (k === "school" || k === "day" ? "var(--accent)" : k === "boarding" ? "var(--accent)" : k === "la" ? "var(--adm-grey-soft)" : "var(--adm-grey-2)");
-  const dash = (k: string) => (k === "boarding" ? "5 4" : k === "england" ? "4 3" : undefined);
+  // 0.8 SMT feedback round 2 (F-11): the school's lines in the accent; the set's averages in grey -- day
+  // solid, boarding dotted.
+  const thin = (k: string) => k.startsWith("set-") || k === "la" || k === "england";
+  const colour = (k: string) => (k === "school" || k === "day" || k === "boarding" ? "var(--accent)" : k === "set-day" || k === "la" ? "var(--adm-grey-soft)" : "var(--adm-grey-2)");
+  const dash = (k: string) => (k === "boarding" ? "5 4" : k === "set-boarding" ? "2 3" : k === "england" ? "4 3" : undefined);
   const years = lines[0].pts.map((p) => p.year);
   return (
     <>
@@ -62,11 +65,11 @@ export function RollIndexed({ o, fullscreen, room }: { o: Overview; fullscreen: 
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[yr(years[0]), yr(years[years.length - 1])]}
-        series={lines.map((l) => ({ id: l.key, label: l.label, colour: colour(l.key), width: l.key === "la" || l.key === "england" ? 1.6 : 2.6, dashed: dash(l.key), points: l.pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${l.label} ${yr(pt.x)}: ${pt.y?.toFixed(0)}` }))}
+        series={lines.map((l) => ({ id: l.key, label: l.label, colour: colour(l.key), width: thin(l.key) ? 1.8 : 2.6, dashed: dash(l.key), points: l.pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${l.label} ${yr(pt.x)}: ${pt.y?.toFixed(0)}` }))}
       />
       <div className="flex flex-wrap gap-3">
         {lines.map((l) => (
-          <Key key={l.key} swatch={<LineSwatch colour={colour(l.key)} width={14} weight={l.key === "la" || l.key === "england" ? 2 : 2.5} dashed={!!dash(l.key)} />}>
+          <Key key={l.key} swatch={<LineSwatch colour={colour(l.key)} width={14} weight={thin(l.key) ? 2 : 2.5} dashed={!!dash(l.key)} />}>
             {l.label}
           </Key>
         ))}
@@ -161,7 +164,7 @@ export function MarketLine({ o, market, schoolName, fullscreen, room }: { o?: Ov
   const years = m.school.map((p) => p.year);
   return (
     <>
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+, against {m.defaultRivals ? "the 10 nearest schools (default rivals)" : "your rivals"}</div>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+, against {m.setRivals ?? (m.defaultRivals ? "the 10 nearest schools (default rivals)" : "your rivals")}</div>
       <LineChart
         height={fullscreen ? fillHeight(room, 150, 300) : 130}
         yFormat={(v) => `${v.toFixed(1)}%`}

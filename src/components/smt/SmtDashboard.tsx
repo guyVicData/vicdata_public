@@ -8,6 +8,7 @@
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
 import { indexBaseWords, indexedLabel } from "@/lib/index-base";
+import { signedDelta } from "@/lib/signed-delta";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -496,7 +497,8 @@ function rowContext(row: string, c: Ctx): string {
       const results = c.school.phases.gcse && !c.school.phases.igcse && ks4 !== undefined ? `results ${yearOf(ks4, "ks4")}` : c.school.phases.post16 && ks5 !== undefined ? `Post-16 results ${yearOf(ks5, "ks5")}` : "";
       return [census !== null ? `January ${census + 1} census` : null, results || null].filter(Boolean).join(" · ");
     }
-    return `indexed to 100, against ${c.school.laName ?? "the LA"} and England`;
+    // 0.8 SMT feedback round 2: the trends compare with the selected set.
+    return `against ${c.set.label}`;
   }
   if (c.dash === "pupils") {
     if (row === "now") return census !== null ? `January ${census + 1} census` : "";
@@ -639,7 +641,8 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-O-MARKET-LINE":
     case "DV-SMT-O-MARKET-TABLE":
       // F-7: the tag says when the rivals are Admissions' default.
-      return { tag: "From Admissions", context: c.overview.status === "ready" && c.overview.data.trends.market.status === "ready" && c.overview.data.trends.market.defaultRivals ? `read-only · ${SMT_NOTES.marketDefaultTag}` : "read-only" };
+      // F-9: the rivals are the selected set; the tag names it.
+      return { tag: "From Admissions", context: `read-only · against ${c.set.label}` };
     case "DV-SMT-A-NOW":
       return { tag: "Current", context: levelLabel(c.level, areaLabelOf(c)) };
     case "DV-SMT-A-AREAS":
@@ -775,9 +778,10 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       const o = c.overview.status === "ready" ? c.overview.data : null;
       const census = o?.now.census !== null && o?.now.census !== undefined ? periodLabel(o.now.census) : "";
       const entry = o?.now.entry?.length
-        ? ` ${o.now.entry.map((t) => smtNote(t.key === "join11" ? "join11Info" : t.key === "net11" ? "net11Info" : "net16Info", { census, now: t.now.toLocaleString("en-GB"), before: (t.before ?? 0).toLocaleString("en-GB") })).join(" ")} ${smtNote("entrySinceInfo", { base: periodLabel(CENSUS_FIRST_PERIOD) })}`
+        ? ` ${o.now.entry.map((t) => smtNote(t.key === "join11" ? "join11Info" : t.key === "net11" ? "net11Info" : "net16Info", { census, now: t.now.toLocaleString("en-GB"), before: (t.before ?? 0).toLocaleString("en-GB"), leaving: signedDelta(-t.value, (x) => Math.abs(x).toLocaleString("en-GB"), { zero: "" }) })).join(" ")} ${smtNote("entrySinceInfo", { base: periodLabel(CENSUS_FIRST_PERIOD) })}`
         : "";
-      return `${SMT_NOTES.size} ${o ? o.p8.text : ""}${entry}`;
+      // F-10: size by phase is against the selected set.
+      return `${smtNote("setSize", { set })} ${o ? o.p8.text : ""}${entry}`;
     }
     case "DV-SMT-O-SCORECARD":
       // F-3, F-4: the set's full name (its column wears the short one), why the trends' years differ,
@@ -788,7 +792,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       return null;
     case "DV-SMT-O-ROLL-LINE":
     case "DV-SMT-O-ROLL-TABLE":
-      return c.overview.status === "ready" ? `${c.overview.data.notes.rollIndexed} ${SMT_NOTES.rollAreaUndercount}` : null;
+      return c.overview.status === "ready" ? c.overview.data.notes.rollIndexed : null;
     case "DV-SMT-O-RESULTS-LINE":
     case "DV-SMT-O-RESULTS-TABLE":
     case "DV-SMT-A-TREND-LINE":
@@ -796,7 +800,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       return withArea(`${smtNote("middleHalf", { setLabel: set })} ${TREND_BASE_NOTE}${igcse}`);
     case "DV-SMT-O-MARKET-LINE":
     case "DV-SMT-O-MARKET-TABLE":
-      return c.overview.status === "ready" && c.overview.data.trends.market.status === "ready" && c.overview.data.trends.market.defaultRivals ? SMT_NOTES.marketDefault : SMT_NOTES.marketShort;
+      return smtNote("marketSet", { set });
     case "DV-SMT-A-NOW":
     case "DV-SMT-A-AREAS":
       return withArea(`${SMT_NOTES.ranks}${igcse}`);
@@ -816,8 +820,11 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-P-ENTRIES":
     case "DV-SMT-P-POOL":
       return SMT_NOTES.pool;
-    case "DV-SMT-P-LEAVING":
-      return ADMISSIONS_NOTES.leaving16;
+    case "DV-SMT-P-LEAVING": {
+      // 0.8 SMT feedback round 2: the same fact as Overview's Net change at 16 (independent schools), signs opposite.
+      const last = c.pupils.status === "ready" ? c.pupils.data.leaving.at(-1) : null;
+      return c.school.independent && last && last.leaving !== null ? `${ADMISSIONS_NOTES.leaving16} ${smtNote("leavingVsNet", { leaving: signedDelta(last.leaving, (x) => Math.abs(x).toLocaleString("en-GB"), { zero: "" }), net: signedDelta(-last.leaving, (x) => Math.abs(x).toLocaleString("en-GB"), { zero: "" }) })}` : ADMISSIONS_NOTES.leaving16;
+    }
     case "DV-SMT-P-MARKET":
       return c.pupils.status === "ready" && c.pupils.data.market.status === "ready" && c.pupils.data.market.defaultRivals ? SMT_NOTES.marketDefault : SMT_NOTES.marketShort;
     case "DV-SMT-P-PHASES":
