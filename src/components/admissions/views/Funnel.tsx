@@ -80,7 +80,7 @@ export function Funnel({ p, fullscreen, room }: { p: PipelineOk; fullscreen: boo
       </div>
       <Waterfall steps={steps} height={fullscreen ? fillHeight(room, 150, 380) : 250} />
       {v.averaged && <div className="text-[10.5px] text-[var(--muted)]">{ADMISSIONS_NOTES.intakeAveraged}</div>}
-      {v.area.boarding && <div className="rounded-[9px] border border-[var(--panel-border)] bg-[var(--box-bg)] px-3 py-2 text-[11.5px] leading-snug text-[var(--chip-fg)]">{ADMISSIONS_NOTES.intakeBoarding}</div>}
+      {v.area.boarding && <div className="rounded-[9px] border border-[var(--panel-border)] bg-[var(--box-bg)] px-3 py-2 text-[11.5px] leading-snug text-[var(--chip-fg)]">{ADMISSIONS_NOTES.intakeBoarding} {ADMISSIONS_NOTES.boardingCensus}</div>}
     </>
   );
 }
