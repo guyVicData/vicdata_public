@@ -193,7 +193,38 @@ The existing re-seed test (`v061_s2_reseed_pglite.mjs`) still passes 16/16.
 
 ## Parity
 
-PARITY_SECTION
+**Parity against `main` (`030d546`): nothing unexpected on screen.** Every difference is an allowed one, listed by item. The run used the branch at `453b44f`. The commits after it touch only the funnel's layout, its boarding note, one class on the x-label row (below), docs and screenshots. All reads went through each tree's own code, read-only. Harness copies, logs and Chrome profiles are in the session scratchpad (`…/scratchpad/parity/`).
+
+| Harness | Pairs | Identical | Allowed | Noise | Unexpected | Failed |
+|---|---|---|---|---|---|---|
+| Admissions, per view (DOM) | 910 | 458 | 452 | 0 | 0 | 0 (128 page loads, 0 errors) |
+| Teacher walker, all 7 case sets | 2,875 | 1,940 | 702 (F-17) | 233 | 0 | 0 (286 / 286 runs) |
+| Teacher public-page SSR (137625, 117037) | 2 | 2 | — | — | 0 | 0 |
+| SMT pages (PNG) | 152 | 136 | 16 (The Chase's Context, 12 km) | 0 | 0 | 0 |
+| SMT pages (DOM) | 152 | 8 | 16 + 128 markup-only (fixed since) | 0 | 0 | 0 |
+| Groups dashboards (DOM and PNG) | 192 | 77 | 114 | 1 PNG (identical on 2 rechecks) | 0 | 0 |
+
+**Admissions:** compared view by view, because each rail's step numbers shift where a view was added.
+- The rails differ only by additions: Local births; girls and boys; the share of Years 7–11.
+- A line view counts as F-12 only if it equals main exactly once the ticks and the middle label are stripped.
+- Every word difference is the round's own: F-12's middle labels, F-14's key, F-15's feeders, F-18's scope line, F-19's rows, F-20's index and average, and F-17's markup.
+
+**Teacher:** the fixtures were byte-identical between the trees.
+- All 702 differing pairs are in the Change, Ranking, Sortable and Trend tables, with equal words and size.
+- 611 are one row band and 62 one narrow column (YearTable's focus column). The other 29 are under 8/255.
+- That is F-17's tint.
+
+**SMT:**
+- **Fixtures:** they differ only in The Chase's Context (5 km → 12 km) and the catchment answer. Leighton Park's Context is unchanged at 15 km.
+- **The 128 markup-only differences:** SMT draws with the Admissions line chart, and F-12 had added a `relative` class to its x-label row even where no middle label draws. The pixels were identical. It is now added only when a middle label draws (`charts.tsx`). With that class stripped, all 128 are identical.
+- **Not in the walk:** the Area pill's new "how" line, because the walk keeps the menu closed.
+
+**Groups:**
+- **The projection table:** Harris's 58 state schools move off 5 km to their density radius, from 2 to 19 km; 26 land on the 2 km floor (dense London). Dukes' 25 stay at 15 km.
+- **On screen:** F-17's tint on the group's own row.
+- **The noise:** `harris_schools_dark_1440_s2` flaked once, as it did in the last parity run.
+
+**Not covered:** the import graph puts three changed files in the Data View's client graph: `src/catalogue/admissions.ts`, `dashboards/admissions.ts` and `notes.ts`. These are catalogue data and wording the Data View doesn't draw. It has no harness among the four, so that is unverified here. The public page is identical.
 
 ## Guy's commands, in order
 

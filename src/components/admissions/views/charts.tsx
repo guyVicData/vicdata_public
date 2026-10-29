@@ -165,7 +165,7 @@ export function LineChart({
         </svg>
       )}
       {xLabels && (
-        <div className="relative flex justify-between text-[10px] text-[var(--muted)]">
+        <div className={`${ticks?.middle && ticks.xs.length > 2 ? "relative " : ""}flex justify-between text-[10px] text-[var(--muted)]`}>
           <span>{xLabels[0]}</span>
           {ticks?.middle && ticks.xs.length > 2 && (
             <span data-tick-middle="" className="absolute -translate-x-1/2" style={{ left: sx(ticks.xs[Math.floor((ticks.xs.length - 1) / 2)]) }}>
