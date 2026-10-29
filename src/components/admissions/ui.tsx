@@ -10,7 +10,7 @@
 // The boards' semantic colours (green flag, red flag, amber, orange, greys) are
 // Admissions variables below, a dark and a light value each, so both themes read.
 import type { CSSProperties, ReactNode } from "react";
-import { productAccent } from "@/components/shell/accent";
+import { featuredRowVars, productAccent } from "@/components/shell/accent";
 import { RailPanel } from "@/components/shell/RailPanel";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 import { ARROW, flatBand, signedDelta, signedValue } from "@/lib/signed-delta";
@@ -23,6 +23,7 @@ export function admissionsVars(theme: Theme): CSSProperties {
   return {
     "--accent": A.hex,
     "--accent-rgb": A.rgb,
+    ...featuredRowVars("admissions"),
     "--adm-tint": `rgba(${A.rgb},${dark ? 0.12 : 0.14})`,
     "--adm-accent-text": dark ? A.hex : "#0e7490",
     "--adm-on-accent": "#041418",

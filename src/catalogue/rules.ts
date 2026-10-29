@@ -2303,6 +2303,17 @@ export const RULES: Rule[] = [
     origin: "0.8 SMT feedback round 2, section 6 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v2.md)",
     status: "active",
   },
+  {
+    id: "R-TABLE-FEATURED-ROW",
+    statement:
+      "In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes.",
+    why: "Guy (F-17): in a table the featured school's row has to be found at a glance, and the tint says whose dashboard it is.",
+    appliesTo: "every table view: Admissions, Teacher (GCSE, Post-16), SMT, groups",
+    enforcedIn: ["src/app/globals.css", "src/components/shell/accent.ts:FEATURED_ROW_BG", "src/components/admissions/views/Tables.tsx:RivalsTable", "src/components/teacher/SchoolRankingTable.tsx", "src/components/teacher/SortTable.tsx", "src/components/teacher/SeriesViews.tsx:YearTable", "src/components/groups/dash/views.tsx", "src/lib/featured-row.test.ts"],
+    testCase: { urn: "110110", school: "Leighton Park, Admissions Market share, Rivals table at 11+ (and the unit test)", phase: "ks4", expect: "Exactly one tinted row, Leighton Park's, drawn with the token; each product's root names its own token; all five tokens set in the light and both dark blocks.", check: "tableFeaturedRow" },
+    origin: "0.8 Admissions feedback round 1, F-17 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

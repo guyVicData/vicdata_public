@@ -33,6 +33,7 @@ import { CentredOnTarget } from "./CentredOnTarget";
 import { ActiveViewContext } from "@/components/dashboard-config/plan";
 import { useTableLayoutStore, yearColumnsShown, yearsLayoutFor, type YearsLayout } from "./tableLayout";
 import { TrendChart } from "./TrendChart";
+import { FEATURED_ROW_BG } from "@/components/shell/accent";
 
 // D2's scale: an index, where 100 is "the same as the first year shown".
 const INDEX_MEASURE: Measure = {
@@ -508,7 +509,7 @@ export function YearTable({
                 {sorted.map((r) => {
                   const focus = highlight && r.s.key === focusKey;
                   return (
-                    <th key={r.s.key} className="px-1.5 pb-1.5 text-right font-semibold" style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.10)" } : undefined}>
+                    <th key={r.s.key} className="px-1.5 pb-1.5 text-right font-semibold" style={focus ? { background: FEATURED_ROW_BG } : undefined}>
                       <span className="flex min-w-0 items-center justify-end gap-1.5">
                         <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.s.colour }} />
                         <span className={`truncate text-[11px] normal-case ${focus ? "text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.s.label}>{r.s.label}</span>
@@ -525,7 +526,7 @@ export function YearTable({
                   {sorted.map((r) => {
                     const focus = highlight && r.s.key === focusKey;
                     return (
-                      <td key={r.s.key} className={`px-1.5 text-right ${focus ? "font-semibold" : "text-[var(--muted2)]"}`} style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.10)" } : undefined}>
+                      <td key={r.s.key} className={`px-1.5 text-right ${focus ? "font-semibold" : "text-[var(--muted2)]"}`} style={focus ? { background: FEATURED_ROW_BG } : undefined}>
                         {r.s.values[i] === null ? "—" : measure.format(r.s.values[i]!)}
                       </td>
                     );
@@ -587,7 +588,7 @@ export function YearTable({
               key={r.s.key}
               data-highlight={focus ? "" : undefined}
               className="border-b border-[var(--panel-border)] last:border-b-0"
-              style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.10)" } : undefined}
+              style={focus ? { background: FEATURED_ROW_BG } : undefined}
             >
               {leadingRank && (
                 <td className={`${rankWidth} pl-0.5 pr-1 text-right text-[var(--muted3)]`}>{windowed ? rankOf.get(r.s.key)?.toLocaleString() ?? "" : rankOf.get(r.s.key) ?? ""}</td>

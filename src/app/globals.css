@@ -48,6 +48,12 @@
   /* 0.8 notes and feedback: the one colour a view's note icon takes when it has a note, and the
      feedback icon's two (yellow: open feedback; green: "Looks good"). Monochrome otherwise. */
   --note-on: #2f6fdb; --fb-open: #b7860b; --fb-good: #1f8a4c;
+  /* 0.8 Admissions feedback round 1 (F-17): the featured school's row in every table, one token per
+     product (src/components/shell/accent.ts): the product accent at 18% over the light panel (#fff),
+     20% over the dark one (#131315). Text on it: 15:1 and more light, 11:1 and more dark. A product
+     root names its own as --row-featured; the default is the accent at 14%, as before. */
+  --row-featured-admissions: #d7f7fc; --row-featured-gcse: #daf7ed; --row-featured-post16: #efeafe;
+  --row-featured-smt: #efeafe; --row-featured-groups: #feebdc;
 }
 @media (prefers-color-scheme: dark) {
   #teacher-root:not([data-theme="light"]), body > [data-feedback-window] {
@@ -55,6 +61,8 @@
     --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
     --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
     --note-on: #7aa7ff; --fb-open: #f5c542; --fb-good: #4ade80;
+    --row-featured-admissions: #163940; --row-featured-gcse: #1a392f; --row-featured-post16: #312b43;
+    --row-featured-smt: #312b43; --row-featured-groups: #412c1d;
   }
 }
 #teacher-root[data-theme="dark"] {
@@ -62,6 +70,8 @@
   --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
   --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
   --note-on: #7aa7ff; --fb-open: #f5c542; --fb-good: #4ade80;
+  --row-featured-admissions: #163940; --row-featured-gcse: #1a392f; --row-featured-post16: #312b43;
+  --row-featured-smt: #312b43; --row-featured-groups: #412c1d;
 }
 
 /* 0.8 notes and feedback: while the feedback window is docked (right on a desktop, a bottom sheet on a

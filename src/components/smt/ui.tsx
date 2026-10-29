@@ -18,7 +18,7 @@ export function smtVars(theme: Theme): CSSProperties {
   const dark = theme === "dark";
   return {
     ...admissionsVars(theme),
-    ...accentVars(S),
+    ...accentVars(S, "smt"),
     "--adm-tint": `rgba(${S.rgb},${dark ? 0.12 : 0.14})`,
     "--adm-accent-text": dark ? S.hex : "#6d28d9",
     "--adm-on-accent": "#160f2a",

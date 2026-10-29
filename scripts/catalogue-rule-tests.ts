@@ -2939,6 +2939,32 @@ const RUNNERS: Record<string, Runner> = {
     const pass = t.page === true && t.viewKey === "page:vicdata.smt.overview" && "row" in row && row.row.panel_id === null && JSON.stringify(row.row.area) === '["set_bar"]' && row.row.view_as === true && refused && colour === "open";
     return { pass, detail: fmt({ key: t.viewKey, panel: "row" in row ? String(row.row.panel_id) : "-", area: "row" in row ? JSON.stringify(row.row.area) : "-", shapeHeld: refused, colour }) + " (the database half: supabase/tests/v08_feedback_page_pglite.mjs)" };
   },
+  // ------------------------------------------------------------------ 0.8 Admissions feedback round 1
+  // R-TABLE-FEATURED-ROW (F-17): Leighton Park's Rivals table, drawn from the screen's own figures, tints
+  // exactly one row -- Leighton Park's -- with the featured-row token; each product's root names its own
+  // token, set for light and dark (the unit half: src/lib/featured-row.test.ts).
+  async tableFeaturedRow() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { RivalsTable } = await import("../src/components/admissions/views/Tables");
+    const { admissionsVars } = await import("../src/components/admissions/ui");
+    const { smtVars } = await import("../src/components/smt/ui");
+    const { groupDashVars } = await import("../src/components/groups/dash/GroupDashboard");
+    const { FEATURED_ROW_TOKEN, featuredRowKey } = await import("../src/components/shell/accent");
+    const { readFileSync } = await import("node:fs");
+    const v = await import("../src/lib/admissions/views-api");
+    const m = await v.marketView("110110", v.entryPoint("11+")!, []);
+    const html = renderToStaticMarkup(createElement(RivalsTable, { m, rivals: { status: "loading" }, fullscreen: true }));
+    const rows = html.match(/<tr[^>]*data-featured-row=""[^>]*>[\s\S]*?<\/tr>/g) ?? [];
+    const name = m.schools["110110"]?.name ?? "";
+    const tinted = rows.length === 1 && rows[0].includes("var(--row-featured,") && textOf(rows[0]).includes(name);
+    const named = (x: object) => (x as Record<string, string>)["--row-featured"];
+    const roots = named(admissionsVars("dark")) === "var(--row-featured-admissions)" && named(smtVars("light")) === "var(--row-featured-smt)" && named(groupDashVars("dark")) === "var(--row-featured-groups)" && featuredRowKey("teacher", "ks4") === "gcse" && featuredRowKey("teacher", "ks5") === "post16";
+    const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+    const tokens = Object.values(FEATURED_ROW_TOKEN).every((t) => (css.match(new RegExp(`${t}:\\s*#[0-9a-f]{6}`, "g")) ?? []).length === 3);
+    const pass = tinted && roots && tokens;
+    return { pass, detail: fmt({ featuredRows: rows.length, school: name, schools: m.entryAge.rows.filter((r) => r.period === m.summary.latest).length, roots, tokensLightAndDark: tokens }) };
+  },
 };
 
 // --------------------------------------------------------------------------- main

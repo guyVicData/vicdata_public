@@ -10,7 +10,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Empty, Key, LineSwatch, Lbl, PairTile, Tile, fillHeight } from "@/components/admissions/ui";
 import { LineChart, useWidth } from "@/components/admissions/views/charts";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
-import { productAccent } from "@/components/shell/accent";
+import { FEATURED_ROW_BG, productAccent } from "@/components/shell/accent";
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
 import { periodLabel, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexedLabel } from "@/lib/index-base";
@@ -139,7 +139,7 @@ export function AgainstOthers({ o, average, candidates = [], onNamed, highlightN
           </thead>
           <tbody>
             {a.rows.map((r) => (
-              <tr key={r.key} className={`border-b border-[var(--panel-border)] last:border-0 ${r.kind === "group" ? "bg-[var(--adm-tint)] font-bold" : ""}`}>
+              <tr key={r.key} data-featured-row={r.kind === "group" ? "" : undefined} className={`border-b border-[var(--panel-border)] last:border-0 ${r.kind === "group" ? "font-bold" : ""}`} style={r.kind === "group" ? { background: FEATURED_ROW_BG } : undefined}>
                 <Td>
                   {/* 0.8 IGCSE subjects (follow-up 5): a long set name takes two lines at most, the full name its tooltip. */}
                   <span data-set-name="" title={r.label} className="line-clamp-2 max-w-[22rem]">
@@ -475,7 +475,7 @@ export function SchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; h
 function SchoolTr({ r, on, onHighlight }: { r: SchoolRow; on: boolean; onHighlight: (urn: string) => void }) {
   const phase = r.ages ?? (r.outsideEngland ? "16–19" : "—");
   return (
-    <tr className={`border-b border-[var(--panel-border)] last:border-0 ${on ? "bg-[var(--adm-tint)]" : ""}`} onClick={() => onHighlight(r.urn)}>
+    <tr data-featured-row={on ? "" : undefined} className="border-b border-[var(--panel-border)] last:border-0" style={on ? { background: FEATURED_ROW_BG } : undefined} onClick={() => onHighlight(r.urn)}>
       <Td>
         {r.outsideEngland ? (
           <span>{r.name}</span>
