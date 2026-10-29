@@ -100,10 +100,12 @@ function Waterfall({ steps, height }: { steps: Step[]; height: number }) {
   const step = raw > 200 ? 50 : raw > 50 ? 10 : 5;
   const lo = Math.floor(raw / step) * step;
   const top = hi + span * 0.18;
-  const labelH = 54;
-  const plotH = Math.max(80, height - labelH);
   const W = Math.max(w, 10);
   const col = W / steps.length;
+  // A phone's columns are too narrow for the detail line: it stays in the hover, and the label wraps.
+  const narrow = col < 110;
+  const labelH = narrow ? 34 : 58;
+  const plotH = Math.max(80, height - labelH);
   const bar = Math.min(64, col * 0.56);
   const y = (v: number) => 14 + (plotH - 14) * (1 - (v - lo) / (top - lo || 1));
   return (
@@ -129,11 +131,12 @@ function Waterfall({ steps, height }: { steps: Step[]; height: number }) {
                 <text x={cx} y={yTop - 5} textAnchor="middle" fontSize={12.5} fontWeight={800} fill={s.kind === "end" ? "var(--fg)" : up ? "var(--adm-accent-text)" : "var(--adm-orange)"}>
                   {value}
                 </text>
-                <text x={cx} y={plotH + 15} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--fg)">
-                  {s.label}
-                </text>
-                <foreignObject x={col * i + 2} y={plotH + 19} width={col - 4} height={labelH - 19}>
-                  <div className="text-center text-[9.5px] leading-[1.25] text-[var(--muted)]">{s.sub}</div>
+                <foreignObject x={col * i + 2} y={plotH + 4} width={col - 4} height={labelH - 4}>
+                  <div className="text-center leading-[1.2]">
+                    <div className={`font-bold text-[var(--fg)] ${narrow ? "text-[10px]" : "text-[11px]"}`}>{s.label}</div>
+                    {!narrow && <div className="mt-[2px] text-[9.5px] leading-[1.25] text-[var(--muted)]">{s.sub}</div>}
+                    {narrow && s.kind === "end" && <div className="text-[9.5px] text-[var(--muted)]">{s.sub}</div>}
+                  </div>
                 </foreignObject>
               </g>
             );

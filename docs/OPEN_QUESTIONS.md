@@ -2624,3 +2624,45 @@ This is the round for `docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_pro
 17. **"Applies to"** on a page reads "this page only" or "every dashboard of this kind". These are the same stored values as for a view.
 18. **Coverage:** the inbox lists a "Page" row for each catalogue dashboard, counted apart from its views. A home or the Data View appears once it has an item.
 19. **Before the migration is applied,** sending a page item says "Page feedback needs the database update (20261118090000_v08_feedback_page)". View feedback works as before: view items send no `area`.
+
+## 2026-10-29 — Admissions feedback round 1
+
+This is the round for `docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md` (F-12 to F-21, Leighton Park, all Guy's items of 29 Oct), on `v0.8-admissions-fb1`. Every call below was **decided unattended, for Guy to confirm**, and is tagged with its item. The report is `docs/v0.8/admissions_feedback_round1_report_v1.md`.
+
+**The funnel: "Why did our intake change?" (F-13)**
+1. **F-13, the births source:** LSOA single ages (the ingest's `area_context`) are held from mid-2011 to mid-2024. They don't reach the 2019/20 cohorts' birth years (2008 at 11+, 2003 at 16+), so, as Guy's decision says, the earliest age held stands in: **age 3 at 11+, age 8 at 16+**, at **both** ends (mid-2011 and mid-2017 at 11+), so the two ends are like with like. The bar is labelled "Cohort size", not "Births", whenever it isn't age 0, and the (i) says why. The LA-blend fallback wasn't needed. Alternative: age 0 at the latest end and age 3 at the base, which mixes three years of migration into the births part.
+2. **F-13, the split:** the log-mean (LMDI) split. The three parts always add up to the change exactly, and the order they are taken in doesn't matter (a sequential split would give a different answer for each order). Rounded to whole pupils by largest remainders, so the rounded parts still add up.
+3. **F-13, the ages and years:** area Year 6 is the area's children aged 10 at the mid-year before entry (Year 11: 15), as the ladder maps census ages. The latest year is the earliest of the current census (2025/26), the school's latest census, and the latest LSOA year + 1.
+4. **F-13, small intakes:** "small" is under 30 at either end (`SMALL_INTAKE`). Each end is then a 3-year average: 2019/20 to 2021/22, and the latest three years. Every figure is averaged alike. Neither Leighton Park nor The Chase is small.
+5. **F-13, sex:** the area's population has no girl/boy split, so the funnel and local births are "not split" while the girls/boys filter is on (`ADM_SEX_FILTER`). The old funnel applied the filter to births only (49%/51%).
+6. **F-13, the axis:** the waterfall's bars start a little below the lowest running total, not at 0, so that a −3 on an intake of 47 can be seen. The view says so under the chart ("The bars start at 35, not 0").
+7. **F-13, editable:** the funnel's Area chip changes the radius for this view only (the presets to the school's cap, held in the page's state). The school's usual radius is saved by its School-Admin in SMT Context's Area pill, as since round 4. Admissions has no save button.
+8. **F-13, local births:** indexed to the first year all three lines have, **2012** (ONS's LA estimates start in 2012; the LSOA line starts in 2011 and is drawn from there). The region is the school's region from `school_region_nation`, its LAs from `la_gss_crosswalk.region`. England is the sum of England's LAs at age 0 (the SMT round 3 reader).
+9. **F-13, the rail:** Local births sits next to the funnel, in the Pipeline panel (as "next to the funnel" says), not in the Trends row.
+
+**The catchment rule**
+10. **Same phase:** secondary means teaching 11 and 15 (all-through schools included), primary means Reception to Year 6 ending by 11, and 16+ means starting at 16. A middle school's range (for example 9–13) has no phase here and falls back to 5 km, which the (i) says.
+11. **State schools:** from `nearest_schools` (the same 400 candidates Admissions' defaults read: academies, free schools and LA-maintained schools). It holds no special schools or colleges, so a 16+ college's density radius counts sixth-form schools only.
+12. **Rounding:** the 5th school's distance, rounded **up** to a whole km ("the smallest radius holding" it), from 2 km to the cap. **The Chase: 11.07 km → 12 km** (it was 5 km). Every state school's SMT Context moves from 5 km to its density radius unless its School-Admin has saved one. That is the point of the rule, but it is the round's widest change.
+13. **Head office, the groups and Admissions' list editor** use the same rule. The browser's list editor reads `nearest_schools` with the member's own session (public data).
+
+**The other items**
+14. **F-12:** a tick at every year on every Admissions line chart, and the middle year labelled. Local births gains a second row of labels for the entry year. Teacher's and SMT's charts are their own components and unchanged.
+15. **F-14:** the school's dot is sized by its entry cohort now (Year 7 at 11+, Year 12 at 16+), on the same scale as the feeders' pupils a year below entry. It is solid accent (Admissions cyan), drawn last, with a key.
+16. **F-15:** the feeders drawn are the set a year below entry (the feeder table's and map's), without the school. The local shape is unchanged (the youngest rung, primaries at 16+, as its caption says). The school's own shape and its rivals' are now only on Market share.
+17. **F-16:** two lines (girls in the accent, boys dashed), and the girls' share under them against 50%. The view always draws both sexes (the filter doesn't apply), placed last in the cohort rail.
+18. **F-18:** a line under the title, "Schools submitting GCSE results only" (A-level at 16+, KS2 at 4+), rather than a longer title.
+19. **F-19:** each card has a row per age over the **featured profile's** ages (Market share: the school's own 11–17; Pipelines: the local shape's 4–10). An age a rival doesn't teach is an empty row, so the rows line up. Each card is scaled to its own largest year group (shapes, not sizes; the size is the badge).
+20. **F-20, the average:** the rivals with a figure in every year, as SMT round 2's F-11. **In full screen a rival under 30 pupils in the band at its base isn't drawn** (an index on a few pupils reads as a surge) and is named under the chart. Leighton Park: Red Balloon Learner Centre. Crosfields (which opened its senior years) is drawn: its 2019/20 base is over 30. Full screen gains labelled y gridlines.
+21. **F-21:** "Years 7–11" is the entry point's whole band: 11–15 at 11+, 16–18 at 16+ ("Years 12–13"), Reception to Year 6 at 4+. It is the share of the same group as the rest of Market share (rivals plus the school), not the local market.
+
+**F-17 (the featured row, every product)**
+22. **SMT and Post-16 share a value** (violet), because the role and phase accents already share that hex. They are still two tokens.
+23. **The groups' featured rows** are the group's own row in "against" and the school picked on the map. The other per-school group tables list every member, with none picked out.
+24. **Teacher's featured-row text** used the raw accent (about 1.5:1 on the light tint). It now uses the accent mixed toward the text colour, so it reads in both themes.
+25. **Teacher KS2** has no accent, so it has no token and keeps the old neutral tint.
+26. **The Data View and the public page** aren't among the products listed, and are unchanged.
+
+**The republish**
+27. **Only the two Admissions dashboards.** Live GCSE Results (version 16), Post-16 Results, SMT Overview and SMT Pupils differ from the code copy, which may be editor changes. The full seed would publish over them. A new `--only` option publishes just Pipelines and Market share. Live Market share was still the 12 Oct seed, so republishing it also brings live two titles that 0.8's audit fixes had corrected in code (Change in share, Entry age band roll).
+28. **The live Funnel** draws whatever the code's view returns for `DV-ADM-P-FUNNEL`, so it shows the new waterfall from the deploy, before the republish. The republish adds Local births, girls and boys and the share of Years 7–11 to the rails, and carries the funnel's new title and spec.
