@@ -9,6 +9,7 @@ import { useMemo, type ReactNode } from "react";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
 import type { MarketView, PipelineOk } from "../api";
 import { Empty, Key, ViewTitle, fillHeight, fmtN, fmtSigned } from "../ui";
+import { rollRadius } from "@/lib/map-radius";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 
@@ -21,10 +22,16 @@ const THIRDS = ["#a5f3fc", "#22d3ee", "#0e7490"];
 
 // 0.7 admissions editor s2: `colour` -- "change" (the feeder flags: focus, red flag, neither) or
 // "value" (pupils at the age, in thirds of this set). Either way each school is sized by its pupils.
+// 0.8 Admissions fb1 (F-14): the school being fed is on the map too -- a solid accent dot, drawn last,
+// sized by its latest entry cohort (Year 7) on the feeders' own scale, so its intake reads against theirs.
 export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: PipelineOk; fullscreen: boolean; room?: number; colour?: "change" | "value" }) {
   const rows = useMemo(() => p.feederTable.rows.filter((r) => r.easting !== null && r.northing !== null), [p]);
+  const self = p.school.easting !== null && p.school.northing !== null ? { urn: p.school.urn, name: p.school.name, easting: p.school.easting, northing: p.school.northing, roll: p.now.cohort } : null;
   // One members array per answer: the map rebuilds only when the schools change.
-  const members: ConsortiumMapMember[] = useMemo(() => rows.map((r) => ({ urn: r.urn, name: r.name, easting: r.easting!, northing: r.northing!, roll: r.pupils })), [rows]);
+  const members: ConsortiumMapMember[] = useMemo(() => [...rows.map((r) => ({ urn: r.urn, name: r.name, easting: r.easting!, northing: r.northing!, roll: r.pupils })), ...(self ? [self] : [])], [rows, self?.urn, self?.roll]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rolls = members.map((m) => m.roll).filter((r): r is number => r !== null);
+  const [minRoll, maxRoll] = [Math.min(...rolls), Math.max(...rolls)];
+  const entryWord = p.entry.age === 4 ? "Reception" : `Year ${p.entry.age - 4}`;
   const byUrn = new Map(rows.map((r) => [r.urn, r]));
   const sorted = rows.map((r) => r.pupils ?? 0).sort((a, b) => a - b);
   const thirdOf = (v: number | null) => (v === null ? 0 : v <= sorted[Math.floor((sorted.length - 1) / 3)] ? 0 : v <= sorted[Math.floor((2 * (sorted.length - 1)) / 3)] ? 1 : 2);
@@ -43,12 +50,14 @@ export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: Pipel
         key={colour}
         members={members}
         heightClass={`${room && fullscreen ? "h-full" : fullscreen ? "h-[560px]" : "h-[300px]"} w-full overflow-hidden rounded-[10px] border border-[var(--panel-border)]`}
+        markerOf={(m) => (m.urn === p.school.urn ? { color: ACCENT, fillColor: ACCENT, fillOpacity: 0.9, radius: rollRadius(m.roll, minRoll, maxRoll), weight: 2.5 } : null)}
         colourOf={(m) => {
           if (colour === "value") return THIRDS[thirdOf(byUrn.get(m.urn)?.pupils ?? null)];
           const f = byUrn.get(m.urn)?.flag?.id;
           return f === "feeder_focus" ? UP : f === "feeder_red" ? DOWN : FLAT;
         }}
         tooltipOf={(m) => {
+          if (m.urn === p.school.urn) return `${p.school.name} (you): ${fmtN(p.now.cohort)} in ${entryWord} now`;
           const r = byUrn.get(m.urn)!;
           return `${r.name}: ${fmtN(r.pupils)} aged ${p.feederTable.age} (${fmtSigned(r.changePct, 0)} in two years)${r.flag ? ` · ${r.flag.label}` : ""}`;
         }}
@@ -56,6 +65,7 @@ export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: Pipel
       </MapBox>
       {colour === "value" ? (
         <div className="flex flex-wrap gap-3">
+          {self && <YouKey word={entryWord} />}
           {(["Fewest pupils (a third of the set)", "The middle third", "Most pupils"] as const).map((l, i) => (
             <Key key={l} swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: THIRDS[i] }} />}>
               {l}
@@ -64,6 +74,7 @@ export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: Pipel
         </div>
       ) : (
       <div className="flex flex-wrap gap-3">
+        {self && <YouKey word={entryWord} />}
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: UP }} />}>Rising or stable (focus)</Key>
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: DOWN }} />}>Falling faster than the area (red flag)</Key>
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: FLAT }} />}>Neither</Key>
@@ -72,6 +83,10 @@ export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: Pipel
     </>
   );
 }
+
+const YouKey = ({ word }: { word: string }) => (
+  <Key swatch={<span data-you-key="" className="h-[9px] w-[9px] rounded-full" style={{ background: ACCENT }} />}>You, sized by your {word} now</Key>
+);
 
 // 0.7 admissions editor s2: `colour` -- "value" (by sector: state or independent, the preset) or
 // "change" (each school's trend at the entry age since last year, as the ranked bars' arrow).

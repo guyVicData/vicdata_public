@@ -14,7 +14,8 @@ import { kmWord, type Catchment } from "@/lib/smt/catchment";
 import type { ContextArea } from "@/lib/smt/context";
 import { cx } from "@/components/admissions/ui";
 
-export type CatchmentInfo = { savedKm: number | null; defaultKm: number; capKm: number; presets: number[]; canSave: boolean };
+// 0.8 Admissions fb1: `how` -- how the default was set (catchmentHowWords: by type, or a state school's density).
+export type CatchmentInfo = { savedKm: number | null; defaultKm: number; capKm: number; presets: number[]; canSave: boolean; how?: string };
 
 export function AreaPill({
   area,
@@ -90,7 +91,7 @@ export function AreaPill({
           <div className="flex flex-col gap-1.5 px-3 pb-2.5 pt-1 text-[11px] leading-snug text-[var(--chip-fg)]" data-catchment-usual="">
             {info && (
               <div>
-                {info.savedKm !== null ? smtNote("catchmentSaved", { radius: kmWord(Math.min(info.savedKm, cap)) }) : smtNote("catchmentDefault", { kind, radius: kmWord(info.defaultKm) })}
+                {info.savedKm !== null ? smtNote("catchmentSaved", { radius: kmWord(Math.min(info.savedKm, cap)) }) : info.how ? <span data-catchment-how="">{info.how}</span> : smtNote("catchmentDefault", { kind, radius: kmWord(info.defaultKm) })}
                 {catchment?.capped && <> {smtNote("catchmentCapped", { saved: kmWord(info.savedKm ?? 0), cap: kmWord(cap) })}</>}
               </div>
             )}

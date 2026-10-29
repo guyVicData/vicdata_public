@@ -66,7 +66,10 @@ export type Series = { id: string; label: string; colour: string; width?: number
 export type Band = { id: string; colour: string; opacity?: number; points: { x: number; lo: number | null; hi: number | null }[] };
 export type Marker = { x: number; label: string };
 
-/** The boards' row-2 line chart: an axis line, optional dashed reference, lines, first/last year labels. */
+/** The boards' row-2 line chart: an axis line, optional dashed reference, lines, first/last year labels.
+ * 0.8 Admissions fb1 (F-12): `ticks` -- a tick on the axis at every x (each year), and the middle one
+ * labelled too, so an entry year can be found by eye. Every Admissions line view passes it. `xLabel2`
+ * is a second line of labels under the first (Local births: the Year 7 entry those births reach). */
 export function LineChart({
   series,
   height,
@@ -77,6 +80,8 @@ export function LineChart({
   endLabels = false,
   bands = [],
   markers = [],
+  ticks,
+  xLabels2,
   children,
 }: {
   series: Series[];
@@ -89,6 +94,9 @@ export function LineChart({
   yFormat?: (v: number) => string;
   // 0.7 admissions editor s2: each line's name and last value at its end (a look option, off by default).
   endLabels?: boolean;
+  // The x of every tick (a year each) and the label of the middle one.
+  ticks?: { xs: number[]; middle: string | null } | null;
+  xLabels2?: { caption: string; labels: [string, string, string | null] } | null;
   children?: ReactNode;
 }) {
   const [ref, w] = useWidth<HTMLDivElement>();
@@ -105,6 +113,7 @@ export function LineChart({
       {w > 0 && (
         <svg width={W} height={height} role="img" aria-label={series.map((s) => s.label).join(", ")}>
           <line x1={0} x2={W} y1={height - 1} y2={height - 1} stroke="var(--adm-axis)" />
+          {ticks?.xs.map((x) => <line key={`t-${x}`} data-tick={x} x1={sx(x)} x2={sx(x)} y1={height - 1} y2={height - 6} stroke="var(--adm-grey-line)" />)}
           {reference && <line x1={0} x2={W} y1={sy(reference.y)} y2={sy(reference.y)} stroke="var(--adm-grid)" strokeDasharray="2 4" />}
           {bands.map((b) => {
             const pts = b.points.filter((p) => p.lo !== null && p.hi !== null) as { x: number; lo: number; hi: number }[];
@@ -145,11 +154,28 @@ export function LineChart({
         </svg>
       )}
       {xLabels && (
-        <div className="flex justify-between text-[10px] text-[var(--muted)]">
+        <div className="relative flex justify-between text-[10px] text-[var(--muted)]">
           <span>{xLabels[0]}</span>
+          {ticks?.middle && ticks.xs.length > 2 && (
+            <span data-tick-middle="" className="absolute -translate-x-1/2" style={{ left: sx(ticks.xs[Math.floor((ticks.xs.length - 1) / 2)]) }}>
+              {ticks.middle}
+            </span>
+          )}
           <span>{xLabels[1]}</span>
         </div>
       )}
+      {xLabels2 && (
+        <div data-x-labels2="" className="relative flex justify-between text-[10px] text-[var(--muted)]">
+          <span>{xLabels2.labels[0]}</span>
+          {xLabels2.labels[2] && ticks && ticks.xs.length > 2 && (
+            <span className="absolute -translate-x-1/2" style={{ left: sx(ticks.xs[Math.floor((ticks.xs.length - 1) / 2)]) }}>
+              {xLabels2.labels[2]}
+            </span>
+          )}
+          <span>{xLabels2.labels[1]}</span>
+        </div>
+      )}
+      {xLabels2 && <div className="text-center text-[10px] text-[var(--muted)]">{xLabels2.caption}</div>}
     </div>
   );
 }
@@ -184,4 +210,12 @@ export function DivergingBar({ value, max, positive = "var(--accent)", negative 
       )}
     </span>
   );
+}
+
+/** F-12: a tick at every year from the first to the last, the middle one labelled with `label`. */
+export function yearTicks(xs: number[], label: (x: number) => string): { xs: number[]; middle: string | null } | null {
+  const ys = Array.from(new Set(xs)).sort((a, b) => a - b);
+  if (ys.length < 2) return null;
+  const all = Array.from({ length: ys[ys.length - 1] - ys[0] + 1 }, (_, i) => ys[0] + i);
+  return { xs: all, middle: all.length > 2 ? label(all[Math.floor((all.length - 1) / 2)]) : null };
 }

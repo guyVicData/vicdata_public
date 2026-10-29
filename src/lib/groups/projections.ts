@@ -1,9 +1,10 @@
 // VicData 0.8 groups r3 (P): each member school's area projection, at its saved catchment (read with the
 // service key: the caller's access to the group is already checked, and the catchment is only read),
-// else its default by type (src/lib/smt/catchment.ts). Server-only.
+// else its default (src/lib/smt/catchment.ts: 15 km independent, the density radius for a state school). Server-only.
 import { createServiceRoleSupabaseClient } from "../supabase";
 import { areaProjection } from "../smt/area-data";
 import { resolveCatchment, type CatchmentSchool } from "../smt/catchment";
+import { stateDensityKm } from "../smt/catchment-density";
 import type { SchoolYearRow } from "./aggregates";
 
 export type ProjectionRow = { urn: string; name: string; km: number; from: "saved" | "default"; ages: string; now: number | null; end: number | null; endYear: number | null; latestYear: number | null; pct: number | null };
@@ -31,7 +32,9 @@ export async function schoolProjections(schools: SchoolYearRow[]): Promise<Proje
     if (!ages.length) return null;
     const lo = Math.max(0, ages[0]);
     const hi = Math.min(18, ages[ages.length - 1]);
-    const cs: CatchmentSchool = { independent: s.establishment_type_group === "Independent schools", high: hi, phases: { post16: f.phases.includes("post16") } };
+    const independent = s.establishment_type_group === "Independent schools";
+    // 0.8 Admissions fb1: a state school's default is its density radius (catchment.ts), as SMT's.
+    const cs: CatchmentSchool = { independent, high: hi, phases: { post16: f.phases.includes("post16") }, densityKm: independent ? null : await stateDensityKm(s.urn, lo, hi) };
     const c = resolveCatchment(cs, null, saved.get(s.urn) ?? null);
     const p = await areaProjection(s.urn, c.km, [lo, hi]).catch(() => null);
     const rows = p?.rows.filter((r) => r.ageFrom === lo && r.ageTo === hi) ?? [];

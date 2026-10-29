@@ -14,6 +14,7 @@ import { productAccent } from "@/components/shell/accent";
 import { RailPanel } from "@/components/shell/RailPanel";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 import { ARROW, flatBand, signedDelta, signedValue } from "@/lib/signed-delta";
+import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 
 const A = productAccent("admissions")!;
 
@@ -40,6 +41,9 @@ export function admissionsVars(theme: Theme): CSSProperties {
     "--adm-orange": dark ? "#f97316" : "#ea580c",
     "--adm-range-edge": dark ? "#2f4b52" : "#a5e4ef",
     "--adm-quadrant": dark ? "#6a6a70" : "#9a9aa2",
+    // 0.8 Admissions fb1 (F-20): one colour per rival in a full-screen line chart (school-series-colours.ts'
+    // palette, in this theme); the school itself stays the accent.
+    ...Object.fromEntries((dark ? PALETTE_DARK : PALETTE_LIGHT).map((c, i) => [`--adm-series-${i}`, c])),
   } as CSSProperties;
 }
 

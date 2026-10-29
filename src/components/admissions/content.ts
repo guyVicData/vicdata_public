@@ -13,12 +13,16 @@ export function admissionsHasContent(dv: string, c: Ctx): boolean {
     switch (dv) {
       case "DV-ADM-P-PIPELINE":
         return p.ladder.past.some((x) => x.pool !== null) || p.ladder.future.some((x) => x.pool !== null);
+      // 0.8 Admissions fb1 (F-13): the intake split and local births draw when their area was read.
       case "DV-ADM-P-FUNNEL":
-        return !p.funnel.length || p.funnel.some((s) => s.value !== null);
+        return p.entry.age <= 4 || p.intake.status === "ok";
+      case "DV-ADM-P-BIRTHS":
+        return p.localBirths.status === "ok";
       case "DV-ADM-P-MAP":
         return p.feederTable.rows.some((r) => r.easting !== null && r.northing !== null);
       case "DV-ADM-P-ENTRY-LINE":
       case "DV-ADM-P-ENTRY-BARS":
+      case "DV-ADM-P-ENTRY-SEX":
         return drawsLine(p.now.series.map((x) => ({ value: x.cohort })));
       case "DV-ADM-P-ENTRY-TABLE":
         return hasPoint(p.now.series.map((x) => ({ value: x.cohort })));
@@ -46,6 +50,10 @@ export function admissionsHasContent(dv: string, c: Ctx): boolean {
         return drawsLine(m.summary.vsIndexed.mine);
       case "DV-ADM-M-SHARE-LINE":
         return drawsLine(m.entryAge.rows.filter((r) => r.urn === m.urn).map((r) => ({ value: r.share })));
+      case "DV-ADM-M-SHARE-BAND":
+        return drawsLine(m.ageBand.rows.filter((r) => r.urn === m.urn).map((r) => ({ value: r.share })));
+      case "DV-ADM-M-ROLL-LINE":
+        return drawsLine(m.summary.rollIndexed.mine);
     }
     return true;
   }

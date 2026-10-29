@@ -6,6 +6,7 @@ import { buildContextMap } from "@/lib/smt/context-map";
 import { parseLevel } from "@/lib/smt/levels";
 import { resolveCatchment } from "@/lib/smt/catchment";
 import { savedCatchmentKm } from "@/lib/smt/catchment-server";
+import { withDensity } from "@/lib/smt/catchment-density";
 
 // VicData 0.8 SMT r3 (K3): Context's neighbourhood map -- the LSOAs around the school with their
 // boundaries and figures, and the schools nearby with their FSM. GET ?urn&level=&km= (0.8 SMT r4: the
@@ -20,7 +21,8 @@ export async function GET(request: NextRequest) {
     const school = await smtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     const level = parseLevel(sp, school.phases, null).phase;
-    const catchment = resolveCatchment(school, sp.get("km"), await savedCatchmentKm(caller, caller.urn));
+    // 0.8 Admissions fb1: a state school's default is its density radius (catchment.ts).
+    const catchment = resolveCatchment(await withDensity(caller.urn, school), sp.get("km"), await savedCatchmentKm(caller, caller.urn));
     const c = await buildContext(school, "around", level, catchment);
     return NextResponse.json(await buildContextMap(school, level, c.map.schools, catchment.km));
   } catch (err) {

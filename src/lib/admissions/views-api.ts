@@ -10,7 +10,8 @@ import { cachedCensus, fetchSchoolInfo } from "./data";
 import { feederFlags } from "./feeders";
 import { loadThresholds, phaseForEntryAge } from "./thresholds";
 import { fetchSchoolTraits, isDefaultFilters, narrow, schoolsInLas, type AdmissionsFilters, type SchoolTraits } from "./traits";
-import { distanceKm, entryNow, feParticipation, feederTable, funnel, funnelArea, indexTo, poolTrends, profileOf, rivalExtras } from "./screens";
+import { distanceKm, entryNow, feParticipation, feederTable, indexTo, poolTrends, profileOf, rivalExtras } from "./screens";
+import { intakeChange, localBirths } from "./intake";
 import { buildMarketShare } from "./market";
 import { rivalSet } from "./rival-set";
 import { buildRivals, stageForEntry, subjectPlaces } from "./rivals";
@@ -30,7 +31,9 @@ export type { EntryPoint };
 export const DEFAULT_FILTERS: AdmissionsFilters = { lists: "both", sector: "all", boardingOnly: false };
 
 // ------------------------------------------------------------------------------- Pipelines
-export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList[], o: { filters?: AdmissionsFilters; sex?: Sex; projection?: boolean; today?: Date } = {}) {
+// 0.8 Admissions fb1 (F-13): `catchment` -- this view's own radius (?km=) and the school's saved catchment,
+// for "Why did our intake change?" and Local births (intake.ts); the feeder lists never change them.
+export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList[], o: { filters?: AdmissionsFilters; sex?: Sex; projection?: boolean; today?: Date; catchment?: { km?: unknown; savedKm: number | null } } = {}) {
   // 0.7 r3 (F2): a day school never thinks about boarders. Its boarding lists (if any were saved
   // before) are kept but not used, and the Day + boarding filter doesn't apply to it.
   const boardingSchool = (await fetchSchoolTraits([urn])).get(urn)?.boarding ?? false;
@@ -73,10 +76,12 @@ export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList
   const own = ownCensus.get(urn);
   const me = traits.get(urn);
   const listMembers = (kind: string) => all.filter((l) => l.kind === kind).flatMap((l) => l.members ?? []);
-  const [now, table, stages, trends, area, fe] = await Promise.all([
+  const catchment = o.catchment ?? { savedKm: null };
+  const [now, table, intake, births, trends, area, fe] = await Promise.all([
     entryNow(urn, ep, own, sex),
     feederTable(urn, ep, p.sets, traits, minCohort, { day: listMembers("day_feeders"), boarding: listMembers("boarding_feeders") }, sex),
-    funnelArea(p.blend, p.blendSource === "override", me).then((area) => funnel(urn, ep, area, own?.table ?? new Map(), sex)),
+    intakeChange(urn, ep, catchment).catch((e) => ({ status: "none" as const, reason: `Could not read the area: ${String((e as Error)?.message ?? e).slice(0, 120)}`, area: null })),
+    localBirths(urn, ep, catchment).catch((e) => ({ status: "none" as const, reason: `Could not read the area: ${String((e as Error)?.message ?? e).slice(0, 120)}`, area: null })),
     poolTrends(ep, p.ladder, me?.laName ?? null),
     cachedReference(`adm:area-pop:${me?.laCode ?? ""}:${CURRENT_CENSUS_PERIOD}`, () => lookupPopulationTrend(me?.laName ?? null, me?.laCode ?? null, CURRENT_CENSUS_PERIOD)),
     own?.latestPeriod == null ? feParticipation(urn, me?.typeGroup ?? null) : Promise.resolve(null),
@@ -94,14 +99,16 @@ export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList
     filters,
     now,
     feederTable: table,
-    funnel: stages,
+    intake,
+    localBirths: births,
     poolTrends: trends,
     areaPopulation: area,
     rungSets,
     fe,
     // "Pool ▼ x% by 2030 against 2026": the year round 1's poolChange measured to.
     changeYear: p.change ? Math.min(p.ladder.future[p.ladder.future.length - 1]?.entryYear ?? CURRENT_CENSUS_PERIOD, (p.ladder.future[0]?.entryYear ?? CURRENT_CENSUS_PERIOD) + 3) : null,
-    school: { urn, name: me?.name ?? urn, laName: me?.laName ?? null, laCode: me?.laCode ?? null, boarding: me?.boarding ?? false },
+    // 0.8 Admissions fb1 (F-14): its location, for its own dot on the feeder map.
+    school: { urn, name: me?.name ?? urn, laName: me?.laName ?? null, laCode: me?.laCode ?? null, boarding: me?.boarding ?? false, easting: me?.easting ?? null, northing: me?.northing ?? null },
   };
 }
 export type PipelineView = Awaited<ReturnType<typeof pipelineView>>;
@@ -157,7 +164,7 @@ export async function marketView(urn: string, ep: EntryPoint, lists: SavedList[]
   const vs = indexTo([minePts, summary.rivalsAverage]);
   return {
     ...m,
-    summary: { ...summary, vsIndexed: { base: vs.base, mine: vs.out[0], rivals: vs.out[1] } },
+    summary: { ...summary, vsIndexed: { base: vs.base, mine: vs.out[0], rivals: vs.out[1] }, rollIndexed: rollIndexed(m, urn) },
     note: ADMISSIONS_NOTES.groupShare,
     filters,
     rivalsSource: saved ? ("saved" as const) : ("nearest" as const),
@@ -166,6 +173,24 @@ export async function marketView(urn: string, ep: EntryPoint, lists: SavedList[]
   };
 }
 export type MarketView = Awaited<ReturnType<typeof marketView>>;
+
+/** F-20 (0.8 Admissions fb1): the entry age band's roll, indexed. The rivals' average is over the rivals
+ * with a figure in every year (so a school opening or closing doesn't move it); the base is the first year
+ * the school and that average share (2019/20 where both have it). Each rival is indexed to the same base
+ * where it has it, else to its own first year (`from`). R-ADM-ROLL-INDEXED. */
+export function rollIndexed(m: { urn: string; ageBand: { periods: number[]; rows: { urn: string; period: number; count: number | null }[] }; rivals: string[] }, urn: string) {
+  const years = m.ageBand.periods;
+  const series = (u: string) => years.map((y) => ({ year: y, value: m.ageBand.rows.find((r) => r.urn === u && r.period === y)?.count ?? null }));
+  const rivals = m.rivals.filter((u) => u !== urn).map((u) => ({ urn: u, pts: series(u) }));
+  const whole = rivals.filter((r) => r.pts.every((p) => p.value !== null));
+  const average = years.map((y, i) => ({ year: y, value: whole.length ? whole.reduce((t, r) => t + (r.pts[i].value as number), 0) / whole.length : null }));
+  const ix = indexTo([series(urn), average]);
+  const own = (pts: { year: number; value: number | null }[]) => {
+    const b = (ix.base !== null ? pts.find((p) => p.year === ix.base && p.value !== null) : undefined) ?? pts.find((p) => p.value !== null);
+    return { from: b?.year ?? null, values: pts.map((p) => ({ year: p.year, value: p.value === null || !b?.value ? null : (100 * p.value) / b.value })) };
+  };
+  return { base: ix.base, mine: ix.out[0], average: ix.out[1], averageOf: whole.length, rivals: rivals.map((r) => ({ urn: r.urn, ...own(r.pts) })) };
+}
 
 // ---------------------------------------------------------------------------------- Rivals
 const MEASURES = new Set(["points", "entries", "threshold"]);
@@ -215,13 +240,17 @@ export async function shapeView(urn: string, ep: EntryPoint, lists: SavedList[],
   // the youngest rung's defaults are primaries) -- so the caption can name it.
   const localFromSaved = sets.get(youngest) !== defaults.get(youngest);
   const { rivals } = await rivalSet(urn, ep, lists, o.filters ?? DEFAULT_FILTERS);
-  const all = Array.from(new Set([urn, ...feeders, ...rivals]));
+  // 0.8 Admissions fb1 (F-15): the feeder schools of the current set -- the set at the age a year below
+  // entry, as the feeder table and map draw it, the school itself left out -- each with its shape and size.
+  const feederAge = Math.max(4, ep.age - 1);
+  const feederSet = Array.from(new Set(sets.get(feederAge) ?? sets.get(youngest) ?? [])).filter((u) => u !== urn);
+  const all = Array.from(new Set([urn, ...feeders, ...feederSet, ...rivals]));
   const [census, info] = await Promise.all([cachedCensus(all), fetchSchoolInfo(all)]);
   const own = census.get(urn);
   const dist = await lookupAgeBandDistributions(info.get(urn)?.laName ?? null, own?.latestPeriod ?? CURRENT_CENSUS_PERIOD);
   const byYear = own ? Array.from(own.ageGenderByPeriod, ([year, counts]) => ({ year, shape: shapeOf(counts) })).sort((a, b) => a.year - b.year) : [];
   const feederCounts = feeders.map((u) => census.get(u)?.ageGender).filter((c): c is NonNullable<typeof c> => !!c);
-  const sizes = await sizePlaces(bandForEntry(ep.age), [urn, ...rivals], info.get(urn)?.laName ?? null);
+  const [sizes, feederSizes] = await Promise.all([sizePlaces(bandForEntry(ep.age), [urn, ...rivals], info.get(urn)?.laName ?? null), sizePlaces(bandForEntry(feederAge), feederSet, info.get(urn)?.laName ?? null)]);
   return {
     urn,
     entry: ep,
@@ -230,6 +259,8 @@ export async function shapeView(urn: string, ep: EntryPoint, lists: SavedList[],
     localShape: { schools: feeders.length, shape: localShape(feederCounts), saved: localFromSaved },
     // Described, not ranked (R-ADM-SHAPE-NOT-RANKED): the rivals in the set's own order.
     rivals: rivals.map((u) => ({ urn: u, name: info.get(u)?.name ?? u, shape: census.get(u) ? shapeOf(census.get(u)!.ageGender) : null, profile: profileOf(census.get(u)?.ageGender), size: sizes.get(u)?.badge ?? null })),
+    // Described, not ranked: the feeders in the set's own order (nearest first, or the lead's list).
+    feeders: { age: feederAge, schools: feederSet.map((u) => ({ urn: u, name: info.get(u)?.name ?? u, shape: census.get(u) ? shapeOf(census.get(u)!.ageGender) : null, profile: profileOf(census.get(u)?.ageGender), size: feederSizes.get(u)?.badge ?? null })) },
     note: ADMISSIONS_NOTES.shape,
     profile: profileOf(own?.ageGender),
     localProfile: profileOf(sumAgeGender(feederCounts)),

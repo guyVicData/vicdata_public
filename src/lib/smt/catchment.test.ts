@@ -4,7 +4,7 @@
 // Run: npx -y tsx --test src/lib/smt/catchment.test.ts
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { catchmentCapKm, catchmentDefaultKm, catchmentPresets, catchmentRights, clampKm, hasSixthForm, kmToMiles, resolveCatchment } from "./catchment";
+import { catchmentCapKm, catchmentDefaultKm, catchmentHowWords, catchmentPresets, catchmentRights, catchmentRule, clampKm, densityKmOf, densityPhase, hasSixthForm, kmToMiles, resolveCatchment, type NearSchool } from "./catchment";
 import { mixLine } from "./context";
 
 const state1116 = { independent: false, high: 16, phases: { post16: false } };
@@ -54,6 +54,46 @@ describe("catchment: which radius a board draws", () => {
   });
   it("km to the ingest's miles", () => {
     assert.ok(Math.abs(kmToMiles(5 * 1.609344) - 5) < 1e-12);
+  });
+});
+
+describe("catchment: a state school's density radius (0.8 Admissions fb1, R-ADM-CATCHMENT-RULE)", () => {
+  const near = (urn: string, km: number, lo: number, hi: number, group = "Academies"): NearSchool => ({ urn, establishment_type_group: group, statutory_low_age: lo, statutory_high_age: hi, distance_metres: km * 1000 });
+  // The Chase's real 5 nearest state secondaries (29 Oct): the 5th, Blessed Edward Oldcorne, 11.07 km.
+  const chaseNear = [near("a", 3.63, 11, 16), near("prep", 4, 3, 13, "Independent schools"), near("b", 5.9, 11, 18), near("pri", 6, 4, 11), near("c", 10.68, 11, 18), near("d", 11.06, 11, 18), near("e", 11.07, 11, 16), near("f", 12.23, 11, 16)];
+  it("phases from the statutory ages", () => {
+    assert.equal(densityPhase(11, 18), "secondary");
+    assert.equal(densityPhase(4, 18), "secondary");
+    assert.equal(densityPhase(4, 11), "primary");
+    assert.equal(densityPhase(16, 19), "post16");
+    assert.equal(densityPhase(9, 13), null);
+  });
+  it("the 5th nearest same-phase state school: independents and other phases left out", () => {
+    assert.equal(densityKmOf("me", "secondary", chaseNear), 11.07);
+    assert.equal(densityKmOf("me", "primary", chaseNear), null);
+    assert.equal(densityKmOf("me", null, chaseNear), null);
+  });
+  it("the default: the next whole km, within 2 km and the cap; 15 km for an independent; 5 km when unread", () => {
+    assert.equal(catchmentDefaultKm({ ...state1118, densityKm: 11.07 }), 12);
+    assert.equal(catchmentDefaultKm({ ...state1118, densityKm: 0.9 }), 2);
+    assert.equal(catchmentDefaultKm({ ...state1116, densityKm: 22 }), 15);
+    assert.equal(catchmentDefaultKm({ ...state1118, densityKm: 6 }), 6);
+    assert.equal(catchmentDefaultKm({ ...independentPrep, densityKm: 3 }), 15);
+    assert.equal(catchmentDefaultKm({ ...state1118, densityKm: null }), 5);
+    assert.equal(catchmentRule({ ...state1118, densityKm: null }), "fallback");
+  });
+  it("saved and view still win; the (i) says how the radius was set", () => {
+    const s = { ...state1118, densityKm: 11.07 };
+    const d = resolveCatchment(s, null, null);
+    assert.equal(d.km, 12);
+    assert.equal(d.rule, "density");
+    assert.match(catchmentHowWords(d, "secondary"), /^12 km: the smallest radius holding the school's 5 nearest state secondaries \(the 5th is 11\.1 km away\)/);
+    assert.match(catchmentHowWords(resolveCatchment(s, null, 8)), /^8 km: the school's saved catchment/);
+    assert.match(catchmentHowWords(resolveCatchment(s, "4", 8)), /^4 km: chosen for this view \(the school's usual is 8 km\)/);
+    assert.match(catchmentHowWords(resolveCatchment({ ...independentPrep, densityKm: null }, null, null)), /^15 km: the usual radius for an independent school/);
+  });
+  it("without a density asked for, round 4's shape exactly", () => {
+    assert.deepEqual(Object.keys(resolveCatchment(state1118, null, null)).sort(), ["capKm", "capped", "defaultKm", "from", "km", "savedKm"]);
   });
 });
 
