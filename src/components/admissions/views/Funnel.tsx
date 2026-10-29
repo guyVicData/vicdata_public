@@ -5,10 +5,10 @@
 // parts in one area, the school's catchment radius (never its feeder list): births (cohort size), families
 // moving (the area's Year 6 against its births) and your share (your Year 7 against the area's Year 6). 16+:
 // the area's Year 11 and your Year 12. No funnel at 4+. Every figure comes from the server (intake.ts); the
-// split is exact (the parts add up to the change), rounded to whole pupils. R-ADM-INTAKE-CHANGE.
+// split is exact (the parts add up to the change), rounded to whole pupils. R-ADM-VIEW-INTAKE-CHANGE.
 //
 // Local births, next to it on the rail: the catchment's births (age 0) by year, indexed against the
-// region and England, with the Year 7 (Year 12) entry each birth year reaches. R-ADM-LOCAL-BIRTHS.
+// region and England, with the Year 7 (Year 12) entry each birth year reaches. R-ADM-VIEW-LOCAL-BIRTHS.
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { indexedLabel } from "@/lib/index-base";
 import type { PipelineOk } from "../api";

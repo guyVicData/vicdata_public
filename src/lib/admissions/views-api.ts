@@ -10,6 +10,7 @@ import { cachedCensus, fetchSchoolInfo } from "./data";
 import { feederFlags } from "./feeders";
 import { loadThresholds, phaseForEntryAge } from "./thresholds";
 import { fetchSchoolTraits, isDefaultFilters, narrow, schoolsInLas, type AdmissionsFilters, type SchoolTraits } from "./traits";
+import { ROLL_INDEX_MIN } from "../index-base";
 import { distanceKm, entryNow, feParticipation, feederTable, indexTo, poolTrends, profileOf, rivalExtras } from "./screens";
 import { intakeChange, localBirths } from "./intake";
 import { buildMarketShare } from "./market";
@@ -177,7 +178,9 @@ export type MarketView = Awaited<ReturnType<typeof marketView>>;
 /** F-20 (0.8 Admissions fb1): the entry age band's roll, indexed. The rivals' average is over the rivals
  * with a figure in every year (so a school opening or closing doesn't move it); the base is the first year
  * the school and that average share (2019/20 where both have it). Each rival is indexed to the same base
- * where it has it, else to its own first year (`from`). R-ADM-ROLL-INDEXED. */
+ * where it has it, else to its own first year (`from`). A rival under ROLL_INDEX_MIN pupils in the band
+ * at its base is `small`: an index on so few reads as a surge (a school opening its senior years), so
+ * full screen names it rather than drawing it. R-ADM-ROLL-INDEXED. */
 export function rollIndexed(m: { urn: string; ageBand: { periods: number[]; rows: { urn: string; period: number; count: number | null }[] }; rivals: string[] }, urn: string) {
   const years = m.ageBand.periods;
   const series = (u: string) => years.map((y) => ({ year: y, value: m.ageBand.rows.find((r) => r.urn === u && r.period === y)?.count ?? null }));
@@ -187,9 +190,9 @@ export function rollIndexed(m: { urn: string; ageBand: { periods: number[]; rows
   const ix = indexTo([series(urn), average]);
   const own = (pts: { year: number; value: number | null }[]) => {
     const b = (ix.base !== null ? pts.find((p) => p.year === ix.base && p.value !== null) : undefined) ?? pts.find((p) => p.value !== null);
-    return { from: b?.year ?? null, values: pts.map((p) => ({ year: p.year, value: p.value === null || !b?.value ? null : (100 * p.value) / b.value })) };
+    return { from: b?.year ?? null, base: b?.value ?? null, values: pts.map((p) => ({ year: p.year, value: p.value === null || !b?.value ? null : (100 * p.value) / b.value })) };
   };
-  return { base: ix.base, mine: ix.out[0], average: ix.out[1], averageOf: whole.length, rivals: rivals.map((r) => ({ urn: r.urn, ...own(r.pts) })) };
+  return { base: ix.base, mine: ix.out[0], average: ix.out[1], averageOf: whole.length, rivals: rivals.map((r) => { const o = own(r.pts); return { urn: r.urn, ...o, small: (o.base ?? 0) < ROLL_INDEX_MIN }; }) };
 }
 
 // ---------------------------------------------------------------------------------- Rivals

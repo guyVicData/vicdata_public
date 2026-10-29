@@ -1462,7 +1462,7 @@ export const RULES: Rule[] = [
     testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Births = 8/12 of 2014 + 4/12 of 2013 in Worcestershire; Year 6 = Worcestershire's age-10 pupils in 2024/25 (age_profile_aggregates); entry = 236; three bars, labelled Births / Year 6 / Your Year 7; 4+ has none." },
     origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
     status: "superseded",
-    supersededBy: "R-ADM-INTAKE-CHANGE",
+    supersededBy: "R-ADM-VIEW-INTAKE-CHANGE",
     fixes: ["0.8 Admissions feedback round 1 (F-13): the funnel is rebuilt as \"Why did our intake change?\" over the school's catchment radius (intake.ts); the LA-blend funnel (screens.ts funnel, funnelArea) and its notes are removed."],
   },
   {
@@ -1597,12 +1597,12 @@ export const RULES: Rule[] = [
     testCase: { urn: "137625", school: "The Chase (11+, 16+), King's Worcester 117037 (11+)", phase: "ks4", expect: "The births and pool bars carry the same LA set and weights (the school's own LA); births recomputed from raw ONS births, the pool from raw age_profile_aggregates rows at age 10 (or 15) in 2024/25." },
     origin: "0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F7)",
     status: "superseded",
-    supersededBy: "R-ADM-INTAKE-CHANGE",
+    supersededBy: "R-ADM-VIEW-INTAKE-CHANGE",
     fixes: ["0.8 Admissions feedback round 1 (F-13): the funnel is rebuilt as \"Why did our intake change?\" over the school's catchment radius (intake.ts); the LA-blend funnel (screens.ts funnel, funnelArea) and its notes are removed."],
   },
   // ---------------------------------------------------------------- 0.8 Admissions feedback round 1
   {
-    id: "R-ADM-INTAKE-CHANGE",
+    id: "R-ADM-VIEW-INTAKE-CHANGE",
     statement:
       "\"Why did our intake change?\" splits the change in the school's entry cohort from 2019/20 to the latest year into three parts in ONE area, the school's catchment radius (R-ADM-CATCHMENT-RULE), never its feeder list: births (the cohort's size: children aged 0 in the LSOAs within the radius, or the youngest age the LSOA years hold for the base cohort, at both ends), families moving (the area's Year 6, or Year 11 at 16+, against those births) and the school's share (its Year 7, or Year 12, against the area's Year 6). The split is the log-mean (LMDI) one, so the parts add up to the change exactly; rounded to whole pupils by largest remainders. An intake under 30 at either end makes each end a 3-year average. No funnel at 4+. The (i) says how the radius was set, that boarding schools draw from beyond any radius, and that families moving includes children crossing the radius to go to school.",
     why: "Guy, 29 Oct 2026 (F-13): the funnel was interesting but unclear; what a head needs is why the intake changed -- fewer children, families moving, or the school's own pull.",
@@ -1613,7 +1613,7 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
-    id: "R-ADM-LOCAL-BIRTHS",
+    id: "R-ADM-VIEW-LOCAL-BIRTHS",
     statement: "Local births draws the catchment's children aged 0 by mid-year (the same LSOAs as the funnel), indexed to the first year every line has, against the school's region and England (ONS's LA estimates aged 0, summed), with a second x-axis label naming the September entry each birth year reaches (Year 7 at 11+: + 11 years; Year 12 at 16+: + 16).",
     why: "Guy, 29 Oct 2026 (F-13): next to the funnel, the births that will reach the school's entry, against the region and England.",
     appliesTo: "DV-ADM-P-BIRTHS",
@@ -1644,7 +1644,7 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-ADM-ROLL-INDEXED",
-    statement: "The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key.",
+    statement: "The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead.",
     why: "Guy, 29 Oct 2026 (F-20): grey lines of different sizes can't be read as trends.",
     appliesTo: "DV-ADM-M-ROLL-LINE",
     enforcedIn: ["src/lib/admissions/views-api.ts:rollIndexed", "src/components/admissions/views/Lines.tsx:RollTrend"],

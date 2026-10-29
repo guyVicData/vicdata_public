@@ -82,6 +82,7 @@ export function LineChart({
   markers = [],
   ticks,
   xLabels2,
+  yGrid,
   children,
 }: {
   series: Series[];
@@ -97,6 +98,8 @@ export function LineChart({
   // The x of every tick (a year each) and the label of the middle one.
   ticks?: { xs: number[]; middle: string | null } | null;
   xLabels2?: { caption: string; labels: [string, string, string | null] } | null;
+  // 0.8 Admissions fb1 (F-20): faint labelled gridlines at these values (a full-screen indexed chart).
+  yGrid?: number[] | null;
   children?: ReactNode;
 }) {
   const [ref, w] = useWidth<HTMLDivElement>();
@@ -105,7 +108,7 @@ export function LineChart({
   const xd: [number, number] = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
   const yd = extent(ys, 0.12, fromZero);
   const W = Math.max(w, 10);
-  const pad = { l: 10, r: endLabels ? 92 : 10, t: 8, b: 10 };
+  const pad = { l: yGrid?.length ? 34 : 10, r: endLabels ? 92 : 10, t: 8, b: 10 };
   const sx = scale(xd, [pad.l, W - pad.r]);
   const sy = scale(yd, [height - pad.b, pad.t]);
   return (
@@ -114,6 +117,14 @@ export function LineChart({
         <svg width={W} height={height} role="img" aria-label={series.map((s) => s.label).join(", ")}>
           <line x1={0} x2={W} y1={height - 1} y2={height - 1} stroke="var(--adm-axis)" />
           {ticks?.xs.map((x) => <line key={`t-${x}`} data-tick={x} x1={sx(x)} x2={sx(x)} y1={height - 1} y2={height - 6} stroke="var(--adm-grey-line)" />)}
+          {yGrid?.map((v) => (
+            <g key={`g-${v}`} data-y-grid={v}>
+              <line x1={pad.l} x2={W - pad.r} y1={sy(v)} y2={sy(v)} stroke="var(--adm-grid)" />
+              <text x={pad.l - 6} y={sy(v) + 3.5} textAnchor="end" fontSize={10} fill="var(--muted)">
+                {yFormat(v)}
+              </text>
+            </g>
+          ))}
           {reference && <line x1={0} x2={W} y1={sy(reference.y)} y2={sy(reference.y)} stroke="var(--adm-grid)" strokeDasharray="2 4" />}
           {bands.map((b) => {
             const pts = b.points.filter((p) => p.lo !== null && p.hi !== null) as { x: number; lo: number; hi: number }[];
@@ -218,4 +229,17 @@ export function yearTicks(xs: number[], label: (x: number) => string): { xs: num
   if (ys.length < 2) return null;
   const all = Array.from({ length: ys[ys.length - 1] - ys[0] + 1 }, (_, i) => ys[0] + i);
   return { xs: all, middle: all.length > 2 ? label(all[Math.floor((all.length - 1) / 2)]) : null };
+}
+
+/** F-20: round gridline values across [lo, hi] (about five), for a full-screen chart's y axis. */
+export function niceGrid(values: (number | null | undefined)[]): number[] {
+  const v = values.filter((x): x is number => x !== null && x !== undefined && Number.isFinite(x));
+  if (!v.length) return [];
+  const [lo, hi] = [Math.min(...v), Math.max(...v)];
+  const raw = (hi - lo) / 5 || 1;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw)!;
+  const out: number[] = [];
+  for (let x = Math.ceil(lo / step) * step; x <= hi + 1e-9; x += step) out.push(Math.round(x * 1e6) / 1e6);
+  return out;
 }

@@ -1,4 +1,4 @@
-// VicData 0.8 Admissions feedback round 1 (F-13, R-ADM-INTAKE-CHANGE): "Why did our intake change?", the
+// VicData 0.8 Admissions feedback round 1 (F-13, R-ADM-VIEW-INTAKE-CHANGE): "Why did our intake change?", the
 // pure split. Run: npx -y tsx --test src/lib/admissions/intake-change.test.ts
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";

@@ -114,7 +114,7 @@ export const ADMISSIONS_NOTES = {
   // 0.7 r2b (E3): the LA and England pool-trend lines for past years (age_profile_aggregates,
   // backfilled from today's schools table). Shown only when a past year is drawn.
   areaUndercount: "Earlier years count only schools still open, so they slightly undercount.",
-  // 0.8 Admissions feedback round 1 (F-13): "Why did our intake change?" (R-ADM-INTAKE-CHANGE).
+  // 0.8 Admissions feedback round 1 (F-13): "Why did our intake change?" (R-ADM-VIEW-INTAKE-CHANGE).
   intakeNote: "Three parts that add up to the change: births (the cohort's size in the area), families moving (more or fewer children of that age living in the area than were born there), and your share of them. Counts in one area, not a flow of the same children.",
   intakeMoving: "\"Families moving\" also counts children crossing the radius to go to school: a child who lives outside it and comes in is a family moving in.",
   intakeBoarding: "Boarding schools draw from far beyond any radius: boarders' families are not in this area's figures, so your share here reads high and moves with boarding as well as with the area.",

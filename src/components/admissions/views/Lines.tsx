@@ -2,12 +2,12 @@
 
 // VicData 0.7 admissions r2 (D3, D4): the row-2 trend views (Main.dc.html, MarketShare.dc.html),
 // drawn from the routes' series (already indexed on the server where indexed). R-ADM-VIEW-TRENDS.
-import { indexedLabel } from "@/lib/index-base";
+import { ROLL_INDEX_MIN, indexedLabel } from "@/lib/index-base";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { POPULATION_TREND_LABELS, displayPopulationTrendPct } from "@/lib/population-trend";
 import type { MarketView, PipelineOk } from "../api";
 import { Empty, Key, LineSwatch, ViewTitle, fillHeight, fmtN, fmtPct, yearLabel } from "../ui";
-import { LineChart, YearBars, yearTicks } from "./charts";
+import { LineChart, YearBars, niceGrid, yearTicks } from "./charts";
 import { cohortWord } from "../panels/EntryNow";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
@@ -344,8 +344,9 @@ export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: 
   const band = `${m.band.from}\u2013${m.band.to}`;
   const raw = (urn: string, y: number) => m.ageBand.rows.find((x) => x.urn === urn && x.period === y)?.count ?? null;
   const me = { id: m.urn, label: "You", colour: "var(--accent)", width: 2.8, points: r.mine.map((x) => ({ x: x.year, y: x.value })), title: (pt: { x: number; y: number | null }) => `You ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(m.urn, pt.x))} aged ${band})` };
+  const small = r.rivals.filter((x) => x.small);
   const rivals = fullscreen
-    ? r.rivals.map((x, i) => ({ id: x.urn, label: m.schools[x.urn]?.name ?? x.urn, colour: `var(--adm-series-${i % 7})`, width: 1.6, dashed: i >= 7 ? "6 3" : undefined, points: x.values.map((v) => ({ x: v.year, y: v.value })), title: (pt: { x: number; y: number | null }) => `${m.schools[x.urn]?.name ?? x.urn} ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(x.urn, pt.x))} aged ${band})` }))
+    ? r.rivals.filter((x) => !x.small).map((x, i) => ({ id: x.urn, label: m.schools[x.urn]?.name ?? x.urn, colour: `var(--adm-series-${i % 7})`, width: 1.6, dashed: i >= 7 ? "6 3" : undefined, points: x.values.map((v) => ({ x: v.year, y: v.value })), title: (pt: { x: number; y: number | null }) => `${m.schools[x.urn]?.name ?? x.urn} ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(x.urn, pt.x))} aged ${band})` }))
     : [{ id: "avg", label: "Rivals' average", colour: "var(--adm-grey-soft)", width: 1.8, dashed: "5 3", points: r.average.map((x) => ({ x: x.year, y: x.value })) }];
   return (
     <>
@@ -358,6 +359,7 @@ export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: 
         yFormat={(v) => v.toFixed(0)}
         xLabels={[yr(years[0]), yr(years[years.length - 1])]}
         ticks={yearTicks(years, yr)}
+        yGrid={fullscreen ? niceGrid([...rivals, me].flatMap((x) => x.points.map((p) => p.y))) : null}
         series={[...rivals, me]}
       />
       <div data-roll-key="" className="flex flex-wrap gap-x-3 gap-y-1">
@@ -368,7 +370,14 @@ export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: 
           </Key>
         ))}
       </div>
-      <div className="text-[10.5px] text-[var(--muted)]">Indexed: {indexedLabel(r.base ?? null)}.</div>
+      <div className="text-[10.5px] text-[var(--muted)]">
+        Indexed: {indexedLabel(r.base ?? null)}.
+        {fullscreen && small.length > 0 && (
+          <span data-roll-small="">
+            {" "}Not drawn (under {ROLL_INDEX_MIN} pupils aged {band} at the start, too few to index): {small.map((x) => m.schools[x.urn]?.name ?? x.urn).join(", ")}.
+          </span>
+        )}
+      </div>
     </>
   );
 }

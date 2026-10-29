@@ -17,7 +17,7 @@
 // Rounded to whole pupils with the largest remainders, so the rounded parts still add up to the rounded
 // change. Where the school's intake is small (under SMALL_INTAKE at either end), each end is a 3-year
 // average (the base and the two years after it; the latest and the two before it), every figure alike.
-// R-ADM-INTAKE-CHANGE.
+// R-ADM-VIEW-INTAKE-CHANGE.
 
 export const SMALL_INTAKE = 30;
 export const AVERAGE_YEARS = 3;

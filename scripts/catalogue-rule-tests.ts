@@ -1523,7 +1523,7 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ sources: [...sources].join("/"), projectionOff: off.ladder.projection.length, projectionOn: on.ladder.projection.length, usesNotes }) };
   },
   // ------------------------------------------------------------------ 0.8 Admissions feedback round 1
-  // R-ADM-INTAKE-CHANGE: the split recomputed from area_context and the census, by hand, at both schools.
+  // R-ADM-VIEW-INTAKE-CHANGE: the split recomputed from area_context and the census, by hand, at both schools.
   async admIntakeChange() {
     const v = await import("../src/lib/admissions/views-api");
     const { areaContext } = await import("../src/lib/smt/area-data");
@@ -1563,7 +1563,7 @@ const RUNNERS: Record<string, Runner> = {
     pass &&= noFour && listsIgnored;
     return { pass, detail: `${out.join("; ")}; 4+ none ${noFour}; lists ignored ${listsIgnored}` };
   },
-  // R-ADM-LOCAL-BIRTHS: the catchment's age 0 equals area_context's; the region and England are the sums.
+  // R-ADM-VIEW-LOCAL-BIRTHS: the catchment's age 0 equals area_context's; the region and England are the sums.
   async admLocalBirths() {
     const v = await import("../src/lib/admissions/views-api");
     const { areaContext, englandPopulation } = await import("../src/lib/smt/area-data");

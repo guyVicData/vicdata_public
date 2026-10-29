@@ -11,7 +11,7 @@
 //
 // Local births: the LSOAs' age 0 by mid-year, indexed to the first year against the school's region and
 // England (ONS mid-year estimates at age 0, the LAs summed), with the Year 7 (Year 12) entry year each
-// birth year reaches. R-ADM-INTAKE-CHANGE, R-ADM-LOCAL-BIRTHS.
+// birth year reaches. R-ADM-VIEW-INTAKE-CHANGE, R-ADM-VIEW-LOCAL-BIRTHS.
 import { cachedReference } from "../server-cache";
 import { createServerAnonSupabaseClient } from "../supabase";
 import { lookupReferenceData } from "../vicdata-reference";

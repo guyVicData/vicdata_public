@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -97,7 +97,7 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | R-ADM-FAMILY-RIVALS | active | Rivals' results is round 1's rivals unchanged, plus each school's whole-school headline change since 2022/23 in points, from the same headline population the flags read; an IGCSE school, listed but not ranked, has none. | no | auto: admFamilyRivals | — |
 | R-ADM-VIEW-NOW | active | The entry point now shows the school's own entry cohort, its change since 2019/20, girls and boys at the entry age, and day and boarding for the whole school (the census has no boarders by age; a day school's tile reads Day only, 0.7 r3 F2); size is the school page's Roll by phase (XS-XL), never new words. | no | auto: admViewNow | — |
 | R-ADM-VIEW-PIPELINE | active | The pipeline chart draws past pools, then counted years solid, births dashed with their range band, and projection only on request (11+), with every label from ADMISSIONS_NOTES. The styling and wording have no look option. | no | auto: admViewPipeline | — |
-| R-ADM-VIEW-FUNNEL | active | The funnel follows this September's entrants back, like with like: the area's births for their school year (8/12 + 4/12), every pupil a year below the entry age in every mainstream school in the SAME area a year before (age_profile_aggregates), then the school's own entry cohort. Each bar leads with a bold label, then its area and year in plain words (ADMISSIONS_NOTES); the panel's note says it is not a flow of the same children. No funnel at 4+ (0.7 r3, F7). | no | auto: admViewFunnel | — |
+| R-ADM-VIEW-FUNNEL | superseded by R-ADM-VIEW-INTAKE-CHANGE | The funnel follows this September's entrants back, like with like: the area's births for their school year (8/12 + 4/12), every pupil a year below the entry age in every mainstream school in the SAME area a year before (age_profile_aggregates), then the school's own entry cohort. Each bar leads with a bold label, then its area and year in plain words (ADMISSIONS_NOTES); the panel's note says it is not a flow of the same children. No funnel at 4+ (0.7 r3, F7). | no | manual | — |
 | R-ADM-VIEW-FEEDERS | active | The feeder table and map list the nearest rung's schools with their pupils at that age now and two years ago, each flagged by R-ADM-FLAG-FEEDER against the whole set, with distance, sector, gender and XS-XL; the school itself is not a feeder. | no | auto: admViewFeeders | — |
 | R-ADM-VIEW-SHAPES | active | Shape and size shows the school's profile by gender, the feeders' local shape and the rivals' shapes as small multiples in the rival set's own order, with no rank, score or sort by shape. | no | auto: admViewShapes | — |
 | R-ADM-VIEW-TRENDS | active | Pool trends index the feeders' past pools and the same age across the LA and England (age_profile_aggregates: LA rows, England the sum of the nine regions) to their first common year; a year the aggregates don't hold is a gap, never filled. | no | auto: admViewTrends | — |
@@ -109,7 +109,18 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | R-ADM-FE-SOURCE | active | An FE college's own figures come from FE participation data (ILR, learners under 19 over the year), labelled as that source, and are never divided into a census group's total, ranked against schools or shown as a Year 12 count. | no | auto: admFeSource | — |
 | R-ADM-FILTERS | active | The top bar's filters (Day + boarding, State + independent, boarding rivals) narrow the sets on the server before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it. Day + boarding is a boarding school's filter only: for a day school it is never drawn and the server ignores it (R-ADM-BOARDING-ONLY-WHERE-BOARDERS). | no | auto: admFilters | — |
 | R-ADM-BOARDING-ONLY-WHERE-BOARDERS | active | A boarding school is one GIAS lists with boarding provision (schools.boarders_name = "Boarding school"; "No boarders" and "Not applicable" are day schools). A day school never has to think about boarders: no tile, filter, chip, column, legend, empty state, note, setup question or step, or editor compare option mentions boarding (column 1's day/boarding tile stays, reading Day only), its saved boarding lists are kept but not used, and the server ignores a boarding filter for it. Its rivals' own figures may still say they board. A boarding school sees every boarding surface: setup's day-and-boarding question and step 3, the filter, the tile's day and boarding, the boarding feeder list and its fuzzy set. | no | auto: admBoardingOnly | — |
-| R-ADM-FUNNEL-SAME-AREA | active | The funnel's births and its pool bar cover the same area with the same weights: the school's own LA, or the lead's LA blend when one is set. The pool is every pupil a year below the entry age (Year 6 = age 10, Year 11 = age 15, at 31 August, the census a year before entry -- the ladder's own age mapping) in every mainstream school in that area: academies, LA-maintained, free and independent (age_profile_aggregates, scope la). The feeder set's pool is not a funnel bar; it stays in the Pipeline. | no | auto: admFunnelSameArea | — |
+| R-ADM-FUNNEL-SAME-AREA | superseded by R-ADM-VIEW-INTAKE-CHANGE | The funnel's births and its pool bar cover the same area with the same weights: the school's own LA, or the lead's LA blend when one is set. The pool is every pupil a year below the entry age (Year 6 = age 10, Year 11 = age 15, at 31 August, the census a year before entry -- the ladder's own age mapping) in every mainstream school in that area: academies, LA-maintained, free and independent (age_profile_aggregates, scope la). The feeder set's pool is not a funnel bar; it stays in the Pipeline. | no | manual | — |
+| R-ADM-VIEW-INTAKE-CHANGE | active | "Why did our intake change?" splits the change in the school's entry cohort from 2019/20 to the latest year into three parts in ONE area, the school's catchment radius (R-ADM-CATCHMENT-RULE), never its feeder list: births (the cohort's size: children aged 0 in the LSOAs within the radius, or the youngest age the LSOA years hold for the base cohort, at both ends), families moving (the area's Year 6, or Year 11 at 16+, against those births) and the school's share (its Year 7, or Year 12, against the area's Year 6). The split is the log-mean (LMDI) one, so the parts add up to the change exactly; rounded to whole pupils by largest remainders. An intake under 30 at either end makes each end a 3-year average. No funnel at 4+. The (i) says how the radius was set, that boarding schools draw from beyond any radius, and that families moving includes children crossing the radius to go to school. | no | auto: admIntakeChange | — |
+| R-ADM-VIEW-LOCAL-BIRTHS | active | Local births draws the catchment's children aged 0 by mid-year (the same LSOAs as the funnel), indexed to the first year every line has, against the school's region and England (ONS's LA estimates aged 0, summed), with a second x-axis label naming the September entry each birth year reaches (Year 7 at 11+: + 11 years; Year 12 at 16+: + 16). | no | auto: admLocalBirths | — |
+| R-ADM-CATCHMENT-RULE | active | One catchment for SMT Context, the group projections and Admissions' funnel and local births: this view's own radius (?km=), else the school's saved catchment, else the default -- 15 km for an independent school; for a state school the density radius, the smallest whole-km radius holding its 5 nearest same-phase state schools (nearest_schools; secondary = teaches 11 and 15, primary = Reception to Year 6 ending by 11, 16+ = starts at 16), from 2 km to its cap; 5 km where the nearest schools can't be read. Every (i) that draws it says how it was set. | no | auto: admCatchmentRule | — |
+| R-ADM-ENTRY-SEX | active | Your cohort, girls and boys: the entry cohort's girls and boys by census year as two lines, and the girls' share under them against 50%, from the same census rows as the cohort (cohort.ts). | no | auto: admEntrySex | — |
+| R-ADM-ROLL-INDEXED | active | The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead. | no | auto: admRollIndexed | — |
+| R-ADM-BAND-SHARE | active | Share of Years 7-11 (the entry point's whole age band: 11+ 11-15, 16+ 16-18, 4+ 4-10) is the school's band roll as a share of the group's, each year, the Market share Trends rail's last view. | no | auto: admBandShare | — |
+| R-ADM-AXIS-TICKS | active | Every Admissions line view has a tick at every year on its x axis, and the middle year labelled as well as the first and last. | no | auto: admAxisTicks | — |
+| R-ADM-MAP-SELF | active | The map of feeders marks the school itself: a solid Admissions-blue dot, drawn last, sized by its entry cohort now on the feeders' own scale, with a key. | no | auto: admMapSelf | — |
+| R-ADM-FEEDER-SHAPES | active | Pipelines' Shape and size draws the local shape, then the shapes and sizes of the current feeder set's schools (the set a year below entry, the school left out), in the set's own order; the school's own shape and its rivals' are Market share's. | no | auto: admFeederShapes | — |
+| R-ADM-SHAPE-ROWS | active | Each small multiple in Shape and size has a row per age over the featured profile's ages (an age the school doesn't teach is an empty row), so the rows line up with the featured school's. | no | auto: admShapeRows | — |
+| R-ADM-MOMENTUM-SCOPE | active | Rivals' momentum says under its title which schools it can place: schools submitting GCSE results only (11+), A-level results (16+), published KS2 results (4+). | no | auto: admMomentumScope | — |
 | R-ADM-EDITOR-LOOKS-KEEP-NOTES | active | An Admissions view's look options and compare chips change how it draws, never what it must say: under every look and compare an editor can choose (src/catalogue/admissions-editor.ts), each view still renders every R-ADM wording from ADMISSIONS_NOTES that its preset renders (a pool, not an intake; a share of this group; the estimates; the requirement; the flags' rules; the undercount), and its rule-held styling and thresholds don't move. Options left at their defaults draw exactly the preset. A day school's view never draws a boarding feeder set, whatever its spec asks. | no | auto: admEditorLooks | — |
 | R-DOUBLE-AWARD-POINTS | active | A GCSE Double Award (grades published as pairs, "98" ... "11") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say "different grading scale, not ranked". | no | auto: doubleAwardPoints | — |
 | R-SMT-PUPILS-LEVEL | active | Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-15), Post-16 Years 12 and 13 (16-17), Primary Reception to Year 6 (4-10), first and last age inclusive; Whole school highlights nothing. The figures don't change with the level; the year groups in focus do. | no | auto: smtPupilsLevel | — |
@@ -128,7 +139,7 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | R-SMT-DATA-GAP | superseded by R-SMT-CONTEXT-DEPRIVATION | Retired in SMT round 3: Context showed the data gap ("Deprivation and free school meals: not yet in VicData") where the figures would be. The ingest has loaded both; the dashed block is gone, and the figures are R-SMT-CONTEXT-DEPRIVATION's and R-SMT-CONTEXT-FSM's. | no | none yet | — |
 | R-SMT-VIEW-CONTEXT-NOW | active | The area now shows children of the level's ages living within the catchment radius (or in the LA) with the change since the first year held, the authority mix under it (0.8 SMT r4), the census's pupils at schools within the radius beside them, births last year and since 2012, the projection tile (the area's children of the ages, latest count to five years on, with its range: area_projection, or la_projection_lookup for the LA), the schools nearby of the same phase (all sectors), the place line (town · LA · region), and the Social context block. | no | auto: smtContextNow | — |
 | R-SMT-VIEW-BIRTHS | active | Births are drawn by LA against England (every English district and unitary summed), indexed to 2012 = 100, said to be by LA. The school-age population (0.8 SMT r4) is the area's children of the level's ages, within the radius or in the LA: estimates to the latest count, then the projection from that count to the settings' horizon (latest + horizon_years). | no | auto: smtBirths | — |
-| R-SMT-RADIUS | active | Context draws at one radius, in whole km: this view's own (?km=), else the school's saved catchment (school_catchment, app DB), else the default by type (5 km state, 15 km independent); never past the cap by type (15 km a state school without a sixth form, 30 km otherwise; a saved catchment over it draws at the cap and says so). The whole board follows it -- the map circle and ring, children now, the deprivation mix, population by age, children nearby over time, the forward view, schools nearby and the census line -- and no caption names another radius. The school's own School-Admin (or account holder) saves it; its approved members read it; nobody else does. | no | auto: smtRadius | — |
+| R-SMT-RADIUS | active | Context draws at one radius, in whole km: this view's own (?km=), else the school's saved catchment (school_catchment, app DB), else the default by type (15 km independent; a state school's density radius since 0.8 Admissions fb1, R-ADM-CATCHMENT-RULE; 5 km where that can't be read); never past the cap by type (15 km a state school without a sixth form, 30 km otherwise; a saved catchment over it draws at the cap and says so). The whole board follows it -- the map circle and ring, children now, the deprivation mix, population by age, children nearby over time, the forward view, schools nearby and the census line -- and no caption names another radius. The school's own School-Admin (or account holder) saves it; its approved members read it; nobody else does. | no | auto: smtRadius | — |
 | R-SMT-FORWARD | active | The forward view is the ingest's children-in-an-area projection (docs/v0.8/vicdata_area_projection_method_v1.md): area_projection at the radius, or la_projection_lookup for the LA (a county's districts summed), for the level's ages. Estimates, solid, to the latest count, then the middle line from that count to the horizon, its band (the lowest and highest of whole single-year projections, taken over the ages' sum) shaded, the years whose ages include children not yet born drawn lighter and labelled at the change. ONS's 2022-based projection (its change, applied by authority around the school) and the scenario are faint lines, off by default. | no | auto: smtForward | — |
 | R-SMT-NOT-A-FORECAST | active | The projection's wording is the method note's, from SMT_NOTES: "A projection of children living in the area, not a forecast for the school." on every view that draws it, and what it is and isn't (SMT_NOTES.whatItIs). Never "forecast" except as "not a forecast", never "your roll", never a school-level number from it. | no | auto: smtNotAForecast | — |
 | R-METHOD-PRESENT | active | Every catalogue view (Teacher, Admissions, SMT; groups' views are SMT's) has a method (src/catalogue/methods.ts): the sources with their editions, read from the data where it carries them; the area; the years used and any left out, with the reason; the calculation as numbered plain-English steps; and any rounding or suppression. The footer's source (i) shows it -- after the view's "What this shows" line (its caption, moved into the (i) in 0.8 notes and feedback) -- the steps under a collapsible "How it is calculated", scrolling, never cut off, on the phone too. Where the code does something the (i) didn't say (a rounding, a filter, an exclusion, double award as two entries, a small-number rule), the method says it. | no | auto: methodPresent | — |
@@ -163,6 +174,7 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | R-ROLL-INDEXED-SET | active | SMT Overview's Roll, indexed (and its table) draws the school's line (day and boarding at a boarding school), the selected set's average day roll, and -- where the set has boarders -- its average boarding roll as a grey dotted line (F-11). No England or LA line. The averages are over the set's schools with a figure in every year shown, indexed from the same base year as the school's lines, under the same filters. | no | auto: rollIndexedSet | — |
 | R-MARKET-FOLLOWS-SET | active | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). | no | auto: marketFollowsSet | — |
 | R-FEEDBACK-PAGE | active | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. | no | auto: feedbackPage | — |
+| R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
 
 ## Cards
 
@@ -1150,7 +1162,7 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | Why | Calendar births straddle two school cohorts. |
 | Applies to | Admissions Pipelines (births rungs) |
 | Enforced in | - src/lib/admissions/ladder.ts:academicBirths, birthsPoint |
-| Tagged at | - src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/ladder.ts<br>- src/lib/admissions/screens.ts |
+| Tagged at | - src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/ladder.ts |
 | Test case | Great Malvern Primary School (136984): 4+: the 2027 pool equals 8/12 of 2023's plus 4/12 of 2022's births in the blend, recomputed from raw ONS births. [runner: admBirthSplit] |
 | Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
 | Status | active |
@@ -1598,13 +1610,13 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | Why | Births, pools and an entry cohort are different counts. |
 | Applies to | DV-ADM-P-FUNNEL |
 | Enforced in | - src/lib/admissions/screens.ts:funnel<br>- src/components/admissions/views/Funnel.tsx |
-| Tagged at | - src/components/admissions/views/Funnel.tsx<br>- src/lib/admissions/screens.ts |
-| Test case | The Chase (137625), ks4: Births = 8/12 of 2014 + 4/12 of 2013 in Worcestershire; Year 6 = Worcestershire's age-10 pupils in 2024/25 (age_profile_aggregates); entry = 236; three bars, labelled Births / Year 6 / Your Year 7; 4+ has none. [runner: admViewFunnel] |
+| Tagged at | — |
+| Test case | The Chase (137625), ks4: Births = 8/12 of 2014 + 4/12 of 2013 in Worcestershire; Year 6 = Worcestershire's age-10 pupils in 2024/25 (age_profile_aggregates); entry = 236; three bars, labelled Births / Year 6 / Your Year 7; 4+ has none. [manual] |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
-| Status | active |
+| Status | superseded by R-ADM-VIEW-INTAKE-CHANGE |
 | Must lift | — |
 | Open issue | — |
-| Fixed | — |
+| Fixed | - 0.8 Admissions feedback round 1 (F-13): the funnel is rebuilt as "Why did our intake change?" over the school's catchment radius (intake.ts); the LA-blend funnel (screens.ts funnel, funnelArea) and its notes are removed. |
 
 ### R-ADM-VIEW-FEEDERS
 
@@ -1790,9 +1802,185 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | Why | "This is great but needs like with like" (Guy, 12 Oct 2026): births in one area against a hand-picked set's pupils compared two different areas. |
 | Applies to | DV-ADM-P-FUNNEL |
 | Enforced in | - src/lib/admissions/screens.ts:funnel, funnelArea<br>- src/components/admissions/views/Funnel.tsx |
-| Tagged at | - src/components/admissions/views/Funnel.tsx<br>- src/lib/admissions/screens.ts |
-| Test case | The Chase (11+, 16+), King's Worcester 117037 (11+) (137625), ks4: The births and pool bars carry the same LA set and weights (the school's own LA); births recomputed from raw ONS births, the pool from raw age_profile_aggregates rows at age 10 (or 15) in 2024/25. [runner: admFunnelSameArea] |
+| Tagged at | — |
+| Test case | The Chase (11+, 16+), King's Worcester 117037 (11+) (137625), ks4: The births and pool bars carry the same LA set and weights (the school's own LA); births recomputed from raw ONS births, the pool from raw age_profile_aggregates rows at age 10 (or 15) in 2024/25. [manual] |
 | Origin | 0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F7) |
+| Status | superseded by R-ADM-VIEW-INTAKE-CHANGE |
+| Must lift | — |
+| Open issue | — |
+| Fixed | - 0.8 Admissions feedback round 1 (F-13): the funnel is rebuilt as "Why did our intake change?" over the school's catchment radius (intake.ts); the LA-blend funnel (screens.ts funnel, funnelArea) and its notes are removed. |
+
+### R-ADM-VIEW-INTAKE-CHANGE
+
+| Field | Content |
+| --- | --- |
+| Statement | "Why did our intake change?" splits the change in the school's entry cohort from 2019/20 to the latest year into three parts in ONE area, the school's catchment radius (R-ADM-CATCHMENT-RULE), never its feeder list: births (the cohort's size: children aged 0 in the LSOAs within the radius, or the youngest age the LSOA years hold for the base cohort, at both ends), families moving (the area's Year 6, or Year 11 at 16+, against those births) and the school's share (its Year 7, or Year 12, against the area's Year 6). The split is the log-mean (LMDI) one, so the parts add up to the change exactly; rounded to whole pupils by largest remainders. An intake under 30 at either end makes each end a 3-year average. No funnel at 4+. The (i) says how the radius was set, that boarding schools draw from beyond any radius, and that families moving includes children crossing the radius to go to school. |
+| Why | Guy, 29 Oct 2026 (F-13): the funnel was interesting but unclear; what a head needs is why the intake changed -- fewer children, families moving, or the school's own pull. |
+| Applies to | DV-ADM-P-FUNNEL |
+| Enforced in | - src/lib/admissions/intake-change.ts:splitIntake, birthsAge, endYears<br>- src/lib/admissions/intake.ts:intakeChange<br>- src/components/admissions/views/Funnel.tsx:Funnel<br>- src/catalogue/methods-admissions.ts |
+| Tagged at | - src/components/admissions/views/Funnel.tsx<br>- src/lib/admissions/intake-change.test.ts<br>- src/lib/admissions/intake-change.ts<br>- src/lib/admissions/intake.ts |
+| Test case | Leighton Park (11+, 16+); The Chase 137625 (11+) (110110), ks4: Recomputed from area_context and the census: the three parts add up to the change; the births age is 3 at 11+ and 8 at 16+ (LSOA years from 2011); the area is 15 km (Leighton Park) and 12 km (The Chase, density); 4+ has none; changing the feeder lists changes nothing. [runner: admIntakeChange] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-LOCAL-BIRTHS
+
+| Field | Content |
+| --- | --- |
+| Statement | Local births draws the catchment's children aged 0 by mid-year (the same LSOAs as the funnel), indexed to the first year every line has, against the school's region and England (ONS's LA estimates aged 0, summed), with a second x-axis label naming the September entry each birth year reaches (Year 7 at 11+: + 11 years; Year 12 at 16+: + 16). |
+| Why | Guy, 29 Oct 2026 (F-13): next to the funnel, the births that will reach the school's entry, against the region and England. |
+| Applies to | DV-ADM-P-BIRTHS |
+| Enforced in | - src/lib/admissions/intake.ts:localBirths<br>- src/components/admissions/views/Funnel.tsx:LocalBirths<br>- src/components/admissions/views/charts.tsx:LineChart (xLabels2) |
+| Tagged at | - src/components/admissions/views/Funnel.tsx<br>- src/lib/admissions/intake.ts |
+| Test case | Leighton Park (110110), ks4: Each year's catchment count equals area_context's age 0; the region (South East) and England are the sums of their LAs' age 0; the second label is the year + 11 at 11+ and + 16 at 16+. [runner: admLocalBirths] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-CATCHMENT-RULE
+
+| Field | Content |
+| --- | --- |
+| Statement | One catchment for SMT Context, the group projections and Admissions' funnel and local births: this view's own radius (?km=), else the school's saved catchment, else the default -- 15 km for an independent school; for a state school the density radius, the smallest whole-km radius holding its 5 nearest same-phase state schools (nearest_schools; secondary = teaches 11 and 15, primary = Reception to Year 6 ending by 11, 16+ = starts at 16), from 2 km to its cap; 5 km where the nearest schools can't be read. Every (i) that draws it says how it was set. |
+| Why | Guy, 29 Oct 2026: a city school's 5 km and a country school's 5 km hold very different numbers of schools; the density radius gives each an area of the same kind, and the funnel, local births and SMT Context share it. |
+| Applies to | DV-ADM-P-FUNNEL, DV-ADM-P-BIRTHS, every SMT Context view, the groups' projections, Admissions' list editor radius |
+| Enforced in | - src/lib/smt/catchment.ts:densityPhase, densityKmOf, catchmentDefaultKm, catchmentHowWords<br>- src/lib/smt/catchment-density.ts<br>- src/lib/smt/catchment-client.ts<br>- src/app/api/smt/context/route.ts<br>- src/app/api/smt/context/map/route.ts<br>- src/app/api/smt/catchment/route.ts<br>- src/lib/groups/projections.ts<br>- src/lib/admissions/intake.ts |
+| Tagged at | - src/lib/smt/catchment.test.ts<br>- src/lib/smt/catchment.ts |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: the 5th nearest state secondary from nearest_schools, recomputed, rounded up -- 12 km; Leighton Park: 15 km; SMT Context and the funnel draw the same km for both. [runner: admCatchmentRule] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-ENTRY-SEX
+
+| Field | Content |
+| --- | --- |
+| Statement | Your cohort, girls and boys: the entry cohort's girls and boys by census year as two lines, and the girls' share under them against 50%, from the same census rows as the cohort (cohort.ts). |
+| Why | Guy, 29 Oct 2026 (F-16): the trend in each sex, and how the balance has moved. |
+| Applies to | DV-ADM-P-ENTRY-SEX |
+| Enforced in | - src/components/admissions/views/Lines.tsx:EntrySex |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: Girls + boys = the cohort each year; the share line is girls ÷ cohort. [runner: admEntrySex] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-ROLL-INDEXED
+
+| Field | Content |
+| --- | --- |
+| Statement | The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead. |
+| Why | Guy, 29 Oct 2026 (F-20): grey lines of different sizes can't be read as trends. |
+| Applies to | DV-ADM-M-ROLL-LINE |
+| Enforced in | - src/lib/admissions/views-api.ts:rollIndexed<br>- src/components/admissions/views/Lines.tsx:RollTrend |
+| Tagged at | - src/lib/admissions/views-api.ts |
+| Test case | Leighton Park (110110), ks4: Recomputed from the census: base 2019/20 = 100; the average over the rivals with every year; one key entry per rival in full screen. [runner: admRollIndexed] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-BAND-SHARE
+
+| Field | Content |
+| --- | --- |
+| Statement | Share of Years 7-11 (the entry point's whole age band: 11+ 11-15, 16+ 16-18, 4+ 4-10) is the school's band roll as a share of the group's, each year, the Market share Trends rail's last view. |
+| Why | Guy, 29 Oct 2026 (F-21). |
+| Applies to | DV-ADM-M-SHARE-BAND |
+| Enforced in | - src/lib/admissions/market.ts:buildMarketShare (ageBand)<br>- src/components/admissions/views/Lines.tsx:BandShareTrend<br>- src/catalogue/dashboards/admissions.ts |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: Each year's share = the school's pupils aged 11-15 ÷ the group's, recomputed; the last view on the rail. [runner: admBandShare] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-AXIS-TICKS
+
+| Field | Content |
+| --- | --- |
+| Statement | Every Admissions line view has a tick at every year on its x axis, and the middle year labelled as well as the first and last. |
+| Why | Guy, 29 Oct 2026 (F-12): entry years were hard to find by eye. |
+| Applies to | Every Admissions line view |
+| Enforced in | - src/components/admissions/views/charts.tsx:LineChart (ticks), yearTicks<br>- src/components/admissions/views/Lines.tsx<br>- src/components/admissions/views/Funnel.tsx |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: Each line view's svg has one tick per year and a middle label. [runner: admAxisTicks] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-MAP-SELF
+
+| Field | Content |
+| --- | --- |
+| Statement | The map of feeders marks the school itself: a solid Admissions-blue dot, drawn last, sized by its entry cohort now on the feeders' own scale, with a key. |
+| Why | Guy, 29 Oct 2026 (F-14): where is the school being fed, and how big is its intake against its feeders? |
+| Applies to | DV-ADM-P-MAP |
+| Enforced in | - src/components/admissions/views/AdmissionsMap.tsx:FeederMap<br>- src/lib/admissions/views-api.ts:pipelineView (school.easting, northing) |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: The school's dot is present, last, accent-filled, its roll the entry cohort now. [runner: admMapSelf] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FEEDER-SHAPES
+
+| Field | Content |
+| --- | --- |
+| Statement | Pipelines' Shape and size draws the local shape, then the shapes and sizes of the current feeder set's schools (the set a year below entry, the school left out), in the set's own order; the school's own shape and its rivals' are Market share's. |
+| Why | Guy, 29 Oct 2026 (F-15). |
+| Applies to | DV-ADM-P-SHAPE |
+| Enforced in | - src/lib/admissions/views-api.ts:shapeView (feeders)<br>- src/components/admissions/views/ShapeAndSize.tsx |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: The feeders listed are the pipeline's set at age 10, in its order, without the school. [runner: admFeederShapes] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-SHAPE-ROWS
+
+| Field | Content |
+| --- | --- |
+| Statement | Each small multiple in Shape and size has a row per age over the featured profile's ages (an age the school doesn't teach is an empty row), so the rows line up with the featured school's. |
+| Why | Guy, 29 Oct 2026 (F-19): three-row outlines couldn't be compared with the featured school's profile. |
+| Applies to | DV-ADM-M-SHAPE, DV-ADM-P-SHAPE |
+| Enforced in | - src/components/admissions/views/ShapeAndSize.tsx:Mini, Cards |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: Every rival card has as many rows as the school's own bars. [runner: admShapeRows] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-MOMENTUM-SCOPE
+
+| Field | Content |
+| --- | --- |
+| Statement | Rivals' momentum says under its title which schools it can place: schools submitting GCSE results only (11+), A-level results (16+), published KS2 results (4+). |
+| Why | Guy, 29 Oct 2026 (F-18). |
+| Applies to | DV-ADM-M-MOMENTUM |
+| Enforced in | - src/components/admissions/views/Momentum.tsx:momentumScope |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: "Schools submitting GCSE results only" at 11+. [runner: admMomentumScope] |
+| Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
@@ -2090,12 +2278,12 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | Context draws at one radius, in whole km: this view's own (?km=), else the school's saved catchment (school_catchment, app DB), else the default by type (5 km state, 15 km independent); never past the cap by type (15 km a state school without a sixth form, 30 km otherwise; a saved catchment over it draws at the cap and says so). The whole board follows it -- the map circle and ring, children now, the deprivation mix, population by age, children nearby over time, the forward view, schools nearby and the census line -- and no caption names another radius. The school's own School-Admin (or account holder) saves it; its approved members read it; nobody else does. |
+| Statement | Context draws at one radius, in whole km: this view's own (?km=), else the school's saved catchment (school_catchment, app DB), else the default by type (15 km independent; a state school's density radius since 0.8 Admissions fb1, R-ADM-CATCHMENT-RULE; 5 km where that can't be read); never past the cap by type (15 km a state school without a sixth form, 30 km otherwise; a saved catchment over it draws at the cap and says so). The whole board follows it -- the map circle and ring, children now, the deprivation mix, population by age, children nearby over time, the forward view, schools nearby and the census line -- and no caption names another radius. The school's own School-Admin (or account holder) saves it; its approved members read it; nobody else does. |
 | Why | One area per board, the same for every view; the school chooses its usual catchment (Guy, 15 Oct 2026: km, caps by type, Admissions' pools left nearest-N). |
 | Applies to | Every SMT Context view; /api/smt/catchment; Admissions' list editor radius |
 | Enforced in | - src/lib/smt/catchment.ts:resolveCatchment, catchmentCapKm, catchmentDefaultKm<br>- src/lib/smt/catchment-server.ts<br>- src/app/api/smt/catchment/route.ts<br>- src/app/api/smt/context/route.ts<br>- src/lib/smt/context.ts:buildContext<br>- src/lib/smt/context-map.ts:buildContextMap<br>- src/components/smt/Catchment.tsx:AreaPill<br>- supabase/migrations/20261113090000_v08_smt_r4_catchment.sql |
 | Tagged at | - src/components/smt/Catchment.tsx<br>- src/components/smt/views/Context.tsx<br>- src/lib/smt/catchment.test.ts<br>- src/lib/smt/catchment.ts |
-| Test case | The Chase; Leighton Park 110110 (137625), ks4: Defaults 5 km (The Chase) and 15 km (Leighton Park); a saved 8 km draws 8 km, a view's 3 km beats it; a state 11-16 school is capped at 15 km and a saved 20 km draws 15 km, capped; at 3 km every Context caption says 3 km and none another radius; RLS (v08_smt_r4_catchment_pglite.mjs, 28 checks): School-Admin and holder write, members read, pending members, another school and anon neither. [runner: smtRadius] |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: Defaults 12 km (The Chase: its density radius, R-ADM-CATCHMENT-RULE) and 15 km (Leighton Park); a saved 8 km draws 8 km, a view's 3 km beats it; a state 11-16 school is capped at 15 km and a saved 20 km draws 15 km, capped; at 3 km every Context caption says 3 km and none another radius; RLS (v08_smt_r4_catchment_pglite.mjs, 28 checks): School-Admin and holder write, members read, pending members, another school and anon neither. [runner: smtRadius] |
 | Origin | 0.8 SMT round 4 (docs/v0.8/vicdata_0_8_smt_round4_area_projection_radius_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -2641,6 +2829,22 @@ What a number is allowed to be. 155 rules: 151 active, 4 superseded; 22 must lif
 | Tagged at | - src/components/feedback/FeedbackWindow.tsx<br>- src/components/feedback/PageFeedback.tsx<br>- src/components/feedback/store.ts<br>- src/lib/feedback-server.ts<br>- src/lib/smt-fb2.test.ts<br>- src/lib/view-ref.ts |
 | Test case | Leighton Park, SMT Overview in View as (unit, PGlite and browser tests) (110110), ks5: The page item carries the full context with no panel or view and its areas; the server takes it and refuses a page key with a panel; the button turns yellow; the inbox row reads Page; in PGlite (17 checks) feedback_for_triage shows is_page and area and feedback_coverage a page row. [runner: feedbackPage] |
 | Origin | 0.8 SMT feedback round 2, section 6 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v2.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-TABLE-FEATURED-ROW
+
+| Field | Content |
+| --- | --- |
+| Statement | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. |
+| Why | Guy (F-17): in a table the featured school's row has to be found at a glance, and the tint says whose dashboard it is. |
+| Applies to | every table view: Admissions, Teacher (GCSE, Post-16), SMT, groups |
+| Enforced in | - src/app/globals.css<br>- src/components/shell/accent.ts:FEATURED_ROW_BG<br>- src/components/admissions/views/Tables.tsx:RivalsTable<br>- src/components/teacher/SchoolRankingTable.tsx<br>- src/components/teacher/SortTable.tsx<br>- src/components/teacher/SeriesViews.tsx:YearTable<br>- src/components/groups/dash/views.tsx<br>- src/lib/featured-row.test.ts |
+| Tagged at | - src/lib/featured-row.test.ts |
+| Test case | Leighton Park, Admissions Market share, Rivals table at 11+ (and the unit test) (110110), ks4: Exactly one tinted row, Leighton Park's, drawn with the token; each product's root names its own token; all five tokens set in the light and both dark blocks. [runner: tableFeaturedRow] |
+| Origin | 0.8 Admissions feedback round 1, F-17 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
