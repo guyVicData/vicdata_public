@@ -174,7 +174,7 @@ The existing re-seed test (`v061_s2_reseed_pglite.mjs`) still passes 16/16.
 | eslint | 0 errors (main's 2 old warnings) |
 | `next build` | clean |
 | Server keys in client bundles | none (`.next/static` searched) |
-| Unit (`src/**/*.test.ts`, `--env-file=.env`) | **535 / 535** over 65 files, each file run on its own. New: `intake-change.test.ts` (9), 5 density tests in `catchment.test.ts`, `featured-row.test.ts` (4). **`view-as-pages.test.ts` not counted:** on this machine it hangs after its first test, and it does the same on `main` (`030d546`, same exit), so it is this machine (no service-role key for View as), not the round. Please run it on `~/dev`. |
+| Unit (`src/**/*.test.ts`, `--env-file=.env`) | **535 / 535** over 65 files, each file run on its own. New: `intake-change.test.ts` (9), 5 density tests in `catchment.test.ts`, `featured-row.test.ts` (4). Plus `view-as-pages.test.ts`: **1 / 1** on the branch and on `main`, run as its header says, with `--test-force-exit`. Run without that flag it passes in under a second and then never exits (its browser Supabase client keeps a timer alive), which an earlier draft of this report took for a hang on this machine. |
 | Catalogue unit tests | **77 / 77** |
 | Rule tests (real data, read-only) | **127 PASS, 0 FAIL**, MANUAL 15, NONE 19, SUPERSEDED 6 |
 | PGlite | `v08_admissions_fb1_republish_pglite.mjs` **11 / 11** (new); `v061_s2_reseed_pglite.mjs` **16 / 16**. The other suites are untouched by this round (no migration) and weren't rerun. |
