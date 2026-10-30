@@ -148,8 +148,8 @@ Owner vicdata · dashboard · layout 3 (independent) · group Admissions #0
 | Panel | Column | Row | Override | Dataviews (rail order) | Default |
 | --- | --- | --- | --- | --- | --- |
 | vicdata.admissions.pipelines.c1.now | c1 | now | — | DV-ADM-P-NOW | DV-ADM-P-NOW |
-| vicdata.admissions.pipelines.c2.now | c2 | now | — | DV-ADM-P-PIPELINE, DV-ADM-P-FUNNEL, DV-ADM-P-MAP, DV-ADM-P-TABLE, DV-ADM-P-SHAPE | DV-ADM-P-PIPELINE |
-| vicdata.admissions.pipelines.c1.trends | c1 | trends | — | DV-ADM-P-ENTRY-LINE, DV-ADM-P-ENTRY-BARS, DV-ADM-P-ENTRY-TABLE | DV-ADM-P-ENTRY-LINE |
+| vicdata.admissions.pipelines.c2.now | c2 | now | — | DV-ADM-P-PIPELINE, DV-ADM-P-FUNNEL, DV-ADM-P-BIRTHS, DV-ADM-P-MAP, DV-ADM-P-TABLE, DV-ADM-P-SHAPE | DV-ADM-P-PIPELINE |
+| vicdata.admissions.pipelines.c1.trends | c1 | trends | — | DV-ADM-P-ENTRY-LINE, DV-ADM-P-ENTRY-BARS, DV-ADM-P-ENTRY-TABLE, DV-ADM-P-ENTRY-SEX | DV-ADM-P-ENTRY-LINE |
 | vicdata.admissions.pipelines.c2.trends | c2 | trends | — | DV-ADM-P-POOL-INDEXED, DV-ADM-P-POOL-TABLE, DV-ADM-P-AREA-POP | DV-ADM-P-POOL-INDEXED |
 | vicdata.admissions.pipelines.c3.trends | c3 | trends | — | DV-ADM-P-HOLD-LINE, DV-ADM-P-HOLD-TABLE | DV-ADM-P-HOLD-LINE |
 
@@ -180,7 +180,7 @@ Owner vicdata · dashboard · layout 3 (independent) · group Admissions #1
 | vicdata.admissions.market-share.c2.now | c2 | now | — | DV-ADM-M-DONUT, DV-ADM-M-BARS, DV-ADM-M-MAP, DV-ADM-M-TABLE, DV-ADM-M-MOMENTUM, DV-ADM-M-STRENGTHS, DV-ADM-M-SHAPE | DV-ADM-M-BARS |
 | vicdata.admissions.market-share.c1.trends | c1 | trends | — | DV-ADM-M-VS-LINE, DV-ADM-M-VS-BARS | DV-ADM-M-VS-LINE |
 | vicdata.admissions.market-share.c2.trends | c2 | trends | — | DV-ADM-M-ACAD-RANK, DV-ADM-M-ACAD-NUM, DV-ADM-M-ACAD-CHANGE | DV-ADM-M-ACAD-RANK |
-| vicdata.admissions.market-share.c3.trends | c3 | trends | — | DV-ADM-M-SHARE-LINE, DV-ADM-M-SHARE-NUM, DV-ADM-M-SHARE-RANKS, DV-ADM-M-SHARE-CHANGE, DV-ADM-M-ROLL-LINE | DV-ADM-M-SHARE-LINE |
+| vicdata.admissions.market-share.c3.trends | c3 | trends | — | DV-ADM-M-SHARE-LINE, DV-ADM-M-SHARE-NUM, DV-ADM-M-SHARE-RANKS, DV-ADM-M-SHARE-CHANGE, DV-ADM-M-ROLL-LINE, DV-ADM-M-SHARE-BAND | DV-ADM-M-SHARE-LINE |
 
 ## SMT Overview (`vicdata.smt.overview`)
 

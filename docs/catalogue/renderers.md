@@ -2,7 +2,7 @@
 
 # Renderers
 
-Shape requirements only, no rules. 44 renderers.
+Shape requirements only, no rules. 45 renderers.
 
 ### RD-NUMBER-TILES — NumberTiles
 
@@ -249,8 +249,8 @@ Shape requirements only, no rules. 44 renderers.
 | Field | Content |
 | --- | --- |
 | File | src/components/admissions/views/Funnel.tsx |
-| Accepts | Births → each kind of school's pool → the school's entry cohort, for this September's entrants. |
-| Empty | A stage without a figure says 'not held'. |
+| Accepts | Why did our intake change? A waterfall: your entry cohort in 2019/20, then births (cohort size), families moving and your share, then the latest year's cohort, all in the catchment radius. |
+| Empty | No funnel at 4+; a missing figure at either end says which. |
 | Suppressed | — |
 | Partial | — |
 | Loading | The panel's skeleton until the route answers. |
@@ -258,6 +258,21 @@ Shape requirements only, no rules. 44 renderers.
 | Fullscreen | The panel's fullscreen modal, the same view larger. |
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
 | Used by | DV-ADM-P-FUNNEL |
+
+### RD-ADM-BIRTHS — LocalBirths
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Funnel.tsx |
+| Accepts | Births in the catchment by mid-year, indexed against the region and England, with the entry year each reaches as a second axis label. |
+| Empty | No small-area figures: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-BIRTHS |
 
 ### RD-ADM-MAP — AdmissionsMap
 
@@ -317,7 +332,7 @@ Shape requirements only, no rules. 44 renderers.
 | Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
 | Fullscreen | The panel's fullscreen modal, the same view larger. |
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
-| Used by | DV-ADM-P-ENTRY-LINE, DV-ADM-P-POOL-INDEXED, DV-ADM-P-HOLD-LINE, DV-ADM-M-VS-LINE, DV-ADM-M-SHARE-LINE, DV-ADM-M-ROLL-LINE |
+| Used by | DV-ADM-P-ENTRY-LINE, DV-ADM-P-ENTRY-SEX, DV-ADM-P-POOL-INDEXED, DV-ADM-P-HOLD-LINE, DV-ADM-M-VS-LINE, DV-ADM-M-SHARE-LINE, DV-ADM-M-ROLL-LINE, DV-ADM-M-SHARE-BAND |
 
 ### RD-ADM-BARS — AdmBars
 

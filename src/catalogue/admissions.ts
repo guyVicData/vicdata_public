@@ -80,6 +80,23 @@ export const ADMISSIONS_MEASURES: Measure[] = [
     citation: "DfE school census (January), pupils by age",
   },
   {
+    // 0.8 Admissions feedback round 1 (F-13): the area around the school -- its catchment radius, SMT's.
+    id: "M-ADM-CATCHMENT",
+    name: "Children in the catchment",
+    data: "admissions.pipeline",
+    definition: "ONS small-area population (LSOAs whose population-weighted centre is within the school's catchment radius: the ingest's area_context) by single age 0-18, per mid-year: births (age 0), and the age a year below entry (src/lib/admissions/intake.ts). The radius is SMT's (src/lib/smt/catchment.ts).",
+    grain: "School's catchment × single age × mid-year",
+    sources: ["ons_lsoa_population", "ons_population_age"],
+    years: { from: "2011", to: "2024", note: "LSOA mid-year estimates; the region and England from ONS's LA estimates (2012 on)." },
+    keying: "urn",
+    geographies: geo("the catchment radius", null, null, "the LAs in the school's region, summed", "England's LAs, summed"),
+    numberTypes: ["totals", "index100"],
+    rules: ["R-ADM-VIEW-INTAKE-CHANGE", "R-ADM-VIEW-LOCAL-BIRTHS", "R-ADM-CATCHMENT-RULE"],
+    fetchedBy: ["src/lib/admissions/intake.ts:intakeChange, localBirths", "src/lib/smt/area-data.ts:areaContext", "src/app/api/admissions/pipeline/route.ts"],
+    knownGaps: ["LSOA single ages from mid-2011 only: older cohorts' births are counted at the youngest age held.", "Not split by sex.", "A boarding school draws from beyond any radius."],
+    citation: "ONS small-area population estimates (LSOA), single year of age",
+  },
+  {
     id: "M-ADM-RIVAL-RESULTS",
     name: "Rivals' results",
     data: "admissions.rivals",
@@ -113,7 +130,8 @@ const r = (id: `RD-${string}`, component: string, file: string, accepts: string,
 export const ADMISSIONS_RENDERERS: Renderer[] = [
   r("RD-ADM-TILES", "EntryNowTiles", "panels/EntryNow.tsx", "The entry point now: four tiles, size by phase (XS-XL), the shape line and mini profile.", "No census for this school: the tiles say so (an FE college shows its ILR series instead)."),
   r("RD-ADM-PIPELINE", "PipelineChart", "views/PipelineChart.tsx", "Past pools then the ladder by entry year, styled by certainty (counted solid, births dashed with a range band, projection only on request).", "No feeder set or no census in it: 'No pool to draw'."),
-  r("RD-ADM-FUNNEL", "Funnel", "views/Funnel.tsx", "Births → each kind of school's pool → the school's entry cohort, for this September's entrants.", "A stage without a figure says 'not held'."),
+  r("RD-ADM-FUNNEL", "Funnel", "views/Funnel.tsx", "Why did our intake change? A waterfall: your entry cohort in 2019/20, then births (cohort size), families moving and your share, then the latest year's cohort, all in the catchment radius.", "No funnel at 4+; a missing figure at either end says which."),
+  r("RD-ADM-BIRTHS", "LocalBirths", "views/Funnel.tsx", "Births in the catchment by mid-year, indexed against the region and England, with the entry year each reaches as a second axis label.", "No small-area figures: says so."),
   r("RD-ADM-MAP", "AdmissionsMap", "views/AdmissionsMap.tsx", "Schools sized by pupils at the age, coloured by trend (feeders) or by share (rivals); the school ringed.", "No located schools."),
   r("RD-ADM-TABLE", "AdmissionsTable", "views/Tables.tsx", "A row per school (or year) with the figures, flags, distance, sector, gender and XS-XL.", "No schools in the set."),
   r("RD-ADM-SHAPES", "ShapeAndSize", "views/ShapeAndSize.tsx", "The school's profile by gender, the local shape, and rivals' shapes as small multiples: described, not ranked.", "No census for a school: its card says so."),
@@ -183,7 +201,9 @@ export const ADMISSIONS_DATAVIEWS: Dataview[] = [
   dv({ id: "DV-ADM-P-NOW", label: "Entry point now", railIcon: "TilesIcon", data: "admissions.pupils", host: P, panel: "current", file: "panels/EntryNow.tsx", viewType: "numerical", dateMode: "single", numberType: ["totals", "pct_change"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-TILES", title: "Your [entry] entry point now", rules: ["R-ADM-VIEW-NOW", "R-ADM-SHAPE-NOT-RANKED"], audience: AUD_PUPILS }),
   // ------------------------------------------------------ Pipelines: the large view
   dv({ id: "DV-ADM-P-PIPELINE", label: "Pipeline", railIcon: "AdmPipelineIcon", data: "admissions.pipeline", host: P, panel: "current", file: "views/PipelineChart.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals", "pct_change"], compare: SETS, measures: ["M-ADM-POOL"], renderer: "RD-ADM-PIPELINE", title: "Children who will reach [entry-year] entry, by September", rules: ["R-ADM-VIEW-PIPELINE", "R-ADM-LADDER", "R-ADM-POOL-NOT-INTAKE", "R-ADM-FLAG-FEEDER"], audience: AUD_PUPILS }),
-  dv({ id: "DV-ADM-P-FUNNEL", label: "Funnel", railIcon: "AdmFunnelIcon", data: "admissions.pipeline", host: P, panel: "current", file: "views/Funnel.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: SETS, measures: ["M-ADM-POOL", "M-ADM-PUPILS"], renderer: "RD-ADM-FUNNEL", title: "From births to your [entry-year]", rules: ["R-ADM-VIEW-FUNNEL", "R-ADM-FUNNEL-SAME-AREA", "R-ADM-BIRTH-SPLIT"], audience: AUD_PUPILS, entryPoints: ["11+", "16+", "custom"], note: "No funnel at 4+: there are no Reception projections yet (0.7 r3, F7)." }),
+  // 0.8 Admissions fb1 (F-13): rebuilt as "Why did our intake change?" over the catchment radius.
+  dv({ id: "DV-ADM-P-FUNNEL", label: "Why did our intake change?", railIcon: "AdmFunnelIcon", data: "admissions.pipeline", host: P, panel: "current", file: "views/Funnel.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals", "pct_change"], compare: [], measures: ["M-ADM-CATCHMENT", "M-ADM-PUPILS"], renderer: "RD-ADM-FUNNEL", title: "Why did our intake change?", rules: ["R-ADM-VIEW-INTAKE-CHANGE", "R-ADM-CATCHMENT-RULE"], audience: AUD_PUPILS, entryPoints: ["11+", "16+", "custom"], note: "No funnel at 4+ (0.7 r3, F7)." }),
+  dv({ id: "DV-ADM-P-BIRTHS", label: "Local births", railIcon: "AdmPopulationIcon", data: "admissions.pipeline", host: P, panel: "current", file: "views/Funnel.tsx", viewType: "graph", dateMode: "trend", numberType: ["index100"], compare: ["averages"], measures: ["M-ADM-CATCHMENT"], renderer: "RD-ADM-BIRTHS", title: "Births in your catchment, against the region and England", rules: ["R-ADM-VIEW-LOCAL-BIRTHS", "R-ADM-CATCHMENT-RULE"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-MAP", label: "Map of feeders", railIcon: "MapPinIcon", data: "admissions.pipeline", host: P, panel: "current", file: "views/AdmissionsMap.tsx", viewType: "map", dateMode: "single", numberType: ["totals", "pct_change"], compare: SETS, measures: ["M-ADM-POOL", "M-ADM-PUPILS"], renderer: "RD-ADM-MAP", title: "Your feeders, sized by pupils aged [feeder-age], coloured by trend", rules: ["R-ADM-VIEW-FEEDERS", "R-ADM-FLAG-FEEDER"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-TABLE", label: "Feeder table", railIcon: "TableIcon", data: "admissions.pipeline", host: P, panel: "current", file: "views/Tables.tsx", viewType: "table", dateMode: "single", numberType: ["totals", "pct_change"], compare: SETS, measures: ["M-ADM-POOL", "M-ADM-PUPILS"], renderer: "RD-ADM-TABLE", title: "Your feeders: pupils aged [feeder-age], trend and flags", rules: ["R-ADM-VIEW-FEEDERS", "R-ADM-FLAG-FEEDER"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-SHAPE", label: "Shape and size", railIcon: "AdmShapeIcon", data: "admissions.pupils", host: P, panel: "current", file: "views/ShapeAndSize.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: SETS, measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-SHAPES", title: "Shape and size: your school, the local shape, and rivals' shapes", rules: ["R-ADM-VIEW-SHAPES", "R-ADM-SHAPE-NOT-RANKED"], audience: AUD_PUPILS }),
@@ -191,6 +211,7 @@ export const ADMISSIONS_DATAVIEWS: Dataview[] = [
   dv({ id: "DV-ADM-P-ENTRY-LINE", label: "Your cohort", railIcon: "TrendLineIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "Your [entry-year] cohort, year by year", rules: ["R-ADM-VIEW-TRENDS", "R-ADM-POOL-NOT-INTAKE"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-ENTRY-BARS", label: "Your cohort, bars", railIcon: "VerticalBarsIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Bars.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-BARS", title: "Your [entry-year] cohort, year by year", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-ENTRY-TABLE", label: "Your cohort, table", railIcon: "TableIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-TABLE", title: "Your [entry-year] cohort, year by year", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
+  dv({ id: "DV-ADM-P-ENTRY-SEX", label: "Your cohort, girls and boys", railIcon: "IndexedLineIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "Your [entry-year] cohort: girls and boys", rules: ["R-ADM-VIEW-TRENDS", "R-ADM-ENTRY-SEX"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-POOL-INDEXED", label: "Pool trends", railIcon: "IndexedLineIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["index100"], compare: SETS_AREA, measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "[feeder-age]-year-olds: your feeders, [la] and England", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-POOL-TABLE", label: "Pool trends, table", railIcon: "TableIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "index100"], compare: SETS_AREA, measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-TABLE", title: "[feeder-age]-year-olds: your feeders, [la] and England", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-AREA-POP", label: "Area population", railIcon: "AdmPopulationIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: ["averages"], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-BARS", title: "Population trends in the area (ages 5-15)", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS, note: "The school page's Population trends in the area, as it draws them." }),
@@ -217,7 +238,10 @@ export const ADMISSIONS_DATAVIEWS: Dataview[] = [
   dv({ id: "DV-ADM-M-SHARE-NUM", label: "Market share numbers", railIcon: "AdmNumbersIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "market_share"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-TABLE", title: "Your market share at [entry], year by year", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-SHARE-RANKS", label: "Market share ranks", railIcon: "HorizontalBarsIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["rank"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-TABLE", title: "Your rank at [entry], year by year", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-SHARE-CHANGE", label: "Change in share", railIcon: "ChangeArrowIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Bars.tsx", viewType: "graph", dateMode: "trend", numberType: ["pct_change", "change_pp"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-BARS", title: `Change in share at [entry] since ${periodLabel(CENSUS_FIRST_PERIOD)}`, rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
-  dv({ id: "DV-ADM-M-ROLL-LINE", label: "Entry age band roll", railIcon: "AdmRollIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: SETS, measures: ["M-ADM-MARKET", "M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "[entry age band] roll: you and the [rivals]", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
+  // 0.8 Admissions fb1 (F-20): indexed; the rivals' average in the panel, each rival in full screen.
+  dv({ id: "DV-ADM-M-ROLL-LINE", label: "Entry age band roll", railIcon: "AdmRollIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["index100"], compare: SETS, measures: ["M-ADM-MARKET", "M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "[entry age band] roll, indexed: you and the [rivals]", rules: ["R-ADM-VIEW-MARKET", "R-ADM-ROLL-INDEXED"], audience: AUD_MARKET }),
+  // 0.8 Admissions fb1 (F-21): the share of the whole age band (11+: Years 7-11), the rail's last view.
+  dv({ id: "DV-ADM-M-SHARE-BAND", label: "Share of Years 7–11", railIcon: "TrendLineIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["market_share"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-LINE", title: "Your share of [entry age band], year by year", rules: ["R-ADM-VIEW-MARKET", "R-ADM-GROUP-SHARE", "R-ADM-BAND-SHARE"], audience: AUD_MARKET }),
 ];
 
 // ------------------------------------------------------------------------------- presets
@@ -233,12 +257,14 @@ const b = (source: AdmissionsDataId, per: ViewSpec["data"]["per"], shownAs: View
 export const ADMISSIONS_BODIES: Record<string, Body> = {
   "DV-ADM-P-NOW": b("admissions.pupils", "school", "actual", LATEST, { kind: "numbers", look: {} }),
   "DV-ADM-P-PIPELINE": b("admissions.pipeline", "year", "actual", SINCE_2019, { kind: "pipeline", look: { projection: "member", pastPools: true, rungLabels: true } }),
-  "DV-ADM-P-FUNNEL": b("admissions.pipeline", "school", "actual", LATEST, { kind: "bar", look: { orientation: "horizontal", values: true } }),
+  "DV-ADM-P-FUNNEL": b("admissions.pipeline", "school", "change", SINCE_2019, { kind: "bar", look: { orientation: "vertical", values: true } }),
+  "DV-ADM-P-BIRTHS": b("admissions.pipeline", "year", "indexed", SINCE_2019, { kind: "line", look: {} }),
   "DV-ADM-P-MAP": b("admissions.pipeline", "school", "actual", LATEST, { kind: "map", look: { colour: "change" } }),
   "DV-ADM-P-TABLE": b("admissions.pipeline", "school", "actual", LATEST, { kind: "table", look: { yearColumns: "latest", extra: ["change"], sort: "listed", highlight: true, colourChange: true, memberSort: true } }),
   "DV-ADM-P-SHAPE": b("admissions.pupils", "school", "actual", LATEST, { kind: "shapes", look: { columns: 2 } }),
   "DV-ADM-P-ENTRY-LINE": b("admissions.pupils", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
   "DV-ADM-P-ENTRY-BARS": b("admissions.pupils", "year", "actual", SINCE_2019, { kind: "bar", look: { orientation: "vertical", values: true } }),
+  "DV-ADM-P-ENTRY-SEX": b("admissions.pupils", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
   "DV-ADM-P-ENTRY-TABLE": b("admissions.pupils", "year", "actual", SINCE_2019, { kind: "table", look: { yearColumns: "every", extra: ["change"], years: "down" } }),
   "DV-ADM-P-POOL-INDEXED": b("admissions.pupils", "year", "indexed", SINCE_2019, { kind: "line", look: {} }),
   "DV-ADM-P-POOL-TABLE": b("admissions.pupils", "year", "actual", SINCE_2019, { kind: "table", look: { yearColumns: "every", years: "down" } }),
@@ -263,7 +289,8 @@ export const ADMISSIONS_BODIES: Record<string, Body> = {
   "DV-ADM-M-SHARE-NUM": b("admissions.market", "year", "actual", SINCE_2019, { kind: "table", look: { yearColumns: "every", years: "down" } }),
   "DV-ADM-M-SHARE-RANKS": b("admissions.market", "year", "actual", SINCE_2019, { kind: "table", look: { yearColumns: "every", extra: ["rank"], years: "down" } }),
   "DV-ADM-M-SHARE-CHANGE": b("admissions.market", "school", "change", SINCE_2019, { kind: "bar", look: { orientation: "horizontal", diverging: true, values: true } }),
-  "DV-ADM-M-ROLL-LINE": b("admissions.market", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
+  "DV-ADM-M-ROLL-LINE": b("admissions.market", "year", "indexed", SINCE_2019, { kind: "line", look: {} }),
+  "DV-ADM-M-SHARE-BAND": b("admissions.market", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
 };
 
 // The families and compare options Step 1 lists for an Admissions dashboard (D7).
@@ -284,12 +311,15 @@ export const isAdmissionsHost = (h: string | undefined | null): h is AdmissionsH
 export const ADM_SEX_FILTER: Record<string, "applies" | "not-split"> = {
   "DV-ADM-P-NOW": "applies",
   "DV-ADM-P-PIPELINE": "applies",
-  "DV-ADM-P-FUNNEL": "applies",
+  // 0.8 Admissions fb1: the catchment's population has no girl/boy split.
+  "DV-ADM-P-FUNNEL": "not-split",
+  "DV-ADM-P-BIRTHS": "not-split",
   "DV-ADM-P-MAP": "applies",
   "DV-ADM-P-TABLE": "applies",
   "DV-ADM-P-SHAPE": "not-split",
   "DV-ADM-P-ENTRY-LINE": "applies",
   "DV-ADM-P-ENTRY-BARS": "applies",
+  "DV-ADM-P-ENTRY-SEX": "not-split",
   "DV-ADM-P-ENTRY-TABLE": "applies",
   "DV-ADM-P-POOL-INDEXED": "applies",
   "DV-ADM-P-POOL-TABLE": "applies",
@@ -315,4 +345,5 @@ export const ADM_SEX_FILTER: Record<string, "applies" | "not-split"> = {
   "DV-ADM-M-SHARE-RANKS": "applies",
   "DV-ADM-M-SHARE-CHANGE": "applies",
   "DV-ADM-M-ROLL-LINE": "applies",
+  "DV-ADM-M-SHARE-BAND": "applies",
 };

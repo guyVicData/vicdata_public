@@ -2,12 +2,12 @@
 
 // VicData 0.7 admissions r2 (D3, D4): the row-2 trend views (Main.dc.html, MarketShare.dc.html),
 // drawn from the routes' series (already indexed on the server where indexed). R-ADM-VIEW-TRENDS.
-import { indexedLabel } from "@/lib/index-base";
+import { ROLL_INDEX_MIN, indexedLabel } from "@/lib/index-base";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { POPULATION_TREND_LABELS, displayPopulationTrendPct } from "@/lib/population-trend";
 import type { MarketView, PipelineOk } from "../api";
 import { Empty, Key, LineSwatch, ViewTitle, fillHeight, fmtN, fmtPct, yearLabel } from "../ui";
-import { LineChart, YearBars } from "./charts";
+import { LineChart, YearBars, niceGrid, yearTicks } from "./charts";
 import { cohortWord } from "../panels/EntryNow";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
@@ -24,11 +24,55 @@ export function EntryTrend({ p, as, fullscreen, room }: { p: PipelineOk; as: "li
         <LineChart
           height={fullscreen ? fillHeight(room, 80, 320) : 170}
           xLabels={[yr(s[0].period), yr(s[s.length - 1].period)]}
+          ticks={yearTicks(s.map((x) => x.period), yr)}
           series={[{ id: "mine", label: "Your cohort", colour: "var(--accent)", points: s.map((x) => ({ x: x.period, y: x.cohort })), title: (pt) => `${yr(pt.x)}: ${fmtN(pt.y)} aged ${p.entry.age}` }]}
         />
       ) : (
         <YearBars height={fullscreen ? fillHeight(room, 80, 320) : 180} bars={s.map((x) => ({ label: yr(x.period).slice(2), value: x.cohort, title: `${yr(x.period)}: ${fmtN(x.cohort)} (${fmtN(x.female)} girls, ${fmtN(x.male)} boys)` }))} />
       )}
+    </>
+  );
+}
+
+// F-16 (0.8 Admissions fb1): the cohort's girls and boys, year by year, and the girls' share of it --
+// each sex's trend, and how the balance has moved. The census by sex (cohort.ts); not filtered by the top
+// bar's girls/boys (it draws both).
+export function EntrySex({ p, fullscreen, room }: { p: PipelineOk; fullscreen: boolean; room?: number }) {
+  const s = p.now.series.filter((x) => x.cohort !== null);
+  if (s.length < 2) return <Empty>Not enough census years for this school yet.</Empty>;
+  const girlsPct = (x: (typeof s)[number]) => (x.cohort ? (100 * (x.female ?? 0)) / x.cohort : null);
+  const years = s.map((x) => x.period);
+  const xLabels: [string, string] = [yr(years[0]), yr(years[years.length - 1])];
+  const first = girlsPct(s[0]);
+  const last = girlsPct(s[s.length - 1]);
+  return (
+    <>
+      <ViewTitle>Your {cohortWord(p.entry.age)} cohort: girls and boys</ViewTitle>
+      <LineChart
+        height={fullscreen ? fillHeight(room, 170, 240) : 100}
+        fromZero
+        xLabels={xLabels}
+        ticks={yearTicks(years, yr)}
+        series={[
+          { id: "girls", label: "Girls", colour: "var(--accent)", points: s.map((x) => ({ x: x.period, y: x.female })), title: (pt) => `${yr(pt.x)}: ${fmtN(pt.y)} girls aged ${p.entry.age}` },
+          { id: "boys", label: "Boys", colour: "var(--adm-amber)", width: 2.2, dashed: "5 3", points: s.map((x) => ({ x: x.period, y: x.male })), title: (pt) => `${yr(pt.x)}: ${fmtN(pt.y)} boys aged ${p.entry.age}` },
+        ]}
+      />
+      <div className="flex gap-3">
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Girls</Key>
+        <Key swatch={<LineSwatch colour="var(--adm-amber)" width={14} weight={2} dashed />}>Boys</Key>
+      </div>
+      <div data-girls-share="" className="text-[11px] text-[var(--muted2)]">
+        Girls&rsquo; share: <b className="text-[var(--fg)]">{last === null ? "—" : `${last.toFixed(0)}%`}</b> in {yr(years[years.length - 1])}
+        {first !== null && last !== null ? <> (from {first.toFixed(0)}% in {yr(years[0])})</> : null}
+      </div>
+      <LineChart
+        height={fullscreen ? fillHeight(room, 220, 150) : 44}
+        reference={{ y: 50 }}
+        yFormat={(v) => `${v.toFixed(0)}%`}
+        ticks={yearTicks(years, yr)}
+        series={[{ id: "pct", label: "Girls' share", colour: "var(--adm-grey-soft)", width: 1.8, dots: true, points: s.map((x) => ({ x: x.period, y: girlsPct(x) })), title: (pt) => `${yr(pt.x)}: girls ${pt.y?.toFixed(1)}% of the cohort` }]}
+      />
     </>
   );
 }
@@ -59,6 +103,7 @@ export function PoolTrends({ p, fullscreen, room, la = true, england = true, end
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[yr(ix.feeders[0].year), yr(ix.feeders[ix.feeders.length - 1].year)]}
+        ticks={yearTicks(ix.feeders.map((x) => x.year), yr)}
         series={[
           { id: "f", label: "Feeders", colour: "var(--accent)", points: ix.feeders.map((x) => ({ x: x.year, y: x.value })), title: (pt) => `Feeders ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(t.feeders.find((f) => f.year === pt.x)?.value)} aged ${t.age})` },
           ...(la ? [{ id: "la", label: t.laName ?? "LA", colour: "var(--adm-grey-soft)", width: 1.6, points: ix.la.map((x) => ({ x: x.year, y: x.value })), dots: areaShort }] : []),
@@ -201,6 +246,7 @@ export function ShareNeeded({ p, fullscreen, table = false, room }: { p: Pipelin
         reference={{ y: h.current.share }}
         yFormat={(v) => `${v.toFixed(1)}%`}
         xLabels={[String(needed[0].entryYear), String(needed[needed.length - 1].entryYear)]}
+        ticks={yearTicks(needed.map((x) => x.entryYear), String)}
         series={[
           { id: "now", label: "Your share now", colour: "var(--adm-grey-line)", width: 2, dashed: "4 4", points: needed.map((x) => ({ x: x.entryYear, y: h.current!.share })), title: () => `Your share now: ${fmtPct(h.current!.share)} (${fmtN(h.current!.cohort)} of ${fmtN(h.current!.pool)})` },
           { id: "c", label: "Share needed", colour: "var(--adm-amber)", width: 2.4, points: counted.map((x) => ({ x: x.entryYear, y: x.share })), title: (pt) => `${pt.x}: ${fmtPct(pt.y)} needed (counted pool)` },
@@ -256,6 +302,7 @@ export function VsRivals({ m, setLabel, as, fullscreen, room }: { m: MarketView;
         reference={{ y: 100 }}
         yFormat={(x) => x.toFixed(0)}
         xLabels={[yr(v.mine[0].year), yr(v.mine[v.mine.length - 1].year)]}
+        ticks={yearTicks(v.mine.map((x) => x.year), yr)}
         series={[
           { id: "me", label: "You", colour: "var(--accent)", points: v.mine.map((x) => ({ x: x.year, y: x.value })) },
           { id: "avg", label: "Rivals' average", colour: "var(--adm-grey-soft)", width: 1.8, dashed: "5 3", points: v.rivals.map((x) => ({ x: x.year, y: x.value })) },
@@ -280,25 +327,81 @@ export function ShareTrend({ m, fullscreen, room }: { m: MarketView; fullscreen:
         height={fullscreen ? fillHeight(room, 80, 300) : 160}
         yFormat={(v) => `${v.toFixed(1)}%`}
         xLabels={[yr(mine[0].period), yr(mine[mine.length - 1].period)]}
+        ticks={yearTicks(mine.map((r) => r.period), yr)}
         series={[{ id: "s", label: "Your share", colour: "var(--accent)", points: mine.map((r) => ({ x: r.period, y: r.share })), title: (pt) => `${yr(pt.x)}: ${fmtPct(pt.y)} of ${fmtN(m.entryAge.totals[pt.x])} (${ADMISSIONS_NOTES.groupShort.toLowerCase()})` }]}
       />
     </>
   );
 }
 
+// F-20 (0.8 Admissions fb1): the entry age band's roll indexed (the first year every line has = 100) so a
+// trend reads whatever the school's size. In the panel: you against the rivals' average. In full screen:
+// you and each rival in its own colour, with a key.
 export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: boolean; room?: number }) {
-  // The entry point's age band (not the whole roll): the school in the accent, each rival a grey line.
-  const series = m.extras.map((e) => {
-    const rows = m.ageBand.rows.filter((r) => r.urn === e.urn).sort((a, b) => a.period - b.period);
-    return { id: e.urn, label: m.schools[e.urn]?.name ?? e.urn, colour: e.urn === m.urn ? "var(--accent)" : "var(--adm-grey-2)", width: e.urn === m.urn ? 2.6 : 1.2, points: rows.map((r) => ({ x: r.period, y: r.count })) };
-  });
-  const years = m.ageBand.periods;
+  const r = m.summary.rollIndexed;
+  if (r.mine.filter((x) => x.value !== null).length < 2) return <Empty>Not enough census years to compare.</Empty>;
+  const years = r.mine.map((x) => x.year);
+  const band = `${m.band.from}\u2013${m.band.to}`;
+  const raw = (urn: string, y: number) => m.ageBand.rows.find((x) => x.urn === urn && x.period === y)?.count ?? null;
+  const me = { id: m.urn, label: "You", colour: "var(--accent)", width: 2.8, points: r.mine.map((x) => ({ x: x.year, y: x.value })), title: (pt: { x: number; y: number | null }) => `You ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(m.urn, pt.x))} aged ${band})` };
+  const small = r.rivals.filter((x) => x.small);
+  const rivals = fullscreen
+    ? r.rivals.filter((x) => !x.small).map((x, i) => ({ id: x.urn, label: m.schools[x.urn]?.name ?? x.urn, colour: `var(--adm-series-${i % 7})`, width: 1.6, dashed: i >= 7 ? "6 3" : undefined, points: x.values.map((v) => ({ x: v.year, y: v.value })), title: (pt: { x: number; y: number | null }) => `${m.schools[x.urn]?.name ?? x.urn} ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(x.urn, pt.x))} aged ${band})` }))
+    : [{ id: "avg", label: "Rivals' average", colour: "var(--adm-grey-soft)", width: 1.8, dashed: "5 3", points: r.average.map((x) => ({ x: x.year, y: x.value })) }];
   return (
     <>
       <ViewTitle>
-        Pupils aged {m.band.from}&ndash;{m.band.to}: you and the rivals
+        Pupils aged {m.band.from}&ndash;{m.band.to}: you {fullscreen ? "and each rival" : "against the rivals\u2019 average"}
       </ViewTitle>
-      <LineChart height={fullscreen ? fillHeight(room, 80, 300) : 160} xLabels={[yr(years[0]), yr(years[years.length - 1])]} series={[...series.filter((s) => s.id !== m.urn), ...series.filter((s) => s.id === m.urn)]} />
+      <LineChart
+        height={fullscreen ? fillHeight(room, 140, 300) : 150}
+        reference={{ y: 100 }}
+        yFormat={(v) => v.toFixed(0)}
+        xLabels={[yr(years[0]), yr(years[years.length - 1])]}
+        ticks={yearTicks(years, yr)}
+        yGrid={fullscreen ? niceGrid([...rivals, me].flatMap((x) => x.points.map((p) => p.y))) : null}
+        series={[...rivals, me]}
+      />
+      <div data-roll-key="" className="flex flex-wrap gap-x-3 gap-y-1">
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>You</Key>
+        {rivals.map((x) => (
+          <Key key={x.id} swatch={<LineSwatch colour={x.colour} width={14} weight={2} dashed={!!x.dashed} />}>
+            {x.label}
+          </Key>
+        ))}
+      </div>
+      <div className="text-[10.5px] text-[var(--muted)]">
+        Indexed: {indexedLabel(r.base ?? null)}.
+        {fullscreen && small.length > 0 && (
+          <span data-roll-small="">
+            {" "}Not drawn (under {ROLL_INDEX_MIN} pupils aged {band} at the start, too few to index): {small.map((x) => m.schools[x.urn]?.name ?? x.urn).join(", ")}.
+          </span>
+        )}
+      </div>
     </>
   );
+}
+
+// F-21 (0.8 Admissions fb1): your share of the whole age band's roll (11+: Years 7-11), year by year.
+export function BandShareTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: boolean; room?: number }) {
+  const mine = m.ageBand.rows.filter((r) => r.urn === m.urn).sort((a, b) => a.period - b.period);
+  if (mine.filter((r) => r.share !== null).length < 2) return <Empty>Not enough years of shares yet.</Empty>;
+  return (
+    <>
+      <ViewTitle>Your share of {bandWords(m.band)}, year by year</ViewTitle>
+      <LineChart
+        height={fullscreen ? fillHeight(room, 80, 300) : 160}
+        yFormat={(v) => `${v.toFixed(1)}%`}
+        xLabels={[yr(mine[0].period), yr(mine[mine.length - 1].period)]}
+        ticks={yearTicks(mine.map((r) => r.period), yr)}
+        series={[{ id: "s", label: "Your share", colour: "var(--accent)", points: mine.map((r) => ({ x: r.period, y: r.share })), title: (pt) => `${yr(pt.x)}: ${fmtPct(pt.y)} of ${fmtN(m.ageBand.totals[pt.x])} aged ${m.band.from}\u2013${m.band.to} (${ADMISSIONS_NOTES.groupShort.toLowerCase()})` }]}
+      />
+    </>
+  );
+}
+
+/** "Years 7–11" for an age band (Reception for 4, then Year age-4). */
+export function bandWords(b: { from: number; to: number }): string {
+  const y = (a: number) => (a <= 4 ? "Reception" : `${a - 4}`);
+  return b.from <= 4 ? `Reception to Year ${y(b.to)}` : `Years ${y(b.from)}\u2013${y(b.to)}`;
 }

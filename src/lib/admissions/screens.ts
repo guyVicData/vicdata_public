@@ -8,10 +8,9 @@ import { createServerAnonSupabaseClient } from "../supabase";
 import { cachedReference } from "../server-cache";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 import { cohortAt, type CohortTable, type Sex } from "./cohort";
-import { CENSUS_FIRST_PERIOD, cachedCensus, fetchBirthsByLa, type SchoolCensus } from "./data";
+import { CENSUS_FIRST_PERIOD, cachedCensus, type SchoolCensus } from "./data";
 import type { EntryPoint } from "./entry-points";
-import { academicBirths, BIRTH_SEX_SHARE, type Ladder } from "./ladder";
-import { blendBirths } from "./blend";
+import type { Ladder } from "./ladder";
 import { feederFlags } from "./feeders";
 import { pctChange, type Flag } from "./flags";
 import { sizePlaces } from "./ranks";
@@ -188,73 +187,8 @@ export async function feederTable(
 }
 
 // ---------------------------------------------------------------------------------------------
-// The funnel (R-ADM-VIEW-FUNNEL, R-ADM-FUNNEL-SAME-AREA): this September's entrants followed back,
-// like with like. 0.7 r3 (F7): every bar before the school's own covers the SAME area, with the
-// same weights -- the school's own LA, or the lead's LA blend when one is set:
-//   births    ONS births in the area for their school year (8/12 + 4/12, R-ADM-BIRTH-SPLIT);
-//   pool      every pupil a year below the entry age in every mainstream school in the area --
-//             academies, LA-maintained, free and independent (age_profile_aggregates, scope la,
-//             ages at 31 August, the census a year before entry: Year 6 = age 10 in 2024/25);
-//   entry     the school's own entry cohort now.
-// The feeder set's pool isn't a funnel bar any more (it stays in the Pipeline). Counts, not a flow
-// of the same children. 4+ has no funnel (no Reception projections yet): no stages.
-export type FunnelArea = { laCode: string; laName: string | null; weight: number }[];
-export type FunnelStage = { label: string; kind: "births" | "pool" | "entry"; value: number | null; year: number | null; age: number | null; schools: number | null; area: FunnelArea | null; bySex?: boolean };
-
-export async function funnel(urn: string, ep: EntryPoint, area: FunnelArea, own: CohortTable, sex: Sex): Promise<FunnelStage[]> {
-  if (ep.age <= 4) return [];
-  const X = P - ep.age; // the academic birth year (Sept X-1 to Aug X) of this September's entrants
-  const weights = new Map(area.map((b) => [b.laCode, b.weight]));
-  const codes = Array.from(weights.keys()).sort();
-  const births = blendBirths(weights, await cachedReference(`adm:births:${codes.join(",")}`, () => fetchBirthsByLa(codes)));
-  const b = academicBirths(births, X);
-  const out: FunnelStage[] = [{ label: "Births", kind: "births", value: b === null ? null : Math.round(b * (sex === "all" ? 1 : BIRTH_SEX_SHARE[sex])), year: X, age: null, schools: null, area, bySex: sex !== "all" }];
-  // The pool: a year below the entry age, in the census a year before (Year 6 = age 10 in 2024/25).
-  const age = ep.age - 1;
-  const year = P - 1;
-  const rows = age >= 5 && age <= 15 ? await areaByAge() : [];
-  let pool: number | null = null;
-  let schools: number | null = null;
-  // The aggregates carry no girl/boy split: a girls' or boys' pool isn't held (never estimated).
-  if (sex === "all" && area.every((x) => x.laName)) {
-    let sum = 0;
-    let count = 0;
-    for (const x of area) {
-      const r = rows.find((y) => y.scope === "la" && y.key === x.laName && y.period === year);
-      const v = r?.byAge[String(age)];
-      if (v === undefined) { sum = NaN; break; }
-      sum += x.weight * v;
-      count += r!.schools;
-    }
-    if (Number.isFinite(sum)) { pool = Math.round(sum); schools = count; }
-  }
-  out.push({ label: `Year ${age - 4}`, kind: "pool", value: pool, year, age, schools, area, bySex: sex !== "all" });
-  out.push({ label: `Your ${ep.age === 4 ? "Reception" : `Year ${ep.age - 4}`}`, kind: "entry", value: cohortAt(own, ep.age, P, sex), year: P, age: ep.age, schools: 1, area: null });
-  return out;
-}
-
-/** The funnel's area: the lead's LA blend when one is set, else the school's own LA. */
-export async function funnelArea(blend: { laCode: string; laName: string | null; weight: number }[], override: boolean, own: { laCode: string | null; laName: string | null } | undefined): Promise<FunnelArea> {
-  if (override && blend.length) {
-    const names = await laNames(blend.filter((b) => !b.laName).map((b) => b.laCode));
-    return blend.map((b) => ({ laCode: b.laCode, laName: b.laName ?? names.get(b.laCode) ?? null, weight: b.weight }));
-  }
-  return own?.laCode ? [{ laCode: own.laCode, laName: own.laName, weight: 1 }] : [];
-}
-
-// LA names by code (schools.la_name, the key age_profile_aggregates uses), for a blend LA with no
-// feeder school in it.
-async function laNames(codes: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  for (const c of codes) {
-    const name = await cachedReference(`adm:la-name:${c}`, async () => {
-      const { data } = await createServerAnonSupabaseClient().from("schools").select("la_name").eq("la_code", c).not("la_name", "is", null).limit(1);
-      return ((data ?? [])[0] as { la_name: string } | undefined)?.la_name ?? null;
-    });
-    if (name) out.set(c, name);
-  }
-  return out;
-}
+// 0.8 Admissions feedback round 1 (F-13): the funnel ("From births to your Year 7", one LA or the lead's
+// blend) is rebuilt as "Why did our intake change?" over the school's catchment radius: intake.ts.
 
 // ---------------------------------------------------------------------------------------------
 // Pool trends, indexed: the feeders' pool (the past pools, same method) against the same age

@@ -14,6 +14,7 @@
 // and that figure read against something (the England average, the comparison group's
 // own average, or the school's rank in the set).
 import { DIRECTION_TEXT } from "@/lib/teacher-view-trend-styles";
+import { FEATURED_ROW_ACCENT_TEXT, FEATURED_ROW_BG } from "@/components/shell/accent";
 
 export type SortKey = "name" | "value" | "delta";
 
@@ -144,9 +145,9 @@ export function SortTable({
           key={r.key}
           data-highlight={r.highlight ? "" : undefined}
           className={`flex items-center gap-1.5 border-b border-[var(--panel-border)] px-0.5 py-[7px] last:border-b-0 ${r.highlight ? "rounded-md px-1.5" : ""}`}
-          // The same rgba(accent, 0.14) the qualification badge and the nav's active phase
-          // use, with the accent itself for the text.
-          style={r.highlight ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)", color: "var(--accent,var(--fg))" } : undefined}
+          // 0.8 Admissions feedback round 1 (F-17): the product's featured-row tint (was the accent at
+          // 14%), with the accent mixed toward the text colour so it reads on it in both themes.
+          style={r.highlight ? { background: FEATURED_ROW_BG, color: FEATURED_ROW_ACCENT_TEXT } : undefined}
         >
           {leadingRank && <span className="w-6 shrink-0 text-right tabular-nums text-[var(--muted3)]">{rankOf.get(r.key) ?? ""}</span>}
           {r.colour && <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: r.colour }} />}

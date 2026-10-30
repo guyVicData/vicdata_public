@@ -10,10 +10,11 @@
 // The boards' semantic colours (green flag, red flag, amber, orange, greys) are
 // Admissions variables below, a dark and a light value each, so both themes read.
 import type { CSSProperties, ReactNode } from "react";
-import { productAccent } from "@/components/shell/accent";
+import { featuredRowVars, productAccent } from "@/components/shell/accent";
 import { RailPanel } from "@/components/shell/RailPanel";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 import { ARROW, flatBand, signedDelta, signedValue } from "@/lib/signed-delta";
+import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 
 const A = productAccent("admissions")!;
 
@@ -22,6 +23,7 @@ export function admissionsVars(theme: Theme): CSSProperties {
   return {
     "--accent": A.hex,
     "--accent-rgb": A.rgb,
+    ...featuredRowVars("admissions"),
     "--adm-tint": `rgba(${A.rgb},${dark ? 0.12 : 0.14})`,
     "--adm-accent-text": dark ? A.hex : "#0e7490",
     "--adm-on-accent": "#041418",
@@ -40,6 +42,9 @@ export function admissionsVars(theme: Theme): CSSProperties {
     "--adm-orange": dark ? "#f97316" : "#ea580c",
     "--adm-range-edge": dark ? "#2f4b52" : "#a5e4ef",
     "--adm-quadrant": dark ? "#6a6a70" : "#9a9aa2",
+    // 0.8 Admissions fb1 (F-20): one colour per rival in a full-screen line chart (school-series-colours.ts'
+    // palette, in this theme); the school itself stays the accent.
+    ...Object.fromEntries((dark ? PALETTE_DARK : PALETTE_LIGHT).map((c, i) => [`--adm-series-${i}`, c])),
   } as CSSProperties;
 }
 

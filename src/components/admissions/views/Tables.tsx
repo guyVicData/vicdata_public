@@ -8,6 +8,7 @@ import type { Load, MarketView, PipelineOk, RivalsView } from "../api";
 import { Empty, FlagPill, ViewTitle, cx, fmtN, fmtPct, fmtSigned, ordinal, yearLabel } from "../ui";
 import { cohortWord } from "../panels/EntryNow";
 import { ARROW, signedValue } from "@/lib/signed-delta";
+import { FEATURED_ROW_BG } from "@/components/shell/accent";
 
 const TH = "px-1 py-1 text-[10.5px] font-normal text-[var(--muted)]";
 const TD = "px-1 py-[5px] text-[12px]";
@@ -116,7 +117,7 @@ export function RivalsTable({ m, rivals, fullscreen, sort = "latest" }: { m: Mar
               const e = m.extras.find((x) => x.urn === row.urn);
               const rr = r?.rows.find((x) => x.urn === row.urn);
               return (
-                <tr key={row.urn} className={cx("border-t border-[var(--panel-border)]", row.urn === m.urn ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")}>
+                <tr key={row.urn} data-featured-row={row.urn === m.urn ? "" : undefined} className={cx("border-t border-[var(--panel-border)]", row.urn === m.urn ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")} style={row.urn === m.urn ? { background: FEATURED_ROW_BG } : undefined}>
                   <td className={TD}>{row.rank ?? "—"}</td>
                   <td className={cx(TD, "max-w-[220px] truncate")}>{m.schools[row.urn]?.name ?? row.urn}</td>
                   <td className={cx(TD, "text-right")}>{fmtN(row.count)}</td>

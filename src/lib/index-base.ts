@@ -6,6 +6,10 @@ import { periodLabel } from "@/catalogue/years";
 
 type Pt = { year: number; value: number | null };
 
+// 0.8 Admissions fb1 (F-20): a line indexed on fewer than this many at its base reads as a surge (a
+// school opening its senior years): Admissions' band roll names such a rival rather than drawing it.
+export const ROLL_INDEX_MIN = 30;
+
 /** Series indexed to 100 at their first COMMON year; with no common year each line is indexed to
  * its own first year (base null). */
 export function indexTo(series: Pt[][]): { base: number | null; out: Pt[][] } {

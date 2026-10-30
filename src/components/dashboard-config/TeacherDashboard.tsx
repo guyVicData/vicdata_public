@@ -37,7 +37,7 @@ import { PhoneNav, TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardFrame, GroupSwitcher, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
-import { accentVars, productAccent } from "@/components/shell/accent";
+import { accentVars, featuredRowKey, productAccent } from "@/components/shell/accent";
 import { UsageReporter, type UsageScope } from "@/lib/usage-client";
 import { buildPlan, configRendererRequested, DashboardPlanContext, type PlanEmbed } from "@/components/dashboard-config/plan";
 import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
@@ -1071,7 +1071,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <main
         id="teacher-root"
         data-theme={theme}
-        style={accentVars({ hex: accentHex, rgb: accentFor(ph).rgb })}
+        style={accentVars({ hex: accentHex, rgb: accentFor(ph).rgb }, featuredRowKey("teacher", ph))}
         // w-full: the root layout's <body> is a flex column, where a mx-auto child sizes to
         // its content; this pins onboarding to the screen width instead.
         className="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
@@ -2617,7 +2617,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
 
   // ---------------------------------------------------------------- mode "embed" (0.6 E)
   if (embed) {
-    const accentStyle = { ...directionCssVars(theme), ...accentVars(accent) } as React.CSSProperties;
+    const accentStyle = { ...directionCssVars(theme), ...accentVars(accent, featuredRowKey("teacher", phase)) } as React.CSSProperties;
     if (!embedConfig) return <EmbedStatus text="No view to draw." />;
     const cols = embedColumns(embedConfig);
     const hostFor = (key: string) => (key === "context" ? contextHost : key === "rankings" ? comparisonsHost : column1Host);
@@ -2721,7 +2721,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // The phase accent reaches every card and box as a custom property, so the shared
       // components never carry a phase-specific hex of their own. So does the one change
       // palette (--dir-up/--dir-down/--dir-flat, trend-colours.ts), in this theme.
-      style={{ ...directionCssVars(theme), ...accentVars(accent) } as React.CSSProperties}
+      style={{ ...directionCssVars(theme), ...accentVars(accent, featuredRowKey("teacher", phase)) } as React.CSSProperties}
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto w-full max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >

@@ -49,11 +49,13 @@ import { useWidth } from "./views/charts";
 import { EntryNow, laContext } from "./panels/EntryNow";
 import { MarketNow } from "./panels/MarketNow";
 import { PipelineChart } from "./views/PipelineChart";
-import { Funnel, areaWords } from "./views/Funnel";
+import { Funnel, LocalBirths, intakeAreaWords, intakeMethodVars, localBirthsMethodVars } from "./views/Funnel";
+import { PillMenu } from "@/components/shell/PillMenu";
+import { MenuDivider, MenuRow } from "@/components/shell/PanelMenu";
 import { FeederMap, RivalsMap } from "./views/AdmissionsMap";
 import { EntryTable, FeederTable, RivalsTable, ShareTable, type FeederTableLook } from "./views/Tables";
 import { ShapeAndSize, SHAPES_NOTE } from "./views/ShapeAndSize";
-import { AreaPopulation, EntryTrend, PoolTable, PoolTrends, RollTrend, ShareNeeded, ShareTrend, VsRivals } from "./views/Lines";
+import { AreaPopulation, BandShareTrend, EntrySex, EntryTrend, PoolTable, PoolTrends, RollTrend, ShareNeeded, ShareTrend, VsRivals, bandWords } from "./views/Lines";
 import { DonutView, RankedBars, ShareChange } from "./views/Bars";
 import { FlagsView, Momentum, momentumChips } from "./views/Momentum";
 import { Strengths } from "./views/Strengths";
@@ -225,6 +227,8 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   useEffect(() => onDash(url.dash), [url.dash, onDash]);
   const [filterState, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [projection, setProjection] = useState(false);
+  // 0.8 Admissions fb1 (F-13): the funnel's and local births' own radius (null = the school's catchment).
+  const [km, setKm] = useState<number | null>(null);
   const [rootRef, width] = useWidth<HTMLDivElement>();
   const phone = width > 0 && width < PHONE;
 
@@ -276,7 +280,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   // A day school's filters never carry a boarding choice (the chips aren't drawn for it).
   const filters: Filters = boardingSchool ? filterState : { ...filterState, lists: "both", boardingOnly: false };
   const q = (extra: Record<string, string> = {}) => (entry ? query(member.schoolUrn, entry, filters, extra) : null);
-  const pipeline = useRoute<PipelineView>(entry && (dash === "pipelines" || phone) ? `/api/admissions/pipeline?${q(projection ? { projection: "1" } : {})}` : null);
+  const pipeline = useRoute<PipelineView>(entry && (dash === "pipelines" || phone) ? `/api/admissions/pipeline?${q({ ...(projection ? { projection: "1" } : {}), ...(km !== null ? { km: String(km) } : {}) })}` : null);
   const market = useRoute<MarketView>(entry && dash === "market-share" ? `/api/admissions/market-share?${q()}` : null);
   const rivals = useRoute<RivalsView>(entry && dash === "market-share" ? `/api/admissions/rivals?${q()}` : null);
   const shape = useRoute<ShapeView>(entry ? `/api/admissions/shape?${q()}` : null);
@@ -329,7 +333,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
         ))}
       </span>
     ) : undefined;
-  const ctx: Ctx = { boardingSchool, member, dash, entry, filters, projection, setProjection, pipeline, market, rivals, shape, setLabel, edit: (s) => update({ setup: s }), lists: lists.status === "ready" ? lists.data : null, focusBar };
+  const ctx: Ctx = { boardingSchool, member, dash, entry, filters, projection, setProjection, km, setKm, pipeline, market, rivals, shape, setLabel, edit: (s) => update({ setup: s }), lists: lists.status === "ready" ? lists.data : null, focusBar };
   const editEntries = member.canEditLists ? () => update({ setup: "entry" }) : null;
   const editTitle = member.canEditLists ? "Choose entry points" : member.access === "viewAs" ? "View as: read-only" : "The Admissions lead chooses the entry points";
   const rivalsChip =
@@ -458,6 +462,9 @@ export type Ctx = {
   filters: Filters;
   projection: boolean;
   setProjection: (on: boolean) => void;
+  // 0.8 Admissions fb1 (F-13): this view's radius for the funnel and local births (null: the school's own).
+  km?: number | null;
+  setKm?: (km: number | null) => void;
   pipeline: Load<PipelineView>;
   market: Load<MarketView>;
   rivals: Load<RivalsView>;
@@ -564,6 +571,8 @@ function viewBody(dv: string, c: Ctx, o: ViewOpts): ReactNode {
       ));
     case "DV-ADM-P-FUNNEL":
       return readyPipe(c.pipeline, (p) => <Funnel p={p} fullscreen={fs} room={o.height} />);
+    case "DV-ADM-P-BIRTHS":
+      return readyPipe(c.pipeline, (p) => <LocalBirths p={p} fullscreen={fs} room={o.height} />);
     case "DV-ADM-P-MAP":
       return readyPipe(c.pipeline, (p) => <FeederMap p={p} fullscreen={fs} room={o.height} colour={L.colour as "change" | "value"} />);
     case "DV-ADM-P-TABLE":
@@ -575,6 +584,8 @@ function viewBody(dv: string, c: Ctx, o: ViewOpts): ReactNode {
       return readyPipe(c.pipeline, (p) => <EntryTrend p={p} as="line" fullscreen={fs} room={o.height} />);
     case "DV-ADM-P-ENTRY-BARS":
       return readyPipe(c.pipeline, (p) => <EntryTrend p={p} as="bars" fullscreen={fs} room={o.height} />);
+    case "DV-ADM-P-ENTRY-SEX":
+      return readyPipe(c.pipeline, (p) => <EntrySex p={p} fullscreen={fs} room={o.height} />);
     case "DV-ADM-P-ENTRY-TABLE":
       return readyPipe(c.pipeline, (p) => <EntryTable p={p} years={L.years as "down" | "across"} />);
     case "DV-ADM-P-POOL-INDEXED":
@@ -625,6 +636,8 @@ function viewBody(dv: string, c: Ctx, o: ViewOpts): ReactNode {
       return ready(c.market, (m) => <ShareChange m={m} />);
     case "DV-ADM-M-ROLL-LINE":
       return ready(c.market, (m) => <RollTrend m={m} fullscreen={fs} room={o.height} />);
+    case "DV-ADM-M-SHARE-BAND":
+      return ready(c.market, (m) => <BandShareTrend m={m} fullscreen={fs} room={o.height} />);
     default:
       return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
   }
@@ -643,6 +656,9 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
   if (panel.row === "now" && panel.column === "c1") return { tag: "Current", context: `Data ${yearLabel(census)}` };
   if (dv.startsWith("DV-ADM-P-") && panel.row === "now") {
     if (dv === "DV-ADM-P-SHAPE") return { tag: "Shape and size", context: `Data ${yearLabel(census)} · pupils by age` };
+    // 0.8 Admissions fb1 (F-13): the area, not the feeders' entry years.
+    if (dv === "DV-ADM-P-FUNNEL") return { tag: "Why did our intake change?", context: p?.intake.status === "ok" ? `${yearLabel(p.intake.baseYear)} → ${yearLabel(p.intake.latestYear)} · within ${p.intake.area.km} km` : "" };
+    if (dv === "DV-ADM-P-BIRTHS") return { tag: "Local births", context: p?.localBirths.status === "ok" ? `${p.localBirths.rows[0]?.year}–${p.localBirths.rows[p.localBirths.rows.length - 1]?.year} · within ${p.localBirths.area.km} km` : "" };
     const years = p ? `entry years ${p.ladder.past[0]?.entryYear ?? ""}–${p.ladder.future[p.ladder.future.length - 1]?.entryYear ?? ""}` : "";
     return { tag: dv === "DV-ADM-P-PIPELINE" ? "Pipeline" : (dataviewById(dv)?.label ?? "Pipeline"), context: ep && ep.age >= 16 ? `16+ · ${years}` : years };
   }
@@ -668,7 +684,10 @@ function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode
   if (dv === "DV-ADM-P-NOW") return { visible: laContext(c.shape.status === "ready" ? c.shape.data : null) ?? undefined };
   // 0.8 notes and feedback: the caption is each view's "What this shows" line, at the top of its (i).
   // Dropped where it only repeated the (i)'s method: M-NOW, P-FUNNEL, P-PIPELINE, M-BARS, M-TABLE.
-  if (dv === "DV-ADM-M-NOW" || dv === "DV-ADM-P-FUNNEL" || dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE") return {};
+  if (dv === "DV-ADM-M-NOW" || dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE") return {};
+  // 0.8 Admissions fb1 (F-13): what the three parts are, and that the area isn't the feeder list.
+  if (dv === "DV-ADM-P-FUNNEL") return { caption: <>{ADMISSIONS_NOTES.intakeNote} {ADMISSIONS_NOTES.intakeNotFeeders}</> };
+  if (dv === "DV-ADM-P-BIRTHS") return { caption: ADMISSIONS_NOTES.intakeNotFeeders };
   if (dv === "DV-ADM-P-MAP" || dv === "DV-ADM-P-TABLE") return { caption: ADMISSIONS_NOTES.poolShort };
   if (dv.endsWith("-SHAPE")) return { caption: SHAPES_NOTE };
   if (dv.startsWith("DV-ADM-P-ENTRY")) return { caption: ADMISSIONS_NOTES.cohortShort };
@@ -677,6 +696,7 @@ function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode
   if (dv.startsWith("DV-ADM-M-ACAD")) return { visible: <AcademicFooter explorerHref={explorerHref(c)} /> };
   if (dv === "DV-ADM-M-DONUT" || dv === "DV-ADM-M-MAP")
     return { caption: "Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools" };
+  if (dv === "DV-ADM-M-SHARE-BAND") return { caption: ADMISSIONS_NOTES.groupShort };
   if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "The entry age band's roll sits on the same rail" };
   return {};
 }
@@ -689,6 +709,16 @@ function withSexNote(dv: string, c: Ctx, notes: { caption?: ReactNode; visible?:
   if (!line) return notes;
   const note = <span data-sex-note="" className="text-[var(--muted)]">{line}</span>;
   return { ...notes, visible: notes.visible ? <>{notes.visible} {note}</> : note };
+}
+
+/** 0.8 Admissions fb1: the (i)'s {placeholders} a view fills from what it drew (the funnel's area,
+ * how its radius was set, which age stands in for births). */
+function methodVars(dv: string, c: Ctx): Record<string, string | number | null> {
+  const p = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data : null;
+  if (dv === "DV-ADM-P-FUNNEL" && p) return intakeMethodVars(p.intake);
+  if (dv === "DV-ADM-P-BIRTHS" && p) return localBirthsMethodVars(p.localBirths);
+  if (dv === "DV-ADM-M-SHARE-BAND" && c.market.status === "ready" && !("empty" in c.market.data)) return { band: bandWords(c.market.data.band) };
+  return {};
 }
 
 /** The source note behind each panel's "i". */
@@ -711,14 +741,13 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
   const ro = c.member.access === "viewAs" ? "View as: read-only" : "Read-only: the Admissions lead changes this";
   // F7: the funnel draws one area (the school's LA, or the lead's blend), not the feeder set: its
   // chip names that area; the feeders chip stays with the views that draw the feeders.
-  if (dv === "DV-ADM-P-FUNNEL" && p) {
-    const area = p.funnel[0]?.area ?? [];
-    return (
-      <FChip onClick={lead ? () => c.edit("blend") : undefined} chevron={false} title={lead ? "Adjust the LA blend (births and the pool follow it)" : ro}>
-        Area: {areaWords(area)}
-        {lead ? " · Adjust" : ""}
-      </FChip>
-    );
+  // 0.8 Admissions fb1 (F-13): the funnel and local births draw the school's catchment radius, never the
+  // feeder list: the chip names the area, and its menu changes the radius for this view only (the
+  // School-Admin saves the school's usual one in SMT Context).
+  if ((dv === "DV-ADM-P-FUNNEL" || dv === "DV-ADM-P-BIRTHS") && p) {
+    const area = p.intake.area ?? (p.localBirths.status === "ok" ? p.localBirths.area : p.localBirths.area);
+    if (!area) return null;
+    return <RadiusChip area={area} c={c} />;
   }
   if (["DV-ADM-P-PIPELINE", "DV-ADM-P-MAP", "DV-ADM-P-TABLE"].includes(dv) && p) {
     const day = c.lists?.lists.find((l) => l.kind === "day_feeders" && l.entry_point === p.entry.id)?.members?.length ?? 0;
@@ -768,6 +797,26 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
       </>
     );
   return null;
+}
+
+function RadiusChip({ area, c }: { area: NonNullable<PipelineOk["intake"]["area"]>; c: Ctx }) {
+  const pick = (km: number | null) => c.setKm?.(km === area.usualKm ? null : km);
+  return (
+    <span data-radius-chip="" title={area.how}>
+      <PillMenu label="Area" value={intakeAreaWords(area)} menuLabel="Radius" width={300} title={`${intakeAreaWords(area)}. ${area.how}`}>
+        {(close) => (
+          <div className="flex flex-col">
+            {area.presets.map((k) => (
+              <MenuRow key={k} label={`${k} km${k === area.usualKm ? " (the school's usual)" : ""}`} selected={k === area.km} onClick={() => { pick(k); close(); }} />
+            ))}
+            {!area.presets.includes(area.usualKm) && <MenuRow label={`${area.usualKm} km (the school's usual)`} selected={area.km === area.usualKm} onClick={() => { pick(area.usualKm); close(); }} />}
+            <MenuDivider />
+            <div className="px-3 pb-2 pt-1 text-[10.5px] leading-snug text-[var(--muted)]">{area.how} Changing it here changes this view only.</div>
+          </div>
+        )}
+      </PillMenu>
+    </span>
+  );
 }
 
 function menuOf(dv: string, c: Ctx, title: string): PanelMenuAction[] {
@@ -846,7 +895,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
   };
   return (
     <>
-    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} caption={notes.caption} visibleCaption={notes.visible} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title} focusBar={c.focusBar} view={{ panelId: panel.id, panelName: panel.name ?? null, instanceId: active, dataview: dv || null }}>
+    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv, methodVars(dv, c))} caption={notes.caption} visibleCaption={notes.visible} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title} focusBar={c.focusBar} view={{ panelId: panel.id, panelName: panel.name ?? null, instanceId: active, dataview: dv || null }}>
       {({ fullscreen, height }) => <InstanceBody dv={dv} c={c} o={{ fullscreen, height, onRail: onRailDv, spec: instance?.kind === "view" ? instance.spec : undefined }} />}
     </Panel>
     {copying && instance?.kind === "view" && (
@@ -902,7 +951,7 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   return (
     <>
       {now && (
-        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv)} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
+        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv, methodVars(nowDv, c))} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
           {() =>
             c.dash === "pipelines"
               ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
@@ -911,12 +960,12 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
         </Panel>
       )}
       {large && (
-        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv)} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
+        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv, methodVars(largeDv, c))} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
           {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? <InstanceBody dv={largeDv} c={c} o={{ fullscreen, height, spec: specOf(large, largeTab) }} /> : phoneView(largeDv, c, specOf(large, largeTab))}</div>}
         </Panel>
       )}
       {trends.length > 0 && (
-        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv)} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} view={trendPanel ? { panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "", dataview: trendDv || null } : null}>
+        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv, methodVars(trendDv, c))} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} view={trendPanel ? { panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "", dataview: trendDv || null } : null}>
           {({ fullscreen, height }) => <div className="flex min-h-[160px] flex-col gap-2"><InstanceBody dv={trendDv} c={c} o={{ fullscreen, height, spec: specOf(trendPanel, stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "") }} /></div>}
         </Panel>
       )}
@@ -991,7 +1040,7 @@ export function AdmissionsEveryView({ member, boardingSchool, entry, pipeline, m
         const n = notesOf(dv, c);
         out.push(
           <div key={`${panel.id}/${r.id}`} data-adm-dash={dash} data-adm-dv={dv}>
-            <Panel tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, h.tag)} title={dataviewById(dv)?.label ?? h.tag} source={sourceOf(dv)} caption={n.caption} visibleCaption={n.visible} height="auto">
+            <Panel tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, h.tag)} title={dataviewById(dv)?.label ?? h.tag} source={sourceOf(dv, methodVars(dv, c))} caption={n.caption} visibleCaption={n.visible} height="auto">
               {({ fullscreen }) => <InstanceBody dv={dv} c={c} o={{ fullscreen, spec: specOf(panel, r.id) }} />}
             </Panel>
           </div>,
@@ -1010,7 +1059,7 @@ export function AdmissionsOneView({ member, boardingSchool, entry, pipeline, mar
   const h = headerOf(panel, dv, c);
   const n = notesOf(dv, c);
   return (
-    <Panel tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, h.tag)} title={dataviewById(dv)?.label ?? h.tag} source={sourceOf(dv)} caption={n.caption} visibleCaption={n.visible} height="auto">
+    <Panel tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, h.tag)} title={dataviewById(dv)?.label ?? h.tag} source={sourceOf(dv, methodVars(dv, c))} caption={n.caption} visibleCaption={n.visible} height="auto">
       {({ fullscreen }) => <InstanceBody dv={dv} c={c} o={{ fullscreen, spec }} />}
     </Panel>
   );

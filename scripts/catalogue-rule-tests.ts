@@ -69,6 +69,27 @@ const subprocessError = (e: unknown) => {
   return (line ?? (e as Error).message).slice(0, 200);
 };
 
+// 0.8 Admissions fb1: every Admissions view for one school and entry point, rendered on the server from
+// the routes' own answers (AdmissionsEveryView), at a fixed width so the charts draw; memoised.
+const admRenderMemo = new Map<string, Promise<string>>();
+function admRenderAll(urn: string, entry: string): Promise<string> {
+  const key = `${urn}:${entry}`;
+  if (!admRenderMemo.has(key))
+    admRenderMemo.set(key, (async () => {
+      const { createElement } = await import("react");
+      const { renderToStaticMarkup } = await import("react-dom/server");
+      const v = await import("../src/lib/admissions/views-api");
+      const { AdmissionsEveryView } = await import("../src/components/admissions/AdmissionsDashboard");
+      const { InitialWidth } = await import("../src/components/admissions/views/charts");
+      const ep = v.entryPoint(entry)!;
+      const [pipeline, market, rivals, shape] = await Promise.all([v.pipelineView(urn, ep, [], { catchment: { savedKm: null } }), v.marketView(urn, ep, []), v.rivalsView(urn, ep, []), v.shapeView(urn, ep, [])]);
+      const member = { userId: "", token: "", membershipId: "m", schoolAccountId: "a", schoolUrn: urn, schoolName: urn, roles: ["admissions"], isAdmin: false, isAccountHolder: false, lead: true, access: "lead" as const, canEditLists: true, override: false, canShare: true, canManageTeam: true, readOnly: false, viewAs: null, leadColumn: true };
+      const el = createElement(AdmissionsEveryView, { member, entry: ep.id, boardingSchool: false, pipeline, market, rivals, shape, lists: null });
+      return renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, el));
+    })());
+  return admRenderMemo.get(key)!;
+}
+
 // --------------------------------------------------------------------------- runners
 // 0.8 SMT round 1: one school's SMT figures, built by the routes' own functions on the school's
 // default set (Teacher's 10 nearest), memoised for the SMT runners.
@@ -1501,64 +1522,159 @@ const RUNNERS: Record<string, Runner> = {
     const pass = [...sources].every((s) => ["counted", "births", "projection"].includes(s)) && off.ladder.projection.length === 0 && on.ladder.projection.length > 0 && off.ladder.past.every((x) => x.source === "counted") && usesNotes && !/look\.(certainty|dash|solid)/.test(src);
     return { pass, detail: fmt({ sources: [...sources].join("/"), projectionOff: off.ladder.projection.length, projectionOn: on.ladder.projection.length, usesNotes }) };
   },
-  async admViewFunnel() {
+  // ------------------------------------------------------------------ 0.8 Admissions feedback round 1
+  // R-ADM-VIEW-INTAKE-CHANGE: the split recomputed from area_context and the census, by hand, at both schools.
+  async admIntakeChange() {
     const v = await import("../src/lib/admissions/views-api");
-    const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
-    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
-    const today = new Date("2026-10-12");
-    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today });
-    const p4 = await v.pipelineView("115786", v.entryPoint("4+")!, [], { today });
-    if ("empty" in p || "empty" in p4) return { pass: false, detail: "empty" };
-    const [b, pool, entry] = [p.funnel.find((s) => s.kind === "births"), p.funnel.find((s) => s.kind === "pool"), p.funnel.find((s) => s.kind === "entry")];
-    const la = b?.area?.[0];
-    const births = await fetchBirthsByLa([la!.laCode]);
-    const expect = Math.round((8 / 12) * (births.get(la!.laCode)?.get(2014) ?? NaN) + (4 / 12) * (births.get(la!.laCode)?.get(2013) ?? NaN));
-    const { data } = await createServerAnonSupabaseClient().from("age_profile_aggregates").select("by_age").eq("scope", "la").eq("scope_key", la!.laName!).eq("period", 2024).maybeSingle<{ by_age: Record<string, number> }>();
-    const labels = p.funnel.map((s) => s.label).join(" / ");
-    const pass = p.funnel.length === 3 && b?.value === expect && b?.year === 2014 && pool?.value === data?.by_age["10"] && pool?.age === 10 && pool?.year === 2024 && entry?.value === 236 && labels === "Births / Year 6 / Your Year 7" && p4.funnel.length === 0;
-    return { pass, detail: fmt({ area: la?.laName, births: b?.value, expect, pool: pool?.value, rawAge10: data?.by_age["10"], entry: entry?.value, labels, fourPlus: p4.funnel.length }) };
-  },
-  async admFunnelSameArea() {
-    const v = await import("../src/lib/admissions/views-api");
-    const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
-    const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
-    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
-    const today = new Date("2026-10-12");
-    const sb = createServerAnonSupabaseClient();
-    const raw = async (laName: string, age: number) => (await sb.from("age_profile_aggregates").select("by_age").eq("scope", "la").eq("scope_key", laName).eq("period", 2024).maybeSingle<{ by_age: Record<string, number> }>()).data?.by_age[String(age)] ?? NaN;
+    const { areaContext } = await import("../src/lib/smt/area-data");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const today = new Date("2026-10-29");
     const out: string[] = [];
     let pass = true;
-    const check = async (urn: string, entry: string, lists: Parameters<typeof v.pipelineView>[2], expectArea: { laCode: string; weight: number }[] | null) => {
-      const p = await v.pipelineView(urn, v.entryPoint(entry)!, lists, { today });
-      if ("empty" in p) { pass = false; return; }
-      const b = p.funnel.find((s) => s.kind === "births")!;
-      const pool = p.funnel.find((s) => s.kind === "pool")!;
-      const key = (a: typeof b.area) => JSON.stringify((a ?? []).map((x) => [x.laCode, x.laName, Math.round(x.weight * 1e6)]));
-      const own = (await fetchSchoolTraits([urn])).get(urn)!;
-      const want = expectArea ?? [{ laCode: own.laCode!, weight: 1 }];
-      const sameArea = key(b.area) === key(pool.area) && JSON.stringify((b.area ?? []).map((x) => [x.laCode, Math.round(x.weight * 1e6)])) === JSON.stringify(want.map((x) => [x.laCode, Math.round(x.weight * 1e6)]));
-      const births = await fetchBirthsByLa(want.map((x) => x.laCode));
-      const X = 2025 - p.entry.age;
-      const bl = (y: number) => want.reduce((a, x) => a + x.weight * (births.get(x.laCode)?.get(y) ?? NaN), 0);
-      const expBirths = Math.round((8 / 12) * bl(X) + (4 / 12) * bl(X - 1));
-      let expPool = 0;
-      for (const x of b.area!) expPool += x.weight * (await raw(x.laName!, p.entry.age - 1));
-      // The age mapping is the ladder's: the pool's age is a rung the ladder counts at.
-      const ladderAge = p.sets.some((s) => s.age === p.entry.age - 1);
-      const ok = sameArea && b.value === expBirths && pool.value === Math.round(expPool) && pool.age === p.entry.age - 1 && pool.year === 2024 && ladderAge;
+    const check = async (urn: string, entry: string, wantKm: number, wantBirthsAge: number) => {
+      const ep = v.entryPoint(entry)!;
+      const p = await v.pipelineView(urn, ep, [], { today, catchment: { savedKm: null } });
+      if ("empty" in p || p.intake.status !== "ok") { pass = false; out.push(`${urn} ${entry}: no split`); return; }
+      const x = p.intake;
+      const ctx = (await areaContext(urn, wantKm))!;
+      const at = (mid: number, age: number) => ctx.years.find((y) => y.year === mid)!.children[age];
+      const t = (await cachedCensus([urn])).get(urn)!.table;
+      const A = ep.age;
+      const end = (E: number) => ({ births: at(E - A + wantBirthsAge, wantBirthsAge), area: at(E - 1, A - 1), school: cohortAt(t, A, E)! });
+      const b0 = end(x.baseYear);
+      const b1 = end(x.latestYear);
+      const L = (b1.school - b0.school) / (Math.log(b1.school) - Math.log(b0.school));
+      const parts = [L * Math.log(b1.births / b0.births), L * Math.log(b1.area / b1.births / (b0.area / b0.births)), L * Math.log(b1.school / b1.area / (b0.school / b0.area))];
+      const sum = x.split.parts.reduce((a, q) => a + q.value, 0);
+      const ok = x.area.km === wantKm && x.birthsAge === wantBirthsAge && !x.averaged && JSON.stringify(x.ends.base) === JSON.stringify(b0) && sum === x.split.change && x.split.parts.every((q, i) => Math.abs(q.exact - parts[i]) < 1e-9 && Math.abs(q.value - parts[i]) < 1);
       pass &&= ok;
-      out.push(`${urn} ${entry}${expectArea ? " blend" : ""}: area ${(b.area ?? []).map((x) => `${x.laName} ${Math.round(x.weight * 100)}%`).join("+")}, births ${b.value}/${expBirths}, pool ${pool.value}/${Math.round(expPool)} ${ok ? "ok" : "MISMATCH"}`);
+      out.push(`${urn} ${entry} ${x.area.km} km: ${x.split.start} -> ${x.split.end} = ${x.split.parts.map((q) => `${q.key} ${q.value}`).join(", ")} (births at age ${x.birthsAge}) ${ok ? "ok" : "MISMATCH"}`);
     };
-    await check("137625", "11+", [], null);
-    await check("137625", "16+", [], null);
-    await check("117037", "11+", [], null);
-    // A lead's blend: the same blend, weighted the same way, for both bars.
-    const base = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today });
-    if (!("empty" in base) && base.blend.length >= 2) {
-      const blend = { [base.blend[0].laCode]: 0.7, [base.blend[1].laCode]: 0.3 };
-      await check("137625", "11+", [{ kind: "day_feeders", rung: null, members: null, la_blend: blend, confirmed: true }], Object.entries(blend).map(([laCode, weight]) => ({ laCode, weight })));
-    }
-    return { pass, detail: out.join("; ") };
+    await check("110110", "11+", 15, 3);
+    await check("110110", "16+", 15, 8);
+    await check("137625", "11+", 12, 3);
+    // 4+: none; and a saved feeder list changes nothing.
+    const four = await v.pipelineView("115786", v.entryPoint("4+")!, [], { today, catchment: { savedKm: null } });
+    const listed = await v.pipelineView("110110", v.entryPoint("11+")!, [{ kind: "day_feeders", rung: null, members: ["109982", "109985"], la_blend: null, confirmed: true }], { today, catchment: { savedKm: null } });
+    const plain = await v.pipelineView("110110", v.entryPoint("11+")!, [], { today, catchment: { savedKm: null } });
+    const noFour = !("empty" in four) && four.intake.status === "none";
+    const listsIgnored = !("empty" in listed) && !("empty" in plain) && JSON.stringify(listed.intake) === JSON.stringify(plain.intake);
+    pass &&= noFour && listsIgnored;
+    return { pass, detail: `${out.join("; ")}; 4+ none ${noFour}; lists ignored ${listsIgnored}` };
+  },
+  // R-ADM-VIEW-LOCAL-BIRTHS: the catchment's age 0 equals area_context's; the region and England are the sums.
+  async admLocalBirths() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { areaContext, englandPopulation } = await import("../src/lib/smt/area-data");
+    const p = await v.pipelineView("110110", v.entryPoint("11+")!, [], { catchment: { savedKm: null } });
+    const p16 = await v.pipelineView("110110", v.entryPoint("16+")!, [], { catchment: { savedKm: null } });
+    if ("empty" in p || "empty" in p16 || p.localBirths.status !== "ok" || p16.localBirths.status !== "ok") return { pass: false, detail: "no view" };
+    const b = p.localBirths;
+    const ctx = (await areaContext("110110", b.area.km))!;
+    const en = await englandPopulation();
+    const catchmentOk = b.rows.every((r) => r.catchment === ctx.years.find((y) => y.year === r.year)!.children[0]);
+    const englandOk = b.rows.every((r) => r.england === (en.get(r.year)?.[0] ?? null));
+    const entryOk = b.rows.every((r) => r.entryYear === r.year + 11) && p16.localBirths.rows.every((r) => r.entryYear === r.year + 16);
+    const baseOk = b.indexed.catchment.find((x) => x.year === b.base)?.value === 100;
+    return { pass: catchmentOk && englandOk && entryOk && baseOk && b.regionName === "South East", detail: fmt({ km: b.area.km, region: b.regionName, base: b.base, years: `${b.rows[0].year}-${b.rows.at(-1)!.year}`, catchmentOk, englandOk, entryOk }) };
+  },
+  // R-ADM-CATCHMENT-RULE: the density radius recomputed from nearest_schools; SMT and the funnel agree.
+  async admCatchmentRule() {
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const v = await import("../src/lib/admissions/views-api");
+    const K = await import("../src/lib/smt/catchment");
+    const { withDensity } = await import("../src/lib/smt/catchment-density");
+    const { data } = await createServerAnonSupabaseClient().rpc("nearest_schools", { p_urn: "137625", p_limit: 400, p_relax_sector: true });
+    const secs = ((data ?? []) as { establishment_type_group: string; statutory_low_age: number; statutory_high_age: number; distance_metres: number }[]).filter((c) => c.establishment_type_group !== "Independent schools" && c.statutory_low_age <= 11 && c.statutory_high_age >= 15).sort((a, b) => a.distance_metres - b.distance_metres);
+    const want = Math.ceil(secs[4].distance_metres / 1000);
+    const chase = (await smtCase("137625")).school;
+    const lp = (await smtCase("110110")).school;
+    const smtChase = K.resolveCatchment(await withDensity("137625", chase), null, null);
+    const smtLp = K.resolveCatchment(await withDensity("110110", lp), null, null);
+    const f = await v.pipelineView("137625", v.entryPoint("11+")!, [], { catchment: { savedKm: null } });
+    const fl = await v.pipelineView("110110", v.entryPoint("11+")!, [], { catchment: { savedKm: null } });
+    const funnelKm = !("empty" in f) ? f.intake.area?.km : null;
+    const funnelLp = !("empty" in fl) ? fl.intake.area?.km : null;
+    const how = smtChase.rule === "density" && /5 nearest state secondaries/.test(K.catchmentHowWords(smtChase, "secondary"));
+    return { pass: want === 12 && smtChase.km === want && funnelKm === want && smtLp.km === 15 && funnelLp === 15 && how, detail: fmt({ fifth: (secs[4].distance_metres / 1000).toFixed(2), want, smtChase: smtChase.km, funnelChase: funnelKm, smtLp: smtLp.km, funnelLp, how }) };
+  },
+  // R-ADM-ENTRY-SEX: girls + boys = the cohort each year.
+  async admEntrySex() {
+    const v = await import("../src/lib/admissions/views-api");
+    const p = await v.pipelineView("110110", v.entryPoint("11+")!, []);
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const s = p.now.series.filter((x) => x.cohort !== null);
+    const ok = s.length >= 2 && s.every((x) => (x.female ?? 0) + (x.male ?? 0) === x.cohort);
+    return { pass: ok, detail: s.map((x) => `${x.period}: ${x.female}+${x.male}=${x.cohort}`).join(", ") };
+  },
+  // R-ADM-ROLL-INDEXED: the average and the index recomputed from the band rows.
+  async admRollIndexed() {
+    const v = await import("../src/lib/admissions/views-api");
+    const m = await v.marketView("110110", v.entryPoint("11+")!, []);
+    const r = m.summary.rollIndexed;
+    const yrs = m.ageBand.periods;
+    const cnt = (u: string, y: number) => m.ageBand.rows.find((x) => x.urn === u && x.period === y)?.count ?? null;
+    const whole = m.rivals.filter((u) => yrs.every((y) => cnt(u, y) !== null));
+    const avg = (y: number) => whole.reduce((t, u) => t + cnt(u, y)!, 0) / whole.length;
+    const b = r.base!;
+    const ok = b === 2019 && whole.length === r.averageOf && yrs.every((y, i) => Math.abs((r.average[i].value ?? NaN) - (100 * avg(y)) / avg(b)) < 1e-9 && Math.abs((r.mine[i].value ?? NaN) - (100 * cnt("110110", y)!) / cnt("110110", b)!) < 1e-9) && r.rivals.length === m.rivals.length;
+    return { pass: ok, detail: fmt({ base: b, averageOf: r.averageOf, rivals: r.rivals.length, mineLatest: round(r.mine.at(-1)?.value), avgLatest: round(r.average.at(-1)?.value) }) };
+  },
+  // R-ADM-BAND-SHARE: the band share recomputed; the rail's last view.
+  async admBandShare() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { ADMISSIONS_DASHBOARDS } = await import("../src/catalogue/dashboards/admissions");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const m = await v.marketView("110110", v.entryPoint("11+")!, []);
+    const census = await cachedCensus([m.urn, ...m.rivals]);
+    const band = (u: string, y: number) => [11, 12, 13, 14, 15].reduce<number | null>((t, a) => { const c = cohortAt(census.get(u)?.table ?? new Map(), a, y); return c === null ? t : (t ?? 0) + c; }, null);
+    const y = Math.max(...m.ageBand.periods);
+    const total = [m.urn, ...m.rivals].reduce((t, u) => t + (band(u, y) ?? 0), 0);
+    const share = m.ageBand.rows.find((r) => r.urn === m.urn && r.period === y)!.share!;
+    const rail = ADMISSIONS_DASHBOARDS[1].panels.find((p) => p.id.endsWith("c3.trends"))!.dataviews.map((d) => (d.kind === "view" ? d.dataview : ""));
+    const ok = Math.abs(share - (100 * band(m.urn, y)!) / total) < 1e-9 && rail.at(-1) === "DV-ADM-M-SHARE-BAND";
+    return { pass: ok, detail: fmt({ year: y, share: round(share, 2), last: rail.at(-1) }) };
+  },
+  // R-ADM-AXIS-TICKS, R-ADM-MAP-SELF, R-ADM-FEEDER-SHAPES, R-ADM-SHAPE-ROWS, R-ADM-MOMENTUM-SCOPE: the views
+  // rendered on the server from real answers (AdmissionsEveryView, as R-ADM-BOARDING-ONLY-WHERE-BOARDERS).
+  async admAxisTicks() {
+    const html = await admRenderAll("110110", "11+");
+    const svgs = html.split("<svg").slice(1).filter((x) => x.includes("data-tick="));
+    const views = [/Your Year 7 cohort, year by year/, /Your share of Years 7.11, year by year/, /Births within 15 km/];
+    const each = views.map((t) => t.test(html));
+    return { pass: svgs.length >= 5 && each.every(Boolean) && html.includes("data-tick-middle"), detail: fmt({ chartsWithTicks: svgs.length, views: each.join("/") }) };
+  },
+  async admMapSelf() {
+    const v = await import("../src/lib/admissions/views-api");
+    const p = await v.pipelineView("110110", v.entryPoint("11+")!, []);
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const src = (await import("node:fs")).readFileSync(path.join(ROOT, "src/components/admissions/views/AdmissionsMap.tsx"), "utf8");
+    const ok = p.school.easting !== null && p.school.northing !== null && p.now.cohort !== null && /markerOf=\{\(m\) => \(m\.urn === p\.school\.urn/.test(src) && /roll: p\.now\.cohort/.test(src);
+    return { pass: ok, detail: fmt({ easting: p.school.easting, northing: p.school.northing, cohort: p.now.cohort }) };
+  },
+  async admFeederShapes() {
+    const v = await import("../src/lib/admissions/views-api");
+    const s = await v.shapeView("110110", v.entryPoint("11+")!, []);
+    const p = await v.pipelineView("110110", v.entryPoint("11+")!, []);
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const set = p.sets.find((x) => x.age === 10)!.urns.filter((u) => u !== "110110");
+    const ok = s.feeders.age === 10 && JSON.stringify(s.feeders.schools.map((f) => f.urn)) === JSON.stringify(set);
+    return { pass: ok, detail: fmt({ age: s.feeders.age, feeders: s.feeders.schools.length, set: set.length }) };
+  },
+  async admShapeRows() {
+    const html = await admRenderAll("110110", "11+");
+    const rows = Array.from(html.matchAll(/data-mini-rows="(\d+)"/g)).map((m) => Number(m[1]));
+    const v = await import("../src/lib/admissions/views-api");
+    const s = await v.shapeView("110110", v.entryPoint("11+")!, []);
+    const own = s.profile.filter((r) => r.female + r.male > 0);
+    const want = own.at(-1)!.age - own[0].age + 1;
+    return { pass: rows.length >= s.rivals.length && rows.slice(0, s.rivals.length).every((n) => n === want), detail: fmt({ cards: rows.length, rows: Array.from(new Set(rows)).join("/"), want }) };
+  },
+  async admMomentumScope() {
+    const html = await admRenderAll("110110", "11+");
+    return { pass: html.includes("Schools submitting GCSE results only"), detail: "11+ momentum" };
   },
   async admBoardingOnly() {
     const { createElement } = await import("react");
@@ -2125,7 +2241,8 @@ const RUNNERS: Record<string, Runner> = {
     const lp = (await smtCase("110110")).school;
     const state16 = { independent: false, high: 16, phases: { post16: false } };
     const rules = {
-      chaseDefault: K.resolveCatchment(chase, null, null).km === 5 && K.catchmentCapKm(chase) === 30,
+      // 0.8 Admissions fb1 (R-ADM-CATCHMENT-RULE): a state school's default is its density radius.
+      chaseDefault: K.resolveCatchment(await (await import("../src/lib/smt/catchment-density")).withDensity("137625", chase), null, null).km === 12 && K.catchmentCapKm(chase) === 30,
       leightonDefault: K.resolveCatchment(lp, null, null).km === 15 && K.catchmentCapKm(lp) === 30,
       state16Cap: K.catchmentCapKm(state16) === 15 && K.catchmentPresets(state16).join() === "2,3,5,8,10,15",
       saved: K.resolveCatchment(chase, null, 8).km === 8 && K.resolveCatchment(chase, null, 8).from === "saved",
@@ -2821,6 +2938,32 @@ const RUNNERS: Record<string, Runner> = {
     st.closeFeedback();
     const pass = t.page === true && t.viewKey === "page:vicdata.smt.overview" && "row" in row && row.row.panel_id === null && JSON.stringify(row.row.area) === '["set_bar"]' && row.row.view_as === true && refused && colour === "open";
     return { pass, detail: fmt({ key: t.viewKey, panel: "row" in row ? String(row.row.panel_id) : "-", area: "row" in row ? JSON.stringify(row.row.area) : "-", shapeHeld: refused, colour }) + " (the database half: supabase/tests/v08_feedback_page_pglite.mjs)" };
+  },
+  // ------------------------------------------------------------------ 0.8 Admissions feedback round 1
+  // R-TABLE-FEATURED-ROW (F-17): Leighton Park's Rivals table, drawn from the screen's own figures, tints
+  // exactly one row -- Leighton Park's -- with the featured-row token; each product's root names its own
+  // token, set for light and dark (the unit half: src/lib/featured-row.test.ts).
+  async tableFeaturedRow() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { RivalsTable } = await import("../src/components/admissions/views/Tables");
+    const { admissionsVars } = await import("../src/components/admissions/ui");
+    const { smtVars } = await import("../src/components/smt/ui");
+    const { groupDashVars } = await import("../src/components/groups/dash/GroupDashboard");
+    const { FEATURED_ROW_TOKEN, featuredRowKey } = await import("../src/components/shell/accent");
+    const { readFileSync } = await import("node:fs");
+    const v = await import("../src/lib/admissions/views-api");
+    const m = await v.marketView("110110", v.entryPoint("11+")!, []);
+    const html = renderToStaticMarkup(createElement(RivalsTable, { m, rivals: { status: "loading" }, fullscreen: true }));
+    const rows = html.match(/<tr[^>]*data-featured-row=""[^>]*>[\s\S]*?<\/tr>/g) ?? [];
+    const name = m.schools["110110"]?.name ?? "";
+    const tinted = rows.length === 1 && rows[0].includes("var(--row-featured,") && textOf(rows[0]).includes(name);
+    const named = (x: object) => (x as Record<string, string>)["--row-featured"];
+    const roots = named(admissionsVars("dark")) === "var(--row-featured-admissions)" && named(smtVars("light")) === "var(--row-featured-smt)" && named(groupDashVars("dark")) === "var(--row-featured-groups)" && featuredRowKey("teacher", "ks4") === "gcse" && featuredRowKey("teacher", "ks5") === "post16";
+    const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+    const tokens = Object.values(FEATURED_ROW_TOKEN).every((t) => (css.match(new RegExp(`${t}:\\s*#[0-9a-f]{6}`, "g")) ?? []).length === 3);
+    const pass = tinted && roots && tokens;
+    return { pass, detail: fmt({ featuredRows: rows.length, school: name, schools: m.entryAge.rows.filter((r) => r.period === m.summary.latest).length, roots, tokensLightAndDark: tokens }) };
   },
 };
 

@@ -13,12 +13,13 @@
 //
 // Columns: a bare rank ("3", no header text -- the same shape as the % change table's
 // leading rank), the school, a small sector icon beside the name (state / independent), the figure, and the distance from the school itself. The
-// school's own row is picked out in the phase accent and carries `data-highlight`, so a
+// school's own row is picked out in the phase's featured-row tint (F-17) and carries `data-highlight`, so a
 // CentredOnTarget around it scrolls it into the middle, as the old table's row did.
 import { useState, type CSSProperties } from "react";
 import { SECTOR, sectorOf } from "@/lib/school-sector";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 import { windowCut } from "@/lib/subject-ranking-view";
+import { FEATURED_ROW_ACCENT_TEXT, FEATURED_ROW_BG } from "@/components/shell/accent";
 
 // The TAG_COLOURS entry for each sector, and its foreground shade per theme.
 const SECTOR_TAG = { state: "State", independent: "Independent" } as const;
@@ -140,7 +141,7 @@ export function SchoolRankingTable({
               key={r.key}
               data-highlight={r.isTarget ? "" : undefined}
               className="border-b border-[var(--panel-border)] last:border-b-0"
-              style={r.isTarget ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)", color: "var(--accent,var(--fg))" } : undefined}
+              style={r.isTarget ? { background: FEATURED_ROW_BG, color: FEATURED_ROW_ACCENT_TEXT } : undefined}
             >
               {has("rank") && <td className={`${rankWidth} py-[6px] pr-1 text-right text-[var(--muted3)]`}>{r.rank === null ? "" : windowed ? r.rank.toLocaleString() : r.rank}</td>}
               <td className={has("rank") ? "max-w-0 px-1" : "max-w-0 px-1 py-[6px]"}>

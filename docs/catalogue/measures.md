@@ -2,7 +2,7 @@
 
 # Measures
 
-What is counted, at what grain, where, with which honest number types. 23 measures.
+What is counted, at what grain, where, with which honest number types. 24 measures.
 
 ## Summary
 
@@ -25,6 +25,7 @@ What is counted, at what grain, where, with which honest number types. 23 measur
 | M-ADM-PUPILS | Pupils by age | admissions.pupils | — | 2019–2025 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | totals, pct_change, index100, rank |
 | M-ADM-POOL | Pipeline (the pool) | admissions.pipeline | — | 2020–2036 | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | totals, pct_change, index100, market_share |
 | M-ADM-MARKET | Market share | admissions.market | — | 2019–2025 | ✓ | ✗ | ✓ | ✗ | ✗ | ✗ | totals, market_share, pct_change, change_pp, index100, rank |
+| M-ADM-CATCHMENT | Children in the catchment | admissions.pipeline | — | 2011–2024 | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | totals, index100 |
 | M-ADM-RIVAL-RESULTS | Rivals' results | admissions.rivals | — | 2022–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, change_points, rank |
 | M-SMT-SCHOOL | The school: roll, phases and size | smt.school | — | 2019–2025 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | totals, pct_change, index100, rank |
 | M-SMT-RESULTS | Headline results and ranks | smt.results | — | 2021–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, rate, change_points, change_pp, rank |
@@ -424,6 +425,29 @@ What is counted, at what grain, where, with which honest number types. 23 measur
 | Known gaps | - FE colleges have no census: their own figures come from ILR participation, labelled, never shared into the group. |
 | Briefing | none |
 | Citation | DfE school census (January), pupils by age |
+
+### M-ADM-CATCHMENT — Children in the catchment
+
+| Field | Content |
+| --- | --- |
+| Definition | ONS small-area population (LSOAs whose population-weighted centre is within the school's catchment radius: the ingest's area_context) by single age 0-18, per mid-year: births (age 0), and the age a year below entry (src/lib/admissions/intake.ts). The radius is SMT's (src/lib/smt/catchment.ts). |
+| Data | admissions.pipeline |
+| Grain | School's catchment × single age × mid-year |
+| Sources | ons_lsoa_population, ons_population_age |
+| Keying | urn |
+| Years | 2011 → 2024. LSOA mid-year estimates; the region and England from ONS's LA estimates (2012 on). |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✗ Not held |
+| LA | ✗ Not held |
+| Region | ✓ the LAs in the school's region, summed |
+| England | ✓ England's LAs, summed |
+| Honest number types | totals, index100 |
+| Rules | R-ADM-VIEW-INTAKE-CHANGE, R-ADM-VIEW-LOCAL-BIRTHS, R-ADM-CATCHMENT-RULE |
+| Fetched by | - src/lib/admissions/intake.ts:intakeChange, localBirths<br>- src/lib/smt/area-data.ts:areaContext<br>- src/app/api/admissions/pipeline/route.ts |
+| Known gaps | - LSOA single ages from mid-2011 only: older cohorts' births are counted at the youngest age held.<br>- Not split by sex.<br>- A boarding school draws from beyond any radius. |
+| Briefing | none |
+| Citation | ONS small-area population estimates (LSOA), single year of age |
 
 ### M-ADM-RIVAL-RESULTS — Rivals' results
 

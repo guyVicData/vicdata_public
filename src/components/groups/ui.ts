@@ -7,7 +7,7 @@ import { GROUP_ACCENT } from "@/lib/teacher-view-theme";
 export function groupVars(theme: "light" | "dark"): CSSProperties {
   const dark = theme === "dark";
   return {
-    ...accentVars(productAccent("groups")),
+    ...accentVars(productAccent("groups"), "groups"),
     "--group-accent-text": dark ? GROUP_ACCENT.hex : "#c2410c",
     // The dashed "coming" chips and the group card's edge (Home.dc.html: #4a2c14 / #21150b / #fed7aa).
     "--group-chip-border": dark ? "#4a2c14" : "#fdba74",

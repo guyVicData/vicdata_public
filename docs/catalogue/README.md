@@ -6,10 +6,10 @@ The four-layer catalogue (docs/v0.6/vicdata_0_6_view_catalogue_and_offer_design_
 
 | File | Contents |
 | --- | --- |
-| [rules.md](rules.md) | 155 rules (22 must lift, 21 lifted; 117 with an automated real-data check in `scripts/catalogue-rule-tests.ts`) |
-| [measures.md](measures.md) | 23 measures |
-| [renderers.md](renderers.md) | 44 renderers |
-| [dataviews.md](dataviews.md) | 111 dataviews (108 live) |
+| [rules.md](rules.md) | 167 rules (22 must lift, 21 lifted; 127 with an automated real-data check in `scripts/catalogue-rule-tests.ts`) |
+| [measures.md](measures.md) | 24 measures |
+| [renderers.md](renderers.md) | 45 renderers |
+| [dataviews.md](dataviews.md) | 114 dataviews (111 live) |
 | [dashboards.md](dashboards.md) | 10 seeded dashboards |
 
 Regenerate: `npx -y tsx scripts/catalogue-export.ts`. Unit tests: `npx -y tsx --test scripts/catalogue-unit-tests.ts`. Rule tests against real data: `npx -y tsx --env-file=.env scripts/catalogue-rule-tests.ts`.

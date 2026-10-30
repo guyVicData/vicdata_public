@@ -27,6 +27,10 @@ export const figuresOf = (f: Flag) =>
 const shapeWord = (s: unknown) => SHAPE_LABELS[s as ShapeLabel] ?? String(s);
 const flagText = (f: Flag) => (f.id === "shape_changed" ? `Shape changed: ${shapeWord(f.figures.from)} → ${shapeWord(f.figures.to)}` : f.label);
 
+/** F-18: "Schools submitting GCSE results only" (11+), Post-16 (16+), KS2 (4+). */
+export const momentumScope = (stage: RivalsView["stage"]) =>
+  stage === "ks4" ? "Schools submitting GCSE results only" : stage === "ks5" ? "Schools submitting A-level results only" : "Schools with published KS2 results only";
+
 export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: { m: MarketView; r: RivalsView; limit?: number; notPlotted?: RivalsView["rows"]; flaggedOnly?: boolean }) {
   const rows = r.rows.filter((x) => !x.isSchool && (!flaggedOnly || x.momentum.length > 0));
   const sorted = [...rows].sort((a, b) => b.momentum.length - a.momentum.length);
@@ -104,6 +108,9 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
       <div className="flex items-center gap-2">
         <span className="text-[13px] font-bold text-[var(--fg)]">Who is gaining pupils, and whose results are rising?</span>
       </div>
+      {/* 0.8 Admissions fb1 (F-18): the title says which schools it can place -- only those publishing
+          results at this stage (IGCSE-only and no-results schools are listed, not plotted). */}
+      <div data-momentum-scope="" className="-mt-1 text-[11px] text-[var(--muted2)]">{momentumScope(r.stage)}</div>
       <div className="flex min-h-0 grow gap-[18px]">
         <div ref={ref} className="relative shrink-0 basis-[470px] rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)]" style={{ height: H }}>
           {w > 0 && (

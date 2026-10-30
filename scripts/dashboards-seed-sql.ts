@@ -16,6 +16,12 @@
 //
 // Run as the service role (the CLI is), so created_by is left null.
 //
+// `--only <slug>[,<slug>...]` (0.8 Admissions feedback round 1): publish just those dashboards (with
+// their groups and role assignments), leaving every other one as it is live -- for a round that
+// changed some dashboards when others may hold editor changes the code copy doesn't have:
+//
+//   npx -y tsx scripts/dashboards-seed-sql.ts --only vicdata.admissions.pipelines,vicdata.admissions.market-share
+//
 // `--legacy-v1` prints the v1 seed exactly as 0.6 S3 shipped it (insert-if-missing, version
 // 1, specs stripped), for the PGlite re-seed test only.
 import { DASHBOARDS } from "../src/catalogue/dashboards";
@@ -25,6 +31,10 @@ import { seedRoles } from "../src/catalogue/dashboards/seed-plan";
 import type { DashboardConfig } from "../src/catalogue/types";
 
 const legacy = process.argv.includes("--legacy-v1");
+const onlyArg = process.argv.indexOf("--only");
+const only = onlyArg >= 0 ? new Set((process.argv[onlyArg + 1] ?? "").split(",").filter(Boolean)) : null;
+if (only && Array.from(only).some((slug) => !DASHBOARDS.some((d) => d.id === slug))) throw new Error(`--only names a dashboard the catalogue doesn't hold: ${Array.from(only).join(", ")}`);
+const chosen = DASHBOARDS.filter((d) => !only || only.has(d.id));
 const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const out: string[] = ["begin;"];
 
@@ -42,12 +52,12 @@ function asV1(d: DashboardConfig): unknown {
 }
 
 const groups = new Map<string, string>();
-for (const d of DASHBOARDS) if (d.owner === "vicdata" && d.group) groups.set(d.group.id, d.group.label);
+for (const d of chosen) if (d.owner === "vicdata" && d.group) groups.set(d.group.id, d.group.label);
 for (const [slug, label] of groups) {
   out.push(`insert into public.dashboard_groups (slug, label, owner_scope) values (${lit(slug)}, ${lit(label)}, 'vicdata') on conflict (slug) do nothing;`);
 }
 
-for (const d of DASHBOARDS) {
+for (const d of chosen) {
   if (d.owner !== "vicdata") continue;
   out.push(`insert into public.dashboards (slug, kind, owner_scope, name, group_id, group_order)
   values (${lit(d.id)}, ${lit(d.kind)}, 'vicdata', ${lit(d.name)},
@@ -72,7 +82,7 @@ for (const d of DASHBOARDS) {
   v as (
     insert into public.dashboard_versions (dashboard_id, version, schema_version, config, label, change_summary)
     select dash.id, coalesce((select max(x.version) from public.dashboard_versions x where x.dashboard_id = dash.id), 0) + 1,
-           ${d.schema_version}, ${config}, ${isSmtDashboard(d.id) ? "'Seed (0.8 SMT r1)', 'The SMT dashboards (0.8 SMT round 1): Overview and Academic'" : isAdmissionsDashboard(d.id) ? "'Seed (0.7 admissions r2)', 'The Admissions dashboards (0.7 admissions round 2): Pipelines and Market share'" : "'Re-seed (0.6.1)', 'The Teacher dashboard in the ViewSpec format (0.6.1 S2): the same views, ids and defaults'"}
+           ${d.schema_version}, ${config}, ${only ? `'Republish (0.8 Admissions fb1)', 'Admissions feedback round 1 (F-12 to F-21): the intake waterfall, local births, girls and boys, the share of Years 7-11'` : isSmtDashboard(d.id) ? "'Seed (0.8 SMT r1)', 'The SMT dashboards (0.8 SMT round 1): Overview and Academic'" : isAdmissionsDashboard(d.id) ? "'Seed (0.7 admissions r2)', 'The Admissions dashboards (0.7 admissions round 2): Pipelines and Market share'" : "'Re-seed (0.6.1)', 'The Teacher dashboard in the ViewSpec format (0.6.1 S2): the same views, ids and defaults'"}
     from dash
     returning id, dashboard_id
   )

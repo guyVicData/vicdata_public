@@ -47,7 +47,7 @@ import { TeacherDashboard } from "./TeacherDashboard";
 import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
 import { schoolSurface } from "@/components/feedback/surface";
 import { GroupSwitcher } from "./ConfigDashboard";
-import { accentVars, productAccent } from "@/components/shell/accent";
+import { accentVars, featuredRowKey, productAccent } from "@/components/shell/accent";
 import { dashboardPhase } from "./embed";
 
 type School = { urn: string; name: string };
@@ -200,7 +200,7 @@ export function CustomDashboardView({
       id={hidden ? undefined : "teacher-root"}
       hidden={hidden}
       data-theme={theme}
-      style={accentVars(accent)}
+      style={accentVars(accent, featuredRowKey("teacher", phase))}
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
       <ViewAsBanner />

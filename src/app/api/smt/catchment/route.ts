@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { smtCaller } from "@/lib/smt/auth";
 import { smtSchool } from "@/lib/smt/school";
-import { catchmentCapKm, catchmentRights, catchmentDefaultKm, catchmentPresets, clampKm } from "@/lib/smt/catchment";
+import { catchmentCapKm, catchmentHowWords, catchmentRights, catchmentDefaultKm, catchmentPresets, clampKm, resolveCatchment } from "@/lib/smt/catchment";
+import { withDensity } from "@/lib/smt/catchment-density";
 import { canSaveCatchment, saveCatchment, savedCatchmentKm } from "@/lib/smt/catchment-server";
 import { VIEW_AS_READ_ONLY } from "@/lib/view-as";
 
@@ -12,10 +13,12 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await smtCaller(request, sp.get("urn"));
   if (caller instanceof NextResponse) return caller;
-  const school = await smtSchool(caller.urn);
-  if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
+  const found = await smtSchool(caller.urn);
+  if (!found) return NextResponse.json({ error: "No such school." }, { status: 404 });
+  // 0.8 Admissions fb1: the default by density for a state school; `how` says how it was set.
+  const school = await withDensity(caller.urn, found);
   const [savedKm, canSave] = await Promise.all([savedCatchmentKm(caller, caller.urn), !catchmentRights(caller).mayTrySave ? Promise.resolve(false) : canSaveCatchment(caller.supabase, caller.urn)]);
-  return NextResponse.json({ savedKm, defaultKm: catchmentDefaultKm(school), capKm: catchmentCapKm(school), presets: catchmentPresets(school), canSave });
+  return NextResponse.json({ savedKm, defaultKm: catchmentDefaultKm(school), capKm: catchmentCapKm(school), presets: catchmentPresets(school), canSave, how: catchmentHowWords(resolveCatchment(school, null, null), school.densityPhase) });
 }
 
 export async function PUT(request: NextRequest) {

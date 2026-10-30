@@ -2,7 +2,7 @@
 
 # Dataviews
 
-The registered recipes the chooser offers and dashboards place, in host then rail order. 111 dataviews: 108 live, 3 draft.
+The registered recipes the chooser offers and dashboards place, in host then rail order. 114 dataviews: 111 live, 3 draft.
 
 ## Summary
 
@@ -50,13 +50,15 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-C3-TR-CHANGEMAP | live | teacher.c3.comparisons · trend · Change map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | pct_change, change_points, change_pp | trend | map | RD-RANKINGS-MAP |
 | DV-ADM-P-NOW | live | admissions.pipelines · current · Entry point now | admissions.pupils | entry_point | none | totals, pct_change | single | numerical | RD-ADM-TILES |
 | DV-ADM-P-PIPELINE | live | admissions.pipelines · current · Pipeline | admissions.pipeline | entry_point | schools | totals, pct_change | trend | graph | RD-ADM-PIPELINE |
-| DV-ADM-P-FUNNEL | live | admissions.pipelines · current · Funnel | admissions.pipeline | entry_point | schools | totals | single | graph | RD-ADM-FUNNEL |
+| DV-ADM-P-FUNNEL | live | admissions.pipelines · current · Why did our intake change? | admissions.pipeline | entry_point | none | totals, pct_change | trend | graph | RD-ADM-FUNNEL |
+| DV-ADM-P-BIRTHS | live | admissions.pipelines · current · Local births | admissions.pipeline | entry_point | averages | index100 | trend | graph | RD-ADM-BIRTHS |
 | DV-ADM-P-MAP | live | admissions.pipelines · current · Map of feeders | admissions.pipeline | entry_point | schools | totals, pct_change | single | map | RD-ADM-MAP |
 | DV-ADM-P-TABLE | live | admissions.pipelines · current · Feeder table | admissions.pipeline | entry_point | schools | totals, pct_change | single | table | RD-ADM-TABLE |
 | DV-ADM-P-SHAPE | live | admissions.pipelines · current · Shape and size | admissions.pupils | entry_point | schools | totals | single | graph | RD-ADM-SHAPES |
 | DV-ADM-P-ENTRY-LINE | live | admissions.pipelines · trend · Your cohort | admissions.pupils | entry_point | none | totals | trend | graph | RD-ADM-LINE |
 | DV-ADM-P-ENTRY-BARS | live | admissions.pipelines · trend · Your cohort, bars | admissions.pupils | entry_point | none | totals | trend | graph | RD-ADM-BARS |
 | DV-ADM-P-ENTRY-TABLE | live | admissions.pipelines · trend · Your cohort, table | admissions.pupils | entry_point | none | totals | trend | table | RD-ADM-TABLE |
+| DV-ADM-P-ENTRY-SEX | live | admissions.pipelines · trend · Your cohort, girls and boys | admissions.pupils | entry_point | none | totals | trend | graph | RD-ADM-LINE |
 | DV-ADM-P-POOL-INDEXED | live | admissions.pipelines · trend · Pool trends | admissions.pupils | entry_point | schools, averages | index100 | trend | graph | RD-ADM-LINE |
 | DV-ADM-P-POOL-TABLE | live | admissions.pipelines · trend · Pool trends, table | admissions.pupils | entry_point | schools, averages | totals, index100 | trend | table | RD-ADM-TABLE |
 | DV-ADM-P-AREA-POP | live | admissions.pipelines · trend · Area population | admissions.pupils | entry_point | averages | totals | single | graph | RD-ADM-BARS |
@@ -80,7 +82,8 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-ADM-M-SHARE-NUM | live | admissions.market · trend · Market share numbers | admissions.market | entry_point | schools | totals, market_share | trend | table | RD-ADM-TABLE |
 | DV-ADM-M-SHARE-RANKS | live | admissions.market · trend · Market share ranks | admissions.market | entry_point | schools | rank | trend | table | RD-ADM-TABLE |
 | DV-ADM-M-SHARE-CHANGE | live | admissions.market · trend · Change in share | admissions.market | entry_point | schools | pct_change, change_pp | trend | graph | RD-ADM-BARS |
-| DV-ADM-M-ROLL-LINE | live | admissions.market · trend · Entry age band roll | admissions.market | entry_point | schools | totals | trend | graph | RD-ADM-LINE |
+| DV-ADM-M-ROLL-LINE | live | admissions.market · trend · Entry age band roll | admissions.market | entry_point | schools | index100 | trend | graph | RD-ADM-LINE |
+| DV-ADM-M-SHARE-BAND | live | admissions.market · trend · Share of Years 7–11 | admissions.market | entry_point | schools | market_share | trend | graph | RD-ADM-LINE |
 | DV-SMT-O-NOW | live | smt.overview · current · The school now | smt.school | level | schools, averages | totals, pct_change, rank | single | numerical | RD-SMT-NOW |
 | DV-SMT-O-SCORECARD | live | smt.overview · current · Scorecard | smt.results | level | schools, averages | points, rank, change_points | single | table | RD-SMT-SCORECARD |
 | DV-SMT-O-MAP | live | smt.overview · current · Map | smt.school | level | schools | totals | single | map | RD-SMT-MAP |
@@ -1340,34 +1343,63 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Note | — |
 | Method | 1. Choose the schools that hold these children now: the lead's lists, or by default the nearest 15 state primaries (at 16+, the nearest 10 state secondaries, 11-16 schools first, plus your own Year 11, with the primaries below).<br>2. Past years: for each September from 2020 to 2026, add up these schools' pupils one year below the entry age in the January census before it (for example Year 6 in January 2026 for September 2026 at 11+).<br>3. Counted years: for each September from 2027, find the age those children are now (entry age minus years to go) and add up these schools' pupils at that age in the January 2026 census. That count is the line. At 16+, the move from the primaries to the secondaries is scaled by the average ratio seen between them in past years.<br>4. Range for counted years: take every year-on-year change in these schools' year groups since 2019/20 (same schools in both years), keep the middle 80% (10th to 90th percentile), and apply the low and high ends once for each year still to go, so the range widens.<br>5. Years beyond the youngest counted age, from births: blend each LA's births by its weight (a weighted average). A school year is 8/12 of calendar year X plus 4/12 of year X-1. Scale this to your schools by the average ratio of their Reception pupils to those births in past years, then follow it forward as in step 4; the range also uses the low and high Reception ratios. For girls or boys, births are taken as 49% or 51%.<br>6. At 4+ (and younger entry ages) the blended births are the pool itself, not scaled to the schools; the range is the spread of the Reception-to-births ratio around its average.<br>7. Headline: the change from the September 2026 pool to the pool three years after the first forward year (or the last year shown, if sooner).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; ONS births by local authority, calendar years (shire counties as the sum of their districts); ONS subnational population projections, age 10, by upper-tier LA (11+ only; off unless switched on); GIAS (Get Information about Schools): nearest schools, sector, age range, LA<br>Rounding: Pools and ranges shown to whole pupils (hover text). Headline change to the whole per cent. Percentiles interpolated between values (numpy's default method). |
 
-### DV-ADM-P-FUNNEL — Funnel
+### DV-ADM-P-FUNNEL — Why did our intake change?
 
 | Field | Content |
 | --- | --- |
-| Measures | M-ADM-POOL (Pipeline (the pool)), M-ADM-PUPILS (Pupils by age) |
+| Measures | M-ADM-CATCHMENT (Children in the catchment), M-ADM-PUPILS (Pupils by age) |
 | Data | admissions.pipeline |
 | Results sub-measures | — |
 | Phases | — |
 | Focus | entry_point |
-| Compare | schools |
-| Number types | totals |
-| Date mode | single |
+| Compare | none |
+| Number types | totals, pct_change |
+| Date mode | trend |
 | View type | graph |
 | Renderer | RD-ADM-FUNNEL |
-| Title template | From births to your [entry-year] |
+| Title template | Why did our intake change? |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
 | Rail icon | AdmFunnelIcon |
-| Host | admissions.pipelines, current, rail "Funnel" (src/components/admissions/views/Funnel.tsx) |
+| Host | admissions.pipelines, current, rail "Why did our intake change?" (src/components/admissions/views/Funnel.tsx) |
 | Audience | rolls, market |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
-| Rules | R-ADM-VIEW-FUNNEL, R-ADM-FUNNEL-SAME-AREA, R-ADM-BIRTH-SPLIT |
+| Rules | R-ADM-VIEW-INTAKE-CHANGE, R-ADM-CATCHMENT-RULE |
 | Used on | Admissions Pipelines › Pipeline › Now |
-| Note | No funnel at 4+: there are no Reception projections yet (0.7 r3, F7). |
-| Method | 1. Pick the area: your school's LA, or the lead's LA blend and its weights.<br>2. Births: take ONS births in the area for calendar years X and X-1 (X = 2025 minus the entry age) and combine them as 8/12 of X plus 4/12 of X-1, to match a September-to-August school year. For a blend, each LA's births are weighted and added (a weighted average). For girls or boys, 49% or 51%.<br>3. Pool: take every pupil one year below the entry age (for example age 10, Year 6, at 11+) in every mainstream school in the area, state and independent, in the 2024/25 census. For a blend, each LA's count is weighted the same way.<br>4. Entry: your own pupils at the entry age in the 2025/26 census.<br>5. Draw each bar to scale against the largest of the three; each is a separate count, not the same children.<br>Sources: ONS births by local authority, calendar years (shire counties as the sum of their districts); DfE school census (January) 2024/25 via DfE school census, summed by area: pupils by single age in every school in the LA; DfE school census (January), pupils by single age and sex, 2025/26 (your own school)<br>Rounding: Births and pool rounded to whole numbers. Weights shown to the whole per cent on the chip. |
+| Note | No funnel at 4+ (0.7 r3, F7). |
+| Method | 1. Take the area: the LSOAs within the radius.<br>2. as shown<br>3. The area's as shown: children living in the area at the age a year below entry, in the mid-year before entry (Year 6 = aged 10 for September 11+ entry; Year 11 = aged 15 at 16+).<br>4. Your as shown: your own pupils at the entry age in the January census (full-time from age 4).<br>5. Your as shown is births × (area as shown ÷ births) × (your as shown ÷ area as shown). The three are the cohort's size, families moving (more or fewer of the area's children at that age than were born there), and your share of the area's children.<br>6. Split the change from the first year held to as shown into those three parts by the log-mean (LMDI) split: each part is L × ln(that factor now ÷ that factor then), where L = (your as shown now − then) ÷ (ln now − ln then). The three parts add up to the whole change exactly, whatever order they are taken in.<br>7. Where your intake is under 30 at either end, each end is a 3-year average (the base year and the two after it; the latest and the two before it), every figure alike.<br>8. Draw a waterfall: your as shown in the first year held, each part from the running total (up in the accent, down in orange), your as shown in as shown. The bars start a little below the lowest running total, and say so.<br>Sources: ONS small-area population estimates (LSOAs, 2021 boundaries), single year of age, mid-2011 to the latest mid-year held; DfE school census (January), your own pupils by single age, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, for a state school's radius<br>Rounding: Your intake at each end to whole pupils; the parts to whole pupils by largest remainders, so they still add up to the change. Ratios in the labels to 2 decimal places; shares to 1 (or 2 under 0.1%). |
+
+### DV-ADM-P-BIRTHS — Local births
+
+| Field | Content |
+| --- | --- |
+| Measures | M-ADM-CATCHMENT (Children in the catchment) |
+| Data | admissions.pipeline |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | entry_point |
+| Compare | averages |
+| Number types | index100 |
+| Date mode | trend |
+| View type | graph |
+| Renderer | RD-ADM-BIRTHS |
+| Title template | Births in your catchment, against the region and England |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | entryPoint, filters |
+| Rail icon | AdmPopulationIcon |
+| Host | admissions.pipelines, current, rail "Local births" (src/components/admissions/views/Funnel.tsx) |
+| Audience | rolls, market |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
+| Rules | R-ADM-VIEW-LOCAL-BIRTHS, R-ADM-CATCHMENT-RULE |
+| Used on | Admissions Pipelines › Pipeline › Now |
+| Note | — |
+| Method | 1. Births in the catchment: the children aged 0 living in the LSOAs within the radius, each mid-year (ONS's small-area estimates).<br>2. The region and England: ONS's LA estimates aged 0, added up over every LA in the school's region, and over every English LA.<br>3. Index each line to the first year held = 100.<br>4. The second axis label is the September entry each birth year reaches: a child aged 0 in mid-year X starts Year 7 in September X + 11 (Year 12 in X + 16), the as shown-year gap.<br>Sources: ONS small-area population estimates (LSOAs, 2021 boundaries), aged 0, mid-as shown to mid-as shown; ONS mid-year population estimates by LA, aged 0 (the region's LAs and England's, summed)<br>Rounding: Index to whole numbers (hover: the count of children aged 0). |
 
 ### DV-ADM-P-MAP — Map of feeders
 
@@ -1396,7 +1428,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Rules | R-ADM-VIEW-FEEDERS, R-ADM-FLAG-FEEDER |
 | Used on | Admissions Pipelines › Pipeline › Now |
 | Note | — |
-| Method | 1. Take the feeder set's schools that hold children one year below the entry age (Reception at 4+; at 16+ the secondaries' Year 11), leaving out your own school.<br>2. For each school, count its pupils at that age in the January 2026 census (2025/26) and two years earlier (2023/24), and work out the change as a percentage.<br>3. Add the same counts across the whole set (schools with both years) to get the set's own change: this is 'the area'.<br>4. Flag: red ('falling faster than the area') when a school fell and its change is more than 5 percentage points below the area's; focus ('rising' above +2%, 'stable' from -2% to +2%) when its change is -2% or better; otherwise no flag. No flag when the school had fewer pupils two years ago than the minimum cohort (the national threshold's minimum for the phase, else 10).<br>5. Draw each school as a dot sized by its 2025/26 count and coloured green (focus), red (red flag) or grey (neither). In the 'value' look, dots are coloured by thirds of the set by pupils instead.<br>Sources: DfE school census (January), pupils by single age and sex, 2023/24 and 2025/26; GIAS (Get Information about Schools): school locations (easting/northing); National flag thresholds (VicData's national flag thresholds): the minimum cohort only<br>Rounding: Pupils to whole numbers; the two-year change in the hover to the whole per cent. |
+| Method | 1. Take the feeder set's schools that hold children one year below the entry age (Reception at 4+; at 16+ the secondaries' Year 11), leaving out your own school.<br>2. For each school, count its pupils at that age in the January 2026 census (2025/26) and two years earlier (2023/24), and work out the change as a percentage.<br>3. Add the same counts across the whole set (schools with both years) to get the set's own change: this is 'the area'.<br>4. Flag: red ('falling faster than the area') when a school fell and its change is more than 5 percentage points below the area's; focus ('rising' above +2%, 'stable' from -2% to +2%) when its change is -2% or better; otherwise no flag. No flag when the school had fewer pupils two years ago than the minimum cohort (the national threshold's minimum for the phase, else 10).<br>5. Draw each school as a dot sized by its 2025/26 count and coloured green (focus), red (red flag) or grey (neither). In the 'value' look, dots are coloured by thirds of the set by pupils instead.<br>6. Your own school is a solid Admissions-blue dot, drawn on top, sized by your entry cohort now (your Year 7 at 11+) on the same scale as the feeders' dots, so your intake reads against theirs.<br>Sources: DfE school census (January), pupils by single age and sex, 2023/24 and 2025/26; GIAS (Get Information about Schools): school locations (easting/northing); National flag thresholds (VicData's national flag thresholds): the minimum cohort only<br>Rounding: Pupils to whole numbers; the two-year change in the hover to the whole per cent. |
 
 ### DV-ADM-P-TABLE — Feeder table
 
@@ -1454,7 +1486,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Rules | R-ADM-VIEW-SHAPES, R-ADM-SHAPE-NOT-RANKED |
 | Used on | Admissions Pipelines › Pipeline › Now |
 | Note | — |
-| Method | 1. Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.<br>2. Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.<br>3. Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).<br>4. Local shape: add up the age profiles of every school in the youngest feeder set (the schools holding Reception) and run the same classifier on the total. Only ages 4 to a year below entry are drawn. At 16+ the caption names the set counted (the nearest primaries, unless a list is saved) and the ages it holds.<br>5. Rivals: each rival's shape and its size in the entry point's phase band (national fifths), in the rival list's own order. Shapes are described, never ranked.<br>Sources: DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils; VicData's shape descriptions; Age-band roll distributions 2025/26 (national fifths)<br>Rounding: Counts to whole numbers (hover). |
+| Method | 1. Local shape: add up the age profiles of every school in the youngest feeder set (the schools holding Reception) and run the shared classifier on the total. Ages 4 to a year below entry are drawn. At 16+ the caption names the set counted (the nearest primaries, unless a list is saved) and the ages it holds.<br>2. Your feeders: the schools of the current feeder set at the age a year below entry (the lead's list, else the nearest state schools), your own school left out, in the set's own order.<br>3. For each feeder: its shape, its size in its phase band against national fifths (XS to XL), and a small outline with a row per age over the local shape's ages, the age a year below entry highlighted. Never ranked.<br>Sources: DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils; VicData's shape descriptions; Age-band roll distributions 2025/26 (national fifths)<br>Rounding: Counts to whole numbers (hover). |
 
 ### DV-ADM-P-ENTRY-LINE — Your cohort
 
@@ -1542,6 +1574,35 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Used on | Admissions Pipelines › Entry point › Trends |
 | Note | — |
 | Method | 1. For each January census from 2019/20 to 2025/26, take your own pupils at the entry age (full-time only from age 4; full- and part-time at ages 2-3).<br>2. List one row per census year with the total, girls and boys.<br>3. A year with no census for your school is left as a gap; an earlier year can come from your school's predecessor (for example before an academy conversion).<br>4. At least two years with figures are needed to draw it.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers. |
+
+### DV-ADM-P-ENTRY-SEX — Your cohort, girls and boys
+
+| Field | Content |
+| --- | --- |
+| Measures | M-ADM-PUPILS (Pupils by age) |
+| Data | admissions.pupils |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | entry_point |
+| Compare | none |
+| Number types | totals |
+| Date mode | trend |
+| View type | graph |
+| Renderer | RD-ADM-LINE |
+| Title template | Your [entry-year] cohort: girls and boys |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | entryPoint, filters |
+| Rail icon | IndexedLineIcon |
+| Host | admissions.pipelines, trend, rail "Your cohort, girls and boys" (src/components/admissions/views/Lines.tsx) |
+| Audience | rolls, market |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
+| Rules | R-ADM-VIEW-TRENDS, R-ADM-ENTRY-SEX |
+| Used on | Admissions Pipelines › Entry point › Trends |
+| Note | — |
+| Method | 1. For each January census from 2019/20 to 2025/26, take your own girls and boys at the entry age (full-time only from age 4).<br>2. Draw a line for each: girls in the accent, boys dashed.<br>3. Under it, the girls' share of the cohort each year (girls ÷ girls and boys), against 50%, and the change from the first year to the latest in words.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Counts to whole numbers; the girls' share to the whole per cent (1 decimal place on hover). |
 
 ### DV-ADM-P-POOL-INDEXED — Pool trends
 
@@ -1918,7 +1979,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Rules | R-ADM-VIEW-SHAPES, R-ADM-SHAPE-NOT-RANKED |
 | Used on | Admissions Market share › Rivals › Now |
 | Note | — |
-| Method | 1. Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.<br>2. Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.<br>3. Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).<br>4. Rivals: each rival's shape, its size in the entry point's phase band against national fifths, and a small four-band outline of its year groups, in the rival list's own order. Never ranked.<br>Sources: DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils; VicData's shape descriptions; Age-band roll distributions 2025/26 (national fifths)<br>Rounding: Counts to whole numbers (hover). |
+| Method | 1. Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.<br>2. Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.<br>3. Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).<br>4. Rivals: each rival's shape, its size in the entry point's phase band against national fifths, and a small outline of its year groups with a row per age over your own school's ages (an age it doesn't teach is an empty row, so the rows line up with yours), each scaled to its own largest year group, in the rival list's own order. Never ranked.<br>Sources: DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils; VicData's shape descriptions; Age-band roll distributions 2025/26 (national fifths)<br>Rounding: Counts to whole numbers (hover). |
 
 ### DV-ADM-M-FLAGS — Flags
 
@@ -2220,11 +2281,11 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | — |
 | Focus | entry_point |
 | Compare | schools |
-| Number types | totals |
+| Number types | index100 |
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-ADM-LINE |
-| Title template | [entry age band] roll: you and the [rivals] |
+| Title template | [entry age band] roll, indexed: you and the [rivals] |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -2234,10 +2295,39 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
-| Rules | R-ADM-VIEW-MARKET |
+| Rules | R-ADM-VIEW-MARKET, R-ADM-ROLL-INDEXED |
 | Used on | Admissions Market share › Trends › Trends |
 | Note | — |
-| Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. Set the age band from the entry age to the end of its phase: 4+ ages 4-10, 11+ ages 11-15, 16+ ages 16-18 (a custom age runs to 10, 15 or 18).<br>3. For each school and census year, add up its pupils across those ages (full-time from age 4). A year with no census is a gap. With the girls/boys filter on, girls or boys only.<br>4. Draw a line per school: yours in the accent colour, each rival in grey.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers. |
+| Method | 1. Take the group: your school plus the rivals, narrowed by the sector and boarding filters.<br>2. Set the age band from the entry age to the end of its phase: 4+ ages 4-10, 11+ ages 11-15, 16+ ages 16-18.<br>3. For each school and census year, add up its pupils across those ages (full-time from age 4). With the girls/boys filter on, girls or boys only.<br>4. The rivals' average: the mean of the rivals' band rolls, each year, over the rivals with a figure in every year.<br>5. Index your line and the average to the first year both have (= 100). In full screen each rival is indexed to the same year, or to its own first year where it has none then, in its own colour with a key.<br>6. In the panel: you against the rivals' average. In full screen: you and each rival.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Index to whole numbers (hover: the pupils behind it). |
+
+### DV-ADM-M-SHARE-BAND — Share of Years 7–11
+
+| Field | Content |
+| --- | --- |
+| Measures | M-ADM-MARKET (Market share) |
+| Data | admissions.market |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | entry_point |
+| Compare | schools |
+| Number types | market_share |
+| Date mode | trend |
+| View type | graph |
+| Renderer | RD-ADM-LINE |
+| Title template | Your share of [entry age band], year by year |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | entryPoint, filters |
+| Rail icon | TrendLineIcon |
+| Host | admissions.market, trend, rail "Share of Years 7–11" (src/components/admissions/views/Lines.tsx) |
+| Audience | market, rolls |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
+| Rules | R-ADM-VIEW-MARKET, R-ADM-GROUP-SHARE, R-ADM-BAND-SHARE |
+| Used on | Admissions Market share › Trends › Trends |
+| Note | — |
+| Method | 1. Take the group: your school plus the rivals, narrowed by the sector and boarding filters.<br>2. For each school and census year, add up its pupils across as shown (11+: ages 11-15; 16+: 16-18; 4+: 4-10), full-time from age 4. With the girls/boys filter on, girls or boys only.<br>3. Each year, your total divided by the group's total is your share of as shown.<br>4. Draw one point per year, joined as a line.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Share to 1 decimal place. |
 
 ### DV-SMT-O-NOW — The school now
 
