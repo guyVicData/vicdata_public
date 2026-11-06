@@ -1523,16 +1523,18 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ sources: [...sources].join("/"), projectionOff: off.ladder.projection.length, projectionOn: on.ladder.projection.length, usesNotes }) };
   },
   // ------------------------------------------------------------------ 0.8 Admissions feedback round 1
-  // R-ADM-VIEW-INTAKE-CHANGE: the split recomputed from area_context and the census, by hand, at both schools.
+  // R-ADM-VIEW-INTAKE-CHANGE: the split recomputed from area_context and the census, by hand (F-31: two
+  // steps, local cohort x share, and the cohort step's "of which").
   async admIntakeChange() {
     const v = await import("../src/lib/admissions/views-api");
     const { areaContext } = await import("../src/lib/smt/area-data");
     const { cachedCensus } = await import("../src/lib/admissions/data");
     const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const F = await import("../src/components/admissions/views/Funnel");
     const today = new Date("2026-10-29");
     const out: string[] = [];
     let pass = true;
-    const check = async (urn: string, entry: string, wantKm: number, wantBirthsAge: number) => {
+    const check = async (urn: string, entry: string, wantKm: number, wantBirthsAge: number, wantVerb?: string) => {
       const ep = v.entryPoint(entry)!;
       const p = await v.pipelineView(urn, ep, [], { today, catchment: { savedKm: null } });
       if ("empty" in p || p.intake.status !== "ok") { pass = false; out.push(`${urn} ${entry}: no split`); return; }
@@ -1541,19 +1543,27 @@ const RUNNERS: Record<string, Runner> = {
       const at = (mid: number, age: number) => ctx.years.find((y) => y.year === mid)!.children[age];
       const t = (await cachedCensus([urn])).get(urn)!.table;
       const A = ep.age;
-      const end = (E: number) => ({ births: at(E - A + wantBirthsAge, wantBirthsAge), area: at(E - 1, A - 1), school: cohortAt(t, A, E)! });
+      const end = (E: number) => ({ here: at(E - A + wantBirthsAge, wantBirthsAge), area: at(E - 1, A - 1), school: cohortAt(t, A, E)! });
       const b0 = end(x.baseYear);
       const b1 = end(x.latestYear);
       const L = (b1.school - b0.school) / (Math.log(b1.school) - Math.log(b0.school));
-      const parts = [L * Math.log(b1.births / b0.births), L * Math.log(b1.area / b1.births / (b0.area / b0.births)), L * Math.log(b1.school / b1.area / (b0.school / b0.area))];
+      const parts = [L * Math.log(b1.area / b0.area), L * Math.log(b1.school / b1.area / (b0.school / b0.area))];
       const sum = x.split.parts.reduce((a, q) => a + q.value, 0);
-      const ok = x.area.km === wantKm && x.birthsAge === wantBirthsAge && !x.averaged && JSON.stringify(x.ends.base) === JSON.stringify(b0) && sum === x.split.change && x.split.parts.every((q, i) => Math.abs(q.exact - parts[i]) < 1e-9 && Math.abs(q.value - parts[i]) < 1);
+      const o = x.split.ofWhich;
+      const dHere = b1.here - b0.here;
+      const dMoved = b1.area - b1.here - (b0.area - b0.here);
+      const ofOk = !!o && o.here + o.moved === x.split.parts[0].value && Math.abs(o.exactHere - (parts[0] * dHere) / (dHere + dMoved)) < 1e-9 && Math.abs(o.exactMoved - (parts[0] * dMoved) / (dHere + dMoved)) < 1e-9;
+      const m = F.movedAt(x)!;
+      const verbOk = !wantVerb || F.movedVerb(m) === wantVerb;
+      const sumOk = F.intakeSum(x) === `${x.split.start}${x.split.parts.map((q) => (q.value < 0 ? ` − ${-q.value}` : ` + ${q.value}`)).join("")} = ${x.split.end}`;
+      const ok = x.area.km === wantKm && x.birthsAge === wantBirthsAge && !x.averaged && JSON.stringify(x.ends.base) === JSON.stringify(b0) && sum === x.split.change && x.split.parts.every((q, i) => Math.abs(q.exact - parts[i]) < 1e-9 && Math.abs(q.value - parts[i]) < 1) && ofOk && verbOk && sumOk;
       pass &&= ok;
-      out.push(`${urn} ${entry} ${x.area.km} km: ${x.split.start} -> ${x.split.end} = ${x.split.parts.map((q) => `${q.key} ${q.value}`).join(", ")} (births at age ${x.birthsAge}) ${ok ? "ok" : "MISMATCH"}`);
+      out.push(`${urn} ${entry} ${x.area.km} km: ${F.intakeSum(x)} (of which here ${o?.here}, ${F.movedVerb(m)} ${o?.moved}; earliest age ${x.birthsAge}) ${ok ? "ok" : "MISMATCH"}`);
     };
     await check("110110", "11+", 15, 3);
     await check("110110", "16+", 15, 8);
     await check("137625", "11+", 12, 3);
+    await check("102787", "11+", 2, 3, "moved out");
     // 4+: none; and a saved feeder list changes nothing.
     const four = await v.pipelineView("115786", v.entryPoint("4+")!, [], { today, catchment: { savedKm: null } });
     const listed = await v.pipelineView("110110", v.entryPoint("11+")!, [{ kind: "day_feeders", rung: null, members: ["109982", "109985"], la_blend: null, confirmed: true }], { today, catchment: { savedKm: null } });

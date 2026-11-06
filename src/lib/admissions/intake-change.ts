@@ -1,31 +1,40 @@
 // VicData 0.8 Admissions feedback round 1 (F-13, Guy's decision of 29 Oct): "Why did our intake change?"
 // -- the Funnel rebuilt as a waterfall from 2019/20 to the latest year. Pure; intake.ts reads the data.
+// Admissions feedback round 2 (F-31, Guy's design of 6 Nov): two steps, and families moving as an
+// "of which" inside the first.
 //
-// The school's entry cohort is a product of three things, all in one area (the school's catchment radius,
+// The school's entry cohort is a product of two things, both in one area (the school's catchment radius,
 // catchment.ts, never its feeder list):
 //
-//   entry  =  births  x  (area Y6 / births)  x  (school Y7 / area Y6)
-//             cohort      families moving        the school's share
-//             size
+//   entry  =  local cohort  x  (school Y7 / local cohort)
+//             cohort size      the school's share
 //
-// (16+: area Y11 and the school's Y12.) The change from the base year to the latest is split into those
-// three parts by the log-mean (LMDI) split, so the parts always add up to the whole change exactly and
-// the order the parts are taken in doesn't matter:
+// where the local cohort is the area's children at the age a year below entry (Y6 = 10 at 11+; Y11 = 15 at
+// 16+), the mid-year before entry. The change from the base year to the latest is split into those two
+// steps by the log-mean (LMDI) split, so the steps always add up to the whole change exactly:
 //
-//   part_k = L(entry_1, entry_0) x ln(factor_k,1 / factor_k,0),   L(a, b) = (a - b) / (ln a - ln b)
+//   step_k = L(entry_1, entry_0) x ln(factor_k,1 / factor_k,0),   L(a, b) = (a - b) / (ln a - ln b)
 //
-// Rounded to whole pupils with the largest remainders, so the rounded parts still add up to the rounded
-// change. Where the school's intake is small (under SMALL_INTAKE at either end), each end is a 3-year
-// average (the base and the two years after it; the latest and the two before it), every figure alike.
-// R-ADM-VIEW-INTAKE-CHANGE.
+// Rounded to whole pupils with the largest remainders, so the rounded steps still add up to the rounded
+// change. Families moving is NOT a step: the local cohort = the same children's count at the earliest age
+// (born here, or here since the youngest age the LSOA years hold) + moved in since (net). The cohort-size
+// step is shared between those two in proportion to each one's change from the base year to the latest
+// (each local child is worth the same pupils), rounded so the two still add up to the step. Where the
+// school's intake is small (under SMALL_INTAKE at either end), each end is a 3-year average (the base and
+// the two years after it; the latest and the two before it), every figure alike. R-ADM-VIEW-INTAKE-CHANGE.
 
 export const SMALL_INTAKE = 30;
 export const AVERAGE_YEARS = 3;
 
-export type IntakeEnd = { births: number; area: number; school: number };
-export type IntakePartKey = "births" | "moving" | "share";
+/** One end: the cohort at its earliest age held (`here`, null when no age before the local-cohort age is
+ * held), the local cohort (`area`), and the school's entry cohort. Moved in (net) = area - here. */
+export type IntakeEnd = { here: number | null; area: number; school: number };
+export type IntakePartKey = "cohort" | "share";
 export type IntakePart = { key: IntakePartKey; value: number; exact: number };
-export type IntakeSplit = { start: number; end: number; change: number; parts: IntakePart[] };
+/** The cohort-size step's "of which": the pupils that came with the children here at the earliest age and
+ * with families moving (net). here + moved = the cohort step, exactly and rounded. */
+export type IntakeOfWhich = { here: number; moved: number; exactHere: number; exactMoved: number };
+export type IntakeSplit = { start: number; end: number; change: number; parts: IntakePart[]; ofWhich: IntakeOfWhich | null };
 
 /** L(a, b): the log mean (a when a = b). */
 export function logMean(a: number, b: number): number {
@@ -47,20 +56,36 @@ export function roundToTotal(exact: number[], total: number): number[] {
   return out;
 }
 
-/** The three parts of the change from `base` to `latest`, or null where a figure is missing or 0 (a
- * share of nothing, or no births: the split isn't defined). */
+/** The two steps of the change from `base` to `latest`, with the cohort step's "of which", or null where
+ * the local cohort or the school's intake is missing or 0 (a share of nothing: the split isn't defined).
+ * A missing earliest-age count only drops the "of which". */
 export function splitIntake(base: IntakeEnd, latest: IntakeEnd): IntakeSplit | null {
-  const all = [base.births, base.area, base.school, latest.births, latest.area, latest.school];
+  const all = [base.area, base.school, latest.area, latest.school];
   if (all.some((v) => !Number.isFinite(v) || v <= 0)) return null;
   const L = logMean(latest.school, base.school);
-  const f0 = [base.births, base.area / base.births, base.school / base.area];
-  const f1 = [latest.births, latest.area / latest.births, latest.school / latest.area];
+  const f0 = [base.area, base.school / base.area];
+  const f1 = [latest.area, latest.school / latest.area];
   const exact = f0.map((f, k) => L * Math.log(f1[k] / f));
   const start = Math.round(base.school);
   const end = Math.round(latest.school);
   const rounded = roundToTotal(exact, end - start);
-  const keys: IntakePartKey[] = ["births", "moving", "share"];
-  return { start, end, change: end - start, parts: keys.map((key, k) => ({ key, value: rounded[k], exact: exact[k] })) };
+  const keys: IntakePartKey[] = ["cohort", "share"];
+  return { start, end, change: end - start, parts: keys.map((key, k) => ({ key, value: rounded[k], exact: exact[k] })), ofWhich: ofWhich(base, latest, exact[0], rounded[0], L) };
+}
+
+/** The cohort step shared between the children here at the earliest age and families moving (net), in
+ * proportion to each one's change. Each local child is worth exact / (change in the local cohort) pupils;
+ * where the local cohort didn't change, the limit of that, L / cohort. */
+function ofWhich(base: IntakeEnd, latest: IntakeEnd, exact: number, value: number, L: number): IntakeOfWhich | null {
+  if (base.here === null || latest.here === null || !Number.isFinite(base.here) || !Number.isFinite(latest.here)) return null;
+  const dHere = latest.here - base.here;
+  const dMoved = latest.area - latest.here - (base.area - base.here);
+  const dArea = latest.area - base.area;
+  const perChild = dArea !== 0 ? exact / dArea : L / base.area;
+  const exactHere = perChild * dHere;
+  const exactMoved = perChild * dMoved;
+  const [here, moved] = roundToTotal([exactHere, exactMoved], value);
+  return { here, moved, exactHere, exactMoved };
 }
 
 /** The mean of the values that are there; null when none is. */
@@ -80,11 +105,12 @@ export function endYears(baseYear: number, latestYear: number, averaged: boolean
 export const isSmallIntake = (base: number | null, latest: number | null) => (base ?? 0) < SMALL_INTAKE || (latest ?? 0) < SMALL_INTAKE;
 
 /**
- * Which age stands in for births. A cohort entering at `entryAge` in census period E was aged a at
- * mid-year E - entryAge + a (ONS mid-year ages, as the census's ages at 31 August). Births are age 0;
- * where the area's single ages don't reach back to the base cohort's birth year, the youngest age held
- * for it is used at both ends, so the two ends are like with like (Guy: "use the earliest age held and
- * say so"). Null when even that is at or past the area-year age (no births part to draw).
+ * The earliest age the "of which" counts the cohort at. A cohort entering at `entryAge` in census period
+ * E was aged a at mid-year E - entryAge + a (ONS mid-year ages, as the census's ages at 31 August). Births
+ * are age 0 ("born here"); where the area's single ages don't reach back to the base cohort's birth year,
+ * the youngest age held for it is used at both ends ("here since age 8"), so the two ends are like with
+ * like (Guy: "use the earliest age held and say so"). Null when even that is at or past the local-cohort
+ * age (no "of which" to draw).
  */
 export function birthsAge(entryAge: number, baseYear: number, firstAreaYear: number): number | null {
   const a = Math.max(0, firstAreaYear - (baseYear - entryAge));

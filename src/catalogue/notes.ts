@@ -115,9 +115,14 @@ export const ADMISSIONS_NOTES = {
   // backfilled from today's schools table). Shown only when a past year is drawn.
   areaUndercount: "Earlier years count only schools still open, so they slightly undercount.",
   // 0.8 Admissions feedback round 1 (F-13): "Why did our intake change?" (R-ADM-VIEW-INTAKE-CHANGE).
-  intakeNote: "Three parts that add up to the change: births (the cohort's size in the area), families moving (more or fewer children of that age living in the area than were born there), and your share of them. Counts in one area, not a flow of the same children.",
-  intakeMoving: "\"Families moving\" also counts children crossing the radius to go to school: a child who lives outside it and comes in is a family moving in.",
+  // Admissions feedback round 2 (F-31, 6 Nov): two steps (cohort size, your share), families moving as the
+  // cohort step's "of which".
+  intakeNote: "Two steps that add up to the change: the cohort size (more or fewer local children a year below your entry age) and your share of them. Families moving is part of the cohort size, not a third step. Counts in one area, not a flow of the same children.",
+  intakeMoving: "\"Families moving\" is net: families moving into the area less those moving out, between the earliest age the area's figures hold for the cohort and the year before entry. Children who live outside the radius and travel in to school are not in the area's figures: they show in your share, not in families moving.",
   intakeBoarding: "Boarding schools draw from far beyond any radius: boarders' families are not in this area's figures, so your share here reads high and moves with boarding as well as with the area.",
+  // The note under the chart, filled by Funnel.tsx (intakeReadNote).
+  intakeRead: "{entryYear} changed by {change}: {cohort} from the cohort size (more or fewer {local}) and {share} from your share of them.",
+  intakeOfWhich: "The dashed bar is part of the cohort size, not another step: of its {cohort}, {here} came with the children {hereWords} and {moved} with families {moving} {since} (net).",
   intakeAveraged: "Your intake is small, so each end is a 3-year average.",
   intakeNotFeeders: "The area is your catchment radius, not your feeder list: changing the lists doesn't change this view.",
 } as const;

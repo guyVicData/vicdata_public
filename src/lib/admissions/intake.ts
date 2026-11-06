@@ -3,10 +3,12 @@
 // the school's saved catchment, else 15 km for an independent school or a state school's density radius),
 // the same area SMT Context draws. Never the feeder list. Server-only.
 //
-//   births / cohort size   ONS small-area population (LSOAs whose population-weighted centre is within
-//                          the radius: the ingest's area_context), at age 0 -- or, where the LSOA years
-//                          don't reach the base cohort's birth year, the youngest age held (birthsAge)
-//   area Y6 (16+: Y11)     the same LSOAs at the age a year below entry, the mid-year before entry
+//   local cohort           ONS small-area population (LSOAs whose population-weighted centre is within
+//   (cohort size)          the radius: the ingest's area_context) at the age a year below entry (10 at
+//                          11+, 15 at 16+), the mid-year before entry
+//   here at the earliest   the same LSOAs, the same children at age 0 ("born here") -- or, where the LSOA
+//   age (the "of which")   years don't reach the base cohort's birth year, the youngest age held
+//                          (birthsAge); moved in (net) = the local cohort - this. F-31 (6 Nov).
 //   the school's Y7 (Y12)  its own January census at the entry age (cohort.ts)
 //
 // Local births: the LSOAs' age 0 by mid-year, indexed to the first year against the school's region and
@@ -49,13 +51,13 @@ export type IntakeChangeView =
       status: "ok";
       area: IntakeArea;
       entryAge: number;
-      areaAge: number; // the age a year below entry (Y6 = 10, Y11 = 15)
-      birthsAge: number; // 0, or the youngest age held standing in for births
+      areaAge: number; // the local cohort's age, a year below entry (Y6 = 10, Y11 = 15)
+      birthsAge: number | null; // the "of which"'s earliest age: 0 (born here), or the youngest held; null: no "of which"
       baseYear: number;
       latestYear: number;
       averaged: boolean;
       years: { base: number[]; latest: number[] }; // census periods averaged at each end
-      birthYears: { base: number[]; latest: number[] }; // the LSOA mid-years read for births at each end
+      birthYears: { base: number[]; latest: number[] } | null; // the LSOA mid-years read at the earliest age at each end
       ends: { base: IntakeEnd; latest: IntakeEnd };
       split: IntakeSplit;
     }
@@ -121,15 +123,15 @@ export async function intakeChange(urn: string, ep: EntryPoint, opts: { km?: unk
   const baseYear = CENSUS_FIRST_PERIOD;
   // The latest entry year with both the school's census and the area's year before it.
   const latestYear = Math.min(CURRENT_CENSUS_PERIOD, r.latestCensus ?? CURRENT_CENSUS_PERIOD, area.lastYear + 1);
+  // F-31: the earliest age only feeds the "of which"; without it the two steps still draw.
   const bAge = birthsAge(A, baseYear, area.firstYear);
-  if (bAge === null) return { status: "none", reason: "The area's population figures don't go back far enough for this entry point.", area };
   const averaged = isSmallIntake(cohortAt(table, A, baseYear), cohortAt(table, A, latestYear));
   const years = endYears(baseYear, latestYear, averaged);
   const endOf = (ys: number[]): IntakeEnd | null => {
-    const births = meanOf(ys.map((E) => at(midYearAt(E, A, bAge), bAge)));
+    const here = bAge === null ? null : meanOf(ys.map((E) => at(midYearAt(E, A, bAge), bAge)));
     const areaY = meanOf(ys.map((E) => at(E - 1, areaAge)));
     const school = meanOf(ys.map((E) => cohortAt(table, A, E)));
-    return births === null || areaY === null || school === null ? null : { births, area: areaY, school };
+    return areaY === null || school === null ? null : { here, area: areaY, school };
   };
   const base = endOf(years.base);
   const latest = endOf(years.latest);
@@ -145,7 +147,7 @@ export async function intakeChange(urn: string, ep: EntryPoint, opts: { km?: unk
     latestYear,
     averaged,
     years,
-    birthYears: { base: years.base.map((E) => midYearAt(E, A, bAge)), latest: years.latest.map((E) => midYearAt(E, A, bAge)) },
+    birthYears: bAge === null ? null : { base: years.base.map((E) => midYearAt(E, A, bAge)), latest: years.latest.map((E) => midYearAt(E, A, bAge)) },
     ends: { base, latest },
     split,
   };

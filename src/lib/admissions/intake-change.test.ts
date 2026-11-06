@@ -1,32 +1,64 @@
 // VicData 0.8 Admissions feedback round 1 (F-13, R-ADM-VIEW-INTAKE-CHANGE): "Why did our intake change?", the
-// pure split. Run: npx -y tsx --test src/lib/admissions/intake-change.test.ts
+// pure split; round 2 (F-31): two steps and the "of which". Run: npx -y tsx --test src/lib/admissions/intake-change.test.ts
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { birthsAge, endYears, isSmallIntake, logMean, meanOf, midYearAt, roundToTotal, splitIntake } from "./intake-change";
 
-describe("the split: births x families moving x your share", () => {
-  // Leighton Park at 11+, 15 km, 29 Oct 2026 (children aged 3 standing in for births).
-  const base = { births: 7112, area: 7332, school: 47 };
-  const latest = { births: 6754, area: 7713, school: 57 };
-  it("adds up to the change exactly, before and after rounding", () => {
+describe("the split: local cohort x your share (F-31)", () => {
+  // Leighton Park at 16+, 15 km, 6 Nov 2026 (the same children counted at age 8 for the "of which").
+  const base = { here: 5906, area: 6622, school: 82 };
+  const latest = { here: 7310, area: 8134, school: 90 };
+  it("two steps that add up to the change exactly, before and after rounding", () => {
     const s = splitIntake(base, latest)!;
-    assert.equal(s.change, 10);
-    assert.ok(Math.abs(s.parts.reduce((t, p) => t + p.exact, 0) - (57 - 47)) < 1e-9);
-    assert.equal(s.parts.reduce((t, p) => t + p.value, 0), 10);
-    assert.deepEqual(s.parts.map((p) => [p.key, p.value]), [["births", -3], ["moving", 5], ["share", 8]]);
+    assert.equal(s.change, 8);
+    assert.ok(Math.abs(s.parts.reduce((t, p) => t + p.exact, 0) - 8) < 1e-9);
+    assert.equal(s.parts.reduce((t, p) => t + p.value, 0), 8);
+    assert.deepEqual(s.parts.map((p) => p.key), ["cohort", "share"]);
   });
-  it("each part is L x ln(factor now / factor then)", () => {
+  it("each step is L x ln(factor now / factor then)", () => {
     const s = splitIntake(base, latest)!;
-    const L = logMean(57, 47);
-    assert.ok(Math.abs(s.parts[0].exact - L * Math.log(6754 / 7112)) < 1e-12);
-    assert.ok(Math.abs(s.parts[2].exact - L * Math.log(57 / 7713 / (47 / 7332))) < 1e-12);
+    const L = logMean(90, 82);
+    assert.ok(Math.abs(s.parts[0].exact - L * Math.log(8134 / 6622)) < 1e-12);
+    assert.ok(Math.abs(s.parts[1].exact - L * Math.log(90 / 8134 / (82 / 6622))) < 1e-12);
   });
-  it("nothing changes: every part is 0", () => {
-    assert.deepEqual(splitIntake(base, base)!.parts.map((p) => p.value), [0, 0, 0]);
+  it("the of which shares the cohort step in proportion to each change, and adds up to it", () => {
+    const s = splitIntake(base, latest)!;
+    const o = s.ofWhich!;
+    assert.equal(o.here + o.moved, s.parts[0].value);
+    assert.ok(Math.abs(o.exactHere + o.exactMoved - s.parts[0].exact) < 1e-9);
+    // here changed by 1,404 and moved in by 108, of 1,512: the shares follow.
+    assert.ok(Math.abs(o.exactMoved / s.parts[0].exact - 108 / 1512) < 1e-12);
+    assert.ok(o.moved >= 0 && o.moved < o.here);
+  });
+  it("opposite signs: more children here, more families leaving -- both signed, netting to the step", () => {
+    // St Bonaventure's (102787) at 11+ shape: here up 153, moved in -206 -> -626.
+    const s = splitIntake({ here: 2734, area: 2528, school: 208 }, { here: 2887, area: 2261, school: 199 })!;
+    const o = s.ofWhich!;
+    assert.ok(s.parts[0].value < 0);
+    assert.ok(o.here > 0 && o.moved < 0);
+    assert.equal(o.here + o.moved, s.parts[0].value);
+  });
+  it("the local cohort didn't change: each child is worth L / cohort, so a swap still shows", () => {
+    const s = splitIntake({ here: 900, area: 1000, school: 50 }, { here: 1000, area: 1000, school: 60 })!;
+    assert.equal(s.parts[0].value, 0);
+    const o = s.ofWhich!;
+    assert.ok(Math.abs(o.exactHere + o.exactMoved) < 1e-12);
+    assert.ok(Math.abs(o.exactHere - (logMean(60, 50) / 1000) * 100) < 1e-12);
+    assert.deepEqual([o.here, o.moved], [5, -5]);
+  });
+  it("nothing changes: every step is 0", () => {
+    const s = splitIntake(base, base)!;
+    assert.deepEqual(s.parts.map((p) => p.value), [0, 0]);
+    assert.deepEqual([s.ofWhich!.here, s.ofWhich!.moved], [0, 0]);
+  });
+  it("no earliest age: the steps, without an of which", () => {
+    const s = splitIntake({ ...base, here: null }, { ...latest, here: null })!;
+    assert.equal(s.ofWhich, null);
+    assert.equal(s.parts.reduce((t, p) => t + p.value, 0), 8);
   });
   it("a zero or missing figure: no split", () => {
     assert.equal(splitIntake(base, { ...latest, school: 0 }), null);
-    assert.equal(splitIntake({ ...base, births: NaN }, latest), null);
+    assert.equal(splitIntake({ ...base, area: NaN }, latest), null);
   });
 });
 
@@ -43,7 +75,7 @@ describe("rounding to a total", () => {
 });
 
 describe("which years and ages", () => {
-  it("births are age 0, else the youngest age the LSOA years hold for the base cohort", () => {
+  it("the earliest age is 0 (born here), else the youngest the LSOA years hold for the base cohort", () => {
     assert.equal(birthsAge(11, 2019, 2011), 3); // born 2008; LSOA from 2011
     assert.equal(birthsAge(16, 2019, 2011), 8); // born 2003
     assert.equal(birthsAge(11, 2019, 2008), 0);
