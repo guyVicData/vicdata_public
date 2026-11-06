@@ -203,6 +203,7 @@ function Inbox() {
   // Read on opening, and again after each triage save (`tick`).
   const [tick, setTick] = useState(0);
   const [gaps, setGaps] = useState<GapRow[]>([]);
+  const [liveBuild, setLiveBuild] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
     (async () => {
@@ -213,7 +214,10 @@ function Inbox() {
       setRows((r.json?.items as TriageRow[]) ?? []);
       // The deploy gate: items claiming more than the live build has (none before its migration is applied).
       const g = await api("/api/platform/feedback?gaps=1");
-      if (live) setGaps(g.ok ? ((g.json?.rows as GapRow[]) ?? []) : []);
+      if (live) {
+        setGaps(g.ok ? ((g.json?.rows as GapRow[]) ?? []) : []);
+        setLiveBuild(g.ok ? ((g.json?.live as { commit?: string } | null)?.commit ?? null) : null);
+      }
     })();
     return () => {
       live = false;
@@ -298,6 +302,11 @@ function Inbox() {
       {missing && <p className="rounded-md border border-dashed border-[var(--panel-border2)] p-3 text-[12.5px] text-[var(--muted2)]">The feedback tables aren&rsquo;t on this database yet (20261117100000_v08_feedback).</p>}
       {error && <p className="text-[12.5px] text-red-600">{error}</p>}
       {notice && <p role="status" className="text-[12px] font-semibold text-[var(--muted)]">{notice}</p>}
+      {gaps.length === 0 && liveBuild && (
+        <p data-fb-deploy-gaps="0" className="text-[12px] text-[var(--muted2)]">
+          Deploy gaps: 0 · live build {liveBuild.slice(0, 7)}
+        </p>
+      )}
       {gaps.length > 0 && (
         <div data-fb-deploy-gaps={gaps.length} role="alert" className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--fb-open)] bg-[var(--box-bg)] p-3 text-[12.5px]">
           <span className="inline-block h-2 w-2 rounded-full bg-[var(--fb-open)]" />

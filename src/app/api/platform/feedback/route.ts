@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
         if (feedbackMissing(error)) return NextResponse.json({ missing: true, rows: [] });
         throw error;
       }
-      return NextResponse.json({ rows: data ?? [] });
+      // The live build the gaps are read against, so the inbox can say "0" rather than nothing.
+      const { data: live } = await u.supabase.from("app_builds").select("commit, last_seen_at").order("last_seen_at", { ascending: false }).limit(1).maybeSingle();
+      return NextResponse.json({ rows: data ?? [], live: live ?? null });
     }
     if (sp.get("coverage") === "1") {
       const { data, error } = await u.supabase.from("feedback_coverage").select("*").order("dashboard_id").limit(5000);
