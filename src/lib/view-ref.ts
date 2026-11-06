@@ -205,6 +205,67 @@ export function recordedQuery(search: string): string {
   return sp.toString();
 }
 
+// 0.8 Admissions feedback round 2, item 3 (F-31: "Your cohort" at 11+ recorded, entry=16%2B in the address).
+
+/** The state keys an address also carries, and what they're called: the state's dashboard against ?view=
+ * (Admissions), its entry against ?entry= (Admissions), its level against ?level= (SMT). The same pairs as
+ * feedback_state_mismatch (20261120090000_v08_feedback_resolved_views). */
+const STATE_IN_ADDRESS: readonly [stateKey: string, param: string, name: string][] = [
+  ["dashboard", "view", "dashboard"],
+  ["entry", "entry", "entry point"],
+  ["level", "level", "level"],
+];
+
+/** Why an item's state and its address disagree, or null when they don't (the server refuses such an
+ * item, and the window shows this). Only where both say: an address without the parameter (a default, or
+ * SMT's remembered level) says nothing. */
+export function stateMismatch(state: ViewSurface["state"] | null | undefined, pageQuery: string | null | undefined): string | null {
+  const sp = new URLSearchParams(pageQuery ?? "");
+  for (const [key, param, name] of STATE_IN_ADDRESS) {
+    const raw = state?.[key];
+    const s = raw === null || raw === undefined || typeof raw === "object" ? "" : String(raw);
+    const a = sp.get(param) ?? "";
+    // A bare "+" typed into an address reads as a space.
+    if (s && a && s !== a && s.replace(/\+/g, " ") !== a)
+      return `This item's settings don't match its address: ${name} ${s} is recorded, but the address says ${a}. Nothing was sent. Move the window to the view on screen and send again.`;
+  }
+  return null;
+}
+
+/** What, besides the view, decides what a view shows: the entry point (Admissions), the level (SMT) or
+ * the phase (Teacher), and the comparison set or rivals. A change of either is a change of what the item
+ * is about (the window offers the move). */
+export function viewContext(state: ViewSurface["state"] | null | undefined): { entry: string | null; set: string | null } {
+  const s = state ?? {};
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = s[k];
+      if (v !== null && v !== undefined && v !== "") return String(v);
+    }
+    return null;
+  };
+  return { entry: pick("entry", "level", "phase"), set: pick("set", "rivals") };
+}
+export const sameContext = (a: ViewSurface["state"] | null | undefined, b: ViewSurface["state"] | null | undefined) => {
+  const x = viewContext(a);
+  const y = viewContext(b);
+  return x.entry === y.entry && x.set === y.set;
+};
+
+const ENTRY_LABEL: Record<string, string> = { gcse: "GCSE", post16: "Post-16", whole: "Whole school", ks2: "KS2", ks4: "GCSE", ks5: "Post-16" };
+/** The entry point as the window's header names it: "16+", "GCSE", "Post-16"; null when the page has none. */
+export function entryLabel(state: ViewSurface["state"] | null | undefined): string | null {
+  const e = viewContext(state).entry;
+  if (!e) return null;
+  const age = /^age:(\d+)$/.exec(e);
+  return age ? `${age[1]}+` : (ENTRY_LABEL[e] ?? e);
+}
+/** A view with its entry point, as the window names it: "Shape and size · 16+". */
+export const viewWithEntry = (label: string, state: ViewSurface["state"] | null | undefined) => {
+  const e = entryLabel(state);
+  return e ? `${label} · ${e}` : label;
+};
+
 /** Which parts of a recorded state the address restores on each product, and which only the
  * banner shows. The report's "What Open restores" table is this. */
 export const RESTORED_BY_ADDRESS: Record<ViewProduct, { restores: string[]; bannerOnly: string[] }> = {

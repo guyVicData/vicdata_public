@@ -11,7 +11,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchNotes, saveNote } from "@/lib/teacher-view-data";
 import { viewKey, viewNoteKey, type ViewRef, type ViewSurface } from "@/lib/view-ref";
 import type { DashboardConfig } from "@/catalogue/types";
-import { loadFeedback } from "./store";
+import { loadFeedback, useLiveSurface } from "./store";
 import { FeedbackWindow } from "./FeedbackWindow";
 import { FeedbackOpenBanner } from "./FeedbackOpenBanner";
 import { useRegisterPage } from "./PageFeedback";
@@ -66,6 +66,8 @@ export function ViewSurfaceProvider({ surface, config = null, children }: { surf
   const host = useFirstHost();
   // Section 6: the page's "Feedback on this page" is about the page the first surface is on.
   useRegisterPage(surface, host);
+  // Admissions feedback round 2, item 3: what this dashboard shows now, for the window's Send and its move offers.
+  useLiveSurface(surface);
 
   const map = notes && notes.scope === scope ? notes.map : null;
   const save = useCallback(

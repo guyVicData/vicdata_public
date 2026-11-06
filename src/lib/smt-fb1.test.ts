@@ -4,7 +4,9 @@
 //                            data alone (a synthetic 2025/26), with no code change
 //   R-INDEP-ENTRY-TILES      Joining / Net change at 11 and Net change at 16, one sum with Leaving at 16
 //   R-RAIL-HIDES-EMPTY       the rail drops empty views; a panel opens on the next view instead
-//   R-FEEDBACK-FOLLOWS-VIEW  the window offers "Move to <view>" when its panel's rail changes, and keeps the draft
+//   R-FEEDBACK-FOLLOWS-VIEW  the window offers "Move to <view>" when its panel's rail changes, and keeps the draft;
+//                            since Admissions feedback round 2 (F-31) also another panel and the entry point, and
+//                            Send records one moment: B at 16+ once moved, A at 11+ if not -- never a mix
 //   the set's short name (F-3) and the app version (F-1's "dev")
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -14,8 +16,10 @@ import { entryTiles, yearOnYear } from "./smt/entry-net";
 import type { CohortTable } from "./admissions/cohort";
 import { activeWithContent, visibleRail } from "./rail-content";
 import { appVersion } from "./feedback-server";
-import { closeFeedback, feedbackSnapshot, moveFeedback, movedView, openFeedback, resetFeedbackStore, setPanelView } from "../components/feedback/store";
-import type { ViewSurface } from "./view-ref";
+import { closeFeedback, driftOf, feedbackSnapshot, moveFeedback, movedView, openFeedback, resetFeedbackStore, sendPlan, setLiveSurface, setPanelView, touchPanel } from "../components/feedback/store";
+import { feedbackPayload, type FormState } from "../components/feedback/FeedbackWindow";
+import { feedbackRow } from "./feedback-server";
+import { stateMismatch, viewWithEntry, type ViewSurface } from "./view-ref";
 
 test("F-3: every set has a short name for a tight header", () => {
   assert.equal(setShortName("10 nearest with a sixth form or 16+ provision"), "10 nearest");
@@ -104,6 +108,106 @@ test("R-FEEDBACK-FOLLOWS-VIEW: the window never silently keeps the old view", ()
   assert.equal(s2.target!.openedAt, at, "the same opening: the draft is kept");
   assert.equal(movedView(s2), null);
   closeFeedback();
+});
+
+// Admissions feedback round 2, item 3: what happened on 6 Nov (F-31). The window opened on "Your cohort, girls
+// and boys" at 11+; Guy switched to 16+ and went to "Why did our intake change?" in another panel, and sent.
+const ADM = (entry: string): ViewSurface => ({ product: "admissions", dashboard: { id: "vicdata.admissions.pipelines", name: "Pipelines", versionId: null }, scope: { kind: "school", urn: "110110", name: "Leighton Park School" }, role: "admissions", viewAs: false, peek: false, noteScope: "110110", state: { dashboard: "pipelines", entry, rivals: null, projection: false } });
+const COHORT = { panelId: "vicdata.admissions.pipelines.c1.trends", panelName: "Trends", instanceId: "sex", dataview: "DV-ADM-P-ENTRY-SEX", label: "Your cohort, girls and boys" };
+const FUNNEL = { panelId: "vicdata.admissions.pipelines.c2.funnel", panelName: "Funnel", instanceId: "funnel", dataview: "DV-ADM-P-FUNNEL", label: "Why did our intake change?" };
+const key = (v: typeof COHORT) => `vicdata.admissions.pipelines:${v.panelId}:${v.instanceId}`;
+const FORM: FormState = { kinds: [], importance: null, scope: null, applies: null, where: [], area: [], saw: "", expected: "", text: "The waterfall at 16+" };
+const AT = (entry: string) => ({ path: "/teacher/admissions", search: `?view=pipelines&entry=${encodeURIComponent(entry)}` });
+// Send, with the page's address at that moment (16+ unless said).
+const payloadOf = (now = AT("16+")) => {
+  const s = feedbackSnapshot();
+  const plan = sendPlan(s, now)!;
+  return { plan, p: feedbackPayload(plan.surface, s.target!, FORM, { ...plan.address, width: 1400, theme: "light" }) };
+};
+
+test("R-FEEDBACK-FOLLOWS-VIEW (round 2): A at 11+, then 16+ and B in another panel -- the window offers B at 16+; Send is B at 16+ or A at 11+, never a mix", () => {
+  const setup = () => {
+    resetFeedbackStore({ status: "ready", allowed: true, items: [] });
+    setLiveSurface(ADM("11+"));
+    setPanelView({ surface: ADM("11+"), view: COHORT, viewKey: key(COHORT), anchor: null });
+    setPanelView({ surface: ADM("11+"), view: FUNNEL, viewKey: key(FUNNEL), anchor: null });
+    touchPanel(ADM("11+"), COHORT.panelId);
+    openFeedback({ surface: ADM("11+"), view: COHORT, viewKey: key(COHORT), anchor: null }, AT("11+"));
+  };
+  setup();
+  assert.equal(driftOf(feedbackSnapshot()), null, "on the view the page shows");
+  assert.equal(viewWithEntry(feedbackSnapshot().target!.view.label, feedbackSnapshot().target!.surface.state), "Your cohort, girls and boys · 11+", "the header names the view with its entry point");
+  // A Send before anything changes: the page as it is at that moment.
+  const clean = payloadOf(AT("11+"));
+  assert.equal(clean.plan.drift, null);
+  assert.deepEqual([clean.p.view_key, clean.p.state.entry, clean.p.page_query], [key(COHORT), "11+", "view=pipelines&entry=11%2B"]);
+  // The entry point goes to 16+ (the page re-renders; the panels keep the copies they announced).
+  setLiveSurface(ADM("16+"));
+  const d1 = driftOf(feedbackSnapshot())!;
+  assert.equal(d1.kind, "entry");
+  assert.equal(d1.to!.view.label, COHORT.label, "offers the same view…");
+  assert.equal(d1.to!.surface.state.entry, "16+", "…at 16+");
+  // Then a click in the funnel's panel.
+  touchPanel(ADM("16+"), FUNNEL.panelId);
+  const d2 = driftOf(feedbackSnapshot())!;
+  assert.equal(d2.kind, "panel", "another panel on the same dashboard");
+  assert.equal(viewWithEntry(d2.to!.view.label, d2.to!.surface.state), "Why did our intake change? · 16+", "offers Move to B at 16+");
+  assert.equal(movedView(feedbackSnapshot())?.viewKey, key(FUNNEL));
+
+  // Declined: Send (after the warning) is A at 11+, its state and address both from when it was tied.
+  const no = payloadOf();
+  assert.ok(no.plan.drift, "Send warns first");
+  assert.equal(no.p.view_key, key(COHORT));
+  assert.equal(no.p.state.entry, "11+");
+  assert.equal(no.p.page_query, "view=pipelines&entry=11%2B");
+  assert.equal(stateMismatch(no.p.state, no.p.page_query), null, "never a mix");
+
+  // What the old window sent on 6 Nov -- A's 11+ state with the 16+ address -- is refused, by the page and the server.
+  const old = { ...no.p, page_query: "view=pipelines&entry=16%2B" };
+  assert.match(stateMismatch(old.state, old.page_query) ?? "", /entry point 11\+ is recorded, but the address says 16\+/);
+  const refused = feedbackRow(old, "abc");
+  assert.ok("error" in refused && /don't match its address/.test(refused.error));
+
+  // Accepted: Move to B, then Send is B at 16+, from the moment of sending; the draft is kept.
+  const at = feedbackSnapshot().target!.openedAt;
+  moveFeedback(d2.to!, AT("16+"));
+  const yes = payloadOf();
+  assert.equal(yes.plan.drift, null);
+  assert.equal(yes.p.view_key, key(FUNNEL));
+  assert.equal(yes.p.view_label, FUNNEL.label);
+  assert.equal(yes.p.state.entry, "16+");
+  assert.equal(yes.p.page_query, "view=pipelines&entry=16%2B");
+  assert.equal(stateMismatch(yes.p.state, yes.p.page_query), null, "never a mix");
+  assert.equal(feedbackSnapshot().target!.openedAt, at, "the same opening: the draft is kept");
+  assert.ok(!("error" in feedbackRow(yes.p, "abc")));
+
+  // A change of entry point alone, on the same view: the offer is that view at 16+; moved, Send is A at 16+.
+  setup();
+  setLiveSurface(ADM("16+"));
+  moveFeedback(driftOf(feedbackSnapshot())!.to!, AT("16+"));
+  const same = payloadOf();
+  assert.deepEqual([same.p.view_key, same.p.state.entry, same.p.page_query], [key(COHORT), "16+", "view=pipelines&entry=16%2B"]);
+  closeFeedback();
+});
+
+test("R-FEEDBACK-FOLLOWS-VIEW (round 2): a dashboard change warns with no move, and Send as it was is A at 11+", async () => {
+  const st = await import("../components/feedback/store");
+  st.resetFeedbackStore({ status: "ready", allowed: true, items: [] });
+  st.setLiveSurface(ADM("11+"));
+  st.setPanelView({ surface: ADM("11+"), view: COHORT, viewKey: key(COHORT), anchor: null });
+  st.openFeedback({ surface: ADM("11+"), view: COHORT, viewKey: key(COHORT), anchor: null }, AT("11+"));
+  // The page switches to Market share: the Pipelines surface goes, Market share's comes.
+  st.clearLiveSurface(ADM("11+"));
+  st.setLiveSurface({ ...ADM("11+"), state: { ...ADM("11+").state, dashboard: "market-share" }, dashboard: { id: "vicdata.admissions.market-share", name: "Market share", versionId: null } });
+  const d = st.driftOf(st.feedbackSnapshot())!;
+  assert.equal(d.kind, "dashboard");
+  assert.equal(d.to, null, "no move to another dashboard: that view's own icon opens it there");
+  assert.equal(d.now.dashboard.name, "Market share");
+  const s = st.feedbackSnapshot();
+  const plan = st.sendPlan(s, { path: "/teacher/admissions", search: "?view=market-share&entry=11%2B" })!;
+  const p = feedbackPayload(plan.surface, s.target!, FORM, { ...plan.address, width: 1400, theme: "dark" });
+  assert.deepEqual([p.view_key, p.state.dashboard, p.state.entry, p.page_query], [key(COHORT), "pipelines", "11+", "view=pipelines&entry=11%2B"]);
+  st.closeFeedback();
 });
 
 test("F-1: a missing app version is 'unknown' outside local dev, never 'dev'", () => {

@@ -1,4 +1,6 @@
 // Run from the repo root: npm i --no-save @electric-sql/pglite@0.2 && node supabase/tests/v08_feedback_deploy_gate_pglite.mjs
+// With the next migration on top (20261120090000_v08_feedback_resolved_views, Admissions feedback round 2), the
+// same checks: FEEDBACK_NEXT=1 node supabase/tests/v08_feedback_deploy_gate_pglite.mjs
 // VicData 0.8 feedback deploy gate: 20261119090000_v08_feedback_deploy_gate.sql over the live feedback schema
 // (20261117100000_v08_feedback.sql + 20261118090000_v08_feedback_page.sql) holding the 6 Nov items as live:
 // F-1 to F-11 done (41c4d26, 030d546), F-12 to F-21 planned "deploy 6bddb6d" (F-15 since done), F-22 new,
@@ -18,6 +20,7 @@ const repo = new URL("../migrations/", import.meta.url).pathname;
 const FEEDBACK = readFileSync(`${repo}20261117100000_v08_feedback.sql`, "utf8");
 const PAGE = readFileSync(`${repo}20261118090000_v08_feedback_page.sql`, "utf8");
 const GATE = readFileSync(`${repo}20261119090000_v08_feedback_deploy_gate.sql`, "utf8");
+const NEXT = process.env.FEEDBACK_NEXT === "1" ? readFileSync(`${repo}20261120090000_v08_feedback_resolved_views.sql`, "utf8") : null;
 
 const GUY = "52a08818-9132-48a0-8665-8362361eff11";
 const MEMBER = "00000000-0000-0000-0000-0000000000b1";
@@ -104,6 +107,8 @@ await ex(GATE);
 const after1 = await statuses(12, 21);
 const notes1 = (await q(`select number, triage_note, follows_up from public.feedback_items where number in (15, 17, 22, 23, 26) order by number`)).rows;
 await ex(GATE);
+// FEEDBACK_NEXT=1: the next migration on top; every check below must still hold.
+if (NEXT) await ex(NEXT);
 const after2 = await statuses(12, 21);
 const notes2 = (await q(`select number, triage_note, follows_up from public.feedback_items where number in (15, 17, 22, 23, 26) order by number`)).rows;
 check("it runs twice cleanly and adds no items", (await q(`select count(*)::int n from public.feedback_items`)).rows[0].n === before);
@@ -118,7 +123,9 @@ check("scope rule: F-22 follows up F-17 and is triaged; F-23 and F-26 follow up 
 const fr = (await as(GUY, () => q(`select ref, follows_up_ref, deployed_at, deployed_build, checked_live_at from public.feedback_for_triage where number = 22`))).rows[0];
 check("feedback_for_triage shows follows_up_ref and the new columns (appended)", fr.follows_up_ref === "F-17" && "deployed_build" in fr && "checked_live_at" in fr);
 const cols = (await q(`select column_name from information_schema.columns where table_name = 'feedback_for_triage' order by ordinal_position`)).rows.map((r) => r.column_name);
-check("feedback_for_triage's existing columns keep their places; the new ones are at the end", cols.indexOf("is_page") === cols.length - 6 && cols.slice(-5).join() === "deployed_at,deployed_build,checked_live_at,follows_up,follows_up_ref" && cols[0] === "ref", cols.slice(-7).join());
+const ip = cols.indexOf("is_page");
+// FEEDBACK_NEXT=1: resolved_views comes after them (the next migration appends it).
+check("feedback_for_triage's existing columns keep their places; the new ones are at the end", ip === cols.length - 6 - (NEXT ? 1 : 0) && cols.slice(ip + 1, ip + 6).join() === "deployed_at,deployed_build,checked_live_at,follows_up,follows_up_ref" && cols[0] === "ref" && (!NEXT || cols.at(-1) === "resolved_views"), cols.slice(-8).join());
 check("an item is still open (icon yellow) while fixed", (await as(GUY, () => q(`select is_open from public.feedback_for_triage where number = 12`))).rows[0].is_open === true);
 
 // ---------------------------------------------------------------------------- R-FEEDBACK-DEPLOY-GAPS

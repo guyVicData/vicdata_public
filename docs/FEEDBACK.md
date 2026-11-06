@@ -28,6 +28,7 @@ Every item has a short number, **F-12**.
 - the panel, and the view (instance id, dataview id, label);
 - the page's state: subject, level, comparison set, year, phase, filters and pills;
 - the address;
+  - the state and the address are taken together, at the moment of sending, and must agree: the server refuses an item whose state and address name a different dashboard, entry point or level (0.8 Admissions feedback round 2, after F-31 recorded 11+ with a 16+ address). See "The feedback window" below;
 - the app version (Render's commit; "unknown" if it is missing, "dev" only on a local dev server);
 - phone or desktop;
 - light or dark theme.
@@ -43,9 +44,24 @@ Every item has a short number, **F-12**.
 - `status`: new, then triaged, then planned (with `planned_version`), then **fixed** (merged to `main`, with `resolved_commit` and `resolved_at`), then **deployed** (the live build holds `resolved_commit`; set by the server, never by hand, with `deployed_at` and `deployed_build`), then **done** (checked on the live site, `checked_live_at`), or won't do (with `wont_do_reason`). Fixed and deployed are still open: the author's icon stays yellow until done;
 - `duplicate_of` another item;
 - `follows_up` another item: a follow-up raised when a triage covered less than its author asked (see "Proposing a triage");
+- `resolved_views`: the views a fix **added or changed**, other than the item's own (view keys, `dashboard:panel:view`). A "Looks good" on any of them closes the item, as one on its own view does (see "Closing an item"). Set with `scripts/feedback-set-fixed.sh … --view <view_key>`, or in the inbox's "Resolved views" field;
 - a `triage_note`.
 
 Authors can't edit or delete an item once sent; they add another. Nobody changes what was recorded: the database allows changes to the triage fields only. Members' items are read by platform admins only, never by their school or group. Feedback is never counted as usage.
+
+## The feedback window
+
+The window is tied to one view (or the page) and to the page as it was when it was tied: its entry point (or level, phase), set and address. Its header names the view with its entry point, for example "Shape and size · 16+".
+
+- **When the page moves on**, the window says so and offers the move (0.8 Admissions feedback round 2):
+  - the view's panel shows another view (its rail);
+  - another panel on the same dashboard is clicked into;
+  - the entry point (or level, phase) or set changes what the view shows;
+  - the page shows another dashboard: the window says so, with no move (that view's own icon opens it there).
+
+  "Move to …" keeps the draft and names the view it moves to with its entry point.
+- **Send** records the page at the moment of sending when it still shows the window's view. When it doesn't, the window asks first: "Move to … and send", or "Send on … as it was", which records the tied view with its own state and address. An item never has one moment's view with another's state or address.
+- **The server refuses a contradictory item** (`feedbackRow`, and the database's `feedback_state_mismatch`): when the state and the address disagree on the dashboard (`view=`), the entry point (`entry=`) or the level (`level=`), it answers "This item's settings don't match its address: entry point 11+ is recorded, but the address says 16+. Nothing was sent. Move the window to the view on screen and send again.", and the window shows it. An address without the parameter (a default, or SMT's remembered level) says nothing.
 
 ## Page items (feedback on a whole page)
 
@@ -71,11 +87,11 @@ order by created_at desc;
 Check the project ref first (`lnhulykjlxmoneappnsp`, the app database). Then read through the two views. Never write with SQL; triage goes through the inbox.
 
 ```sql
--- New and open items, newest first, with readable names
+-- New and open items, newest first, with readable names (resolved_views: once 20261120090000_v08_feedback_resolved_views is applied)
 select ref, created_london, author_name, view_as, role, product, dashboard_name, panel_name, view_label,
        dataview_id, school_or_group, state, page_path, page_query, app_version, device, theme,
        kinds, importance, scope, applies_to, where_in_view, saw, expected, body,
-       type, priority, status, planned_version, resolved_commit, deployed_build, duplicate_of_ref, follows_up_ref, triage_note
+       type, priority, status, planned_version, resolved_commit, deployed_build, duplicate_of_ref, follows_up_ref, triage_note, resolved_views
 from feedback_for_triage
 where status in ('new', 'triaged', 'planned', 'fixed', 'deployed') and is_open
 order by created_at desc;
@@ -121,9 +137,10 @@ Guy confirms. The confirmed fields are set in the inbox (`/platform/feedback`: o
 An item closes on the live site, not on merge (0.8 feedback deploy gate, after round 1 of the Admissions feedback was marked done on a build that was never deployed).
 
 1. **Fixed** — when the fix is merged to `main` and pushed: the round's report's "set fixed" step, `scripts/feedback-set-fixed.sh <commit> F-12 F-13 …`. It checks the project ref and that the commit is on GitHub's `main`, and only sets `fixed` (never deployed or done). In the inbox: tick the items, then "Set ticked to: Fixed" with the commit.
+   - **Pass `--view <view_key>` (repeatable) when the fix added a view, or changed one other than the item's own**, so that view's "Looks good" closes the item (F-16 and F-21 were fixed by new views, and closed by hand). It adds to the item's `resolved_views` and applies to every F-number in the call, so run the script once per item when their views differ: `scripts/feedback-set-fixed.sh <commit> F-31 --view vicdata.admissions.pipelines:<panel>:<view>`. Leave it out when the fix is on the item's own view. A view key is the item's `view_key` shape (`dashboard:panel:view`; the inbox's Open link and the view's `data-view-key` show it).
 2. **Deployed** — by itself. Each build writes its commit list (`scripts/write-build-info.mjs`, at `npm run build`); the server records its build in `app_builds` on its first feedback item or inbox load, and every fixed item whose commit that build holds moves to deployed, stamped `deployed_at` and `deployed_build`. `GET /api/version` shows the live commit.
 3. **Done** — checked on the live site, either way:
-   - a platform admin's **"Looks good"** on the same view (or page) and school, at or after `deployed_at`, closes it automatically;
+   - a platform admin's **"Looks good"** on the same view (or page), **or on any of its `resolved_views`**, at the same school, at or after `deployed_at`, closes it automatically;
    - or the inbox's **"Checked live"** on ticked deployed items (the date is stamped).
 4. The author's icon on that view stays yellow until done, then goes back to monochrome, unless they have other open items there (or a "Looks good" there not yet done). Coverage still counts a "Looks good" as checked.
 5. **The gaps:** `feedback_deploy_gaps` lists items that claim more than the live build has (deployed or done at a commit it doesn't hold; fixed for over 48 hours and not deployed). The inbox shows the count as a banner. It should be empty after every round's live check.
@@ -133,13 +150,20 @@ An item closes on the live site, not on merge (0.8 feedback deploy gate, after r
 
 Every round's report gives "Guy's commands" as these seven numbered steps, in this order, each a bold line (`**1. Migrations** …`). A step the round doesn't need stays, saying "none this round". The rule test R-REPORT-COMMANDS-ORDER (`scripts/report-template.ts`) checks every report written since 6 Nov 2026, and any not yet committed.
 
-1. **Migrations** — applied by Guy (`supabase db query --linked -f …` and `supabase migration repair`, never `db push`), with the project-ref check first.
+1. **Migrations** — applied by Guy (`supabase db query --linked -f supabase/migrations/<file>`, never `db push`), with the project-ref check first. Then record it with an idempotent insert, which works from any checkout (the migration file need not be on `main`), and show the recorded row:
+
+   ```
+   supabase db query --linked "insert into supabase_migrations.schema_migrations (version, name) values ('<version>', '<name>') on conflict (version) do nothing"
+   supabase db query --linked "select version, name from supabase_migrations.schema_migrations where version = '<version>'"
+   ```
+
+   Not `supabase migration repair --status applied <version>`: it needs the migration file in the checkout it runs from, so on `main` before the merge it fails with "file does not exist" (the deploy-gate round, 6 Nov).
 2. **Merge and push** — from `~/dev/vicdata_public` on a clean `main`, over HTTPS, then `npm run build`. The push starts the Render deploy (step 3).
 3. **Render deploys main on its own** (auto-deploy, On Commit); if no deploy starts within 5 minutes, deploy by hand.
 4. **Wait until /api/version shows the merge** — `curl -s https://<the live site>/api/version` names the merge commit (or a later one).
 5. **Republish**, if the round changed dashboards — `scripts/dashboards-seed-sql.ts --live https://<the live site> --only …`, which refuses until step 4 holds.
-6. **Set fixed** — `scripts/feedback-set-fixed.sh <merge commit> F-…`; the items then move to deployed by themselves.
-7. **Live check** — look at each item's view on the live site and give it "Looks good" (or new feedback); then `feedback_deploy_gaps` reads empty.
+6. **Set fixed** — `scripts/feedback-set-fixed.sh <merge commit> F-…`, with `--view <view_key>` for each view the fix added or changed other than the item's own (one call per item when their views differ); the items then move to deployed by themselves.
+7. **Live check** — look at each item's view (or one of its `--view` views) on the live site, at the entry point the report names, and give it "Looks good" (or new feedback); then `feedback_deploy_gaps` reads empty.
 
 If the auto-deploy fails, Render emails Guy (notifications on); the inbox's gaps banner shows any item still fixed 48 hours after merge.
 

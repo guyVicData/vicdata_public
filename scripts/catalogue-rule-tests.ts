@@ -2938,8 +2938,43 @@ const RUNNERS: Record<string, Runner> = {
     st.moveFeedback(st.movedView(st.feedbackSnapshot())!);
     const after = st.feedbackSnapshot().target!;
     st.closeFeedback();
-    const pass = offer === "Flags" && after.view.label === "Flags" && after.openedAt === at && appVersion({ NODE_ENV: "production" }) === "unknown" && appVersion({ RENDER_GIT_COMMIT: "abc", NODE_ENV: "production" }) === "abc";
-    return { pass, detail: fmt({ offer, movedTo: after.view.label, draftKept: after.openedAt === at, versionWithout: appVersion({ NODE_ENV: "production" }) }) };
+    // Admissions feedback round 2 (F-31): A at 11+, then 16+ and a click in B's panel.
+    const { feedbackPayload } = await import("../src/components/feedback/FeedbackWindow");
+    const { stateMismatch } = await import("../src/lib/view-ref");
+    const adm = (entry: string) => ({ product: "admissions", dashboard: { id: "vicdata.admissions.pipelines", name: "Pipelines", versionId: null }, scope: { kind: "school", urn: "110110", name: "Leighton Park School" }, role: "admissions", viewAs: false, peek: false, noteScope: null, state: { dashboard: "pipelines", entry } }) as never;
+    const a = (entry: string) => ({ surface: adm(entry), view: { panelId: "c1", panelName: "Trends", instanceId: "sex", dataview: "DV-ADM-P-ENTRY-SEX", label: "Your cohort, girls and boys" }, viewKey: "vicdata.admissions.pipelines:c1:sex", anchor: null });
+    const b = (entry: string) => ({ surface: adm(entry), view: { panelId: "c2", panelName: "Funnel", instanceId: "funnel", dataview: "DV-ADM-P-FUNNEL", label: "Why did our intake change?" }, viewKey: "vicdata.admissions.pipelines:c2:funnel", anchor: null });
+    const addr = (entry: string) => ({ path: "/teacher/admissions", search: `?view=pipelines&entry=${encodeURIComponent(entry)}` });
+    const form = { kinds: [], importance: null, scope: null, applies: null, where: [], area: [], saw: "", expected: "", text: "x" };
+    const sent = () => {
+      const s = st.feedbackSnapshot();
+      const plan = st.sendPlan(s, addr("16+"))!;
+      const p = feedbackPayload(plan.surface, s.target!, form, { ...plan.address, width: 1400, theme: "light" });
+      return `${p.view_label} @ ${p.state.entry} / ${p.page_query}${stateMismatch(p.state, p.page_query) ? " (MIX)" : ""}`;
+    };
+    const round2 = (move: boolean) => {
+      st.resetFeedbackStore({ status: "ready", allowed: true, items: [] });
+      st.setLiveSurface(adm("11+"));
+      st.setPanelView(a("11+"));
+      st.setPanelView(b("11+"));
+      st.openFeedback(a("11+"), addr("11+"));
+      st.setLiveSurface(adm("16+"));
+      st.touchPanel(adm("16+"), "c2");
+      const offer = st.driftOf(st.feedbackSnapshot());
+      if (move && offer?.to) st.moveFeedback(offer.to, addr("16+"));
+      const out = { offer: offer ? `${offer.kind}: ${offer.to?.view.label} @ ${(offer.to?.surface.state as { entry?: string } | undefined)?.entry}` : "none", sent: sent() };
+      st.closeFeedback();
+      return out;
+    };
+    const moved = round2(true);
+    const declined = round2(false);
+    const r2 =
+      moved.offer === "panel: Why did our intake change? @ 16+" &&
+      moved.sent === "Why did our intake change? @ 16+ / view=pipelines&entry=16%2B" &&
+      declined.sent === "Your cohort, girls and boys @ 11+ / view=pipelines&entry=11%2B" &&
+      !!stateMismatch({ entry: "11+" }, "view=pipelines&entry=16%2B");
+    const pass = r2 && offer === "Flags" && after.view.label === "Flags" && after.openedAt === at && appVersion({ NODE_ENV: "production" }) === "unknown" && appVersion({ RENDER_GIT_COMMIT: "abc", NODE_ENV: "production" }) === "abc";
+    return { pass, detail: fmt({ offer, movedTo: after.view.label, draftKept: after.openedAt === at, round2Offer: moved.offer, round2Moved: moved.sent, round2Declined: declined.sent, versionWithout: appVersion({ NODE_ENV: "production" }) }) };
   },
 
   // ------------------------------------------------------------ 0.8 SMT feedback round 2
@@ -3074,6 +3109,24 @@ const RUNNERS: Record<string, Runner> = {
     const total = /(\d+) PASS, (\d+) FAIL/.exec(pg.out);
     const pass = pg.ok && unit.ok && !lines.some((l) => l.startsWith("FAIL"));
     return { pass, detail: fmt({ pglite: total ? `${total[1]} pass, ${total[2]} fail` : "did not run", thisRule: mine.length ? `${mine.length} named checks` : "checked within the suite", unit: unit.ok ? "pass" : "FAIL" }) };
+  },
+  // R-FEEDBACK-RESOLVED-VIEWS (Admissions feedback round 2): the PGlite suite and the app's unit tests.
+  async feedbackResolvedViews() {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, args: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const pg = run("node", ["supabase/tests/v08_feedback_resolved_views_pglite.mjs"]);
+    const gate = run("node", ["supabase/tests/v08_feedback_deploy_gate_pglite.mjs"]);
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/feedback-resolved-views.test.ts"]);
+    const total = /(\d+) PASS, (\d+) FAIL/.exec(pg.out);
+    const pass = pg.ok && gate.ok && unit.ok;
+    return { pass, detail: fmt({ pglite: total ? `${total[1]} pass, ${total[2]} fail` : "did not run", deployGateSuite: gate.ok ? "pass" : "FAIL", unit: unit.ok ? "pass" : "FAIL" }) };
   },
   async republishGuard() {
     const { execFileSync } = await import("node:child_process");

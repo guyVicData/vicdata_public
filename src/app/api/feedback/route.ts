@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   const u = await userFrom(request);
   if (u instanceof NextResponse) return u;
   const built = feedbackRow(await request.json().catch(() => null), appVersion());
-  if ("error" in built) return NextResponse.json({ error: built.error }, { status: 400 });
+  if ("error" in built) return NextResponse.json({ error: built.error }, { status: built.error.startsWith("This item's settings don't match") ? 422 : 400 });
   try {
     // 0.8 feedback deploy gate: this build is recorded (and its fixed items promoted to deployed) before the
     // first item is taken, so a "Looks good" here can close what this build deployed. Once per process.
@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
       // 0.8 SMT feedback round 2 (section 6): a page item before its migration -- no area column, or the old
       // product and shape checks.
       if (isPageKey(String(built.row.view_key)) && (error.code === "PGRST204" || error.code === "42703" || error.code === "23514")) return NextResponse.json({ error: "Page feedback needs the database update (20261118090000_v08_feedback_page)." }, { status: 503 });
+      // 0.8 Admissions feedback round 2 (item 3): the database's own check that state and address agree.
+      if (error.hint === "feedback_state_mismatch") return NextResponse.json({ error: error.message }, { status: 422 });
       if (error.code === "42501" || /row-level security/i.test(error.message)) return NextResponse.json({ error: "Feedback isn't open to you yet." }, { status: 403 });
       throw error;
     }

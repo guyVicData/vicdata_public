@@ -11,6 +11,10 @@
 //   * It works over a panel's full screen too (z above the modal, which shrinks to give it room).
 // It stays tied to the view it was opened from. Send keeps it open, emptied, for the next item; Esc
 // (inside it) or the close button closes it. It lists the person's own items on the view, then the form.
+// 0.8 Admissions feedback round 2, item 3 (F-31): its header names the view with its entry point ("Shape and
+// size · 16+"); when the page moves on (the panel's rail, another panel, the entry point or set, the
+// dashboard) it offers the move, and Send never records one moment's view with another's state or address:
+// the page as it is when sending, or -- after a warning -- the page as it was when the window was tied.
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -23,11 +27,15 @@ import {
   FEEDBACK_STATUS_LABEL,
   FEEDBACK_WHERE,
   feedbackNumber,
+  entryLabel,
   recordedQuery,
+  stateMismatch,
+  viewContext,
+  viewWithEntry,
   type ViewSurface,
 } from "@/lib/view-ref";
 import { publishedVersionIdOf } from "@/lib/published-vicdata";
-import { addOwnItem, closeFeedback, feedbackToken, moveFeedback, movedView, useFeedbackState, type FeedbackTarget, type OwnItem, type PanelView } from "./store";
+import { addOwnItem, closeFeedback, driftOf, feedbackSnapshot, feedbackToken, moveFeedback, sendPlan, useFeedbackState, type Drift, type FeedbackTarget, type OwnItem, type PanelView } from "./store";
 
 const PHONE_MAX = 640;
 const DOCK_WIDTH = 360;
@@ -159,15 +167,55 @@ export function FeedbackWindow() {
   if (!target) return null;
   // Keyed on the opening, so a new opening starts a fresh form; moving to the panel's new view (F-5)
   // keeps the draft.
-  return <WindowFor key={`${target.openedAt}`} target={target} moved={movedView(st)} items={items.filter((i) => i.view_key === target.viewKey)} />;
+  return <WindowFor key={`${target.openedAt}`} target={target} drift={driftOf(st)} items={items.filter((i) => i.view_key === target.viewKey)} />;
+}
+
+/** A view (or the page) with its entry point: "Shape and size · 16+". */
+const named = (v: Pick<PanelView, "surface" | "view" | "page">) => (v.page ? `this page (${viewWithEntry(v.surface.dashboard.name, v.surface.state)})` : viewWithEntry(v.view.label, v.surface.state));
+/** What the page shows now that the window's view doesn't: the entry point and the set. */
+const contextNow = (now: ViewSurface) => [entryLabel(now.state), viewContext(now.state).set].filter(Boolean).join(", ") || "other settings";
+
+/** Round 2: how the page has moved on from the window's view, in a sentence. */
+function DriftText({ drift, tied, tiedDashboard }: { drift: Drift; tied: string; tiedDashboard: string }) {
+  const still = (
+    <>
+      {" "}This feedback is still on <b>{tied}</b>.
+    </>
+  );
+  if (drift.kind === "dashboard")
+    return (
+      <>
+        The page now shows <b>{drift.now.dashboard.name}</b>. This feedback is still on <b>{tied}</b> ({tiedDashboard}).
+      </>
+    );
+  if (drift.kind === "entry")
+    return (
+      <>
+        The page now shows <b>{contextNow(drift.now)}</b>.{still}
+      </>
+    );
+  if (drift.kind === "panel" && drift.to)
+    return (
+      <>
+        You&apos;re now in {drift.to.view.panelName ? <b>{drift.to.view.panelName}</b> : "another panel"}, on <b>{named(drift.to)}</b>.{still}
+      </>
+    );
+  return (
+    <>
+      The panel now shows <b>{drift.to ? named(drift.to) : "another view"}</b>.{still}
+    </>
+  );
 }
 
 type Mode = { kind: "dock"; width: number } | { kind: "float"; x: number; y: number; w: number; h: number } | { kind: "sheet"; tall: boolean };
 
-function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: OwnItem[]; moved: PanelView | null }) {
+function WindowFor({ target, items, drift }: { target: FeedbackTarget; items: OwnItem[]; drift: Drift | null }) {
   const { surface, view } = target;
+  const moved = drift?.to ?? null;
   const [form, setForm] = useState<FormState>(EMPTY);
   const [sending, setSending] = useState(false);
+  // Round 2: Send pressed while the page has moved on -- the window asks before sending.
+  const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [mode, setMode] = useState<Mode>(() => (window.innerWidth < PHONE_MAX ? { kind: "sheet", tall: false } : { kind: "dock", width: DOCK_WIDTH }));
   const root = useRef<HTMLDivElement | null>(null);
@@ -198,30 +246,50 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
     closeFeedback();
   };
 
-  const send = async () => {
+  // "check": send if the page still shows the window's view, else ask first. "asItWas": the page as it was when
+  // the window was tied (the view, its state and its address, all from then).
+  const send = async (how: "check" | "asItWas" = "check") => {
     if (!canSend(form) || sending) return;
-    setSending(true);
+    // Read the store now, not this render's props: a "Move to … and send" has just moved it.
+    const snap = feedbackSnapshot();
+    const plan = sendPlan(snap);
+    const tied = snap.target;
+    if (!plan || !tied) return;
+    if (plan.drift && how === "check") {
+      setConfirming(true);
+      return;
+    }
+    setConfirming(false);
     setMessage(null);
+    const base = plan.surface;
+    const surfaceNow = { ...base, dashboard: { ...base.dashboard, versionId: base.dashboard.versionId ?? publishedVersionIdOf(base.dashboard.id) } };
+    const payload = feedbackPayload(surfaceNow, tied, form, { path: plan.address.path, search: plan.address.search, width: window.innerWidth, theme: themeOf() });
+    // Never record a contradictory item (the server refuses one too, with the same words).
+    const mismatch = stateMismatch(payload.state, payload.page_query);
+    if (mismatch) {
+      setMessage({ tone: "error", text: mismatch });
+      return;
+    }
+    setSending(true);
     try {
       const token = await feedbackToken();
-      const surfaceNow = { ...surface, dashboard: { ...surface.dashboard, versionId: surface.dashboard.versionId ?? publishedVersionIdOf(surface.dashboard.id) } };
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { Authorization: `Bearer ${token ?? ""}`, "Content-Type": "application/json" },
-        body: JSON.stringify(feedbackPayload(surfaceNow, target, form, { path: window.location.pathname, search: window.location.search, width: window.innerWidth, theme: themeOf() })),
+        body: JSON.stringify(payload),
       });
       const json = (await res.json().catch(() => null)) as { item?: { id: string; number: number; created_at: string; status: OwnItem["status"] }; error?: string } | null;
       if (!res.ok || !json?.item) {
         setMessage({ tone: "error", text: json?.error ?? "Could not send it. Try again." });
         return;
       }
-      const sc = surface.scope;
+      const sc = base.scope;
       addOwnItem({
         id: json.item.id,
         number: json.item.number,
         created_at: json.item.created_at,
         status: json.item.status,
-        view_key: target.viewKey,
+        view_key: tied.viewKey,
         school_urn: sc.kind === "school" ? sc.urn : null,
         school_name: sc.kind === "school" ? sc.name : null,
         group_id: sc.kind === "group" ? sc.id : null,
@@ -283,9 +351,12 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
           { left: 0, width: window.visualViewport?.width ?? window.innerWidth, bottom: 0, height: mode.tall ? "85dvh" : "50dvh" };
   const sc = surface.scope;
   const whole = !!target.page;
-  const where = whole ? "" : [view.panelName && view.panelName !== view.label ? view.panelName : null, surface.dashboard.name, sc.name].filter(Boolean).join(" · ");
-  // Section 6: the page's header reads "This page: SMT Overview · Leighton Park School".
-  const title = whole ? `This page: ${surface.dashboard.name} · ${sc.name}` : view.label;
+  const set = viewContext(surface.state).set;
+  const where = whole ? (set ? `Set: ${set}` : "") : [view.panelName && view.panelName !== view.label ? view.panelName : null, surface.dashboard.name, sc.name, set ? `set: ${set}` : null].filter(Boolean).join(" · ");
+  // Section 6: the page's header reads "This page: SMT Overview · Leighton Park School". Round 2: always with the
+  // entry point it is tied to -- "Shape and size · 16+", "This page: Pipelines · 16+ · Leighton Park School".
+  const tiedName = whole ? `this page (${viewWithEntry(surface.dashboard.name, surface.state)})` : viewWithEntry(view.label, surface.state);
+  const title = whole ? `This page: ${viewWithEntry(surface.dashboard.name, surface.state)} · ${sc.name}` : tiedName;
   const wrong = form.kinds.includes("wrong_figure");
 
   return portal(
@@ -338,16 +409,18 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
           </svg>
         </button>
       </div>
-      {moved && (
-        // F-5 (R-FEEDBACK-FOLLOWS-VIEW): the panel's rail has moved on; the window never silently keeps
-        // the old view.
-        <div data-fb-moved="" className="flex shrink-0 items-center gap-2 border-b border-[var(--panel-border)] bg-[var(--chip-bg)] px-3 py-2 text-[11.5px]">
+      {drift && (
+        // F-5 (R-FEEDBACK-FOLLOWS-VIEW): the page has moved on -- the panel's rail, and since round 2 another
+        // panel, the entry point or set, or the dashboard; the window never silently keeps the old view.
+        <div data-fb-moved="" data-fb-drift={drift.kind} className="flex shrink-0 items-center gap-2 border-b border-[var(--panel-border)] bg-[var(--chip-bg)] px-3 py-2 text-[11.5px]">
           <span className="min-w-0 flex-1">
-            The panel now shows <b>{moved.view.label}</b>. This feedback is still on <b>{view.label}</b>.
+            <DriftText drift={drift} tied={tiedName} tiedDashboard={surface.dashboard.name} />
           </span>
-          <button type="button" data-fb-move="" onClick={() => moveFeedback(moved)} className="shrink-0 rounded-md border border-[var(--panel-border2)] px-2 py-0.5 font-semibold text-[var(--fg)] hover:bg-[var(--chip-bg)]">
-            Move to {moved.view.label}
-          </button>
+          {moved && (
+            <button type="button" data-fb-move="" onClick={() => moveFeedback(moved)} className="shrink-0 rounded-md border border-[var(--panel-border2)] px-2 py-0.5 font-semibold text-[var(--fg)] hover:bg-[var(--chip-bg)]">
+              Move to {named(moved)}
+            </button>
+          )}
         </div>
       )}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2">
@@ -398,6 +471,32 @@ function WindowFor({ target, items, moved }: { target: FeedbackTarget; items: Ow
             </button>
             <span className="text-[10.5px] text-[var(--muted3)]">Only VicData sees this, with the {whole ? "page" : "view"} and its settings.</span>
           </div>
+          {confirming && drift && (
+            // Round 2: before sending, say that the page no longer shows the window's view.
+            <div role="alert" data-fb-confirm={drift.kind} className="mt-2 rounded-md border border-[var(--fb-open)] px-2 py-1.5 text-[11.5px] leading-snug">
+              <p>
+                Before sending: <DriftText drift={drift} tied={tiedName} tiedDashboard={surface.dashboard.name} />
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {moved && (
+                  <button
+                    type="button"
+                    data-fb-confirm-move=""
+                    onClick={() => {
+                      moveFeedback(moved);
+                      void send();
+                    }}
+                    className="rounded-md bg-[var(--fg)] px-2 py-0.5 font-semibold text-[var(--panel-bg)]"
+                  >
+                    Move to {named(moved)} and send
+                  </button>
+                )}
+                <button type="button" data-fb-confirm-keep="" onClick={() => void send("asItWas")} className="rounded-md border border-[var(--panel-border2)] px-2 py-0.5 font-semibold text-[var(--fg)]">
+                  Send on {tiedName}, as it was
+                </button>
+              </div>
+            </div>
+          )}
           {message && (
             <p role="status" data-fb-message={message.tone} className={cx("mt-2 text-[11.5px] font-semibold", message.tone === "ok" ? "text-[var(--fb-good)]" : "text-red-600")}>
               {message.text}

@@ -9,7 +9,7 @@
 //     the one feedback window for it. A dashboard's ViewSurfaceProvider says it for its own page.
 import { useEffect } from "react";
 import { feedbackColour, pageKey, scopeKey, type ViewSurface } from "@/lib/view-ref";
-import { loadFeedback, marksFor, openPageFeedback, setPageSurface, useFeedbackState } from "./store";
+import { loadFeedback, marksFor, openPageFeedback, setPageSurface, useFeedbackState, useLiveSurface } from "./store";
 import { FeedbackIcon } from "./FeedbackButton";
 import { FeedbackWindow } from "./FeedbackWindow";
 import { FeedbackOpenBanner } from "./FeedbackOpenBanner";
@@ -56,6 +56,7 @@ export function PageSurface({ surface }: { surface: ViewSurface }) {
     void loadFeedback();
   }, []);
   useRegisterPage(surface);
+  useLiveSurface(surface);
   const host = useFirstHost();
   return host ? (
     <>
