@@ -1703,6 +1703,16 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-LOCAL-SHAPE-16",
+    statement: "At a 16+ intake, Pipelines' local shape and its feeder cards cover ages 11 to 15: the local shape sums ages 11 to 15 in the current feeder set a year below entry (the nearest secondaries unless a list is saved, the school left out), the same schools the cards show, and each card has a row per age 11 to 15. Below 16+ they are as round 1 drew them.",
+    why: "Guy, 6 Nov 2026 (F-23, refined by F-26): at 16+ the local shape and the feeder schools need to show ages 11-15.",
+    appliesTo: "DV-ADM-P-SHAPE",
+    enforcedIn: ["src/lib/admissions/views-api.ts:shapeView (localShape.ages, LOCAL_SECONDARY_AGES)", "src/components/admissions/views/ShapeAndSize.tsx:ShapeAndSize"],
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks5", expect: "At 16+ the local shape and every feeder card are ages 11 to 15, over the age-15 set without the school; at 11+ ages 4 to 10 over the 15 nearest primaries, as round 1.", check: "admLocalShape16" },
+    origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 7)",
+    status: "active",
+  },
+  {
     id: "R-ADM-MOMENTUM-SCOPE",
     statement: "Rivals' momentum says under its title which schools it can place: schools submitting GCSE results only (11+), A-level results (16+), published KS2 results (4+).",
     why: "Guy, 29 Oct 2026 (F-18).",

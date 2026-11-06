@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 168 rules: 162 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -120,6 +120,7 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | R-ADM-MAP-SELF | active | The map of feeders marks the school itself: a solid Admissions-blue dot, drawn last, sized by its entry cohort now on the feeders' own scale, with a key. | no | auto: admMapSelf | — |
 | R-ADM-FEEDER-SHAPES | active | Pipelines' Shape and size draws the local shape, then the shapes and sizes of the current feeder set's schools (the set a year below entry, the school left out), in the set's own order; the school's own shape and its rivals' are Market share's. | no | auto: admFeederShapes | — |
 | R-ADM-SHAPE-ROWS | active | Each small multiple in Shape and size has a row per age over the featured profile's ages (an age the school doesn't teach is an empty row), so the rows line up with the featured school's. | no | auto: admShapeRows | — |
+| R-LOCAL-SHAPE-16 | active | At a 16+ intake, Pipelines' local shape and its feeder cards cover ages 11 to 15: the local shape sums ages 11 to 15 in the current feeder set a year below entry (the nearest secondaries unless a list is saved, the school left out), the same schools the cards show, and each card has a row per age 11 to 15. Below 16+ they are as round 1 drew them. | no | auto: admLocalShape16 | — |
 | R-ADM-MOMENTUM-SCOPE | active | Rivals' momentum says under its title which schools it can place: schools submitting GCSE results only (11+), A-level results (16+), published KS2 results (4+). | no | auto: admMomentumScope | — |
 | R-ADM-EDITOR-LOOKS-KEEP-NOTES | active | An Admissions view's look options and compare chips change how it draws, never what it must say: under every look and compare an editor can choose (src/catalogue/admissions-editor.ts), each view still renders every R-ADM wording from ADMISSIONS_NOTES that its preset renders (a pool, not an intake; a share of this group; the estimates; the requirement; the flags' rules; the undercount), and its rule-held styling and thresholds don't move. Options left at their defaults draw exactly the preset. A day school's view never draws a boarding feeder set, whatever its spec asks. | no | auto: admEditorLooks | — |
 | R-DOUBLE-AWARD-POINTS | active | A GCSE Double Award (grades published as pairs, "98" ... "11") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say "different grading scale, not ranked". | no | auto: doubleAwardPoints | — |
@@ -1965,6 +1966,22 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | Tagged at | — |
 | Test case | Leighton Park (110110), ks4: Every rival card has as many rows as the school's own bars. [runner: admShapeRows] |
 | Origin | 0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-LOCAL-SHAPE-16
+
+| Field | Content |
+| --- | --- |
+| Statement | At a 16+ intake, Pipelines' local shape and its feeder cards cover ages 11 to 15: the local shape sums ages 11 to 15 in the current feeder set a year below entry (the nearest secondaries unless a list is saved, the school left out), the same schools the cards show, and each card has a row per age 11 to 15. Below 16+ they are as round 1 drew them. |
+| Why | Guy, 6 Nov 2026 (F-23, refined by F-26): at 16+ the local shape and the feeder schools need to show ages 11-15. |
+| Applies to | DV-ADM-P-SHAPE |
+| Enforced in | - src/lib/admissions/views-api.ts:shapeView (localShape.ages, LOCAL_SECONDARY_AGES)<br>- src/components/admissions/views/ShapeAndSize.tsx:ShapeAndSize |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks5: At 16+ the local shape and every feeder card are ages 11 to 15, over the age-15 set without the school; at 11+ ages 4 to 10 over the 15 nearest primaries, as round 1. [runner: admLocalShape16] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 7) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

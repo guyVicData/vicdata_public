@@ -88,7 +88,8 @@ export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen, column
   const local = s.localProfile.filter((r) => r.female + r.male > 0);
   // Pipelines (F-15): the local shape, then the current set's feeders, over the local shape's ages.
   if (showLocal) {
-    const localAges: [number, number] = local.length ? [Math.max(4, local[0].age), Math.max(4, Math.min(local[local.length - 1].age, Math.max(entryAge - 1, 4)))] : [4, Math.max(4, entryAge - 1)];
+    // F-23, F-26: at 16+ the server says the ages (11 to 15, the secondaries'); below 16+, as round 1.
+    const localAges: [number, number] = s.localShape.ages ?? (local.length ? [Math.max(4, local[0].age), Math.max(4, Math.min(local[local.length - 1].age, Math.max(entryAge - 1, 4)))] : [4, Math.max(4, entryAge - 1)]);
     return (
       <div className="flex min-h-0 grow gap-[18px]">
         <div data-local-shape="" className="flex shrink-0 basis-[300px] flex-col gap-2">
@@ -97,9 +98,9 @@ export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen, column
             {label(s.localShape.shape)} <Muted size={13}>&middot; your feeders&rsquo; area</Muted>
           </div>
           <Muted className="leading-[1.4]">
-            {/* 0.8 audit fixes (5, A8): at 16+ the set counted is the primaries unless a list is saved; say which, and the ages it holds. */}
-            {entryAge >= 16 && local.length > 0
-              ? <>All pupils aged {local[0].age}&ndash;{local[local.length - 1].age} in {s.localShape.saved ? `the ${s.localShape.schools} schools on your saved list` : `the ${s.localShape.schools} nearest primaries`}, together.</>
+            {/* 0.8 audit fixes (5, A8): at 16+ say which set is counted, and the ages it holds -- since F-23 and F-26, ages 11 to 15 in the nearest secondaries unless a list is saved. */}
+            {entryAge >= 16 && s.localShape.ages
+              ? <>All pupils aged {localAges[0]}&ndash;{localAges[1]} in {s.localShape.saved ? `the ${s.localShape.schools} schools on your saved list` : `the ${s.localShape.schools} nearest secondaries (schools teaching ${localAges[0]} to ${localAges[1]})`}, together.</>
               : <>All pupils aged 4&ndash;{Math.max(4, entryAge - 1)} in your {s.localShape.schools} feeder schools, together.</>}{" "}
             {ADMISSIONS_NOTES.localShape}
           </Muted>
