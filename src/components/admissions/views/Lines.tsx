@@ -2,12 +2,12 @@
 
 // VicData 0.7 admissions r2 (D3, D4): the row-2 trend views (Main.dc.html, MarketShare.dc.html),
 // drawn from the routes' series (already indexed on the server where indexed). R-ADM-VIEW-TRENDS.
-import { ROLL_INDEX_MIN, indexedLabel } from "@/lib/index-base";
+import { ROLL_INDEX_MIN, indexOwn, indexedLabel } from "@/lib/index-base";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { POPULATION_TREND_LABELS, displayPopulationTrendPct } from "@/lib/population-trend";
 import type { MarketView, PipelineOk } from "../api";
 import { Empty, Key, LineSwatch, ViewTitle, fillHeight, fmtN, fmtPct, yearLabel } from "../ui";
-import { LineChart, YearBars, niceGrid, yearTicks } from "./charts";
+import { LineChart, YearBars, niceGrid, yearTicks, type Pt, type Series } from "./charts";
 import { cohortWord } from "../panels/EntryNow";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 
@@ -292,13 +292,41 @@ export function VsRivals({ m, setLabel, as, fullscreen, room }: { m: MarketView;
       </>
     );
   }
+  // F-36 (0.8 Admissions fb2): in full screen, you and each rival (as the band roll, F-20); the panel as before.
+  if (fullscreen) {
+    const count = (urn: string, y: number) => m.entryAge.rows.find((r) => r.urn === urn && r.period === y)?.count ?? null;
+    const years = v.mine.map((x) => x.year);
+    const age = String(m.entry.age);
+    const name = (urn: string) => m.schools[urn]?.name ?? urn;
+    const rivals = m.rivals.filter((u) => u !== m.urn).map((u) => ({ urn: u, ...indexOwn(years.map((y) => ({ year: y, value: count(u, y) })), v.base) }));
+    return (
+      <>
+        <ViewTitle>
+          Your {word} against the {setLabel}
+        </ViewTitle>
+        <YouAndEachRival
+          data="vs"
+          fullscreen
+          height={fillHeight(room, 140, 300)}
+          years={years}
+          base={v.base ?? null}
+          me={{ id: m.urn, label: "You", colour: "var(--accent)", width: 2.8, points: v.mine.map((x) => ({ x: x.year, y: x.value })), title: (pt) => `You ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(count(m.urn, pt.x))} aged ${age})` }}
+          average={v.rivals}
+          rivals={rivals}
+          name={name}
+          rivalTitle={(urn, pt) => `${name(urn)} ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(count(urn, pt.x))} aged ${age})`}
+          age={age}
+        />
+      </>
+    );
+  }
   return (
     <>
       <ViewTitle>
         Your {word} against the {setLabel}
       </ViewTitle>
       <LineChart
-        height={fullscreen ? fillHeight(room, 110, 300) : 160}
+        height={160}
         reference={{ y: 100 }}
         yFormat={(x) => x.toFixed(0)}
         xLabels={[yr(v.mine[0].year), yr(v.mine[v.mine.length - 1].year)]}
@@ -336,45 +364,85 @@ export function ShareTrend({ m, fullscreen, room }: { m: MarketView; fullscreen:
 
 // F-20 (0.8 Admissions fb1): the entry age band's roll indexed (the first year every line has = 100) so a
 // trend reads whatever the school's size. In the panel: you against the rivals' average. In full screen:
-// you and each rival in its own colour, with a key.
+// you and each rival in its own colour, with a key (YouAndEachRival, shared with F-36's You and the rivals).
 export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: boolean; room?: number }) {
   const r = m.summary.rollIndexed;
   if (r.mine.filter((x) => x.value !== null).length < 2) return <Empty>Not enough census years to compare.</Empty>;
   const years = r.mine.map((x) => x.year);
   const band = `${m.band.from}\u2013${m.band.to}`;
   const raw = (urn: string, y: number) => m.ageBand.rows.find((x) => x.urn === urn && x.period === y)?.count ?? null;
-  const me = { id: m.urn, label: "You", colour: "var(--accent)", width: 2.8, points: r.mine.map((x) => ({ x: x.year, y: x.value })), title: (pt: { x: number; y: number | null }) => `You ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(m.urn, pt.x))} aged ${band})` };
-  const small = r.rivals.filter((x) => x.small);
-  const rivals = fullscreen
-    ? r.rivals.filter((x) => !x.small).map((x, i) => ({ id: x.urn, label: m.schools[x.urn]?.name ?? x.urn, colour: `var(--adm-series-${i % 7})`, width: 1.6, dashed: i >= 7 ? "6 3" : undefined, points: x.values.map((v) => ({ x: v.year, y: v.value })), title: (pt: { x: number; y: number | null }) => `${m.schools[x.urn]?.name ?? x.urn} ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(x.urn, pt.x))} aged ${band})` }))
-    : [{ id: "avg", label: "Rivals' average", colour: "var(--adm-grey-soft)", width: 1.8, dashed: "5 3", points: r.average.map((x) => ({ x: x.year, y: x.value })) }];
+  const name = (urn: string) => m.schools[urn]?.name ?? urn;
   return (
     <>
       <ViewTitle>
         Pupils aged {m.band.from}&ndash;{m.band.to}: you {fullscreen ? "and each rival" : "against the rivals\u2019 average"}
       </ViewTitle>
-      <LineChart
+      <YouAndEachRival
+        data="roll"
+        fullscreen={fullscreen}
         height={fullscreen ? fillHeight(room, 140, 300) : 150}
+        years={years}
+        base={r.base ?? null}
+        me={{ id: m.urn, label: "You", colour: "var(--accent)", width: 2.8, points: r.mine.map((x) => ({ x: x.year, y: x.value })), title: (pt) => `You ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(m.urn, pt.x))} aged ${band})` }}
+        average={r.average}
+        rivals={r.rivals}
+        name={name}
+        rivalTitle={(urn, pt) => `${name(urn)} ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(raw(urn, pt.x))} aged ${band})`}
+        age={band}
+      />
+    </>
+  );
+}
+
+/** F-20, F-36 (0.8 Admissions fb1, fb2): an indexed line chart of you against the rivals -- the chart, its
+ * key and the "Indexed:" line under it (the caller draws the title). In the panel: you against the rivals'
+ * average (grey, dashed). In full screen: you and each rival in its own colour (the 7-colour series
+ * palette, dashed after the seventh), with a key and labelled y gridlines; a `small` rival (under
+ * ROLL_INDEX_MIN at its base, indexOwn) isn't drawn but is named under the chart. `data` names the key's
+ * and the note's markers (data-roll-key / data-roll-small, data-vs-key / data-vs-small). Your line draws
+ * last, on top. R-ADM-ROLL-INDEXED, R-ADM-VS-EACH. */
+export function YouAndEachRival({ data, fullscreen, height, years, base, me, average, rivals, name, rivalTitle, age }: {
+  data: "roll" | "vs";
+  fullscreen: boolean;
+  height: number;
+  years: number[];
+  base: number | null;
+  me: Series;
+  average: { year: number; value: number | null }[];
+  rivals: { urn: string; values: { year: number; value: number | null }[]; small: boolean }[];
+  name: (urn: string) => string;
+  rivalTitle: (urn: string, pt: Pt) => string;
+  /** The ages counted, for the small rivals' note: "11–15" (the band) or "11" (the entry age). */
+  age: string;
+}) {
+  const small = rivals.filter((x) => x.small);
+  const lines: Series[] = fullscreen
+    ? rivals.filter((x) => !x.small).map((x, i) => ({ id: x.urn, label: name(x.urn), colour: `var(--adm-series-${i % 7})`, width: 1.6, dashed: i >= 7 ? "6 3" : undefined, points: x.values.map((v) => ({ x: v.year, y: v.value })), title: (pt: Pt) => rivalTitle(x.urn, pt) }))
+    : [{ id: "avg", label: "Rivals' average", colour: "var(--adm-grey-soft)", width: 1.8, dashed: "5 3", points: average.map((x) => ({ x: x.year, y: x.value })) }];
+  return (
+    <>
+      <LineChart
+        height={height}
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[yr(years[0]), yr(years[years.length - 1])]}
         ticks={yearTicks(years, yr)}
-        yGrid={fullscreen ? niceGrid([...rivals, me].flatMap((x) => x.points.map((p) => p.y))) : null}
-        series={[...rivals, me]}
+        yGrid={fullscreen ? niceGrid([...lines, me].flatMap((x) => x.points.map((p) => p.y))) : null}
+        series={[...lines, me]}
       />
-      <div data-roll-key="" className="flex flex-wrap gap-x-3 gap-y-1">
+      <div {...{ [`data-${data}-key`]: "" }} className="flex flex-wrap gap-x-3 gap-y-1">
         <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>You</Key>
-        {rivals.map((x) => (
+        {lines.map((x) => (
           <Key key={x.id} swatch={<LineSwatch colour={x.colour} width={14} weight={2} dashed={!!x.dashed} />}>
             {x.label}
           </Key>
         ))}
       </div>
       <div className="text-[10.5px] text-[var(--muted)]">
-        Indexed: {indexedLabel(r.base ?? null)}.
+        Indexed: {indexedLabel(base)}.
         {fullscreen && small.length > 0 && (
-          <span data-roll-small="">
-            {" "}Not drawn (under {ROLL_INDEX_MIN} pupils aged {band} at the start, too few to index): {small.map((x) => m.schools[x.urn]?.name ?? x.urn).join(", ")}.
+          <span {...{ [`data-${data}-small`]: "" }}>
+            {" "}Not drawn (under {ROLL_INDEX_MIN} pupils aged {age} at the start, too few to index): {small.map((x) => name(x.urn)).join(", ")}.
           </span>
         )}
       </div>
