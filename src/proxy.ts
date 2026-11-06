@@ -10,8 +10,10 @@ import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-sa
 // before the gate is satisfied or the whole mechanism deadlocks. It does its own
 // fail-closed checks and its own timing-safe token comparison, so being outside the gate
 // costs nothing -- when the feature is unconfigured it is a plain 404.
+// api/version (0.8 feedback deploy gate) is outside too: the republish script and Guy's commands read the
+// live commit from it. It returns the commit and build time only; the repo is public, so neither is a secret.
 export const config = {
-  matcher: "/((?!_next/static|_next/image|favicon.ico|api/health|api/testing/preview-session).*)",
+  matcher: "/((?!_next/static|_next/image|favicon.ico|api/health|api/version|api/testing/preview-session).*)",
 };
 
 function unauthorized(): NextResponse {
