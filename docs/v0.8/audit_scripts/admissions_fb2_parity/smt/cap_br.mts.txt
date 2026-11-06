@@ -1,0 +1,46 @@
+// SMT preview fixtures: the routes' own server functions, read-only, for each school and level.
+import { writeFileSync } from "node:fs";
+import { smtSchool } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/school";
+import { buildOverview } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/overview";
+import { buildAcademic } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/academic";
+import { buildPupils } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/pupils";
+import { buildContext } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/context";
+import { resolveDefaultNearest } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/chooser-sets";
+import { setPhaseOf, levelChips, parseLevel, type SmtLevel } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/levels";
+import { buildContextMap } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/context-map";
+import { resolveCatchment, catchmentDefaultKm, catchmentCapKm, catchmentPresets, catchmentHowWords } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/catchment";
+import { withDensity } from "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/e2eb28f6-5a2a-4862-8cca-b10eaa64fd55/scratchpad/branch/src/lib/smt/catchment-density";
+const out: Record<string, unknown> = {};
+for (const urn of process.argv.slice(3)) {
+  const t = Date.now();
+  const s = (await smtSchool(urn))!;
+  const phase = setPhaseOf(s.phases);
+  const near = await resolveDefaultNearest(urn, phase);
+  const urns = near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn);
+  const set = { kind: "nearest", label: "10 nearest schools", urns };
+  const overview: Record<string, unknown> = {};
+  for (const f of [{ sex: "all", boarding: "all" }, ...(s.boarding ? [{ sex: "all", boarding: "day" }, { sex: "all", boarding: "boarding" }] : []), ...(s.mixed ? [{ sex: "female", boarding: "all" }] : [])] as const)
+    overview[`${f.sex}|${f.boarding}`] = await buildOverview(s, set, f, null);
+  const academic: Record<string, unknown> = {};
+  const levels: SmtLevel[] = [];
+  for (const p of levelChips(s.phases)) {
+    levels.push({ phase: p, area: null });
+    if (p === "gcse" || p === "post16") for (const a of s.areas[p].slice(0, 3)) levels.push({ phase: p, area: a.id });
+  }
+  if (s.areas.gcse.some((a) => a.id === "sciences_maths") && !levels.some((l) => l.area === "sciences_maths")) levels.push({ phase: "gcse", area: "sciences_maths" });
+  for (const l of levels) academic[`${l.phase}|${l.area ?? ""}`] = await buildAcademic(s, l, set);
+  const pupils: Record<string, unknown> = {};
+  for (const l of levelChips(s.phases)) pupils[`${l}|all|all`] = await buildPupils(s, set, { sex: "all", boarding: "all" }, { phase: l, area: null }, null);
+  // Parity update (feedback deploy gate): the routes as of SMT r4 / Admissions fb1 -- the default level, the
+  // default catchment (nothing saved: the harness's member has none), the map and the catchment GET.
+  const lvl = parseLevel(new URLSearchParams(), s.phases, null).phase;
+  const dens = await withDensity(urn, s);
+  const catchment = resolveCatchment(dens, null, null);
+  const around = await buildContext(s, "around", lvl, catchment);
+  const context = { around, la: await buildContext(s, "la", lvl, catchment) };
+  const contextMap = await buildContextMap(s, lvl, around.map.schools, catchment.km);
+  const catchmentGet = { savedKm: null, defaultKm: catchmentDefaultKm(dens), capKm: catchmentCapKm(dens), presets: catchmentPresets(dens), canSave: false, how: catchmentHowWords(catchment, dens.densityPhase) };
+  out[urn] = { urn, name: s.name, school: s, phase, nearest: { rows: near.rows.map((r: { urn: string; name?: string }) => ({ urn: r.urn, name: r.name })) }, overview, academic, pupils, context, contextMap, catchmentGet };
+  console.error(urn, s.name, levels.length, "levels", Date.now() - t, "ms");
+}
+writeFileSync(process.argv[2], `window.__SMTFX = ${JSON.stringify(out)};\n`);

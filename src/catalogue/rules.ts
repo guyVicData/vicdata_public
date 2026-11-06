@@ -1604,12 +1604,13 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-VIEW-INTAKE-CHANGE",
     statement:
-      "\"Why did our intake change?\" splits the change in the school's entry cohort from 2019/20 to the latest year into three parts in ONE area, the school's catchment radius (R-ADM-CATCHMENT-RULE), never its feeder list: births (the cohort's size: children aged 0 in the LSOAs within the radius, or the youngest age the LSOA years hold for the base cohort, at both ends), families moving (the area's Year 6, or Year 11 at 16+, against those births) and the school's share (its Year 7, or Year 12, against the area's Year 6). The split is the log-mean (LMDI) one, so the parts add up to the change exactly; rounded to whole pupils by largest remainders. An intake under 30 at either end makes each end a 3-year average. No funnel at 4+. The (i) says how the radius was set, that boarding schools draw from beyond any radius, and that families moving includes children crossing the radius to go to school.",
-    why: "Guy, 29 Oct 2026 (F-13): the funnel was interesting but unclear; what a head needs is why the intake changed -- fewer children, families moving, or the school's own pull.",
+      "\"Why did our intake change?\" splits the change in the school's entry cohort from 2019/20 to the latest year in ONE area, the school's catchment radius (R-ADM-CATCHMENT-RULE), never its feeder list, into two steps: the cohort size (the local children a year below entry -- 10-year-olds at 11+, 15-year-olds at 16+ -- in the LSOAs within the radius, the mid-year before entry) and the school's share of them (its Year 7, or Year 12, against that cohort). The split is the log-mean (LMDI) one, so the steps add up to the change exactly; rounded to whole pupils by largest remainders. Families moving is the cohort step's \"of which\", not a step: the cohort = the same children at the earliest age the LSOA years hold (age 0, \"born here\", where they reach the base cohort's birth year; else the youngest held, \"here since age 8\" at 16+) + moved in since (net); the step is shared between the two in proportion to each one's change (signed, so opposite signs both show), rounded so the two add up to the step; drawn hollow and dashed beside the step, ending level with its end, with the running total unchanged. \"Moved out\" when net out at both ends. Under the chart the sum (82 + 18 − 10 = 90) and a note on how to read it. An intake under 30 at either end makes each end a 3-year average. No funnel at 4+. The (i) says how the radius was set, which earliest age applies and why, that boarding schools draw from beyond any radius, and that children travelling in from outside the radius are in the share, not families moving.",
+    why: "Guy, 29 Oct 2026 (F-13): the funnel was interesting but unclear; what a head needs is why the intake changed -- fewer children, families moving, or the school's own pull. 6 Nov (F-31): \"children aged 8\" at 16+ was not understood; the cohort is the local 15-year-olds, and families moving is part of it, not a third factor.",
     appliesTo: "DV-ADM-P-FUNNEL",
-    enforcedIn: ["src/lib/admissions/intake-change.ts:splitIntake, birthsAge, endYears", "src/lib/admissions/intake.ts:intakeChange", "src/components/admissions/views/Funnel.tsx:Funnel", "src/catalogue/methods-admissions.ts"],
-    testCase: { urn: "110110", school: "Leighton Park (11+, 16+); The Chase 137625 (11+)", phase: "ks4", expect: "Recomputed from area_context and the census: the three parts add up to the change; the births age is 3 at 11+ and 8 at 16+ (LSOA years from 2011); the area is 15 km (Leighton Park) and 12 km (The Chase, density); 4+ has none; changing the feeder lists changes nothing.", check: "admIntakeChange" },
-    origin: "0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md)",
+    enforcedIn: ["src/lib/admissions/intake-change.ts:splitIntake, birthsAge, endYears", "src/lib/admissions/intake.ts:intakeChange", "src/components/admissions/views/Funnel.tsx:Funnel, partWords, intakeReadNote, intakeMethodVars", "src/catalogue/methods-admissions.ts", "src/catalogue/notes.ts:ADMISSIONS_NOTES.intakeRead, intakeOfWhich"],
+    testCase: { urn: "110110", school: "Leighton Park (11+, 16+); The Chase 137625 (11+); St Bonaventure's 102787 (11+, families moving out)", phase: "ks4", expect: "Recomputed from area_context and the census: the two steps add up to the change; the of which's two parts add up to the cohort step and follow the two changes' proportions; the earliest age is 3 at 11+ and 8 at 16+ (LSOA years from 2011); the area is 15 km (Leighton Park) and 12 km (The Chase, density); St Bonaventure's reads moved out, with the two parts of opposite signs; 4+ has none; changing the feeder lists changes nothing.", check: "admIntakeChange" },
+    origin: "0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md); round 2, F-31 (docs/v0.8/vicdata_0_8_admissions_feedback_round2_claude_code_prompt_v1.md)",
+    fixes: ["0.8 Admissions feedback round 2 (F-31): three factors (births x families moving x share) became two steps (local cohort x share) with families moving as the cohort step's \"of which\"; the note under the chart explains the waterfall, and the boarding caveat moved into the (i)."],
     status: "active",
   },
   {
@@ -1647,9 +1648,19 @@ export const RULES: Rule[] = [
     statement: "The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead.",
     why: "Guy, 29 Oct 2026 (F-20): grey lines of different sizes can't be read as trends.",
     appliesTo: "DV-ADM-M-ROLL-LINE",
-    enforcedIn: ["src/lib/admissions/views-api.ts:rollIndexed", "src/components/admissions/views/Lines.tsx:RollTrend"],
+    enforcedIn: ["src/lib/admissions/views-api.ts:rollIndexed", "src/lib/index-base.ts:indexOwn", "src/components/admissions/views/Lines.tsx:RollTrend, YouAndEachRival"],
     testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "Recomputed from the census: base 2019/20 = 100; the average over the rivals with every year; one key entry per rival in full screen.", check: "admRollIndexed" },
     origin: "0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VS-EACH",
+    statement: "You and the rivals: the panel draws your entry-age cohort against the rivals' average, indexed (as before); full screen draws you and each rival in its own colour with a key and labelled y gridlines, each rival indexed to the same base where it has it, else to its own first year (indexOwn), except a rival under 30 at the entry age at its base (ROLL_INDEX_MIN), which is named under the chart instead. Drawn by the same component as the band roll's (YouAndEachRival, R-ADM-ROLL-INDEXED).",
+    why: "Guy, 6 Nov 2026 (F-36): full screen should be per school, with a key, as the band roll is (F-20).",
+    appliesTo: "DV-ADM-M-VS-LINE",
+    enforcedIn: ["src/lib/index-base.ts:indexOwn", "src/components/admissions/views/Lines.tsx:VsRivals, YouAndEachRival"],
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "At 11+, full screen: one key entry per rival with 30 or more aged 11 at its base, the rest named under the chart, and each line recomputed from the census rows; the panel keeps the one average line; RollTrend and VsRivals both draw through YouAndEachRival.", check: "admVsEach" },
+    origin: "0.8 Admissions feedback round 2 (docs/v0.8/vicdata_0_8_admissions_feedback_round2_claude_code_prompt_v1.md)",
     status: "active",
   },
   {
@@ -2261,11 +2272,11 @@ export const RULES: Rule[] = [
   {
     id: "R-FEEDBACK-FOLLOWS-VIEW",
     statement:
-      "The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers \"Move to <view>\", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). A missing app version is recorded as \"unknown\", \"dev\" only on a local dev server (F-1).",
+      "The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers \"Move to <view>\", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). Since Admissions feedback round 2 (F-31, recorded on \"Your cohort, girls and boys\" at 11+ with a 16+ address): the window is tied to the view and to the page as it was then (state and address); its header names the view with its entry point (\"Shape and size · 16+\"); it also offers the move when another panel on the same dashboard is clicked into, or the entry point (level, phase) or set changes, and says so when the dashboard changes; Send records the page at the moment of sending when it still shows the window's view, otherwise it warns first and records either the moved-to view at the new settings or, if the move is declined, the tied view with its own state and address -- never a mix. The server (feedbackRow) and the database (feedback_state_mismatch) refuse an item whose state and page_query disagree on the dashboard, entry point or level, with a message the window shows. A missing app version is recorded as \"unknown\", \"dev\" only on a local dev server (F-1).",
     why: "An item recorded against the wrong view sends the fix to the wrong place.",
     appliesTo: "the feedback window, every panel",
-    enforcedIn: ["src/components/feedback/store.ts:movedView", "src/components/feedback/FeedbackWindow.tsx", "src/components/shell/CardBox.tsx", "src/lib/feedback-server.ts:appVersion", "src/lib/smt-fb1.test.ts"],
-    testCase: { urn: "110110", school: "Leighton Park, SMT Overview (store and browser tests)", phase: "ks4", expect: "Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept; appVersion is the commit on Render, \"unknown\" without it in production.", check: "feedbackFollowsView" },
+    enforcedIn: ["src/components/feedback/store.ts:driftOf", "src/components/feedback/store.ts:sendPlan", "src/components/feedback/FeedbackWindow.tsx", "src/components/shell/CardBox.tsx", "src/lib/view-ref.ts:stateMismatch", "src/lib/feedback-server.ts:feedbackRow", "supabase/migrations/20261120090000_v08_feedback_resolved_views.sql:feedback_state_mismatch", "src/lib/feedback-server.ts:appVersion", "src/lib/smt-fb1.test.ts", "src/lib/feedback-resolved-views.test.ts"],
+    testCase: { urn: "110110", school: "Leighton Park, SMT Overview and Admissions Pipelines (store tests)", phase: "ks4", expect: "Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept. Open on Your cohort at 11+, then 16+ and a click in the funnel's panel: the window offers Why did our intake change? · 16+; Send is that view at 16+ (moved) or Your cohort at 11+ with entry=11%2B (declined), and the 6 Nov mix is refused. appVersion is the commit on Render, \"unknown\" without it in production.", check: "feedbackFollowsView" },
     origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
@@ -2360,12 +2371,23 @@ export const RULES: Rule[] = [
   {
     id: "R-FEEDBACK-LIVE-CHECK",
     statement:
-      "A deployed item becomes done when a platform admin gives \"Looks good\" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's \"Checked live\". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked.",
+      "A deployed item becomes done when a platform admin gives \"Looks good\" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's \"Checked live\". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked. Since Admissions feedback round 2 a Looks good on any of the item's resolved_views counts as on its own view (R-FEEDBACK-RESOLVED-VIEWS).",
     why: "Done means someone has seen the fix on the live site.",
     appliesTo: "the feedback system",
-    enforcedIn: ["supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_items_live_check", "src/components/admin/FeedbackInbox.tsx"],
+    enforcedIn: ["supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_items_live_check", "supabase/migrations/20261120090000_v08_feedback_resolved_views.sql:feedback_items_live_check", "src/components/admin/FeedbackInbox.tsx"],
     testCase: { urn: "110110", school: "Leighton Park (PGlite)", phase: "ks4", expect: "Same view and school after deployed_at: done; before it, another school, a member's, or a text item: still deployed.", check: "feedbackDeployGate" },
     origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDBACK-RESOLVED-VIEWS",
+    statement:
+      "An item's resolved_views names the views a fix added or changed, beside its own. A platform admin's \"Looks good\" on any of them, at the item's school and at or after its deployed_at, closes the deployed item as one on its own view does (feedback_items_live_check); one on an unrelated view, another school, before the deploy, or by a member doesn't. It is a triage field: set by scripts/feedback-set-fixed.sh --view (repeatable, adding) or the inbox, by platform admins only; a new item has none. feedback_for_triage shows it, as its last column.",
+    why: "F-16 and F-21 were fixed by new views; Guy's Looks good went on those, and the auto-close, matching only the item's own view, missed both.",
+    appliesTo: "the feedback system",
+    enforcedIn: ["supabase/migrations/20261120090000_v08_feedback_resolved_views.sql", "scripts/feedback-set-fixed.sh", "src/lib/feedback-server.ts:triagePatch", "src/components/admin/FeedbackInbox.tsx", "docs/FEEDBACK.md"],
+    testCase: { urn: "110110", school: "Leighton Park (PGlite)", phase: "ks4", expect: "Looks good on a resolved view, same school, after the deploy: done; on an unrelated view, another school, before the deploy, by a member: still deployed; a member can't set resolved_views.", check: "feedbackResolvedViews" },
+    origin: "0.8 Admissions feedback round 2 (docs/v0.8/vicdata_0_8_admissions_feedback_round2_claude_code_prompt_v1.md)",
     status: "active",
   },
   {

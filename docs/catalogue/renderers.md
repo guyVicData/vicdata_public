@@ -249,7 +249,7 @@ Shape requirements only, no rules. 45 renderers.
 | Field | Content |
 | --- | --- |
 | File | src/components/admissions/views/Funnel.tsx |
-| Accepts | Why did our intake change? A waterfall: your entry cohort in 2019/20, then births (cohort size), families moving and your share, then the latest year's cohort, all in the catchment radius. |
+| Accepts | Why did our intake change? A waterfall: your entry cohort in 2019/20, then the cohort size (the local children a year below entry), with families moving as its hollow "of which", and your share of them, then the latest year's cohort, all in the catchment radius. |
 | Empty | No funnel at 4+; a missing figure at either end says which. |
 | Suppressed | — |
 | Partial | — |

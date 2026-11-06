@@ -13,6 +13,7 @@ import {
   FEEDBACK_TYPES,
   FEEDBACK_WHERE,
   isPageKey,
+  stateMismatch,
   type ViewProduct,
 } from "./view-ref";
 
@@ -54,6 +55,11 @@ export function feedbackRow(input: unknown, appVersion: string | null): { row: R
   if (!body.trim() && !looksGood) return { error: "Write something, or choose Looks good." };
   const state = b.state && typeof b.state === "object" && !Array.isArray(b.state) ? b.state : {};
   if (JSON.stringify(state).length > 8000) return { error: "The page's state is too large to record." };
+  // 0.8 Admissions feedback round 2, item 3 (F-31): never record an item whose state and address disagree on
+  // the dashboard, entry point or level. The database refuses it too (feedback_state_mismatch).
+  const pageQuery = typeof b.page_query === "string" ? b.page_query.slice(0, 2000) : null;
+  const mismatch = stateMismatch(state as Record<string, string | number | boolean | null>, pageQuery);
+  if (mismatch) return { error: mismatch };
   const width = typeof b.viewport_width === "number" && Number.isFinite(b.viewport_width) ? Math.max(0, Math.min(100000, Math.round(b.viewport_width))) : null;
   return {
     row: {
@@ -76,7 +82,7 @@ export function feedbackRow(input: unknown, appVersion: string | null): { row: R
       view_key: viewKey,
       state,
       page_path: str(b.page_path, 500),
-      page_query: typeof b.page_query === "string" ? b.page_query.slice(0, 2000) : null,
+      page_query: pageQuery,
       app_version: appVersion,
       device: pick(b.device, ["phone", "desktop"] as const),
       viewport_width: width,
@@ -124,6 +130,14 @@ export function triagePatch(input: unknown): { patch: Record<string, unknown> } 
   if ("duplicate_of" in b) patch.duplicate_of = typeof b.duplicate_of === "string" && /^[0-9a-f-]{36}$/i.test(b.duplicate_of) ? b.duplicate_of : null;
   // The scope rule: a follow-up names the item whose triage didn't cover it.
   if ("follows_up" in b) patch.follows_up = typeof b.follows_up === "string" && /^[0-9a-f-]{36}$/i.test(b.follows_up) ? b.follows_up : null;
+  // 0.8 Admissions feedback round 2, item 4: the view keys a fix added or changed, beside the item's own; a
+  // platform admin's "Looks good" on any of them closes the deployed item (feedback_items_live_check).
+  if ("resolved_views" in b) {
+    if (!Array.isArray(b.resolved_views)) return { error: "Resolved views should be a list of view keys." };
+    const keys = Array.from(new Set(b.resolved_views.filter((x): x is string => typeof x === "string").map((x) => x.trim()).filter(Boolean)));
+    if (keys.length > 50 || keys.some((k) => k.length > 600 || !/^[^\s:]+:[^\s]+$/.test(k))) return { error: "A resolved view is a view key, e.g. vicdata.admissions.pipelines:c1.trends:sex (at most 50)." };
+    patch.resolved_views = keys;
+  }
   if (patch.status === "fixed" && !patch.resolved_commit) return { error: "Fixed needs the commit that fixed it (merged to main)." };
   if (typeof patch.resolved_commit === "string" && !/^[0-9a-f]{7,64}$/i.test(patch.resolved_commit)) return { error: "The commit should be a git sha, 7 characters or more." };
   if (patch.status === "planned" && "planned_version" in patch && !patch.planned_version) return { error: "Planned needs a version, e.g. 0.85." };

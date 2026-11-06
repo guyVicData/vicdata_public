@@ -1,0 +1,27 @@
+# where.py <out> <A> <B>: for each non-identical pair, which dashboard panel's DOM differs and the view it shows.
+import os,re,sys
+from collections import Counter
+out,ta,tb=sys.argv[1:4]; A,B=f"{out}/{ta}",f"{out}/{tb}"
+def panels(s):
+    out={}
+    for p in re.split(r'(?=<section[^>]*data-adm-panel=")',s):
+        m=re.match(r'<section[^>]*data-adm-panel="([^"]+)"',p); out[m.group(1) if m else '_pre']=p
+    return out
+c=Counter(); n=0
+for f in sorted(os.listdir(A)):
+    if not f.endswith('.png'): continue
+    h=f[:-4]+'.html'
+    pa=open(f"{A}/{f}",'rb').read()==open(f"{B}/{f}",'rb').read()
+    da=open(f"{A}/{h}").read()==open(f"{B}/{h}").read()
+    if pa and da: continue
+    n+=1
+    a=panels(open(f"{A}/{h}").read()); b=panels(open(f"{B}/{h}").read())
+    views=[]
+    for k in sorted(set(a)|set(b)):
+        if a.get(k)==b.get(k): continue
+        s=b.get(k,'')
+        m=re.search(r'aria-pressed="true"[^>]*title="([^"]+)"',s) or re.search(r'role="tab"[^>]*aria-selected="true"[^>]*>([^<]+)',s)
+        views.append(f"{'.'.join(k.split('.')[-2:])}:{m.group(1) if m else '?'}")
+    c[tuple(views)]+=1
+    print(f, 'PX' if not pa else '--', 'DOM' if not da else '---', views)
+print(n,'non-identical'); [print(' ',v,k) for k,v in c.items()]

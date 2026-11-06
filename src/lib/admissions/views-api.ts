@@ -10,7 +10,7 @@ import { cachedCensus, fetchSchoolInfo } from "./data";
 import { feederFlags } from "./feeders";
 import { loadThresholds, phaseForEntryAge } from "./thresholds";
 import { fetchSchoolTraits, isDefaultFilters, narrow, schoolsInLas, type AdmissionsFilters, type SchoolTraits } from "./traits";
-import { ROLL_INDEX_MIN } from "../index-base";
+import { indexOwn } from "../index-base";
 import { distanceKm, entryNow, feParticipation, feederTable, indexTo, poolTrends, profileOf, rivalExtras } from "./screens";
 import { intakeChange, localBirths } from "./intake";
 import { buildMarketShare } from "./market";
@@ -188,11 +188,7 @@ export function rollIndexed(m: { urn: string; ageBand: { periods: number[]; rows
   const whole = rivals.filter((r) => r.pts.every((p) => p.value !== null));
   const average = years.map((y, i) => ({ year: y, value: whole.length ? whole.reduce((t, r) => t + (r.pts[i].value as number), 0) / whole.length : null }));
   const ix = indexTo([series(urn), average]);
-  const own = (pts: { year: number; value: number | null }[]) => {
-    const b = (ix.base !== null ? pts.find((p) => p.year === ix.base && p.value !== null) : undefined) ?? pts.find((p) => p.value !== null);
-    return { from: b?.year ?? null, base: b?.value ?? null, values: pts.map((p) => ({ year: p.year, value: p.value === null || !b?.value ? null : (100 * p.value) / b.value })) };
-  };
-  return { base: ix.base, mine: ix.out[0], average: ix.out[1], averageOf: whole.length, rivals: rivals.map((r) => { const o = own(r.pts); return { urn: r.urn, ...o, small: (o.base ?? 0) < ROLL_INDEX_MIN }; }) };
+  return { base: ix.base, mine: ix.out[0], average: ix.out[1], averageOf: whole.length, rivals: rivals.map((r) => ({ urn: r.urn, ...indexOwn(r.pts, ix.base) })) };
 }
 
 // ---------------------------------------------------------------------------------- Rivals

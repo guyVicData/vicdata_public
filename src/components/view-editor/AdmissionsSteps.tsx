@@ -152,7 +152,7 @@ export function AdmissionsDataStep({ draft, set, env, school = null, dataview, b
         {!showFeeders && !lines.length ? (
           <div data-adm-compare="none" style={{ fontSize: 11.5, color: "var(--cc-sub)", lineHeight: 1.45 }}>
             {dataview === "DV-ADM-P-FUNNEL"
-              ? "The funnel draws one area: the school's LA, or the lead's LA blend. Births and the Year 6 or Year 11 pool both follow it, so there is nothing to choose here."
+              ? "This view draws one area: the school's catchment radius, not its feeder list. The cohort size and your share both follow it, so there is nothing to choose here."
               : "This view draws the page's sets: the top bar's feeder lists, or the lead's rivals. Nothing to choose for it."}
           </div>
         ) : (

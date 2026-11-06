@@ -1523,16 +1523,18 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ sources: [...sources].join("/"), projectionOff: off.ladder.projection.length, projectionOn: on.ladder.projection.length, usesNotes }) };
   },
   // ------------------------------------------------------------------ 0.8 Admissions feedback round 1
-  // R-ADM-VIEW-INTAKE-CHANGE: the split recomputed from area_context and the census, by hand, at both schools.
+  // R-ADM-VIEW-INTAKE-CHANGE: the split recomputed from area_context and the census, by hand (F-31: two
+  // steps, local cohort x share, and the cohort step's "of which").
   async admIntakeChange() {
     const v = await import("../src/lib/admissions/views-api");
     const { areaContext } = await import("../src/lib/smt/area-data");
     const { cachedCensus } = await import("../src/lib/admissions/data");
     const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const F = await import("../src/components/admissions/views/Funnel");
     const today = new Date("2026-10-29");
     const out: string[] = [];
     let pass = true;
-    const check = async (urn: string, entry: string, wantKm: number, wantBirthsAge: number) => {
+    const check = async (urn: string, entry: string, wantKm: number, wantBirthsAge: number, wantVerb?: string) => {
       const ep = v.entryPoint(entry)!;
       const p = await v.pipelineView(urn, ep, [], { today, catchment: { savedKm: null } });
       if ("empty" in p || p.intake.status !== "ok") { pass = false; out.push(`${urn} ${entry}: no split`); return; }
@@ -1541,19 +1543,27 @@ const RUNNERS: Record<string, Runner> = {
       const at = (mid: number, age: number) => ctx.years.find((y) => y.year === mid)!.children[age];
       const t = (await cachedCensus([urn])).get(urn)!.table;
       const A = ep.age;
-      const end = (E: number) => ({ births: at(E - A + wantBirthsAge, wantBirthsAge), area: at(E - 1, A - 1), school: cohortAt(t, A, E)! });
+      const end = (E: number) => ({ here: at(E - A + wantBirthsAge, wantBirthsAge), area: at(E - 1, A - 1), school: cohortAt(t, A, E)! });
       const b0 = end(x.baseYear);
       const b1 = end(x.latestYear);
       const L = (b1.school - b0.school) / (Math.log(b1.school) - Math.log(b0.school));
-      const parts = [L * Math.log(b1.births / b0.births), L * Math.log(b1.area / b1.births / (b0.area / b0.births)), L * Math.log(b1.school / b1.area / (b0.school / b0.area))];
+      const parts = [L * Math.log(b1.area / b0.area), L * Math.log(b1.school / b1.area / (b0.school / b0.area))];
       const sum = x.split.parts.reduce((a, q) => a + q.value, 0);
-      const ok = x.area.km === wantKm && x.birthsAge === wantBirthsAge && !x.averaged && JSON.stringify(x.ends.base) === JSON.stringify(b0) && sum === x.split.change && x.split.parts.every((q, i) => Math.abs(q.exact - parts[i]) < 1e-9 && Math.abs(q.value - parts[i]) < 1);
+      const o = x.split.ofWhich;
+      const dHere = b1.here - b0.here;
+      const dMoved = b1.area - b1.here - (b0.area - b0.here);
+      const ofOk = !!o && o.here + o.moved === x.split.parts[0].value && Math.abs(o.exactHere - (parts[0] * dHere) / (dHere + dMoved)) < 1e-9 && Math.abs(o.exactMoved - (parts[0] * dMoved) / (dHere + dMoved)) < 1e-9;
+      const m = F.movedAt(x)!;
+      const verbOk = !wantVerb || F.movedVerb(m) === wantVerb;
+      const sumOk = F.intakeSum(x) === `${x.split.start}${x.split.parts.map((q) => (q.value < 0 ? ` − ${-q.value}` : ` + ${q.value}`)).join("")} = ${x.split.end}`;
+      const ok = x.area.km === wantKm && x.birthsAge === wantBirthsAge && !x.averaged && JSON.stringify(x.ends.base) === JSON.stringify(b0) && sum === x.split.change && x.split.parts.every((q, i) => Math.abs(q.exact - parts[i]) < 1e-9 && Math.abs(q.value - parts[i]) < 1) && ofOk && verbOk && sumOk;
       pass &&= ok;
-      out.push(`${urn} ${entry} ${x.area.km} km: ${x.split.start} -> ${x.split.end} = ${x.split.parts.map((q) => `${q.key} ${q.value}`).join(", ")} (births at age ${x.birthsAge}) ${ok ? "ok" : "MISMATCH"}`);
+      out.push(`${urn} ${entry} ${x.area.km} km: ${F.intakeSum(x)} (of which here ${o?.here}, ${F.movedVerb(m)} ${o?.moved}; earliest age ${x.birthsAge}) ${ok ? "ok" : "MISMATCH"}`);
     };
     await check("110110", "11+", 15, 3);
     await check("110110", "16+", 15, 8);
     await check("137625", "11+", 12, 3);
+    await check("102787", "11+", 2, 3, "moved out");
     // 4+: none; and a saved feeder list changes nothing.
     const four = await v.pipelineView("115786", v.entryPoint("4+")!, [], { today, catchment: { savedKm: null } });
     const listed = await v.pipelineView("110110", v.entryPoint("11+")!, [{ kind: "day_feeders", rung: null, members: ["109982", "109985"], la_blend: null, confirmed: true }], { today, catchment: { savedKm: null } });
@@ -1620,6 +1630,43 @@ const RUNNERS: Record<string, Runner> = {
     const b = r.base!;
     const ok = b === 2019 && whole.length === r.averageOf && yrs.every((y, i) => Math.abs((r.average[i].value ?? NaN) - (100 * avg(y)) / avg(b)) < 1e-9 && Math.abs((r.mine[i].value ?? NaN) - (100 * cnt("110110", y)!) / cnt("110110", b)!) < 1e-9) && r.rivals.length === m.rivals.length;
     return { pass: ok, detail: fmt({ base: b, averageOf: r.averageOf, rivals: r.rivals.length, mineLatest: round(r.mine.at(-1)?.value), avgLatest: round(r.average.at(-1)?.value) }) };
+  },
+  // R-ADM-VS-EACH: You and the rivals in full screen, rendered on the server from the route's answer: a key
+  // entry per rival drawn, each small rival named, each line recomputed from the entry-age rows; the panel
+  // keeps the average; the band roll and this view share YouAndEachRival (source scan).
+  async admVsEach() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const fs = await import("node:fs");
+    const v = await import("../src/lib/admissions/views-api");
+    const { VsRivals } = await import("../src/components/admissions/views/Lines");
+    const { InitialWidth } = await import("../src/components/admissions/views/charts");
+    const { ROLL_INDEX_MIN } = await import("../src/lib/index-base");
+    const m = await v.marketView("110110", v.entryPoint("11+")!, []);
+    const draw = (fullscreen: boolean) => renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(VsRivals, { m, setLabel: "10 nearest", as: "line", fullscreen, room: 600 })));
+    const [full, panel] = [draw(true), draw(false)];
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const cnt = (u: string, y: number) => m.entryAge.rows.find((r) => r.urn === u && r.period === y)?.count ?? null;
+    const b = m.summary.vsIndexed.base!;
+    const yrs = m.entryAge.periods;
+    const each = m.rivals.map((u) => {
+      const from = cnt(u, b) !== null ? b : yrs.find((y) => cnt(u, y) !== null) ?? null;
+      const base = from === null ? null : cnt(u, from);
+      return { u, name: m.schools[u]?.name ?? u, small: (base ?? 0) < ROLL_INDEX_MIN, last: base ? (100 * (cnt(u, yrs.at(-1)!) ?? NaN)) / base : null };
+    });
+    const key = full.split("data-vs-key")[1]?.split("</div>")[0] ?? "";
+    const note = full.split("data-vs-small")[1]?.split("</span>")[0] ?? "";
+    const drawn = each.filter((x) => !x.small);
+    const { yearLabel } = await import("../src/components/admissions/ui");
+    const titles = drawn.every((x) => x.last === null || !Number.isFinite(x.last) || full.includes(`${esc(x.name)} ${yearLabel(yrs.at(-1)!)}: ${x.last.toFixed(0)}`));
+    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 1;
+    const named = each.filter((x) => x.small).every((x) => note.includes(esc(x.name)) && !key.includes(`>${esc(x.name)}</span>`));
+    const lines = fs.readFileSync(path.join(ROOT, "src/components/admissions/views/Lines.tsx"), "utf8");
+    const fn = (n: string) => lines.split(`export function ${n}(`)[1]?.split("\nexport function ")[0] ?? "";
+    const shared = ["RollTrend", "VsRivals"].every((n) => fn(n).includes("<YouAndEachRival")) && (lines.match(/var\(--adm-series-\$\{/g) ?? []).length === 1;
+    const panelOk = panel.includes("Rivals’ average") && !panel.includes("data-vs-key") && !panel.includes("data-y-grid") && !panel.includes("--adm-series-");
+    const ok = keyed && named && titles && shared && panelOk && full.includes("data-y-grid");
+    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, named, titles, shared, panelOk }) };
   },
   // R-ADM-BAND-SHARE: the band share recomputed; the rail's last view.
   async admBandShare() {
@@ -1775,7 +1822,11 @@ const RUNNERS: Record<string, Runner> = {
         const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
         // 0.8 SMT feedback round 1 (F-1): the tile is a PairTile, each figure boxed with its own label.
         const tile = /data-pair="Day"/.test(html) && /data-pair="Boarding"/.test(html);
-        const isc = ep.age > 4 ? /International boarders/.test(T) : true;
+        // Admissions feedback round 2 (F-31): the ISC note left the intake chart for its (i) (DV-ADM-P-FUNNEL's
+        // notes); it shows in the pipeline itself or in that (i).
+        const { METHODS_ADMISSIONS } = await import("../src/catalogue/methods-admissions");
+        const iscInI = (METHODS_ADMISSIONS["DV-ADM-P-FUNNEL"].notes ?? []).some((n) => /International boarders/.test(n));
+        const isc = ep.age > 4 ? /International boarders/.test(T) || iscInI : true;
         const setupOk = /Day and boarding/.test(text(setup[0])) && /Your boarding feeders/.test(text(setup[2])) && /Step 3 of 4/.test(setup[2]) && /Step 4 of 4/.test(setup[3]) && /Boarding only/.test(text(setup[3]));
         // The boarding feeder list end to end: setup's search returns preps with boarders, kept as a
         // fuzzy set, and Boarding only draws the pool from them.
@@ -2891,8 +2942,43 @@ const RUNNERS: Record<string, Runner> = {
     st.moveFeedback(st.movedView(st.feedbackSnapshot())!);
     const after = st.feedbackSnapshot().target!;
     st.closeFeedback();
-    const pass = offer === "Flags" && after.view.label === "Flags" && after.openedAt === at && appVersion({ NODE_ENV: "production" }) === "unknown" && appVersion({ RENDER_GIT_COMMIT: "abc", NODE_ENV: "production" }) === "abc";
-    return { pass, detail: fmt({ offer, movedTo: after.view.label, draftKept: after.openedAt === at, versionWithout: appVersion({ NODE_ENV: "production" }) }) };
+    // Admissions feedback round 2 (F-31): A at 11+, then 16+ and a click in B's panel.
+    const { feedbackPayload } = await import("../src/components/feedback/FeedbackWindow");
+    const { stateMismatch } = await import("../src/lib/view-ref");
+    const adm = (entry: string) => ({ product: "admissions", dashboard: { id: "vicdata.admissions.pipelines", name: "Pipelines", versionId: null }, scope: { kind: "school", urn: "110110", name: "Leighton Park School" }, role: "admissions", viewAs: false, peek: false, noteScope: null, state: { dashboard: "pipelines", entry } }) as never;
+    const a = (entry: string) => ({ surface: adm(entry), view: { panelId: "c1", panelName: "Trends", instanceId: "sex", dataview: "DV-ADM-P-ENTRY-SEX", label: "Your cohort, girls and boys" }, viewKey: "vicdata.admissions.pipelines:c1:sex", anchor: null });
+    const b = (entry: string) => ({ surface: adm(entry), view: { panelId: "c2", panelName: "Funnel", instanceId: "funnel", dataview: "DV-ADM-P-FUNNEL", label: "Why did our intake change?" }, viewKey: "vicdata.admissions.pipelines:c2:funnel", anchor: null });
+    const addr = (entry: string) => ({ path: "/teacher/admissions", search: `?view=pipelines&entry=${encodeURIComponent(entry)}` });
+    const form = { kinds: [], importance: null, scope: null, applies: null, where: [], area: [], saw: "", expected: "", text: "x" };
+    const sent = () => {
+      const s = st.feedbackSnapshot();
+      const plan = st.sendPlan(s, addr("16+"))!;
+      const p = feedbackPayload(plan.surface, s.target!, form, { ...plan.address, width: 1400, theme: "light" });
+      return `${p.view_label} @ ${p.state.entry} / ${p.page_query}${stateMismatch(p.state, p.page_query) ? " (MIX)" : ""}`;
+    };
+    const round2 = (move: boolean) => {
+      st.resetFeedbackStore({ status: "ready", allowed: true, items: [] });
+      st.setLiveSurface(adm("11+"));
+      st.setPanelView(a("11+"));
+      st.setPanelView(b("11+"));
+      st.openFeedback(a("11+"), addr("11+"));
+      st.setLiveSurface(adm("16+"));
+      st.touchPanel(adm("16+"), "c2");
+      const offer = st.driftOf(st.feedbackSnapshot());
+      if (move && offer?.to) st.moveFeedback(offer.to, addr("16+"));
+      const out = { offer: offer ? `${offer.kind}: ${offer.to?.view.label} @ ${(offer.to?.surface.state as { entry?: string } | undefined)?.entry}` : "none", sent: sent() };
+      st.closeFeedback();
+      return out;
+    };
+    const moved = round2(true);
+    const declined = round2(false);
+    const r2 =
+      moved.offer === "panel: Why did our intake change? @ 16+" &&
+      moved.sent === "Why did our intake change? @ 16+ / view=pipelines&entry=16%2B" &&
+      declined.sent === "Your cohort, girls and boys @ 11+ / view=pipelines&entry=11%2B" &&
+      !!stateMismatch({ entry: "11+" }, "view=pipelines&entry=16%2B");
+    const pass = r2 && offer === "Flags" && after.view.label === "Flags" && after.openedAt === at && appVersion({ NODE_ENV: "production" }) === "unknown" && appVersion({ RENDER_GIT_COMMIT: "abc", NODE_ENV: "production" }) === "abc";
+    return { pass, detail: fmt({ offer, movedTo: after.view.label, draftKept: after.openedAt === at, round2Offer: moved.offer, round2Moved: moved.sent, round2Declined: declined.sent, versionWithout: appVersion({ NODE_ENV: "production" }) }) };
   },
 
   // ------------------------------------------------------------ 0.8 SMT feedback round 2
@@ -3027,6 +3113,24 @@ const RUNNERS: Record<string, Runner> = {
     const total = /(\d+) PASS, (\d+) FAIL/.exec(pg.out);
     const pass = pg.ok && unit.ok && !lines.some((l) => l.startsWith("FAIL"));
     return { pass, detail: fmt({ pglite: total ? `${total[1]} pass, ${total[2]} fail` : "did not run", thisRule: mine.length ? `${mine.length} named checks` : "checked within the suite", unit: unit.ok ? "pass" : "FAIL" }) };
+  },
+  // R-FEEDBACK-RESOLVED-VIEWS (Admissions feedback round 2): the PGlite suite and the app's unit tests.
+  async feedbackResolvedViews() {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, args: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const pg = run("node", ["supabase/tests/v08_feedback_resolved_views_pglite.mjs"]);
+    const gate = run("node", ["supabase/tests/v08_feedback_deploy_gate_pglite.mjs"]);
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/feedback-resolved-views.test.ts"]);
+    const total = /(\d+) PASS, (\d+) FAIL/.exec(pg.out);
+    const pass = pg.ok && gate.ok && unit.ok;
+    return { pass, detail: fmt({ pglite: total ? `${total[1]} pass, ${total[2]} fail` : "did not run", deployGateSuite: gate.ok ? "pass" : "FAIL", unit: unit.ok ? "pass" : "FAIL" }) };
   },
   async republishGuard() {
     const { execFileSync } = await import("node:child_process");

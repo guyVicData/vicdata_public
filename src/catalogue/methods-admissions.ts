@@ -25,22 +25,23 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
   },
   // 0.8 Admissions feedback round 1 (F-13): rebuilt as "Why did our intake change?" (src/lib/admissions/intake.ts).
   "DV-ADM-P-FUNNEL": {
-    notes: [ADMISSIONS_NOTES.intakeNote, ADMISSIONS_NOTES.intakeMoving, ADMISSIONS_NOTES.intakeBoarding, ADMISSIONS_NOTES.intakeNotFeeders],
+    // Admissions feedback round 2 (F-31): the boarding caveat moved here from under the chart.
+    notes: [ADMISSIONS_NOTES.intakeNote, ADMISSIONS_NOTES.intakeMoving, ADMISSIONS_NOTES.intakeBoarding, ADMISSIONS_NOTES.boardingCensus, ADMISSIONS_NOTES.intakeNotFeeders],
     sources: ["ONS small-area population estimates (LSOAs, 2021 boundaries), single year of age, mid-2011 to the latest mid-year held", "DfE school census (January), your own pupils by single age, 2019/20 to {census}", "GIAS (Get Information about Schools): nearest schools, for a state school's radius"],
     geography: "{radius}: every LSOA whose population-weighted centre is within the radius ({lsoas} neighbourhoods), the same area SMT Context draws. Not your feeder list. How the radius was set: {how}",
-    years: "Your {entryYear} from {base} to {latest}, each with the area's {areaYear} the year before and the cohort's births. {averagedNote}",
+    years: "Your {entryYear} from {base} to {latest}, each with the local {areaAge}-year-olds the mid-year before entry, and the same children at the earliest age held. {earliestNote} {averagedNote}",
     leftOut: ["No funnel at 4+.", "The girls/boys filter: not split (the area's population has no split); the panel says so while it is on.", "A neighbourhood's figures below 5 are withheld by ONS and count as 0.", "Boarders and children from outside the radius are in your intake but not in the area's figures."],
     steps: [
       "Take the area: the LSOAs within the radius.",
-      "{birthsNote}",
-      "The area's {areaYear}: children living in the area at the age a year below entry, in the mid-year before entry (Year 6 = aged 10 for September 11+ entry; Year 11 = aged 15 at 16+).",
+      "Cohort size: the local {areaAge}-year-olds, the children living in the area at the age a year below entry, in the mid-year before entry (Year 6 = aged 10 for September 11+ entry; Year 11 = aged 15 at 16+).",
       "Your {entryYear}: your own pupils at the entry age in the January census (full-time from age 4).",
-      "Your {entryYear} is births × (area {areaYear} ÷ births) × (your {entryYear} ÷ area {areaYear}). The three are the cohort's size, families moving (more or fewer of the area's children at that age than were born there), and your share of the area's children.",
-      "Split the change from {base} to {latest} into those three parts by the log-mean (LMDI) split: each part is L × ln(that factor now ÷ that factor then), where L = (your {entryYear} now − then) ÷ (ln now − ln then). The three parts add up to the whole change exactly, whatever order they are taken in.",
+      "Your {entryYear} is the cohort size × your share (your {entryYear} ÷ the local {areaAge}-year-olds).",
+      "Split the change from {base} to {latest} into those two steps by the log-mean (LMDI) split: each step is L × ln(that factor now ÷ that factor then), where L = (your {entryYear} now − then) ÷ (ln now − ln then). The two steps add up to the whole change exactly.",
+      "Families moving, the cohort size's \"of which\": count the same children at the earliest age the area's figures hold for them. {birthsNote} The cohort size = those children + moved in since (net: in less out). Share the cohort-size step between the two in proportion to each one's change from {base} to {latest} (each local child is worth the same pupils), so the two add up to the step. Where the two changes have opposite signs (more children here, but more families leaving), both are drawn, signed, and still net to the step.",
       "Where your intake is under 30 at either end, each end is a 3-year average (the base year and the two after it; the latest and the two before it), every figure alike.",
-      "Draw a waterfall: your {entryYear} in {base}, each part from the running total (up in the accent, down in orange), your {entryYear} in {latest}. The bars start a little below the lowest running total, and say so.",
+      "Draw a waterfall: your {entryYear} in {base}; the cohort-size step from it (up in the accent, down in orange); families moving hollow and dashed beside it, ending level with the step's end (not a step: the running total doesn't move); your share from the running total; your {entryYear} in {latest}. Under it, the sum (for example 82 + 18 − 10 = 90). The bars start a little below the lowest level, and say so.",
     ],
-    rounding: ["Your intake at each end to whole pupils; the parts to whole pupils by largest remainders, so they still add up to the change.", "Ratios in the labels to 2 decimal places; shares to 1 (or 2 under 0.1%)."],
+    rounding: ["Your intake at each end to whole pupils; the two steps to whole pupils by largest remainders, so they still add up to the change; the \"of which\" the same way, so its two parts add up to the cohort-size step.", "Counts in the labels to whole children; the cohort's change to the whole per cent; shares to 1 decimal place (or 2 under 0.1%)."],
   },
   "DV-ADM-P-BIRTHS": {
     notes: [ADMISSIONS_NOTES.intakeNotFeeders],

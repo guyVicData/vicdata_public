@@ -99,6 +99,8 @@ export type TriageRow = {
   checked_live_at?: string | null;
   follows_up?: string | null;
   follows_up_ref?: string | null;
+  // Admissions feedback round 2 (absent before 20261120090000_v08_feedback_resolved_views is applied).
+  resolved_views?: string[] | null;
 };
 
 type GapRow = { ref: string; number: number; id: string; status: FeedbackStatus; resolved_commit: string | null; live_build: string; gap: string };
@@ -150,6 +152,7 @@ export function itemMarkdown(r: TriageRow, origin = ""): string {
     r.body.trim() ? `- **Text:** ${r.body.trim().replace(/\n+/g, " / ")}` : r.looks_good ? "- **Text:** Looks good" : "",
     r.duplicate_of_ref ? `- **Duplicate of:** ${r.duplicate_of_ref}` : "",
     r.follows_up_ref ? `- **Follows up:** ${r.follows_up_ref}` : "",
+    r.resolved_views?.length ? `- **Resolved views:** ${r.resolved_views.join(", ")}` : "",
     r.triage_note ? `- **Triage note:** ${r.triage_note}` : "",
     r.wont_do_reason ? `- **Won't do:** ${r.wont_do_reason}` : "",
     href ? `- **Open:** ${origin}${href}` : "",
@@ -510,7 +513,9 @@ function Detail({ k, children }: { k: string; children: ReactNode }) {
 }
 
 function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onPatch: (b: Record<string, unknown>) => Promise<boolean> }) {
-  const [t, setT] = useState({ type: r.type ?? "", priority: r.priority ?? "", status: r.status, planned_version: r.planned_version ?? "", resolved_commit: r.resolved_commit ?? "", wont_do_reason: r.wont_do_reason ?? "", duplicate: r.duplicate_of_ref ?? "", follows: r.follows_up_ref ?? "", triage_note: r.triage_note ?? "" });
+  const [t, setT] = useState({ type: r.type ?? "", priority: r.priority ?? "", status: r.status, planned_version: r.planned_version ?? "", resolved_commit: r.resolved_commit ?? "", wont_do_reason: r.wont_do_reason ?? "", duplicate: r.duplicate_of_ref ?? "", follows: r.follows_up_ref ?? "", triage_note: r.triage_note ?? "", resolved_views: (r.resolved_views ?? []).join("\n") });
+  const resolvedViews = (text: string) => Array.from(new Set(text.split(/[\s,]+/).map((x) => x.trim()).filter(Boolean)));
+  const resolvedChanged = resolvedViews(t.resolved_views).join("\n") !== (r.resolved_views ?? []).join("\n");
   const fol = parseFeedbackNumber(t.follows);
   const folRow = fol !== null ? rows.find((x) => x.number === fol) : null;
   const followUps = rows.filter((x) => x.follows_up === r.id);
@@ -535,6 +540,7 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
         <Detail k="Device">{`${r.device ?? ""} ${r.viewport_width ?? ""}px · ${r.theme ?? ""} · app ${r.app_version ?? ""}`}</Detail>
         <Detail k="Status">{statusText(r)}</Detail>
         <Detail k="Follows up">{r.follows_up_ref ?? null}</Detail>
+        <Detail k="Resolved views">{r.resolved_views?.length ? r.resolved_views.join(" · ") : null}</Detail>
         <Detail k="Follow-ups">{followUps.length ? followUps.map((x) => `${x.ref} (${FEEDBACK_STATUS_LABEL[x.status]})`).join(" · ") : null}</Detail>
         {href && (
           <a href={href} target="_blank" rel="noreferrer" data-fb-open-link="" className="mt-1 self-start rounded-lg bg-[var(--fg)] px-3 py-1.5 text-[12px] font-semibold text-[var(--panel-bg)]">
@@ -557,6 +563,8 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
             duplicate_of: dupRow?.id ?? null,
             follows_up: folRow?.id ?? null,
             triage_note: t.triage_note || null,
+            // Only when changed, so an inbox before the migration (no column) still saves the rest.
+            ...(resolvedChanged ? { resolved_views: resolvedViews(t.resolved_views) } : {}),
           });
         }}
       >
@@ -623,6 +631,18 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
             <input value={t.wont_do_reason} onChange={(e) => setT({ ...t, wont_do_reason: e.target.value })} className={field} />
           </label>
         )}
+        <label className="flex flex-col gap-1">
+          <span className={label}>Resolved views (one view key a line)</span>
+          <textarea
+            value={t.resolved_views}
+            onChange={(e) => setT({ ...t, resolved_views: e.target.value })}
+            rows={2}
+            data-fb-resolved-views=""
+            placeholder={`views the fix added or changed, beside ${r.view_key}`}
+            className={`${field} font-mono text-[11px]`}
+          />
+          <span className="text-[11px] text-[var(--muted2)]">A Looks good on any of these, at this school after the deploy, closes it too.</span>
+        </label>
         <label className="flex flex-col gap-1">
           <span className={label}>Triage note</span>
           <textarea value={t.triage_note} onChange={(e) => setT({ ...t, triage_note: e.target.value })} rows={3} className={field} />

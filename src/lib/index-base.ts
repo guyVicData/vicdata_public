@@ -25,6 +25,14 @@ export function indexTo(series: Pt[][]): { base: number | null; out: Pt[][] } {
   };
 }
 
+/** F-20, F-36 (0.8 Admissions fb1, fb2): one rival's line indexed to `base` where it has a figure there,
+ * else to its own first year (`from`). `small`: under ROLL_INDEX_MIN at its base, so a full-screen chart
+ * names it rather than drawing it. Shared by the band roll (rollIndexed) and You and the rivals. */
+export function indexOwn(pts: Pt[], base: number | null): { from: number | null; base: number | null; values: Pt[]; small: boolean } {
+  const b = (base !== null ? pts.find((p) => p.year === base && p.value !== null) : undefined) ?? pts.find((p) => p.value !== null);
+  return { from: b?.year ?? null, base: b?.value ?? null, values: pts.map((p) => ({ year: p.year, value: p.value === null || !b?.value ? null : (100 * p.value) / b.value })), small: (b?.value ?? 0) < ROLL_INDEX_MIN };
+}
+
 /** The base year in words: "2021/22" (census and results years), "2014" (births and ONS mid-year),
  * or "each line's first year" when the lines share none. */
 export function indexBaseWords(base: number | null, years: "academic" | "calendar" = "academic"): string {

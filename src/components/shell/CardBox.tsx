@@ -25,7 +25,7 @@ import { PanelIconRow } from "./PanelIconRow";
 import { reportUsage, useUsageScope } from "@/lib/usage-client";
 import { useViewMarks } from "@/components/feedback/ViewSurface";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
-import { clearPanelView, setPanelView } from "@/components/feedback/store";
+import { clearPanelView, setPanelView, touchPanel } from "@/components/feedback/store";
 import type { ViewRef } from "@/lib/view-ref";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
@@ -380,6 +380,10 @@ export function CardBox({
     <div
       ref={boxRef}
       data-view-key={marks?.viewKey}
+      // Admissions feedback round 2, item 3: the panel being worked in, so an open feedback window on another
+      // panel offers to move here (its full screen is inside this tree, so it counts too).
+      onPointerDownCapture={marks ? () => touchPanel(marks.surface, marks.view.panelId) : undefined}
+      onFocusCapture={marks ? () => touchPanel(marks.surface, marks.view.panelId) : undefined}
       className={[
         "mt-3 flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3",
         fixedHeight ? "relative overflow-hidden pb-9" : "",
