@@ -8,6 +8,7 @@ import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import type { Load, MarketView, RivalsView } from "../api";
 import { Empty, ViewTitle, arrow, cx, fmtN, fmtPct, fmtSigned, ordinal, yearLabel } from "../ui";
 import { DivergingBar } from "./charts";
+import { featuredRow } from "@/components/shell/accent";
 
 const sectorWord = (e: MarketView["extras"][number] | undefined) =>
   [e?.traits?.sector === "independent" ? "Ind" : e?.traits?.sector === "state" ? "State" : null, e?.traits?.boarding ? "boarding" : null, e?.traits?.gender === "girls" ? "girls" : e?.traits?.gender === "boys" ? "boys" : null].filter(Boolean).join(" · ");
@@ -81,7 +82,7 @@ export function RankedBars({ m, rivals, withDonut = true, fullscreen, phone = fa
             const e = m.extras.find((x) => x.urn === row.urn);
             const t = m.summary.trend[row.urn];
             return (
-              <div key={row.urn} className={cx("grid items-center gap-2 rounded-[6px] px-[6px] py-1 text-[12px]", phone ? GRID_PHONE : GRID, me ? "bg-[var(--adm-tint)] font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")}>
+              <div key={row.urn} {...featuredRow(me)} className={cx("grid items-center gap-2 rounded-[6px] px-[6px] py-1 text-[12px]", phone ? GRID_PHONE : GRID, me ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")}>
                 <span className="tabular-nums">{row.rank ?? "—"}</span>
                 <span className="truncate" title={`${m.schools[row.urn]?.name ?? row.urn}${e?.distanceKm ? ` · ${e.distanceKm.toFixed(1)} km` : ""}`}>
                   {me ? m.schools[row.urn]?.name : `${m.schools[row.urn]?.name ?? row.urn}${sectorWord(e) ? ` · ${sectorWord(e)}` : ""}`}

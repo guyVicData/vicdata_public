@@ -2666,3 +2666,45 @@ This is the round for `docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_c
 **The republish**
 27. **Only the two Admissions dashboards.** Live GCSE Results (version 16), Post-16 Results, SMT Overview and SMT Pupils differ from the code copy, which may be editor changes. The full seed would publish over them. A new `--only` option publishes just Pipelines and Market share. Live Market share was still the 12 Oct seed, so republishing it also brings live two titles that 0.8's audit fixes had corrected in code (Change in share, Entry age band roll).
 28. **The live Funnel** draws whatever the code's view returns for `DV-ADM-P-FUNNEL`, so it shows the new waterfall from the deploy, before the republish. The republish adds Local births, girls and boys and the share of Years 7–11 to the rails, and carries the funnel's new title and spec.
+
+## 2026-11-06 — feedback deploy gate
+
+This is the round for `docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md`, on `v0.8-feedback-deploy-gate`. Every call below was **decided unattended, for Guy to confirm**, and is tagged with its item.
+
+**F-22 (the focus school in every table and rank view)**
+- **F-22, what counts:** a table, or a ranked list of schools with a value per row, is a rank view and is tinted. Bar charts aren't: Data View Graphs' sorted and diverging bars, Admissions' change in share and results change, and Teacher's bar rows. Their focus bar is already coloured and the school's name bold. Tinting them too is one `featuredRow()` per chart, if wanted.
+- **F-22, groups:** every list of member schools tints the school picked on the map or in Schools: Schools ranked, value added, Year 12 against Year 11, each school's share, children around each school, joined and left. With none picked, no member row is tinted. The shape cards keep their own tint: they are a chart.
+- **F-22, the public page:** no table or rank view there has the school's row. Its nearest schools leave it out, and the roll chart already colours it. So no public-page token was added, though the prompt lists one.
+- **F-22, the Data View's token** is the red it already drew (red-50, and red-950 at 40% over the dark page), now one token on `:root`. The region and nation rankings were at 30% in dark and now match the other tables at 40%. The rank number on the focus row is neutral-600 / neutral-400, since neutral-500 was 4.3:1 on the light tint.
+- **F-22, KS2's token** is neutral, since KS2 has no accent: #eeeef0 light, #2a2a2e dark. It replaces the old fallback, the grey accent at 14%.
+- **F-22, meeting slides:** an Admissions view on a slide tinted the school's row in the meeting's rose, because the preview named no token. The slot now names Admissions'.
+- **F-22, contrast:** F-17's "muted 6.3:1" is 6.29:1 for Post-16's and SMT's violet. The test holds 6.25. The colour is F-17's and wasn't changed, to keep parity.
+
+**F-23 (the local shape at a 16+ intake)**
+- **F-23: ages 11–15, not 4–15.** The prompt says 4–15, but the triage note on F-23 and F-26 (6 Nov, written after the prompt) makes them one request. F-26 refines F-23: "needs to show ages 11-15 in the feeder schools and in the feeders area". So at 16+ the local shape and the feeder cards both cover ages 11–15, and primaries aren't counted at 16+.
+- **F-23: the set is the current feeder set at age 15,** the same schools as the feeder cards. That is the 10 nearest state secondaries (`DEFAULT_SECONDARIES`), 11–16 schools first because their pupils must move, with the school itself left out. A saved rung list for age 15, or saved feeder lists, take over as they already do for the cards. **No new count:** a separate "nearest N teaching 11–15" set would put schools in the shape that aren't on the cards beside it.
+- **F-23: the school's own Year 11 is left out.** The age-15 set includes it, but the cards already leave it out. The school's own shape is on Market share.
+- **F-23: only ages 11–15 are counted, not just drawn.** The classifier reads the summed 11–15 profile, so a secondary's sixth form doesn't shape "the area you recruit from". Leighton Park at 16+: Tube, 8,037 pupils aged 11–15 in 10 schools. Below 16+ the count is unchanged (whole profiles), so 11+ stays as round 1 drew it.
+- **F-23: what each intake covers now.**
+  - **11+ (unchanged):** the 15 nearest primaries, drawn over ages 4–10; the cards are the same 15 schools at age 10.
+  - **4+ (unchanged):** the same 15 primaries, but only age 4 is drawn, and the caption reads "aged 4–4". The cards are the 15 primaries at age 4, one row each. Left as it is; the wording "aged 4–4" could read "aged 4" in a later round.
+  - **16+ (new):** the 10 nearest secondaries over ages 11–15; the cards are the same 10 schools at age 15, five rows each.
+  - **Custom ages between 12 and 15 (unchanged):** the local shape is still the primaries, and the cards are the age-below secondaries over the local shape's ages. Not raised; noted only.
+
+**The deploy gate (items 1 to 5)**
+- **Statuses: `deployed` can't be set by hand,** not even by a platform admin (the update trigger refuses it unless the server's own call is running). It is a fact about the live build, so only `record_app_build` sets it. The inbox doesn't offer it, and "Set ticked to" lists every other status.
+- **Promotion matches commits by prefix, never under 7 characters.** `resolved_commit` is often 7 characters (round 1's step 4 wrote `6bddb6d`) and the build lists 12. A match either way counts.
+- **"The live build" is the `app_builds` row a server last started as (`last_seen_at`), not the newest by `first_seen_at`.** A Render rollback starts an older build again; ordering by first sight would keep reading the newer one as live. `last_seen_at` and `built_at` are added to the table for this; the prompt named `commit`, `first_seen_at` and `commits`.
+- **The live check counts a "Looks good" at or after `deployed_at`, not strictly after.** PGlite's clock has millisecond steps, so a check made in the same instant as the promotion flaked the test; a "Looks good" given as the build is recorded is a check on that build.
+- **The live check needs a platform admin's "Looks good",** with or without text. A member's "Looks good" (once feedback opens to beta testers) doesn't close a fix; it still counts in coverage.
+- **When the server records its build:** before the first feedback insert of each process (so a "Looks good" sees items already promoted), and on the inbox's first load. If the call fails (before the migration is applied, or the database is down), it retries after 10 minutes, never per request.
+- **The build's commit list on Render: git first, deepened if shallow; then GitHub's public commits API; then `null`.** Tested on a depth-1 clone from GitHub (deepened to 771 commits) and on a checkout with no `.git` (GitHub's API, 771 commits). Render's own checkout isn't known until this deploys: its build log says which source was used (`[build-info] …`), and `/api/version` says how many commits the build lists. A list that is still shallow and short of 1,000 is not trusted (`null`): its oldest commits would read as "not in the build".
+- **`/api/version` also returns `commits`, the count** (not the list), so the Render check can be read from outside. `/api/health` is unchanged.
+- **The republish guard:** `--live <url>` or `VICDATA_LIVE_URL`, no default. "Holds HEAD" means HEAD is the live commit or one of its ancestors (`git merge-base --is-ancestor`), so a later live build passes. If the live commit isn't in the checkout, it refuses and says to fetch. The PGlite tests and the catalogue unit test pass `--force`, since their SQL only ever reaches WASM Postgres.
+- **"Set fixed" is a script, `scripts/feedback-set-fixed.sh`,** not SQL pasted into a report, so the project-ref check, the "on GitHub's main" check and the "only from new, triaged or planned" guard can't be dropped. It writes `resolved_commit` as 12 characters.
+- **The report template's rule test checks reports first committed on or after 6 Nov 2026, and any not yet committed.** Older reports used other orders; rewriting them adds nothing.
+
+**The scope rule, applied backwards (item 5)**
+- **F-22 and F-23 (with F-26) are treated as the follow-ups**, rather than raising new items: they ask for exactly what F-17 and F-15 left out. The migration sets `follows_up` (F-22 → F-17; F-23 and F-26 → F-15), adds a "Not covered:" line to F-17's and F-15's triage notes, and moves F-22 from new to triaged. No item is created.
+- **F-15 stays done.** It was checked live on 6 Nov at 11+ (F-25), which is what it was built for; the 16+ gap is now F-23's, open.
+- **The backfill moves F-12 to F-21 only while they are still `planned` under "deploy 6bddb6d".** F-15 (done since) is left alone, so nine move. Their `resolved_at` is the merge's date (30 Oct).

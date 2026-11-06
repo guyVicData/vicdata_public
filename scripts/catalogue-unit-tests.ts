@@ -732,7 +732,7 @@ describe("Admissions in the catalogue (0.7 r2)", () => {
   });
   it("the seed gives the Admissions dashboards to Admissions and SMT only; Teacher's SQL is as before", async () => {
     const { execFileSync } = await import("node:child_process");
-    const sql = execFileSync("npx", ["-y", "tsx", path.resolve(__dirname, "dashboards-seed-sql.ts")], { encoding: "utf8" });
+    const sql = execFileSync("npx", ["-y", "tsx", path.resolve(__dirname, "dashboards-seed-sql.ts"), "--force"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     const adm = sql.split("\n").filter((l) => /select id, 'role', '(\w+)', 'live', true from public.dashboards where slug = 'vicdata.admissions/.test(l));
     assert.deepEqual(adm.map((l) => /'role', '(\w+)'/.exec(l)![1]).sort(), ["admissions", "admissions", "smt", "smt"]);
     assert.ok(!/'role', 'teacher', 'live', true from public.dashboards where slug = 'vicdata.admissions/.test(sql), "never to Teacher");

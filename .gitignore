@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# the build's own commit list (scripts/write-build-info.mjs, at `npm run build`)
+/src/generated/build-info.json

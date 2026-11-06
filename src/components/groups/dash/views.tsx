@@ -10,7 +10,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Empty, Key, LineSwatch, Lbl, PairTile, Tile, fillHeight } from "@/components/admissions/ui";
 import { LineChart, useWidth } from "@/components/admissions/views/charts";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
-import { FEATURED_ROW_BG, productAccent } from "@/components/shell/accent";
+import { FEATURED_ROW_BG, featuredRow, productAccent } from "@/components/shell/accent";
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
 import { periodLabel, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexedLabel } from "@/lib/index-base";
@@ -244,7 +244,7 @@ export function GroupMap({ name, schools, highlight, fullscreen, room }: { name:
 
 // ------------------------------------------------------------------------------ joined and left
 
-export function JoinedLeft({ membership, schools, compact = false }: { membership: MembershipRow[]; schools?: { urn: string; current: boolean }[]; compact?: boolean }) {
+export function JoinedLeft({ membership, schools, compact = false, highlight = null }: { membership: MembershipRow[]; schools?: { urn: string; current: boolean }[]; compact?: boolean; highlight?: string | null }) {
   const rows = membership
     .map((m) => ({ ...m, left: schools ? !schools.find((s) => s.urn === m.urn)?.current : false }))
     .sort((a, b) => (b.joined ?? b.lastSeen ?? "").localeCompare(a.joined ?? a.lastSeen ?? "") || a.name.localeCompare(b.name));
@@ -254,7 +254,7 @@ export function JoinedLeft({ membership, schools, compact = false }: { membershi
     <div className="flex min-h-0 flex-col gap-1 overflow-y-auto text-[12.5px]">
       {!compact && <div className="text-[13px] font-bold text-[var(--fg)]">Joined and left</div>}
       {shown.map((r) => (
-        <div key={r.urn} className="flex items-baseline justify-between gap-3 border-b border-[var(--panel-border)] py-1 last:border-0">
+        <div key={r.urn} {...featuredRow(r.urn === highlight)} className="flex items-baseline justify-between gap-3 border-b border-[var(--panel-border)] py-1 last:border-0">
           <span className="min-w-0 truncate">
             {r.name}
             {r.joined || r.left ? ` ${r.left ? "left" : "joined"}` : ""}

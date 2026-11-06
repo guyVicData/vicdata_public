@@ -3,12 +3,14 @@ import { userFrom } from "@/lib/groups/server";
 import { isPlatformAdmin } from "@/lib/view-as";
 import { feedbackMissing, triagePatch } from "@/lib/feedback-server";
 import { parseFeedbackNumber } from "@/lib/view-ref";
+import { recordBuildOnce } from "@/lib/app-build-server";
 
 // VicData 0.8 notes and feedback (decision 4): the inbox's side, platform admins only (anyone else:
 // "not found", as the Platform page itself). Through the caller's own session, so the database's RLS
 // and its triage guard (only the triage fields change) decide as well.
 //   GET   ?number=F-12          one item (the Open banner)
 //   GET   ?coverage=1           feedback_coverage
+//   GET   ?gaps=1               feedback_deploy_gaps (items claiming more than the live build has)
 //   GET   (filters)             feedback_for_triage, newest first: status, type, priority, product,
 //                               dashboard, school (URN or group id), author (profile id), q (text)
 //   PATCH { ids: [...], ...triage fields }   one item or many (bulk status changes)
@@ -20,6 +22,18 @@ export async function GET(request: NextRequest) {
   if (u instanceof NextResponse || !(await isPlatformAdmin(u.supabase))) return notFound();
   const sp = request.nextUrl.searchParams;
   try {
+    // 0.8 feedback deploy gate: the inbox's first load records this build and promotes its fixed items.
+    await recordBuildOnce();
+    if (sp.get("gaps") === "1") {
+      const { data, error } = await u.supabase.from("feedback_deploy_gaps").select("*").order("number").limit(1000);
+      if (error) {
+        if (feedbackMissing(error)) return NextResponse.json({ missing: true, rows: [] });
+        throw error;
+      }
+      // The live build the gaps are read against, so the inbox can say "0" rather than nothing.
+      const { data: live } = await u.supabase.from("app_builds").select("commit, last_seen_at").order("last_seen_at", { ascending: false }).limit(1).maybeSingle();
+      return NextResponse.json({ rows: data ?? [], live: live ?? null });
+    }
     if (sp.get("coverage") === "1") {
       const { data, error } = await u.supabase.from("feedback_coverage").select("*").order("dashboard_id").limit(5000);
       if (error) {
@@ -32,6 +46,9 @@ export async function GET(request: NextRequest) {
     const number = parseFeedbackNumber(sp.get("number"));
     if (number !== null) query = query.eq("number", number);
     const filters: [string, string][] = [["status", "status"], ["type", "type"], ["priority", "priority"], ["product", "product"], ["dashboard", "dashboard_id"]];
+    // follows_up: the follow-ups of one item (its id).
+    const followsUp = sp.get("followsUp");
+    if (followsUp && /^[0-9a-f-]{36}$/i.test(followsUp)) query = query.eq("follows_up", followsUp);
     for (const [param, col] of filters) {
       const v = LIST(sp.get(param));
       if (v.length) query = query.in(col, v);

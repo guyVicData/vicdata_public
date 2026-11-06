@@ -1672,6 +1672,48 @@ const RUNNERS: Record<string, Runner> = {
     const want = own.at(-1)!.age - own[0].age + 1;
     return { pass: rows.length >= s.rivals.length && rows.slice(0, s.rivals.length).every((n) => n === want), detail: fmt({ cards: rows.length, rows: Array.from(new Set(rows)).join("/"), want }) };
   },
+  // 0.8 feedback deploy gate (F-23, F-26): Pipelines' local shape at 16+ is ages 11-15 in the age-15 set; 11+ as round 1.
+  async admLocalShape16() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const v = await import("../src/lib/admissions/views-api");
+    const { ShapeAndSize } = await import("../src/components/admissions/views/ShapeAndSize");
+    const at = async (entry: string) => {
+      const ep = v.entryPoint(entry)!;
+      const [s, p] = await Promise.all([v.shapeView("110110", ep, []), v.pipelineView("110110", ep, [])]);
+      if ("empty" in p) throw new Error(`no pipeline at ${entry}`);
+      const html = renderToStaticMarkup(createElement(ShapeAndSize, { s, entryAge: ep.age, showLocal: true, fullscreen: false, columns: 2 }));
+      const local = html.slice(html.indexOf("data-local-shape"), html.indexOf("data-mini-rows"));
+      const barAges = Array.from(local.matchAll(/title="Age (\d+):/g)).map((m) => Number(m[1]));
+      const cardRows = Array.from(html.matchAll(/data-mini-rows="(\d+)"/g)).map((m) => Number(m[1]));
+      return { s, p, html, barAges, cardRows };
+    };
+    const a = await at("16+");
+    const set15 = a.p.sets.find((x) => x.age === 15)!.urns.filter((u) => u !== "110110");
+    const profAges = a.s.localProfile.filter((r) => r.female + r.male > 0).map((r) => r.age);
+    const ok16 =
+      JSON.stringify(a.s.localShape.ages) === "[11,15]" &&
+      a.s.localShape.kind === "secondaries" &&
+      a.s.feeders.age === 15 &&
+      JSON.stringify(a.s.feeders.schools.map((f) => f.urn)) === JSON.stringify(set15) &&
+      a.s.localShape.schools === set15.length &&
+      profAges.length > 0 && profAges.every((x) => x >= 11 && x <= 15) &&
+      JSON.stringify([...a.barAges].sort((x, y) => x - y)) === "[11,12,13,14,15]" &&
+      a.cardRows.length === set15.length && a.cardRows.every((n) => n === 5) &&
+      a.html.includes(`All pupils aged 11&ndash;15 in the ${set15.length} nearest secondaries (schools teaching 11 to 15), together.`.replace("&ndash;", "–"));
+    // 11+: round 1's -- the 15 nearest primaries (the youngest rung), ages 4 to 10, cards over 4 to 10.
+    const b = await at("11+");
+    const set4 = b.p.sets.find((x) => x.age === 4)!.urns;
+    const ok11 =
+      b.s.localShape.ages === null &&
+      b.s.localShape.kind === "primaries" &&
+      b.s.feeders.age === 10 &&
+      b.s.localShape.schools === new Set(set4).size &&
+      JSON.stringify([...b.barAges].sort((x, y) => x - y)) === "[4,5,6,7,8,9,10]" &&
+      b.cardRows.every((n) => n === 7) &&
+      b.html.includes(`All pupils aged 4–10 in your ${b.s.localShape.schools} feeder schools, together.`);
+    return { pass: ok16 && ok11, detail: fmt({ "16+ ages": a.barAges.length ? `${Math.min(...a.barAges)}-${Math.max(...a.barAges)}` : "none", "16+ schools": a.s.localShape.schools, "16+ cards": `${a.cardRows.length}x${Array.from(new Set(a.cardRows)).join("/")}`, "11+ ages": b.barAges.length ? `${Math.min(...b.barAges)}-${Math.max(...b.barAges)}` : "none", "11+ schools": b.s.localShape.schools, "11+ cards": `${b.cardRows.length}x${Array.from(new Set(b.cardRows)).join("/")}`, ok16, ok11 }) };
+  },
   async admMomentumScope() {
     const html = await admRenderAll("110110", "11+");
     return { pass: html.includes("Schools submitting GCSE results only"), detail: "11+ momentum" };
@@ -2964,6 +3006,71 @@ const RUNNERS: Record<string, Runner> = {
     const tokens = Object.values(FEATURED_ROW_TOKEN).every((t) => (css.match(new RegExp(`${t}:\\s*#[0-9a-f]{6}`, "g")) ?? []).length === 3);
     const pass = tinted && roots && tokens;
     return { pass, detail: fmt({ featuredRows: rows.length, school: name, schools: m.entryAge.rows.filter((r) => r.period === m.summary.latest).length, roots, tokensLightAndDark: tokens }) };
+  },
+  // ------------------------------------------------------------------ 0.8 feedback deploy gate
+  // R-FEEDBACK-STATUSES, -PROMOTE, -DEPLOY-GAPS, -LIVE-CHECK: the database's half in PGlite (never a real
+  // database), the app's half in the unit test; each rule names its own lines.
+  async feedbackDeployGate(_L, rule) {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, args: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const pg = run("node", ["supabase/tests/v08_feedback_deploy_gate_pglite.mjs"]);
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/feedback-deploy-gate.test.ts"]);
+    const lines = pg.out.split("\n").filter((l) => l.startsWith("PASS") || l.startsWith("FAIL"));
+    const mine = lines.filter((l) => l.includes(rule.id));
+    const total = /(\d+) PASS, (\d+) FAIL/.exec(pg.out);
+    const pass = pg.ok && unit.ok && !lines.some((l) => l.startsWith("FAIL"));
+    return { pass, detail: fmt({ pglite: total ? `${total[1]} pass, ${total[2]} fail` : "did not run", thisRule: mine.length ? `${mine.length} named checks` : "checked within the suite", unit: unit.ok ? "pass" : "FAIL" }) };
+  },
+  async republishGuard() {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    let ok = true;
+    let out = "";
+    try {
+      out = execFileSync("npx", ["-y", "tsx", "--test", "--test-force-exit", "--test-name-pattern", "R-REPUBLISH-GUARD", "src/lib/feedback-deploy-gate.test.ts"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    } catch (e) {
+      ok = false;
+      out = String((e as { stdout?: string }).stdout ?? "");
+    }
+    const passed = /ℹ pass (\d+)/.exec(out)?.[1] ?? "0";
+    return { pass: ok && Number(passed) >= 2, detail: fmt({ tests: passed, mocked: "/api/version" }) };
+  },
+  // R-REPORT-COMMANDS-ORDER: every report first committed on or after the template (6 Nov), and any not yet
+  // committed -- the next one -- gives Guy's commands in the template's order.
+  async reportCommandsOrder() {
+    const { execFileSync } = await import("node:child_process");
+    const { readFileSync } = await import("node:fs");
+    const { checkCommands } = await import("./report-template");
+    const root = new URL("..", import.meta.url).pathname;
+    const git = (...a: string[]) => execFileSync("git", a, { cwd: root, encoding: "utf8" });
+    const isReport = (f: string) => /^docs\/.*report.*\.md$/i.test(f) && !/screenshots|archive/.test(f);
+    const since = git("log", "--since=2026-11-06T00:00:00Z", "--diff-filter=A", "--name-only", "--format=").split("\n").filter(isReport);
+    const untracked = git("ls-files", "--others", "--exclude-standard", "docs").split("\n").filter(isReport);
+    const files = Array.from(new Set([...since, ...untracked]));
+    const bad = files.map((f) => ({ f, p: checkCommands(readFileSync(`${root}${f}`, "utf8")) })).filter((x) => x.p.length);
+    return { pass: bad.length === 0, detail: fmt({ reports: files.length ? files.join(", ") : "none since the template yet", problems: bad.length ? bad.map((b) => `${b.f}: ${b.p.join("; ")}`).join(" | ") : "none" }) };
+  },
+  // R-FEATURED-ROW-EVERYWHERE (F-22): every table or rank view of schools marks and tints the focus row;
+  // a row of schools without the mark must be listed with why (src/lib/featured-row-scan.ts).
+  async featuredRowEverywhere() {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { featuredRowFindings, NO_FOCUS_ROWS } = await import("../src/lib/featured-row-scan");
+    const { FEATURED_ROW_TOKEN } = await import("../src/components/shell/accent");
+    const src = path.join(ROOT, "src");
+    const files = (readdirSync(src, { recursive: true }) as string[]).filter((f) => f.endsWith(".tsx") && !f.includes("__")).map((f) => ({ file: `src/${f}`, text: readFileSync(path.join(src, f), "utf8") }));
+    const { unmarkedTables, unlisted, rows } = featuredRowFindings(files);
+    const stale = NO_FOCUS_ROWS.filter((x) => !rows.some((r) => r.file === x.file && r.listed === x.why));
+    const css = readFileSync(path.join(src, "app/globals.css"), "utf8");
+    const tokens = Object.values(FEATURED_ROW_TOKEN).every((t) => (css.match(new RegExp(`${t}:\\s*#[0-9a-f]{6}`, "g")) ?? []).length === 3);
+    const pass = !unmarkedTables.length && !unlisted.length && !stale.length && tokens;
+    return { pass, detail: fmt({ marked: rows.filter((r) => r.marked).length, listed: rows.filter((r) => r.listed).length, unmarkedTables: unmarkedTables.join(", ") || "none", unlisted: unlisted.map((r) => `${r.file}:${r.line}`).join(", ") || "none", stale: stale.length, tokens: Object.keys(FEATURED_ROW_TOKEN).length, tokensLightAndDark: tokens }) };
   },
 };
 

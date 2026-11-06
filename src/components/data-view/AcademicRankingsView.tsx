@@ -44,6 +44,7 @@ import type { AcademicRegionNationRankMetric } from "@/lib/academic-region-natio
 import { academicYearLabel } from "./TrendPill";
 import TrendBaseNote from "./TrendBaseNote";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
+import { featuredRow } from "@/components/shell/accent";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
@@ -375,13 +376,10 @@ function LargeSetRanking({
   const row = (r: { urn: string; name: string; value: number; rank: number }) => (
     <tr
       key={r.urn}
-      className={
-        r.urn === targetUrn
-          ? "border-t border-neutral-100 bg-red-50 dark:border-neutral-800 dark:bg-red-950/30"
-          : "border-t border-neutral-100 dark:border-neutral-800"
-      }
+      {...featuredRow(r.urn === targetUrn)}
+      className="border-t border-neutral-100 dark:border-neutral-800"
     >
-      <td className="w-10 py-1.5 text-neutral-500">#{r.rank}</td>
+      <td className={`w-10 py-1.5 ${r.urn === targetUrn ? "text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>#{r.rank}</td>
       <td className="py-1.5">
         {r.name}
         {r.urn === targetUrn && " (this school)"}
@@ -453,8 +451,8 @@ function RankTable({
           <table className="w-full text-sm">
             <tbody>
               {chunk.rows.map((r) => (
-                <tr key={r.urn} className={r.isTarget ? "border-t border-neutral-100 bg-red-50 font-medium dark:border-neutral-800 dark:bg-red-950/40" : "border-t border-neutral-100 dark:border-neutral-800"}>
-                  <td className={`w-10 py-1.5 text-neutral-500 ${r.isTarget ? "border-l-4 border-l-red-500 pl-1.5" : ""}`}>#{r.rank}</td>
+                <tr key={r.urn} {...featuredRow(r.isTarget)} className={r.isTarget ? "border-t border-neutral-100 font-medium dark:border-neutral-800" : "border-t border-neutral-100 dark:border-neutral-800"}>
+                  <td className={`w-10 py-1.5 ${r.isTarget ? "border-l-4 border-l-red-500 pl-1.5 text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>#{r.rank}</td>
                   <td className="py-1.5">
                     {r.name}
                     {r.isTarget && " (this school)"}
@@ -519,8 +517,8 @@ function ComparisonOverTimeTable({
                   const series = ranksByUrn.get(r.urn) ?? [];
                   const avg = avgRankFor(r.urn);
                   return (
-                    <tr key={r.urn} className={r.urn === targetUrn ? "border-t border-neutral-100 bg-red-50 font-medium dark:border-neutral-800 dark:bg-red-950/40" : "border-t border-neutral-100 dark:border-neutral-800"}>
-                      <td className={`w-10 py-1.5 text-neutral-500 ${r.urn === targetUrn ? "border-l-4 border-l-red-500 pl-1.5" : ""}`}>#{r.rank}</td>
+                    <tr key={r.urn} {...featuredRow(r.urn === targetUrn)} className={r.urn === targetUrn ? "border-t border-neutral-100 font-medium dark:border-neutral-800" : "border-t border-neutral-100 dark:border-neutral-800"}>
+                      <td className={`w-10 py-1.5 ${r.urn === targetUrn ? "border-l-4 border-l-red-500 pl-1.5 text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>#{r.rank}</td>
                       <td className="py-1.5">
                         {r.name}
                         {r.urn === targetUrn && " (this school)"}

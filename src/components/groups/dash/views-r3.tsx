@@ -12,6 +12,7 @@ import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
 import { reasonWords } from "@/lib/groups/dash";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
+import { featuredRow } from "@/components/shell/accent";
 
 const unitOf = (m: string): Unit => (MEASURE_UNIT[m] === "pct" ? "pct" : MEASURE_UNIT[m] === "va" ? "va" : "points");
 const f = (v: number | null | undefined, m: string) => fmt(v ?? null, unitOf(m), m.startsWith("ks5_aps") ? "aps_per_entry" : undefined);
@@ -84,7 +85,7 @@ export function SchoolsRanked({ a, highlight, fullscreen }: { a: GroupAcademic; 
       </div>
       <div className="flex min-h-0 flex-col overflow-y-auto text-[12.5px]">
         {rows.map((x) => (
-          <div key={x.urn} className={`grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_56px_170px] items-center gap-2 border-b border-[var(--panel-border)] py-1 ${x.urn === highlight ? "bg-[var(--adm-tint)]" : ""}`}>
+          <div key={x.urn} {...featuredRow(x.urn === highlight)} className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_56px_170px] items-center gap-2 border-b border-[var(--panel-border)] py-1">
             <span className="truncate">
               {x.name}
               {x.likely && <span className="ml-1 rounded-[5px] bg-[var(--group-likely-bg)] px-[6px] text-[10px] font-bold text-[var(--group-likely-fg)]">likely</span>}
@@ -153,7 +154,7 @@ export function SubjectAreasAcross({ a }: { a: GroupAcademic }) {
 
 // ------------------------------------------------------------------------------ Value added
 
-export function ValueAddedPanel({ a, fullscreen }: { a: GroupAcademic; fullscreen: boolean }) {
+export function ValueAddedPanel({ a, fullscreen, highlight = null }: { a: GroupAcademic; fullscreen: boolean; highlight?: string | null }) {
   const al = a.va.alevel;
   const p8 = a.va.p8;
   const show = (rows: typeof al.rows) => (fullscreen ? rows : rows.slice(0, 8));
@@ -168,7 +169,7 @@ export function ValueAddedPanel({ a, fullscreen }: { a: GroupAcademic; fullscree
         <table className="mt-1 w-full border-collapse text-[12px]">
           <tbody>
             {show(al.rows).map((r) => (
-              <tr key={r.urn} className="border-b border-[var(--panel-border)] last:border-0">
+              <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
                 <Td>{r.name}</Td>
                 <Td className={`text-right ${dirClass(r.value, 0.05)}`}>{r.value !== null ? fmt(r.value, "va") : <span className="text-[var(--muted2)]">{r.note}</span>}</Td>
               </tr>
@@ -185,7 +186,7 @@ export function ValueAddedPanel({ a, fullscreen }: { a: GroupAcademic; fullscree
           <table className="mt-1 w-full border-collapse text-[12px]">
             <tbody>
               {show(p8.rows).map((r) => (
-                <tr key={r.urn} className="border-b border-[var(--panel-border)] last:border-0">
+                <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
                   <Td>{r.name}</Td>
                   <Td className={`text-right ${dirClass(r.value, 0.05)}`}>{r.value !== null ? fmt(r.value, "va") : <span className="text-[var(--muted2)]">{r.note}</span>}</Td>
                 </tr>
@@ -324,7 +325,7 @@ export function EntryCohorts({ p, highlight, fullscreen, room }: { p: GroupPupil
   );
 }
 
-export function LeavingAt16({ p, fullscreen }: { p: GroupPupils; fullscreen: boolean }) {
+export function LeavingAt16({ p, fullscreen, highlight = null }: { p: GroupPupils; fullscreen: boolean; highlight?: string | null }) {
   const rows = fullscreen ? p.leaving : p.leaving.slice(0, 10);
   if (!rows.length) return <Empty>No school in the group has a sixth form with both years.</Empty>;
   return (
@@ -343,7 +344,7 @@ export function LeavingAt16({ p, fullscreen }: { p: GroupPupils; fullscreen: boo
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.urn} className="border-b border-[var(--panel-border)] last:border-0">
+            <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
               <Td>{r.name}</Td>
               <Td>{fmt(r.y11, "pupils")}</Td>
               <Td>{fmt(r.y12, "pupils")}</Td>
@@ -357,7 +358,7 @@ export function LeavingAt16({ p, fullscreen }: { p: GroupPupils; fullscreen: boo
   );
 }
 
-export function MarketShare({ p, fullscreen }: { p: GroupPupils; fullscreen: boolean }) {
+export function MarketShare({ p, fullscreen, highlight = null }: { p: GroupPupils; fullscreen: boolean; highlight?: string | null }) {
   const rows = fullscreen ? p.market.rows : p.market.rows.slice(0, 10);
   if (!rows.length) return <Empty>No school with an LA total to measure.</Empty>;
   const max = Math.max(1, ...rows.map((r) => r.pct ?? 0));
@@ -366,7 +367,7 @@ export function MarketShare({ p, fullscreen }: { p: GroupPupils; fullscreen: boo
       <div className="text-[13px] font-bold text-[var(--fg)]">Each school&rsquo;s share of its own area</div>
       <div className="flex flex-col gap-1 text-[12.5px]">
         {rows.map((r) => (
-          <div key={r.urn} className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_52px] items-center gap-2" title={`${r.pupils.toLocaleString("en-GB")} of ${r.laPupils?.toLocaleString("en-GB") ?? "—"} ${PHASE_NOUN[r.phase][0]} pupils in ${r.la ?? "its LA"}`}>
+          <div key={r.urn} {...featuredRow(r.urn === highlight)} className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_52px] items-center gap-2" title={`${r.pupils.toLocaleString("en-GB")} of ${r.laPupils?.toLocaleString("en-GB") ?? "—"} ${PHASE_NOUN[r.phase][0]} pupils in ${r.la ?? "its LA"}`}>
             <span className="truncate">{r.name}</span>
             <span className="h-[9px] rounded-[3px] bg-[var(--box-bg)]">
               <span className="block h-full rounded-[3px] bg-[var(--accent)]" style={{ width: `${(100 * (r.pct ?? 0)) / max}%` }} />
@@ -382,7 +383,7 @@ export function MarketShare({ p, fullscreen }: { p: GroupPupils; fullscreen: boo
 
 export type ProjectionRow = { urn: string; name: string; km: number; from: "saved" | "default"; ages: string; now: number | null; end: number | null; endYear: number | null; latestYear: number | null; pct: number | null };
 
-export function ProjectionPerSchool({ rows, fullscreen }: { rows: ProjectionRow[] | null; fullscreen: boolean }) {
+export function ProjectionPerSchool({ rows, fullscreen, highlight = null }: { rows: ProjectionRow[] | null; fullscreen: boolean; highlight?: string | null }) {
   if (!rows) return <Empty>Reading each school&rsquo;s area…</Empty>;
   if (!rows.length) return <Empty>No located schools in England to project around.</Empty>;
   const shown = fullscreen ? rows : rows.slice(0, 8);
@@ -400,7 +401,7 @@ export function ProjectionPerSchool({ rows, fullscreen }: { rows: ProjectionRow[
         </thead>
         <tbody>
           {shown.map((r) => (
-            <tr key={r.urn} className="border-b border-[var(--panel-border)] last:border-0">
+            <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
               <Td className="max-w-[160px] truncate">{r.name}</Td>
               <Td className="text-[var(--muted2)]">{r.km} km{r.from === "saved" ? " (saved)" : ""}, ages {r.ages}</Td>
               <Td>{fmt(r.now, "pupils")}</Td>

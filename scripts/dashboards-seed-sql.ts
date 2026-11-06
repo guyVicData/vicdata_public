@@ -24,12 +24,32 @@
 //
 // `--legacy-v1` prints the v1 seed exactly as 0.6 S3 shipped it (insert-if-missing, version
 // 1, specs stripped), for the PGlite re-seed test only.
+//
+// 0.8 feedback deploy gate (R-REPUBLISH-GUARD): it refuses to print anything unless the live site's
+// /api/version commit holds this checkout's HEAD -- a republish onto code that can't draw it is what left
+// round 1's new views reading "This view isn't drawn here yet". The live address is --live <url> or
+// VICDATA_LIVE_URL (no default). `--force` skips the check and says why that's unsafe; the PGlite tests,
+// which never touch a real database, pass it.
+//
+//   npx -y tsx scripts/dashboards-seed-sql.ts --live https://<the live site> --only <slug>,...
 import { DASHBOARDS } from "../src/catalogue/dashboards";
 import { isAdmissionsDashboard } from "../src/catalogue/dashboards/admissions";
 import { isSmtDashboard } from "../src/catalogue/dashboards/smt";
 import { seedRoles } from "../src/catalogue/dashboards/seed-plan";
 import type { DashboardConfig } from "../src/catalogue/types";
+import { FORCE_WARNING, liveHoldsHead, liveUrlFrom } from "./live-guard";
 
+async function main() {
+if (process.argv.includes("--force")) {
+  console.error(FORCE_WARNING);
+} else {
+  const guard = await liveHoldsHead(liveUrlFrom(process.argv, process.env));
+  if (!guard.ok) {
+    console.error(`Refused: ${guard.reason}`);
+    process.exit(3);
+  }
+  console.error(`Live build ${guard.live.slice(0, 12)} holds HEAD ${guard.head.slice(0, 12)}: republishing.`);
+}
 const legacy = process.argv.includes("--legacy-v1");
 const onlyArg = process.argv.indexOf("--only");
 const only = onlyArg >= 0 ? new Set((process.argv[onlyArg + 1] ?? "").split(",").filter(Boolean)) : null;
@@ -100,3 +120,9 @@ for (const d of chosen) {
 }
 out.push("commit;");
 console.log(out.join("\n"));
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

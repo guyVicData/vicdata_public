@@ -2,6 +2,7 @@ import { isPageKey } from "@/lib/view-ref";
 import { NextRequest, NextResponse } from "next/server";
 import { userFrom } from "@/lib/groups/server";
 import { appVersion, feedbackAllowed, feedbackMissing, feedbackRow } from "@/lib/feedback-server";
+import { recordBuildOnce } from "@/lib/app-build-server";
 
 // VicData 0.8 notes and feedback (decision 4): the author's side. GET: may this person give feedback
 // (the audience setting, read by the database), and their own items, for the icons' colours and the
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
   const built = feedbackRow(await request.json().catch(() => null), appVersion());
   if ("error" in built) return NextResponse.json({ error: built.error }, { status: 400 });
   try {
+    // 0.8 feedback deploy gate: this build is recorded (and its fixed items promoted to deployed) before the
+    // first item is taken, so a "Looks good" here can close what this build deployed. Once per process.
+    await recordBuildOnce();
     const { data, error } = await u.supabase.from("feedback_items").insert({ ...built.row, author_id: u.userId }).select("id, number, created_at, status").single();
     if (error) {
       if (feedbackMissing(error)) return NextResponse.json({ error: "Feedback needs the database update (20261117100000_v08_feedback)." }, { status: 503 });

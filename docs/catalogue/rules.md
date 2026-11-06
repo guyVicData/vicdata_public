@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 175 rules: 169 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -120,6 +120,7 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | R-ADM-MAP-SELF | active | The map of feeders marks the school itself: a solid Admissions-blue dot, drawn last, sized by its entry cohort now on the feeders' own scale, with a key. | no | auto: admMapSelf | — |
 | R-ADM-FEEDER-SHAPES | active | Pipelines' Shape and size draws the local shape, then the shapes and sizes of the current feeder set's schools (the set a year below entry, the school left out), in the set's own order; the school's own shape and its rivals' are Market share's. | no | auto: admFeederShapes | — |
 | R-ADM-SHAPE-ROWS | active | Each small multiple in Shape and size has a row per age over the featured profile's ages (an age the school doesn't teach is an empty row), so the rows line up with the featured school's. | no | auto: admShapeRows | — |
+| R-LOCAL-SHAPE-16 | active | At a 16+ intake, Pipelines' local shape and its feeder cards cover ages 11 to 15: the local shape sums ages 11 to 15 in the current feeder set a year below entry (the nearest secondaries unless a list is saved, the school left out), the same schools the cards show, and each card has a row per age 11 to 15. Below 16+ they are as round 1 drew them. | no | auto: admLocalShape16 | — |
 | R-ADM-MOMENTUM-SCOPE | active | Rivals' momentum says under its title which schools it can place: schools submitting GCSE results only (11+), A-level results (16+), published KS2 results (4+). | no | auto: admMomentumScope | — |
 | R-ADM-EDITOR-LOOKS-KEEP-NOTES | active | An Admissions view's look options and compare chips change how it draws, never what it must say: under every look and compare an editor can choose (src/catalogue/admissions-editor.ts), each view still renders every R-ADM wording from ADMISSIONS_NOTES that its preset renders (a pool, not an intake; a share of this group; the estimates; the requirement; the flags' rules; the undercount), and its rule-held styling and thresholds don't move. Options left at their defaults draw exactly the preset. A day school's view never draws a boarding feeder set, whatever its spec asks. | no | auto: admEditorLooks | — |
 | R-DOUBLE-AWARD-POINTS | active | A GCSE Double Award (grades published as pairs, "98" ... "11") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say "different grading scale, not ranked". | no | auto: doubleAwardPoints | — |
@@ -175,6 +176,13 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | R-MARKET-FOLLOWS-SET | active | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). | no | auto: marketFollowsSet | — |
 | R-FEEDBACK-PAGE | active | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. | no | auto: feedbackPage | — |
 | R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
+| R-FEEDBACK-STATUSES | active | A feedback item's statuses are new, triaged, planned, fixed (merged to main, with resolved_commit), deployed (the live build holds resolved_commit -- set by the server only, stamped deployed_at and deployed_build) and done (checked on the live site), or won't do. Fixed and deployed are still open: the author's icon stays yellow until done. Nobody sets deployed by hand; fixed needs its commit. | no | auto: feedbackDeployGate | — |
+| R-FEEDBACK-PROMOTE | active | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time. | no | auto: feedbackDeployGate | — |
+| R-FEEDBACK-DEPLOY-GAPS | active | feedback_deploy_gaps lists the items that claim more than the live build (the newest app_builds row) has: deployed or done at a commit the live build doesn't hold, and fixed items older than 48 hours not yet deployed. The inbox shows the count as a banner. | no | auto: feedbackDeployGate | — |
+| R-FEEDBACK-LIVE-CHECK | active | A deployed item becomes done when a platform admin gives "Looks good" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's "Checked live". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked. | no | auto: feedbackDeployGate | — |
+| R-REPUBLISH-GUARD | active | The republish (scripts/dashboards-seed-sql.ts) prints nothing and exits non-zero unless the live site's /api/version commit holds the local HEAD. The live address is --live or VICDATA_LIVE_URL, with no default. --force skips the check and says why that is unsafe. The reports' "set fixed" step (scripts/feedback-set-fixed.sh) checks the project ref and that the commit is on GitHub's main, and only ever sets fixed. | no | auto: republishGuard | — |
+| R-REPORT-COMMANDS-ORDER | active | Every round's report gives "Guy's commands" as the template's seven numbered steps, in order: 1 migrations, 2 merge and push, 3 Render deploy, 4 wait until /api/version shows the merge, 5 republish, 6 set fixed, 7 live check (docs/FEEDBACK.md). A step the round doesn't need stays, saying so. | no | auto: reportCommandsOrder | — |
+| R-FEATURED-ROW-EVERYWHERE | active | Every table or rank view with school rows tints the focus school's row (on a group's views, the school picked, when one is) with its product's featured-row token and marks it data-featured-row (featuredRow() does both): Teacher at every phase (KS2's token is neutral), SMT, Admissions, the groups, the Data View (its own red token, on :root: Rankings, the large-set rankings, the deep dive) and a saved set's rank table, in custom dashboards and meeting slides as on their own pages. A row of schools anywhere in src without the mark is listed with why it has no focus row (a picker, a list that leaves the school out, a bar chart); anything else fails the scan. Every token reads at 11:1 for text in both themes and about 6.3:1 for muted text on the light tint. | no | auto: featuredRowEverywhere | — |
 
 ## Cards
 
@@ -1970,6 +1978,22 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | Open issue | — |
 | Fixed | — |
 
+### R-LOCAL-SHAPE-16
+
+| Field | Content |
+| --- | --- |
+| Statement | At a 16+ intake, Pipelines' local shape and its feeder cards cover ages 11 to 15: the local shape sums ages 11 to 15 in the current feeder set a year below entry (the nearest secondaries unless a list is saved, the school left out), the same schools the cards show, and each card has a row per age 11 to 15. Below 16+ they are as round 1 drew them. |
+| Why | Guy, 6 Nov 2026 (F-23, refined by F-26): at 16+ the local shape and the feeder schools need to show ages 11-15. |
+| Applies to | DV-ADM-P-SHAPE |
+| Enforced in | - src/lib/admissions/views-api.ts:shapeView (localShape.ages, LOCAL_SECONDARY_AGES)<br>- src/components/admissions/views/ShapeAndSize.tsx:ShapeAndSize |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks5: At 16+ the local shape and every feeder card are ages 11 to 15, over the age-15 set without the school; at 11+ ages 4 to 10 over the 15 nearest primaries, as round 1. [runner: admLocalShape16] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
 ### R-ADM-MOMENTUM-SCOPE
 
 | Field | Content |
@@ -2845,6 +2869,118 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | Tagged at | - src/lib/featured-row.test.ts |
 | Test case | Leighton Park, Admissions Market share, Rivals table at 11+ (and the unit test) (110110), ks4: Exactly one tinted row, Leighton Park's, drawn with the token; each product's root names its own token; all five tokens set in the light and both dark blocks. [runner: tableFeaturedRow] |
 | Origin | 0.8 Admissions feedback round 1, F-17 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEEDBACK-STATUSES
+
+| Field | Content |
+| --- | --- |
+| Statement | A feedback item's statuses are new, triaged, planned, fixed (merged to main, with resolved_commit), deployed (the live build holds resolved_commit -- set by the server only, stamped deployed_at and deployed_build) and done (checked on the live site), or won't do. Fixed and deployed are still open: the author's icon stays yellow until done. Nobody sets deployed by hand; fixed needs its commit. |
+| Why | Round 1 of the Admissions feedback marked F-12 to F-21 done on merge, while the live site still ran 19 Oct's build: done said more than the live site showed. |
+| Applies to | the feedback system: feedback_items, the inbox, the feedback icon |
+| Enforced in | - supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql<br>- src/lib/view-ref.ts:FEEDBACK_STATUSES<br>- src/lib/feedback-server.ts:triagePatch<br>- src/components/admin/FeedbackInbox.tsx<br>- supabase/tests/v08_feedback_deploy_gate_pglite.mjs<br>- src/lib/feedback-deploy-gate.test.ts |
+| Tagged at | - src/lib/feedback-deploy-gate.test.ts |
+| Test case | F-12 to F-21 (PGlite and unit tests) (110110), ks4: fixed -> deployed -> done in PGlite; open (yellow) until done; the backfill moves F-12 to F-21 to fixed once and a second run changes nothing; the patch refuses deployed and a fixed with no commit. [runner: feedbackDeployGate] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEEDBACK-PROMOTE
+
+| Field | Content |
+| --- | --- |
+| Statement | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time. |
+| Why | Deployed has to be a fact read from the running build, not a step someone remembers. |
+| Applies to | the feedback system, every build |
+| Enforced in | - scripts/write-build-info.mjs<br>- src/lib/build-info.ts<br>- src/lib/app-build-server.ts<br>- src/app/api/version/route.ts<br>- src/proxy.ts<br>- supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:record_app_build |
+| Tagged at | - src/lib/feedback-deploy-gate.test.ts |
+| Test case | F-12 to F-21 (PGlite and unit tests) (110110), ks4: A build whose commits hold 6bddb6d moves F-12 to F-21 to deployed (9, F-15 being done); a build without it leaves them fixed; the same build again moves none; no client can record a build. [runner: feedbackDeployGate] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEEDBACK-DEPLOY-GAPS
+
+| Field | Content |
+| --- | --- |
+| Statement | feedback_deploy_gaps lists the items that claim more than the live build (the newest app_builds row) has: deployed or done at a commit the live build doesn't hold, and fixed items older than 48 hours not yet deployed. The inbox shows the count as a banner. |
+| Why | On 6 Nov it would have listed F-12 to F-21 a week earlier. |
+| Applies to | the feedback inbox; Claude's reads (docs/FEEDBACK.md) |
+| Enforced in | - supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_deploy_gaps<br>- src/app/api/platform/feedback/route.ts<br>- src/components/admin/FeedbackInbox.tsx |
+| Tagged at | — |
+| Test case | the 6 Nov case (PGlite) (110110), ks4: Done at 6bddb6d with the live build 030d546: F-12 to F-21 listed; once the live build holds 6bddb6d, none. [runner: feedbackDeployGate] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEEDBACK-LIVE-CHECK
+
+| Field | Content |
+| --- | --- |
+| Statement | A deployed item becomes done when a platform admin gives "Looks good" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's "Checked live". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked. |
+| Why | Done means someone has seen the fix on the live site. |
+| Applies to | the feedback system |
+| Enforced in | - supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_items_live_check<br>- src/components/admin/FeedbackInbox.tsx |
+| Tagged at | — |
+| Test case | Leighton Park (PGlite) (110110), ks4: Same view and school after deployed_at: done; before it, another school, a member's, or a text item: still deployed. [runner: feedbackDeployGate] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-REPUBLISH-GUARD
+
+| Field | Content |
+| --- | --- |
+| Statement | The republish (scripts/dashboards-seed-sql.ts) prints nothing and exits non-zero unless the live site's /api/version commit holds the local HEAD. The live address is --live or VICDATA_LIVE_URL, with no default. --force skips the check and says why that is unsafe. The reports' "set fixed" step (scripts/feedback-set-fixed.sh) checks the project ref and that the commit is on GitHub's main, and only ever sets fixed. |
+| Why | Round 1's republish went live on the old code, whose rails then read "This view isn't drawn here yet". |
+| Applies to | Guy's commands: the republish and the closing step |
+| Enforced in | - scripts/live-guard.ts<br>- scripts/dashboards-seed-sql.ts<br>- scripts/feedback-set-fixed.sh<br>- src/lib/feedback-deploy-gate.test.ts |
+| Tagged at | - src/lib/feedback-deploy-gate.test.ts |
+| Test case | a mocked /api/version (unit test) (110110), ks4: Live at HEAD's parent, or naming no commit, or no address: non-zero and no SQL; live at HEAD: the SQL; --force: the SQL and the warning. [runner: republishGuard] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-REPORT-COMMANDS-ORDER
+
+| Field | Content |
+| --- | --- |
+| Statement | Every round's report gives "Guy's commands" as the template's seven numbered steps, in order: 1 migrations, 2 merge and push, 3 Render deploy, 4 wait until /api/version shows the merge, 5 republish, 6 set fixed, 7 live check (docs/FEEDBACK.md). A step the round doesn't need stays, saying so. |
+| Why | Round 1 listed the deploy, but nothing put it before the republish and the closing. |
+| Applies to | every report from the feedback deploy gate on (and any not yet committed) |
+| Enforced in | - scripts/report-template.ts<br>- docs/FEEDBACK.md<br>- scripts/catalogue-rule-tests.ts:reportCommandsOrder |
+| Tagged at | - src/lib/feedback-deploy-gate.test.ts |
+| Test case | docs/**/*report*.md since 6 Nov (110110), ks4: Each report first committed on or after 2026-11-06, and each not yet committed, passes checkCommands. [runner: reportCommandsOrder] |
+| Origin | 0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEATURED-ROW-EVERYWHERE
+
+| Field | Content |
+| --- | --- |
+| Statement | Every table or rank view with school rows tints the focus school's row (on a group's views, the school picked, when one is) with its product's featured-row token and marks it data-featured-row (featuredRow() does both): Teacher at every phase (KS2's token is neutral), SMT, Admissions, the groups, the Data View (its own red token, on :root: Rankings, the large-set rankings, the deep dive) and a saved set's rank table, in custom dashboards and meeting slides as on their own pages. A row of schools anywhere in src without the mark is listed with why it has no focus row (a picker, a list that leaves the school out, a bar chart); anything else fails the scan. Every token reads at 11:1 for text in both themes and about 6.3:1 for muted text on the light tint. |
+| Why | Guy (F-22): "ALL table / rank views the focus school should be highlit." F-17 covered some products only and the rest read as done. |
+| Applies to | every table and rank view of schools, every product |
+| Enforced in | - src/lib/featured-row-scan.ts<br>- src/components/shell/accent.ts:featuredRow<br>- src/app/globals.css<br>- src/lib/featured-row.test.ts |
+| Tagged at | - src/components/shell/accent.ts<br>- src/lib/featured-row-scan.ts<br>- src/lib/featured-row.test.ts |
+| Test case | the source scan (every .tsx in src) and the tokens (110110), ks4: No focus table without data-featured-row; no row keyed by a school's URN unmarked and unlisted; every listed exception still matches a row; seven tokens, each light and dark. [runner: featuredRowEverywhere] |
+| Origin | 0.8 feedback deploy gate, F-22 (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 6) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

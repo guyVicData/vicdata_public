@@ -11,6 +11,7 @@ import { DivergingBar } from "../views/charts";
 import { overallLine } from "../views/Strengths";
 import { periodLabel as yearLabel, TREND_BASE_PERIOD } from "@/catalogue/years";
 import { arrowed } from "@/lib/signed-delta";
+import { featuredRow } from "@/components/shell/accent";
 
 export const STAGE_WORD = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" } as const;
 
@@ -65,7 +66,7 @@ export function AcademicNumbers({ r }: { r: RivalsView }) {
     <div className="flex min-w-0 grow flex-col gap-[2px] overflow-y-auto">
       <div className="mb-1 text-[12.5px] font-bold text-[var(--fg)]">{r.overall?.measure ?? STAGE_WORD[r.stage]}: the rivals&rsquo; figures</div>
       {rows.map((x) => (
-        <div key={x.urn} className={cx("grid grid-cols-[minmax(0,1fr)_48px_64px] gap-[6px] rounded-[5px] px-1 py-[3px] text-[11.5px]", x.isSchool ? "bg-[var(--adm-tint)] font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")}>
+        <div key={x.urn} {...featuredRow(x.isSchool)} className={cx("grid grid-cols-[minmax(0,1fr)_48px_64px] gap-[6px] rounded-[5px] px-1 py-[3px] text-[11.5px]", x.isSchool ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")}>
           <span className="truncate">{x.name}</span>
           <span className="text-right tabular-nums">{x.results.note === "igcse_not_ranked" ? "IGCSE" : x.results.value === null ? "—" : x.results.value.toFixed(1)}</span>
           <span className="text-right">{x.results.national ? `${ordinal(x.results.national.rank)}` : "—"}</span>

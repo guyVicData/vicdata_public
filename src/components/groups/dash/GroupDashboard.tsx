@@ -647,7 +647,7 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
     case "GRP-O-MAP":
       return c.d.map ? <GroupMap name={c.o.group.name} schools={c.d.map} highlight={hl} fullscreen={fullscreen} room={room} /> : <Empty>The map is on Overview.</Empty>;
     case "GRP-O-JOINED":
-      return <JoinedLeft membership={c.d.membership} />;
+      return <JoinedLeft membership={c.d.membership} highlight={hl} />;
     case "GRP-O-ROLL":
       return <RollTrend o={c.o} fullscreen={fullscreen} room={room} />;
     case "GRP-O-RESULTS":
@@ -675,7 +675,7 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
     case "GRP-A-AREAS":
       return a ? <SubjectAreasAcross a={a} /> : <Skeleton />;
     case "GRP-A-VA":
-      return a ? <ValueAddedPanel a={a} fullscreen={fullscreen} /> : <Skeleton />;
+      return a ? <ValueAddedPanel a={a} fullscreen={fullscreen} highlight={hl} /> : <Skeleton />;
     case "GRP-A-TREND":
       return <ResultsTrend o={c.o} average={c.average} fullscreen={fullscreen} room={room} />;
     case "GRP-A-POST16":
@@ -691,13 +691,13 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
     case "GRP-P-ENTRIES":
       return p ? <EntryCohorts p={p} highlight={hl} fullscreen={fullscreen} room={room} /> : <Skeleton />;
     case "GRP-P-LEAVING":
-      return p ? <LeavingAt16 p={p} fullscreen={fullscreen} /> : <Skeleton />;
+      return p ? <LeavingAt16 p={p} fullscreen={fullscreen} highlight={hl} /> : <Skeleton />;
     case "GRP-P-MARKET":
-      return p ? <MarketShare p={p} fullscreen={fullscreen} /> : <Skeleton />;
+      return p ? <MarketShare p={p} fullscreen={fullscreen} highlight={hl} /> : <Skeleton />;
     case "GRP-P-ROLL":
       return <RollTrend o={c.o} fullscreen={fullscreen} room={room} />;
     case "GRP-P-PROJECTION":
-      return <ProjectionPerSchool rows={c.projection} fullscreen={fullscreen} />;
+      return <ProjectionPerSchool rows={c.projection} fullscreen={fullscreen} highlight={hl} />;
     case "GRP-P-GROWING":
       return p ? <GrowingShrinking p={p} /> : <Skeleton />;
   }
