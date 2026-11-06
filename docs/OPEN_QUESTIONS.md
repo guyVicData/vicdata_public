@@ -2666,3 +2666,16 @@ This is the round for `docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_c
 **The republish**
 27. **Only the two Admissions dashboards.** Live GCSE Results (version 16), Post-16 Results, SMT Overview and SMT Pupils differ from the code copy, which may be editor changes. The full seed would publish over them. A new `--only` option publishes just Pipelines and Market share. Live Market share was still the 12 Oct seed, so republishing it also brings live two titles that 0.8's audit fixes had corrected in code (Change in share, Entry age band roll).
 28. **The live Funnel** draws whatever the code's view returns for `DV-ADM-P-FUNNEL`, so it shows the new waterfall from the deploy, before the republish. The republish adds Local births, girls and boys and the share of Years 7–11 to the rails, and carries the funnel's new title and spec.
+
+## 2026-11-06 — feedback deploy gate
+
+**F-23 (the local shape at a 16+ intake)**
+- **F-23: ages 11–15, not 4–15.** The prompt says 4–15, but the triage note on F-23 and F-26 (6 Nov, written after the prompt) makes them one request. F-26 refines F-23: "needs to show ages 11-15 in the feeder schools and in the feeders area". So at 16+ the local shape and the feeder cards both cover ages 11–15, and primaries aren't counted at 16+.
+- **F-23: the set is the current feeder set at age 15,** the same schools as the feeder cards. That is the 10 nearest state secondaries (`DEFAULT_SECONDARIES`), 11–16 schools first because their pupils must move, with the school itself left out. A saved rung list for age 15, or saved feeder lists, take over as they already do for the cards. **No new count:** a separate "nearest N teaching 11–15" set would put schools in the shape that aren't on the cards beside it.
+- **F-23: the school's own Year 11 is left out.** The age-15 set includes it, but the cards already leave it out. The school's own shape is on Market share.
+- **F-23: only ages 11–15 are counted, not just drawn.** The classifier reads the summed 11–15 profile, so a secondary's sixth form doesn't shape "the area you recruit from". Leighton Park at 16+: Tube, 8,037 pupils aged 11–15 in 10 schools. Below 16+ the count is unchanged (whole profiles), so 11+ stays as round 1 drew it.
+- **F-23: what each intake covers now.**
+  - **11+ (unchanged):** the 15 nearest primaries, drawn over ages 4–10; the cards are the same 15 schools at age 10.
+  - **4+ (unchanged):** the same 15 primaries, but only age 4 is drawn, and the caption reads "aged 4–4". The cards are the 15 primaries at age 4, one row each. Left as it is; the wording "aged 4–4" could read "aged 4" in a later round.
+  - **16+ (new):** the 10 nearest secondaries over ages 11–15; the cards are the same 10 schools at age 15, five rows each.
+  - **Custom ages between 12 and 15 (unchanged):** the local shape is still the primaries, and the cards are the age-below secondaries over the local shape's ages. Not raised; noted only.
