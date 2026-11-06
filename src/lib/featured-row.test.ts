@@ -92,6 +92,8 @@ test("F-22: the Data View's token, light and dark, and its contrast", () => {
   assert.notEqual(light, dark);
   assert.ok(ratio(light!, "#171717") >= 11 && ratio(light!, "#525252") >= 6.3, "Data View light");
   assert.ok(ratio(dark!, "#ededed") >= 11 && ratio(dark!, "#a1a1a1") >= 6.3, "Data View dark");
+  // A meeting slide's Admissions view names Admissions' token (the meeting's root is rose).
+  assert.ok(readFileSync(root + "src/components/meetings/liveSlotRenderer.tsx", "utf8").includes('featuredRowVars("admissions")'), "meeting slides: Admissions' token");
   // The Data View's pages name it.
   for (const f of ["src/components/data-view/DataViewShell.tsx", "src/app/sets/[id]/page.tsx"]) assert.ok(readFileSync(root + f, "utf8").includes('featuredRowVars("dataview")'), f);
 });

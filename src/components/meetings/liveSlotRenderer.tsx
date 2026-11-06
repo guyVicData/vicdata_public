@@ -21,6 +21,7 @@ import { oneViewConfig, oneViewPinned } from "@/components/dashboard-config/embe
 import { SlotRendererContext, type SlotRenderInput, type SlotRenderer } from "./SlotRendererContext";
 import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
 import { SmtViewPreview } from "@/components/smt/SmtDashboard";
+import { featuredRowVars } from "@/components/shell/accent";
 
 const logged = new Set<string>();
 
@@ -68,7 +69,9 @@ export const liveSlotRenderer: SlotRenderer = (input) => {
   // point (the routes check the viewer is allowed into Admissions at that school).
   if (dv.host.id.startsWith("admissions."))
     return (
-      <div data-live-slot={dv.id} className="flex min-h-0 min-w-0 flex-col" style={input.fullscreen ? { flex: "1 1 auto" } : { width: input.width, height: input.height }}>
+      // F-22 (feedback deploy gate): the slide's Admissions tables tint the school's row in Admissions' own
+      // token, not the meeting's rose (the preview names no token of its own).
+      <div data-live-slot={dv.id} className="flex min-h-0 min-w-0 flex-col" style={{ ...featuredRowVars("admissions"), ...(input.fullscreen ? { flex: "1 1 auto" } : { width: input.width, height: input.height }) }}>
         <AdmissionsViewPreview dataview={dv.id} urn={input.pinned.schoolUrn} schoolName={input.pinned.schoolName ?? input.pinned.schoolUrn} entry={String(input.pinned.params?.entry ?? "11+")} height={input.fullscreen ? 640 : input.height} />
       </div>
     );
