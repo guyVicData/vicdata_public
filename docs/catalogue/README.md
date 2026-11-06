@@ -6,7 +6,7 @@ The four-layer catalogue (docs/v0.6/vicdata_0_6_view_catalogue_and_offer_design_
 
 | File | Contents |
 | --- | --- |
-| [rules.md](rules.md) | 175 rules (22 must lift, 21 lifted; 135 with an automated real-data check in `scripts/catalogue-rule-tests.ts`) |
+| [rules.md](rules.md) | 177 rules (22 must lift, 21 lifted; 137 with an automated real-data check in `scripts/catalogue-rule-tests.ts`) |
 | [measures.md](measures.md) | 24 measures |
 | [renderers.md](renderers.md) | 45 renderers |
 | [dataviews.md](dataviews.md) | 114 dataviews (111 live) |
