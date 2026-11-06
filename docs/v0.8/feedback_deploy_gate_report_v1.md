@@ -489,12 +489,12 @@ The catalogue docs (`docs/catalogue/*.md`) are regenerated: 175 rules.
 
 ## Guy's commands, in order
 
-These follow the template (`docs/FEEDBACK.md`, "Guy's commands"). The live site is **`https://vicdata.co.uk`**: its `/api/health` answers past the gate.
+These follow the template (`docs/FEEDBACK.md`, "Guy's commands"). The branch `v0.8-feedback-deploy-gate` is local, not pushed: `~/dev/vicdata_public` shares the repository with this round's worktree, so it is there already. The live site is **`https://vicdata.co.uk`**: its `/api/health` answers past the gate.
 
 **1. Apply the migration** (it writes; the project-ref check comes first). Run it from `~/dev/vicdata_public`:
 
 ```
-cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && git fetch https://github.com/guyVicData/vicdata_public.git v0.8-feedback-deploy-gate && git show FETCH_HEAD:supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql > /tmp/fdg.sql && supabase db query --linked -f /tmp/fdg.sql && supabase migration repair --status applied 20261119090000 --linked && supabase db query --linked "select ref, status, resolved_commit, follows_up_ref from feedback_for_triage where number between 12 and 26 order by number"
+cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && git show v0.8-feedback-deploy-gate:supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql > /tmp/fdg.sql && supabase db query --linked -f /tmp/fdg.sql && supabase migration repair --status applied 20261119090000 --linked && supabase db query --linked "select ref, status, resolved_commit, follows_up_ref from feedback_for_triage where number between 12 and 26 order by number"
 ```
 
 Expect:
@@ -508,7 +508,7 @@ Expect:
 **2. Merge and push** (the push starts the Render deploy). From `~/dev/vicdata_public` on a clean `main`:
 
 ```
-cd ~/dev/vicdata_public && git checkout main && git pull https://github.com/guyVicData/vicdata_public.git main && git fetch https://github.com/guyVicData/vicdata_public.git v0.8-feedback-deploy-gate && git merge --no-ff FETCH_HEAD -m "0.8 Feedback deploy gate: feedback closes on the live site; F-22 the focus row in every table; F-23 the local shape at 16+" && npm run build && git push https://github.com/guyVicData/vicdata_public.git main
+cd ~/dev/vicdata_public && git checkout main && git pull https://github.com/guyVicData/vicdata_public.git main && git merge --no-ff v0.8-feedback-deploy-gate -m "0.8 Feedback deploy gate: feedback closes on the live site; F-22 the focus row in every table; F-23 the local shape at 16+" && npm run build && git push https://github.com/guyVicData/vicdata_public.git main
 ```
 
 **3. Render deploys main on its own** (auto-deploy, On Commit). If no deploy starts within 5 minutes, deploy by hand. In the build log, read the `[build-info]` lines:
