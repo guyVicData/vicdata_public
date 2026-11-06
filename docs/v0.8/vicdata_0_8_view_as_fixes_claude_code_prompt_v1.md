@@ -18,6 +18,18 @@ d) **Guy is "approved" as Teacher, Admissions and School-Admin at Acland Burghle
   3. **`resolveViewAs` clears the cookie on any falsy `confirmPlatformAdmin`,** including a transient error. One slow RPC then silently drops View as. A failed check must never clear it: only a definite "not an admin" may.
   4. **`/teacher` or the home lens picks a membership before View as resolves.**
   5. For (a): **the button stays disabled or does nothing until a search result is clicked.** Check that the chosen school is actually held in state.
+- **Update from Guy (18 Oct, 09:05):** he did reach SMT at Leighton Park by clicking its **Recently viewed as** link. The **Open their home page** button is what fails. So the start-and-land path can work, which points at the button (suspect 5): the picked school isn't held in state, the button is disabled, or its handler isn't wired.
+  - Still check (b) properly: other recent links (e.g. Admissions at The Chase) did land on Acland Burghley. Find out which links fail, and why.
+- **Update from Guy (18 Oct, 10:49), the most important one:** in View as SMT at Leighton Park, he sees the SMT home ("main dashboard"). But **clicking any SMT dashboard** (Overview, Academic, Pupils, Context) shows "To see a school's SMT dashboards, use View as in your account menu."
+  - So on the SMT dashboard pages, `loadSmtMember()` comes back without a `viewAs`. Either `resolveViewAs` returned null, or the school-account lookup returned "no-school".
+  - The View as round's R-VIEW-AS-ANY-SCHOOL test passed, so it must have been mocked, or run on a path the live pages don't take. **This round's tests must run the real pages in a browser, against the real app database:**
+    - every SMT dashboard;
+    - both Admissions dashboards;
+    - the Teacher phases;
+    - the group dashboards;
+    
+    each reached by clicking through from the home, as Guy does. They must not set the cookie directly.
+  - Check the client-side navigation between dashboards (pinned state, the `resolved` cache) as well as a full page load.
 - `usage_events` got a 201 during those minutes. Check whether View as wrote a usage row; it mustn't.
 - `group_accounts` is **empty**, so the Head office list has nothing in it.
 

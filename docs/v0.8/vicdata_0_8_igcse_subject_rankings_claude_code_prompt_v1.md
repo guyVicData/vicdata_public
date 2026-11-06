@@ -45,6 +45,12 @@ Every GCSE ranking path: Teacher (Column 1, Comparisons, subject rankings, maps,
    - Long set names truncate with the full name in a tooltip, and in the (i).
    - Add a test with the longest real set label.
 
+6. **Three small snags:**
+   - a year table prints "−0.0", and Context's summary can say "X has grown the most (−0.1)" when every subject fell. Say "fell the least" or similar, and never print a negative zero;
+   - Croydon shows two chips with the identical label "Business Studies · BTec, OCR, VRQ". Make chip labels unique, or merge the two;
+   - show `engmath_97_percent` for the current year only, with no trend line or change, because DfE publishes it from 2025/26 only.
+7. **One check:** BTEC and vocational points for 2021/22–2022/23 used to be stored as 0 rather than null, and drawn as 0. Confirm on one affected school that the BTEC historic points fix (7 Oct) cured it. If not, report it; don't fix the data here.
+
 ## Tests and parity
 
 - **R-IGCSE-SUBJECT:**
