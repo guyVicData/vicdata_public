@@ -54,6 +54,8 @@
      root names its own as --row-featured; the default is the accent at 14%, as before. */
   --row-featured-admissions: #d7f7fc; --row-featured-gcse: #daf7ed; --row-featured-post16: #efeafe;
   --row-featured-smt: #efeafe; --row-featured-groups: #feebdc;
+  /* F-22 (feedback deploy gate): Teacher KS2 has no accent, so its token is neutral. */
+  --row-featured-ks2: #eeeef0;
 }
 @media (prefers-color-scheme: dark) {
   #teacher-root:not([data-theme="light"]), body > [data-feedback-window] {
@@ -63,6 +65,7 @@
     --note-on: #7aa7ff; --fb-open: #f5c542; --fb-good: #4ade80;
     --row-featured-admissions: #163940; --row-featured-gcse: #1a392f; --row-featured-post16: #312b43;
     --row-featured-smt: #312b43; --row-featured-groups: #412c1d;
+    --row-featured-ks2: #2a2a2e;
   }
 }
 #teacher-root[data-theme="dark"] {
@@ -72,7 +75,18 @@
   --note-on: #7aa7ff; --fb-open: #f5c542; --fb-good: #4ade80;
   --row-featured-admissions: #163940; --row-featured-gcse: #1a392f; --row-featured-post16: #312b43;
   --row-featured-smt: #312b43; --row-featured-groups: #412c1d;
+  --row-featured-ks2: #2a2a2e;
 }
+
+/* F-22 (feedback deploy gate): the Data View's featured row. Its pages (the Data View, a saved set) are
+   outside #teacher-root and follow the system theme, so the token is on :root, light and dark: the red
+   it already drew (red-50, and red-950 at 40% over the dark page), now one token. Text on it: 16:1
+   light and dark; its muted text (neutral-600 / neutral-400 on the row) 7:1. */
+:root { --row-featured-dataview: #fef2f2; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --row-featured-dataview: #220a0a; }
+}
+:root[data-theme="dark"] { --row-featured-dataview: #220a0a; }
 
 /* 0.8 notes and feedback: while the feedback window is docked (right on a desktop, a bottom sheet on a
    phone) the page and a panel's full screen give it its room, so it never covers the view. The

@@ -31,6 +31,7 @@ import Sparkline from "./Sparkline";
 import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
+import { featuredRow } from "@/components/shell/accent";
 
 type Metric = { key: string; label: string; getValue: (p: DataViewSchoolProfile, filters: DataViewFilterState) => number | null; format: (v: number) => string };
 
@@ -338,7 +339,10 @@ function ChunkHeading({ label }: { label: string }) {
 // metrics wanting the new strengthened highlight + top-10/neighbours/bottom-3
 // shape above RANK_TABLE_LARGE_THRESHOLD schools (chunkedRankingDisplay). The
 // target row now gets a coloured left border + a deeper background than the
-// original bg-red-50/950-30 tint (direct feedback: "current is too subtle").
+// original tint (red-950 at 30% in dark; direct feedback: "current is too subtle").
+// F-22 (feedback deploy gate): that background is now the Data View's featured-row
+// token (--row-featured-dataview, through featuredRow()), the deeper one, in every
+// Data View rank table, the large-set ones included.
 function RankTable({
   title,
   ranked,
@@ -379,13 +383,10 @@ function RankTable({
               {chunk.rows.map((r) => (
                 <tr
                   key={r.urn}
-                  className={
-                    r.isTarget
-                      ? "border-t border-neutral-100 bg-red-50 font-medium dark:border-neutral-800 dark:bg-red-950/40"
-                      : "border-t border-neutral-100 dark:border-neutral-800"
-                  }
+                  {...featuredRow(r.isTarget)}
+                  className={r.isTarget ? "border-t border-neutral-100 font-medium dark:border-neutral-800" : "border-t border-neutral-100 dark:border-neutral-800"}
                 >
-                  <td className={`w-10 py-1.5 text-neutral-500 ${r.isTarget ? "border-l-4 border-l-red-500 pl-1.5" : ""}`}>#{r.rank}</td>
+                  <td className={`w-10 py-1.5 ${r.isTarget ? "border-l-4 border-l-red-500 pl-1.5 text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>#{r.rank}</td>
                   <td className="py-1.5">
                     {r.name}
                     {r.isTarget && " (this school)"}
@@ -469,13 +470,10 @@ function ComparisonOverTimeTable({
                     return (
                       <tr
                         key={r.urn}
-                        className={
-                          r.isTarget
-                            ? "border-t border-neutral-100 bg-red-50 font-medium dark:border-neutral-800 dark:bg-red-950/40"
-                            : "border-t border-neutral-100 dark:border-neutral-800"
-                        }
+                        {...featuredRow(r.isTarget)}
+                  className={r.isTarget ? "border-t border-neutral-100 font-medium dark:border-neutral-800" : "border-t border-neutral-100 dark:border-neutral-800"}
                       >
-                        <td className={`w-10 py-1.5 text-neutral-500 ${r.isTarget ? "border-l-4 border-l-red-500 pl-1.5" : ""}`}>#{r.rank}</td>
+                        <td className={`w-10 py-1.5 ${r.isTarget ? "border-l-4 border-l-red-500 pl-1.5 text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>#{r.rank}</td>
                         <td className="py-1.5">
                           {r.name}
                           {r.isTarget && " (this school)"}
@@ -541,13 +539,10 @@ function LargeSetMetricRanking({
   const row = (r: { urn: string; name: string; value: number; rank: number }) => (
     <tr
       key={r.urn}
-      className={
-        r.urn === targetUrn
-          ? "border-t border-neutral-100 bg-red-50 dark:border-neutral-800 dark:bg-red-950/30"
-          : "border-t border-neutral-100 dark:border-neutral-800"
-      }
+      {...featuredRow(r.urn === targetUrn)}
+      className="border-t border-neutral-100 dark:border-neutral-800"
     >
-      <td className="w-10 py-1.5 text-neutral-500">#{r.rank}</td>
+      <td className={`w-10 py-1.5 ${r.urn === targetUrn ? "text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>#{r.rank}</td>
       <td className="py-1.5">
         {r.name}
         {r.urn === targetUrn && " (this school)"}
