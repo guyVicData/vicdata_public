@@ -52,9 +52,15 @@ export const groupNoteScope = (groupId: string, viewAs: boolean) => (viewAs ? `g
 
 // ------------------------------------------------------------------------------------ feedback
 
-export type FeedbackStatus = "new" | "triaged" | "planned" | "done" | "wont_do";
-export const FEEDBACK_STATUSES: FeedbackStatus[] = ["new", "triaged", "planned", "done", "wont_do"];
-export const FEEDBACK_STATUS_LABEL: Record<FeedbackStatus, string> = { new: "New", triaged: "Triaged", planned: "Planned", done: "Done", wont_do: "Won't do" };
+// 0.8 feedback deploy gate: fixed (merged, with its commit) -> deployed (the live build holds the commit; set
+// by the server only) -> done (checked on the live site). An item is open, and its icon yellow, until done.
+export type FeedbackStatus = "new" | "triaged" | "planned" | "fixed" | "deployed" | "done" | "wont_do";
+export const FEEDBACK_STATUSES: FeedbackStatus[] = ["new", "triaged", "planned", "fixed", "deployed", "done", "wont_do"];
+export const FEEDBACK_STATUS_LABEL: Record<FeedbackStatus, string> = { new: "New", triaged: "Triaged", planned: "Planned", fixed: "Fixed", deployed: "Deployed", done: "Done", wont_do: "Won't do" };
+/** The statuses a person may set: never "deployed", which is the live build's to set (record_app_build). */
+export const FEEDBACK_SETTABLE_STATUSES: FeedbackStatus[] = FEEDBACK_STATUSES.filter((s) => s !== "deployed");
+/** Still to do: everything but done and won't do (the inbox's default filter). */
+export const FEEDBACK_OPEN_STATUSES: FeedbackStatus[] = ["new", "triaged", "planned", "fixed", "deployed"];
 
 export type FeedbackType = "fix" | "data_question" | "wording" | "design" | "feature_request" | "praise" | "other";
 export const FEEDBACK_TYPES: FeedbackType[] = ["fix", "data_question", "wording", "design", "feature_request", "praise", "other"];

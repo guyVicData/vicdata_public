@@ -6,6 +6,9 @@
 //     and author; each opens to everything it recorded, its Open link (the view as it was), and its
 //     triage (type, priority, status with a planned version / commit / reason, duplicate of, a note).
 //     Ticked items take a bulk status change, or "Copy as Markdown" for the to-do list.
+//     0.8 feedback deploy gate: fixed (with the commit) -> deployed (set by the live build, never here) ->
+//     done ("Checked live"); a banner counts the items that claim more than the live build has
+//     (feedback_deploy_gaps); follow-ups (follows_up) show on their parent and link to it.
 //   * Coverage: for proofing -- every view of every VicData dashboard, and per school or group whether
 //     it has been checked ("Looks good"), has open feedback, or is unseen (feedback_coverage).
 // Reads and writes go through /api/platform/feedback, as the caller (RLS and the triage guard apply).
@@ -21,8 +24,10 @@ import {
   FEEDBACK_AREAS,
   FEEDBACK_IMPORTANCE,
   FEEDBACK_KINDS,
+  FEEDBACK_OPEN_STATUSES,
   FEEDBACK_PRIORITIES,
   FEEDBACK_SCOPE,
+  FEEDBACK_SETTABLE_STATUSES,
   FEEDBACK_STATUSES,
   FEEDBACK_STATUS_LABEL,
   FEEDBACK_TYPES,
@@ -88,7 +93,27 @@ export type TriageRow = {
   duplicate_of: string | null;
   triage_note: string | null;
   is_open: boolean;
+  // 0.8 feedback deploy gate (absent before its migration is applied).
+  deployed_at?: string | null;
+  deployed_build?: string | null;
+  checked_live_at?: string | null;
+  follows_up?: string | null;
+  follows_up_ref?: string | null;
 };
+
+type GapRow = { ref: string; number: number; id: string; status: FeedbackStatus; resolved_commit: string | null; live_build: string; gap: string };
+
+/** The status with what it rests on: planned's version, fixed's commit, deployed's build, done's live check. */
+export function statusText(r: Pick<TriageRow, "status" | "planned_version" | "resolved_commit" | "deployed_build" | "deployed_at" | "checked_live_at">): string {
+  const day = (d: string | null | undefined) => (d ? d.slice(0, 10) : "");
+  const extra =
+    r.status === "planned" ? r.planned_version
+    : r.status === "fixed" ? r.resolved_commit
+    : r.status === "deployed" ? [r.deployed_build ? `in ${r.deployed_build.slice(0, 7)}` : "", day(r.deployed_at)].filter(Boolean).join(", ")
+    : r.status === "done" ? [r.resolved_commit, r.checked_live_at ? `checked live ${day(r.checked_live_at)}` : ""].filter(Boolean).join(", ")
+    : null;
+  return `${FEEDBACK_STATUS_LABEL[r.status]}${extra ? ` (${extra})` : ""}`;
+}
 
 type CoverageRow = { dashboard_id: string; dashboard_name: string | null; panel_id: string | null; view_instance_id: string | null; view_label: string | null; view_key: string; scope_id: string; scope_name: string | null; state: "open" | "looks good" | "none"; last_looks_good_at: string | null; last_open_at: string | null; items: number; open_items: number };
 
@@ -110,7 +135,7 @@ const areasOf = (r: Pick<TriageRow, "area">) => (r.area ?? []).map((a) => labelO
 
 /** One item as Markdown, for the to-do list (docs/FEEDBACK.md). */
 export function itemMarkdown(r: TriageRow, origin = ""): string {
-  const triage = [r.type ? FEEDBACK_TYPE_LABEL[r.type as keyof typeof FEEDBACK_TYPE_LABEL] : null, r.priority, `${FEEDBACK_STATUS_LABEL[r.status]}${r.status === "planned" && r.planned_version ? ` (${r.planned_version})` : ""}${r.status === "done" && r.resolved_commit ? ` (${r.resolved_commit})` : ""}`].filter(Boolean).join(" · ");
+  const triage = [r.type ? FEEDBACK_TYPE_LABEL[r.type as keyof typeof FEEDBACK_TYPE_LABEL] : null, r.priority, statusText(r)].filter(Boolean).join(" · ");
   const hints = [r.kinds.map((k) => labelOf(FEEDBACK_KINDS, k)).join(", "), labelOf(FEEDBACK_IMPORTANCE, r.importance), labelOf(FEEDBACK_SCOPE, r.scope), labelOf(FEEDBACK_APPLIES, r.applies_to), r.where_in_view.length ? `where: ${r.where_in_view.map((w) => labelOf(FEEDBACK_WHERE, w)).join(", ")}` : "", areasOf(r) ? `area: ${areasOf(r)}` : ""].filter(Boolean).join(" · ");
   const state = Object.entries(r.state ?? {}).filter(([, v]) => v !== null && v !== "").map(([k, v]) => `${k}=${String(v)}`).join(", ");
   const href = feedbackOpenHref(r);
@@ -124,6 +149,7 @@ export function itemMarkdown(r: TriageRow, origin = ""): string {
     r.saw || r.expected ? `- **Figure:** I see ${r.saw ?? "?"} · I expected ${r.expected ?? "?"}` : "",
     r.body.trim() ? `- **Text:** ${r.body.trim().replace(/\n+/g, " / ")}` : r.looks_good ? "- **Text:** Looks good" : "",
     r.duplicate_of_ref ? `- **Duplicate of:** ${r.duplicate_of_ref}` : "",
+    r.follows_up_ref ? `- **Follows up:** ${r.follows_up_ref}` : "",
     r.triage_note ? `- **Triage note:** ${r.triage_note}` : "",
     r.wont_do_reason ? `- **Won't do:** ${r.wont_do_reason}` : "",
     href ? `- **Open:** ${origin}${href}` : "",
@@ -160,8 +186,8 @@ export function FeedbackInboxScreen() {
 }
 
 // `kind`: section 6's page items, or view items, or both.
-type Filters = { status: string[]; type: string; priority: string; product: string; dashboard: string; school: string; author: string; hideLooksGood: boolean; q: string; kind: string };
-const NO_FILTERS: Filters = { status: ["new", "triaged", "planned"], type: "", priority: "", product: "", dashboard: "", school: "", author: "", hideLooksGood: false, q: "", kind: "" };
+type Filters = { status: string[]; type: string; priority: string; product: string; dashboard: string; school: string; author: string; hideLooksGood: boolean; q: string; kind: string; gapIds?: string[] };
+const NO_FILTERS: Filters = { status: [...FEEDBACK_OPEN_STATUSES], type: "", priority: "", product: "", dashboard: "", school: "", author: "", hideLooksGood: false, q: "", kind: "" };
 
 function Inbox() {
   const [theme] = useTeacherTheme();
@@ -176,6 +202,7 @@ function Inbox() {
 
   // Read on opening, and again after each triage save (`tick`).
   const [tick, setTick] = useState(0);
+  const [gaps, setGaps] = useState<GapRow[]>([]);
   useEffect(() => {
     let live = true;
     (async () => {
@@ -184,6 +211,9 @@ function Inbox() {
       if (!r.ok) return setError(String(r.json?.error ?? "Could not read the feedback."));
       setMissing(r.json?.missing === true);
       setRows((r.json?.items as TriageRow[]) ?? []);
+      // The deploy gate: items claiming more than the live build has (none before its migration is applied).
+      const g = await api("/api/platform/feedback?gaps=1");
+      if (live) setGaps(g.ok ? ((g.json?.rows as GapRow[]) ?? []) : []);
     })();
     return () => {
       live = false;
@@ -207,6 +237,7 @@ function Inbox() {
     return (rows ?? []).filter(
       (r) =>
         (n !== null ? r.number === n : true) &&
+        (!filters.gapIds || filters.gapIds.includes(r.id)) &&
         (filters.status.length === 0 || filters.status.includes(r.status)) &&
         (!filters.type || r.type === filters.type) &&
         (!filters.priority || r.priority === filters.priority) &&
@@ -243,6 +274,7 @@ function Inbox() {
   };
 
   const [bulk, setBulk] = useState<{ status: FeedbackStatus; planned: string; reason: string; commit: string }>({ status: "triaged", planned: "", reason: "", commit: "" });
+  const deployedTicked = tickedRows(picked, rows).filter((r) => r.status === "deployed");
   const sel = Array.from(picked).filter((id) => shown.some((r) => r.id === id));
 
   return (
@@ -266,6 +298,18 @@ function Inbox() {
       {missing && <p className="rounded-md border border-dashed border-[var(--panel-border2)] p-3 text-[12.5px] text-[var(--muted2)]">The feedback tables aren&rsquo;t on this database yet (20261117100000_v08_feedback).</p>}
       {error && <p className="text-[12.5px] text-red-600">{error}</p>}
       {notice && <p role="status" className="text-[12px] font-semibold text-[var(--muted)]">{notice}</p>}
+      {gaps.length > 0 && (
+        <div data-fb-deploy-gaps={gaps.length} role="alert" className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--fb-open)] bg-[var(--box-bg)] p-3 text-[12.5px]">
+          <span className="inline-block h-2 w-2 rounded-full bg-[var(--fb-open)]" />
+          <span className="font-semibold">
+            {gaps.length} item{gaps.length === 1 ? "" : "s"} claim{gaps.length === 1 ? "s" : ""} more than the live build ({gaps[0].live_build.slice(0, 7)}) has:
+          </span>
+          <span>{gaps.map((g) => `${g.ref} (${g.gap})`).join(" · ")}</span>
+          <button type="button" className={btn} onClick={() => setFilters({ ...NO_FILTERS, status: [], gapIds: gaps.map((g) => g.id) })}>
+            Show them
+          </button>
+        </div>
+      )}
       {tab === "coverage" ? (
         <Coverage />
       ) : (
@@ -311,14 +355,14 @@ function Inbox() {
             <span className="mx-1 h-4 w-px bg-[var(--panel-border2)]" />
             <span className={label}>Set ticked to</span>
             <select value={bulk.status} onChange={(e) => setBulk({ ...bulk, status: e.target.value as FeedbackStatus })} className={field} aria-label="Bulk status">
-              {FEEDBACK_STATUSES.map((s) => (
+              {FEEDBACK_SETTABLE_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {FEEDBACK_STATUS_LABEL[s]}
                 </option>
               ))}
             </select>
             {bulk.status === "planned" && <input value={bulk.planned} onChange={(e) => setBulk({ ...bulk, planned: e.target.value })} placeholder="version, e.g. 0.85" className={field} aria-label="Planned version" />}
-            {bulk.status === "done" && <input value={bulk.commit} onChange={(e) => setBulk({ ...bulk, commit: e.target.value })} placeholder="commit" className={field} aria-label="Resolved commit" />}
+            {(bulk.status === "fixed" || bulk.status === "done") && <input value={bulk.commit} onChange={(e) => setBulk({ ...bulk, commit: e.target.value })} placeholder={bulk.status === "fixed" ? "commit (required)" : "commit"} className={field} aria-label="Resolved commit" />}
             {bulk.status === "wont_do" && <input value={bulk.reason} onChange={(e) => setBulk({ ...bulk, reason: e.target.value })} placeholder="reason" className={field} aria-label="Won't do reason" />}
             <button
               type="button"
@@ -327,12 +371,25 @@ function Inbox() {
               onClick={async () => {
                 const body: Record<string, unknown> = { status: bulk.status };
                 if (bulk.status === "planned") body.planned_version = bulk.planned;
-                if (bulk.status === "done" && bulk.commit) body.resolved_commit = bulk.commit;
+                if ((bulk.status === "fixed" || bulk.status === "done") && bulk.commit) body.resolved_commit = bulk.commit.trim();
                 if (bulk.status === "wont_do") body.wont_do_reason = bulk.reason;
                 if (await patch(sel, body)) setPicked(new Set());
               }}
             >
               Apply
+            </button>
+            <span className="mx-1 h-4 w-px bg-[var(--panel-border2)]" />
+            <button
+              type="button"
+              className={btn}
+              data-fb-checked-live=""
+              disabled={!deployedTicked.length}
+              title="Done: checked on the live site (the date is stamped). For deployed items only."
+              onClick={async () => {
+                if (await patch(deployedTicked.map((r) => r.id), { status: "done" })) setPicked(new Set());
+              }}
+            >
+              Checked live{deployedTicked.length ? ` (${deployedTicked.length})` : ""}
             </button>
           </section>
           <div className="overflow-x-auto rounded-[10px] border border-[var(--panel-border)] bg-[var(--panel-bg)]">
@@ -369,6 +426,8 @@ function Inbox() {
     </main>
   );
 }
+
+const tickedRows = (picked: Set<string>, rows: TriageRow[] | null) => (rows ?? []).filter((r) => picked.has(r.id));
 
 function Select({ label: l, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: [string, string][] }) {
   return (
@@ -414,7 +473,8 @@ function ItemRow({ r, picked, onPick, open, onOpen, rows, onPatch }: { r: Triage
           <div className="text-[11px] text-[var(--muted2)]">{r.kinds.map((k) => labelOf(FEEDBACK_KINDS, k)).join(", ")}</div>
         </td>
         <td className="whitespace-nowrap p-2">
-          <div className="font-semibold">{FEEDBACK_STATUS_LABEL[r.status]}{r.status === "planned" && r.planned_version ? ` · ${r.planned_version}` : ""}</div>
+          <div className="font-semibold" data-fb-status={r.status}>{statusText(r)}</div>
+          {r.follows_up_ref && <div className="text-[11px] text-[var(--muted2)]">follows up {r.follows_up_ref}</div>}
           <div className="text-[11px] text-[var(--muted2)]">{[r.type ? FEEDBACK_TYPE_LABEL[r.type as keyof typeof FEEDBACK_TYPE_LABEL] : null, r.priority].filter(Boolean).join(" · ")}</div>
         </td>
       </tr>
@@ -441,7 +501,10 @@ function Detail({ k, children }: { k: string; children: ReactNode }) {
 }
 
 function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onPatch: (b: Record<string, unknown>) => Promise<boolean> }) {
-  const [t, setT] = useState({ type: r.type ?? "", priority: r.priority ?? "", status: r.status, planned_version: r.planned_version ?? "", resolved_commit: r.resolved_commit ?? "", wont_do_reason: r.wont_do_reason ?? "", duplicate: r.duplicate_of_ref ?? "", triage_note: r.triage_note ?? "" });
+  const [t, setT] = useState({ type: r.type ?? "", priority: r.priority ?? "", status: r.status, planned_version: r.planned_version ?? "", resolved_commit: r.resolved_commit ?? "", wont_do_reason: r.wont_do_reason ?? "", duplicate: r.duplicate_of_ref ?? "", follows: r.follows_up_ref ?? "", triage_note: r.triage_note ?? "" });
+  const fol = parseFeedbackNumber(t.follows);
+  const folRow = fol !== null ? rows.find((x) => x.number === fol) : null;
+  const followUps = rows.filter((x) => x.follows_up === r.id);
   const href = feedbackOpenHref(r);
   const dup = parseFeedbackNumber(t.duplicate);
   const dupRow = dup !== null ? rows.find((x) => x.number === dup) : null;
@@ -461,6 +524,9 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
         <Detail k="State">{Object.entries(r.state ?? {}).filter(([, v]) => v !== null && v !== "").map(([k, v]) => `${k}: ${String(v)}`).join(" · ")}</Detail>
         <Detail k="Page">{`${r.page_path ?? ""}${r.page_query ? `?${r.page_query}` : ""}`}</Detail>
         <Detail k="Device">{`${r.device ?? ""} ${r.viewport_width ?? ""}px · ${r.theme ?? ""} · app ${r.app_version ?? ""}`}</Detail>
+        <Detail k="Status">{statusText(r)}</Detail>
+        <Detail k="Follows up">{r.follows_up_ref ?? null}</Detail>
+        <Detail k="Follow-ups">{followUps.length ? followUps.map((x) => `${x.ref} (${FEEDBACK_STATUS_LABEL[x.status]})`).join(" · ") : null}</Detail>
         {href && (
           <a href={href} target="_blank" rel="noreferrer" data-fb-open-link="" className="mt-1 self-start rounded-lg bg-[var(--fg)] px-3 py-1.5 text-[12px] font-semibold text-[var(--panel-bg)]">
             Open the view as it was
@@ -474,11 +540,13 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
           await onPatch({
             type: t.type || null,
             priority: t.priority || null,
-            status: t.status,
+            // Only a change of status is sent: "deployed" is the live build's, so re-saving a deployed item keeps it.
+            ...(t.status !== r.status ? { status: t.status } : {}),
             planned_version: t.planned_version || null,
             resolved_commit: t.resolved_commit || null,
             wont_do_reason: t.wont_do_reason || null,
             duplicate_of: dupRow?.id ?? null,
+            follows_up: folRow?.id ?? null,
             triage_note: t.triage_note || null,
           });
         }}
@@ -509,8 +577,8 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
           <label className="flex flex-col gap-1">
             <span className={label}>Status</span>
             <select value={t.status} onChange={(e) => setT({ ...t, status: e.target.value as FeedbackStatus })} className={field}>
-              {FEEDBACK_STATUSES.map((x) => (
-                <option key={x} value={x}>
+              {FEEDBACK_STATUSES.filter((x) => x !== "deployed" || r.status === "deployed").map((x) => (
+                <option key={x} value={x} disabled={x === "deployed"}>
                   {FEEDBACK_STATUS_LABEL[x]}
                 </option>
               ))}
@@ -522,9 +590,9 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
               <input value={t.planned_version} onChange={(e) => setT({ ...t, planned_version: e.target.value })} placeholder="0.85" className={field} />
             </label>
           )}
-          {t.status === "done" && (
+          {(t.status === "fixed" || t.status === "done") && (
             <label className="flex flex-col gap-1">
-              <span className={label}>Commit</span>
+              <span className={label}>{t.status === "fixed" ? "Commit (merged to main)" : "Commit"}</span>
               <input value={t.resolved_commit} onChange={(e) => setT({ ...t, resolved_commit: e.target.value })} placeholder="abc1234" className={field} />
             </label>
           )}
@@ -532,8 +600,14 @@ function ItemDetail({ r, rows, onPatch }: { r: TriageRow; rows: TriageRow[]; onP
             <span className={label}>Duplicate of</span>
             <input value={t.duplicate} onChange={(e) => setT({ ...t, duplicate: e.target.value })} placeholder="F-3" className={`${field} w-20`} />
           </label>
+          <label className="flex flex-col gap-1">
+            <span className={label}>Follows up</span>
+            <input value={t.follows} onChange={(e) => setT({ ...t, follows: e.target.value })} placeholder="F-17" className={`${field} w-20`} />
+          </label>
         </div>
         {t.duplicate && !dupRow && <p className="text-[11.5px] text-red-600">No item {t.duplicate} here.</p>}
+        {t.follows && !folRow && <p className="text-[11.5px] text-red-600">No item {t.follows} here.</p>}
+        {t.status === "fixed" && <p className="text-[11.5px] text-[var(--muted2)]">It moves to Deployed by itself once the live build holds this commit, and to Done once checked live.</p>}
         {t.status === "wont_do" && (
           <label className="flex flex-col gap-1">
             <span className={label}>Why not</span>

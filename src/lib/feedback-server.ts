@@ -109,6 +109,8 @@ export function triagePatch(input: unknown): { patch: Record<string, unknown> } 
   if ("status" in b) {
     const s = pick(b.status, FEEDBACK_STATUSES);
     if (!s) return { error: "Unknown status." };
+    // 0.8 feedback deploy gate: "deployed" is a fact about the live build, set by the server (record_app_build).
+    if (s === "deployed") return { error: "Deployed is set by the live build, not by hand: set Fixed with the commit." };
     patch.status = s;
   }
   set("planned_version", b.planned_version === null ? null : str(b.planned_version, 20));
@@ -120,6 +122,10 @@ export function triagePatch(input: unknown): { patch: Record<string, unknown> } 
     patch.resolved_at = d && !Number.isNaN(d.getTime()) ? d.toISOString() : null;
   }
   if ("duplicate_of" in b) patch.duplicate_of = typeof b.duplicate_of === "string" && /^[0-9a-f-]{36}$/i.test(b.duplicate_of) ? b.duplicate_of : null;
+  // The scope rule: a follow-up names the item whose triage didn't cover it.
+  if ("follows_up" in b) patch.follows_up = typeof b.follows_up === "string" && /^[0-9a-f-]{36}$/i.test(b.follows_up) ? b.follows_up : null;
+  if (patch.status === "fixed" && !patch.resolved_commit) return { error: "Fixed needs the commit that fixed it (merged to main)." };
+  if (typeof patch.resolved_commit === "string" && !/^[0-9a-f]{7,64}$/i.test(patch.resolved_commit)) return { error: "The commit should be a git sha, 7 characters or more." };
   if (patch.status === "planned" && "planned_version" in patch && !patch.planned_version) return { error: "Planned needs a version, e.g. 0.85." };
   if (patch.status === "wont_do" && "wont_do_reason" in patch && !patch.wont_do_reason) return { error: "Won't do needs a reason." };
   if (!Object.keys(patch).length) return { error: "Nothing to change." };
