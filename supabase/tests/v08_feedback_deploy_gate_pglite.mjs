@@ -243,6 +243,7 @@ const priv = (await q(`select
   (select reloptions::text from pg_class where relname = 'feedback_for_triage') topt`)).rows[0];
 check("record_app_build: security definer, fixed search_path, execute for service_role only (not anon, not authenticated)", priv.def === true && /search_path=public/.test(priv.cfg) && !priv.fa && !priv.fu && priv.fs, JSON.stringify(priv));
 check("feedback_items_live_check: fixed search_path, no execute for anon or authenticated", /search_path=public/.test(priv.lcfg) && !priv.la && !priv.lu, JSON.stringify(priv));
+check("every function the migration creates or replaces has a fixed search_path (the advisor's search-path check)", (await q(`select bool_and(proconfig::text like '%search_path=public%') ok, string_agg(proname, ',') filter (where proconfig is null) missing from pg_proc where proname in ('feedback_items_triage_columns', 'feedback_items_on_insert', 'feedback_items_on_update', 'build_has_commit', 'record_app_build', 'feedback_items_live_check')`)).rows[0].ok === true);
 check("app_builds: RLS on, no anon read, no client insert, update or delete", priv.rls === true && !priv.ta && !priv.ti && !priv.tu && !priv.td, JSON.stringify(priv));
 check("feedback_deploy_gaps and feedback_for_triage: security_invoker, no anon read", /security_invoker=true/.test(priv.gopt) && /security_invoker=true/.test(priv.topt) && !priv.ga, JSON.stringify(priv));
 

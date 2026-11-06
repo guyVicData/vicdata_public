@@ -39,6 +39,7 @@ create or replace function public.feedback_items_triage_columns()
 returns text[]
 language sql
 immutable
+set search_path = public
 as $$ select array['type', 'priority', 'status', 'planned_version', 'resolved_commit', 'resolved_at', 'wont_do_reason', 'duplicate_of', 'triage_note', 'triaged_by', 'triaged_at', 'updated_at',
                    'deployed_at', 'deployed_build', 'checked_live_at', 'follows_up'] $$;
 
@@ -128,6 +129,7 @@ create or replace function public.build_has_commit(p_commit text, p_build_commit
 returns boolean
 language sql
 immutable
+set search_path = public
 as $$
   select length(coalesce(p_commit, '')) >= 7 and (
     p_build_commit like p_commit || '%' or p_commit like p_build_commit || '%'
