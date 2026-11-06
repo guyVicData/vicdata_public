@@ -200,12 +200,58 @@ check("a page item's Looks good closes the page's deployed item", await (async (
 })());
 check("coverage still counts a Looks good as checked", (await as(GUY, () => q(`select state from public.feedback_coverage where view_key = 'vicdata.admissions.pipelines:p16:v16' and scope_id = '137625'`))).rows[0].state === "looks good");
 
+// ---------------------------------------------------------------------------- permissions (the advisor's checks)
+console.log("\n-- permissions");
+const asAnon = async (fn) => {
+  await ex(`set role anon;`);
+  try {
+    return await fn();
+  } finally {
+    await ex(`reset role;`);
+  }
+};
+check("anon can't call record_app_build", (await refused(() => asAnon(() => q(`select public.record_app_build('${C_6BD}', null, null)`)))) === true);
+check("an authenticated non-admin caller of record_app_build is refused", (await refused(() => as(MEMBER, () => q(`select public.record_app_build('${C_6BD}', null, null)`)))) === true);
+check("an authenticated admin client can't set 'deployed' directly", (await refused(() => as(GUY, () => q(`update public.feedback_items set status = 'deployed' where number = 26`)))) === true);
+check("an admin client can't set 'deployed' even with the server's flag set", (await refused(() => as(GUY, () => ex(`select set_config('vicdata.feedback_auto', 'on', false); update public.feedback_items set status = 'deployed' where number = 26;`)))) === true);
+await ex(`select set_config('vicdata.feedback_auto', '', false)`);
+// A non-admin's update reaches no row (RLS: feedback_items_update_admin), and the trigger would refuse it anyway.
+const memberFixed = await as(MEMBER, () => q(`update public.feedback_items set status = 'fixed', resolved_commit = 'abc1234' where number = 26`));
+const memberDeployed = await as(MEMBER, () => q(`update public.feedback_items set status = 'deployed' where number = 26`));
+check("a non-admin client can't set 'fixed' or 'deployed' (RLS: no row reached; the item unchanged)", memberFixed.affectedRows === 0 && memberDeployed.affectedRows === 0 && (await status(26)).status === "triaged", JSON.stringify([memberFixed.affectedRows, memberDeployed.affectedRows, (await status(26)).status]));
+check("the server role can: record_app_build moves a fixed item to deployed", await (async () => {
+  await ex(`update public.feedback_items set status = 'fixed', resolved_commit = 'abcdef123456' where number = 26`);
+  const n = (await asService(() => q(`select public.record_app_build('999999999999', $1, null) n`, [["999999999999", "abcdef123456"]]))).rows[0].n;
+  return n === 1 && (await status(26)).status === "deployed";
+})());
+const priv = (await q(`select
+  has_function_privilege('anon', 'public.record_app_build(text, text[], timestamptz)', 'execute') fa,
+  has_function_privilege('authenticated', 'public.record_app_build(text, text[], timestamptz)', 'execute') fu,
+  has_function_privilege('service_role', 'public.record_app_build(text, text[], timestamptz)', 'execute') fs,
+  has_function_privilege('anon', 'public.feedback_items_live_check()', 'execute') la,
+  has_function_privilege('authenticated', 'public.feedback_items_live_check()', 'execute') lu,
+  (select prosecdef from pg_proc where proname = 'record_app_build') def,
+  (select proconfig::text from pg_proc where proname = 'record_app_build') cfg,
+  (select proconfig::text from pg_proc where proname = 'feedback_items_live_check') lcfg,
+  has_table_privilege('anon', 'public.app_builds', 'select') ta,
+  has_table_privilege('authenticated', 'public.app_builds', 'insert') ti,
+  has_table_privilege('authenticated', 'public.app_builds', 'update') tu,
+  has_table_privilege('authenticated', 'public.app_builds', 'delete') td,
+  (select relrowsecurity from pg_class where relname = 'app_builds') rls,
+  has_table_privilege('anon', 'public.feedback_deploy_gaps', 'select') ga,
+  (select reloptions::text from pg_class where relname = 'feedback_deploy_gaps') gopt,
+  (select reloptions::text from pg_class where relname = 'feedback_for_triage') topt`)).rows[0];
+check("record_app_build: security definer, fixed search_path, execute for service_role only (not anon, not authenticated)", priv.def === true && /search_path=public/.test(priv.cfg) && !priv.fa && !priv.fu && priv.fs, JSON.stringify(priv));
+check("feedback_items_live_check: fixed search_path, no execute for anon or authenticated", /search_path=public/.test(priv.lcfg) && !priv.la && !priv.lu, JSON.stringify(priv));
+check("app_builds: RLS on, no anon read, no client insert, update or delete", priv.rls === true && !priv.ta && !priv.ti && !priv.tu && !priv.td, JSON.stringify(priv));
+check("feedback_deploy_gaps and feedback_for_triage: security_invoker, no anon read", /security_invoker=true/.test(priv.gopt) && /security_invoker=true/.test(priv.topt) && !priv.ga, JSON.stringify(priv));
+
 // ---------------------------------------------------------------------------- the rest
 console.log("\n-- the rest");
 check("an unknown status is still refused", (await refused(() => as(GUY, () => q(`update public.feedback_items set status = 'shipped' where number = 22`)))) === true);
 check("an item can't follow itself up", (await refused(() => as(GUY, () => q(`update public.feedback_items set follows_up = id where number = 22`)))) === true);
 check("an author still can't change what was recorded", (await refused(() => as(GUY, () => q(`update public.feedback_items set body = 'x' where number = 22`)))) === true);
-check("a member still can't triage", (await refused(() => as(MEMBER, () => q(`update public.feedback_items set status = 'fixed' where number = 26`)))) === true || (await status(26)).status === "triaged");
+check("a member still can't triage (no row reached)", (await as(MEMBER, () => q(`update public.feedback_items set status = 'triaged' where number = 26`))).affectedRows === 0 && (await status(26)).status === "deployed");
 check("a new item starts with the deploy fields empty", await (async () => {
   const r = (await as(GUY, () => q(`insert into public.feedback_items (product, school_urn, dashboard_id, panel_id, view_key, body, deployed_at, deployed_build, follows_up) values ('smt', '110110', 'd', 'p', 'd:p:v', 'x', now(), 'zzz', null) returning deployed_at, deployed_build`))).rows[0];
   return r.deployed_at === null && r.deployed_build === null;

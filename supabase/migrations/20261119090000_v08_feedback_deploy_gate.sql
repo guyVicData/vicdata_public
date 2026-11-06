@@ -80,8 +80,10 @@ begin
   if (to_jsonb(new) - v_fixed) is distinct from (to_jsonb(old) - v_fixed) then
     raise exception 'feedback: an item can''t be changed once sent; only its triage fields' using errcode = '42501';
   end if;
-  -- Only the server marks an item deployed: it is a fact about the live build, not a choice.
-  if new.status = 'deployed' and old.status <> 'deployed' and not v_auto then
+  -- Only the server marks an item deployed: it is a fact about the live build, not a choice. Held by the role,
+  -- not only the flag: a client's update runs as anon or authenticated (this function isn't security definer),
+  -- while record_app_build runs as its owner, so no client can reach 'deployed' even if it set the flag.
+  if new.status = 'deployed' and old.status <> 'deployed' and (not v_auto or current_user in ('anon', 'authenticated')) then
     raise exception 'feedback: "deployed" is set by the live build (record_app_build), not by hand' using errcode = '42501';
   end if;
   new.updated_at := now();
@@ -132,6 +134,9 @@ as $$
     or exists (select 1 from unnest(coalesce(p_commits, '{}'::text[])) c where c like p_commit || '%' or p_commit like c || '%')
   );
 $$;
+
+revoke execute on function public.build_has_commit(text, text, text[]) from public, anon;
+grant execute on function public.build_has_commit(text, text, text[]) to authenticated, service_role;
 
 -- The server records the build it runs as (once per process, src/lib/app-build-server.ts) and promotes
 -- every fixed item whose commit that build holds to deployed. Idempotent; returns how many moved.
