@@ -52,6 +52,7 @@ import PdfExportButton from "./PdfExportButton";
 import DataViewErrorBoundary from "./DataViewErrorBoundary";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
 import AcademicDataView from "./AcademicDataView";
+import { featuredRowVars } from "@/components/shell/accent";
 
 type TargetSchool = {
   urn: string;
@@ -1492,7 +1493,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // `flex-1` here (a flex item of `body`) fixes that without touching the root
   // layout or adding any height on top of it.
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col">
+    // F-22 (feedback deploy gate): the Data View's rank tables tint the school's row with its own token.
+    <div className="flex min-h-0 w-full flex-1 flex-col" style={featuredRowVars("dataview")}>
       {/* 0.8 SMT feedback round 2 (section 6): feedback on the Data View as a whole. */}
       <PageSurface surface={schoolSurface({ product: "dataview", dashboard: { id: "dataview", name: "Data View" }, urn: target.urn, name: target.name, role: "member", state: { topic: String(activeTopic) } })} />
       <TopicTabs

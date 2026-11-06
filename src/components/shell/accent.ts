@@ -29,20 +29,25 @@ export function accentVars(accent: Accent | null | undefined, featured: Featured
 // 0.8 Admissions feedback round 1 (F-17): the featured school's row in every table is tinted in its
 // product's own colour -- one token per product, light and dark, in globals.css (#teacher-root). A
 // product's root names its token as --row-featured (featuredRowVars); every table reads
-// FEATURED_ROW_BG. Teacher by phase: GCSE and Post-16 (KS2 has no accent and takes the neutral
-// default). SMT's token is Post-16's violet, as the role and phase accents already share it.
-export type FeaturedRowKey = "admissions" | "gcse" | "post16" | "smt" | "groups";
+// FEATURED_ROW_BG. Teacher by phase: GCSE, Post-16 and KS2. SMT's token is Post-16's violet, as the
+// role and phase accents already share it.
+// 0.8 feedback deploy gate (F-22): every table and rank view with school rows tints the focus school's
+// row. KS2 (no accent) has a neutral token; the Data View (its own pages, outside #teacher-root, on the
+// system theme) has its red, set on :root in globals.css.
+export type FeaturedRowKey = "admissions" | "gcse" | "post16" | "ks2" | "smt" | "groups" | "dataview";
 export const FEATURED_ROW_TOKEN: Record<FeaturedRowKey, string> = {
   admissions: "--row-featured-admissions",
   gcse: "--row-featured-gcse",
   post16: "--row-featured-post16",
+  ks2: "--row-featured-ks2",
   smt: "--row-featured-smt",
   groups: "--row-featured-groups",
+  dataview: "--row-featured-dataview",
 };
 
-/** The product's featured-row token: Teacher by phase (none for KS2). */
+/** The product's featured-row token: Teacher by phase (KS2's neutral one at KS2). */
 export function featuredRowKey(product: ShellProduct, phase?: TeacherPhase): FeaturedRowKey | null {
-  if (product === "teacher") return phase === "ks4" ? "gcse" : phase === "ks5" ? "post16" : null;
+  if (product === "teacher") return phase === "ks4" ? "gcse" : phase === "ks5" ? "post16" : phase === "ks2" ? "ks2" : null;
   return product;
 }
 
@@ -54,6 +59,12 @@ export function featuredRowVars(key: FeaturedRowKey | null): CSSProperties {
 /** A featured row's (or column's) background in any table. Where no product has named a token (KS2,
  * an editor preview outside #teacher-root), the accent at 14%, as Teacher's tables drew it before. */
 export const FEATURED_ROW_BG = "var(--row-featured, rgba(var(--accent-rgb,138,138,144),0.14))";
+
+/** F-22 (R-FEATURED-ROW-EVERYWHERE): the focus school's row in a table or rank view, marked and tinted
+ * with its product's token. Spread it on the row: `<tr {...featuredRow(r.urn === focusUrn)}>`. */
+export function featuredRow(on: boolean): { "data-featured-row"?: ""; style?: CSSProperties } {
+  return on ? { "data-featured-row": "", style: { background: FEATURED_ROW_BG } } : {};
+}
 /** Text in the accent on a featured row: the accent mixed toward --fg (accentText's per-theme share), so
  * it reads on the tint in both themes (the raw #34d399 on the light tint is about 1.5:1). */
 export const FEATURED_ROW_ACCENT_TEXT = "color-mix(in srgb, var(--accent, var(--fg)) var(--accent-text-mix, 65%), var(--fg))";

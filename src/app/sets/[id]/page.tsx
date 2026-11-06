@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import PeerTrendChart, { type PeerSchool } from "@/components/PeerTrendChart";
+import { featuredRow, featuredRowVars } from "@/components/shell/accent";
 
 type PeersResponse = {
   setName: string;
@@ -53,7 +54,8 @@ export default function ComparatorSetViewPage({
   const anchorRank = anchor ? ranked.findIndex((s) => s.urn === anchor.urn) + 1 : null;
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    // F-22 (feedback deploy gate): the set's own school is tinted in the rank table, with the Data View's token.
+    <main className="mx-auto max-w-2xl px-6 py-16" style={featuredRowVars("dataview")}>
       <h1 className="mb-6 text-xl font-semibold">{data.setName}</h1>
 
       <section className="mb-10">
@@ -69,8 +71,8 @@ export default function ComparatorSetViewPage({
         <table className="w-full text-sm">
           <tbody>
             {ranked.map((s, i) => (
-              <tr key={s.urn} className="border-t border-neutral-100 dark:border-neutral-800">
-                <td className="py-1.5 text-neutral-500">{i + 1}</td>
+              <tr key={s.urn} {...featuredRow(!!s.isAnchor)} className="border-t border-neutral-100 dark:border-neutral-800">
+                <td className={`py-1.5 ${s.isAnchor ? "text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>{i + 1}</td>
                 <td className="py-1.5">
                   {s.name}
                   {s.isAnchor && " (this school)"}

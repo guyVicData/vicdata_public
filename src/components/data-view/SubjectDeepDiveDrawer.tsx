@@ -56,6 +56,7 @@ import { bucketFor, KS5_BUCKET_LABEL, type Ks5Bucket } from "@/lib/dfe-qualifica
 // measure rather than kept as a second copy here -- see subject-grades.ts.
 import { gradeOrderFrom } from "@/lib/subject-grades";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
+import { featuredRow } from "@/components/shell/accent";
 
 export type DeepDiveTarget = { familyId: string; familyLabel: string; subject?: string };
 
@@ -522,8 +523,8 @@ export default function SubjectDeepDiveDrawer({
                             const isTarget = schoolUrn === profile.urn;
                             const name = isTarget ? profile.name : (comparableGroup.find((p) => p.urn === schoolUrn)?.name ?? schoolUrn);
                             return (
-                              <tr key={schoolUrn} className={isTarget ? "border-t border-neutral-100 bg-red-50 font-medium dark:border-neutral-800 dark:bg-red-950/40" : "border-t border-neutral-100 dark:border-neutral-800"}>
-                                <td className="w-8 py-1.5 text-neutral-500">#{i + 1}</td>
+                              <tr key={schoolUrn} {...featuredRow(isTarget)} className={isTarget ? "border-t border-neutral-100 font-medium dark:border-neutral-800" : "border-t border-neutral-100 dark:border-neutral-800"}>
+                                <td className={`w-8 py-1.5 ${isTarget ? "text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>#{i + 1}</td>
                                 <td className="py-1.5">
                                   {name}
                                   {isTarget && " (this school)"}

@@ -144,6 +144,7 @@ export function SortTable({
         <div
           key={r.key}
           data-highlight={r.highlight ? "" : undefined}
+          data-featured-row={r.highlight ? "" : undefined}
           className={`flex items-center gap-1.5 border-b border-[var(--panel-border)] px-0.5 py-[7px] last:border-b-0 ${r.highlight ? "rounded-md px-1.5" : ""}`}
           // 0.8 Admissions feedback round 1 (F-17): the product's featured-row tint (was the accent at
           // 14%), with the accent mixed toward the text colour so it reads on it in both themes.

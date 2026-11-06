@@ -3057,6 +3057,21 @@ const RUNNERS: Record<string, Runner> = {
     const bad = files.map((f) => ({ f, p: checkCommands(readFileSync(`${root}${f}`, "utf8")) })).filter((x) => x.p.length);
     return { pass: bad.length === 0, detail: fmt({ reports: files.length ? files.join(", ") : "none since the template yet", problems: bad.length ? bad.map((b) => `${b.f}: ${b.p.join("; ")}`).join(" | ") : "none" }) };
   },
+  // R-FEATURED-ROW-EVERYWHERE (F-22): every table or rank view of schools marks and tints the focus row;
+  // a row of schools without the mark must be listed with why (src/lib/featured-row-scan.ts).
+  async featuredRowEverywhere() {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { featuredRowFindings, NO_FOCUS_ROWS } = await import("../src/lib/featured-row-scan");
+    const { FEATURED_ROW_TOKEN } = await import("../src/components/shell/accent");
+    const src = path.join(ROOT, "src");
+    const files = (readdirSync(src, { recursive: true }) as string[]).filter((f) => f.endsWith(".tsx") && !f.includes("__")).map((f) => ({ file: `src/${f}`, text: readFileSync(path.join(src, f), "utf8") }));
+    const { unmarkedTables, unlisted, rows } = featuredRowFindings(files);
+    const stale = NO_FOCUS_ROWS.filter((x) => !rows.some((r) => r.file === x.file && r.listed === x.why));
+    const css = readFileSync(path.join(src, "app/globals.css"), "utf8");
+    const tokens = Object.values(FEATURED_ROW_TOKEN).every((t) => (css.match(new RegExp(`${t}:\\s*#[0-9a-f]{6}`, "g")) ?? []).length === 3);
+    const pass = !unmarkedTables.length && !unlisted.length && !stale.length && tokens;
+    return { pass, detail: fmt({ marked: rows.filter((r) => r.marked).length, listed: rows.filter((r) => r.listed).length, unmarkedTables: unmarkedTables.join(", ") || "none", unlisted: unlisted.map((r) => `${r.file}:${r.line}`).join(", ") || "none", stale: stale.length, tokens: Object.keys(FEATURED_ROW_TOKEN).length, tokensLightAndDark: tokens }) };
+  },
 };
 
 // --------------------------------------------------------------------------- main
