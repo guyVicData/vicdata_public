@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 168 rules: 162 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -175,6 +175,7 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | R-MARKET-FOLLOWS-SET | active | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). | no | auto: marketFollowsSet | — |
 | R-FEEDBACK-PAGE | active | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. | no | auto: feedbackPage | — |
 | R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
+| R-FEATURED-ROW-EVERYWHERE | active | Every table or rank view with school rows tints the focus school's row (on a group's views, the school picked, when one is) with its product's featured-row token and marks it data-featured-row (featuredRow() does both): Teacher at every phase (KS2's token is neutral), SMT, Admissions, the groups, the Data View (its own red token, on :root: Rankings, the large-set rankings, the deep dive) and a saved set's rank table, in custom dashboards and meeting slides as on their own pages. A row of schools anywhere in src without the mark is listed with why it has no focus row (a picker, a list that leaves the school out, a bar chart); anything else fails the scan. Every token reads at 11:1 for text in both themes and about 6.3:1 for muted text on the light tint. | no | auto: featuredRowEverywhere | — |
 
 ## Cards
 
@@ -2845,6 +2846,22 @@ What a number is allowed to be. 167 rules: 161 active, 6 superseded; 22 must lif
 | Tagged at | - src/lib/featured-row.test.ts |
 | Test case | Leighton Park, Admissions Market share, Rivals table at 11+ (and the unit test) (110110), ks4: Exactly one tinted row, Leighton Park's, drawn with the token; each product's root names its own token; all five tokens set in the light and both dark blocks. [runner: tableFeaturedRow] |
 | Origin | 0.8 Admissions feedback round 1, F-17 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEATURED-ROW-EVERYWHERE
+
+| Field | Content |
+| --- | --- |
+| Statement | Every table or rank view with school rows tints the focus school's row (on a group's views, the school picked, when one is) with its product's featured-row token and marks it data-featured-row (featuredRow() does both): Teacher at every phase (KS2's token is neutral), SMT, Admissions, the groups, the Data View (its own red token, on :root: Rankings, the large-set rankings, the deep dive) and a saved set's rank table, in custom dashboards and meeting slides as on their own pages. A row of schools anywhere in src without the mark is listed with why it has no focus row (a picker, a list that leaves the school out, a bar chart); anything else fails the scan. Every token reads at 11:1 for text in both themes and about 6.3:1 for muted text on the light tint. |
+| Why | Guy (F-22): "ALL table / rank views the focus school should be highlit." F-17 covered some products only and the rest read as done. |
+| Applies to | every table and rank view of schools, every product |
+| Enforced in | - src/lib/featured-row-scan.ts<br>- src/components/shell/accent.ts:featuredRow<br>- src/app/globals.css<br>- src/lib/featured-row.test.ts |
+| Tagged at | - src/components/shell/accent.ts<br>- src/lib/featured-row-scan.ts<br>- src/lib/featured-row.test.ts |
+| Test case | the source scan (every .tsx in src) and the tokens (110110), ks4: No focus table without data-featured-row; no row keyed by a school's URN unmarked and unlisted; every listed exception still matches a row; seven tokens, each light and dark. [runner: featuredRowEverywhere] |
+| Origin | 0.8 feedback deploy gate, F-22 (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 6) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

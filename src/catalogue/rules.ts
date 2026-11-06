@@ -2314,6 +2314,17 @@ export const RULES: Rule[] = [
     origin: "0.8 Admissions feedback round 1, F-17 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
+  {
+    id: "R-FEATURED-ROW-EVERYWHERE",
+    statement:
+      "Every table or rank view with school rows tints the focus school's row (on a group's views, the school picked, when one is) with its product's featured-row token and marks it data-featured-row (featuredRow() does both): Teacher at every phase (KS2's token is neutral), SMT, Admissions, the groups, the Data View (its own red token, on :root: Rankings, the large-set rankings, the deep dive) and a saved set's rank table, in custom dashboards and meeting slides as on their own pages. A row of schools anywhere in src without the mark is listed with why it has no focus row (a picker, a list that leaves the school out, a bar chart); anything else fails the scan. Every token reads at 11:1 for text in both themes and about 6.3:1 for muted text on the light tint.",
+    why: "Guy (F-22): \"ALL table / rank views the focus school should be highlit.\" F-17 covered some products only and the rest read as done.",
+    appliesTo: "every table and rank view of schools, every product",
+    enforcedIn: ["src/lib/featured-row-scan.ts", "src/components/shell/accent.ts:featuredRow", "src/app/globals.css", "src/lib/featured-row.test.ts"],
+    testCase: { urn: "110110", school: "the source scan (every .tsx in src) and the tokens", phase: "ks4", expect: "No focus table without data-featured-row; no row keyed by a school's URN unmarked and unlisted; every listed exception still matches a row; seven tokens, each light and dark.", check: "featuredRowEverywhere" },
+    origin: "0.8 feedback deploy gate, F-22 (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 6)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);
