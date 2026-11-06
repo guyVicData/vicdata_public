@@ -2261,11 +2261,11 @@ export const RULES: Rule[] = [
   {
     id: "R-FEEDBACK-FOLLOWS-VIEW",
     statement:
-      "The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers \"Move to <view>\", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). A missing app version is recorded as \"unknown\", \"dev\" only on a local dev server (F-1).",
+      "The feedback window is on one view; when its panel's rail moves to another view while the window is open, the window says so and offers \"Move to <view>\", which moves it keeping the draft. It never silently keeps the old view (F-5, recorded on Map but written about Flags). Since Admissions feedback round 2 (F-31, recorded on \"Your cohort, girls and boys\" at 11+ with a 16+ address): the window is tied to the view and to the page as it was then (state and address); its header names the view with its entry point (\"Shape and size · 16+\"); it also offers the move when another panel on the same dashboard is clicked into, or the entry point (level, phase) or set changes, and says so when the dashboard changes; Send records the page at the moment of sending when it still shows the window's view, otherwise it warns first and records either the moved-to view at the new settings or, if the move is declined, the tied view with its own state and address -- never a mix. The server (feedbackRow) and the database (feedback_state_mismatch) refuse an item whose state and page_query disagree on the dashboard, entry point or level, with a message the window shows. A missing app version is recorded as \"unknown\", \"dev\" only on a local dev server (F-1).",
     why: "An item recorded against the wrong view sends the fix to the wrong place.",
     appliesTo: "the feedback window, every panel",
-    enforcedIn: ["src/components/feedback/store.ts:movedView", "src/components/feedback/FeedbackWindow.tsx", "src/components/shell/CardBox.tsx", "src/lib/feedback-server.ts:appVersion", "src/lib/smt-fb1.test.ts"],
-    testCase: { urn: "110110", school: "Leighton Park, SMT Overview (store and browser tests)", phase: "ks4", expect: "Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept; appVersion is the commit on Render, \"unknown\" without it in production.", check: "feedbackFollowsView" },
+    enforcedIn: ["src/components/feedback/store.ts:driftOf", "src/components/feedback/store.ts:sendPlan", "src/components/feedback/FeedbackWindow.tsx", "src/components/shell/CardBox.tsx", "src/lib/view-ref.ts:stateMismatch", "src/lib/feedback-server.ts:feedbackRow", "supabase/migrations/20261120090000_v08_feedback_resolved_views.sql:feedback_state_mismatch", "src/lib/feedback-server.ts:appVersion", "src/lib/smt-fb1.test.ts", "src/lib/feedback-resolved-views.test.ts"],
+    testCase: { urn: "110110", school: "Leighton Park, SMT Overview and Admissions Pipelines (store tests)", phase: "ks4", expect: "Open on Map, the rail moves to Flags: the window offers Move to Flags; after it, the item's view is Flags and the draft is kept. Open on Your cohort at 11+, then 16+ and a click in the funnel's panel: the window offers Why did our intake change? · 16+; Send is that view at 16+ (moved) or Your cohort at 11+ with entry=11%2B (declined), and the 6 Nov mix is refused. appVersion is the commit on Render, \"unknown\" without it in production.", check: "feedbackFollowsView" },
     origin: "0.8 SMT feedback round 1 (docs/v0.8/vicdata_0_8_smt_feedback_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
@@ -2360,12 +2360,23 @@ export const RULES: Rule[] = [
   {
     id: "R-FEEDBACK-LIVE-CHECK",
     statement:
-      "A deployed item becomes done when a platform admin gives \"Looks good\" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's \"Checked live\". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked.",
+      "A deployed item becomes done when a platform admin gives \"Looks good\" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's \"Checked live\". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked. Since Admissions feedback round 2 a Looks good on any of the item's resolved_views counts as on its own view (R-FEEDBACK-RESOLVED-VIEWS).",
     why: "Done means someone has seen the fix on the live site.",
     appliesTo: "the feedback system",
-    enforcedIn: ["supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_items_live_check", "src/components/admin/FeedbackInbox.tsx"],
+    enforcedIn: ["supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_items_live_check", "supabase/migrations/20261120090000_v08_feedback_resolved_views.sql:feedback_items_live_check", "src/components/admin/FeedbackInbox.tsx"],
     testCase: { urn: "110110", school: "Leighton Park (PGlite)", phase: "ks4", expect: "Same view and school after deployed_at: done; before it, another school, a member's, or a text item: still deployed.", check: "feedbackDeployGate" },
     origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDBACK-RESOLVED-VIEWS",
+    statement:
+      "An item's resolved_views names the views a fix added or changed, beside its own. A platform admin's \"Looks good\" on any of them, at the item's school and at or after its deployed_at, closes the deployed item as one on its own view does (feedback_items_live_check); one on an unrelated view, another school, before the deploy, or by a member doesn't. It is a triage field: set by scripts/feedback-set-fixed.sh --view (repeatable, adding) or the inbox, by platform admins only; a new item has none. feedback_for_triage shows it, as its last column.",
+    why: "F-16 and F-21 were fixed by new views; Guy's Looks good went on those, and the auto-close, matching only the item's own view, missed both.",
+    appliesTo: "the feedback system",
+    enforcedIn: ["supabase/migrations/20261120090000_v08_feedback_resolved_views.sql", "scripts/feedback-set-fixed.sh", "src/lib/feedback-server.ts:triagePatch", "src/components/admin/FeedbackInbox.tsx", "docs/FEEDBACK.md"],
+    testCase: { urn: "110110", school: "Leighton Park (PGlite)", phase: "ks4", expect: "Looks good on a resolved view, same school, after the deploy: done; on an unrelated view, another school, before the deploy, by a member: still deployed; a member can't set resolved_views.", check: "feedbackResolvedViews" },
+    origin: "0.8 Admissions feedback round 2 (docs/v0.8/vicdata_0_8_admissions_feedback_round2_claude_code_prompt_v1.md)",
     status: "active",
   },
   {

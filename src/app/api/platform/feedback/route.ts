@@ -83,6 +83,8 @@ export async function PATCH(request: NextRequest) {
     const { data, error } = await u.supabase.from("feedback_items").update(built.patch).in("id", ids).select("id, number, status");
     if (error) {
       if (error.code === "42501") return NextResponse.json({ error: error.message }, { status: 403 });
+      // Admissions feedback round 2 (item 4): resolved_views before its migration is applied.
+      if ("resolved_views" in built.patch && (error.code === "PGRST204" || error.code === "42703")) return NextResponse.json({ error: "Resolved views need the database update (20261120090000_v08_feedback_resolved_views)." }, { status: 503 });
       throw error;
     }
     return NextResponse.json({ updated: data ?? [] });
