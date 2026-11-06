@@ -29,7 +29,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     notes: [ADMISSIONS_NOTES.intakeNote, ADMISSIONS_NOTES.intakeMoving, ADMISSIONS_NOTES.intakeBoarding, ADMISSIONS_NOTES.boardingCensus, ADMISSIONS_NOTES.intakeNotFeeders],
     sources: ["ONS small-area population estimates (LSOAs, 2021 boundaries), single year of age, mid-2011 to the latest mid-year held", "DfE school census (January), your own pupils by single age, 2019/20 to {census}", "GIAS (Get Information about Schools): nearest schools, for a state school's radius"],
     geography: "{radius}: every LSOA whose population-weighted centre is within the radius ({lsoas} neighbourhoods), the same area SMT Context draws. Not your feeder list. How the radius was set: {how}",
-    years: "Your {entryYear} from {base} to {latest}, each with the area's {areaYear}-age children the mid-year before entry, and the same children at the earliest age held. {earliestNote} {averagedNote}",
+    years: "Your {entryYear} from {base} to {latest}, each with the local {areaAge}-year-olds the mid-year before entry, and the same children at the earliest age held. {earliestNote} {averagedNote}",
     leftOut: ["No funnel at 4+.", "The girls/boys filter: not split (the area's population has no split); the panel says so while it is on.", "A neighbourhood's figures below 5 are withheld by ONS and count as 0.", "Boarders and children from outside the radius are in your intake but not in the area's figures."],
     steps: [
       "Take the area: the LSOAs within the radius.",
