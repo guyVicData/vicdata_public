@@ -141,6 +141,8 @@ Every round's report gives "Guy's commands" as these seven numbered steps, in th
 6. **Set fixed** — `scripts/feedback-set-fixed.sh <merge commit> F-…`; the items then move to deployed by themselves.
 7. **Live check** — look at each item's view on the live site and give it "Looks good" (or new feedback); then `feedback_deploy_gaps` reads empty.
 
+If the auto-deploy fails, Render emails Guy (notifications on); the inbox's gaps banner shows any item still fixed 48 hours after merge.
+
 ## Keeping and deleting items
 
 - **How long:** items are kept while open, and deleted 2 years after they are closed (done or won't do) (Guy, 18 Oct). If an account is deleted, its items stay without the author's name (`author_id` set to null).

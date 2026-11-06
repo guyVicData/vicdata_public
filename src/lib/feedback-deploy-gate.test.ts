@@ -154,3 +154,70 @@ test("R-REPORT-COMMANDS-ORDER: the template's seven steps, in order", () => {
   assert.ok(checkCommands(good.replace("**5. Republish:** none this round.\n\n**6. Set fixed** e", "**5. Set fixed** e\n\n**6. Republish**")).length > 0, "out of order fails");
   assert.deepEqual(checkCommands("# no commands"), ["no \"## Guy's commands\" section"]);
 });
+
+// ------------------------------------------------------------------------------- the build step never fails
+
+// R-BUILD-INFO (Render's 30 Oct build failed; this step must never be a cause): a shallow clone whose deepen
+// fails, then GitHub's API failing (an error answer, and a hang), ends in commits: null and exit 0, quickly.
+function runBuildInfo(cwd: string, env: Record<string, string>): Promise<{ code: number; out: string; ms: number }> {
+  const t0 = Date.now();
+  return new Promise((resolve) => {
+    execFile("node", ["scripts/write-build-info.mjs"], { cwd, env: { ...process.env, RENDER_GIT_COMMIT: "", ...env } }, (err, stdout, stderr) => {
+      resolve({ code: err ? ((err as { code?: number }).code ?? 1) : 0, out: stdout + stderr, ms: Date.now() - t0 });
+    });
+  });
+}
+
+test("R-BUILD-INFO: git fetch and GitHub's API both failing -> commits: null, exit 0", async () => {
+  const { mkdtempSync, mkdirSync, copyFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const dir = mkdtempSync(path.join(tmpdir(), "build-info-"));
+  // An API that answers 500, and one that never answers.
+  const failing = createServer((_req, res) => {
+    res.statusCode = 500;
+    res.end("{}");
+  });
+  const hanging = createServer(() => {});
+  await new Promise<void>((r) => failing.listen(0, "127.0.0.1", r));
+  await new Promise<void>((r) => hanging.listen(0, "127.0.0.1", r));
+  const api500 = `http://127.0.0.1:${(failing.address() as AddressInfo).port}`;
+  const apiHang = `http://127.0.0.1:${(hanging.address() as AddressInfo).port}`;
+  try {
+    // 1. A depth-1 clone, as Render's might be; the deepen goes to a dead remote, then the API answers 500.
+    const shallow = path.join(dir, "shallow");
+    execFileSync("git", ["clone", "-q", "--depth", "1", `file://${root}`, shallow]);
+    mkdirSync(path.join(shallow, "scripts"), { recursive: true });
+    copyFileSync(path.join(root, "scripts/write-build-info.mjs"), path.join(shallow, "scripts/write-build-info.mjs"));
+    const a = await runBuildInfo(shallow, { BUILD_INFO_GIT_REMOTE: "http://127.0.0.1:1/none.git", BUILD_INFO_GITHUB_API: api500 });
+    const fa = JSON.parse(readFileSync(path.join(shallow, "src/generated/build-info.json"), "utf8"));
+    assert.equal(a.code, 0, a.out);
+    assert.equal(fa.commits, null);
+    assert.match(fa.commit, /^[0-9a-f]{12}$/, "the commit is still known");
+    assert.match(a.out, /couldn't deepen/);
+    assert.match(a.out, /GitHub's commits API failed \(HTTP 500\)/);
+    assert.match(a.out, /no commit list \(commits: null\)/);
+    // 2. No .git at all (the commit from Render's variable), and an API that hangs: the deadline ends it.
+    const bare = path.join(dir, "bare");
+    mkdirSync(path.join(bare, "scripts"), { recursive: true });
+    copyFileSync(path.join(root, "scripts/write-build-info.mjs"), path.join(bare, "scripts/write-build-info.mjs"));
+    const b = await runBuildInfo(bare, { RENDER_GIT_COMMIT: "6bddb6dbe91eb0fa52add9b67c32b187388ad89f", BUILD_INFO_GITHUB_API: apiHang });
+    const fb = JSON.parse(readFileSync(path.join(bare, "src/generated/build-info.json"), "utf8"));
+    assert.equal(b.code, 0, b.out);
+    assert.equal(fb.commits, null);
+    assert.equal(fb.commit, "6bddb6dbe91e");
+    assert.ok(b.ms < 30_000, `it gives up within its deadline (${b.ms} ms)`);
+    // 3. Nowhere to write the file: still exit 0 (the app reads a missing file as "no list").
+    const blocked = path.join(dir, "blocked");
+    mkdirSync(path.join(blocked, "scripts"), { recursive: true });
+    copyFileSync(path.join(root, "scripts/write-build-info.mjs"), path.join(blocked, "scripts/write-build-info.mjs"));
+    execFileSync("sh", ["-c", `printf x > "${path.join(blocked, "src")}"`]);
+    const c = await runBuildInfo(blocked, { BUILD_INFO_GITHUB_API: api500 });
+    assert.equal(c.code, 0, c.out);
+    assert.match(c.out, /failed \(/);
+  } finally {
+    failing.close();
+    hanging.closeAllConnections();
+    hanging.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
