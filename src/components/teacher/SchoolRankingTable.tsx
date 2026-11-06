@@ -140,6 +140,7 @@ export function SchoolRankingTable({
             <tr
               key={r.key}
               data-highlight={r.isTarget ? "" : undefined}
+              data-featured-row={r.isTarget ? "" : undefined}
               className="border-b border-[var(--panel-border)] last:border-b-0"
               style={r.isTarget ? { background: FEATURED_ROW_BG, color: FEATURED_ROW_ACCENT_TEXT } : undefined}
             >

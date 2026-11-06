@@ -509,7 +509,8 @@ export function YearTable({
                 {sorted.map((r) => {
                   const focus = highlight && r.s.key === focusKey;
                   return (
-                    <th key={r.s.key} className="px-1.5 pb-1.5 text-right font-semibold" style={focus ? { background: FEATURED_ROW_BG } : undefined}>
+                    // Years down, the focus school is a column: its header carries the mark.
+                    <th key={r.s.key} data-featured-row={focus ? "" : undefined} className="px-1.5 pb-1.5 text-right font-semibold" style={focus ? { background: FEATURED_ROW_BG } : undefined}>
                       <span className="flex min-w-0 items-center justify-end gap-1.5">
                         <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.s.colour }} />
                         <span className={`truncate text-[11px] normal-case ${focus ? "text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.s.label}>{r.s.label}</span>
@@ -587,6 +588,7 @@ export function YearTable({
             <tr
               key={r.s.key}
               data-highlight={focus ? "" : undefined}
+              data-featured-row={focus ? "" : undefined}
               className="border-b border-[var(--panel-border)] last:border-b-0"
               style={focus ? { background: FEATURED_ROW_BG } : undefined}
             >
