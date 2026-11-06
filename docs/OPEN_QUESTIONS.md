@@ -2666,3 +2666,16 @@ This is the round for `docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_c
 **The republish**
 27. **Only the two Admissions dashboards.** Live GCSE Results (version 16), Post-16 Results, SMT Overview and SMT Pupils differ from the code copy, which may be editor changes. The full seed would publish over them. A new `--only` option publishes just Pipelines and Market share. Live Market share was still the 12 Oct seed, so republishing it also brings live two titles that 0.8's audit fixes had corrected in code (Change in share, Entry age band roll).
 28. **The live Funnel** draws whatever the code's view returns for `DV-ADM-P-FUNNEL`, so it shows the new waterfall from the deploy, before the republish. The republish adds Local births, girls and boys and the share of Years 7–11 to the rails, and carries the funnel's new title and spec.
+
+## 2026-11-06 — feedback deploy gate
+
+This is the round for `docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md`, on `v0.8-feedback-deploy-gate`. Every call below was **decided unattended, for Guy to confirm**, and is tagged with its item.
+
+**F-22 (the focus school in every table and rank view)**
+- **F-22, what counts:** a table, or a ranked list of schools with a value per row, is a rank view and is tinted. Bar charts aren't: Data View Graphs' sorted and diverging bars, Admissions' change in share and results change, and Teacher's bar rows. Their focus bar is already coloured and the school's name bold. Tinting them too is one `featuredRow()` per chart, if wanted.
+- **F-22, groups:** every list of member schools tints the school picked on the map or in Schools: Schools ranked, value added, Year 12 against Year 11, each school's share, children around each school, joined and left. With none picked, no member row is tinted. The shape cards keep their own tint: they are a chart.
+- **F-22, the public page:** no table or rank view there has the school's row. Its nearest schools leave it out, and the roll chart already colours it. So no public-page token was added, though the prompt lists one.
+- **F-22, the Data View's token** is the red it already drew (red-50, and red-950 at 40% over the dark page), now one token on `:root`. The region and nation rankings were at 30% in dark and now match the other tables at 40%. The rank number on the focus row is neutral-600 / neutral-400, since neutral-500 was 4.3:1 on the light tint.
+- **F-22, KS2's token** is neutral, since KS2 has no accent: #eeeef0 light, #2a2a2e dark. It replaces the old fallback, the grey accent at 14%.
+- **F-22, meeting slides:** an Admissions view on a slide tinted the school's row in the meeting's rose, because the preview named no token. The slot now names Admissions'.
+- **F-22, contrast:** F-17's "muted 6.3:1" is 6.29:1 for Post-16's and SMT's violet. The test holds 6.25. The colour is F-17's and wasn't changed, to keep parity.
