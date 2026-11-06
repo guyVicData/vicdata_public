@@ -129,7 +129,7 @@ async function verifySeed(qq, plan) {
 }
 
 // 1. The v1 seed of every planned dashboard.
-await ex(tsx("scripts/dashboards-seed-sql.ts", "--legacy-v1"));
+await ex(tsx("scripts/dashboards-seed-sql.ts", "--force", "--legacy-v1"));
 check(`the v1 seed: every planned dashboard (${SLUGS.length}), each on version 1 in schema_version 1`,
   (await n(`select count(*)::int n from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.slug like 'vicdata.%' and v.version = 1 and v.schema_version = 1 and v.config->>'schema_version' = '1'`)) === SLUGS.length);
 
@@ -164,7 +164,7 @@ const othersBefore = await others();
 const stateBefore = JSON.stringify((await q(`select * from dashboard_user_state`).catch(() => ({ rows: [] }))).rows);
 
 // 2. The re-seed.
-const reseed = tsx("scripts/dashboards-seed-sql.ts");
+const reseed = tsx("scripts/dashboards-seed-sql.ts", "--force");
 await ex(reseed);
 const code = JSON.parse(tsx("-e", "import { DASHBOARDS } from './src/catalogue/dashboards'; console.log(JSON.stringify(DASHBOARDS.filter((d) => d.owner === 'vicdata')))"));
 const published = async () => (await q(`select d.slug, d.published_version_id, v.version, v.schema_version, v.config, v.label from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.slug like 'vicdata.%' order by d.slug`)).rows;

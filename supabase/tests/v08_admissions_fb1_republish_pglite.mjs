@@ -95,7 +95,7 @@ const ONLY = "vicdata.admissions.pipelines,vicdata.admissions.market-share";
 const ADM = ONLY.split(",");
 
 // 1. Every VicData dashboard seeded as today's seed publishes it.
-await ex(tsx("scripts/dashboards-seed-sql.ts"));
+await ex(tsx("scripts/dashboards-seed-sql.ts", "--force"));
 // 2. Live's state: the Admissions dashboards on an older config (a version with an old title and no
 // new views), and an editor's version of GCSE Results.
 for (const slug of ADM) await q(`with d as (select id, published_version_id p from dashboards where slug = $1),
@@ -115,7 +115,7 @@ const before = await snapshot();
 const [a0, g0] = [await assignments(), await groupsN()];
 
 // 3. The republish.
-const sql = tsx("scripts/dashboards-seed-sql.ts", "--only", ONLY);
+const sql = tsx("scripts/dashboards-seed-sql.ts", "--force", "--only", ONLY);
 check("the SQL names only the two Admissions dashboards", (sql.match(/insert into public\.dashboard_versions/g) ?? []).length === 2 && !/vicdata\.(ks4|ks5|smt)\./.test(sql));
 await ex(sql);
 const after = await snapshot();
@@ -134,11 +134,11 @@ check("Market share's Trends rail ends with the share of Years 7-11", mviews.at(
 check("the editor's GCSE Results stays published", (await q(`select v.config->>'name' n from dashboards x join dashboard_versions v on v.id = x.published_version_id where x.slug = 'vicdata.ks4.results'`)).rows[0].n === "GCSE Results (Guy's edit)");
 check("role assignments and groups unchanged", (await assignments()) === a0 && (await groupsN()) === g0);
 // 4. Twice: nothing more.
-await ex(tsx("scripts/dashboards-seed-sql.ts", "--only", ONLY));
+await ex(tsx("scripts/dashboards-seed-sql.ts", "--force", "--only", ONLY));
 check("running it again publishes nothing", JSON.stringify(await snapshot()) === JSON.stringify(after));
 // 5. A slug the catalogue doesn't hold is refused.
 let refused = false;
-try { tsx("scripts/dashboards-seed-sql.ts", "--only", "vicdata.admissions.nope"); } catch { refused = true; }
+try { tsx("scripts/dashboards-seed-sql.ts", "--force", "--only", "vicdata.admissions.nope"); } catch { refused = true; }
 check("an unknown slug is refused", refused);
 
 console.log(fails ? `FAILED ${fails}` : "ALL PASS");

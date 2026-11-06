@@ -2314,6 +2314,72 @@ export const RULES: Rule[] = [
     origin: "0.8 Admissions feedback round 1, F-17 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
+  {
+    id: "R-FEEDBACK-STATUSES",
+    statement:
+      "A feedback item's statuses are new, triaged, planned, fixed (merged to main, with resolved_commit), deployed (the live build holds resolved_commit -- set by the server only, stamped deployed_at and deployed_build) and done (checked on the live site), or won't do. Fixed and deployed are still open: the author's icon stays yellow until done. Nobody sets deployed by hand; fixed needs its commit.",
+    why: "Round 1 of the Admissions feedback marked F-12 to F-21 done on merge, while the live site still ran 19 Oct's build: done said more than the live site showed.",
+    appliesTo: "the feedback system: feedback_items, the inbox, the feedback icon",
+    enforcedIn: ["supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql", "src/lib/view-ref.ts:FEEDBACK_STATUSES", "src/lib/feedback-server.ts:triagePatch", "src/components/admin/FeedbackInbox.tsx", "supabase/tests/v08_feedback_deploy_gate_pglite.mjs", "src/lib/feedback-deploy-gate.test.ts"],
+    testCase: { urn: "110110", school: "F-12 to F-21 (PGlite and unit tests)", phase: "ks4", expect: "fixed -> deployed -> done in PGlite; open (yellow) until done; the backfill moves F-12 to F-21 to fixed once and a second run changes nothing; the patch refuses deployed and a fixed with no commit.", check: "feedbackDeployGate" },
+    origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDBACK-PROMOTE",
+    statement:
+      "The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time.",
+    why: "Deployed has to be a fact read from the running build, not a step someone remembers.",
+    appliesTo: "the feedback system, every build",
+    enforcedIn: ["scripts/write-build-info.mjs", "src/lib/build-info.ts", "src/lib/app-build-server.ts", "src/app/api/version/route.ts", "src/proxy.ts", "supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:record_app_build"],
+    testCase: { urn: "110110", school: "F-12 to F-21 (PGlite and unit tests)", phase: "ks4", expect: "A build whose commits hold 6bddb6d moves F-12 to F-21 to deployed (9, F-15 being done); a build without it leaves them fixed; the same build again moves none; no client can record a build.", check: "feedbackDeployGate" },
+    origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDBACK-DEPLOY-GAPS",
+    statement:
+      "feedback_deploy_gaps lists the items that claim more than the live build (the newest app_builds row) has: deployed or done at a commit the live build doesn't hold, and fixed items older than 48 hours not yet deployed. The inbox shows the count as a banner.",
+    why: "On 6 Nov it would have listed F-12 to F-21 a week earlier.",
+    appliesTo: "the feedback inbox; Claude's reads (docs/FEEDBACK.md)",
+    enforcedIn: ["supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_deploy_gaps", "src/app/api/platform/feedback/route.ts", "src/components/admin/FeedbackInbox.tsx"],
+    testCase: { urn: "110110", school: "the 6 Nov case (PGlite)", phase: "ks4", expect: "Done at 6bddb6d with the live build 030d546: F-12 to F-21 listed; once the live build holds 6bddb6d, none.", check: "feedbackDeployGate" },
+    origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDBACK-LIVE-CHECK",
+    statement:
+      "A deployed item becomes done when a platform admin gives \"Looks good\" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's \"Checked live\". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked.",
+    why: "Done means someone has seen the fix on the live site.",
+    appliesTo: "the feedback system",
+    enforcedIn: ["supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:feedback_items_live_check", "src/components/admin/FeedbackInbox.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park (PGlite)", phase: "ks4", expect: "Same view and school after deployed_at: done; before it, another school, a member's, or a text item: still deployed.", check: "feedbackDeployGate" },
+    origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-REPUBLISH-GUARD",
+    statement:
+      "The republish (scripts/dashboards-seed-sql.ts) prints nothing and exits non-zero unless the live site's /api/version commit holds the local HEAD. The live address is --live or VICDATA_LIVE_URL, with no default. --force skips the check and says why that is unsafe. The reports' \"set fixed\" step (scripts/feedback-set-fixed.sh) checks the project ref and that the commit is on GitHub's main, and only ever sets fixed.",
+    why: "Round 1's republish went live on the old code, whose rails then read \"This view isn't drawn here yet\".",
+    appliesTo: "Guy's commands: the republish and the closing step",
+    enforcedIn: ["scripts/live-guard.ts", "scripts/dashboards-seed-sql.ts", "scripts/feedback-set-fixed.sh", "src/lib/feedback-deploy-gate.test.ts"],
+    testCase: { urn: "110110", school: "a mocked /api/version (unit test)", phase: "ks4", expect: "Live at HEAD's parent, or naming no commit, or no address: non-zero and no SQL; live at HEAD: the SQL; --force: the SQL and the warning.", check: "republishGuard" },
+    origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-REPORT-COMMANDS-ORDER",
+    statement:
+      "Every round's report gives \"Guy's commands\" as the template's seven numbered steps, in order: 1 migrations, 2 merge and push, 3 Render deploy, 4 wait until /api/version shows the merge, 5 republish, 6 set fixed, 7 live check (docs/FEEDBACK.md). A step the round doesn't need stays, saying so.",
+    why: "Round 1 listed the deploy, but nothing put it before the republish and the closing.",
+    appliesTo: "every report from the feedback deploy gate on (and any not yet committed)",
+    enforcedIn: ["scripts/report-template.ts", "docs/FEEDBACK.md", "scripts/catalogue-rule-tests.ts:reportCommandsOrder"],
+    testCase: { urn: "110110", school: "docs/**/*report*.md since 6 Nov", phase: "ks4", expect: "Each report first committed on or after 2026-11-06, and each not yet committed, passes checkCommands.", check: "reportCommandsOrder" },
+    origin: "0.8 feedback deploy gate (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

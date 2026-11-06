@@ -2965,6 +2965,56 @@ const RUNNERS: Record<string, Runner> = {
     const pass = tinted && roots && tokens;
     return { pass, detail: fmt({ featuredRows: rows.length, school: name, schools: m.entryAge.rows.filter((r) => r.period === m.summary.latest).length, roots, tokensLightAndDark: tokens }) };
   },
+  // ------------------------------------------------------------------ 0.8 feedback deploy gate
+  // R-FEEDBACK-STATUSES, -PROMOTE, -DEPLOY-GAPS, -LIVE-CHECK: the database's half in PGlite (never a real
+  // database), the app's half in the unit test; each rule names its own lines.
+  async feedbackDeployGate(_L, rule) {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, args: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const pg = run("node", ["supabase/tests/v08_feedback_deploy_gate_pglite.mjs"]);
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/feedback-deploy-gate.test.ts"]);
+    const lines = pg.out.split("\n").filter((l) => l.startsWith("PASS") || l.startsWith("FAIL"));
+    const mine = lines.filter((l) => l.includes(rule.id));
+    const total = /(\d+) PASS, (\d+) FAIL/.exec(pg.out);
+    const pass = pg.ok && unit.ok && !lines.some((l) => l.startsWith("FAIL"));
+    return { pass, detail: fmt({ pglite: total ? `${total[1]} pass, ${total[2]} fail` : "did not run", thisRule: mine.length ? `${mine.length} named checks` : "checked within the suite", unit: unit.ok ? "pass" : "FAIL" }) };
+  },
+  async republishGuard() {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    let ok = true;
+    let out = "";
+    try {
+      out = execFileSync("npx", ["-y", "tsx", "--test", "--test-force-exit", "--test-name-pattern", "R-REPUBLISH-GUARD", "src/lib/feedback-deploy-gate.test.ts"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    } catch (e) {
+      ok = false;
+      out = String((e as { stdout?: string }).stdout ?? "");
+    }
+    const passed = /ℹ pass (\d+)/.exec(out)?.[1] ?? "0";
+    return { pass: ok && Number(passed) >= 2, detail: fmt({ tests: passed, mocked: "/api/version" }) };
+  },
+  // R-REPORT-COMMANDS-ORDER: every report first committed on or after the template (6 Nov), and any not yet
+  // committed -- the next one -- gives Guy's commands in the template's order.
+  async reportCommandsOrder() {
+    const { execFileSync } = await import("node:child_process");
+    const { readFileSync } = await import("node:fs");
+    const { checkCommands } = await import("./report-template");
+    const root = new URL("..", import.meta.url).pathname;
+    const git = (...a: string[]) => execFileSync("git", a, { cwd: root, encoding: "utf8" });
+    const isReport = (f: string) => /^docs\/.*report.*\.md$/i.test(f) && !/screenshots|archive/.test(f);
+    const since = git("log", "--since=2026-11-06T00:00:00Z", "--diff-filter=A", "--name-only", "--format=").split("\n").filter(isReport);
+    const untracked = git("ls-files", "--others", "--exclude-standard", "docs").split("\n").filter(isReport);
+    const files = Array.from(new Set([...since, ...untracked]));
+    const bad = files.map((f) => ({ f, p: checkCommands(readFileSync(`${root}${f}`, "utf8")) })).filter((x) => x.p.length);
+    return { pass: bad.length === 0, detail: fmt({ reports: files.length ? files.join(", ") : "none since the template yet", problems: bad.length ? bad.map((b) => `${b.f}: ${b.p.join("; ")}`).join(" | ") : "none" }) };
+  },
 };
 
 // --------------------------------------------------------------------------- main
