@@ -3,7 +3,7 @@
 // Run: npx -y tsx --test src/lib/index-base.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { indexBaseWords, indexedLabel, indexTo } from "./index-base";
+import { ROLL_INDEX_MIN, indexBaseWords, indexedLabel, indexOwn, indexTo } from "./index-base";
 
 const pts = (from: number, vals: (number | null)[]) => vals.map((value, i) => ({ year: from + i, value }));
 
@@ -32,4 +32,18 @@ test("no shared year: each line from its own first year, and the label says that
   assert.equal(r.out[1][0].value, 100);
   assert.equal(indexBaseWords(null), "each line's first year");
   assert.equal(indexedLabel(null), "each line's first year = 100");
+});
+
+test("indexOwn (F-20, F-36): to the shared base where the line has it, else its own first year; small under ROLL_INDEX_MIN", () => {
+  const a = indexOwn(pts(2019, [200, 210, 220]), 2019);
+  assert.deepEqual([a.from, a.base, a.values[2].value, a.small], [2019, 200, 110, false]);
+  // Opened in 2021: indexed to its own first year.
+  const b = indexOwn(pts(2019, [null, null, 60, 90]), 2019);
+  assert.deepEqual([b.from, b.base, b.values[0].value, b.values[3].value, b.small], [2021, 60, null, 150, false]);
+  // Under the threshold at its base: small (named, not drawn).
+  assert.equal(indexOwn(pts(2019, [ROLL_INDEX_MIN - 1, 80]), 2019).small, true);
+  assert.equal(indexOwn(pts(2019, [ROLL_INDEX_MIN, 80]), 2019).small, false);
+  // No figure at all.
+  const c = indexOwn(pts(2019, [null, null]), 2019);
+  assert.deepEqual([c.from, c.base, c.small], [null, null, true]);
 });

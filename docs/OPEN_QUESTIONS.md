@@ -2708,3 +2708,19 @@ This is the round for `docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_pr
 - **F-22 and F-23 (with F-26) are treated as the follow-ups**, rather than raising new items: they ask for exactly what F-17 and F-15 left out. The migration sets `follows_up` (F-22 → F-17; F-23 and F-26 → F-15), adds a "Not covered:" line to F-17's and F-15's triage notes, and moves F-22 from new to triaged. No item is created.
 - **F-15 stays done.** It was checked live on 6 Nov at 11+ (F-25), which is what it was built for; the 16+ gap is now F-23's, open.
 - **The backfill moves F-12 to F-21 only while they are still `planned` under "deploy 6bddb6d".** F-15 (done since) is left alone, so nine move. Their `resolved_at` is the merge's date (30 Oct).
+
+## 2026-11-06 — Admissions feedback round 2
+
+This is the round for `docs/v0.8/vicdata_0_8_admissions_feedback_round2_claude_code_prompt_v1.md` (Leighton Park, Guy's items of 6 Nov), on `v0.8-admissions-fb2`. Every call below was **decided unattended, for Guy to confirm**, and is tagged with its item.
+
+**You and the rivals in full screen (F-36)**
+- **F-36, the shared code:** the band roll (F-20) and You and the rivals now draw through one component, `YouAndEachRival` (`views/Lines.tsx`), and index each rival with one helper, `indexOwn` (`src/lib/index-base.ts`, also used by the server's `rollIndexed`). The band roll's markup is byte-identical before and after, in the panel and in full screen (rendered on the server from saved answers for Leighton Park at 11+ and 16+ and The Chase at 11+), and `rollIndexed`'s answer is identical.
+- **F-36, the panel is untouched:** You and the rivals' panel keeps its own markup (your line drawn under the average, no key wrap), so it is identical. Only full screen goes through the shared component.
+- **F-36, the small rule at the entry age:** F-20's rule (under 30 at the base, `ROLL_INDEX_MIN`) applied to the entry-age cohort, not the band, so "under 30 pupils aged 11 at the start". Leighton Park at 11+, 10 nearest: 8 rivals drawn; OneSchool Global Reading Senior Campus and Red Balloon Learner Centre Reading are named under the chart. A 30 floor on one year group leaves out more small schools than it does on a five-year band; a lower floor for the entry age would be a new number, so the band's is kept.
+- **F-36, each rival's base:** as the band roll: the panel's base (the first year you and the rivals' average share, 2019/20 at Leighton Park) where the rival has a figure, else its own first year. The panel's average is unchanged: over every rival with a figure that year (not only the rivals with every year, as the band roll's is), since the panel must not move.
+- **F-36, no new data:** the per-rival lines are worked out in the browser from the entry-age rows the market answer already carries (`m.entryAge.rows`), so the route's answer is unchanged.
+- **F-36, the title** stays "Your Year 7 against the 10 nearest" in full screen (the band roll's changes to "you and each rival"); the key says what is drawn.
+- **F-36, the other Admissions line views with rivals:** only the band roll (`DV-ADM-M-ROLL-LINE`, already done in F-20) and You and the rivals (`DV-ADM-M-VS-LINE`, this item) draw the rivals as a line. Not extended:
+  - **You and the rivals, bars (`DV-ADM-M-VS-BARS`):** draws the rivals' average as bars, not a line. Each rival in full screen would be ten or more bars a year, a grouped bar chart that can't be read; the line view is the one to use. Left as it is.
+  - **Market share (`DV-ADM-M-SHARE-LINE`) and Share of Years 7–11 (`DV-ADM-M-SHARE-BAND`):** draw only your share, no rivals. Each rival's share is in the answer, so a full screen of every school's share would be possible, but it would add rivals to a view that has none: Guy's call.
+  - **Pipelines' line views** (feeders, pools, share needed, cohort, local births) compare with the LA, the region and England, not rivals.

@@ -1621,6 +1621,43 @@ const RUNNERS: Record<string, Runner> = {
     const ok = b === 2019 && whole.length === r.averageOf && yrs.every((y, i) => Math.abs((r.average[i].value ?? NaN) - (100 * avg(y)) / avg(b)) < 1e-9 && Math.abs((r.mine[i].value ?? NaN) - (100 * cnt("110110", y)!) / cnt("110110", b)!) < 1e-9) && r.rivals.length === m.rivals.length;
     return { pass: ok, detail: fmt({ base: b, averageOf: r.averageOf, rivals: r.rivals.length, mineLatest: round(r.mine.at(-1)?.value), avgLatest: round(r.average.at(-1)?.value) }) };
   },
+  // R-ADM-VS-EACH: You and the rivals in full screen, rendered on the server from the route's answer: a key
+  // entry per rival drawn, each small rival named, each line recomputed from the entry-age rows; the panel
+  // keeps the average; the band roll and this view share YouAndEachRival (source scan).
+  async admVsEach() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const fs = await import("node:fs");
+    const v = await import("../src/lib/admissions/views-api");
+    const { VsRivals } = await import("../src/components/admissions/views/Lines");
+    const { InitialWidth } = await import("../src/components/admissions/views/charts");
+    const { ROLL_INDEX_MIN } = await import("../src/lib/index-base");
+    const m = await v.marketView("110110", v.entryPoint("11+")!, []);
+    const draw = (fullscreen: boolean) => renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(VsRivals, { m, setLabel: "10 nearest", as: "line", fullscreen, room: 600 })));
+    const [full, panel] = [draw(true), draw(false)];
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const cnt = (u: string, y: number) => m.entryAge.rows.find((r) => r.urn === u && r.period === y)?.count ?? null;
+    const b = m.summary.vsIndexed.base!;
+    const yrs = m.entryAge.periods;
+    const each = m.rivals.map((u) => {
+      const from = cnt(u, b) !== null ? b : yrs.find((y) => cnt(u, y) !== null) ?? null;
+      const base = from === null ? null : cnt(u, from);
+      return { u, name: m.schools[u]?.name ?? u, small: (base ?? 0) < ROLL_INDEX_MIN, last: base ? (100 * (cnt(u, yrs.at(-1)!) ?? NaN)) / base : null };
+    });
+    const key = full.split("data-vs-key")[1]?.split("</div>")[0] ?? "";
+    const note = full.split("data-vs-small")[1]?.split("</span>")[0] ?? "";
+    const drawn = each.filter((x) => !x.small);
+    const { yearLabel } = await import("../src/components/admissions/ui");
+    const titles = drawn.every((x) => x.last === null || !Number.isFinite(x.last) || full.includes(`${esc(x.name)} ${yearLabel(yrs.at(-1)!)}: ${x.last.toFixed(0)}`));
+    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 1;
+    const named = each.filter((x) => x.small).every((x) => note.includes(esc(x.name)) && !key.includes(`>${esc(x.name)}</span>`));
+    const lines = fs.readFileSync(path.join(ROOT, "src/components/admissions/views/Lines.tsx"), "utf8");
+    const fn = (n: string) => lines.split(`export function ${n}(`)[1]?.split("\nexport function ")[0] ?? "";
+    const shared = ["RollTrend", "VsRivals"].every((n) => fn(n).includes("<YouAndEachRival")) && (lines.match(/var\(--adm-series-\$\{/g) ?? []).length === 1;
+    const panelOk = panel.includes("Rivals’ average") && !panel.includes("data-vs-key") && !panel.includes("data-y-grid") && !panel.includes("--adm-series-");
+    const ok = keyed && named && titles && shared && panelOk && full.includes("data-y-grid");
+    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, named, titles, shared, panelOk }) };
+  },
   // R-ADM-BAND-SHARE: the band share recomputed; the rail's last view.
   async admBandShare() {
     const v = await import("../src/lib/admissions/views-api");
