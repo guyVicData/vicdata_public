@@ -134,8 +134,8 @@ An item closes on the live site, not on merge (0.8 feedback deploy gate, after r
 Every round's report gives "Guy's commands" as these seven numbered steps, in this order, each a bold line (`**1. Migrations** …`). A step the round doesn't need stays, saying "none this round". The rule test R-REPORT-COMMANDS-ORDER (`scripts/report-template.ts`) checks every report written since 6 Nov 2026, and any not yet committed.
 
 1. **Migrations** — applied by Guy (`supabase db query --linked -f …` and `supabase migration repair`, never `db push`), with the project-ref check first.
-2. **Merge and push** — from `~/dev/vicdata_public` on a clean `main`, over HTTPS, then `npm run build`.
-3. **Render deploy** — deploy `main` on Render and wait for "Deploy live".
+2. **Merge and push** — from `~/dev/vicdata_public` on a clean `main`, over HTTPS, then `npm run build`. The push starts the Render deploy (step 3).
+3. **Render deploys main on its own** (auto-deploy, On Commit); if no deploy starts within 5 minutes, deploy by hand.
 4. **Wait until /api/version shows the merge** — `curl -s https://<the live site>/api/version` names the merge commit (or a later one).
 5. **Republish**, if the round changed dashboards — `scripts/dashboards-seed-sql.ts --live https://<the live site> --only …`, which refuses until step 4 holds.
 6. **Set fixed** — `scripts/feedback-set-fixed.sh <merge commit> F-…`; the items then move to deployed by themselves.

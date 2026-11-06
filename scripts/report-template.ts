@@ -2,7 +2,8 @@
 // (docs/FEEDBACK.md, "Guy's commands"). Round 1 of the Admissions feedback listed the Render deploy but
 // nothing made it come before the republish and the closing, so neither ran in that order.
 //
-//   1. Migrations  2. Merge and push  3. Render deploy  4. Wait for /api/version
+//   1. Migrations  2. Merge and push  3. Render deploys main on its own (by hand if none starts in 5 minutes)
+//   4. Wait for /api/version
 //   5. Republish   6. Set fixed       7. Live check
 //
 // Each step is a bold numbered line (`**1. Migrations** ...`); a step a round doesn't need stays, saying
@@ -12,7 +13,7 @@
 export const COMMAND_STEPS: { n: number; name: string; test: RegExp }[] = [
   { n: 1, name: "Migrations", test: /migration/i },
   { n: 2, name: "Merge and push", test: /merge[\s\S]*push/i },
-  { n: 3, name: "Render deploy", test: /render[\s\S]*deploy/i },
+  { n: 3, name: "Render deploys main on its own", test: /render[\s\S]*deploy/i },
   { n: 4, name: "Wait until /api/version shows the merge", test: /\/api\/version/ },
   { n: 5, name: "Republish", test: /republish/i },
   { n: 6, name: "Set fixed", test: /set fixed/i },
