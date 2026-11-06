@@ -1,0 +1,7 @@
+#!/bin/zsh
+# REPO=<tree> NAME=<bundle> CSSNAME=<css> ./build.sh
+D=${0:A:h}; REPO=${REPO:-/Users/guy/dev/vicdata_public}; NAME=${NAME:-bundle}; CSS=${CSSNAME:-app}
+cd $D
+YEARS=$REPO/src/catalogue/years.ts; [ -f $YEARS ] || YEARS=$D/yr-stub.ts
+perl -e 'alarm 180; exec @ARGV' node css.mjs $CSS.css $REPO >/dev/null && echo "[build] css $CSS"
+perl -e 'alarm 240; exec @ARGV' npx -y esbuild@0.24.0 $D/harness_dv.tsx --bundle --outfile=$D/$NAME.js --jsx=automatic --tsconfig=$REPO/tsconfig.json --alias:@harness/years=$YEARS --alias:@/lib/supabase=$D/stubs/supabase.ts --alias:next/navigation=$D/stubs/navigation.ts --alias:next/link=$D/stubs/link.tsx --alias:next/dynamic=$D/stubs/dynamic.tsx --alias:react=$REPO/node_modules/react --alias:react-dom=$REPO/node_modules/react-dom --define:process.env.NODE_ENV=\"production\" --loader:.css=empty --log-level=error && echo "[build] bundle $NAME"

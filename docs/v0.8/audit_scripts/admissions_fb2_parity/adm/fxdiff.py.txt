@@ -1,0 +1,17 @@
+import json,sys,re
+def load(p):
+    s=open(p).read(); return json.loads(s[s.index('] = ')+4:].rstrip().rstrip(';'))
+def walk(a,b,path,out):
+    if type(a)!=type(b): out.append(path); return
+    if isinstance(a,dict):
+        for k in set(a)|set(b):
+            if k not in a or k not in b: out.append(path+'.'+k+(' (only base)' if k in a else ' (only br)'))
+            else: walk(a[k],b[k],path+'.'+k,out)
+    elif isinstance(a,list):
+        if len(a)!=len(b): out.append(path+f' len {len(a)}->{len(b)}'); return
+        for i,(x,y) in enumerate(zip(a,b)): walk(x,y,path+f'[{i}]',out)
+    elif a!=b: out.append(path)
+for u in sys.argv[2:]:
+    out=[]; walk(load(f"{sys.argv[1]}/fx_base/fx_{u}.js"),load(f"{sys.argv[1]}/fx_br/fx_{u}.js"),'',out)
+    pre=sorted(set(re.sub(r'\[\d+\]','[]',p) for p in out))
+    print(u,len(out)); [print('  ',p) for p in pre[:25]]

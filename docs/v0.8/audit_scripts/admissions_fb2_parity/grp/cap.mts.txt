@@ -1,0 +1,50 @@
+// Groups r2 preview fixtures: the dashboard route's own builders over the group lookups, read through
+// aggregates.ts with the FIXTURE switch on (the ingest's dry run), plus production's current member
+// list (group_schools_lookup, read-only) for joined dates. Run with VICDATA_GROUP_FIXTURES=true.
+import { writeFileSync } from "node:fs";
+const R = process.env.REPO ?? "/Users/guy/dev/vicdata_public_groups";
+const { groupAggregate, groupComparisons, groupSchoolsYear, namedCandidates, groupDataSource } = await import(`${R}/src/lib/groups/aggregates.ts`);
+const { buildOverview, buildSchools, kindsFor } = await import(`${R}/src/lib/groups/dash.ts`);
+const r3 = await import(`${R}/src/lib/groups/dash-r3.ts`).catch(() => null);
+const proj = await import(`${R}/src/lib/groups/projections.ts`).catch(() => null);
+const { groupMembers } = await import(`${R}/src/lib/groups/production.ts`);
+if (groupDataSource() !== "fixtures") throw new Error("the fixture switch is off");
+const G = [
+  { key: "harris", groupId: "3320", account: "a0000000-0000-4000-8000-000000003320", name: "Harris Federation" },
+  { key: "dukes", groupId: "club_iss:dukes-education", account: "a0000000-0000-4000-8000-0000000d0e55", name: "Dukes Education" },
+];
+const out: Record<string, Record<string, unknown>> = {};
+for (const g of G) {
+  const members = await groupMembers(g.groupId).catch(() => []);
+  const membership = members.map((m: { urn: string; name: string; confidence: string; joined: string | null; lastSeen: string | null; source: string }) => ({ urn: m.urn, name: m.name, confidence: m.confidence, joined: m.joined, lastSeen: m.lastSeen, source: m.source }));
+  const schools = await groupSchoolsYear(g.groupId);
+  const vicdata = new Set<string>(schools.filter((s: { role: string }) => s.role === "member").slice(0, 6).map((s: { urn: string }) => s.urn));
+  const mapOf = (census: number) => schools.filter((s: any) => s.role === "member" && s.years.some((y: any) => y.listed_now)).map((s: any) => { const f = s.years.find((y: any) => y.period === census)?.figures ?? null; return { urn: s.urn, name: s.name ?? s.urn, easting: s.easting, northing: s.northing, roll: f?.roll ?? null, trend: f?.trend["1"] ?? null, outside: s.outside_england, likely: s.confidence === "likely", phases: f?.phases ?? [] }; });
+  const viewer = { as: "head_office", accountId: g.account, groupId: g.groupId, name: g.name, urn: null };
+  out[g.key] = {};
+  for (const reading of ["at_time", "listed_now"]) {
+    const agg = await groupAggregate(g.groupId, reading);
+    const cands = await namedCandidates(g.groupId, agg.group.type, 0);
+    for (const focus of ["all", "primary", "secondary", "post16"]) {
+      if (focus !== "all" && !agg.rows.some((r: any) => r.phase === focus)) continue;
+      for (const compare of ["peer_band", "non_group", "areas", "england", "mix_matched", ...(cands.length ? [`peer_named:${cands.map((c: any) => c.id).join(",")}`] : [])]) {
+        const comps = await groupComparisons(g.groupId, kindsFor(compare));
+        const overview = buildOverview({ agg, comps, compare, focus, namedLabels: Object.fromEntries(cands.map((c: any) => [c.id, c.label])) });
+        out[g.key][`overview|${reading}|${focus}|${compare}`] = { viewer, source: "fixtures", membership, overview, map: mapOf(overview.years.census), candidates: cands };
+      }
+      if (r3) for (const compare of ["peer_band", "non_group", "england"]) {
+        const comps = await groupComparisons(g.groupId, kindsFor(compare));
+        const input = { agg, comps, schools, compare, focus, namedLabels: Object.fromEntries(cands.map((c: any) => [c.id, c.label])) };
+        const a = r3.buildAcademic(input);
+        out[g.key][`academic|${reading}|${focus}|${compare}`] = { viewer, source: "fixtures", membership, academic: a, now: a.overview, overview: a.overview, map: mapOf(a.overview.years.census), candidates: cands };
+        const pp = r3.buildPupils(input);
+        out[g.key][`pupils|${reading}|${focus}|${compare}`] = { viewer, source: "fixtures", membership, pupils: pp, now: pp.overview, overview: pp.overview, map: mapOf(pp.overview.years.census), candidates: cands };
+      }
+      const now = buildOverview({ agg, comps: [], compare: "peer_band", focus });
+      out[g.key][`schools|${reading}|${focus}`] = { viewer, source: "fixtures", membership, now, map: mapOf(now.years.census), schools: buildSchools({ agg, schools, focus, members, vicdata, headOffice: true }) };
+    }
+  }
+  if (proj) out[g.key]["projection"] = { rows: await proj.schoolProjections(schools) };
+  console.log(g.key, Object.keys(out[g.key]).length, "responses");
+}
+writeFileSync(process.argv[2] ?? "fx/r2.js", `window.__R2FX = ${JSON.stringify(out)};\n`);
