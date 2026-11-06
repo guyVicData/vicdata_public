@@ -1822,7 +1822,11 @@ const RUNNERS: Record<string, Runner> = {
         const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
         // 0.8 SMT feedback round 1 (F-1): the tile is a PairTile, each figure boxed with its own label.
         const tile = /data-pair="Day"/.test(html) && /data-pair="Boarding"/.test(html);
-        const isc = ep.age > 4 ? /International boarders/.test(T) : true;
+        // Admissions feedback round 2 (F-31): the ISC note left the intake chart for its (i) (DV-ADM-P-FUNNEL's
+        // notes); it shows in the pipeline itself or in that (i).
+        const { METHODS_ADMISSIONS } = await import("../src/catalogue/methods-admissions");
+        const iscInI = (METHODS_ADMISSIONS["DV-ADM-P-FUNNEL"].notes ?? []).some((n) => /International boarders/.test(n));
+        const isc = ep.age > 4 ? /International boarders/.test(T) || iscInI : true;
         const setupOk = /Day and boarding/.test(text(setup[0])) && /Your boarding feeders/.test(text(setup[2])) && /Step 3 of 4/.test(setup[2]) && /Step 4 of 4/.test(setup[3]) && /Boarding only/.test(text(setup[3]));
         // The boarding feeder list end to end: setup's search returns preps with boarders, kept as a
         // fuzzy set, and Boarding only draws the pool from them.
