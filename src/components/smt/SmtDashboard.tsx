@@ -720,6 +720,8 @@ function methodVars(c: Ctx): Record<string, string | number | null> {
     laYear: x?.sources.laYear ?? null,
     iodYear: x?.sources.iodYear ?? null,
     fsmYear: x?.sources.fsmYear !== null && x?.sources.fsmYear !== undefined ? periodLabel(x.sources.fsmYear) : null,
+    // 0.8 Sets r1 (F24): a day school's (i) drops its boarding sentences (method-conditions.ts).
+    boarding: c.school.boarding ? 1 : 0,
   };
 }
 

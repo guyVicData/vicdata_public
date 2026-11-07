@@ -397,7 +397,8 @@ export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: 
 /** F-20, F-36 (0.8 Admissions fb1, fb2): an indexed line chart of you against the rivals -- the chart, its
  * key and the "Indexed:" line under it (the caller draws the title). In the panel: you against the rivals'
  * average (grey, dashed). In full screen: you and each rival in its own colour (the 7-colour series
- * palette, dashed after the seventh), with a key and labelled y gridlines; a `small` rival (under
+ * palette, dashed after the seventh), plus the rivals' average (grey, dashed; 0.8 Sets r1, F23), with a
+ * key and labelled y gridlines; a `small` rival (under
  * ROLL_INDEX_MIN at its base, indexOwn) isn't drawn but is named under the chart. `data` names the key's
  * and the note's markers (data-roll-key / data-roll-small, data-vs-key / data-vs-small). Your line draws
  * last, on top. R-ADM-ROLL-INDEXED, R-ADM-VS-EACH. */
@@ -416,9 +417,12 @@ export function YouAndEachRival({ data, fullscreen, height, years, base, me, ave
   age: string;
 }) {
   const small = rivals.filter((x) => x.small);
+  // The rivals' average, one series for the panel and (0.8 Sets r1, F23) the full screen, where it draws
+  // over each rival's line, dashed, with its own key entry.
+  const avg: Series = { id: "avg", label: "Rivals' average", colour: "var(--adm-grey-soft)", width: 1.8, dashed: "5 3", points: average.map((x) => ({ x: x.year, y: x.value })) };
   const lines: Series[] = fullscreen
-    ? rivals.filter((x) => !x.small).map((x, i) => ({ id: x.urn, label: name(x.urn), colour: `var(--adm-series-${i % 7})`, width: 1.6, dashed: i >= 7 ? "6 3" : undefined, points: x.values.map((v) => ({ x: v.year, y: v.value })), title: (pt: Pt) => rivalTitle(x.urn, pt) }))
-    : [{ id: "avg", label: "Rivals' average", colour: "var(--adm-grey-soft)", width: 1.8, dashed: "5 3", points: average.map((x) => ({ x: x.year, y: x.value })) }];
+    ? [...rivals.filter((x) => !x.small).map((x, i) => ({ id: x.urn, label: name(x.urn), colour: `var(--adm-series-${i % 7})`, width: 1.6, dashed: i >= 7 ? "6 3" : undefined, points: x.values.map((v) => ({ x: v.year, y: v.value })), title: (pt: Pt) => rivalTitle(x.urn, pt) })), { ...avg, width: 2.2, title: (pt: Pt) => `Rivals' average ${yr(pt.x)}: ${pt.y?.toFixed(0)}` }]
+    : [avg];
   return (
     <>
       <LineChart

@@ -1659,14 +1659,20 @@ const RUNNERS: Record<string, Runner> = {
     const drawn = each.filter((x) => !x.small);
     const { yearLabel } = await import("../src/components/admissions/ui");
     const titles = drawn.every((x) => x.last === null || !Number.isFinite(x.last) || full.includes(`${esc(x.name)} ${yearLabel(yrs.at(-1)!)}: ${x.last.toFixed(0)}`));
-    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 1;
+    // 0.8 Sets r1 (F23): full screen also keys the rivals' average (you + each rival drawn + the average),
+    // on this view and on the band roll's (both through YouAndEachRival).
+    const avgKey = (k: string) => k.includes(">Rivals&#x27; average</span>");
+    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 2 && avgKey(key);
+    const { RollTrend } = await import("../src/components/admissions/views/Lines");
+    const rollFull = renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(RollTrend, { m, fullscreen: true, room: 600 })));
+    const rollAvg = avgKey(rollFull.split("data-roll-key")[1]?.split("</div>")[0] ?? "");
     const named = each.filter((x) => x.small).every((x) => note.includes(esc(x.name)) && !key.includes(`>${esc(x.name)}</span>`));
     const lines = fs.readFileSync(path.join(ROOT, "src/components/admissions/views/Lines.tsx"), "utf8");
     const fn = (n: string) => lines.split(`export function ${n}(`)[1]?.split("\nexport function ")[0] ?? "";
     const shared = ["RollTrend", "VsRivals"].every((n) => fn(n).includes("<YouAndEachRival")) && (lines.match(/var\(--adm-series-\$\{/g) ?? []).length === 1;
     const panelOk = panel.includes("Rivals’ average") && !panel.includes("data-vs-key") && !panel.includes("data-y-grid") && !panel.includes("--adm-series-");
-    const ok = keyed && named && titles && shared && panelOk && full.includes("data-y-grid");
-    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, named, titles, shared, panelOk }) };
+    const ok = keyed && rollAvg && named && titles && shared && panelOk && full.includes("data-y-grid");
+    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, rollAvg, named, titles, shared, panelOk }) };
   },
   // R-ADM-BAND-SHARE: the band share recomputed; the rail's last view.
   async admBandShare() {
@@ -1765,12 +1771,72 @@ const RUNNERS: Record<string, Runner> = {
     const html = await admRenderAll("110110", "11+");
     return { pass: html.includes("Schools submitting GCSE results only"), detail: "11+ momentum" };
   },
+  // R-ADM-MOMENTUM-IGCSE (0.8 Sets r1, F25): the 11+ results switch recomputed from the KS4 / KS5
+  // headline populations and the IGCSE rule, and the panel rendered on the server from the route's answer.
+  async admMomentumIgcse() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const fs = await import("node:fs");
+    const v = await import("../src/lib/admissions/views-api");
+    const { headlinePopulation } = await import("../src/lib/admissions/ranks");
+    const { latestResults } = await import("../src/lib/admissions/rivals");
+    const { igcseAmong } = await import("../src/lib/igcse");
+    const { resultsMeasureFor, IGCSE_SWITCH_SHARE } = await import("../src/lib/sets/results-coverage");
+    const { Momentum, momentumChips } = await import("../src/components/admissions/views/Momentum");
+    const { InitialWidth } = await import("../src/components/admissions/views/charts");
+    const { TREND_BASE_PERIOD } = await import("../src/catalogue/notes");
+    const [k4, k5] = [await latestResults("ks4"), await latestResults("ks5")];
+    const [p4, p5] = [await headlinePopulation("ks4", k4.period!), await headlinePopulation("ks5", k5.period!)];
+    const ep = v.entryPoint("11+")!;
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const one = async (urn: string, members: string[] | null) => {
+      const lists = members ? [{ kind: "rivals", rung: null, members, la_blend: null, confirmed: true }] : [];
+      const [m, r] = await Promise.all([v.marketView(urn, ep, lists), v.rivalsView(urn, ep, lists)]);
+      const rivals = r.rows.filter((x) => !x.isSchool).map((x) => x.urn);
+      const ig = await igcseAmong(rivals);
+      const want = resultsMeasureFor(11, rivals.map((u) => ({ urn: u, hasGcse: !ig.has(u) && p4.get(u)?.get(k4.period!) !== undefined, hasPost16: p5.get(u)?.get(k5.period!) !== undefined, igcse: ig.has(u) })));
+      const got = r.momentum!;
+      const same = got.measure === want.measure && got.noGcse === want.noGcse && got.noPost16 === want.noPost16 && got.of === want.of && JSON.stringify(got.leftOut.map((x) => x.urn)) === JSON.stringify(want.leftOut);
+      const html = renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(Momentum, { m, r, fullscreen: false })));
+      const scope = html.split("data-momentum-scope")[1]?.split("</div>")[0] ?? "";
+      // Each dot's y on the switched measure: the KS5 headline change since 2022/23.
+      const ys = got.measure !== "post16" || r.rows.every((x) => { const a = p5.get(x.urn)?.get(TREND_BASE_PERIOD); const b = p5.get(x.urn)?.get(k5.period!); const pts = got.resultsChange[x.urn]?.points; return a === undefined || b === undefined ? pts === null : Math.abs((pts ?? NaN) - (b - a)) < 1e-9; });
+      return { r, got, want, same, scope, ys, chip: momentumChips(m, r).results, html };
+    };
+    // Leighton Park's 11+ default set: whatever the rule says for its real counts (on 6 Nov's data: GCSE,
+    // 2 of 10 rivals without, both IGCSE), drawn as the rule says.
+    const lp = await one("110110", null);
+    const lpLine = `Post-16 results: ${lp.got.noGcse} of ${lp.got.of} rivals have no GCSE results`;
+    const lpDrawn = lp.got.switched
+      ? lp.scope.includes(esc(lpLine)) && lp.chip === "Results: A-level points" && lp.ys
+      : lp.got.noGcse / lp.got.of <= IGCSE_SWITCH_SHARE || lp.got.noPost16 >= lp.got.noGcse
+        ? lp.got.leftOut.every((x) => lp.scope.includes(esc(x.name))) && (lp.got.leftOut.length === 0 || lp.scope.includes("Left out, no GCSE results")) && lp.scope.includes("Schools submitting GCSE results only") && lp.chip === "Results: Attainment 8"
+        : false;
+    const lpOk = lp.same && lpDrawn;
+    // Leighton Park with a saved list of its nearby IGCSE independents and two state grammars: switches.
+    const sw = await one("110110", ["110165", "110137", "110109", "110151", "134467", "136449", "136448"]);
+    const line = `Post-16 results: ${sw.got.noGcse} of ${sw.got.of} rivals have no GCSE results (mostly IGCSE)`;
+    const swOk = sw.same && sw.got.switched && sw.got.measure === "post16" && sw.scope.includes(esc(line)) && sw.scope.includes('data-momentum-measure="post16"') && sw.ys && sw.chip === "Results: A-level points" && sw.html.includes("A-level points per entry");
+    // A state school's set (Maiden Erlegh School): stays on GCSE.
+    const st = await one("136637", null);
+    const stOk = st.same && st.got.measure === "gcse" && !st.got.switched;
+    // 16+: nothing changes (no momentum rule; the rivals view's own post-16 results).
+    const r16 = await v.rivalsView("110110", v.entryPoint("16+")!, []);
+    const at16 = r16.momentum === null && r16.stage === "ks5";
+    // The 40% in one place: the constant is declared once, and only results-coverage.ts holds 0.4 for it.
+    const src = (f: string) => fs.readFileSync(path.join(ROOT, f), "utf8");
+    const once = (src("src/lib/sets/results-coverage.ts").match(/IGCSE_SWITCH_SHARE = 0\.4\b/g) ?? []).length === 1 && !/resultsMeasureFor|IGCSE_SWITCH_SHARE/.test(src("src/components/admissions/views/Momentum.tsx").replace(/import[^;]+;/g, "")) && src("src/lib/admissions/views-api.ts").includes("resultsMeasureFor(");
+    const pass = lpOk && swOk && stOk && at16 && once;
+    const d = (x: Awaited<ReturnType<typeof one>>) => `${x.got.measure} (no GCSE ${x.got.noGcse}/${x.got.of}, ${x.got.noGcseIgcse} IGCSE; no post-16 ${x.got.noPost16}/${x.got.of}; left out: ${x.got.leftOut.map((y) => y.name).join("; ") || "none"})`;
+    return { pass, detail: fmt({ leightonPark: d(lp), lpOk, saved7: d(sw), swOk, line: sw.got.switched ? line : "not switched", maidenErlegh: d(st), stOk, at16, oneConstant: once }) };
+  },
   async admBoardingOnly() {
     const { createElement } = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
     const v = await import("../src/lib/admissions/views-api");
     const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
-    const { AdmissionsEveryView } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { AdmissionsEveryView, methodVars } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { METHODS, methodOf, methodText } = await import("../src/catalogue/methods");
     const { Setup } = await import("../src/components/admissions/setup/Setup");
     const { OpenInFullscreen } = await import("../src/components/teacher/CardBox");
     // Setup's "add by name" (SchoolSearch) reads the app router: a do-nothing one for a server render.
@@ -1806,6 +1872,11 @@ const RUNNERS: Record<string, Runner> = {
           ),
         );
       const editorOk = boarding ? editor.every((h) => /Boarding feeders/.test(text(h))) : editor.every((h) => !BOARD.test(text(h)));
+      // 0.8 Sets r1 (F24): every Admissions view's (i) as the host fills it (methodVars: the view's
+      // placeholders and the school's boarding flag): its notes and its method's text.
+      const host = { boardingSchool: boarding, pipeline: { status: "ready" as const, data: p }, market: { status: "ready" as const, data: m } };
+      const iText = (dv: string) => { const x = methodOf(dv, methodVars(dv, host as never))!; return [...(x.notes ?? []), methodText(x)].join("\n"); };
+      const admDvs = Object.keys(METHODS).filter((d) => d.startsWith("DV-ADM-"));
       if (!boarding) {
         const leaks = [...own, ...setup].map(text).filter((x) => BOARD.test(x)).map((x) => x.match(BOARD)![0]);
         const marketControls = market.map(text).some((x) => /Rivals with boarders|Boarding only/.test(x));
@@ -1814,18 +1885,23 @@ const RUNNERS: Record<string, Runner> = {
         const asked = await v.pipelineView(urn, ep, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
         const ignored = !("empty" in asked) && !("empty" in p) && JSON.stringify(asked.ladder) === JSON.stringify(p.ladder);
         const steps = /Step 1 of 3/.test(setup[0]) && /Step 3 of 3/.test(setup[3]) && /Step 2 of 3/.test(setup[2]);
-        const ok = leaks.length === 0 && !marketControls && tile && ignored && steps && editorOk;
+        // A day school's (i): no boarding words, but the rivals' own figures may still say they board
+        // (Market share's GIAS traits and the group line's count of schools with boarding).
+        const RIVALS_BOARD = [/nearest schools, sector, boarding, gender, location/g, /independent, state and boarding \(your school included/g];
+        const iLeaks = admDvs.filter((d) => BOARD.test(RIVALS_BOARD.reduce((t, r) => t.replace(r, ""), iText(d))));
+        const ok = leaks.length === 0 && iLeaks.length === 0 && !marketControls && tile && ignored && steps && editorOk;
         pass &&= ok;
-        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps + ${editor.length} editor Data steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps}, editor compare without boarding ${editorOk} ${ok ? "ok" : "FAIL"}`);
+        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps + ${editor.length} editor Data steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, (i)s with boarding words ${iLeaks.length}/${admDvs.length}${iLeaks.length ? ` (${iLeaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps}, editor compare without boarding ${editorOk} ${ok ? "ok" : "FAIL"}`);
       } else {
         const T = text(html);
         const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
         // 0.8 SMT feedback round 1 (F-1): the tile is a PairTile, each figure boxed with its own label.
         const tile = /data-pair="Day"/.test(html) && /data-pair="Boarding"/.test(html);
         // Admissions feedback round 2 (F-31): the ISC note left the intake chart for its (i) (DV-ADM-P-FUNNEL's
-        // notes); it shows in the pipeline itself or in that (i).
-        const { METHODS_ADMISSIONS } = await import("../src/catalogue/methods-admissions");
-        const iscInI = (METHODS_ADMISSIONS["DV-ADM-P-FUNNEL"].notes ?? []).some((n) => /International boarders/.test(n));
+        // notes); it shows in the pipeline itself or in that (i). 0.8 Sets r1 (F24): read as the host fills
+        // the (i) for this boarding school, with the intake's boarding caveat beside it.
+        const funnelI = iText("DV-ADM-P-FUNNEL");
+        const iscInI = /International boarders/.test(funnelI) && /Boarding schools draw from far beyond any radius/.test(funnelI);
         const isc = ep.age > 4 ? /International boarders/.test(T) || iscInI : true;
         const setupOk = /Day and boarding/.test(text(setup[0])) && /Your boarding feeders/.test(text(setup[2])) && /Step 3 of 4/.test(setup[2]) && /Step 4 of 4/.test(setup[3]) && /Boarding only/.test(text(setup[3]));
         // The boarding feeder list end to end: setup's search returns preps with boarders, kept as a
