@@ -14,7 +14,7 @@ import { readSets, readUserState } from "./store";
 /** Whose personal sets a caller sees: their own; none in a platform admin's View as (the viewed
  * member's own sets aren't readable, and Guy's own are never shown as theirs). */
 const profileOf = (c: AdmissionsCaller) => (c.viewAs ? null : c.userId);
-const curates = (c: AdmissionsCaller, kind: SetKind) => !c.readOnly && canCurate({ roles: c.roles, isAdmin: !!c.isAdmin, isAccountHolder: !!c.isAccountHolder }, kind);
+const curates = (c: AdmissionsCaller, kind: SetKind) => !c.readOnly && canCurate({ roles: c.roles, isAdmin: !!c.isAdmin, isAccountHolder: !!c.isAccountHolder, lead: c.lead }, kind);
 
 export type RouteSets = { lists: SavedList[]; feeders?: ResolvedSet; rivals?: ResolvedSet };
 

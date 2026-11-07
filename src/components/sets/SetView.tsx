@@ -139,7 +139,7 @@ export function SetView({ urn, schoolName, set, editHref, duplicateHref, phone }
   const whereBody = (
     <div className="text-[12.5px]">
       <p>{feeders ? `Pipelines at ${set.entry} for Admissions. Not shown in Teacher.` : set.phase ? `Teacher's ${set.phase === "ks5" ? "Post-16" : "GCSE"} pages${set.scope === "school" ? " for everyone at the school" : ""}.` : `Market share at ${set.entry}${set.scope === "school" ? ` for everyone at ${schoolName}` : ""}.${set.entry === "11+" || set.entry === "16+" ? ` Teachers see it on ${set.entry === "11+" ? "GCSE" : "Post-16"} pages under School sets.` : ""}`}</p>
-      <p className="text-[var(--muted2)]">Editable by {set.scope === "personal" ? "you" : set.scope === "default" ? "no one: save a copy as your own" : feeders ? "Admissions" : "SMT, Admissions and the School-Admin"}.</p>
+      <p className="text-[var(--muted2)]">Editable by {set.scope === "personal" ? "you" : set.scope === "default" ? "no one: save a copy as your own" : feeders ? "the Admissions lead (and the School-Admin, audited)" : "the Admissions lead, SMT and the School-Admin"}.</p>
     </div>
   );
   if (phone)

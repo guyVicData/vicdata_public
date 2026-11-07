@@ -89,9 +89,9 @@ export async function PUT(request: NextRequest) {
   const existing = await readSets(caller.supabase, { schoolAccountId: acc, kind: shape.kind });
   if (existing.error) return NextResponse.json({ error: existing.notSetUp ? "Admissions lists are not set up yet." : "Could not save." }, { status: existing.notSetUp ? 503 : 502 });
   const current = existing.sets.find((s) => s.ownerScope === "school" && s.isDefault && s.entryPoint === ep && legacyKindOf(s) === l.kind && (s.rungAge ?? null) === shape.rungAge);
-  // A new list set is made under the writer's own role there: the lead's is Admissions; the
-  // School-Admin's (0.7 r2b's override) is the School-Admin's.
-  const creator = caller.roles.includes("admissions") ? "admissions" : caller.roles.includes("smt") && shape.kind === "compared_against" ? "smt" : "school_admin";
+  // A new list set is made under the writer's own standing there (lead-only, Guy 7 Nov): the lead's is
+  // Admissions; SMT's (rivals only) SMT's; the School-Admin's is the audited override's.
+  const creator = caller.lead ? "admissions" : caller.roles.includes("smt") && shape.kind === "compared_against" ? "smt" : "school_admin";
   const res = await saveSet(
     caller.supabase,
     current?.id ?? null,
@@ -103,7 +103,7 @@ export async function PUT(request: NextRequest) {
   if ("error" in res) {
     if (setsNotSetUp(res.error)) return NextResponse.json({ error: "Admissions lists are not set up yet." }, { status: 503 });
     const refused = res.code === "42501" || /can't change this set/.test(res.error);
-    return NextResponse.json({ error: refused ? (shape.kind === "feeders" ? "Only Admissions can change the feeder lists." : "Only SMT, Admissions or the School-Admin can change the rivals.") : "Could not save." }, { status: refused ? 403 : 502 });
+    return NextResponse.json({ error: refused ? (shape.kind === "feeders" ? "Only the Admissions lead or the School-Admin can change the feeder lists." : "Only the Admissions lead, SMT or the School-Admin can change the rivals.") : "Could not save." }, { status: refused ? 403 : 502 });
   }
   const after = await readSet(caller.supabase, res.id);
   return NextResponse.json({ list: { id: res.id, updated_by: after?.updatedBy ?? null, updated_at: after?.updatedAt ?? null } });

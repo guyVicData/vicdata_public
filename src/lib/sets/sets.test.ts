@@ -30,19 +30,25 @@ test("a set fits a page by kind, and by entry point or phase (11+ is GCSE, 16+ P
   assert.equal(setFitsPage(set({ phase: "ks4" }), { kind: "compared_against", entryPoint: "4+" }), false);
 });
 
-test("who curates: compared-against by SMT, Admissions and the School-Admin; feeders by Admissions", () => {
+test("who curates (lead-only, Guy 7 Nov): compared-against by the lead, SMT and the School-Admin; feeders by the lead and the School-Admin", () => {
+  const lead = { roles: ["admissions"], isAdmin: false, lead: true };
+  const member = { roles: ["admissions"], isAdmin: false };
+  assert.equal(canCurate(lead, "compared_against"), true);
+  assert.equal(canCurate(lead, "feeders"), true);
+  assert.equal(canCurate(member, "compared_against"), false, "an Admissions member who isn't the lead");
+  assert.equal(canCurate(member, "feeders"), false);
   assert.equal(canCurate({ roles: ["smt"], isAdmin: false }, "compared_against"), true);
-  assert.equal(canCurate({ roles: ["admissions"], isAdmin: false }, "compared_against"), true);
+  assert.equal(canCurate({ roles: ["smt"], isAdmin: false }, "feeders"), false);
   assert.equal(canCurate({ roles: ["teacher"], isAdmin: true }, "compared_against"), true);
-  assert.equal(canCurate({ roles: ["teacher"], isAdmin: false, isAccountHolder: true }, "compared_against"), true);
-  assert.equal(canCurate({ roles: ["teacher"], isAdmin: false }, "compared_against"), false);
-  assert.equal(canCurate({ roles: ["admissions"], isAdmin: false }, "feeders"), true);
-  assert.equal(canCurate({ roles: ["smt"], isAdmin: true }, "feeders"), false);
-  assert.equal(creatorFor({ roles: ["smt", "admissions"], isAdmin: false }, "compared_against"), "admissions");
-  assert.equal(creatorFor({ roles: ["smt", "admissions"], isAdmin: false }, "compared_against", "smt"), "smt");
-  assert.equal(creatorFor({ roles: ["smt", "admissions"], isAdmin: false }, "feeders", "smt"), "admissions");
-  assert.equal(creatorFor({ roles: ["teacher"], isAdmin: true }, "compared_against"), "school_admin");
-  assert.equal(creatorFor({ roles: ["teacher"], isAdmin: false }, "compared_against"), null);
+  assert.equal(canCurate({ roles: ["teacher"], isAdmin: true }, "feeders"), true, "the School-Admin, audited");
+  assert.equal(canCurate({ roles: ["teacher"], isAdmin: false, isAccountHolder: true }, "feeders"), true);
+  assert.equal(canCurate({ roles: ["teacher", "hod"], isAdmin: false }, "compared_against"), false);
+  assert.equal(creatorFor({ roles: ["smt", "admissions"], isAdmin: false, lead: true }, "compared_against"), "admissions");
+  assert.equal(creatorFor({ roles: ["smt", "admissions"], isAdmin: false, lead: true }, "compared_against", "smt"), "smt");
+  assert.equal(creatorFor({ roles: ["smt", "admissions"], isAdmin: false, lead: true }, "feeders", "smt"), "admissions");
+  assert.equal(creatorFor({ roles: ["smt", "admissions"], isAdmin: false }, "compared_against"), "smt", "a non-lead Admissions member who is SMT saves as SMT");
+  assert.equal(creatorFor({ roles: ["teacher"], isAdmin: true }, "feeders"), "school_admin");
+  assert.equal(creatorFor({ roles: ["admissions"], isAdmin: false }, "compared_against"), null);
 });
 
 test("the cap counts active personal sets only; untiered counts as Regular", () => {

@@ -3412,7 +3412,8 @@ const RUNNERS: Record<string, Runner> = {
     const root = new URL("..", import.meta.url).pathname;
     const src = (f: string) => fs.readFileSync(path.join(root, f), "utf8");
     const smt = /const set = `\$\{c\.set\.label\} · \$\{c\.set\.urns\.length\}`/.test(src("src/components/smt/SmtDashboard.tsx"));
-    const teacher = /withSetLine\(current\.controls\)/.test(src("src/components/teacher/ComparisonsPanels.tsx")) && /withSetLine\(trend\.controls\)/.test(src("src/components/teacher/ComparisonsPanels.tsx"));
+    // Teacher: the column's set selector, directly above both panels, names the set and its count.
+    const teacher = /<SetSelector label="Compared against" kind="compared_against" width=\{TEACHER_SET_PILL_WIDTH\}/.test(src("src/components/teacher/ComparisonsPanels.tsx")) && /current: \{ name: activeSetLabel, count: activeCount \}/.test(src("src/components/dashboard-config/TeacherDashboard.tsx"));
     const wraps = /data-set-header=[^>]*class="[^"]*flex-wrap[^"]*whitespace-normal/.test(html) && !/data-set-header=[^>]*truncate/.test(html);
     const pass = chunks.length > 30 && missing.length === 0 && extra.length === 0 && smt && teacher && wraps;
     return { pass, detail: fmt({ admissionsViews: chunks.length, named: chunks.length - missing.length - chunks.filter((c) => !setKindOfView(dvOf(c))).length, missing: missing.join(" ") || 0, noSetViewsWithALine: extra.join(" ") || 0, smtHeaders: smt, teacherPanels: teacher, wrapsOnPhone: wraps }) };

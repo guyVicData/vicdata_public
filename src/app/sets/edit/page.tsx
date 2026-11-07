@@ -21,7 +21,7 @@ import { useWidth } from "@/components/admissions/views/charts";
 
 const PHONE = 600;
 
-type Membership = { roles: string[] | null; is_admin: boolean | null; id: string; school_account_id: string; school_accounts: { school_urn: string; account_holder_membership_id: string | null; schools: { current_name: string } | null } };
+type Membership = { roles: string[] | null; is_admin: boolean | null; admissions_lead: boolean | null; id: string; school_account_id: string; school_accounts: { school_urn: string; account_holder_membership_id: string | null; schools: { current_name: string } | null } };
 
 function EditorLoader() {
   const sp = useSearchParams();
@@ -43,14 +43,14 @@ function EditorLoader() {
       if (!who.user) return setState({ status: "error", message: "Sign in to edit sets." });
       const { data: mem } = await supabase
         .from("school_memberships")
-        .select("id, roles, is_admin, school_account_id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn, account_holder_membership_id, schools(current_name))")
+        .select("id, roles, is_admin, admissions_lead, school_account_id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn, account_holder_membership_id, schools(current_name))")
         .eq("profile_id", who.user.id)
         .eq("status", "approved")
         .eq("school_accounts.school_urn", urn)
         .limit(1)
         .maybeSingle<Membership>();
       if (!mem) return setState({ status: "error", message: "Sets are edited by the school's own staff. (In View as, sets are read-only.)" });
-      const curator = { roles: mem.roles ?? [], isAdmin: !!mem.is_admin, isAccountHolder: mem.school_accounts.account_holder_membership_id === mem.id };
+      const curator = { roles: mem.roles ?? [], isAdmin: !!mem.is_admin, isAccountHolder: mem.school_accounts.account_holder_membership_id === mem.id, lead: !!mem.admissions_lead };
       const curates = canCurate(curator, kind);
       const set = setId ? await readSet(supabase, setId) : null;
       if (setId && !set) return setState({ status: "error", message: "That set has gone, or isn't one you can see." });
@@ -65,7 +65,7 @@ function EditorLoader() {
       const isDefault = !set && !!fromKey;
       const mode = saveModeOf(set, { profileId: who.user.id, canCurate: curates, isDefault });
       const creator: CreatorKind = set ? set.creatorKind : isDefault ? "default" : "me";
-      const editableBy = kind === "feeders" ? "Admissions" : "SMT, Admissions and the School-Admin";
+      const editableBy = kind === "feeders" ? "the Admissions lead (and the School-Admin, audited)" : "the Admissions lead, SMT and the School-Admin";
       const schoolName = mem.school_accounts.schools?.current_name ?? urn;
       const urns = (sp.get("urns") ?? "").split(",").filter((u) => /^\d{5,7}$/.test(u));
       const start: EditorStart = set

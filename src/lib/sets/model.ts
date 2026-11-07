@@ -73,24 +73,28 @@ export function setFitsPage(set: Pick<StoredSet, "kind" | "entryPoint" | "phase"
   return set.phase === pagePhase;
 }
 
-/** The member's standing at a school, as the curate rules read it. */
-export type Curator = { roles: readonly string[]; isAdmin: boolean; isAccountHolder?: boolean };
+/** The member's standing at a school, as the curate rules read it. `lead`: the Admissions lead. */
+export type Curator = { roles: readonly string[]; isAdmin: boolean; isAccountHolder?: boolean; lead?: boolean };
 
-/** Who curates school sets (A2), mirroring the database's can_curate_sets: compared-against by SMT,
- * Admissions and the School-Admin (or the account holder); feeders by Admissions. Teachers use
- * school sets and never build them. */
+/** Who curates school sets (A2; lead-only, Guy 7 Nov), mirroring the database's can_curate_sets:
+ * compared-against by the Admissions lead, SMT and the School-Admin (or the account holder); feeders by
+ * the Admissions lead and the School-Admin. Everyone else -- other Admissions members, teachers, HoDs --
+ * keeps personal sets only. A School-Admin's change is audited as an override (as 0.7 r2b did). */
 export function canCurate(m: Curator | null | undefined, kind: SetKind): boolean {
   if (!m) return false;
-  if (kind === "feeders") return m.roles.includes("admissions");
-  return m.roles.includes("smt") || m.roles.includes("admissions") || m.isAdmin || !!m.isAccountHolder;
+  const admin = m.isAdmin || !!m.isAccountHolder;
+  if (kind === "feeders") return !!m.lead || admin;
+  return !!m.lead || m.roles.includes("smt") || admin;
 }
 
-/** The creator a curator's school set is saved under: a role they hold, Admissions first on
- * Admissions pages, else SMT, else the School-Admin. Null if they can't curate this kind. */
+/** The creator a curator's school set is saved under: Admissions for the lead, else SMT (compared
+ * against), else the School-Admin. On SMT's pages SMT comes first. Null if they can't curate this kind. */
 export function creatorFor(m: Curator | null | undefined, kind: SetKind, prefer?: "admissions" | "smt"): Exclude<StoredCreatorKind, "me"> | null {
   if (!m || !canCurate(m, kind)) return null;
-  const order: Exclude<StoredCreatorKind, "me">[] = prefer === "smt" ? ["smt", "admissions"] : ["admissions", "smt"];
-  for (const r of order) if (m.roles.includes(r) && (kind === "compared_against" || r === "admissions")) return r;
+  const smt = kind === "compared_against" && m.roles.includes("smt");
+  if (prefer === "smt" && smt) return "smt";
+  if (m.lead) return "admissions";
+  if (smt) return "smt";
   return "school_admin";
 }
 

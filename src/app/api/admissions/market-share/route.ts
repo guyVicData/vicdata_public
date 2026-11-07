@@ -13,7 +13,8 @@ import { marketView } from "@/lib/admissions/views-api";
 // same set the rivals' ranks use); `extras` per school and `fe` (an FE college's own ILR series,
 // never divided into the group) for the screens (views-api.ts marketView).
 // 0.8 sets round 1 (B6-B11): &fset= / &rset= choose the Feeder schools / Compared against set
-// (src/lib/sets/admissions-route.ts); the answer names the sets in use (`sets`), for the headers.
+// (src/lib/sets/admissions-route.ts); the answer names the sets in use (`setChoices`, beside the
+// pipeline's own `sets`, its rung sets), for the headers.
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await admissionsCaller(request, sp.get("urn"));
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   const sex = sp.get("sex") === "male" || sp.get("sex") === "female" ? (sp.get("sex") as "male" | "female") : "all";
   try {
     const chosen = await listsForRoute(caller, ep, sp, ["compared_against"]);
-    return NextResponse.json({ ...(await marketView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), sex })), sets: setsInUse(chosen) });
+    return NextResponse.json({ ...(await marketView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), sex })), setChoices: setsInUse(chosen) });
   } catch (err) {
     console.error("[admissions/market-share] failed:", err);
     return NextResponse.json({ error: "Could not build market share." }, { status: 502 });

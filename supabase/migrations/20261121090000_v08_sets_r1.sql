@@ -33,9 +33,13 @@
 --        read    a personal set: its owner only. A school set: every approved member of its school,
 --                and platform admins (View as reads with the service role once resolveCaller has
 --                confirmed it, as before).
---        write   a personal set: its owner. A school set, by kind: compared_against by SMT,
---                Admissions and the School-Admin (is_admin or the account holder); feeders by
---                Admissions. Teachers use school sets and never write them.
+--        write   a personal set: its owner. A school set is lead-only (Guy, 7 Nov), by kind:
+--                compared_against by the Admissions lead, SMT and the School-Admin (is_admin or the
+--                account holder); feeders by the Admissions lead and the School-Admin. Everyone else
+--                -- other Admissions members, teachers, HoDs -- keeps personal sets only.
+--        audit   a School-Admin's change to a school set (one only their School-Admin standing allows:
+--                not the lead's, not SMT's on a compared-against set) is written to platform_audit_log
+--                as admissions_lists_override, as 0.7 r2b audited the lists.
 --        cap     up to 8 ACTIVE personal sets per person (archiving frees a slot); a trigger, so
 --                the database is the backstop, not the page.
 --        stamp   updated_by / updated_at (and created_by on insert) are set by the database.
@@ -62,9 +66,11 @@ as $$
           and m.status = 'approved' and p_role = any(m.roles));
 $$;
 
--- May the caller curate (create, change, archive, delete) this school's sets of this kind?
---   compared_against: SMT, Admissions, the School-Admin (is_admin) or the account holder
---   feeders:          Admissions
+-- May the caller curate (create, change, archive, delete) this school's sets of this kind? Lead-only
+-- (Guy, 7 Nov):
+--   compared_against: the Admissions lead, SMT, the School-Admin (is_admin) or the account holder
+--   feeders:          the Admissions lead, the School-Admin or the account holder
+-- An Admissions member who isn't the lead curates neither.
 create or replace function public.can_curate_sets(p_school_account_id uuid, p_kind text)
 returns boolean
 language sql
@@ -74,15 +80,33 @@ set search_path = public
 as $$
     select case p_kind
         when 'compared_against' then
-            public.has_school_role(p_school_account_id, 'smt')
-            or public.has_school_role(p_school_account_id, 'admissions')
+            public.is_admissions_lead_of(p_school_account_id)
+            or public.has_school_role(p_school_account_id, 'smt')
             or public.is_admin_of_school_account(p_school_account_id)
             or public.is_account_holder_of_school_account(p_school_account_id)
         when 'feeders' then
-            public.has_school_role(p_school_account_id, 'admissions')
+            public.is_admissions_lead_of(p_school_account_id)
+            or public.is_admin_of_school_account(p_school_account_id)
+            or public.is_account_holder_of_school_account(p_school_account_id)
         else false
     end;
 $$;
+
+-- Is a write to this school set the School-Admin's override, to be audited -- allowed only by the
+-- writer's School-Admin (or account holder) standing, not as the lead, nor as SMT on a
+-- compared-against set? No user (the service role, the conversion): never.
+create or replace function public.is_set_override(p_school_account_id uuid, p_kind text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select auth.uid() is not null
+       and not public.is_admissions_lead_of(p_school_account_id)
+       and not (p_kind = 'compared_against' and public.has_school_role(p_school_account_id, 'smt'));
+$$;
+revoke execute on function public.is_set_override(uuid, text) from public, anon, authenticated;
 
 -- 1. sets -------------------------------------------------------------------------------------
 
@@ -228,8 +252,8 @@ create policy set_members_delete on public.set_members for delete using (public.
 drop policy if exists set_user_state_own on public.set_user_state;
 create policy set_user_state_own on public.set_user_state for all using (profile_id = auth.uid()) with check (profile_id = auth.uid());
 
--- The creator is who the writer is: 'me' for a personal set; for a school set, a role the writer
--- holds there (admissions, smt) or 'school_admin' for the School-Admin or the account holder. A
+-- The creator is who the writer is: 'me' for a personal set; for a school set, 'admissions' for the
+-- Admissions lead, 'smt' for SMT, or 'school_admin' for the School-Admin or the account holder. A
 -- write with no user (the service role, this migration) is trusted as given.
 create or replace function public.check_set_creator()
 returns trigger
@@ -241,7 +265,7 @@ begin
     if auth.uid() is null then return new; end if;
     if tg_op = 'UPDATE' and new.creator_kind = old.creator_kind then return new; end if;
     if new.owner_scope = 'school' and not (
-        (new.creator_kind = 'admissions' and public.has_school_role(new.school_account_id, 'admissions'))
+        (new.creator_kind = 'admissions' and public.is_admissions_lead_of(new.school_account_id))
         or (new.creator_kind = 'smt' and public.has_school_role(new.school_account_id, 'smt'))
         or (new.creator_kind = 'school_admin' and (public.is_admin_of_school_account(new.school_account_id) or public.is_account_holder_of_school_account(new.school_account_id)))) then
         raise exception 'a school set''s creator must be a role the writer holds at that school' using errcode = '42501';
@@ -376,17 +400,143 @@ begin
         end if;
     end if;
     if p_members is not null then
-        delete from public.set_members where set_id = v_id;
+        -- Only what changed: the schools that leave, the ones that join, and new places or tiers --
+        -- so the override audit records a real difference.
+        delete from public.set_members m
+        where m.set_id = v_id
+          and not exists (select 1 from jsonb_array_elements(p_members) e where e ->> 'urn' = m.urn);
         insert into public.set_members (set_id, urn, position, tier)
-        select v_id, e ->> 'urn', (o - 1)::int, nullif(e ->> 'tier', '')
-        from jsonb_array_elements(p_members) with ordinality as x(e, o)
-        on conflict (set_id, urn) do nothing;
+        select v_id, x.urn, x.position, x.tier
+        from (
+            select distinct on (e ->> 'urn') e ->> 'urn' as urn, (o - 1)::int as position, nullif(e ->> 'tier', '') as tier
+            from jsonb_array_elements(p_members) with ordinality as y(e, o)
+            order by e ->> 'urn', o
+        ) x
+        on conflict (set_id, urn) do update set position = excluded.position, tier = excluded.tier
+            where (set_members.position, set_members.tier) is distinct from (excluded.position, excluded.tier);
     end if;
     return v_id;
 end;
 $$;
 revoke execute on function public.save_set(uuid, jsonb, jsonb) from public, anon;
 grant execute on function public.save_set(uuid, jsonb, jsonb) to authenticated;
+
+-- The School-Admin's override, audited as 0.7 r2b audited the lists (admissions_lists_override in
+-- platform_audit_log, People -> Admissions history). The detail keeps r2b's fields (op, entry_point,
+-- kind in the old list kinds, rung, added, removed, changed) and adds the set's id and name.
+create or replace function public.set_audit_detail(p_set public.sets, p_op text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select jsonb_build_object('op', p_op, 'set_id', p_set.id, 'name', p_set.name, 'entry_point', p_set.entry_point,
+        'kind', case when p_set.kind = 'compared_against' then 'rivals' when p_set.rung_age is not null then 'rung'
+                     when p_set.audience = 'boarding' then 'boarding_feeders' when p_set.audience = 'day' then 'day_feeders' else p_set.kind end,
+        'rung', case when p_set.rung_age is not null then 'age:' || p_set.rung_age else null end);
+$$;
+revoke execute on function public.set_audit_detail(public.sets, text) from public, anon, authenticated;
+
+create or replace function public.audit_set_override()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_row public.sets;
+    v_changed text[];
+    v_detail jsonb;
+begin
+    if tg_op = 'DELETE' then v_row := old; else v_row := new; end if;
+    if v_row.owner_scope <> 'school' or not public.is_set_override(v_row.school_account_id, v_row.kind) then
+        return null;
+    end if;
+    v_detail := public.set_audit_detail(v_row, lower(tg_op));
+    if tg_op = 'UPDATE' then
+        select coalesce(array_agg(f order by f), '{}') into v_changed
+        from unnest(array['name', 'description', 'rule', 'la_blend', 'pinned', 'archived', 'is_default', 'folder', 'tags', 'source_recipe', 'audience']) f
+        where (to_jsonb(new) -> f) is distinct from (to_jsonb(old) -> f);
+        -- A change to its schools touches updated_at: the members' own audit records that.
+        if cardinality(v_changed) = 0 then
+            return null;
+        end if;
+        v_detail := v_detail || jsonb_build_object('changed', v_changed);
+    end if;
+    perform public.log_admissions_action('admissions_lists_override', v_row.school_account_id, v_detail);
+    return null;
+end;
+$$;
+drop trigger if exists sets_audit_override on public.sets;
+create trigger sets_audit_override after insert or update or delete on public.sets
+    for each row execute function public.audit_set_override();
+
+-- A set's schools, one audit row per set per statement: who joined, who left, whose tier changed.
+-- Each statement's transition tables arrive as jsonb ([{set_id, urn, tier}]); save_set writes only the
+-- difference, so the row says what really changed.
+create or replace function public.audit_set_members_apply(p_old jsonb, p_new jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_set public.sets;
+    r record;
+begin
+    if auth.uid() is null then return; end if;
+    for r in
+        with o as (select (x ->> 'set_id')::uuid set_id, x ->> 'urn' urn, x ->> 'tier' tier from jsonb_array_elements(coalesce(p_old, '[]')) x),
+             n as (select (x ->> 'set_id')::uuid set_id, x ->> 'urn' urn, x ->> 'tier' tier from jsonb_array_elements(coalesce(p_new, '[]')) x)
+        select coalesce(n.set_id, o.set_id) as set_id,
+               coalesce(jsonb_agg(n.urn order by n.urn) filter (where o.urn is null), '[]') as added,
+               coalesce(jsonb_agg(o.urn order by o.urn) filter (where n.urn is null), '[]') as removed,
+               coalesce(jsonb_agg(n.urn order by n.urn) filter (where o.urn is not null and n.urn is not null and o.tier is distinct from n.tier), '[]') as retiered
+        from o full join n on o.set_id = n.set_id and o.urn = n.urn
+        group by coalesce(n.set_id, o.set_id)
+    loop
+        select * into v_set from public.sets where id = r.set_id;
+        if not found or v_set.owner_scope <> 'school' or not public.is_set_override(v_set.school_account_id, v_set.kind) then
+            continue;
+        end if;
+        if jsonb_array_length(r.added) + jsonb_array_length(r.removed) + jsonb_array_length(r.retiered) = 0 then
+            continue;
+        end if;
+        perform public.log_admissions_action('admissions_lists_override', v_set.school_account_id,
+            public.set_audit_detail(v_set, 'update') || jsonb_build_object(
+                'changed', case when jsonb_array_length(r.retiered) > 0 then jsonb_build_array('members', 'tiers') else jsonb_build_array('members') end,
+                'added', r.added, 'removed', r.removed, 'retiered', r.retiered));
+    end loop;
+end;
+$$;
+revoke execute on function public.audit_set_members_apply(jsonb, jsonb) from public, anon, authenticated;
+
+create or replace function public.audit_set_members_insert() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+    perform public.audit_set_members_apply(null, (select jsonb_agg(jsonb_build_object('set_id', set_id, 'urn', urn, 'tier', tier)) from new_rows));
+    return null;
+end; $$;
+create or replace function public.audit_set_members_delete() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+    perform public.audit_set_members_apply((select jsonb_agg(jsonb_build_object('set_id', set_id, 'urn', urn, 'tier', tier)) from old_rows), null);
+    return null;
+end; $$;
+create or replace function public.audit_set_members_update() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+    perform public.audit_set_members_apply((select jsonb_agg(jsonb_build_object('set_id', set_id, 'urn', urn, 'tier', tier)) from old_rows),
+                                           (select jsonb_agg(jsonb_build_object('set_id', set_id, 'urn', urn, 'tier', tier)) from new_rows));
+    return null;
+end; $$;
+drop trigger if exists set_members_audit_insert on public.set_members;
+create trigger set_members_audit_insert after insert on public.set_members
+    referencing new table as new_rows for each statement execute function public.audit_set_members_insert();
+drop trigger if exists set_members_audit_delete on public.set_members;
+create trigger set_members_audit_delete after delete on public.set_members
+    referencing old table as old_rows for each statement execute function public.audit_set_members_delete();
+drop trigger if exists set_members_audit_update on public.set_members;
+create trigger set_members_audit_update after update on public.set_members
+    referencing old table as old_rows new table as new_rows for each statement execute function public.audit_set_members_update();
 
 grant select, insert, update, delete on public.sets, public.set_members, public.set_user_state to authenticated;
 revoke all on public.sets, public.set_members, public.set_user_state from anon;

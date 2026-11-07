@@ -12,7 +12,8 @@ import { shapeView } from "@/lib/admissions/views-api";
 // 0.7 r2 (additive): the counts the screens draw (profiles, the local profile, each rival's
 // profile and XS-XL) and Market share's rival set (&sector, &boarding) (views-api.ts shapeView).
 // 0.8 sets round 1 (B6-B11): &fset= / &rset= choose the Feeder schools / Compared against set
-// (src/lib/sets/admissions-route.ts); the answer names the sets in use (`sets`), for the headers.
+// (src/lib/sets/admissions-route.ts); the answer names the sets in use (`setChoices`, beside the
+// pipeline's own `sets`, its rung sets), for the headers.
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await admissionsCaller(request, sp.get("urn"));
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   if (!ep) return NextResponse.json({ error: "entry must be 4+, 11+, 16+ or age:2-17" }, { status: 400 });
   try {
     const chosen = await listsForRoute(caller, ep, sp, ["feeders", "compared_against"]);
-    return NextResponse.json({ ...(await shapeView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp) })), sets: setsInUse(chosen) });
+    return NextResponse.json({ ...(await shapeView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp) })), setChoices: setsInUse(chosen) });
   } catch (err) {
     console.error("[admissions/shape] failed:", err);
     return NextResponse.json({ error: "Could not build shape and size." }, { status: 502 });

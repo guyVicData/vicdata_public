@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const c = await resolveCaller(request, request.nextUrl.searchParams.get("urn"), { refusal: "Sets are for the school's own staff." });
   if (c instanceof NextResponse) return c;
   try {
-    return NextResponse.json(await libraryData({ reader: c.reader, supabase: c.supabase, urn: c.urn, userId: c.userId, roles: c.roles, isAdmin: c.isAdmin, isAccountHolder: c.isAccountHolder, viewAs: !!c.viewAsRole }));
+    return NextResponse.json(await libraryData({ reader: c.reader, supabase: c.supabase, urn: c.urn, userId: c.userId, roles: c.roles, isAdmin: c.isAdmin, isAccountHolder: c.isAccountHolder, lead: c.lead, viewAs: !!c.viewAsRole }));
   } catch (err) {
     console.error("[sets/library] failed:", err);
     return NextResponse.json({ error: "Could not read the sets." }, { status: 502 });

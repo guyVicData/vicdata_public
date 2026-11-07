@@ -159,7 +159,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
         {x.block === "school" && btn(x.pinned ? "Unpin from the menu" : "Pin to menu", () => void act(x, "pin"), { disabled: !x.canChange, title: x.canChange ? undefined : "Curators pin the school's sets" })}
         {btn("Move to folder", () => setFolderFor(x.key), { disabled: !data.profileId })}
         {btn("Share", () => void act(x, "share"))}
-        {x.block === "mine" && btn("Propose as school set", () => void act(x, "propose"), { disabled: !data.curates[x.kind], title: data.curates[x.kind] ? "Copy it into the school's sets" : x.kind === "feeders" ? "Ask Admissions to add it to the school's sets" : "Ask SMT or Admissions to add it to the school's sets" })}
+        {x.block === "mine" && btn(data.curates[x.kind] ? "Propose as school set" : "Propose as school set · Ask your Admissions lead", () => void act(x, "propose"), { disabled: !data.curates[x.kind], title: data.curates[x.kind] ? "Copy it into the school's sets" : "Ask your Admissions lead" })}
         {x.id && btn(x.archived ? "Unarchive" : "Archive", () => void act(x, x.archived ? "unarchive" : "archive"), { disabled: !x.canChange })}
         {folderFor === x.key && (
           <form

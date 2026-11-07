@@ -230,9 +230,10 @@ function Gate({ member, theme, onTheme, platformAdmin, onDash, reloadTick }: { m
   return <Dashboard member={member} theme={theme} onTheme={onTheme} onDash={onDash} reloadTick={reloadTick} />;
 }
 
-/** The sets a route's answer says it drew (0.8 sets round 1: `sets` on pipeline, market share, shape). */
+/** The sets a route's answer says it drew (0.8 sets round 1: `setChoices` on pipeline, market share and
+ * shape -- never `sets`, which is the pipeline's own rung sets). */
 function inUseOf(l: Load<unknown>): { feeders?: SetChoice; rivals?: SetChoice } | null {
-  return l.status === "ready" && l.data && typeof l.data === "object" && "sets" in (l.data as object) ? ((l.data as { sets?: { feeders?: SetChoice; rivals?: SetChoice } }).sets ?? null) : null;
+  return l.status === "ready" && l.data && typeof l.data === "object" && "setChoices" in (l.data as object) ? ((l.data as { setChoices?: { feeders?: SetChoice; rivals?: SetChoice } }).setChoices ?? null) : null;
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -140,7 +140,8 @@ export async function GET(request: NextRequest) {
     if (request.nextUrl.searchParams.get("only") === "rankings") return NextResponse.json({ rankings });
     // The viewed member's standing: may they curate the school's compared-against sets?
     const viewed = viewAsMembership(viewAs.role);
-    const curator = { roles: viewed.roles, isAdmin: !!viewed.is_admin, isAccountHolder: viewed.isAccountHolder };
+    // View as "admissions" is the lead (as the Admissions page treats it); View as is read-only anyway.
+    const curator = { roles: viewed.roles, isAdmin: !!viewed.is_admin, isAccountHolder: viewed.isAccountHolder, lead: viewAs.role === "admissions" };
     const canEditShared = canCurate(curator, "compared_against");
     ctx = { membershipId: "", profileId: null, schoolAccountId: accountId, canEditShared, creatorKind: creatorFor(curator, "compared_against", "smt"), personalCount: own.sets.length, rows, vcRows: (vc ?? []) as unknown as VcRow[], rankings };
   } else {
@@ -148,7 +149,7 @@ export async function GET(request: NextRequest) {
     // they make, and whether they may create or edit the school's shared sets.
     const { data: membership } = await supabase
       .from("school_memberships")
-      .select("id, is_admin, roles, school_account_id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn, account_holder_membership_id)")
+      .select("id, is_admin, roles, admissions_lead, school_account_id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn, account_holder_membership_id)")
       .eq("status", "approved")
       .eq("profile_id", userId)
       .eq("school_accounts.school_urn", urn)
@@ -158,15 +159,16 @@ export async function GET(request: NextRequest) {
         id: string;
         is_admin: boolean | null;
         roles: string[] | null;
+        admissions_lead: boolean | null;
         school_account_id: string;
         school_accounts: { school_urn: string; account_holder_membership_id: string | null };
       }>();
     if (!membership) {
       return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
     }
-    // 0.8 sets round 1 (A2): SMT, Admissions and the School-Admin (or the account holder) curate
-    // the school's compared-against sets (can_curate_sets); everyone else uses them.
-    const curator = { roles: membership.roles ?? [], isAdmin: !!membership.is_admin, isAccountHolder: membership.school_accounts.account_holder_membership_id === membership.id };
+    // 0.8 sets round 1 (A2, lead-only, Guy 7 Nov): the Admissions lead, SMT and the School-Admin (or the
+    // account holder) curate the school's compared-against sets (can_curate_sets); everyone else uses them.
+    const curator = { roles: membership.roles ?? [], isAdmin: !!membership.is_admin, isAccountHolder: membership.school_accounts.account_holder_membership_id === membership.id, lead: !!membership.admissions_lead };
     const canEditShared = canCurate(curator, "compared_against");
 
     const read = await readSets(supabase, { schoolAccountId: membership.school_account_id, profileId: userId });

@@ -20,7 +20,7 @@
 // history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
-import { SetHeaderLine, SetSelector, type SetSelectorProps } from "@/components/sets/SetSelector";
+import { SetSelector, type SetSelectorProps } from "@/components/sets/SetSelector";
 import { igcseTargetLine } from "@/lib/igcse-words";
 import { useEffect, useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
@@ -1125,16 +1125,9 @@ export function ComparisonsPanels({
             : {}),
         };
 
-  const setLine = setMenu?.current ? <SetHeaderLine kind="compared_against" set={setMenu.current} /> : null;
-  const withSetLine = (controls: ReactNode) =>
-    setLine ? (
-      <div className="flex min-w-0 flex-col items-start gap-1">
-        {controls}
-        {setLine}
-      </div>
-    ) : (
-      controls
-    );
+  // 0.8 sets round 1 (B10, R-PANEL-NAMES-SET): in Teacher's column the set selector, directly above
+  // both panels, names the set and its count for them; a line in each fixed-height card cost the last
+  // bar and the legend (the parity pass), so the panels don't repeat it.
   return (
     <ColumnPanels
       columnId="rankings"
@@ -1178,9 +1171,8 @@ export function ComparisonsPanels({
           : unavailableNote
             ? { current: notAvailable(current), trend: notAvailable(trend) }
             : {
-                // 0.8 sets round 1 (B10, R-PANEL-NAMES-SET): each panel's header names the set in use.
-                current: { ...current, controls: withSelectionChip(withSetLine(current.controls), selectionChip), frame: currentFrame },
-                trend: { ...trend, controls: withSelectionChip(withSetLine(trend.controls), selectionChip), frame },
+                current: { ...current, controls: withSelectionChip(current.controls, selectionChip), frame: currentFrame },
+                trend: { ...trend, controls: withSelectionChip(trend.controls, selectionChip), frame },
               }
       }
     />

@@ -166,29 +166,51 @@ const dayId = sets.find((s) => s.audience === "day" && s.entry_point === "11+").
 check("members follow their set: T reads the rivals' 10, O none", (await as("T", () => q(`select urn from set_members where set_id = '${rivalsId}'`))).rows.length === 10
   && (await as("O", () => q(`select urn from set_members where set_id = '${rivalsId}'`))).rows.length === 0);
 
-console.log("\n-- who writes: compared-against school sets");
+console.log("\n-- who writes: compared-against school sets (lead-only, Guy 7 Nov)");
+const audits = async () => (await q(`select action, actor_profile_id, detail from platform_audit_log where action = 'admissions_lists_override' order by id`)).rows;
 const newSchoolSet = (who, kind, creator) => as(who, () => q(`insert into sets (name, kind, entry_point, owner_scope, school_account_id, creator_kind) values ('${who} ${kind}', '${kind}', '11+', 'school', '${LP}', '${creator}') returning id`));
-for (const [who, creator] of [["S", "smt"], ["M", "admissions"], ["G", "admissions"], ["H", "school_admin"]]) {
+for (const [who, creator, label] of [["G", "admissions", "the Admissions lead"], ["S", "smt", "SMT"], ["H", "school_admin", "the School-Admin"]]) {
   const e = await throws(() => newSchoolSet(who, "compared_against", creator));
-  check(`${who} (${creator}) makes a compared-against school set`, e === false, e || "");
+  check(`${who} (${label}) makes a compared-against school set`, e === false, e || "");
 }
+check("M (an Admissions member who isn't the lead) can't", !!(await throws(() => newSchoolSet("M", "compared_against", "admissions"))));
+check("  nor change the rivals set or its schools", (await as("M", () => q(`update sets set name = 'x' where id = '${rivalsId}' returning id`))).rows.length === 0
+  && (await as("M", () => q(`delete from set_members where set_id = '${rivalsId}' returning urn`))).rows.length === 0);
 check("T (a teacher) can't", !!(await throws(() => newSchoolSet("T", "compared_against", "smt"))) && !!(await throws(() => newSchoolSet("T", "compared_against", "school_admin"))));
-check("S can't claim to be Admissions (the creator is a role the writer holds)", !!(await throws(() => newSchoolSet("S", "compared_against", "admissions"))));
+check("S can't claim to be Admissions (the creator is a role the writer holds; 'admissions' is the lead's)", !!(await throws(() => newSchoolSet("S", "compared_against", "admissions"))));
 check("OS (SMT elsewhere) can't make one at Leighton Park", !!(await throws(() => newSchoolSet("OS", "compared_against", "smt"))));
-check("S changes the rivals set's schools", (await as("S", () => q(`update set_members set position = position where set_id = '${rivalsId}' returning urn`))).rows.length === 10
-  && !(await throws(() => as("S", () => q(`insert into set_members (set_id, urn, position) values ('${rivalsId}', '117037', 10)`)))));
+let nAudit = (await audits()).length;
+check("S changes the rivals set's schools, not audited (SMT's own right)", (await as("S", () => q(`update set_members set position = position where set_id = '${rivalsId}' returning urn`))).rows.length === 10
+  && !(await throws(() => as("S", () => q(`insert into set_members (set_id, urn, position) values ('${rivalsId}', '117037', 10)`))))
+  && (await audits()).length === nAudit);
 check("T can't change a school set or its schools", (await as("T", () => q(`update sets set name = 'x' where id = '${rivalsId}' returning id`))).rows.length === 0
   && (await as("T", () => q(`delete from set_members where set_id = '${rivalsId}' returning urn`))).rows.length === 0
   && !!(await throws(() => as("T", () => q(`insert into set_members (set_id, urn) values ('${rivalsId}', '100053')`)))));
+nAudit = (await audits()).length;
+check("H (School-Admin) changes the rivals set's description: allowed, audited as an override", (await as("H", () => q(`update sets set description = 'H was here' where id = '${rivalsId}' returning id`))).rows.length === 1
+  && (await audits()).length === nAudit + 1 && (await audits()).at(-1).actor_profile_id === P_.H && (await audits()).at(-1).detail.changed.includes("description") && (await audits()).at(-1).detail.kind === "rivals");
 
-console.log("\n-- who writes: feeder school sets");
-check("M (Admissions) makes a feeder school set", (await throws(() => newSchoolSet("M", "feeders", "admissions"))) === false);
-check("S (SMT) and H (School-Admin) can't", !!(await throws(() => newSchoolSet("S", "feeders", "smt"))) && !!(await throws(() => newSchoolSet("H", "feeders", "school_admin"))));
-check("S and H can't change the day feeders' schools", (await as("S", () => q(`delete from set_members where set_id = '${dayId}' returning urn`))).rows.length === 0
-  && (await as("H", () => q(`update sets set name = 'x' where id = '${dayId}' returning id`))).rows.length === 0);
-check("G (the lead) tiers a day feeder", (await as("G", () => q(`update set_members set tier = 'main' where set_id = '${dayId}' and position = 0 returning tier`))).rows[0]?.tier === "main");
+console.log("\n-- who writes: feeder school sets (the lead, and the School-Admin audited)");
+check("G (the lead) makes a feeder school set", (await throws(() => newSchoolSet("G", "feeders", "admissions"))) === false);
+check("M (an Admissions member who isn't the lead) can't make one", !!(await throws(() => newSchoolSet("M", "feeders", "admissions"))));
+check("  nor change the day feeders' schools", (await as("M", () => q(`delete from set_members where set_id = '${dayId}' returning urn`))).rows.length === 0
+  && !!(await throws(() => as("M", () => q(`insert into set_members (set_id, urn) values ('${dayId}', '100053')`)))));
+check("  but keeps a personal feeder set of its own", (await throws(() => as("M", () => q(`insert into sets (name, kind, entry_point, owner_scope, owner_profile_id, school_account_id, creator_kind) values ('M preps','feeders','11+','personal','${P_.M}','${LP}','me')`)))) === false);
+check("S (SMT) can't make or change feeder sets", !!(await throws(() => newSchoolSet("S", "feeders", "smt"))) && (await as("S", () => q(`delete from set_members where set_id = '${dayId}' returning urn`))).rows.length === 0);
+nAudit = (await audits()).length;
+check("G (the lead) tiers a day feeder, not audited", (await as("G", () => q(`update set_members set tier = 'main' where set_id = '${dayId}' and position = 0 returning tier`))).rows[0]?.tier === "main" && (await audits()).length === nAudit);
 check("  which stamps the set as G's change", (await q(`select updated_by from sets where id = '${dayId}'`)).rows[0].updated_by === GUY);
 await as("G", () => q(`update set_members set tier = null where set_id = '${dayId}'`));
+nAudit = (await audits()).length;
+const hFeeder = await throws(() => newSchoolSet("H", "feeders", "school_admin"));
+check("H (School-Admin) makes a feeder school set: allowed, audited", hFeeder === false && (await audits()).length === nAudit + 1 && (await audits()).at(-1).detail.op === "insert", hFeeder || "");
+nAudit = (await audits()).length;
+check("H adds a school to the day feeders: allowed, audited with what joined", !(await throws(() => as("H", () => q(`insert into set_members (set_id, urn, position) values ('${dayId}', '100053', 99)`))))
+  && (await audits()).length === nAudit + 1 && JSON.stringify((await audits()).at(-1).detail.added) === '["100053"]' && (await audits()).at(-1).detail.kind === "day_feeders" && (await audits()).at(-1).detail.entry_point === "11+");
+nAudit = (await audits()).length;
+check("  and takes it out again: audited with what left", (await as("H", () => q(`delete from set_members where set_id = '${dayId}' and urn = '100053' returning urn`))).rows.length === 1
+  && (await audits()).length === nAudit + 1 && JSON.stringify((await audits()).at(-1).detail.removed) === '["100053"]');
+check("a service-role write is never audited", await (async () => { const b = (await audits()).length; await asService(`update sets set description = 'svc' where id = '${dayId}'`); return (await audits()).length === b; })());
 
 console.log("\n-- no set moves or changes hands");
 check("S can't move the rivals set to another school", !!(await throws(() => as("S", () => q(`update sets set school_account_id = '${OTHER}' where id = '${rivalsId}'`)))));
@@ -220,8 +242,11 @@ check("T records using a set and a computed set", (await throws(() => as("T", ()
 check("  only T reads T's state", (await as("T", () => q(`select * from set_user_state`))).rows.length === 2 && (await as("G", () => q(`select * from set_user_state`))).rows.length === 0);
 check("  nobody writes someone else's", !!(await throws(() => as("G", () => q(`insert into set_user_state (profile_id, set_key) values ('${P_.T}','x')`)))));
 check("one school default per page (a second default rivals set at 11+ is refused)", !!(await throws(() => asService(`insert into sets (name, kind, entry_point, owner_scope, school_account_id, creator_kind, is_default) values ('d2','compared_against','11+','school','${LP}','smt', true)`))));
-check("the curate helper answers by kind", (await as("S", () => q(`select can_curate_sets('${LP}','compared_against') a, can_curate_sets('${LP}','feeders') b`))).rows[0].a === true
-  && (await as("M", () => q(`select can_curate_sets('${LP}','feeders') b`))).rows[0].b === true
+check("the curate helper answers by kind: the lead, SMT and the School-Admin; never another Admissions member", (await as("S", () => q(`select can_curate_sets('${LP}','compared_against') a, can_curate_sets('${LP}','feeders') b`))).rows[0].a === true
+  && (await as("G", () => q(`select can_curate_sets('${LP}','feeders') b`))).rows[0].b === true
+  && (await as("M", () => q(`select can_curate_sets('${LP}','feeders') b, can_curate_sets('${LP}','compared_against') a`))).rows.every((r) => r.a === false && r.b === false)
+  && (await as("S", () => q(`select can_curate_sets('${LP}','feeders') b`))).rows[0].b === false
+  && (await as("H", () => q(`select can_curate_sets('${LP}','feeders') b`))).rows[0].b === true
   && (await as("T", () => q(`select can_curate_sets('${LP}','compared_against') a`))).rows[0].a === false);
 
 console.log("\n-- save_set: a set and its schools in one call, under the caller's RLS");
@@ -240,6 +265,9 @@ check("  a refused member write leaves nothing behind (atomic)", await (async ()
   await throws(() => as("S", () => q(`select save_set(null, '{"name":"bad","kind":"compared_against","owner_scope":"school","school_account_id":"${LP}","creator_kind":"smt"}'::jsonb, '[{"urn":"not-a-urn"}]'::jsonb)`)));
   return (await q(`select count(*)::int n from sets`)).rows[0].n === n;
 })());
+nAudit = (await audits()).length;
+check("H tiers one day feeder through save_set: one audit row naming only that school", !(await throws(() => as("H", () => q(`select save_set('${dayId}', '{}'::jsonb, (select jsonb_agg(jsonb_build_object('urn', urn, 'tier', case when position = 1 then 'occasional' end) order by position) from set_members where set_id = '${dayId}'))`))))
+  && (await audits()).length === nAudit + 1 && JSON.stringify((await audits()).at(-1).detail.retiered) === JSON.stringify([(await q(`select urn from set_members where set_id = '${dayId}' and position = 1`)).rows[0].urn]) && (await audits()).at(-1).detail.added.length === 0);
 check("G tiers feeders through it", (await throws(() => as("G", () => q(`select save_set('${dayId}', '{}'::jsonb, (select jsonb_agg(jsonb_build_object('urn', urn, 'tier', case when position < 6 then 'main' end) order by position) from set_members where set_id = '${dayId}'))`)))) === false
   && (await q(`select count(*) filter (where tier = 'main')::int m, count(*)::int n from set_members where set_id = '${dayId}'`)).rows[0].m === 6);
 check("anon can't call it", /permission denied/.test((await throws(() => asAnon(() => q(`select save_set(null, '{}'::jsonb, '[]'::jsonb)`)))) || ""));

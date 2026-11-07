@@ -18,7 +18,8 @@ import { savedCatchmentKm } from "@/lib/smt/catchment-server";
 // 0.8 Admissions fb1: &km= (the funnel's radius), and the school's saved catchment read with the caller's
 // token (catchment-server.ts; View as reads it through the server).
 // 0.8 sets round 1 (B6-B11): &fset= / &rset= choose the Feeder schools / Compared against set
-// (src/lib/sets/admissions-route.ts); the answer names the sets in use (`sets`), for the headers.
+// (src/lib/sets/admissions-route.ts); the answer names the sets in use (`setChoices`, beside the
+// pipeline's own `sets`, its rung sets), for the headers.
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await admissionsCaller(request, sp.get("urn"));
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     const [chosen, savedKm] = await Promise.all([listsForRoute(caller, ep, sp, ["feeders"]), savedCatchmentKm({ supabase: caller.reader, headOffice: null, readOnly: caller.readOnly }, caller.urn).catch(() => null)]);
     // 0.8 Admissions fb1 (F-13): &km= is the funnel's and local births' own radius; else the school's catchment.
-    return NextResponse.json({ ...(await pipelineView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), sex, projection: sp.get("projection") === "1", catchment: { km: sp.get("km"), savedKm } })), sets: setsInUse(chosen), tiers: chosen.feeders?.tiers ?? {} });
+    return NextResponse.json({ ...(await pipelineView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), sex, projection: sp.get("projection") === "1", catchment: { km: sp.get("km"), savedKm } })), setChoices: setsInUse(chosen), tiers: chosen.feeders?.tiers ?? {} });
   } catch (err) {
     console.error("[admissions/pipeline] failed:", err);
     return NextResponse.json({ error: "Could not build the pipeline." }, { status: 502 });

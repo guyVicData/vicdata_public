@@ -37,7 +37,7 @@ export function entriesFor(saved: string[], low: number | null, high: number | n
   return out.length ? out : ["11+"];
 }
 
-export async function libraryData(c: { reader: SupabaseClient; supabase: SupabaseClient; urn: string; userId: string; roles: string[]; isAdmin: boolean; isAccountHolder: boolean; viewAs: boolean }): Promise<LibraryData> {
+export async function libraryData(c: { reader: SupabaseClient; supabase: SupabaseClient; urn: string; userId: string; roles: string[]; isAdmin: boolean; isAccountHolder: boolean; lead: boolean; viewAs: boolean }): Promise<LibraryData> {
   const profileId = c.viewAs ? null : c.userId;
   const { data: acc } = await c.reader.from("school_accounts").select("id").eq("school_urn", c.urn).maybeSingle<{ id: string }>();
   const [traits, eps] = await Promise.all([fetchSchoolTraits([c.urn]), acc ? c.reader.from("admissions_entry_points").select("entry_point").eq("school_account_id", acc.id).order("sort_order") : Promise.resolve({ data: [] })]);
@@ -61,7 +61,7 @@ export async function libraryData(c: { reader: SupabaseClient; supabase: Supabas
     folders[k] = v.folder;
   }
   const names = Object.fromEntries(await schoolNames(c.reader, read.sets.flatMap((s) => s.members.map((m) => m.urn))));
-  const curator = { roles: c.roles, isAdmin: c.isAdmin, isAccountHolder: c.isAccountHolder };
+  const curator = { roles: c.roles, isAdmin: c.isAdmin, isAccountHolder: c.isAccountHolder, lead: c.lead };
   return {
     school: { urn: c.urn, name: me?.name ?? c.urn, boarding: me?.boarding ?? false },
     entries,

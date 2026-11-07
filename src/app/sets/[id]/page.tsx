@@ -32,8 +32,8 @@ function View({ id }: { id: string }) {
       const { data: who } = await supabase.auth.getUser();
       let canChange = s.ownerScope === "personal" && s.ownerProfileId === who.user?.id;
       if (s.ownerScope === "school" && who.user && s.schoolAccountId) {
-        const { data: mem } = await supabase.from("school_memberships").select("id, roles, is_admin, school_accounts!school_memberships_school_account_id_fkey!inner(account_holder_membership_id)").eq("profile_id", who.user.id).eq("status", "approved").eq("school_account_id", s.schoolAccountId).limit(1).maybeSingle<{ id: string; roles: string[] | null; is_admin: boolean | null; school_accounts: { account_holder_membership_id: string | null } }>();
-        canChange = !!mem && canCurate({ roles: mem.roles ?? [], isAdmin: !!mem.is_admin, isAccountHolder: mem.school_accounts.account_holder_membership_id === mem.id }, s.kind);
+        const { data: mem } = await supabase.from("school_memberships").select("id, roles, is_admin, admissions_lead, school_accounts!school_memberships_school_account_id_fkey!inner(account_holder_membership_id)").eq("profile_id", who.user.id).eq("status", "approved").eq("school_account_id", s.schoolAccountId).limit(1).maybeSingle<{ id: string; roles: string[] | null; is_admin: boolean | null; admissions_lead: boolean | null; school_accounts: { account_holder_membership_id: string | null } }>();
+        canChange = !!mem && canCurate({ roles: mem.roles ?? [], isAdmin: !!mem.is_admin, isAccountHolder: mem.school_accounts.account_holder_membership_id === mem.id, lead: !!mem.admissions_lead }, s.kind);
       }
       let lastChanged: string | null = null;
       if (s.updatedBy) {
