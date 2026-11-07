@@ -4,6 +4,7 @@
 //   /sets/<id>?urn                         a stored set (RLS: the reader's own session)
 //   /sets/default?urn&kind&entry&from&name&urns   a default set, from its schools (computed, never stored)
 // It replaces the old comparator set page (roll ranks and trends), which read the old tables.
+import { returnToHere, savedSetFromEditor, useEditorReturnReload } from "@/lib/sets/editor-return";
 import { Suspense, use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -17,6 +18,10 @@ function View({ id }: { id: string }) {
   const [viewed, setViewed] = useState<ViewedSet | null | "error">(null);
   const [urnFromSet, setUrnFromSet] = useState<string | null>(sp.get("urn"));
   const m = useSetsMember(urnFromSet);
+  // Back from editing this set: the page reads it afresh (a reload if the browser restored it from its
+  // cache), and the handover is taken so it doesn't linger.
+  useEditorReturnReload();
+  useState(() => savedSetFromEditor());
   useEffect(() => {
     (async () => {
       if (id === "default") {
@@ -51,7 +56,8 @@ function View({ id }: { id: string }) {
         if (m.status === "error") return <p className="p-6 text-[13px] text-[var(--muted2)]">{m.message}</p>;
         if (!viewed || m.status !== "ready") return <p className="p-6 text-[13px] text-[var(--muted2)]">Loading…</p>;
         const urn = m.member.urn;
-        const base = new URLSearchParams({ urn, kind: viewed.kind, back: `/sets/${id === "default" ? `default?${sp.toString()}` : `${id}?urn=${urn}`}` });
+        // The editor's way back: this view, as it stands.
+        const base = new URLSearchParams({ urn, kind: viewed.kind, returnTo: returnToHere(urn, `/sets/${id === "default" ? `default?${sp.toString()}` : `${id}?urn=${urn}`}`) });
         if (viewed.phase) base.set("phase", viewed.phase);
         else base.set("entry", viewed.entry);
         const edit = new URLSearchParams(base);

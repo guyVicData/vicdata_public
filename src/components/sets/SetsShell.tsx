@@ -4,6 +4,7 @@
 // school's own sets: the URN in the address, else the person's first approved school.
 import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { pickMembership } from "@/lib/view-as";
 import { useTeacherTheme } from "@/components/shell/TeacherChrome";
 import { useWidth } from "@/components/admissions/views/charts";
 
@@ -20,11 +21,14 @@ export function useSetsMember(urnParam: string | null): { status: "loading" } | 
       if (!who.user || !session.session) return setState({ status: "error", message: "Sign in to see your sets." });
       let q = supabase
         .from("school_memberships")
-        .select("school_accounts!school_memberships_school_account_id_fkey!inner(school_urn, schools(current_name))")
+        .select("approved_at, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn, schools(current_name))")
         .eq("profile_id", who.user.id)
         .eq("status", "approved");
       if (urnParam) q = q.eq("school_accounts.school_urn", urnParam);
-      const { data } = await q.limit(1).maybeSingle<{ school_accounts: { school_urn: string; schools: { current_name: string } | null } }>();
+      // With no ?urn=, the school every other page shows (?school=, else the one last chosen, else the
+      // earliest approved), never an arbitrary first row.
+      const { data: rows } = await q.returns<{ approved_at: string | null; school_accounts: { school_urn: string; schools: { current_name: string } | null } }[]>();
+      const data = pickMembership(rows ?? [], urnParam ?? undefined);
       if (!data) return setState({ status: "error", message: urnParam ? "Sets are for the school's own staff." : "You need to be an approved member at a school to keep sets. Join your school from your account page." });
       setState({ status: "ready", member: { userId: who.user.id, urn: data.school_accounts.school_urn, schoolName: data.school_accounts.schools?.current_name ?? data.school_accounts.school_urn, token: session.session.access_token } });
     })();

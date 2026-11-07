@@ -22,6 +22,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
+import { useEditorReturnReload } from "@/lib/sets/editor-return";
 import { NEAREST_KEY, rankingKey, takeUseSet, teacherEditorHref, teacherMenuRows } from "@/components/sets/teacherMenu";
 import type { SetMenuRow } from "@/components/sets/SetSelector";
 import { igcseGroupLabelFor, igcseGroupNoteFor, igcseTargetLine } from "@/lib/igcse-words";
@@ -230,6 +231,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const [draftConfigs, setDraftConfigs] = useState<Record<string, DashboardConfig> | null>(null);
   const [superAdmin, setSuperAdmin] = useState(false);
   const [peek, setPeek] = useState<Peek | null>(null);
+  // View as or the Catalogue's peek: sets are read-only there, so Edit this set… and New set… aren't
+  // offered (as on Admissions and SMT); the editor would only say so.
+  const [viewingAs, setViewingAs] = useState(false);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string | null>(null);
   const [entries, setEntries] = useState<SubjectEntry[]>([]);
@@ -338,6 +342,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const trial = embed ? null : await resolveViewAs(supabase);
       const requestedPeek = embed || trial ? null : readPeek(search);
       const peekOk = requestedPeek ? await confirmPlatformAdmin(supabase) : false;
+      setViewingAs(!!trial || (peekOk && !!requestedPeek));
       // Started here so it runs alongside the school's data; awaited just before the page
       // first paints, so the stored config is drawn from the start (no swap, no flash).
       let publishedLoad: Promise<Record<string, DashboardConfig>> | null = null;
@@ -698,6 +703,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // 0.8 sets round 1 (D20): back from the set editor's Save (?useSet=<id>), the Comparisons column uses
   // the set it saved, once the school and its preferences are known.
   const useSetTaken = useRef(false);
+  useEditorReturnReload();
   useEffect(() => {
     if (useSetTaken.current || !schoolUrn || !phase) return;
     const id = takeUseSet();
@@ -2518,11 +2524,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       }
     },
     // C17, D20: Edit this set… and New set… open the set editor (a copy where the set isn't yours to change).
-    onEdit: (() => {
+    onEdit: viewingAs ? null : (() => {
       const href = schoolUrn ? teacherEditorHref({ urn: schoolUrn, phase, product: "teacher", current: { savedId: activeSavedSet?.id ?? null, name: activeSetLabel, urns: (allComparatorSets[comparisonsSet] ?? []).filter((x) => !x.isTarget && x.urn !== schoolUrn).map((x) => x.urn) }, fresh: false }) : null;
       return href ? { label: "Edit this set…", title: activeSavedSet?.editable ? undefined : "Opens a copy to save as your own", onClick: () => (window.location.href = href) } : { label: "Edit this set…", onClick: () => setChooser({ editing: activeSavedSet?.editable ? activeSavedSet : null }) };
     })(),
-    onNew: (() => {
+    onNew: viewingAs ? null : (() => {
       const href = schoolUrn ? teacherEditorHref({ urn: schoolUrn, phase, product: "teacher", current: null, fresh: true }) : null;
       return href ? { label: "New set…", onClick: () => (window.location.href = href) } : { label: "New set…", onClick: () => setChooser({ editing: null }) };
     })(),

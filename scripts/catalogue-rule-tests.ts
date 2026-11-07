@@ -3231,7 +3231,8 @@ const RUNNERS: Record<string, Runner> = {
       ok = false;
       out = String((e as { stdout?: string }).stdout ?? "");
     }
-    const passed = /ℹ pass (\d+)/.exec(out)?.[1] ?? "0";
+    // The summary is "ℹ pass N" (spec reporter, a terminal) or "# pass N" (TAP, which Node uses when piped, as here).
+    const passed = /^(?:ℹ|#) pass (\d+)/m.exec(out)?.[1] ?? "0";
     return { pass: ok && Number(passed) >= 2, detail: fmt({ tests: passed, mocked: "/api/version" }) };
   },
   // R-REPORT-COMMANDS-ORDER: every report first committed on or after the template (6 Nov), and any not yet
@@ -3433,7 +3434,7 @@ const RUNNERS: Record<string, Runner> = {
       unit = false;
     }
     const router = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
-    const page = { urn: "110110", schoolName: "Leighton Park", kind: "compared_against" as const, entry: "11+", phase: null, back: "/teacher/admissions", usedOn: "Market share at 11+", profileId: "p", schoolAccountId: "a", schoolCreator: null, personalActive: 2, boardingSchool: true, readOnly: false };
+    const page = { urn: "110110", schoolName: "Leighton Park", kind: "compared_against" as const, entry: "11+", phase: null, returnTo: "/teacher/admissions?view=market-share&entry=11%2B", returnFallback: false, returnLabel: "Back to Leighton Park · Market share 11+", usedOn: "Market share at 11+", profileId: "p", schoolAccountId: "a", schoolCreator: null, personalActive: 2, boardingSchool: true, readOnly: false };
     const set = { id: "s", name: "Rivals", description: null, kind: "compared_against" as const, entryPoint: "11+", phase: null, focusUrn: "110110", ownerScope: "school" as const, schoolAccountId: "a", ownerProfileId: null, creatorKind: "admissions" as const, audience: null, rungAge: null, isDefault: true, pinned: true, folder: null, tags: [], archived: false, rule: null, sourceRecipe: null, laBlend: null, config: {}, members: [{ urn: "110137", position: 0, tier: null }], createdBy: null, createdAt: "", updatedBy: null, updatedAt: "" };
     const render = (mode: "save" | "copy" | "new", creator: "admissions" | "default" | "me") =>
       renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router as never }, createElement(SetEditor, { page, start: { set: mode === "save" || creator === "admissions" ? set : null, name: "Rivals", description: null, members: [{ urn: "110137" }], creator, sourceRecipe: null, mode, editableBy: "SMT, Admissions and the School-Admin", lastChanged: null } })));
@@ -3513,7 +3514,7 @@ const RUNNERS: Record<string, Runner> = {
     const row = (k: string, creator: "default" | "smt" | "me") => ({ key: k, name: `Set ${k}`, count: 10, creator });
     const selector = renderToStaticMarkup(createElement(SetSelector, { label: "Feeder schools", kind: "feeders", current: { name: "Day | all sectors", count: 28, main: 6 }, rows: { default: [row("d", "default")], school: [row("s", "smt")], mine: [row("m", "me")] }, mine: { active: 1, cap: 8 }, selectedKey: "d", onPick: () => undefined, onEdit: { label: "Edit this set…", onClick: () => undefined }, onNew: { label: "New set…", onClick: () => undefined }, manageHref: "/sets", phone: true, defaultOpen: true }));
     const set = { id: "s", name: "Rivals", description: "why", kind: "compared_against" as const, entryPoint: "11+", phase: null, focusUrn: "110110", ownerScope: "school" as const, schoolAccountId: "a", ownerProfileId: null, creatorKind: "admissions" as const, audience: null, rungAge: null, isDefault: true, pinned: true, folder: null, tags: [], archived: false, rule: null, sourceRecipe: null, laBlend: null, config: {}, members: [{ urn: "110137", position: 0, tier: null }], createdBy: null, createdAt: "2026-11-06T00:00:00Z", updatedBy: null, updatedAt: "2026-11-06T00:00:00Z" };
-    const page = { urn: "110110", schoolName: "Leighton Park", kind: "compared_against" as const, entry: "11+", phase: null, back: "/", usedOn: "Market share", profileId: "p", schoolAccountId: "a", schoolCreator: "admissions" as const, personalActive: 1, boardingSchool: true, readOnly: false };
+    const page = { urn: "110110", schoolName: "Leighton Park", kind: "compared_against" as const, entry: "11+", phase: null, returnTo: "/teacher/admissions?view=market-share&entry=11%2B", returnFallback: true, returnLabel: "Back to Leighton Park · Market share 11+", usedOn: "Market share", profileId: "p", schoolAccountId: "a", schoolCreator: "admissions" as const, personalActive: 1, boardingSchool: true, readOnly: false };
     const editor = renderToStaticMarkup(wrap(createElement(SetEditor, { page, start: { set, name: "Rivals", description: null, members: set.members, creator: "admissions", sourceRecipe: null, mode: "save", editableBy: "SMT", lastChanged: null }, phone: true })));
     const lib = { school: { urn: "110110", name: "Leighton Park", boarding: true }, entries: ["11+", "16+"], defaults: [{ key: "adm:nearest-sector", name: "10 nearest | independent", kind: "compared_against" as const, entryPoint: "11+", urns: ["1"], how: "", count: 1 }], stored: [set], lastUsed: {}, folders: {}, names: {}, curates: { compared_against: true, feeders: true }, creators: { compared_against: "admissions" as const, feeders: "admissions" as const }, profileId: "p", personalActive: 1, cap: 8 };
     const library = renderToStaticMarkup(createElement(SetsLibrary, { data: lib as never, phone: true }));

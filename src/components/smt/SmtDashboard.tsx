@@ -7,6 +7,7 @@
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
+import { useEditorReturnReload } from "@/lib/sets/editor-return";
 import { indexBaseWords, indexedLabel } from "@/lib/index-base";
 import { signedDelta } from "@/lib/signed-delta";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -223,6 +224,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const phase = s ? setPhaseOf(s.phases) : null;
   const sets = useSmtSet(member.schoolUrn, phase);
   // 0.8 sets round 1 (D20): back from the set editor's Save, use the set it saved (re-reading the sets).
+  useEditorReturnReload();
   useEffect(() => {
     const id = takeUseSet();
     if (!id) return;

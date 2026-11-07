@@ -10,6 +10,7 @@ import { SetsLibrary } from "@/components/sets/SetsLibrary";
 import { SetsShell, useSetsMember } from "@/components/sets/SetsShell";
 import { entryOfPhase } from "@/lib/sets/model";
 import type { LibraryData } from "@/lib/sets/library";
+import type { LibraryFilter } from "@/lib/sets/library-view";
 
 function Library() {
   const sp = useSearchParams();
@@ -23,6 +24,8 @@ function Library() {
     })();
   }, [m]);
   const kind = sp.get("kind") === "feeders" ? "feeders" : sp.get("kind") === "compared_against" ? "compared_against" : "all";
+  const sectionParam = sp.get("section") ?? "";
+  const section = (["default", "school", "mine", "archived"].includes(sectionParam) || /^folder:.{1,80}$/.test(sectionParam) ? sectionParam : null) as LibraryFilter["section"] | null;
   const entry = sp.get("entry") ?? entryOfPhase(sp.get("phase") === "ks5" ? "ks5" : sp.get("phase") === "ks4" ? "ks4" : null);
   return (
     <SetsShell>
@@ -34,7 +37,7 @@ function Library() {
         ) : data === "error" ? (
           <p className="p-6 text-[13px] text-[var(--muted2)]">Could not read the sets.</p>
         ) : (
-          <SetsLibrary key={data.school.urn} data={data} phone={phone} initial={{ kind, entry: entry && data.entries.includes(entry) ? entry : null }} />
+          <SetsLibrary key={data.school.urn} data={data} phone={phone} initial={{ kind, entry: entry && data.entries.includes(entry) ? entry : null, query: sp.get("q") ?? "", ...(section ? { section } : {}) }} />
         )
       }
     </SetsShell>

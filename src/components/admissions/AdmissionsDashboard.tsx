@@ -10,6 +10,7 @@
 // The entry point plays the subject's part: the chips (the school's admissions_entry_points, else
 // the defaults its age range gives) choose what every view follows. The top bar's filters pass
 // through to the routes. Every figure comes from /api/admissions/* (the browser recomputes none).
+import { savedSetFromEditor, useEditorReturnReload } from "@/lib/sets/editor-return";
 import { ADM_SEX_FILTER } from "@/catalogue/admissions";
 import { indexedLabel } from "@/lib/index-base";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -114,10 +115,10 @@ function readUrl(): UrlState {
   const setup = step && (["entry", "day", "boarding", "rivals", "blend"].includes(step) || /^rung:\d+-\d+$/.test(step)) ? (step as SetupStep) : null;
   const key = (k: string) => (sp.get(k) ?? "").slice(0, 120) || null;
   const dash: DashKey = sp.get("view") === "market-share" ? "market-share" : "pipelines";
-  // 0.8 sets round 1 (D20): back from the set editor's Save (?useSet=<id>), the page uses the set it
-  // saved, for its own kind (writeUrl then drops the parameter).
-  const used = sp.get("useSet");
-  const fromEditor = used && /^[0-9a-f-]{36}$/i.test(used) ? `set:${used}` : null;
+  // 0.8 sets round 1 (D20): back from the set editor's Save -- ?useSet=<id>, or the handover when it
+  // went back in history -- the page uses the set it saved, for its own kind (writeUrl then drops useSet).
+  const used = savedSetFromEditor();
+  const fromEditor = used ? `set:${used}` : null;
   return { dash, entry: sp.get("entry"), setup, fset: dash === "pipelines" && fromEditor ? fromEditor : key("fset"), rset: dash === "market-share" && fromEditor ? fromEditor : key("rset") };
 }
 function writeUrl(s: UrlState) {
@@ -240,6 +241,7 @@ function inUseOf(l: Load<unknown>): { feeders?: SetChoice; rivals?: SetChoice } 
 function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: AdmissionsMember; theme: "dark" | "light"; onTheme: (t: "dark" | "light") => void; onDash: (d: DashKey) => void; reloadTick: number }) {
   // Read once on mount: this component only mounts in the browser, after the member has loaded.
   const [url, setUrl] = useState<UrlState>(readUrl);
+  useEditorReturnReload();
   const update = useCallback((next: Partial<UrlState>) => {
     setUrl((u) => {
       const s = { ...u, ...next };

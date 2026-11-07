@@ -4,6 +4,7 @@
 // Pipelines, Compared against on Market share) and the Pupils filter. The old "Day + boarding" and
 // "Independent only" dropdowns are gone: a boarding choice and a sector are now inside the set (the
 // Default block's "10 nearest | boarding", "Day | independent", a school's "Day + boarding feeders").
+import { returnToHere } from "@/lib/sets/editor-return";
 import { MenuChip } from "@/components/shell/FilterPills";
 import { SetSelector, type SetMenuRow } from "@/components/sets/SetSelector";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -40,7 +41,7 @@ async function remember(member: AdmissionsMember, key: string) {
  * can't change it); a default set, or a school's Day + boarding pair, as a copy of its schools; New
  * set… empty. Save comes back here with the set in use. */
 export function editorHref(member: AdmissionsMember, entry: string, kind: SetKind, current: SetChoice | null, fresh: boolean): string {
-  const q = new URLSearchParams({ urn: member.schoolUrn, kind, entry, product: "admissions", back: typeof window === "undefined" ? "/teacher/admissions" : `${window.location.pathname}${window.location.search}` });
+  const q = new URLSearchParams({ urn: member.schoolUrn, kind, entry, product: "admissions", returnTo: returnToHere(member.schoolUrn, "/teacher/admissions") });
   if (!fresh && current) {
     if (current.key.startsWith("set:")) q.set("set", current.key.slice(4));
     else {
