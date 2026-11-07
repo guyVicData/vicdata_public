@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit feeder set</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e0f11}
+a{color:#5fd0e6}a:hover{color:#9be3f1}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #0e0f11; color: #ececee; font-family: Inter, system-ui, sans-serif; font-size: 14px; box-sizing: border-box; padding: 24px 32px 40px">
+<div style="max-width: 1216px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: #a0a3ab; font-size: 13px">
+<a href="#" style="text-decoration: none">Pipelines</a>
+<span aria-hidden="true">›</span>
+<span>Feeder schools</span>
+<span aria-hidden="true">›</span>
+<span style="color: #ececee">Edit set</span>
+<span style="margin-left: auto; padding: 4px 12px; border-radius: 999px; border: 1.5px solid #5fd0e6; color: #ececee">11+</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+
+<div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap">
+<div role="img" aria-label="Map of the feeder schools around Leighton Park, main feeders larger" style="width: 168px; height: 168px; border-radius: 14px; background: #16242a; position: relative; overflow: hidden; flex: none">
+<div style="position: absolute; left: 76px; top: 76px; width: 16px; height: 16px; border-radius: 50%; background: #5fd0e6"></div>
+<div style="position: absolute; left: 112px; top: 46px; width: 14px; height: 14px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 40px; top: 110px; width: 14px; height: 14px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 86px; top: 70px; width: 8px; height: 8px; border-radius: 50%; background: #a0a3ab"></div>
+<div style="position: absolute; left: 70px; top: 92px; width: 8px; height: 8px; border-radius: 50%; background: #a0a3ab"></div>
+<div style="position: absolute; left: 98px; top: 96px; width: 8px; height: 8px; border-radius: 50%; background: #a0a3ab"></div>
+<div style="position: absolute; left: 58px; top: 60px; width: 6px; height: 6px; border-radius: 50%; background: #6b6e76"></div>
+<div style="position: absolute; left: 104px; top: 120px; width: 6px; height: 6px; border-radius: 50%; background: #6b6e76"></div>
+<div style="position: absolute; left: 124px; top: 84px; width: 6px; height: 6px; border-radius: 50%; background: #6b6e76"></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 260px; flex: 1">
+<div style="font-size: 12px; color: #a0a3ab">School set · made by Admissions · 11+ · pupils aged 10</div>
+<h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.01em">Day | all sectors</h1>
+<p style="margin: 0; color: #c7c9ce; max-width: 560px">The preps and primaries our day pupils come from. Main feeders drive the alerts on Pipelines.</p>
+<div style="color: #a0a3ab; font-size: 13px">28 schools · 6 main · <span style="color: #e0866b">[n] main feeders falling</span> · [n] pupils aged 10</div>
+</div>
+</div>
+
+<div style="display: flex; gap: 10px; flex-wrap: wrap">
+<button type="button" style="font: inherit; padding: 9px 18px; border-radius: 8px; border: none; background: #5fd0e6; color: #08262d; font-weight: 600; cursor: pointer">Save</button>
+<button type="button" style="font: inherit; padding: 9px 16px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">Save as…</button>
+<button type="button" style="font: inherit; padding: 9px 16px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">Share</button>
+<button type="button" aria-label="More actions" style="font: inherit; padding: 9px 14px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">···</button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; background: #16171a; border: 1px solid #2a2c31">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a0a3ab" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<label for="addf" style="position: absolute; left: -9999px">Find a school in this set</label>
+<input id="addf" placeholder="Find in this set" style="font: inherit; flex: 1; background: transparent; border: none; color: #ececee; outline: none">
+<span role="group" aria-label="Group by" style="display: inline-flex; align-items: center; gap: 2px; border: 1px solid #3a3d44; border-radius: 999px; padding: 2px">
+<span style="color: #8a8d95; font-size: 12px; padding: 0 6px 0 8px">Group by</span>
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: none; background: #10333b; color: #5fd0e6; cursor: pointer">Tier</button>
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: none; background: transparent; color: #a0a3ab; cursor: pointer">Borough</button>
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: none; background: transparent; color: #a0a3ab; cursor: pointer">Sector</button>
+</span>
+<span style="color: #8a8d95; font-size: 12px">sort within: distance ▾</span>
+</div>
+
+<div style="border-radius: 12px; background: #16171a; border: 1px solid #2a2c31; overflow: hidden">
+<div style="display: grid; grid-template-columns: 52px minmax(0,1fr) 60px 100px 130px 96px; gap: 12px; padding: 10px 16px; font-size: 12px; color: #8a8d95; border-bottom: 1px solid #2a2c31">
+<span>In set</span><span>School</span><span style="text-align: right">km</span><span>Sector</span><span>Tier</span><span style="text-align: right">Aged 10, trend</span>
+</div>
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; padding: 9px 16px; background: #1c1d21; border-bottom: 1px solid #2a2c31; font-size: 13px">
+<span aria-hidden="true" style="color: #a0a3ab; width: 12px">{{g.arrow}}</span>
+<span style="font-weight: 600">{{g.name}}</span>
+<span style="color: #8a8d95">{{g.count}}</span>
+<span style="margin-left: auto; color: #8a8d95; font-size: 12px">{{g.hint}}</span>
+</div>
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2">
+<div style="display: grid; grid-template-columns: 52px minmax(0,1fr) 60px 100px 130px 96px; gap: 12px; padding: 9px 16px; align-items: center; border-bottom: 1px solid #222428; color: {{r.ink}}">
+<input type="checkbox" checked="{{r.on}}" aria-label="{{r.name}} in the set" style="width: 18px; height: 18px; accent-color: #5fd0e6">
+<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: {{r.weight}}">{{r.name}}<span style="color: #8a8d95; font-size: 12px; font-weight: 400">{{r.note}}</span></span>
+<span style="text-align: right">{{r.km}}</span>
+<span>{{r.sector}}</span>
+<button type="button" aria-label="Tier for {{r.name}}: {{r.tier}}" style="justify-self: start; font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; cursor: pointer; background: transparent; {{r.tierStyle}}">{{r.tier}} ▾</button>
+<span style="text-align: right; color: {{r.trendInk}}">{{r.trend}}</span>
+</div>
+</sc-for>
+</sc-for>
+</div>
+<div style="color: #8a8d95; font-size: 12px">Click a tier to change it. Unticked schools stay on the list until you save.</div>
+</div>
+
+<div style="flex: 1 1 320px; min-width: 280px; display: flex; flex-direction: column; gap: 16px">
+<div style="padding: 16px; border-radius: 12px; background: #16171a; border: 1px solid #2a2c31; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Add schools</h2>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a3d44">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a0a3ab" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<label for="addname" style="position: absolute; left: -9999px">Add a school by name</label>
+<input id="addname" placeholder="By name or town" style="font: inherit; font-size: 13px; flex: 1; background: transparent; border: none; color: #ececee; outline: none">
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid #3a3d44; background: transparent; color: #c7c9ce; cursor: pointer">Independent</button>
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid #3a3d44; background: transparent; color: #c7c9ce; cursor: pointer">State</button>
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: none; background: #5fd0e6; color: #08262d; cursor: pointer">Both</button>
+</div>
+<div style="color: #8a8d95; font-size: 12px">Nearest with 10-year-olds, not in the set · tick to add</div>
+<sc-for list="{{suggest}}" as="r" hint-placeholder-count="4">
+<label style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #222428; cursor: pointer; font-size: 13px; color: #c7c9ce">
+<input type="checkbox" aria-label="Add {{r.name}} to the set" style="width: 16px; height: 16px; accent-color: #5fd0e6">
+<span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+<span style="color: #8a8d95; font-size: 12px">{{r.km}}</span>
+</label>
+</sc-for>
+<button type="button" style="align-self: flex-start; font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">+5 more</button>
+</div>
+
+<div style="padding: 18px; border-radius: 12px; background: #16171a; border: 1px solid #2a2c31; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Tiers</h2>
+<div style="display: flex; gap: 10px; align-items: flex-start"><span style="font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #5fd0e6; color: #08262d; flex: none">Main</span><span style="color: #c7c9ce; font-size: 13px">Top of the feeder health table, larger on the map, and an alert if its roll falls.</span></div>
+<div style="display: flex; gap: 10px; align-items: flex-start"><span style="font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid #5fd0e6; flex: none">Regular</span><span style="color: #c7c9ce; font-size: 13px">Sends pupils most years.</span></div>
+<div style="display: flex; gap: 10px; align-items: flex-start"><span style="font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid #4a4d55; color: #c7c9ce; flex: none">Occasional</span><span style="color: #c7c9ce; font-size: 13px">Now and then. Kept in view, never alerts.</span></div>
+<div style="color: #a0a3ab; font-size: 12px">Optional. Untiered schools count like Regular.</div>
+</div>
+<div style="padding: 18px; border-radius: 12px; background: #16171a; border: 1px solid #2a2c31; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Where this set is used</h2>
+<div style="color: #c7c9ce; font-size: 13px; line-height: 1.5">Pipelines at 11+ for Admissions. Not shown in Teacher.</div>
+<div style="color: #a0a3ab; font-size: 13px">Editable by Admissions.</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tiers = {
+      Main: 'background: #5fd0e6; color: #08262d',
+      Regular: 'border: 1px solid #5fd0e6; color: #ececee',
+      Occasional: 'border: 1px solid #4a4d55; color: #c7c9ce',
+      'Set tier': 'border: 1px dashed #4a4d55; color: #8a8d95'
+    };
+    const T = (name, km, sector, tier, extra) => ({ name, km, sector, tier, ...(extra || {}) });
+    const style = (r) => r.off ? 'border: 1px solid #3a3d44; color: #6b6e76' : tiers[r.tier];
+    const fix = (r) => ({ ...r, on: !r.off, ink: r.off ? '#6b6e76' : '#ececee', note: r.off ? '  · unticked, leaves on save' : '', tierStyle: style(r), weight: r.tier === 'Main' && !r.off ? '600' : '400', trend: r.trend || '[trend]', trendInk: r.falling ? '#e0866b' : '#8a8d95' });
+    const groups = [
+      { name: 'Main', count: '6', hint: 'drives the alerts', arrow: '▾', rows: [
+        T('Caversham Preparatory School', '4.9', 'Independent', 'Main', { trend: '[falling]', falling: true }),
+        T("St Edward's Prep", '4.0', 'Independent', 'Main'),
+        T('The Ridgeway Primary School', '0.4', 'State', 'Main'),
+        T('[3 more main feeders]', '', '', 'Main')
+      ].map(fix) },
+      { name: 'Regular', count: '9', hint: '', arrow: '▾', rows: [
+        T('Whiteknights Primary School', '0.4', 'State', 'Regular'),
+        T('Hillside Primary School', '0.9', 'State', 'Regular'),
+        T('Loddon Primary School', '2.5', 'State', 'Regular', { off: true }),
+        T('[6 more]', '', '', 'Regular')
+      ].map(fix) },
+      { name: 'Occasional', count: '10', hint: 'collapsed · show', arrow: '▸', rows: [] },
+      { name: 'Untiered', count: '3', hint: 'collapsed · show', arrow: '▸', rows: [] }
+    ];
+    const suggest = [
+      { name: 'Redlands Primary School', km: '1.8 km' },
+      { name: "Earley St Peter's CofE Primary", km: '1.9 km' },
+      { name: 'Alfred Sutton Primary School', km: '2.1 km' },
+      { name: 'Oratory Preparatory School', km: '13.2 km' }
+    ];
+    return { groups, suggest };
+  }
+}
+</script>
+</body>
+</html>

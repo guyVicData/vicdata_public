@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit rivals set</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e0f11}
+a{color:#5fd0e6}a:hover{color:#9be3f1}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #0e0f11; color: #ececee; font-family: Inter, system-ui, sans-serif; font-size: 14px; box-sizing: border-box; padding: 24px 32px 40px">
+<div style="max-width: 1216px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: #a0a3ab; font-size: 13px">
+<a href="#" style="text-decoration: none">Market share</a>
+<span aria-hidden="true">›</span>
+<span>Compared against</span>
+<span aria-hidden="true">›</span>
+<span style="color: #ececee">Edit set</span>
+<span style="margin-left: auto; display: flex; gap: 8px">
+<span style="padding: 4px 12px; border-radius: 999px; border: 1.5px solid #5fd0e6; color: #ececee">11+</span>
+</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+
+<div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap">
+<div role="img" aria-label="Map of the set's schools around Leighton Park" style="width: 168px; height: 168px; border-radius: 14px; background: #16242a; position: relative; overflow: hidden; flex: none">
+<div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #23363d"></div>
+<div style="position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: #23363d"></div>
+<div style="position: absolute; left: 76px; top: 76px; width: 16px; height: 16px; border-radius: 50%; background: #5fd0e6; box-shadow: 0 0 0 3px #16242a"></div>
+<div style="position: absolute; left: 70px; top: 66px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 58px; top: 92px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 104px; top: 54px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 96px; top: 104px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 40px; top: 46px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 128px; top: 92px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 132px; top: 30px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+<div style="position: absolute; left: 18px; top: 120px; width: 8px; height: 8px; border-radius: 50%; background: #ececee"></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 260px; flex: 1">
+<div style="font-size: 12px; color: #a0a3ab">School set · made by Admissions · 11+</div>
+<h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.01em">Day and boarding rivals</h1>
+<p style="margin: 0; color: #c7c9ce; max-width: 560px">Started from 10 nearest | independent. Took out schools that aren't real rivals at 11+, added the boarding colleges we lose pupils to.</p>
+<div style="color: #a0a3ab; font-size: 13px">8 schools ticked · [n] pupils aged 11 · last changed by Guy Beckett, 6 Nov</div>
+</div>
+</div>
+
+<div style="display: flex; gap: 10px; flex-wrap: wrap">
+<button type="button" style="font: inherit; padding: 9px 18px; border-radius: 8px; border: none; background: #5fd0e6; color: #08262d; font-weight: 600; cursor: pointer">Save</button>
+<button type="button" style="font: inherit; padding: 9px 16px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">Save as…</button>
+<button type="button" style="font: inherit; padding: 9px 16px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">Share</button>
+<button type="button" aria-label="More actions" style="font: inherit; padding: 9px 14px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">···</button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; background: #16171a; border: 1px solid #2a2c31">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a0a3ab" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<label for="add" style="position: absolute; left: -9999px">Add a school by name</label>
+<input id="add" placeholder="Add a school by name or town" style="font: inherit; flex: 1; background: transparent; border: none; color: #ececee; outline: none">
+<span style="color: #8a8d95; font-size: 12px">Sort: distance ▾</span>
+</div>
+
+<div style="border-radius: 12px; background: #16171a; border: 1px solid #2a2c31; overflow: hidden">
+<div style="display: grid; grid-template-columns: 52px minmax(0,1fr) 70px 110px 74px 96px; gap: 12px; padding: 10px 16px; font-size: 12px; color: #8a8d95; border-bottom: 1px solid #2a2c31">
+<span>In set</span><span>School</span><span style="text-align: right">km</span><span>Sector</span><span>Boards</span><span style="text-align: right">Pupils at 11</span>
+</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="9">
+<label style="display: grid; grid-template-columns: 52px minmax(0,1fr) 70px 110px 74px 96px; gap: 12px; padding: 11px 16px; align-items: center; border-bottom: 1px solid #222428; cursor: pointer; color: {{r.ink}}">
+<input type="checkbox" checked="{{r.on}}" aria-label="{{r.name}} in the set" style="width: 18px; height: 18px; accent-color: #5fd0e6">
+<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}<span style="color: #8a8d95; font-size: 12px">{{r.note}}</span></span>
+<span style="text-align: right">{{r.km}}</span>
+<span>Independent</span>
+<span>{{r.boards}}</span>
+<span style="text-align: right; color: #8a8d95">[n]</span>
+</label>
+</sc-for>
+<div style="padding: 12px 16px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 1px solid #2a2c31; background: #131417">
+<span style="font-size: 13px; font-weight: 600; margin-right: 6px">Suggested</span>
+<span style="color: #8a8d95; font-size: 12px; margin-right: 4px">nearest teaching 11-year-olds, tick to add:</span>
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; padding: 4px 11px; border-radius: 999px; border: none; background: #5fd0e6; color: #08262d; cursor: pointer">Independent</button>
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 4px 11px; border-radius: 999px; border: 1px solid #3a3d44; background: transparent; color: #c7c9ce; cursor: pointer">State</button>
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 4px 11px; border-radius: 999px; border: 1px solid #3a3d44; background: transparent; color: #c7c9ce; cursor: pointer">Both</button>
+<span style="width: 1px; height: 18px; background: #3a3d44; margin: 0 4px"></span>
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 4px 11px; border-radius: 999px; border: 1px solid #3a3d44; background: transparent; color: #c7c9ce; cursor: pointer">Boarding only</button>
+</div>
+<sc-for list="{{suggest}}" as="r" hint-placeholder-count="3">
+<label style="display: grid; grid-template-columns: 52px minmax(0,1fr) 70px 110px 74px 96px; gap: 12px; padding: 11px 16px; align-items: center; border-bottom: 1px solid #222428; cursor: pointer; background: #131417; color: #a0a3ab">
+<input type="checkbox" aria-label="Add {{r.name}} to the set" style="width: 18px; height: 18px; accent-color: #5fd0e6">
+<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+<span style="text-align: right">{{r.km}}</span>
+<span>Independent</span>
+<span>{{r.boards}}</span>
+<span style="text-align: right">[n]</span>
+</label>
+</sc-for>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #131417; font-size: 13px">
+<button type="button" style="font: inherit; padding: 5px 12px; border-radius: 8px; border: 1px solid #3a3d44; background: transparent; color: #ececee; cursor: pointer">+5 more</button>
+<span style="color: #8a8d95; font-size: 12px">10 shown, nearest first, counted after the filter</span>
+</div>
+</div>
+<div style="color: #8a8d95; font-size: 12px">Unticked schools stay on the list until you save, so ticking again puts them back.</div>
+</div>
+
+<div style="flex: 1 1 320px; min-width: 280px; display: flex; flex-direction: column; gap: 16px">
+<div style="padding: 18px; border-radius: 12px; background: #16171a; border: 1px solid #2a2c31; display: flex; flex-direction: column; gap: 14px">
+<div>
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">How close is this set to Leighton Park?</h2>
+<p style="margin: 4px 0 0; color: #a0a3ab; font-size: 13px">Updates as you add or remove schools.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between"><span>Distance</span><span style="color: #5fd0e6; font-weight: 500">Close</span></div>
+<div style="height: 6px; border-radius: 3px; background: #2a2c31"><div style="width: 78%; height: 6px; border-radius: 3px; background: #5fd0e6"></div></div>
+<div style="color: #a0a3ab; font-size: 12px">All within 12.4 km · median 4.8 km</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><span>Results</span>
+<span role="group" aria-label="Results measure" style="display: inline-flex; border: 1px solid #3a3d44; border-radius: 999px; padding: 2px">
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: none; background: transparent; color: #a0a3ab; cursor: pointer">GCSE</button>
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: none; background: #10333b; color: #5fd0e6; cursor: pointer">Post-16</button>
+</span>
+<span style="color: #a0a3ab; margin-left: auto">[how close]</span></div>
+<div style="height: 6px; border-radius: 3px; background: #2a2c31"><div style="width: 50%; height: 6px; border-radius: 3px; background: #4a6b73"></div></div>
+<div style="color: #a0a3ab; font-size: 12px">[n] of 8 have Post-16 results; [n] have GCSE results (many sit IGCSEs). Starts on whichever covers more.</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between"><span>Pupil population</span><span style="color: #a0a3ab">[how close]</span></div>
+<div style="height: 6px; border-radius: 3px; background: #2a2c31"><div style="width: 50%; height: 6px; border-radius: 3px; background: #4a6b73"></div></div>
+<div style="color: #a0a3ab; font-size: 12px">5 of 8 board, as you do · [size and gender against yours]</div>
+</div>
+</div>
+
+<div style="padding: 18px; border-radius: 12px; background: #16171a; border: 1px solid #2a2c31; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Where this set is used</h2>
+<div style="color: #c7c9ce; font-size: 13px; line-height: 1.5">Market share at 11+ for everyone at Leighton Park. Teachers see it on GCSE pages under School sets.</div>
+<div style="color: #a0a3ab; font-size: 13px">Editable by Admissions and SMT.</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      { name: 'Crosfields School', km: '0.9', boards: 'No' },
+      { name: 'The Abbey School Reading', km: '2.3', boards: 'No' },
+      { name: "Queen Anne's School", km: '4.7', boards: 'Yes' },
+      { name: 'Reddam House Berkshire', km: '4.7', boards: 'Yes' },
+      { name: 'Reading Blue Coat School', km: '4.9', boards: 'No' },
+      { name: 'Luckley House School', km: '8.3', boards: 'Yes' },
+      { name: 'Shiplake College', km: '8.4', boards: 'Yes' },
+      { name: 'Pangbourne College', km: '12.4', boards: 'Yes' },
+      { name: 'OneSchool Global Reading Senior Campus', km: '1.7', boards: 'No', off: true }
+    ].map((r) => ({ ...r, on: !r.off, ink: r.off ? '#6b6e76' : '#ececee', note: r.off ? '  · unticked, leaves on save' : '' }));
+    const suggest = [
+      { name: 'The Deenway Montessori School', km: '2.7', boards: 'No' },
+      { name: 'Red Balloon Learner Centre Reading', km: '2.7', boards: 'No' },
+      { name: 'The Vine Christian School', km: '3.3', boards: 'No' },
+      { name: 'Ludgrove School', km: '9.1', boards: 'Yes' },
+      { name: '[6 more, nearest first]', km: '', boards: '' }
+    ];
+    return { rows, suggest };
+  }
+}
+</script>
+</body>
+</html>
