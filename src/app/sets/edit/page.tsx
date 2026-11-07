@@ -18,6 +18,7 @@ import { SetEditor, type EditorPage, type EditorStart } from "@/components/sets/
 import { useTeacherTheme } from "@/components/shell/TeacherChrome";
 import { accentVars, productAccent } from "@/components/shell/accent";
 import { useWidth } from "@/components/admissions/views/charts";
+import { safeReturnTo } from "@/lib/sets/return-to";
 
 const PHONE = 600;
 
@@ -33,7 +34,8 @@ function EditorLoader() {
   const entry = sp.get("entry") ?? entryOfPhase(phase) ?? "11+";
   const setId = sp.get("set");
   const product = sp.get("product") === "smt" ? "smt" : sp.get("product") === "teacher" ? "teacher" : "admissions";
-  const back = sp.get("back") || "/sets";
+  // Only a path on this site, on a page that opens the editor (an open redirect, and javascript: URLs, otherwise).
+  const back = safeReturnTo(sp.get("back")) ?? "/sets";
   const [state, setState] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; page: EditorPage; start: EditorStart }>({ status: "loading" });
 
   useEffect(() => {
