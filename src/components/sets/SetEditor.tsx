@@ -26,6 +26,7 @@ import { deleteSet, saveSet } from "@/lib/sets/store";
 import { PERSONAL_SET_CAP, type CreatorKind, type SetKind, type StoredSet, type Tier } from "@/lib/sets/model";
 import type { EditorData, EditorRow } from "@/lib/sets/editor-data";
 import { closeness, closenessWords } from "@/lib/sets/closeness";
+import { safeReturnTo } from "@/lib/sets/return-to";
 import { add, changed, feederSummary, groupItems, initItems, isBigFeederSet, setTier, sortByTier, toSave, toggle, type EditorItem, type GroupBy, type SaveMode } from "@/lib/sets/editor-state";
 import { CreatorPill, KindIcon, creatorColours } from "./SetSelector";
 
@@ -73,9 +74,10 @@ async function token(): Promise<string | null> {
 }
 
 function withUseSet(back: string, id: string): string {
+  const safe = safeReturnTo(back);
+  if (!safe) return "/sets";
   try {
-    const u = new URL(back, window.location.origin);
-    if (u.origin !== window.location.origin) return "/sets";
+    const u = new URL(safe, window.location.origin);
     u.searchParams.set("useSet", id);
     return `${u.pathname}?${u.searchParams.toString()}`;
   } catch {
