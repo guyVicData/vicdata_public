@@ -3,6 +3,7 @@
 // VicData 0.7 admissions r2 (D3, D4): the tables -- the feeder table (each school with its pupils
 // at the age, trend, flag, distance, sector, gender and XS-XL: R-ADM-VIEW-FEEDERS), the rivals
 // table, and the year tables on row 2's rails. Every cell is the route's figure.
+import { isMain, mainFalling, mainFallingWords, mainFirst, type Tiers } from "@/lib/sets/tiers";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import type { Load, MarketView, PipelineOk, RivalsView } from "../api";
 import { Empty, FlagPill, ViewTitle, cx, fmtN, fmtPct, fmtSigned, ordinal, yearLabel } from "../ui";
@@ -38,13 +39,23 @@ export type FeederTableLook = { sort?: "listed" | "latest" | "change"; showKm?: 
 export function FeederTable({ p, fullscreen, look = {} }: { p: PipelineOk; fullscreen: boolean; look?: FeederTableLook }) {
   const t = p.feederTable;
   const { sort = "listed", showKm = true, showSector = true, showGender = true, showSize = true } = look;
-  const rows = sort === "latest" ? [...t.rows].sort((a, b) => (b.pupils ?? -1) - (a.pupils ?? -1)) : sort === "change" ? [...t.rows].sort((a, b) => (b.changePct ?? -1e9) - (a.changePct ?? -1e9)) : t.rows;
-  if (!t.rows.length) return <Empty>No feeder schools in this set. The Admissions lead builds the lists in setup.</Empty>;
+  // 0.8 sets round 1 (E22, R-FEEDER-TIERS): the set's Main feeders lead the table, and a falling one
+  // raises the alert (the feeder flag's own rule).
+  const tiers = (p as PipelineOk & { tiers?: Tiers }).tiers;
+  const sorted = sort === "latest" ? [...t.rows].sort((a, b) => (b.pupils ?? -1) - (a.pupils ?? -1)) : sort === "change" ? [...t.rows].sort((a, b) => (b.changePct ?? -1e9) - (a.changePct ?? -1e9)) : t.rows;
+  const rows = mainFirst(sorted, tiers);
+  const alert = mainFallingWords(mainFalling(t.rows, tiers));
+  if (!t.rows.length) return <Empty>No feeder schools in this set. Add some with the set&rsquo;s editor (Feeder schools, Edit this set…).</Empty>;
   return (
     <>
       <ViewTitle>
         Your feeders: pupils aged {t.age}, their trend since {yearLabel(p.censusPeriod - 2)} and flags
       </ViewTitle>
+      {alert && (
+        <div data-main-feeder-alert="" role="status" className="rounded-[9px] border border-[var(--fb-open,#b7860b)] px-3 py-[6px] text-[12px] font-semibold text-[var(--fg)]">
+          {alert}
+        </div>
+      )}
       <div className={cx("min-h-0", !fullscreen && "overflow-y-auto")} style={fullscreen ? undefined : { maxHeight: 330 }}>
         <table className="w-full tabular-nums">
           <thead className="sticky top-0 bg-[var(--panel-bg)]">
@@ -62,7 +73,8 @@ export function FeederTable({ p, fullscreen, look = {} }: { p: PipelineOk; fulls
           <tbody>
             {rows.map((r) => (
               <tr key={r.urn} className="border-t border-[var(--panel-border)] text-[var(--chip-fg)]">
-                <td className={cx(TD, "max-w-[240px] truncate")} title={`${r.name}${r.laName ? ` · ${r.laName}` : ""}${r.inLists.length ? ` · on the ${r.inLists.join(" and ")} list` : ""}`}>
+                <td className={cx(TD, "max-w-[240px] truncate")} title={`${r.name}${r.laName ? ` · ${r.laName}` : ""}${r.inLists.length ? ` · on the ${r.inLists.join(" and ")} list` : ""}${isMain(tiers, r.urn) ? " · Main feeder" : ""}`}>
+                  {isMain(tiers, r.urn) && <span data-main-feeder={r.urn} className="mr-1 rounded-[5px] border border-[var(--panel-border2)] px-[4px] text-[10px] font-bold uppercase text-[var(--fg)]">Main</span>}
                   {r.name}
                 </td>
                 <td className={cx(TD, "text-right font-semibold text-[var(--fg)]")}>{fmtN(r.pupils)}</td>

@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 183 rules: 177 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 187 rules: 181 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -191,6 +191,10 @@ What a number is allowed to be. 183 rules: 177 active, 6 superseded; 22 must lif
 | R-SET-PILL | active | One set selector everywhere a page compares with a set (src/components/sets/SetSelector.tsx): Teacher's Comparisons column, SMT and Admissions. Its label is plain text outside the button ("Compared against"; "Feeder schools" on Pipelines); the button holds only the set, with an accent border, the name in bold and its number of schools. Its menu is always three blocks in this order: Default (no heading), School sets (each row tagged with its creator: Admissions, SMT, the school's group under its own name, Victoria Consultancy), My sets ("n of 8"); the current set ticked and every row's count shown; then Edit this set…, New set…, Manage sets. Only sets that fit the page appear (kind, and entry point or phase: Admissions' 11+ compared-against sets on GCSE pages, 16+ on Post-16; feeder sets never in Teacher). Up to 5 pinned school sets and 5 recently used personal sets show, then "All … (n)…". In Teacher's column the button has a fixed width that truncates a long name (the full name on hover). On a phone the label sits above a full-width button and the menu is a bottom sheet (Esc, the handle or a tap outside closes it). | no | auto: setPill | — |
 | R-SET-DEFAULTS-ADMISSIONS | active | Admissions' default sets are computed when shown (src/lib/sets/recipes.ts): compared against, "10 nearest \| [the school's own sector]", "10 nearest \| boarding" for a boarding school only, and "Schools in [LA] \| all sectors" at 4+ and 11+ or "All post-16 in [LA]" at 16+, each teaching the entry year and the year after it; feeders, "Day \| all sectors", "Day \| state", "Day \| independent" and, for a boarding school, the same as Boarding (independent preps day or boarding, never boarding-only), sized by the SMT catchment's density radius (10 to 40 schools). Which is the default follows Teacher's boarding rule: the top two fifths by boarders default to the boarding set; others to the same-sector set. A school that has saved its own set for the page draws it (a boarding school's day and boarding feeders together, as before), so its figures don't change. | no | auto: setDefaultsAdmissions | — |
 | R-PANEL-NAMES-SET | active | Every panel that draws a set names it in its header (B10): "against 10 nearest \| independent · 10"; on Pipelines, "Day \| all sectors · 28 · 6 main" where the set has Main feeders. On Admissions every view but the area views (the intake change and local births: the radius; the area's population) and the school's own entry views; SMT's headers ("against [set] · n"); Teacher's Comparisons panels. On a phone the line wraps, never truncating the set's name. | no | auto: panelNamesSet | — |
+| R-SET-EDITOR-TICK | active | In the set editor a tick means "in the set", nothing else (src/lib/sets/editor-state.ts): unticking greys a school, marked "unticked, leaves on save", and ticking again restores it (its tier too), so there is no undo, no minus button and no bulk bar; adding a school already listed just ticks it. Save keeps the ticked schools in the list's order with their tiers. A set you can't change -- a default set, a school set you don't curate, someone else's -- opens as a copy that can only be saved as your own (My sets, or School sets where you curate that kind). Save returns to the page you came from, with the set in use. | no | auto: setEditorTick | — |
+| R-SET-HOW-CLOSE | active | "How close is this set to [school]?" (compared-against sets, src/lib/sets/closeness.ts) gives real figures only, updating as schools are ticked: the distance range and median of the ticked schools; how many have GCSE and how many Post-16 results, with the switch starting on the measure the dashboard uses (results-coverage.ts, F25: so the editor and Market share agree), naming how many sit IGCSEs; and the pupil population -- how many board (and whether the school does), how many share its gender, their median pupils at the age against the school's. No closeness score: the counts are shown and say so. | no | auto: setHowClose | — |
+| R-FEEDER-TIERS | active | A feeder set's tiers drive the feeder views (src/lib/sets/tiers.ts): Main feeders go to the top of the feeder health table (marked Main) and are drawn larger on the feeder map (MAIN_DOT_SCALE); an alert shows above the table when a Main feeder's roll is falling, by the existing trend rule (the feeder flag "Falling faster than the area"). Untiered counts as Regular; Occasional is kept in view and never alerts. The pipeline's answer carries the set's tiers. | no | auto: feederTiers | — |
+| R-SETS-MOBILE | active | Every new sets screen has a designed phone layout (G26-G31) from the same components, no phone-only copies of logic: at 390 px the selector (label above a full-width button, its menu a bottom sheet with a handle and the actions pinned at the bottom), the editor (one column, 72 px artwork, Save and Save as in a sticky bottom bar, the tick on the left, other figures behind a row's chevron, Add schools as a bottom sheet), the library (tabs, sideways pinned tiles, cards with a ··· sheet) and the set view (stacked, Edit first, How close and Where used folded) render without horizontal scroll; every control has at least a 44 px hit area; the sheets open and close by Esc, the handle and a tap outside; a panel header naming its set wraps rather than truncating. | no | auto: setsMobile | — |
 
 ## Cards
 
@@ -3117,6 +3121,70 @@ What a number is allowed to be. 183 rules: 177 active, 6 superseded; 22 must lif
 | Tagged at | - src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/sets/SetSelector.tsx<br>- src/components/smt/SmtDashboard.tsx<br>- src/components/teacher/ComparisonsPanels.tsx |
 | Test case | Leighton Park, Admissions 11+ (every view, rendered on the server) and the source tree (110110), ks4: Every Admissions view with a set kind has a data-set-header line naming its set and count; none of the area or own-entry views has one; SMT's header context carries the set's count; Teacher's panels add the line. [runner: panelNamesSet] |
 | Origin | 0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, B10, G30) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SET-EDITOR-TICK
+
+| Field | Content |
+| --- | --- |
+| Statement | In the set editor a tick means "in the set", nothing else (src/lib/sets/editor-state.ts): unticking greys a school, marked "unticked, leaves on save", and ticking again restores it (its tier too), so there is no undo, no minus button and no bulk bar; adding a school already listed just ticks it. Save keeps the ticked schools in the list's order with their tiers. A set you can't change -- a default set, a school set you don't curate, someone else's -- opens as a copy that can only be saved as your own (My sets, or School sets where you curate that kind). Save returns to the page you came from, with the set in use. |
+| Why | Sets round 1 (C13, C17): one meaning for a tick, and no way to change a set that isn't yours. |
+| Applies to | the set editor (/sets/edit) |
+| Enforced in | - src/lib/sets/editor-state.ts<br>- src/components/sets/SetEditor.tsx<br>- src/app/sets/edit/page.tsx<br>- src/lib/sets/editor.test.ts |
+| Tagged at | - src/lib/sets/editor-state.ts<br>- src/lib/sets/editor.test.ts |
+| Test case | the editor's list (pure) and the editor rendered on the server (110110), ks4: Untick and retick restores the school and its tier; save drops the unticked; a teacher's school set, someone else's set and a default set open as copies with "Save as your own…" and no Save. [runner: setEditorTick] |
+| Origin | 0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, C13, C17) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SET-HOW-CLOSE
+
+| Field | Content |
+| --- | --- |
+| Statement | "How close is this set to [school]?" (compared-against sets, src/lib/sets/closeness.ts) gives real figures only, updating as schools are ticked: the distance range and median of the ticked schools; how many have GCSE and how many Post-16 results, with the switch starting on the measure the dashboard uses (results-coverage.ts, F25: so the editor and Market share agree), naming how many sit IGCSEs; and the pupil population -- how many board (and whether the school does), how many share its gender, their median pupils at the age against the school's. No closeness score: the counts are shown and say so. |
+| Why | Sets round 1 (C16): show what makes a set close or not, from data, without inventing a score. |
+| Applies to | the set editor; the set view |
+| Enforced in | - src/lib/sets/closeness.ts<br>- src/lib/sets/editor-data.ts<br>- src/components/sets/SetEditor.tsx |
+| Tagged at | - src/lib/sets/closeness.ts<br>- src/lib/sets/editor.test.ts |
+| Test case | Leighton Park's 10 nearest \| independent at 11+ (live) (110110), ks4: The range and median equal those of the ten rows' distances; GCSE and Post-16 counts equal the rows' own; the switch starts on the measure resultsMeasureFor gives (Post-16, as Rivals' momentum does); the words say so. [runner: setHowClose] |
+| Origin | 0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, C16) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-FEEDER-TIERS
+
+| Field | Content |
+| --- | --- |
+| Statement | A feeder set's tiers drive the feeder views (src/lib/sets/tiers.ts): Main feeders go to the top of the feeder health table (marked Main) and are drawn larger on the feeder map (MAIN_DOT_SCALE); an alert shows above the table when a Main feeder's roll is falling, by the existing trend rule (the feeder flag "Falling faster than the area"). Untiered counts as Regular; Occasional is kept in view and never alerts. The pipeline's answer carries the set's tiers. |
+| Why | Sets round 1 (E22): the schools that matter most should lead and warn. |
+| Applies to | Admissions: Pipelines' feeder table and feeder map |
+| Enforced in | - src/lib/sets/tiers.ts<br>- src/components/admissions/views/Tables.tsx:FeederTable<br>- src/components/admissions/views/AdmissionsMap.tsx:FeederMap<br>- src/lib/sets/admissions-page.ts:resolveChoice<br>- src/app/api/admissions/pipeline/route.ts |
+| Tagged at | - src/components/admissions/views/AdmissionsMap.tsx<br>- src/components/admissions/views/Tables.tsx<br>- src/lib/sets/editor.test.ts<br>- src/lib/sets/tiers.ts |
+| Test case | Leighton Park's 11+ day feeders with tiers (rendered on the server) (110110), ks4: The table lists the Main feeders first, marked Main; a Main feeder with a red flag raises the alert naming it; an Occasional one with a red flag doesn't; the map draws Main feeders at 1.5 times the radius. [runner: feederTiers] |
+| Origin | 0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, E22) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SETS-MOBILE
+
+| Field | Content |
+| --- | --- |
+| Statement | Every new sets screen has a designed phone layout (G26-G31) from the same components, no phone-only copies of logic: at 390 px the selector (label above a full-width button, its menu a bottom sheet with a handle and the actions pinned at the bottom), the editor (one column, 72 px artwork, Save and Save as in a sticky bottom bar, the tick on the left, other figures behind a row's chevron, Add schools as a bottom sheet), the library (tabs, sideways pinned tiles, cards with a ··· sheet) and the set view (stacked, Edit first, How close and Where used folded) render without horizontal scroll; every control has at least a 44 px hit area; the sheets open and close by Esc, the handle and a tap outside; a panel header naming its set wraps rather than truncating. |
+| Why | Sets round 1 (G, Guy 7 Nov): every new screen works on a phone. |
+| Applies to | the selector, the editor, the library, the set view, on a phone |
+| Enforced in | - src/components/sets/SetSelector.tsx<br>- src/components/sets/SetEditor.tsx<br>- src/components/sets/SetsLibrary.tsx<br>- src/components/sets/SetView.tsx<br>- docs/v0.8/sets_round1_report_v1.md (the 390 px measurements) |
+| Tagged at | — |
+| Test case | the four screens rendered on the server at phone (and measured at 390 x 844 in headless Chrome: the report) (110110), ks4: No fixed width over 358 px in any phone markup; every button, link, field, select and summary carries a 44 px minimum (a checkbox or radio inside a 44 px label); the menu sheet has its handle and backdrop and closes on Esc; the editor's sticky bar holds Save and Save as; the library's sections are tabs; the set view's How close and Where used are folded. [runner: setsMobile] |
+| Origin | 0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, G26-G31) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

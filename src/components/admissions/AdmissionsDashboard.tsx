@@ -113,7 +113,12 @@ function readUrl(): UrlState {
   const step = sp.get("setup");
   const setup = step && (["entry", "day", "boarding", "rivals", "blend"].includes(step) || /^rung:\d+-\d+$/.test(step)) ? (step as SetupStep) : null;
   const key = (k: string) => (sp.get(k) ?? "").slice(0, 120) || null;
-  return { dash: sp.get("view") === "market-share" ? "market-share" : "pipelines", entry: sp.get("entry"), setup, fset: key("fset"), rset: key("rset") };
+  const dash: DashKey = sp.get("view") === "market-share" ? "market-share" : "pipelines";
+  // 0.8 sets round 1 (D20): back from the set editor's Save (?useSet=<id>), the page uses the set it
+  // saved, for its own kind (writeUrl then drops the parameter).
+  const used = sp.get("useSet");
+  const fromEditor = used && /^[0-9a-f-]{36}$/i.test(used) ? `set:${used}` : null;
+  return { dash, entry: sp.get("entry"), setup, fset: dash === "pipelines" && fromEditor ? fromEditor : key("fset"), rset: dash === "market-share" && fromEditor ? fromEditor : key("rset") };
 }
 function writeUrl(s: UrlState) {
   const sp = new URLSearchParams(window.location.search);
@@ -122,6 +127,7 @@ function writeUrl(s: UrlState) {
   else sp.delete("entry");
   if (s.setup) sp.set("setup", s.setup);
   else sp.delete("setup");
+  sp.delete("useSet");
   for (const k of ["fset", "rset"] as const) {
     if (s[k]) sp.set(k, s[k]!);
     else sp.delete(k);
@@ -359,9 +365,6 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   const editTitle = member.canEditLists ? "Choose entry points" : member.access === "viewAs" ? "View as: read-only" : "The Admissions lead chooses the entry points";
   // 0.8 sets round 1 (B6, B11): the page's one set and the Pupils filter replace the old filter chips.
   const pageKind = dash === "pipelines" ? "feeders" : "compared_against";
-  // Edit this set… opens the old setup step for the school's own list, for its curators (C17's editor
-  // replaces it); any other set has no editor yet here.
-  const editStep: SetupStep | null = member.canEditLists ? (pageKind === "feeders" ? "day" : "rivals") : null;
   const setBar = entry ? (
     <AdmissionsSetSelector
       key={`${pageKind}:${entry}`}
@@ -371,7 +374,6 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
       choice={pageKind === "feeders" ? url.fset : url.rset}
       inUse={(pageKind === "feeders" ? sets.feeders : sets.rivals) ?? null}
       onPick={(k) => update(pageKind === "feeders" ? { fset: k } : { rset: k })}
-      onEdit={editStep ? () => update({ setup: editStep }) : null}
       phone={phone}
     />
   ) : null;

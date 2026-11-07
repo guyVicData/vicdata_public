@@ -2489,6 +2489,50 @@ export const RULES: Rule[] = [
     origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, B10, G30)",
     status: "active",
   },
+  {
+    id: "R-SET-EDITOR-TICK",
+    statement:
+      "In the set editor a tick means \"in the set\", nothing else (src/lib/sets/editor-state.ts): unticking greys a school, marked \"unticked, leaves on save\", and ticking again restores it (its tier too), so there is no undo, no minus button and no bulk bar; adding a school already listed just ticks it. Save keeps the ticked schools in the list's order with their tiers. A set you can't change -- a default set, a school set you don't curate, someone else's -- opens as a copy that can only be saved as your own (My sets, or School sets where you curate that kind). Save returns to the page you came from, with the set in use.",
+    why: "Sets round 1 (C13, C17): one meaning for a tick, and no way to change a set that isn't yours.",
+    appliesTo: "the set editor (/sets/edit)",
+    enforcedIn: ["src/lib/sets/editor-state.ts", "src/components/sets/SetEditor.tsx", "src/app/sets/edit/page.tsx", "src/lib/sets/editor.test.ts"],
+    testCase: { urn: "110110", school: "the editor's list (pure) and the editor rendered on the server", phase: "ks4", expect: "Untick and retick restores the school and its tier; save drops the unticked; a teacher's school set, someone else's set and a default set open as copies with \"Save as your own…\" and no Save.", check: "setEditorTick" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, C13, C17)",
+    status: "active",
+  },
+  {
+    id: "R-SET-HOW-CLOSE",
+    statement:
+      "\"How close is this set to [school]?\" (compared-against sets, src/lib/sets/closeness.ts) gives real figures only, updating as schools are ticked: the distance range and median of the ticked schools; how many have GCSE and how many Post-16 results, with the switch starting on the measure the dashboard uses (results-coverage.ts, F25: so the editor and Market share agree), naming how many sit IGCSEs; and the pupil population -- how many board (and whether the school does), how many share its gender, their median pupils at the age against the school's. No closeness score: the counts are shown and say so.",
+    why: "Sets round 1 (C16): show what makes a set close or not, from data, without inventing a score.",
+    appliesTo: "the set editor; the set view",
+    enforcedIn: ["src/lib/sets/closeness.ts", "src/lib/sets/editor-data.ts", "src/components/sets/SetEditor.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park's 10 nearest | independent at 11+ (live)", phase: "ks4", expect: "The range and median equal those of the ten rows' distances; GCSE and Post-16 counts equal the rows' own; the switch starts on the measure resultsMeasureFor gives (Post-16, as Rivals' momentum does); the words say so.", check: "setHowClose" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, C16)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDER-TIERS",
+    statement:
+      "A feeder set's tiers drive the feeder views (src/lib/sets/tiers.ts): Main feeders go to the top of the feeder health table (marked Main) and are drawn larger on the feeder map (MAIN_DOT_SCALE); an alert shows above the table when a Main feeder's roll is falling, by the existing trend rule (the feeder flag \"Falling faster than the area\"). Untiered counts as Regular; Occasional is kept in view and never alerts. The pipeline's answer carries the set's tiers.",
+    why: "Sets round 1 (E22): the schools that matter most should lead and warn.",
+    appliesTo: "Admissions: Pipelines' feeder table and feeder map",
+    enforcedIn: ["src/lib/sets/tiers.ts", "src/components/admissions/views/Tables.tsx:FeederTable", "src/components/admissions/views/AdmissionsMap.tsx:FeederMap", "src/lib/sets/admissions-page.ts:resolveChoice", "src/app/api/admissions/pipeline/route.ts"],
+    testCase: { urn: "110110", school: "Leighton Park's 11+ day feeders with tiers (rendered on the server)", phase: "ks4", expect: "The table lists the Main feeders first, marked Main; a Main feeder with a red flag raises the alert naming it; an Occasional one with a red flag doesn't; the map draws Main feeders at 1.5 times the radius.", check: "feederTiers" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, E22)",
+    status: "active",
+  },
+  {
+    id: "R-SETS-MOBILE",
+    statement:
+      "Every new sets screen has a designed phone layout (G26-G31) from the same components, no phone-only copies of logic: at 390 px the selector (label above a full-width button, its menu a bottom sheet with a handle and the actions pinned at the bottom), the editor (one column, 72 px artwork, Save and Save as in a sticky bottom bar, the tick on the left, other figures behind a row's chevron, Add schools as a bottom sheet), the library (tabs, sideways pinned tiles, cards with a ··· sheet) and the set view (stacked, Edit first, How close and Where used folded) render without horizontal scroll; every control has at least a 44 px hit area; the sheets open and close by Esc, the handle and a tap outside; a panel header naming its set wraps rather than truncating.",
+    why: "Sets round 1 (G, Guy 7 Nov): every new screen works on a phone.",
+    appliesTo: "the selector, the editor, the library, the set view, on a phone",
+    enforcedIn: ["src/components/sets/SetSelector.tsx", "src/components/sets/SetEditor.tsx", "src/components/sets/SetsLibrary.tsx", "src/components/sets/SetView.tsx", "docs/v0.8/sets_round1_report_v1.md (the 390 px measurements)"],
+    testCase: { urn: "110110", school: "the four screens rendered on the server at phone (and measured at 390 x 844 in headless Chrome: the report)", phase: "ks4", expect: "No fixed width over 358 px in any phone markup; every button, link, field, select and summary carries a 44 px minimum (a checkbox or radio inside a 44 px label); the menu sheet has its handle and backdrop and closes on Esc; the editor's sticky bar holds Save and Save as; the library's sections are tabs; the set view's How close and Where used are folded.", check: "setsMobile" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, G26-G31)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

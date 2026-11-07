@@ -50,7 +50,7 @@ import { freshToken } from "@/components/admissions/member";
 import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
 import { SetSelector, setHeaderWords } from "@/components/sets/SetSelector";
-import { NEAREST_KEY, rankingKey, teacherMenuRows } from "@/components/sets/teacherMenu";
+import { NEAREST_KEY, rankingKey, takeUseSet, teacherEditorHref, teacherMenuRows } from "@/components/sets/teacherMenu";
 import { arrowOf, dirClass, smtVars, yearOf } from "./ui";
 import { SchoolNow } from "./views/Now";
 import { smtHasContent } from "./content";
@@ -222,6 +222,12 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const [level, setLevel] = useLevel(member.schoolUrn, s);
   const phase = s ? setPhaseOf(s.phases) : null;
   const sets = useSmtSet(member.schoolUrn, phase);
+  // 0.8 sets round 1 (D20): back from the set editor's Save, use the set it saved (re-reading the sets).
+  useEffect(() => {
+    const id = takeUseSet();
+    if (!id) return;
+    void sets.reloadSaved().then(() => sets.choose({ kind: "saved", id }));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [chooser, setChooser] = useState<{ editing: NonNullable<typeof sets.savedSets>["sets"][number] | null } | null>(null);
   const [filters, setFilters] = useState<SmtFilters>({ sex: "all", boarding: "all" });
   const f: SmtFilters = { sex: s?.mixed ? filters.sex : "all", boarding: s?.boarding ? filters.boarding : "all" };
@@ -307,6 +313,9 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const savedNow = savedId ? (sets.savedSets?.sets.find((x) => x.id === savedId) ?? null) : null;
   const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: sets.choice.kind === "nearest" && set ? set.urns.length : 10 });
   const selectedKey = sets.choice.kind === "nearest" ? NEAREST_KEY : sets.choice.kind === "saved" ? `saved:${sets.choice.id}` : sets.choice.kind === "ranking" && sets.choice.rankingId ? rankingKey(sets.choice.rankingId) : null;
+  // C17, D20: Edit this set… and New set… open the set editor (a copy where the set isn't yours to change).
+  const editHref = member.viewAs ? null : teacherEditorHref({ urn: member.schoolUrn, phase, product: "smt", current: set ? { savedId: savedNow?.id ?? null, name: set.label, urns: set.urns } : null, fresh: false });
+  const newHref = member.viewAs ? null : teacherEditorHref({ urn: member.schoolUrn, phase, product: "smt", current: null, fresh: true });
   const setPill = (
     <SetSelector
       label="Compared against"
@@ -324,8 +333,8 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
           if (rk) sets.choose({ kind: "ranking", label: rk.name, filters: rk.filters, rankingId: rk.id });
         }
       }}
-      onEdit={savedNow?.editable ? { label: "Edit this set…", onClick: () => setChooser({ editing: savedNow }) } : { label: "Edit this set…", onClick: () => setChooser({ editing: null }), title: "Opens a copy to save as your own" }}
-      onNew={{ label: "New set…", onClick: () => setChooser({ editing: null }) }}
+      onEdit={editHref ? { label: "Edit this set…", onClick: () => (window.location.href = editHref), title: savedNow?.editable ? undefined : "Opens a copy to save as your own" } : null}
+      onNew={newHref ? { label: "New set…", onClick: () => (window.location.href = newHref) } : { label: "New set…", onClick: () => setChooser({ editing: null }) }}
       extraDefault={[{ label: "Schools in the LA, regional and national rankings…", onClick: () => setChooser({ editing: null }) }]}
       manageHref="/sets?kind=compared_against"
       phone={phone}

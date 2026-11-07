@@ -31,3 +31,33 @@ export function teacherMenuRows(payload: SavedSetsPayload | null, o: { nearestLa
     mine: payload ? { active: payload.personalCount, cap: payload.cap } : null,
   };
 }
+
+/** The set editor's address from Teacher or SMT (C17, D20): a saved set opens as itself (a copy where
+ * this person can't change it); anything else -- the 10 nearest, a linked or chooser set -- as a copy of
+ * its schools; New set… empty. Save comes back with useSet=<id>. Null where the editor doesn't apply
+ * (a KS2 page: sets there are whole-school and built in the chooser). */
+export function teacherEditorHref(o: { urn: string; phase: string | null; product: "smt" | "teacher"; current: { savedId: string | null; name: string; urns: string[] } | null; fresh: boolean }): string | null {
+  if (o.phase !== "ks4" && o.phase !== "ks5") return null;
+  const back = typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
+  const q = new URLSearchParams({ urn: o.urn, kind: "compared_against", phase: o.phase, product: o.product, back });
+  if (!o.fresh && o.current) {
+    if (o.current.savedId) q.set("set", o.current.savedId);
+    else {
+      q.set("from", "teacher:current");
+      q.set("name", o.current.name);
+      if (o.current.urns.length) q.set("urns", o.current.urns.join(","));
+    }
+  }
+  return `/sets/edit?${q.toString()}`;
+}
+
+/** Back from the editor's Save: the id it saved (and the address without it), or null. */
+export function takeUseSet(): string | null {
+  if (typeof window === "undefined") return null;
+  const u = new URL(window.location.href);
+  const id = u.searchParams.get("useSet");
+  if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+  u.searchParams.delete("useSet");
+  window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+  return id;
+}

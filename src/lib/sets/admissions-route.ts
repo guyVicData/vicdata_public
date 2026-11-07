@@ -36,7 +36,7 @@ export async function listsForRoute(c: AdmissionsCaller, ep: EntryPoint, sp: URL
 }
 
 /** What the views' answers carry about the sets in use: the header's name and counts. */
-export const setsInUse = (r: RouteSets): { feeders?: SetChoice; rivals?: SetChoice } => ({ ...(r.feeders ? { feeders: r.feeders.choice } : {}), ...(r.rivals ? { rivals: r.rivals.choice } : {}) });
+export const setsInUse = (r: RouteSets): { feeders?: SetChoice; rivals?: SetChoice } => ({ ...(r.feeders ? { feeders: { ...r.feeders.choice, urns: r.feeders.urns } } : {}), ...(r.rivals ? { rivals: { ...r.rivals.choice, urns: r.rivals.urns } } : {}) });
 
 /** The menu for one page kind, with the current set ticked. */
 export async function menuForRoute(c: AdmissionsCaller, ep: EntryPoint, kind: SetKind, key: string | null): Promise<AdmissionsMenu> {

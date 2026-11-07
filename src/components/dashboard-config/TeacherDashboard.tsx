@@ -22,7 +22,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
-import { NEAREST_KEY, rankingKey, teacherMenuRows } from "@/components/sets/teacherMenu";
+import { NEAREST_KEY, rankingKey, takeUseSet, teacherEditorHref, teacherMenuRows } from "@/components/sets/teacherMenu";
 import type { SetMenuRow } from "@/components/sets/SetSelector";
 import { igcseGroupLabelFor, igcseGroupNoteFor, igcseTargetLine } from "@/lib/igcse-words";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
@@ -694,6 +694,20 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     },
     [canWrite, columns, schoolUrn, phase, supabase],
   );
+
+  // 0.8 sets round 1 (D20): back from the set editor's Save (?useSet=<id>), the Comparisons column uses
+  // the set it saved, once the school and its preferences are known.
+  const useSetTaken = useRef(false);
+  useEffect(() => {
+    if (useSetTaken.current || !schoolUrn || !phase) return;
+    const id = takeUseSet();
+    useSetTaken.current = true;
+    if (!id) return;
+    void (async () => {
+      setSavedSets(await fetchSavedSets(supabase, schoolUrn, phase, { fresh: true }));
+      await setColumnSettings([[setKey("rankings"), savedSetKey(id)], [CHOOSER_KEY, null]]);
+    })();
+  }, [schoolUrn, phase, supabase, setColumnSettings]);
 
   const setColumnSetting = useCallback(
     async (key: string, value: string | null) => {
@@ -2503,8 +2517,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         if (rk) void applyChoice({ kind: "ranking", label: rk.name, filters: rk.filters, rankingId: rk.id });
       }
     },
-    onEdit: activeSavedSet?.editable ? { label: "Edit this set…", onClick: () => setChooser({ editing: activeSavedSet }) } : { label: "Edit this set…", title: "Opens a copy to save as your own", onClick: () => setChooser({ editing: null }) },
-    onNew: { label: "New set…", onClick: () => setChooser({ editing: null }) },
+    // C17, D20: Edit this set… and New set… open the set editor (a copy where the set isn't yours to change).
+    onEdit: (() => {
+      const href = schoolUrn ? teacherEditorHref({ urn: schoolUrn, phase, product: "teacher", current: { savedId: activeSavedSet?.id ?? null, name: activeSetLabel, urns: (allComparatorSets[comparisonsSet] ?? []).filter((x) => !x.isTarget && x.urn !== schoolUrn).map((x) => x.urn) }, fresh: false }) : null;
+      return href ? { label: "Edit this set…", title: activeSavedSet?.editable ? undefined : "Opens a copy to save as your own", onClick: () => (window.location.href = href) } : { label: "Edit this set…", onClick: () => setChooser({ editing: activeSavedSet?.editable ? activeSavedSet : null }) };
+    })(),
+    onNew: (() => {
+      const href = schoolUrn ? teacherEditorHref({ urn: schoolUrn, phase, product: "teacher", current: null, fresh: true }) : null;
+      return href ? { label: "New set…", onClick: () => (window.location.href = href) } : { label: "New set…", onClick: () => setChooser({ editing: null }) };
+    })(),
     extraDefault: [{ label: "Schools in the LA, regional and national rankings…", onClick: () => setChooser({ editing: null }) }],
     manageHref: `/sets?kind=compared_against&phase=${phase}`,
   };

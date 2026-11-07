@@ -36,7 +36,23 @@ async function remember(member: AdmissionsMember, key: string) {
   }
 }
 
-export function AdmissionsSetSelector({ member, entry, kind, choice, inUse, onPick, phone, onEdit }: { member: AdmissionsMember; entry: string; kind: SetKind; choice: string | null; inUse: SetChoice | null; onPick: (key: string) => void; phone?: boolean; onEdit?: (() => void) | null }) {
+/** The editor's address for this page (C17, D20): a stored set opens as itself (a copy if this person
+ * can't change it); a default set, or a school's Day + boarding pair, as a copy of its schools; New
+ * set… empty. Save comes back here with the set in use. */
+export function editorHref(member: AdmissionsMember, entry: string, kind: SetKind, current: SetChoice | null, fresh: boolean): string {
+  const q = new URLSearchParams({ urn: member.schoolUrn, kind, entry, product: "admissions", back: typeof window === "undefined" ? "/teacher/admissions" : `${window.location.pathname}${window.location.search}` });
+  if (!fresh && current) {
+    if (current.key.startsWith("set:")) q.set("set", current.key.slice(4));
+    else {
+      q.set("from", current.key);
+      q.set("name", current.name);
+      if (current.urns?.length) q.set("urns", current.urns.join(","));
+    }
+  }
+  return `/sets/edit?${q.toString()}`;
+}
+
+export function AdmissionsSetSelector({ member, entry, kind, choice, inUse, onPick, phone }: { member: AdmissionsMember; entry: string; kind: SetKind; choice: string | null; inUse: SetChoice | null; onPick: (key: string) => void; phone?: boolean }) {
   const menu = useRoute<AdmissionsMenu>(`/api/admissions/sets?urn=${member.schoolUrn}&entry=${encodeURIComponent(entry)}&kind=${kind}${choice ? `&key=${encodeURIComponent(choice)}` : ""}`);
   const m = menu.status === "ready" ? menu.data : null;
   // The set in use: the page's answer when it has come (what the views drew), else the menu's.
@@ -54,7 +70,9 @@ export function AdmissionsSetSelector({ member, entry, kind, choice, inUse, onPi
         void remember(member, r.key);
         onPick(r.key);
       }}
-      onEdit={onEdit ? { label: "Edit this set…", onClick: onEdit } : null}
+      // C17: Edit opens the editor -- the set itself where this person can change it, else a copy.
+      onEdit={member.viewAs ? null : { label: "Edit this set…", onClick: () => (window.location.href = editorHref(member, entry, kind, current, false)) }}
+      onNew={member.viewAs ? null : { label: "New set…", onClick: () => (window.location.href = editorHref(member, entry, kind, current, true)) }}
       manageHref={`/sets?kind=${kind}&entry=${encodeURIComponent(entry)}`}
       phone={phone}
     />

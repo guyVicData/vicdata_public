@@ -35,6 +35,8 @@ export type SetChoice = {
   pinned?: boolean;
   lastUsedAt?: string | null;
   how?: string;
+  /** The set's schools (the routes' answers carry them, so Edit can open a copy of a default set). */
+  urns?: string[];
 };
 
 export type AdmissionsMenu = {

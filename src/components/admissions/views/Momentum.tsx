@@ -56,8 +56,12 @@ function MomentumScope({ r }: { r: RivalsView }) {
     <div data-momentum-scope="" className="-mt-1 text-[11px] text-[var(--muted2)]">
       {momentumScope(r.stage)}
       {out.length > 0 && (
-        <span data-momentum-left-out="">
-          {". "}Left out, no GCSE results: {out.map((x) => `${x.name}${x.igcse ? " (IGCSE)" : ""}`).join(", ")}
+        // Every school left out is named; past two, the line says how many more and the hover names them
+        // all, so it stays one line in the panel's fixed height (sets round 1 parity: a long list
+        // wrapped and clipped the flag table's last row).
+        <span data-momentum-left-out="" title={`Left out, no GCSE results: ${out.map((x) => `${x.name}${x.igcse ? " (IGCSE)" : ""}`).join(", ")}`}>
+          {". "}Left out, no GCSE results: {out.slice(0, 2).map((x) => `${x.name}${x.igcse ? " (IGCSE)" : ""}`).join(", ")}
+          {out.length > 2 ? ` and ${out.length - 2} more` : ""}
         </span>
       )}
     </div>
