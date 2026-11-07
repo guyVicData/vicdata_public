@@ -797,6 +797,14 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
   );
 }
 
+/** G30: on a phone each panel's header names its set too (only the line: the phone draws no chips),
+ * wrapping onto a second line rather than truncating the set's name. */
+export function phoneSetLine(dv: string, c: Ctx): ReactNode {
+  const kind = setKindOfView(dv);
+  const set = kind ? (kind === "feeders" ? c.sets?.feeders : c.sets?.rivals) : null;
+  return kind && set ? <SetHeaderLine kind={kind} set={set} /> : null;
+}
+
 function chipsOfView(dv: string, c: Ctx): ReactNode {
   const p = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data : null;
   const lead = c.member.canEditLists;
@@ -1007,7 +1015,7 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   return (
     <>
       {now && (
-        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv, methodVars(nowDv, c))} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
+        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" chips={phoneSetLine(nowDv, c)} source={sourceOf(nowDv, methodVars(nowDv, c))} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
           {() =>
             c.dash === "pipelines"
               ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
@@ -1016,12 +1024,12 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
         </Panel>
       )}
       {large && (
-        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv, methodVars(largeDv, c))} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
+        <Panel tag={largeTitle} title={largeTitle} height="auto" chips={phoneSetLine(largeDv, c)} source={sourceOf(largeDv, methodVars(largeDv, c))} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
           {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? <InstanceBody dv={largeDv} c={c} o={{ fullscreen, height, spec: specOf(large, largeTab) }} /> : phoneView(largeDv, c, specOf(large, largeTab))}</div>}
         </Panel>
       )}
       {trends.length > 0 && (
-        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv, methodVars(trendDv, c))} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} view={trendPanel ? { panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "", dataview: trendDv || null } : null}>
+        <Panel tag={trendTitle} title={trendTitle} height="auto" chips={phoneSetLine(trendDv, c)} source={sourceOf(trendDv, methodVars(trendDv, c))} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} view={trendPanel ? { panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "", dataview: trendDv || null } : null}>
           {({ fullscreen, height }) => <div className="flex min-h-[160px] flex-col gap-2"><InstanceBody dv={trendDv} c={c} o={{ fullscreen, height, spec: specOf(trendPanel, stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "") }} /></div>}
         </Panel>
       )}

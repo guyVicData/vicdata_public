@@ -169,7 +169,17 @@ Every harness ran twice against the base `aaac88b` (`main` 8eb2fc9 plus the prom
 
 Both trees ran in their own detached worktrees, with fixtures captured from each tree's own code (read-only). The harness copies and commands are in the session scratchpad (`sets_par/harness_copies/README.txt`).
 
-**Run 2 found one real bug, now fixed.** The Admissions routes returned the set in use under `sets`, the same key as the pipeline's own rung sets. With the route's real answer, Pipelines failed to draw ("p.sets.find is not a function"), as did Market share on a phone. The key is now `setChoices` (`a49d8fe`). The fix hasn't been re-run through the harness; the live check (step 7) opens Pipelines first.
+**Run 2 found one real bug, now fixed.** The Admissions routes returned the set in use under `sets`, the same key as the pipeline's own rung sets. With the route's real answer, Pipelines failed to draw ("p.sets.find is not a function"), as did Market share on a phone. The key is now `setChoices` (`a49d8fe`).
+
+**Runs 3 and 4 checked that fix.** In both, the stubs return exactly what the routes return (`setChoices` beside the pipeline's own `sets`).
+- **Run 3, on `2b6bbd4`:**
+  - Admissions: 468 rail steps and 1,872 panels, 0 unexpected.
+  - SMT: 152 pairs, 100 allowed, 3 noise, 0 unexpected, every chart identical to the base.
+  - Leighton Park: Pipelines and Market share at 11+ and 16+, 1440 and 390, light and dark, every view drawn (16 to 24 per page) and no console errors.
+  - It also found the phone panels named no set (G30).
+- **Run 4, with the phone fix:**
+  - Admissions at 390: 234 rail steps and 702 panels, 0 unexpected. The 530 phone panels that draw a set now name it, wrapped and never truncated.
+  - Leighton Park: every view still draws, with no console errors.
 
 **"Figures never change for the same set of schools" holds.** The Admissions fixtures call the views with no lists (round 1's nearby defaults), so the sets compare like for like:
 - Every Admissions panel was compared with its set lines and set names set aside; all 856 changed panels then match the base exactly, SVG coordinates included.
