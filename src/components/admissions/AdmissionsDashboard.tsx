@@ -712,13 +712,16 @@ function withSexNote(dv: string, c: Ctx, notes: { caption?: ReactNode; visible?:
 }
 
 /** 0.8 Admissions fb1: the (i)'s {placeholders} a view fills from what it drew (the funnel's area,
- * how its radius was set, which age stands in for births). */
-function methodVars(dv: string, c: Ctx): Record<string, string | number | null> {
+ * how its radius was set, which age stands in for births). 0.8 Sets r1 (F24): and `boarding`, so a day
+ * school's (i) drops every boarding sentence (method-conditions.ts). Exported for the rule tests
+ * (R-ADM-BOARDING-ONLY-WHERE-BOARDERS read the (i) as this host fills it). */
+export function methodVars(dv: string, c: Pick<Ctx, "boardingSchool" | "pipeline" | "market">): Record<string, string | number | null> {
   const p = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data : null;
-  if (dv === "DV-ADM-P-FUNNEL" && p) return intakeMethodVars(p.intake);
-  if (dv === "DV-ADM-P-BIRTHS" && p) return localBirthsMethodVars(p.localBirths);
-  if (dv === "DV-ADM-M-SHARE-BAND" && c.market.status === "ready" && !("empty" in c.market.data)) return { band: bandWords(c.market.data.band) };
-  return {};
+  const boarding = { boarding: c.boardingSchool ? 1 : 0 };
+  if (dv === "DV-ADM-P-FUNNEL" && p) return { ...intakeMethodVars(p.intake), ...boarding };
+  if (dv === "DV-ADM-P-BIRTHS" && p) return { ...localBirthsMethodVars(p.localBirths), ...boarding };
+  if (dv === "DV-ADM-M-SHARE-BAND" && c.market.status === "ready" && !("empty" in c.market.data)) return { band: bandWords(c.market.data.band), ...boarding };
+  return boarding;
 }
 
 /** The source note behind each panel's "i". */

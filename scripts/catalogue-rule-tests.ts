@@ -1776,7 +1776,8 @@ const RUNNERS: Record<string, Runner> = {
     const { renderToStaticMarkup } = await import("react-dom/server");
     const v = await import("../src/lib/admissions/views-api");
     const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
-    const { AdmissionsEveryView } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { AdmissionsEveryView, methodVars } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { METHODS, methodOf, methodText } = await import("../src/catalogue/methods");
     const { Setup } = await import("../src/components/admissions/setup/Setup");
     const { OpenInFullscreen } = await import("../src/components/teacher/CardBox");
     // Setup's "add by name" (SchoolSearch) reads the app router: a do-nothing one for a server render.
@@ -1812,6 +1813,11 @@ const RUNNERS: Record<string, Runner> = {
           ),
         );
       const editorOk = boarding ? editor.every((h) => /Boarding feeders/.test(text(h))) : editor.every((h) => !BOARD.test(text(h)));
+      // 0.8 Sets r1 (F24): every Admissions view's (i) as the host fills it (methodVars: the view's
+      // placeholders and the school's boarding flag): its notes and its method's text.
+      const host = { boardingSchool: boarding, pipeline: { status: "ready" as const, data: p }, market: { status: "ready" as const, data: m } };
+      const iText = (dv: string) => { const x = methodOf(dv, methodVars(dv, host as never))!; return [...(x.notes ?? []), methodText(x)].join("\n"); };
+      const admDvs = Object.keys(METHODS).filter((d) => d.startsWith("DV-ADM-"));
       if (!boarding) {
         const leaks = [...own, ...setup].map(text).filter((x) => BOARD.test(x)).map((x) => x.match(BOARD)![0]);
         const marketControls = market.map(text).some((x) => /Rivals with boarders|Boarding only/.test(x));
@@ -1820,18 +1826,23 @@ const RUNNERS: Record<string, Runner> = {
         const asked = await v.pipelineView(urn, ep, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
         const ignored = !("empty" in asked) && !("empty" in p) && JSON.stringify(asked.ladder) === JSON.stringify(p.ladder);
         const steps = /Step 1 of 3/.test(setup[0]) && /Step 3 of 3/.test(setup[3]) && /Step 2 of 3/.test(setup[2]);
-        const ok = leaks.length === 0 && !marketControls && tile && ignored && steps && editorOk;
+        // A day school's (i): no boarding words, but the rivals' own figures may still say they board
+        // (Market share's GIAS traits and the group line's count of schools with boarding).
+        const RIVALS_BOARD = [/nearest schools, sector, boarding, gender, location/g, /independent, state and boarding \(your school included/g];
+        const iLeaks = admDvs.filter((d) => BOARD.test(RIVALS_BOARD.reduce((t, r) => t.replace(r, ""), iText(d))));
+        const ok = leaks.length === 0 && iLeaks.length === 0 && !marketControls && tile && ignored && steps && editorOk;
         pass &&= ok;
-        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps + ${editor.length} editor Data steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps}, editor compare without boarding ${editorOk} ${ok ? "ok" : "FAIL"}`);
+        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps + ${editor.length} editor Data steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, (i)s with boarding words ${iLeaks.length}/${admDvs.length}${iLeaks.length ? ` (${iLeaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps}, editor compare without boarding ${editorOk} ${ok ? "ok" : "FAIL"}`);
       } else {
         const T = text(html);
         const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
         // 0.8 SMT feedback round 1 (F-1): the tile is a PairTile, each figure boxed with its own label.
         const tile = /data-pair="Day"/.test(html) && /data-pair="Boarding"/.test(html);
         // Admissions feedback round 2 (F-31): the ISC note left the intake chart for its (i) (DV-ADM-P-FUNNEL's
-        // notes); it shows in the pipeline itself or in that (i).
-        const { METHODS_ADMISSIONS } = await import("../src/catalogue/methods-admissions");
-        const iscInI = (METHODS_ADMISSIONS["DV-ADM-P-FUNNEL"].notes ?? []).some((n) => /International boarders/.test(n));
+        // notes); it shows in the pipeline itself or in that (i). 0.8 Sets r1 (F24): read as the host fills
+        // the (i) for this boarding school, with the intake's boarding caveat beside it.
+        const funnelI = iText("DV-ADM-P-FUNNEL");
+        const iscInI = /International boarders/.test(funnelI) && /Boarding schools draw from far beyond any radius/.test(funnelI);
         const isc = ep.age > 4 ? /International boarders/.test(T) || iscInI : true;
         const setupOk = /Day and boarding/.test(text(setup[0])) && /Your boarding feeders/.test(text(setup[2])) && /Step 3 of 4/.test(setup[2]) && /Step 4 of 4/.test(setup[3]) && /Boarding only/.test(text(setup[3]));
         // The boarding feeder list end to end: setup's search returns preps with boarders, kept as a
