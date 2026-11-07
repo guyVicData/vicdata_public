@@ -1567,9 +1567,9 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-FILTERS",
     statement:
-      "The top bar's filters (Day + boarding, State + independent, boarding rivals) narrow the sets on the server before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it. Day + boarding is a boarding school's filter only: for a day school it is never drawn and the server ignores it (R-ADM-BOARDING-ONLY-WHERE-BOARDERS).",
+      "The server's filters (lists=day|boarding, sector, boarding rivals) narrow the sets before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it. The day/boarding filter is a boarding school's only: for a day school the server ignores it (R-ADM-BOARDING-ONLY-WHERE-BOARDERS). Since sets round 1 the top bar no longer draws them: its Day + boarding and Independent only dropdowns became choices of set (the set selector, R-SET-PILL); the server's filters remain for a view's own feeder compare (a boarding school's day or boarding list) and for old links.",
     why: "The figures change only by the schools they count.",
-    appliesTo: "Admissions top bar",
+    appliesTo: "Admissions' server filters (the top bar's, before sets round 1)",
     enforcedIn: ["src/lib/admissions/traits.ts:narrow", "src/lib/admissions/rival-set.ts:rivalSet", "src/lib/admissions/views-api.ts:pipelineView"],
     testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "sector=independent leaves only independent schools (and the school's own Year 11 at 16+); for a boarding school (Beaudesert Park 115786) boarding-only with no boarding list returns the empty state; for The Chase (a day school) it is ignored.", check: "admFilters" },
     origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
@@ -1579,11 +1579,11 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-BOARDING-ONLY-WHERE-BOARDERS",
     statement:
-      "A boarding school is one GIAS lists with boarding provision (schools.boarders_name = \"Boarding school\"; \"No boarders\" and \"Not applicable\" are day schools). A day school never has to think about boarders: no tile, filter, chip, column, legend, empty state, note, setup question or step, or editor compare option mentions boarding (column 1's day/boarding tile stays, reading Day only), its saved boarding lists are kept but not used, and the server ignores a boarding filter for it. Its rivals' own figures may still say they board. A boarding school sees every boarding surface: setup's day-and-boarding question and step 3, the filter, the tile's day and boarding, the boarding feeder list and its fuzzy set.",
+      "A boarding school is one GIAS lists with boarding provision (schools.boarders_name = \"Boarding school\"; \"No boarders\" and \"Not applicable\" are day schools). A day school never has to think about boarders: no tile, filter, chip, column, legend, empty state, note, (i) (a view's notes and method: its boarding sentences are tagged boarding-only in the methods and dropped by the host, 0.8 Sets r1 F24), setup question or step, or editor compare option mentions boarding (column 1's day/boarding tile stays, reading Day only), its saved boarding lists are kept but not used, and the server ignores a boarding filter for it. Its rivals' own figures may still say they board. A boarding school sees every boarding surface: setup's day-and-boarding question and step 3, the boarding sets in the set menu (since sets round 1 the old Day + boarding filter is a choice of set: \"10 nearest | boarding\", the Boarding feeder sets, the school's Day + boarding feeders), the tile's day and boarding, the boarding feeder list and its fuzzy set (independent preps, day or boarding: sets round 1, B8). A day school's set menu offers no boarding set.",
     why: "\"Non-boarding schools must not have to think about boarders, but boarding schools must\" (Guy, 12 Oct 2026).",
     appliesTo: "Admissions: every view, the top bar, setup, the editor's compare options",
-    enforcedIn: ["src/lib/admissions/boarding.ts:isBoardingSchool", "src/lib/admissions/views-api.ts:pipelineView", "src/components/admissions/AdmissionsDashboard.tsx", "src/components/admissions/setup/Setup.tsx", "src/components/view-editor/AdmissionsSteps.tsx"],
-    testCase: { urn: "137625", school: "The Chase, Nunnery Wood High (137051), Beaudesert Park (115786)", phase: "ks4", expect: "Every Pipelines view, column 1, the top bar's filters and every setup step rendered on real data: no boarding text or control for The Chase (11+, 16+) or Nunnery Wood (11+); every boarding surface present for Beaudesert Park (4+, 11+), whose boarding feeder search returns preps with boarders that make a non-empty boarding-only pool. The editor's 1 · Data for every feeder view offers the feeder set (Boarding feeders) for Beaudesert Park only (0.7 editor s2); a day school's previews ignore a boarding feeder spec (R-ADM-EDITOR-LOOKS-KEEP-NOTES).", check: "admBoardingOnly" },
+    enforcedIn: ["src/lib/admissions/boarding.ts:isBoardingSchool", "src/lib/admissions/views-api.ts:pipelineView", "src/components/admissions/AdmissionsDashboard.tsx", "src/catalogue/method-conditions.ts", "src/catalogue/methods-admissions.ts", "src/components/admissions/setup/Setup.tsx", "src/components/view-editor/AdmissionsSteps.tsx"],
+    testCase: { urn: "137625", school: "The Chase, Nunnery Wood High (137051), Beaudesert Park (115786)", phase: "ks4", expect: "Every Pipelines view, column 1, the top bar's filters and every setup step rendered on real data: no boarding text or control for The Chase (11+, 16+) or Nunnery Wood (11+), nor in any Admissions view's (i) as the host fills it (the rivals' own GIAS traits aside); every boarding surface present for Beaudesert Park (4+, 11+), the intake view's (i) with its boarding caveat and ISC note, whose boarding feeder search returns preps with boarders that make a non-empty boarding-only pool. The editor's 1 · Data for every feeder view offers the feeder set (Boarding feeders) for Beaudesert Park only (0.7 editor s2); a day school's previews ignore a boarding feeder spec (R-ADM-EDITOR-LOOKS-KEEP-NOTES).", check: "admBoardingOnly" },
     origin: "0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F2)",
     status: "active",
   },
@@ -1645,7 +1645,7 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-ADM-ROLL-INDEXED",
-    statement: "The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead.",
+    statement: "The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead, plus the rivals' average as one more line, dashed, keyed \"Rivals' average\" (0.8 Sets r1, F23).",
     why: "Guy, 29 Oct 2026 (F-20): grey lines of different sizes can't be read as trends.",
     appliesTo: "DV-ADM-M-ROLL-LINE",
     enforcedIn: ["src/lib/admissions/views-api.ts:rollIndexed", "src/lib/index-base.ts:indexOwn", "src/components/admissions/views/Lines.tsx:RollTrend, YouAndEachRival"],
@@ -1655,11 +1655,11 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-ADM-VS-EACH",
-    statement: "You and the rivals: the panel draws your entry-age cohort against the rivals' average, indexed (as before); full screen draws you and each rival in its own colour with a key and labelled y gridlines, each rival indexed to the same base where it has it, else to its own first year (indexOwn), except a rival under 30 at the entry age at its base (ROLL_INDEX_MIN), which is named under the chart instead. Drawn by the same component as the band roll's (YouAndEachRival, R-ADM-ROLL-INDEXED).",
+    statement: "You and the rivals: the panel draws your entry-age cohort against the rivals' average, indexed (as before); full screen draws you and each rival in its own colour with a key and labelled y gridlines, each rival indexed to the same base where it has it, else to its own first year (indexOwn), except a rival under 30 at the entry age at its base (ROLL_INDEX_MIN), which is named under the chart instead, plus the rivals' average as one more line, dashed, keyed \"Rivals' average\" (0.8 Sets r1, F23). Drawn by the same component as the band roll's (YouAndEachRival, R-ADM-ROLL-INDEXED).",
     why: "Guy, 6 Nov 2026 (F-36): full screen should be per school, with a key, as the band roll is (F-20).",
     appliesTo: "DV-ADM-M-VS-LINE",
     enforcedIn: ["src/lib/index-base.ts:indexOwn", "src/components/admissions/views/Lines.tsx:VsRivals, YouAndEachRival"],
-    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "At 11+, full screen: one key entry per rival with 30 or more aged 11 at its base, the rest named under the chart, and each line recomputed from the census rows; the panel keeps the one average line; RollTrend and VsRivals both draw through YouAndEachRival.", check: "admVsEach" },
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "At 11+, full screen: one key entry per rival with 30 or more aged 11 at its base, the rest named under the chart, and each line recomputed from the census rows; the full-screen key also has \"Rivals' average\", on this view and the band roll's (F23); the panel keeps the one average line; RollTrend and VsRivals both draw through YouAndEachRival.", check: "admVsEach" },
     origin: "0.8 Admissions feedback round 2 (docs/v0.8/vicdata_0_8_admissions_feedback_round2_claude_code_prompt_v1.md)",
     status: "active",
   },
@@ -1731,6 +1731,16 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/components/admissions/views/Momentum.tsx:momentumScope"],
     testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "\"Schools submitting GCSE results only\" at 11+.", check: "admMomentumScope" },
     origin: "0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-MOMENTUM-IGCSE",
+    statement: "Rivals' momentum at 11+ counts the rivals with no GCSE results in the latest results year (no Attainment 8, or an IGCSE school, listed but never ranked). Over 40% of them (IGCSE_SWITCH_SHARE, one constant in src/lib/sets/results-coverage.ts), and with post-16 results covering more of the rivals than GCSE does, its results axis and the flag list's Results column read A-level points per entry since 2022/23 instead, and one line under the title says so: \"Post-16 results: 6 of 10 rivals have no GCSE results (mostly IGCSE)\" (real counts). At 40% or below it stays on GCSE and names the rivals it leaves out. At 16+ (post-16 already) and 4+ nothing changes. The decision is one pure function (resultsMeasureFor), shared with the set editor's results switch (C16).",
+    why: "Guy, 7 Nov 2026 (F-40, F-41): \"this data panel needs to [act] when the compare list is largely IGCSE schools, maybe more than 40%\"; \"the IGCSE issue is only relevant for 11+; 16+ uses post-16 results\".",
+    appliesTo: "DV-ADM-M-MOMENTUM",
+    enforcedIn: ["src/lib/sets/results-coverage.ts:resultsMeasureFor, IGCSE_SWITCH_SHARE", "src/lib/admissions/views-api.ts:momentumResults", "src/components/admissions/views/Momentum.tsx:Momentum, MomentumScope, momentumChips"],
+    testCase: { urn: "110110", school: "Leighton Park; Maiden Erlegh School (136637, state)", phase: "ks4", expect: "Recomputed from the KS4 and KS5 headlines and the IGCSE rule: Leighton Park's 11+ default set is drawn as the rule says for its real counts (on 6 Nov's data and the pre-sets default: GCSE, 2 of 10 rivals without, both IGCSE, named under the title); Leighton Park with a saved list of five IGCSE independents and two state grammars switches (\"Post-16 results: 5 of 7 rivals have no GCSE results (mostly IGCSE)\"), each dot's y the A-level points change; Maiden Erlegh's set stays on GCSE; 16+ unchanged; the 40% in one place.", check: "admMomentumIgcse" },
+    origin: "0.8 Sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, F25)",
     status: "active",
   },
   // ---------------------------------------------------------------- 0.7 admissions editor s1-2
@@ -2421,6 +2431,106 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/featured-row-scan.ts", "src/components/shell/accent.ts:featuredRow", "src/app/globals.css", "src/lib/featured-row.test.ts"],
     testCase: { urn: "110110", school: "the source scan (every .tsx in src) and the tokens", phase: "ks4", expect: "No focus table without data-featured-row; no row keyed by a school's URN unmarked and unlisted; every listed exception still matches a row; seven tokens, each light and dark.", check: "featuredRowEverywhere" },
     origin: "0.8 feedback deploy gate, F-22 (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 6)",
+    status: "active",
+  },
+  // ------------------------------------------------------------------ 0.8 sets round 1
+  {
+    id: "R-SETS-ONE-MODEL",
+    statement:
+      "Every set of schools on the site -- Admissions' feeder and rival lists, Teacher's and SMT's comparator sets, the Data View's saved sets -- is one model: public.sets with set_members (urn, order, tier) and set_user_state (last used, folder, per person). Nothing in src reads or writes saved_sets, saved_set_members or admissions_lists. Admissions' old list kinds are read from the school's own default sets (compared_against = rivals; feeders day / boarding = the day and boarding feeder lists; a rung age = the 16+ rung list), so the views' figures are unchanged for the same schools. The migration converts every admissions_lists and saved_sets row, keeping members in order, the fuzzy rule (as rule), the LA blend, the entry point, who changed it and when; running it twice changes nothing; the old tables stay, read by nothing new.",
+    why: "Two list systems that shared nothing, and four editors (sets round 1, Guy 6 Nov): one engine, Admissions first.",
+    appliesTo: "every set of schools: Admissions, Teacher, SMT, the Data View, /sets",
+    enforcedIn: ["supabase/migrations/20261121090000_v08_sets_r1.sql", "src/lib/sets/store.ts", "src/lib/sets/admissions-lists.ts", "src/lib/admissions/auth.ts:savedLists", "src/app/api/admissions/lists/route.ts", "src/app/api/teacher/saved-comparator-sets/route.ts", "src/lib/teacher-view-saved-sets.ts:saveComparatorSet", "src/components/data-view/DataViewShell.tsx", "supabase/tests/v08_sets_r1_pglite.mjs"],
+    testCase: { urn: "110110", school: "Leighton Park (its 6 lists, PGlite) and the source tree", phase: "ks4", expect: "No src read of saved_sets, saved_set_members or admissions_lists (code, not comments). Leighton Park's 6 rows convert exactly: 18, 27, 10, 16, 18 and 10 schools in order, both rivals' rules, no blend, the lead's name and time; a second run changes nothing; the Admissions views read the same lists from the sets.", check: "setsOneModel" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, A1-A5)",
+    status: "active",
+  },
+  {
+    id: "R-SETS-RLS",
+    statement:
+      "A personal set is read and written by its owner only (and if it names a school, they are approved there). A school set is read by every approved member of its school (and platform admins). School sets are lead-only (Guy, 7 Nov): compared-against sets are written by the Admissions lead, SMT and the School-Admin (or the account holder); feeder sets by the Admissions lead and the School-Admin. Everyone else -- other Admissions members, teachers, HoDs -- keeps personal sets only (up to 8 active; archiving frees a slot), and \"Propose as school set\" stays disabled for them (\"Ask your Admissions lead\") until there is a request flow. A School-Admin's change to a school set (one only their School-Admin standing allows) is audited as admissions_lists_override in platform_audit_log, as 0.7 r2b audited the lists: the set, what changed, the schools that joined, left or changed tier; the lead's and SMT's own writes, and the service role's, aren't. A set can't be moved to another school, made personal, or given away. A school set's creator is the writer's standing there ('admissions' is the lead's). Who changed it and when is the database's stamp. save_set writes a set and its schools in one call under the caller's RLS, changing only what differs.",
+    why: "Curated sets are the school's; personal ones are private; the cap keeps the menu short.",
+    appliesTo: "public.sets, set_members, set_user_state",
+    enforcedIn: ["supabase/migrations/20261121090000_v08_sets_r1.sql:can_curate_sets", "supabase/migrations/20261121090000_v08_sets_r1.sql:is_set_override", "supabase/migrations/20261121090000_v08_sets_r1.sql:audit_set_override", "supabase/migrations/20261121090000_v08_sets_r1.sql:enforce_personal_set_cap", "supabase/migrations/20261121090000_v08_sets_r1.sql:save_set", "src/lib/sets/model.ts:canCurate", "src/components/sets/SetsLibrary.tsx", "supabase/tests/v08_sets_r1_pglite.mjs"],
+    testCase: { urn: "110110", school: "Leighton Park (PGlite)", phase: "ks4", expect: "Owner-only personal sets; every approved member reads school sets, pending members and other schools nothing; an Admissions member who isn't the lead is refused on a school feeder set (and a compared-against one) and keeps a personal one; the lead writes both kinds, unaudited; the School-Admin writes a feeder set, audited (insert, a school added and taken out, a tier changed through save_set: one row each); SMT writes compared-against sets, unaudited, and is refused on feeders; teachers write neither; no move, takeover or forged creator; the 9th active personal set refused until one is archived.", check: "setsRls" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, A2, A5)",
+    status: "active",
+  },
+  {
+    id: "R-SET-PILL",
+    statement:
+      "One set selector everywhere a page compares with a set (src/components/sets/SetSelector.tsx): Teacher's Comparisons column, SMT and Admissions. Its label is plain text outside the button (\"Compared against\"; \"Feeder schools\" on Pipelines); the button holds only the set, with an accent border, the name in bold and its number of schools. Its menu is always three blocks in this order: Default (no heading), School sets (each row tagged with its creator: Admissions, SMT, the school's group under its own name, Victoria Consultancy), My sets (\"n of 8\"); the current set ticked and every row's count shown; then Edit this set…, New set…, Manage sets. Only sets that fit the page appear (kind, and entry point or phase: Admissions' 11+ compared-against sets on GCSE pages, 16+ on Post-16; feeder sets never in Teacher). Up to 5 pinned school sets and 5 recently used personal sets show, then \"All … (n)…\". In Teacher's column the button has a fixed width that truncates a long name (the full name on hover). On a phone the label sits above a full-width button and the menu is a bottom sheet (Esc, the handle or a tap outside closes it).",
+    why: "Sets round 1 (Guy, 6 Nov): one way to choose a set, like a playlist; the old pills looked like filters and the Admissions page had four list controls.",
+    appliesTo: "Teacher (Comparisons), SMT, Admissions",
+    enforcedIn: ["src/components/sets/SetSelector.tsx", "src/components/sets/teacherMenu.ts", "src/lib/sets/admissions-page.ts:buildMenu", "src/components/admissions/AdmissionsSets.tsx", "src/components/smt/SmtDashboard.tsx", "src/components/teacher/ComparisonsPanels.tsx", "src/lib/sets/model.ts:setFitsPage"],
+    testCase: { urn: "110110", school: "Leighton Park (the menu, rendered on the server) and the source tree", phase: "ks4", expect: "Label outside the button; the open menu's blocks in the order default, school, mine; a ticked current row; Edit this set…, New set… and Manage sets below; a feeder set and a 16+ set left out of an 11+ compared-against page; 7 school sets show 5 and \"All school sets (7)…\"; Teacher's button width fixed and its name truncating; Admissions, SMT and Teacher all draw SetSelector and none draws the old Compared against pill.", check: "setPill" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, B6-B9, G26)",
+    status: "active",
+  },
+  {
+    id: "R-SET-DEFAULTS-ADMISSIONS",
+    statement:
+      "Admissions' default sets are computed when shown (src/lib/sets/recipes.ts): compared against, \"10 nearest | [the school's own sector]\", \"10 nearest | boarding\" for a boarding school only, and \"Schools in [LA] | all sectors\" at 4+ and 11+ or \"All post-16 in [LA]\" at 16+, each teaching the entry year and the year after it; feeders, \"Day | all sectors\", \"Day | state\", \"Day | independent\" and, for a boarding school, the same as Boarding (independent preps day or boarding, never boarding-only), sized by the SMT catchment's density radius (10 to 40 schools). Which is the default follows Teacher's boarding rule: the top two fifths by boarders default to the boarding set; others to the same-sector set. A school that has saved its own set for the page draws it (a boarding school's day and boarding feeders together, as before), so its figures don't change.",
+    why: "Sets round 1 (B8): defaults named by what they hold, chosen from one menu.",
+    appliesTo: "Admissions: Pipelines and Market share",
+    enforcedIn: ["src/lib/sets/recipes.ts:rivalRecipes", "src/lib/sets/recipes.ts:feederRecipes", "src/lib/sets/admissions-page.ts:resolveChoice", "src/lib/admissions/views-api.ts:candidatesView"],
+    testCase: { urn: "110110", school: "Leighton Park; a top-two-fifths boarding school; The Chase 137625 (day)", phase: "ks4", expect: "Leighton Park at 11+ defaults to 10 nearest | independent with 10 nearest | boarding offered second (its boarders in the third fifth); a top-two-fifths boarding school defaults to its boarding set; The Chase has no boarding set; Leighton Park's LA set at 16+ is \"All post-16 in Reading\"; with Leighton Park's 6 saved lists the page draws them (Day + boarding feeders) unchanged.", check: "setDefaultsAdmissions" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, B8)",
+    status: "active",
+  },
+  {
+    id: "R-PANEL-NAMES-SET",
+    statement:
+      "Every panel that draws a set names it in its header (B10): \"against 10 nearest | independent · 10\"; on Pipelines, \"Day | all sectors · 28 · 6 main\" where the set has Main feeders. On Admissions every view but the area views (the intake change and local births: the radius; the area's population) and the school's own entry views; SMT's headers (\"against [set] · n\"). In Teacher's Comparisons column the set selector directly above both panels names the set and its count for them (a line inside each fixed-height card cost the last bar and the legend). On a phone the line wraps, never truncating the set's name.",
+    why: "A figure against a set means nothing without the set.",
+    appliesTo: "Admissions, SMT, Teacher's Comparisons column",
+    enforcedIn: ["src/components/sets/SetSelector.tsx:SetHeaderLine", "src/components/admissions/AdmissionsDashboard.tsx:chipsOf", "src/components/smt/SmtDashboard.tsx:headerOf", "src/components/teacher/ComparisonsPanels.tsx:TEACHER_SET_PILL_WIDTH"],
+    testCase: { urn: "110110", school: "Leighton Park, Admissions 11+ (every view, rendered on the server) and the source tree", phase: "ks4", expect: "Every Admissions view with a set kind has a data-set-header line naming its set and count; none of the area or own-entry views has one; SMT's header context carries the set's count; Teacher's column selector names the set and count above its panels.", check: "panelNamesSet" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, B10, G30)",
+    status: "active",
+  },
+  {
+    id: "R-SET-EDITOR-TICK",
+    statement:
+      "In the set editor a tick means \"in the set\", nothing else (src/lib/sets/editor-state.ts): unticking greys a school, marked \"unticked, leaves on save\", and ticking again restores it (its tier too), so there is no undo, no minus button and no bulk bar; adding a school already listed just ticks it. Save keeps the ticked schools in the list's order with their tiers. A set you can't change -- a default set, a school set you don't curate, someone else's -- opens as a copy that can only be saved as your own (My sets, or School sets where you curate that kind). Save returns to the page you came from, with the set in use.",
+    why: "Sets round 1 (C13, C17): one meaning for a tick, and no way to change a set that isn't yours.",
+    appliesTo: "the set editor (/sets/edit)",
+    enforcedIn: ["src/lib/sets/editor-state.ts", "src/components/sets/SetEditor.tsx", "src/app/sets/edit/page.tsx", "src/lib/sets/editor.test.ts"],
+    testCase: { urn: "110110", school: "the editor's list (pure) and the editor rendered on the server", phase: "ks4", expect: "Untick and retick restores the school and its tier; save drops the unticked; a teacher's school set, someone else's set and a default set open as copies with \"Save as your own…\" and no Save.", check: "setEditorTick" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, C13, C17)",
+    status: "active",
+  },
+  {
+    id: "R-SET-HOW-CLOSE",
+    statement:
+      "\"How close is this set to [school]?\" (compared-against sets, src/lib/sets/closeness.ts) gives real figures only, updating as schools are ticked: the distance range and median of the ticked schools; how many have GCSE and how many Post-16 results, with the switch starting on the measure the dashboard uses (results-coverage.ts, F25: so the editor and Market share agree), naming how many sit IGCSEs; and the pupil population -- how many board (and whether the school does), how many share its gender, their median pupils at the age against the school's. No closeness score: the counts are shown and say so.",
+    why: "Sets round 1 (C16): show what makes a set close or not, from data, without inventing a score.",
+    appliesTo: "the set editor; the set view",
+    enforcedIn: ["src/lib/sets/closeness.ts", "src/lib/sets/editor-data.ts", "src/components/sets/SetEditor.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park's 10 nearest | independent at 11+ (live)", phase: "ks4", expect: "The range and median equal those of the ten rows' distances; GCSE and Post-16 counts equal the rows' own; the switch starts on the measure resultsMeasureFor gives (Post-16, as Rivals' momentum does); the words say so.", check: "setHowClose" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, C16)",
+    status: "active",
+  },
+  {
+    id: "R-FEEDER-TIERS",
+    statement:
+      "A feeder set's tiers drive the feeder views (src/lib/sets/tiers.ts): Main feeders go to the top of the feeder health table (marked Main) and are drawn larger on the feeder map (MAIN_DOT_SCALE); an alert shows above the table when a Main feeder's roll is falling, by the existing trend rule (the feeder flag \"Falling faster than the area\"). Untiered counts as Regular; Occasional is kept in view and never alerts. The pipeline's answer carries the set's tiers.",
+    why: "Sets round 1 (E22): the schools that matter most should lead and warn.",
+    appliesTo: "Admissions: Pipelines' feeder table and feeder map",
+    enforcedIn: ["src/lib/sets/tiers.ts", "src/components/admissions/views/Tables.tsx:FeederTable", "src/components/admissions/views/AdmissionsMap.tsx:FeederMap", "src/lib/sets/admissions-page.ts:resolveChoice", "src/app/api/admissions/pipeline/route.ts"],
+    testCase: { urn: "110110", school: "Leighton Park's 11+ day feeders with tiers (rendered on the server)", phase: "ks4", expect: "The table lists the Main feeders first, marked Main; a Main feeder with a red flag raises the alert naming it; an Occasional one with a red flag doesn't; the map draws Main feeders at 1.5 times the radius.", check: "feederTiers" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, E22)",
+    status: "active",
+  },
+  {
+    id: "R-SETS-MOBILE",
+    statement:
+      "Every new sets screen has a designed phone layout (G26-G31) from the same components, no phone-only copies of logic: at 390 px the selector (label above a full-width button, its menu a bottom sheet with a handle and the actions pinned at the bottom), the editor (one column, 72 px artwork, Save and Save as in a sticky bottom bar, the tick on the left, other figures behind a row's chevron, Add schools as a bottom sheet), the library (tabs, sideways pinned tiles, cards with a ··· sheet) and the set view (stacked, Edit first, How close and Where used folded) render without horizontal scroll; every control has at least a 44 px hit area; the sheets open and close by Esc, the handle and a tap outside; a panel header naming its set wraps rather than truncating.",
+    why: "Sets round 1 (G, Guy 7 Nov): every new screen works on a phone.",
+    appliesTo: "the selector, the editor, the library, the set view, on a phone",
+    enforcedIn: ["src/components/sets/SetSelector.tsx", "src/components/sets/SetEditor.tsx", "src/components/sets/SetsLibrary.tsx", "src/components/sets/SetView.tsx", "docs/v0.8/sets_round1_report_v1.md (the 390 px measurements)"],
+    testCase: { urn: "110110", school: "the four screens rendered on the server at phone (and measured at 390 x 844 in headless Chrome: the report)", phase: "ks4", expect: "No fixed width over 358 px in any phone markup; every button, link, field, select and summary carries a 44 px minimum (a checkbox or radio inside a 44 px label); the menu sheet has its handle and backdrop and closes on Esc; the editor's sticky bar holds Save and Save as; the library's sections are tabs; the set view's How close and Where used are folded.", check: "setsMobile" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, G26-G31)",
     status: "active",
   },
 ];

@@ -1,0 +1,118 @@
+// VicData 0.8 sets round 1 (C12-C16): what the set editor draws for a set, from public reference data.
+// Server-only. For a focus school and a page (kind and entry point; Teacher's GCSE / Post-16 pages are
+// 11+ / 16+), each school's row -- name, distance, sector, boarders, its pupils at the age that matters
+// (rivals: the entry age; feeders: a year below it) and that count's trend -- and the suggestions: the
+// nearest schools teaching that age, not in the set, narrowed by Independent / State / Both (and
+// Boarding only), counted after the filter. Results cover GCSE (no IGCSE school) and Post-16, for
+// "How close" (the client recomputes it live as schools are ticked: ./closeness.ts).
+import { cachedCensus } from "../admissions/data";
+import { feederFlags } from "../admissions/feeders";
+import { nearbyCandidates } from "../admissions/rungs";
+import { fetchSchoolTraits, type SchoolTraits } from "../admissions/traits";
+import { loadThresholds, phaseForEntryAge } from "../admissions/thresholds";
+import { cohortAt } from "../admissions/cohort";
+import { headlinePopulation } from "../admissions/ranks";
+import { latestResults } from "../admissions/rivals";
+import { igcseAmong } from "../igcse";
+import { CURRENT_CENSUS_PERIOD } from "../roll-data";
+import type { EntryPoint } from "../admissions/entry-points";
+import type { SetKind } from "./model";
+
+export const SUGGESTIONS_SHOWN = 10;
+export const SUGGESTIONS_STEP = 5;
+
+export type EditorRow = {
+  urn: string;
+  name: string;
+  km: number | null;
+  sector: "state" | "independent";
+  boarding: boolean;
+  gender: "mixed" | "girls" | "boys";
+  laName: string | null;
+  laCode: string | null;
+  town: string | null;
+  /** Pupils at the age that matters, in the latest census. */
+  pupils: number | null;
+  /** That count's trend over two years, by the feeder flag rules: "falling" / "rising" / null. */
+  trend: "falling" | "rising" | null;
+  changePct: number | null;
+  hasGcse: boolean;
+  hasPost16: boolean;
+  igcse: boolean;
+  easting: number | null;
+  northing: number | null;
+};
+
+export type EditorData = {
+  kind: SetKind;
+  entry: string;
+  age: number;
+  period: number;
+  focus: (EditorRow & { roll: null }) | null;
+  rows: EditorRow[];
+  suggestions: EditorRow[];
+  /** How many fit the suggestion filter in all (before showing `n`). */
+  suggestionsTotal: number;
+};
+
+const holds = (t: { low: number | null; high: number | null }, age: number) => (t.low ?? 99) <= age && (t.high ?? -1) >= age;
+const km = (a: SchoolTraits | undefined, b: SchoolTraits | undefined) => (a?.easting == null || a.northing == null || b?.easting == null || b.northing == null ? null : Math.round((Math.hypot(a.easting - b.easting, a.northing - b.northing) / 1000) * 10) / 10);
+
+export type SuggestionFilter = { sector: "all" | "state" | "independent"; boardingOnly: boolean; n: number };
+
+export async function editorData(urn: string, ep: EntryPoint, kind: SetKind, urns: string[], f: SuggestionFilter): Promise<EditorData> {
+  const age = kind === "feeders" ? Math.max(4, ep.age - 1) : ep.age;
+  const near = await nearbyCandidates(urn);
+  const traits = await fetchSchoolTraits(Array.from(new Set([urn, ...urns, ...near.map((c) => c.urn)])));
+  const me = traits.get(urn);
+  const inSet = new Set(urns);
+  const teaching = (t: SchoolTraits) => t.urn !== urn && holds(t, age) && (kind === "feeders" || holds(t, age + 1));
+  const pool = Array.from(traits.values())
+    .filter((t) => !inSet.has(t.urn) && teaching(t))
+    .filter((t) => (f.sector === "all" ? true : t.sector === f.sector))
+    .filter((t) => (f.boardingOnly ? t.boarding : true))
+    .map((t) => ({ t, d: km(me, t) }))
+    .sort((a, b) => (a.d ?? 1e9) - (b.d ?? 1e9));
+  const shown = pool.slice(0, Math.max(1, Math.min(60, f.n)));
+  const all = Array.from(new Set([urn, ...urns, ...shown.map((x) => x.t.urn)]));
+  const [census, thresholds, k4, k5, ig] = await Promise.all([cachedCensus(all), loadThresholds(), latestResults("ks4"), latestResults("ks5"), igcseAmong(all)]);
+  const [p4, p5] = await Promise.all([k4.period === null ? null : headlinePopulation("ks4", k4.period), k5.period === null ? null : headlinePopulation("ks5", k5.period)]);
+  const P = CURRENT_CENSUS_PERIOD;
+  const minCohort = thresholds?.get(phaseForEntryAge(ep.age), "entry_cohort")?.minCohort ?? 10;
+  const flags = new Map(feederFlags(new Map(all.map((u) => [u, census.get(u)?.table ?? new Map()])), [age], P, minCohort).map((x) => [x.urn, x]));
+  const rowOf = (u: string): EditorRow => {
+    const t = traits.get(u);
+    const fl = flags.get(u);
+    const flag = fl?.flag ?? null;
+    return {
+      urn: u,
+      name: t?.name ?? u,
+      km: km(me, t),
+      sector: t?.sector ?? "state",
+      boarding: t?.boarding ?? false,
+      gender: t?.gender ?? "mixed",
+      laName: t?.laName ?? null,
+      laCode: t?.laCode ?? null,
+      town: t?.town ?? null,
+      pupils: cohortAt(census.get(u)?.table ?? new Map(), age, P),
+      // The existing feeder trend rule (flags.ts feederFlag): falling faster than the set's area, or rising.
+      trend: flag?.id === "feeder_red" ? "falling" : flag?.id === "feeder_focus" && flag.label === "Rising" ? "rising" : null,
+      changePct: fl?.from && fl.to !== null ? Math.round(((fl.to - fl.from) / fl.from) * 1000) / 10 : null,
+      hasGcse: !ig.has(u) && k4.period !== null && p4?.get(u)?.get(k4.period) !== undefined,
+      hasPost16: k5.period !== null && p5?.get(u)?.get(k5.period) !== undefined,
+      igcse: ig.has(u),
+      easting: t?.easting ?? null,
+      northing: t?.northing ?? null,
+    };
+  };
+  return {
+    kind,
+    entry: ep.id,
+    age,
+    period: P,
+    focus: me ? { ...rowOf(urn), roll: null } : null,
+    rows: urns.filter((u) => traits.has(u)).map(rowOf),
+    suggestions: shown.map((x) => rowOf(x.t.urn)),
+    suggestionsTotal: pool.length,
+  };
+}

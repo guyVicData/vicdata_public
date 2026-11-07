@@ -82,9 +82,16 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   }
   if (path === "schools") return json(f.urn && names[f.urn] ? [{ urn: f.urn, current_name: names[f.urn] }] : []);
   if (path === "school_catchment") return json(service && f.school_account_id === "acc-lp" ? [{ km: 12 }] : []);
-  if (path === "admissions_entry_points" || path === "admissions_lists") {
+  if (path === "admissions_entry_points") {
     const visible = service || Object.entries(accounts).some(([urn, a]) => a.id === f.school_account_id && memberOf(uid, urn));
-    return json(visible && f.school_account_id === "acc-lp" ? (path === "admissions_lists" ? [{ id: "l1", entry_point: "y7", kind: "rivals", members: ["100050"], updated_by: null }] : [{ entry_point: "y7", sort_order: 0, updated_by: null }]) : []);
+    return json(visible && f.school_account_id === "acc-lp" ? [{ entry_point: "y7", sort_order: 0, updated_by: null }] : []);
+  }
+  // 0.8 sets round 1: the school's lists are school sets (public.sets). Leighton Park has one, its
+  // rivals; a personal read (owner_profile_id) has none here.
+  if (path === "sets") {
+    const visible = service || Object.entries(accounts).some(([urn, a]) => a.id === f.school_account_id && memberOf(uid, urn));
+    if (f.owner_scope !== "school" || !visible || f.school_account_id !== "acc-lp" || (f.kind && f.kind !== "compared_against")) return json([]);
+    return json([{ id: "l1", name: "Rivals", description: null, kind: "compared_against", entry_point: "y7", phase: null, focus_urn: LEIGHTON, owner_scope: "school", school_account_id: "acc-lp", owner_profile_id: null, creator_kind: "admissions", audience: null, rung_age: null, is_default: true, pinned: true, folder: null, tags: [], archived: false, rule: null, source_recipe: null, la_blend: null, config: {}, created_by: null, created_at: "2026-11-06T00:00:00Z", updated_by: null, updated_at: "2026-11-06T00:00:00Z", set_members: [{ urn: "100050", position: 0, tier: null }] }]);
   }
   if (path === "group_accounts") return json(service ? groupAccounts.filter((g) => !f.id || g.id === f.id) : []);
   if (path === "group_memberships") return json([]);

@@ -22,6 +22,8 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
+import { NEAREST_KEY, rankingKey, takeUseSet, teacherEditorHref, teacherMenuRows } from "@/components/sets/teacherMenu";
+import type { SetMenuRow } from "@/components/sets/SetSelector";
 import { igcseGroupLabelFor, igcseGroupNoteFor, igcseTargetLine } from "@/lib/igcse-words";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
@@ -692,6 +694,20 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     },
     [canWrite, columns, schoolUrn, phase, supabase],
   );
+
+  // 0.8 sets round 1 (D20): back from the set editor's Save (?useSet=<id>), the Comparisons column uses
+  // the set it saved, once the school and its preferences are known.
+  const useSetTaken = useRef(false);
+  useEffect(() => {
+    if (useSetTaken.current || !schoolUrn || !phase) return;
+    const id = takeUseSet();
+    useSetTaken.current = true;
+    if (!id) return;
+    void (async () => {
+      setSavedSets(await fetchSavedSets(supabase, schoolUrn, phase, { fresh: true }));
+      await setColumnSettings([[setKey("rankings"), savedSetKey(id)], [CHOOSER_KEY, null]]);
+    })();
+  }, [schoolUrn, phase, supabase, setColumnSettings]);
 
   const setColumnSetting = useCallback(
     async (key: string, value: string | null) => {
@@ -2472,8 +2488,50 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               : null,
         }
       : null;
+  // A choice from the chooser or the set menu (0.8 sets round 1): a saved set is switched on by its own
+  // id; anything else is kept as the chooser's own choice, which the column resolves and shows by
+  // name; null is the default (the 10 nearest). A linked set (?set=) gives way to it.
+  const applyChoice = async (choice: ChooserChoice | null) => {
+    if (linkedSet) {
+      setLinkedSet(null);
+      window.history.replaceState(window.history.state, "", withoutLinkedSet(window.location.href));
+    }
+    if (choice === null) await setColumnSettings([[CHOOSER_KEY, null], [setKey("rankings"), CHOOSER_SET_ID]]);
+    else if (choice.kind === "saved") await setColumnSettings([[setKey("rankings"), savedSetKey(choice.id)], [CHOOSER_KEY, null]]);
+    else await setColumnSettings([[CHOOSER_KEY, JSON.stringify(choice)], [setKey("rankings"), CHOOSER_SET_ID]]);
+  };
+  // 0.8 sets round 1 (B6, B7, B9): the set selector's menu, from the chooser's payload.
+  const teacherMenu = teacherMenuRows(savedSets, { nearestLabel: DEFAULT_CHOICE_LABEL, nearestCount: comparisonsSet === CHOOSER_SET_ID && !chooserChoice ? Math.max(0, (allComparatorSets[CHOOSER_SET_ID] ?? []).filter((x) => !x.isTarget).length) || 10 : 10 });
+  const activeCount = activeSavedSet ? activeSavedSet.members.length : chooserChoice?.kind === "ranking" ? null : (allComparatorSets[comparisonsSet] ?? []).filter((x) => !x.isTarget && x.urn !== schoolUrn).length || null;
+  const teacherSelected = activeSavedSet ? savedSetKey(activeSavedSet.id) : !chooserChoice && comparisonsSet === CHOOSER_SET_ID ? NEAREST_KEY : chooserChoice?.kind === "ranking" && chooserChoice.rankingId ? rankingKey(chooserChoice.rankingId) : null;
+  const setMenu = embed || !savedSets ? undefined : {
+    current: { name: activeSetLabel, count: activeCount },
+    rows: teacherMenu.rows,
+    mine: teacherMenu.mine,
+    selectedKey: teacherSelected,
+    onPick: (r: SetMenuRow) => {
+      if (r.key === NEAREST_KEY) void applyChoice(null);
+      else if (r.key.startsWith("saved:")) void applyChoice({ kind: "saved", id: r.key.slice(6) });
+      else if (r.key.startsWith("ranking:")) {
+        const rk = savedSets.rankings?.find((x) => rankingKey(x.id) === r.key);
+        if (rk) void applyChoice({ kind: "ranking", label: rk.name, filters: rk.filters, rankingId: rk.id });
+      }
+    },
+    // C17, D20: Edit this set… and New set… open the set editor (a copy where the set isn't yours to change).
+    onEdit: (() => {
+      const href = schoolUrn ? teacherEditorHref({ urn: schoolUrn, phase, product: "teacher", current: { savedId: activeSavedSet?.id ?? null, name: activeSetLabel, urns: (allComparatorSets[comparisonsSet] ?? []).filter((x) => !x.isTarget && x.urn !== schoolUrn).map((x) => x.urn) }, fresh: false }) : null;
+      return href ? { label: "Edit this set…", title: activeSavedSet?.editable ? undefined : "Opens a copy to save as your own", onClick: () => (window.location.href = href) } : { label: "Edit this set…", onClick: () => setChooser({ editing: activeSavedSet?.editable ? activeSavedSet : null }) };
+    })(),
+    onNew: (() => {
+      const href = schoolUrn ? teacherEditorHref({ urn: schoolUrn, phase, product: "teacher", current: null, fresh: true }) : null;
+      return href ? { label: "New set…", onClick: () => (window.location.href = href) } : { label: "New set…", onClick: () => setChooser({ editing: null }) };
+    })(),
+    extraDefault: [{ label: "Schools in the LA, regional and national rankings…", onClick: () => setChooser({ editing: null }) }],
+    manageHref: `/sets?kind=compared_against&phase=${phase}`,
+  };
   const comparisonsHost = (
       <ComparisonsPanels
+        setMenu={setMenu}
         phase={phase}
         theme={theme}
         panels={panelsOf("rankings")}
@@ -2949,17 +3007,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           onSetsChanged={reloadSavedSets}
           onDone={async (choice) => {
             setChooser(null);
-            if (linkedSet) {
-              setLinkedSet(null);
-              window.history.replaceState(window.history.state, "", withoutLinkedSet(window.location.href));
-            }
-            // A saved set is switched on by its own id; anything else is kept as the
-            // chooser's own choice, which the column resolves and shows by name.
-            if (choice.kind === "saved") {
-              await setColumnSettings([[setKey("rankings"), savedSetKey(choice.id)], [CHOOSER_KEY, null]]);
-            } else {
-              await setColumnSettings([[CHOOSER_KEY, JSON.stringify(choice)], [setKey("rankings"), CHOOSER_SET_ID]]);
-            }
+            await applyChoice(choice);
           }}
         />
         </Suspense>

@@ -9,7 +9,7 @@
 // tier calls the SAME real function directly (not a second, possibly-diverging
 // proximity search) to get the real, phase/sector-matched URN list, then attaches real
 // academic data for those URNs. The paid tier reads the genuinely-persisted
-// saved_sets/saved_set_members tables directly, the same real shape DataViewShell.tsx's
+// sets/set_members tables (0.8 sets round 1) directly, the same real shape DataViewShell.tsx's
 // own comparator-set load already uses.
 //
 // This is read-path wiring only -- no new UI, no new page, no new API route (a real
@@ -29,6 +29,7 @@
 // this codebase needs subject-family or geography comparisons yet -- not wired in here
 // until one does.
 
+import { readSet } from "./sets/store";
 import { createServerAnonSupabaseClient } from "./supabase";
 import { buildDefaultComparatorLists, type DefaultList } from "./default-comparator-lists";
 import { lookupAcademicHeadline, type AcademicHeadlineRow, type KsStage } from "./vicdata-reference";
@@ -75,28 +76,20 @@ export async function getFreeAcademicNearestSchools(
 }
 
 // Paid tier: the member's own saved Comparator Set, read the same real way
-// DataViewShell.tsx's own load already does (saved_sets + saved_set_members, only
-// member_status = 'confirmed' rows) -- not a fresh proximity search, and not a second
+// DataViewShell.tsx's own load already does (0.8 sets round 1: public.sets + set_members) -- not a fresh proximity search, and not a second
 // comparator-set mechanism of Academic Results' own.
 export async function getPaidAcademicComparatorSet(
   savedSetId: string,
   ksStage: KsStage,
 ): Promise<SchoolAcademicComparison[] | null> {
+  // 0.8 sets round 1 (A5): the one sets model (public.sets), under the same anon client as before
+  // (RLS: it sees what that client may see).
   const supabase = createServerAnonSupabaseClient();
-  const { data, error } = await supabase
-    .from("saved_sets")
-    .select("id, name, saved_set_members(school_urn, member_status, schools(current_name))")
-    .eq("set_type", "comparator")
-    .eq("id", savedSetId)
-    .maybeSingle();
-  if (error || !data) return null;
-
-  type SavedSetRow = {
-    saved_set_members: { school_urn: string; member_status: string; schools: { current_name: string } | null }[];
-  };
-  const row = data as unknown as SavedSetRow;
-  const schools = row.saved_set_members
-    .filter((m) => m.member_status === "confirmed")
-    .map((m) => ({ urn: m.school_urn, name: m.schools?.current_name ?? m.school_urn, distanceKm: null }));
+  const set = await readSet(supabase, savedSetId);
+  if (!set || set.kind !== "compared_against") return null;
+  const urns = set.members.map((m) => m.urn);
+  const { data: names } = urns.length ? await supabase.from("schools").select("urn, current_name").in("urn", urns) : { data: [] };
+  const nameBy = new Map(((names ?? []) as { urn: string; current_name: string }[]).map((r) => [r.urn, r.current_name]));
+  const schools = urns.map((u) => ({ urn: u, name: nameBy.get(u) ?? u, distanceKm: null }));
   return attachAcademicFacts(schools, ksStage);
 }

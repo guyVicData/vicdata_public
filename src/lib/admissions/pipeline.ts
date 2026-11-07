@@ -13,7 +13,7 @@ import { defaultRungSets, nearbyCandidates, type RungSets } from "./rungs";
 import { cohortAt } from "./cohort";
 
 export type PipelineOptions = {
-  sets?: RungSets; // confirmed lists (admissions_lists), else the nearby defaults
+  sets?: RungSets; // the school's saved sets (0.8 sets round 1: public.sets), else the nearby defaults
   laBlend?: Record<string, number> | null; // the lead's override, DfE LA code -> weight
   sex?: Sex;
   includeProjection?: boolean;

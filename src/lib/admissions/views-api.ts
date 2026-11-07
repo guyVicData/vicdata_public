@@ -15,7 +15,8 @@ import { distanceKm, entryNow, feParticipation, feederTable, indexTo, poolTrends
 import { intakeChange, localBirths } from "./intake";
 import { buildMarketShare } from "./market";
 import { rivalSet } from "./rival-set";
-import { buildRivals, stageForEntry, subjectPlaces } from "./rivals";
+import { buildRivals, latestResults, stageForEntry, subjectPlaces, type Rivals } from "./rivals";
+import { resultsMeasureFor, type ResultsMeasure } from "../sets/results-coverage";
 import { englandSchools, headlinePopulation, sizePlaces } from "./ranks";
 import { pctChange, pointsChange } from "./flags";
 import { familyLabels } from "./family-labels";
@@ -222,9 +223,48 @@ export async function rivalsView(urn: string, ep: EntryPoint, lists: SavedList[]
   const overall = me && me.results.value !== null && me.results.note === null
     ? { rank: 1 + ranked.filter((x) => x.results.value! > me.results.value!).length, of: ranked.length, measure: stage === "ks4" ? "Attainment 8" : stage === "ks5" ? "A-level points per entry" : "the KS2 expected standard", national: me.results.national, change: resultsChange[urn]?.points ?? null, unranked: r.rows.filter((x) => x.results.note !== null).map((x) => ({ urn: x.urn, name: x.name, note: x.results.note })) }
     : null;
-  return { ...r, subjects, resultsChange, areaLabels, overall };
+  const momentum = await momentumResults(r, resultsChange);
+  return { ...r, subjects, resultsChange, areaLabels, overall, momentum };
 }
 export type RivalsView = Awaited<ReturnType<typeof rivalsView>>;
+
+type ResultsChange = { from: number | null; to: number | null; fromYear: number; toYear: number | null; points: number | null };
+export type MomentumResults = Omit<ResultsMeasure, "leftOut"> & {
+  /** The stage the scatter's y reads: "ks5" where the 11+ rule switched to post-16. */
+  stage: "ks4" | "ks5";
+  resultsPeriod: number | null;
+  /** Each school's results change on that stage (the scatter's y and the flag list's Results). */
+  resultsChange: Record<string, ResultsChange>;
+  /** The rivals the measure leaves out (no figure on it in the latest year), named. */
+  leftOut: { urn: string; name: string; igcse: boolean }[];
+};
+
+/** 0.8 Sets r1 (F25, F-40 / F-41): Rivals' momentum at 11+ reads GCSE results unless over 40% of the
+ * rivals have none in the latest year (mostly IGCSE), then post-16 (resultsMeasureFor, the one rule
+ * the set editor's results switch shares). A rival "has GCSE" with a ranked Attainment 8 headline in
+ * the latest KS4 year (the IGCSE rule's schools, listed but never ranked, have none); "has post-16"
+ * with an A-level points per entry headline in the latest KS5 year. Null away from 11+ (16+ already
+ * reads post-16; 4+ KS2): nothing changes there. R-ADM-MOMENTUM-IGCSE. */
+async function momentumResults(r: Rivals, gcseChange: Record<string, ResultsChange>): Promise<MomentumResults | null> {
+  if (r.stage !== "ks4") return null;
+  const k5 = await latestResults("ks5");
+  const pop5 = k5.period === null ? null : await headlinePopulation("ks5", k5.period);
+  const has5 = (u: string) => k5.period !== null && (pop5?.get(u)?.get(k5.period) ?? null) !== null;
+  const rivals = r.rows.filter((x) => !x.isSchool);
+  const rule = resultsMeasureFor(r.entry.age, rivals.map((x) => ({ urn: x.urn, hasGcse: x.results.note === null && x.results.value !== null, hasPost16: has5(x.urn), igcse: x.results.note === "igcse_not_ranked" })));
+  const name = new Map(r.rows.map((x) => [x.urn, x]));
+  const leftOut = rule.leftOut.map((u) => ({ urn: u, name: name.get(u)?.name ?? u, igcse: rule.measure === "gcse" && name.get(u)?.results.note === "igcse_not_ranked" }));
+  if (rule.measure !== "post16") return { ...rule, stage: "ks4", resultsPeriod: r.resultsPeriod, resultsChange: gcseChange, leftOut };
+  const resultsChange = Object.fromEntries(
+    r.rows.map((x) => {
+      const by = pop5?.get(x.urn);
+      const from = by?.get(TREND_BASE_PERIOD) ?? null;
+      const to = k5.period === null ? null : (by?.get(k5.period) ?? null);
+      return [x.urn, { from, to, fromYear: TREND_BASE_PERIOD, toYear: k5.period, points: pointsChange(from, to) }];
+    }),
+  );
+  return { ...rule, stage: "ks5", resultsPeriod: k5.period, resultsChange, leftOut };
+}
 
 // ------------------------------------------------------------------------------ Shape, size
 // F-23, F-26 (Guy, 6 Nov): at 16+ the local shape and the feeder cards cover ages 11 to 15.
@@ -322,7 +362,9 @@ export async function candidatesView(urn: string, ep: EntryPoint, sp: URLSearchP
     .filter((t) => t.urn !== urn)
     .filter((t) => holdsAge(t, age) && (kind !== "rivals" || holdsAge(t, age + 1)))
     .filter((t) => (sector === "state" || sector === "independent" ? t.sector === sector : true))
-    .filter((t) => (kind === "boarding" ? t.sector === "independent" && t.boarding : true))
+    // 0.8 sets round 1 (B8): a boarding feeder set suggests independent preps, day or boarding (not
+    // boarding-only: a day prep sends boarders too); the list shows which board.
+    .filter((t) => (kind === "boarding" ? t.sector === "independent" : true))
     .filter((t) => (sp.get("boarding") === "1" ? t.boarding : true))
     .filter((t) => (sp.get("gender") === "same" && me ? t.gender === me.gender : true))
     .filter((t) => (tops.length ? tops.includes(t.high ?? -1) : true))

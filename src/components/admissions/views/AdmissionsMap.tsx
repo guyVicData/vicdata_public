@@ -4,6 +4,7 @@
 // trend) and the map of rivals (sized by pupils at the entry age). The existing fixed-list map
 // (ConsortiumMap) through its new OPTIONAL props only -- so every existing caller draws exactly
 // what it drew; the Data View's maps aren't touched.
+import { isMain, MAIN_DOT_SCALE, type Tiers } from "@/lib/sets/tiers";
 import dynamic from "next/dynamic";
 import { useMemo, type ReactNode } from "react";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
@@ -35,6 +36,13 @@ export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: Pipel
   const byUrn = new Map(rows.map((r) => [r.urn, r]));
   const sorted = rows.map((r) => r.pupils ?? 0).sort((a, b) => a - b);
   const thirdOf = (v: number | null) => (v === null ? 0 : v <= sorted[Math.floor((sorted.length - 1) / 3)] ? 0 : v <= sorted[Math.floor((2 * (sorted.length - 1)) / 3)] ? 1 : 2);
+  const tiers = (p as PipelineOk & { tiers?: Tiers }).tiers;
+  const dotColour = (urn: string) => {
+    if (colour === "value") return THIRDS[thirdOf(byUrn.get(urn)?.pupils ?? null)];
+    const f = byUrn.get(urn)?.flag?.id;
+    return f === "feeder_focus" ? UP : f === "feeder_red" ? DOWN : FLAT;
+  };
+  const hasMain = rows.some((r) => isMain(tiers, r.urn));
   if (!rows.length) return <Empty>No located schools in this set.</Empty>;
   return (
     <>
@@ -50,12 +58,16 @@ export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: Pipel
         key={colour}
         members={members}
         heightClass={`${room && fullscreen ? "h-full" : fullscreen ? "h-[560px]" : "h-[300px]"} w-full overflow-hidden rounded-[10px] border border-[var(--panel-border)]`}
-        markerOf={(m) => (m.urn === p.school.urn ? { color: ACCENT, fillColor: ACCENT, fillOpacity: 0.9, radius: rollRadius(m.roll, minRoll, maxRoll), weight: 2.5 } : null)}
-        colourOf={(m) => {
-          if (colour === "value") return THIRDS[thirdOf(byUrn.get(m.urn)?.pupils ?? null)];
-          const f = byUrn.get(m.urn)?.flag?.id;
-          return f === "feeder_focus" ? UP : f === "feeder_red" ? DOWN : FLAT;
+        markerOf={(m) => {
+          if (m.urn === p.school.urn) return { color: ACCENT, fillColor: ACCENT, fillOpacity: 0.9, radius: rollRadius(m.roll, minRoll, maxRoll), weight: 2.5 };
+          // 0.8 sets round 1 (E22, R-FEEDER-TIERS): a Main feeder is drawn larger, in its own colour.
+          if (isMain(tiers, m.urn)) {
+            const c = dotColour(m.urn);
+            return { color: c, fillColor: c, fillOpacity: 0.85, radius: rollRadius(m.roll, minRoll, maxRoll) * MAIN_DOT_SCALE, weight: 2 };
+          }
+          return null;
         }}
+        colourOf={(m) => dotColour(m.urn)}
         tooltipOf={(m) => {
           if (m.urn === p.school.urn) return `${p.school.name} (you): ${fmtN(p.now.cohort)} in ${entryWord} now`;
           const r = byUrn.get(m.urn)!;
@@ -75,6 +87,7 @@ export function FeederMap({ p, fullscreen, room, colour = "change" }: { p: Pipel
       ) : (
       <div className="flex flex-wrap gap-3">
         {self && <YouKey word={entryWord} />}
+        {hasMain && <Key swatch={<span className="h-[13px] w-[13px] rounded-full border-2 border-[var(--chip-fg)]" />}>Main feeders: larger</Key>}
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: UP }} />}>Rising or stable (focus)</Key>
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: DOWN }} />}>Falling faster than the area (red flag)</Key>
         <Key swatch={<span className="h-[9px] w-[9px] rounded-full" style={{ background: FLAT }} />}>Neither</Key>

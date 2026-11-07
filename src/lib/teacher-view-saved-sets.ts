@@ -2,21 +2,22 @@
 // and the writes. Client-safe (no reference-data calls); the ranked rows and series come
 // from /api/teacher/saved-comparator-sets.
 //
-// Writes go straight to saved_sets / saved_set_members under the caller's own session,
-// the same way /sets/comparator/new saves, so RLS -- not this file -- decides who may
-// create or edit what: anyone approved can make a personal set; only the account holder
-// or an admin can create or edit a shared one.
+// Writes go straight to the one sets model (public.sets, 0.8 sets round 1) under the caller's own
+// session, so RLS -- not this file -- decides who may create or edit what: anyone approved can make
+// a personal set; SMT, Admissions and the School-Admin curate the school's compared-against sets.
 import type { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { RankingFilters } from "@/lib/comparator-chooser";
 import { cachedFetchJson } from "@/lib/fetch-cache";
 import { viewAsSetsKey } from "@/lib/view-as";
+import { deleteSet, saveSet } from "@/lib/sets/store";
+import { PERSONAL_SET_CAP } from "@/lib/sets/model";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
 // Personal comparator sets per member. Raised from 3 to 8 (the agreed "5-10") by the
 // 20260925232857_personal_comparator_cap_8 migration, which the DB trigger enforces; this
 // constant is only what the UI shows ("2 / 8") and checks before trying.
-export const PERSONAL_COMPARATOR_CAP = 8;
+export const PERSONAL_COMPARATOR_CAP = PERSONAL_SET_CAP;
 
 // A saved set's id as the Comparisons column keys it, so it can never collide with the
 // four algorithmic ids ("nearest", "same_sector", ...).
@@ -30,6 +31,9 @@ export type SavedComparatorSet = {
   name: string;
   shared: boolean;
   mine: boolean;
+  // 0.8 sets round 1 (B7): who made it -- the menu tags school sets by creator.
+  creator?: import("@/lib/sets/model").CreatorKind;
+  creatorLabel?: string;
   editable: boolean;
   config: { startedFrom?: string } & Record<string, unknown>;
   members: SetMember[];
@@ -46,7 +50,7 @@ export type SavedComparatorSet = {
 export type SavedSetsPayload = {
   // 0.6 snag 4 (B): `viewAs` while a platform admin views this school as a member: their
   // own sets and rankings are then the View as's (viewAsStore below), and membershipId is "".
-  me: { membershipId: string; schoolAccountId: string; canEditShared: boolean; viewAs?: { urn: string; stateKey: string } };
+  me: { membershipId: string; schoolAccountId: string; canEditShared: boolean; creatorKind?: "admissions" | "smt" | "school_admin" | null; viewAs?: { urn: string; stateKey: string } };
   // View as only: the school's shared rankings and the View as's own (a member reads
   // saved_rankings straight from the table; Guy's RLS can't, as he isn't a member).
   rankings?: SavedRanking[];
@@ -79,8 +83,11 @@ export async function saveComparatorSet(
     name: string;
     urns: string[];
     config: Record<string, unknown>;
-    // View as: saved as the View as's own personal set, never to saved_sets.
+    // View as: saved as the View as's own personal set, never to the school's sets.
     viewAs?: { stateKey: string } | null;
+    // 0.8 sets round 1: a shared (school) set's creator, a curator role the writer holds there.
+    creatorKind?: "admissions" | "smt" | "school_admin";
+    focusUrn?: string | null;
   },
 ): Promise<{ id: string } | { error: string }> {
   if (args.viewAs) {
@@ -90,43 +97,36 @@ export async function saveComparatorSet(
     const err = await writeViewAsRow(supabase, args.viewAs.stateKey, `set:${id}`, body);
     return err ? { error: err } : { id };
   }
-  let id = args.id;
-  if (id === null) {
-    const { data, error } = await supabase
-      .from("saved_sets")
-      .insert({
-        school_account_id: args.schoolAccountId,
-        set_type: "comparator",
-        name: args.name,
-        owner_membership_id: args.ownerMembershipId,
-        config: args.config,
-      })
-      .select("id")
-      .single();
-    if (error || !data) return { error: error?.message ?? "Could not save the set." };
-    id = data.id as string;
-  } else {
-    const { error } = await supabase
-      .from("saved_sets")
-      .update({ name: args.name, config: args.config, updated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) return { error: error.message };
-    const { error: delError } = await supabase.from("saved_set_members").delete().eq("saved_set_id", id);
-    if (delError) return { error: delError.message };
-  }
-  if (args.urns.length) {
-    const { error } = await supabase
-      .from("saved_set_members")
-      .insert(args.urns.map((urn) => ({ saved_set_id: id, school_urn: urn, member_status: "confirmed" })));
-    if (error) return { error: error.message };
-  }
-  return { id: id! };
+  // 0.8 sets round 1 (A5): one model for every set (public.sets, src/lib/sets/). A shared set is a
+  // school set, saved under the writer's curator role there (creatorKind; the database checks it);
+  // a personal one is the signed-in person's own. The set and its schools are saved in one call.
+  const shared = args.ownerMembershipId === null;
+  const { data: who } = await supabase.auth.getUser();
+  if (!shared && !who.user) return { error: "Sign in to save." };
+  const res = await saveSet(
+    supabase,
+    args.id,
+    args.id
+      ? { name: args.name, config: args.config, source_recipe: typeof args.config.startedFrom === "string" ? args.config.startedFrom : null }
+      : {
+          name: args.name,
+          kind: "compared_against",
+          owner_scope: shared ? "school" : "personal",
+          school_account_id: args.schoolAccountId || null,
+          owner_profile_id: shared ? null : who.user!.id,
+          creator_kind: shared ? (args.creatorKind ?? "school_admin") : "me",
+          focus_urn: args.focusUrn ?? null,
+          source_recipe: typeof args.config.startedFrom === "string" ? args.config.startedFrom : null,
+          config: args.config,
+        },
+    args.urns.map((urn) => ({ urn })),
+  );
+  return "error" in res ? { error: res.error } : { id: res.id };
 }
 
 export async function deleteComparatorSet(supabase: Supa, id: string, viewAs?: { stateKey: string } | null): Promise<string | null> {
   if (viewAs) return deleteViewAsRow(supabase, viewAs.stateKey, `set:${id}`);
-  const { error } = await supabase.from("saved_sets").delete().eq("id", id);
-  return error ? error.message : null;
+  return deleteSet(supabase, id);
 }
 
 // ------------------------------------------------------------------ saved rankings

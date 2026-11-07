@@ -17,6 +17,7 @@ import { CURRENT_CENSUS_PERIOD, periodLabel } from "./years";
 import { METHODS_ADMISSIONS } from "./methods-admissions";
 import { METHODS_SMT } from "./methods-smt";
 import { METHODS_TEACHER } from "./methods-teacher";
+import { applyConditions, applyConditionsAll } from "./method-conditions";
 
 export type ViewMethod = {
   sources: string[];
@@ -64,20 +65,26 @@ const CENSUS_VARS = {
   censusPrevJanuary: CURRENT_CENSUS_PERIOD,
 };
 
-/** A view's method with its {placeholders} filled from what the host drew (unknown ones say so). */
+/** A view's method with its {placeholders} filled from what the host drew (unknown ones say so), and
+ * the parts for some schools only ({?boarding}…{/boarding}) kept or dropped by the host's flags. */
 export function methodOf(id: string, given: Record<string, string | number | null | undefined> = {}): ViewMethod | null {
   const m = METHODS[id];
   if (!m) return null;
   const vars = { ...CENSUS_VARS, ...given };
+  // 0.8 Sets r1 (F24): the parts that hold only for some schools ({?boarding}…, method-conditions.ts)
+  // first, then the {placeholders}.
+  const all = (xs: string[]) => applyConditionsAll(xs, vars).map((s) => fillOne(s, vars));
+  const one = (s: string) => fillOne(applyConditions(s, vars), vars);
+  const notes = m.notes ? applyConditionsAll(m.notes, vars) : null;
   return {
-    sources: m.sources.map((s) => fillOne(s, vars)),
-    geography: fillOne(m.geography, vars),
-    years: fillOne(m.years, vars),
-    leftOut: m.leftOut.map((s) => fillOne(s, vars)),
-    steps: m.steps.map((s) => fillOne(s, vars)),
-    rounding: m.rounding.map((s) => fillOne(s, vars)),
+    sources: all(m.sources),
+    geography: one(m.geography),
+    years: one(m.years),
+    leftOut: all(m.leftOut),
+    steps: all(m.steps),
+    rounding: all(m.rounding),
     settings: m.settings,
-    ...(m.notes ? { notes: m.notes } : {}),
+    ...(notes?.length ? { notes } : {}),
   };
 }
 

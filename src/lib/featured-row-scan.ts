@@ -20,15 +20,14 @@ export const FOCUS_TABLES: { file: string; view: string }[] = [
   { file: "src/components/data-view/RankingsView.tsx", view: "Data View: Rankings (rank, over time, large set)" },
   { file: "src/components/data-view/AcademicRankingsView.tsx", view: "Data View: academic Rankings" },
   { file: "src/components/data-view/SubjectDeepDiveDrawer.tsx", view: "Data View: the subject deep dive" },
-  { file: "src/app/sets/[id]/page.tsx", view: "Saved set: roll-size rank" },
 ];
 
 /** Rows of schools with no focus row to tint, each with why. `has` picks the element (a fragment of its
  * opening tag); without it, every school row in the file. */
 export const NO_FOCUS_ROWS: { file: string; has?: string; why: string }[] = [
-  { file: "src/app/sets/comparator/new/page.tsx", why: "the set builder's search results: no school is the focus" },
-  { file: "src/app/sets/feeder/new/page.tsx", why: "the feeder list builder's search results: no school is the focus" },
   { file: "src/components/admissions/setup/Setup.tsx", why: "Admissions set-up: choosing rivals, no focus row" },
+  { file: "src/components/sets/SetEditor.tsx", why: "sets round 1: the set editor lists the set's schools and suggestions; the school the set is about is never one of them" },
+  { file: "src/components/sets/SetView.tsx", why: "sets round 1: a set's numbered list of its schools; the school it is about is never one of them" },
   { file: "src/components/admissions/views/Momentum.tsx", why: "rivals' momentum lists the rivals only (the school is filtered out)" },
   { file: "src/components/admissions/views/ShapeAndSize.tsx", why: "shape cards, a chart (the featured profile is drawn apart)" },
   { file: "src/components/admissions/views/Tables.tsx", has: 'className="border-t border-[var(--panel-border)] text-[var(--chip-fg)]"', why: "the feeder table lists the feeders, never the school" },

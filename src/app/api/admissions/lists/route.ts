@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { admissionsCaller } from "@/lib/admissions/auth";
 import { VIEW_AS_READ_ONLY } from "@/lib/view-as";
 import { entryPoint } from "@/lib/admissions/entry-points";
+import { readSet, readSets, saveSet, setsNotSetUp } from "@/lib/sets/store";
+import { legacyKindOf, listRowsFromSets, setShapeOfList, type LegacyListKind } from "@/lib/sets/admissions-lists";
 
 // VicData 0.7 admissions r1 (A5): the school's entry points and shared lists (school-level).
 //   GET  ?urn                         entry points and every list (RLS: Admissions, SMT, School-Admin,
@@ -13,6 +15,10 @@ import { entryPoint } from "@/lib/admissions/entry-points";
 // admissions_entry_points). Who changed it and when is stamped by the
 // database. Before the 0.7 r1 migration is applied, every call says "not set up yet" (503).
 // 0.7 r2: GET also returns `names` (profile id -> name) for "last changed by".
+// 0.8 sets round 1 (A5): the lists are school sets now (public.sets, src/lib/sets/): each old list is
+// the school's own choice of set for its entry point and kind, read and written in the old shape so
+// Setup and the views are unchanged. Who may write follows the sets' rules: rivals by SMT,
+// Admissions and the School-Admin; feeders by Admissions (can_curate_sets).
 const KINDS = new Set(["day_feeders", "boarding_feeders", "rivals", "rung"]);
 const URN = /^\d{5,7}$/;
 const notSetUp = (msg: string) => /admissions_(lists|entry_points)|does not exist|schema cache/i.test(msg);
@@ -33,15 +39,16 @@ export async function GET(request: NextRequest) {
   if (!acc) return NextResponse.json({ error: "No school account." }, { status: 404 });
   // 0.7 r2b (E1): updated_by_kind ("lead" | "school_admin") once the r2b migration is applied;
   // before it, read without it. (Typed as "*": the column list is chosen at run time.)
-  const read = (kind: ", updated_by_kind" | "") =>
-    Promise.all([
-      caller.reader.from("admissions_entry_points").select(("entry_point, sort_order, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc).order("sort_order"),
-      caller.reader.from("admissions_lists").select(("id, entry_point, kind, rung, members, fuzzy, la_blend, confirmed, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc),
-    ]);
-  let [eps, lists] = await read(", updated_by_kind");
-  if (/updated_by_kind/.test(eps.error?.message ?? lists.error?.message ?? "")) [eps, lists] = await read("");
-  const err = eps.error ?? lists.error;
-  if (err) return NextResponse.json({ error: notSetUp(err.message) ? "Admissions lists are not set up yet." : "Could not read the lists." }, { status: notSetUp(err.message) ? 503 : 502 });
+  const readEps = (kind: ", updated_by_kind" | "") => caller.reader.from("admissions_entry_points").select(("entry_point, sort_order, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc).order("sort_order");
+  let eps = await readEps(", updated_by_kind");
+  if (/updated_by_kind/.test(eps.error?.message ?? "")) eps = await readEps("");
+  const sets = await readSets(caller.reader, { schoolAccountId: acc });
+  if (eps.error || sets.error) {
+    const msg = eps.error?.message ?? sets.error ?? "";
+    const missing = notSetUp(msg) || sets.notSetUp;
+    return NextResponse.json({ error: missing ? "Admissions lists are not set up yet." : "Could not read the lists." }, { status: missing ? 503 : 502 });
+  }
+  const lists = { data: listRowsFromSets(sets.sets) };
   // 0.7 r2 (D5): "last changed by [name], [date]" -- the names of whoever stamped the rows, read
   // with the caller's own token (RLS: colleagues at the same school), else left out.
   const ids = Array.from(new Set([...(eps.data ?? []), ...(lists.data ?? [])].map((r) => (r as { updated_by: string | null }).updated_by).filter((x): x is string => !!x)));
@@ -77,13 +84,27 @@ export async function PUT(request: NextRequest) {
   if (!l || !entryPoint(l.entry_point) || !KINDS.has(l.kind) || (l.kind === "rung") !== !!l.rung || (l.rung && !/^age:(\d|1[0-7])$/.test(l.rung)))
     return NextResponse.json({ error: "list: entry_point, kind (day_feeders|boarding_feeders|rivals|rung), rung for kind rung" }, { status: 400 });
   const members = Array.from(new Set(l.members ?? [])).filter((u) => URN.test(u)).slice(0, 500);
-  const row = { school_account_id: acc, entry_point: entryPoint(l.entry_point)!.id, kind: l.kind, rung: l.rung ?? "", members, fuzzy: l.fuzzy ?? null, la_blend: l.la_blend ?? null, confirmed: !!l.confirmed };
-  const existing = await caller.supabase.from("admissions_lists").select("id").eq("school_account_id", acc).eq("entry_point", row.entry_point).eq("kind", row.kind).eq("rung", row.rung).maybeSingle();
-  if (existing.error) return NextResponse.json({ error: notSetUp(existing.error.message) ? "Admissions lists are not set up yet." : "Could not save." }, { status: notSetUp(existing.error.message) ? 503 : 502 });
-  const res = existing.data
-    ? await caller.supabase.from("admissions_lists").update(row).eq("id", (existing.data as { id: string }).id).select("id, updated_by, updated_at")
-    : await caller.supabase.from("admissions_lists").insert(row).select("id, updated_by, updated_at");
-  if (res.error) return NextResponse.json({ error: res.error.code === "42501" ? "Only the Admissions lead or the School-Admin can change the lists." : "Could not save." }, { status: res.error.code === "42501" ? 403 : 502 });
-  if (!res.data?.length) return NextResponse.json({ error: "Only the Admissions lead or the School-Admin can change the lists." }, { status: 403 });
-  return NextResponse.json({ list: res.data[0] });
+  const ep = entryPoint(l.entry_point)!.id;
+  const shape = setShapeOfList(l.kind as LegacyListKind, l.rung);
+  const existing = await readSets(caller.supabase, { schoolAccountId: acc, kind: shape.kind });
+  if (existing.error) return NextResponse.json({ error: existing.notSetUp ? "Admissions lists are not set up yet." : "Could not save." }, { status: existing.notSetUp ? 503 : 502 });
+  const current = existing.sets.find((s) => s.ownerScope === "school" && s.isDefault && s.entryPoint === ep && legacyKindOf(s) === l.kind && (s.rungAge ?? null) === shape.rungAge);
+  // A new list set is made under the writer's own standing there (lead-only, Guy 7 Nov): the lead's is
+  // Admissions; SMT's (rivals only) SMT's; the School-Admin's is the audited override's.
+  const creator = caller.lead ? "admissions" : caller.roles.includes("smt") && shape.kind === "compared_against" ? "smt" : "school_admin";
+  const res = await saveSet(
+    caller.supabase,
+    current?.id ?? null,
+    current
+      ? { rule: l.fuzzy ?? null, la_blend: l.la_blend ?? null }
+      : { name: shape.name, kind: shape.kind, entry_point: ep, focus_urn: caller.urn, owner_scope: "school", school_account_id: acc, creator_kind: creator, audience: shape.audience, rung_age: shape.rungAge, is_default: true, pinned: true, rule: l.fuzzy ?? null, la_blend: l.la_blend ?? null },
+    members.map((urn) => ({ urn, tier: current?.members.find((m) => m.urn === urn)?.tier ?? null })),
+  );
+  if ("error" in res) {
+    if (setsNotSetUp(res.error)) return NextResponse.json({ error: "Admissions lists are not set up yet." }, { status: 503 });
+    const refused = res.code === "42501" || /can't change this set/.test(res.error);
+    return NextResponse.json({ error: refused ? (shape.kind === "feeders" ? "Only the Admissions lead or the School-Admin can change the feeder lists." : "Only the Admissions lead, SMT or the School-Admin can change the rivals.") : "Could not save." }, { status: refused ? 403 : 502 });
+  }
+  const after = await readSet(caller.supabase, res.id);
+  return NextResponse.json({ list: { id: res.id, updated_by: after?.updatedBy ?? null, updated_at: after?.updatedAt ?? null } });
 }

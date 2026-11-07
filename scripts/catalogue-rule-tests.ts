@@ -1659,14 +1659,20 @@ const RUNNERS: Record<string, Runner> = {
     const drawn = each.filter((x) => !x.small);
     const { yearLabel } = await import("../src/components/admissions/ui");
     const titles = drawn.every((x) => x.last === null || !Number.isFinite(x.last) || full.includes(`${esc(x.name)} ${yearLabel(yrs.at(-1)!)}: ${x.last.toFixed(0)}`));
-    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 1;
+    // 0.8 Sets r1 (F23): full screen also keys the rivals' average (you + each rival drawn + the average),
+    // on this view and on the band roll's (both through YouAndEachRival).
+    const avgKey = (k: string) => k.includes(">Rivals&#x27; average</span>");
+    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 2 && avgKey(key);
+    const { RollTrend } = await import("../src/components/admissions/views/Lines");
+    const rollFull = renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(RollTrend, { m, fullscreen: true, room: 600 })));
+    const rollAvg = avgKey(rollFull.split("data-roll-key")[1]?.split("</div>")[0] ?? "");
     const named = each.filter((x) => x.small).every((x) => note.includes(esc(x.name)) && !key.includes(`>${esc(x.name)}</span>`));
     const lines = fs.readFileSync(path.join(ROOT, "src/components/admissions/views/Lines.tsx"), "utf8");
     const fn = (n: string) => lines.split(`export function ${n}(`)[1]?.split("\nexport function ")[0] ?? "";
     const shared = ["RollTrend", "VsRivals"].every((n) => fn(n).includes("<YouAndEachRival")) && (lines.match(/var\(--adm-series-\$\{/g) ?? []).length === 1;
     const panelOk = panel.includes("Rivals’ average") && !panel.includes("data-vs-key") && !panel.includes("data-y-grid") && !panel.includes("--adm-series-");
-    const ok = keyed && named && titles && shared && panelOk && full.includes("data-y-grid");
-    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, named, titles, shared, panelOk }) };
+    const ok = keyed && rollAvg && named && titles && shared && panelOk && full.includes("data-y-grid");
+    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, rollAvg, named, titles, shared, panelOk }) };
   },
   // R-ADM-BAND-SHARE: the band share recomputed; the rail's last view.
   async admBandShare() {
@@ -1698,7 +1704,7 @@ const RUNNERS: Record<string, Runner> = {
     const p = await v.pipelineView("110110", v.entryPoint("11+")!, []);
     if ("empty" in p) return { pass: false, detail: "empty" };
     const src = (await import("node:fs")).readFileSync(path.join(ROOT, "src/components/admissions/views/AdmissionsMap.tsx"), "utf8");
-    const ok = p.school.easting !== null && p.school.northing !== null && p.now.cohort !== null && /markerOf=\{\(m\) => \(m\.urn === p\.school\.urn/.test(src) && /roll: p\.now\.cohort/.test(src);
+    const ok = p.school.easting !== null && p.school.northing !== null && p.now.cohort !== null && /markerOf=\{\(m\) => (\(|\{\s*if \()m\.urn === p\.school\.urn/.test(src) && /roll: p\.now\.cohort/.test(src);
     return { pass: ok, detail: fmt({ easting: p.school.easting, northing: p.school.northing, cohort: p.now.cohort }) };
   },
   async admFeederShapes() {
@@ -1765,12 +1771,75 @@ const RUNNERS: Record<string, Runner> = {
     const html = await admRenderAll("110110", "11+");
     return { pass: html.includes("Schools submitting GCSE results only"), detail: "11+ momentum" };
   },
+  // R-ADM-MOMENTUM-IGCSE (0.8 Sets r1, F25): the 11+ results switch recomputed from the KS4 / KS5
+  // headline populations and the IGCSE rule, and the panel rendered on the server from the route's answer.
+  async admMomentumIgcse() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const fs = await import("node:fs");
+    const v = await import("../src/lib/admissions/views-api");
+    const { headlinePopulation } = await import("../src/lib/admissions/ranks");
+    const { latestResults } = await import("../src/lib/admissions/rivals");
+    const { igcseAmong } = await import("../src/lib/igcse");
+    const { resultsMeasureFor, IGCSE_SWITCH_SHARE } = await import("../src/lib/sets/results-coverage");
+    const { Momentum, momentumChips } = await import("../src/components/admissions/views/Momentum");
+    const { InitialWidth } = await import("../src/components/admissions/views/charts");
+    const { TREND_BASE_PERIOD } = await import("../src/catalogue/notes");
+    const [k4, k5] = [await latestResults("ks4"), await latestResults("ks5")];
+    const [p4, p5] = [await headlinePopulation("ks4", k4.period!), await headlinePopulation("ks5", k5.period!)];
+    const ep = v.entryPoint("11+")!;
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const one = async (urn: string, members: string[] | null) => {
+      const lists = members ? [{ kind: "rivals", rung: null, members, la_blend: null, confirmed: true }] : [];
+      const [m, r] = await Promise.all([v.marketView(urn, ep, lists), v.rivalsView(urn, ep, lists)]);
+      const rivals = r.rows.filter((x) => !x.isSchool).map((x) => x.urn);
+      const ig = await igcseAmong(rivals);
+      const want = resultsMeasureFor(11, rivals.map((u) => ({ urn: u, hasGcse: !ig.has(u) && p4.get(u)?.get(k4.period!) !== undefined, hasPost16: p5.get(u)?.get(k5.period!) !== undefined, igcse: ig.has(u) })));
+      const got = r.momentum!;
+      const same = got.measure === want.measure && got.noGcse === want.noGcse && got.noPost16 === want.noPost16 && got.of === want.of && JSON.stringify(got.leftOut.map((x) => x.urn)) === JSON.stringify(want.leftOut);
+      const html = renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(Momentum, { m, r, fullscreen: false })));
+      const scope = html.split("data-momentum-scope")[1]?.split("</div>")[0] ?? "";
+      // Each dot's y on the switched measure: the KS5 headline change since 2022/23.
+      const ys = got.measure !== "post16" || r.rows.every((x) => { const a = p5.get(x.urn)?.get(TREND_BASE_PERIOD); const b = p5.get(x.urn)?.get(k5.period!); const pts = got.resultsChange[x.urn]?.points; return a === undefined || b === undefined ? pts === null : Math.abs((pts ?? NaN) - (b - a)) < 1e-9; });
+      return { r, got, want, same, scope, ys, chip: momentumChips(m, r).results, html };
+    };
+    // Leighton Park's 11+ default set -- since sets round 1 (B8) the default recipe, "10 nearest |
+    // independent" (src/lib/sets/recipes.ts), as the page's routes draw it -- whatever the rule says for
+    // its real counts, drawn as the rule says.
+    const { admissionsRecipes } = await import("../src/lib/sets/recipes");
+    const lpDefault = (await admissionsRecipes("110110", ep, "compared_against")).find((x) => x.isDefaultChoice)!;
+    const lp = await one("110110", lpDefault.urns);
+    const lpLine = `Post-16 results: ${lp.got.noGcse} of ${lp.got.of} rivals have no GCSE results`;
+    const lpDrawn = lp.got.switched
+      ? lp.scope.includes(esc(lpLine)) && lp.chip === "Results: A-level points" && lp.ys
+      : lp.got.noGcse / lp.got.of <= IGCSE_SWITCH_SHARE || lp.got.noPost16 >= lp.got.noGcse
+        ? lp.got.leftOut.every((x) => lp.scope.includes(esc(x.name))) && (lp.got.leftOut.length === 0 || lp.scope.includes("Left out, no GCSE results")) && lp.scope.includes("Schools submitting GCSE results only") && lp.chip === "Results: Attainment 8"
+        : false;
+    const lpOk = lp.same && lpDrawn;
+    // Leighton Park with a saved list of its nearby IGCSE independents and two state grammars: switches.
+    const sw = await one("110110", ["110165", "110137", "110109", "110151", "134467", "136449", "136448"]);
+    const line = `Post-16 results: ${sw.got.noGcse} of ${sw.got.of} rivals have no GCSE results (mostly IGCSE)`;
+    const swOk = sw.same && sw.got.switched && sw.got.measure === "post16" && sw.scope.includes(esc(line)) && sw.scope.includes('data-momentum-measure="post16"') && sw.ys && sw.chip === "Results: A-level points" && sw.html.includes("A-level points per entry");
+    // A state school's set (Maiden Erlegh School): stays on GCSE.
+    const st = await one("136637", null);
+    const stOk = st.same && st.got.measure === "gcse" && !st.got.switched;
+    // 16+: nothing changes (no momentum rule; the rivals view's own post-16 results).
+    const r16 = await v.rivalsView("110110", v.entryPoint("16+")!, []);
+    const at16 = r16.momentum === null && r16.stage === "ks5";
+    // The 40% in one place: the constant is declared once, and only results-coverage.ts holds 0.4 for it.
+    const src = (f: string) => fs.readFileSync(path.join(ROOT, f), "utf8");
+    const once = (src("src/lib/sets/results-coverage.ts").match(/IGCSE_SWITCH_SHARE = 0\.4\b/g) ?? []).length === 1 && !/resultsMeasureFor|IGCSE_SWITCH_SHARE/.test(src("src/components/admissions/views/Momentum.tsx").replace(/import[^;]+;/g, "")) && src("src/lib/admissions/views-api.ts").includes("resultsMeasureFor(");
+    const pass = lpOk && swOk && stOk && at16 && once;
+    const d = (x: Awaited<ReturnType<typeof one>>) => `${x.got.measure} (no GCSE ${x.got.noGcse}/${x.got.of}, ${x.got.noGcseIgcse} IGCSE; no post-16 ${x.got.noPost16}/${x.got.of}; left out: ${x.got.leftOut.map((y) => y.name).join("; ") || "none"})`;
+    return { pass, detail: fmt({ leightonPark: d(lp), lpOk, saved7: d(sw), swOk, line: sw.got.switched ? line : "not switched", maidenErlegh: d(st), stOk, at16, oneConstant: once }) };
+  },
   async admBoardingOnly() {
     const { createElement } = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
     const v = await import("../src/lib/admissions/views-api");
     const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
-    const { AdmissionsEveryView } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { AdmissionsEveryView, methodVars } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { METHODS, methodOf, methodText } = await import("../src/catalogue/methods");
     const { Setup } = await import("../src/components/admissions/setup/Setup");
     const { OpenInFullscreen } = await import("../src/components/teacher/CardBox");
     // Setup's "add by name" (SchoolSearch) reads the app router: a do-nothing one for a server render.
@@ -1806,6 +1875,11 @@ const RUNNERS: Record<string, Runner> = {
           ),
         );
       const editorOk = boarding ? editor.every((h) => /Boarding feeders/.test(text(h))) : editor.every((h) => !BOARD.test(text(h)));
+      // 0.8 Sets r1 (F24): every Admissions view's (i) as the host fills it (methodVars: the view's
+      // placeholders and the school's boarding flag): its notes and its method's text.
+      const host = { boardingSchool: boarding, pipeline: { status: "ready" as const, data: p }, market: { status: "ready" as const, data: m } };
+      const iText = (dv: string) => { const x = methodOf(dv, methodVars(dv, host as never))!; return [...(x.notes ?? []), methodText(x)].join("\n"); };
+      const admDvs = Object.keys(METHODS).filter((d) => d.startsWith("DV-ADM-"));
       if (!boarding) {
         const leaks = [...own, ...setup].map(text).filter((x) => BOARD.test(x)).map((x) => x.match(BOARD)![0]);
         const marketControls = market.map(text).some((x) => /Rivals with boarders|Boarding only/.test(x));
@@ -1814,29 +1888,43 @@ const RUNNERS: Record<string, Runner> = {
         const asked = await v.pipelineView(urn, ep, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
         const ignored = !("empty" in asked) && !("empty" in p) && JSON.stringify(asked.ladder) === JSON.stringify(p.ladder);
         const steps = /Step 1 of 3/.test(setup[0]) && /Step 3 of 3/.test(setup[3]) && /Step 2 of 3/.test(setup[2]);
-        const ok = leaks.length === 0 && !marketControls && tile && ignored && steps && editorOk;
+        // A day school's (i): no boarding words, but the rivals' own figures may still say they board
+        // (Market share's GIAS traits and the group line's count of schools with boarding).
+        const RIVALS_BOARD = [/nearest schools, sector, boarding, gender, location/g, /independent, state and boarding \(your school included/g];
+        const iLeaks = admDvs.filter((d) => BOARD.test(RIVALS_BOARD.reduce((t, r) => t.replace(r, ""), iText(d))));
+        // 0.8 sets round 1 (B8, B11): the boarding choice is a set now; a day school's menu offers none.
+        const { admissionsRecipes } = await import("../src/lib/sets/recipes");
+        const dayRecipes = [...(await admissionsRecipes(urn, ep, "compared_against")), ...(await admissionsRecipes(urn, ep, "feeders"))];
+        const noBoardingSets = !dayRecipes.some((x) => BOARD.test(x.name) || x.audience === "boarding");
+        const ok = leaks.length === 0 && iLeaks.length === 0 && !marketControls && tile && ignored && steps && editorOk && noBoardingSets;
         pass &&= ok;
-        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps + ${editor.length} editor Data steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps}, editor compare without boarding ${editorOk} ${ok ? "ok" : "FAIL"}`);
+        out.push(`${urn} ${entry} day: no boarding sets offered ${noBoardingSets}, ${chunks.length} surfaces + 4 setup steps + ${editor.length} editor Data steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, (i)s with boarding words ${iLeaks.length}/${admDvs.length}${iLeaks.length ? ` (${iLeaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps}, editor compare without boarding ${editorOk} ${ok ? "ok" : "FAIL"}`);
       } else {
         const T = text(html);
-        const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
+        // 0.8 sets round 1 (B8, B11): the old Day + boarding filter is a choice of set: the menu's Default
+        // block offers "10 nearest | boarding" and the Boarding feeder sets for a boarding school.
+        const { admissionsRecipes } = await import("../src/lib/sets/recipes");
+        const rec = [...(await admissionsRecipes(urn, ep, "compared_against")), ...(await admissionsRecipes(urn, ep, "feeders"))];
+        const filters = rec.some((x) => x.key === "adm:nearest-boarding") && rec.some((x) => x.audience === "boarding");
         // 0.8 SMT feedback round 1 (F-1): the tile is a PairTile, each figure boxed with its own label.
         const tile = /data-pair="Day"/.test(html) && /data-pair="Boarding"/.test(html);
         // Admissions feedback round 2 (F-31): the ISC note left the intake chart for its (i) (DV-ADM-P-FUNNEL's
-        // notes); it shows in the pipeline itself or in that (i).
-        const { METHODS_ADMISSIONS } = await import("../src/catalogue/methods-admissions");
-        const iscInI = (METHODS_ADMISSIONS["DV-ADM-P-FUNNEL"].notes ?? []).some((n) => /International boarders/.test(n));
+        // notes); it shows in the pipeline itself or in that (i). 0.8 Sets r1 (F24): read as the host fills
+        // the (i) for this boarding school, with the intake's boarding caveat beside it.
+        const funnelI = iText("DV-ADM-P-FUNNEL");
+        const iscInI = /International boarders/.test(funnelI) && /Boarding schools draw from far beyond any radius/.test(funnelI);
         const isc = ep.age > 4 ? /International boarders/.test(T) || iscInI : true;
         const setupOk = /Day and boarding/.test(text(setup[0])) && /Your boarding feeders/.test(text(setup[2])) && /Step 3 of 4/.test(setup[2]) && /Step 4 of 4/.test(setup[3]) && /Boarding only/.test(text(setup[3]));
-        // The boarding feeder list end to end: setup's search returns preps with boarders, kept as a
-        // fuzzy set, and Boarding only draws the pool from them.
+        // The boarding feeder list end to end: setup's search returns independent preps, day or boarding
+        // (0.8 sets round 1, B8: no longer boarding-only), kept as a fuzzy set, and Boarding only draws
+        // the pool from them.
         const cand = await v.candidatesView(urn, ep, new URLSearchParams({ kind: "boarding", mode: "nearest", n: "40" }));
-        const preps = cand.rows.filter((x) => x.boarding && x.sector === "independent");
+        const preps = cand.rows.filter((x) => x.sector === "independent");
         const bp = await v.pipelineView(urn, ep, [{ kind: "boarding_feeders", rung: null, members: preps.map((x) => x.urn), la_blend: null, confirmed: true }], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
         const used = !("empty" in bp) && bp.sets.some((x) => x.urns.some((u) => preps.some((pp) => pp.urn === u)));
-        const ok = filters && tile && isc && setupOk && preps.length > 0 && preps.length === cand.rows.length && used && editorOk;
+        const ok = filters && tile && isc && setupOk && preps.length > 0 && preps.length === cand.rows.length && preps.some((x) => x.boarding) && used && editorOk;
         pass &&= ok;
-        out.push(`${urn} ${entry} boarding: filters ${filters}, tile ${tile}, ISC note ${isc}, setup 1-4 ${setupOk}, boarding preps ${preps.length}/${cand.rows.length}, boarding-only pool from them ${used}, editor's feeder chips on ${editor.length} views ${editorOk} ${ok ? "ok" : "FAIL"}`);
+        out.push(`${urn} ${entry} boarding: boarding sets in the menu ${filters}, day or boarding preps ${preps.filter((x) => !x.boarding).length} day + ${preps.filter((x) => x.boarding).length} boarding, tile ${tile}, ISC note ${isc}, setup 1-4 ${setupOk}, boarding preps ${preps.length}/${cand.rows.length}, boarding-only pool from them ${used}, editor's feeder chips on ${editor.length} views ${editorOk} ${ok ? "ok" : "FAIL"}`);
       }
     };
     await run("137625", "11+");
@@ -3175,6 +3263,312 @@ const RUNNERS: Record<string, Runner> = {
     const tokens = Object.values(FEATURED_ROW_TOKEN).every((t) => (css.match(new RegExp(`${t}:\\s*#[0-9a-f]{6}`, "g")) ?? []).length === 3);
     const pass = !unmarkedTables.length && !unlisted.length && !stale.length && tokens;
     return { pass, detail: fmt({ marked: rows.filter((r) => r.marked).length, listed: rows.filter((r) => r.listed).length, unmarkedTables: unmarkedTables.join(", ") || "none", unlisted: unlisted.map((r) => `${r.file}:${r.line}`).join(", ") || "none", stale: stale.length, tokens: Object.keys(FEATURED_ROW_TOKEN).length, tokensLightAndDark: tokens }) };
+  },
+  // 0.8 sets round 1: R-SETS-ONE-MODEL -- no src read of the old tables (code, not comments), and the
+  // conversion of Leighton Park's 6 lists and the sets' RLS proved in PGlite (v08_sets_r1_pglite.mjs).
+  async setsOneModel() {
+    const fs = await import("node:fs");
+    const root = new URL("..", import.meta.url).pathname;
+    const files: string[] = [];
+    const walk = (d: string) => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const p = path.join(d, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (/\.(ts|tsx)$/.test(e.name)) files.push(p);
+      }
+    };
+    walk(path.join(root, "src"));
+    const OLD = /\b(saved_sets|saved_set_members|admissions_lists)\b/;
+    const hits: string[] = [];
+    for (const f of files) {
+      fs.readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+        const code = line.replace(/\/\/.*$/, "").replace(/^\s*\*.*$/, "").replace(/\/\*.*?\*\//g, "");
+        // Test names and messages mention the old tables in prose; a read is a from() or an embed.
+        if (OLD.test(code) && /from\(\s*["'`](saved_sets|saved_set_members|admissions_lists)|\b(saved_set_members|saved_sets|admissions_lists)\([a-z_]/.test(code)) hits.push(`${path.relative(root, f)}:${i + 1}`);
+      });
+    }
+    const { execFileSync } = await import("node:child_process");
+    let out = "";
+    let ok = true;
+    try {
+      out = execFileSync("node", ["supabase/tests/v08_sets_r1_pglite.mjs"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 });
+    } catch (e) {
+      ok = false;
+      out = String((e as { stdout?: string }).stdout ?? "");
+    }
+    const lines = out.split("\n");
+    const conv = lines.filter((l) => /^(PASS|FAIL)\s+ {2}(11|16)\+ /.test(l));
+    const twice = lines.filter((l) => /applies a second time|changes nothing/.test(l));
+    const pass = hits.length === 0 && ok && conv.length === 6 && conv.every((l) => l.startsWith("PASS")) && twice.every((l) => l.startsWith("PASS")) && twice.length === 2;
+    return { pass, detail: fmt({ oldTableReadsInSrc: hits.length ? hits.slice(0, 5).join(" ") : 0, filesScanned: files.length, conversion: `${conv.filter((l) => l.startsWith("PASS")).length}/6 rows exact`, runTwice: twice.every((l) => l.startsWith("PASS")) ? "no change" : "CHANGED", pglite: ok ? "all pass" : "FAIL" }) };
+  },
+  // 0.8 sets round 1: R-SET-PILL -- the selector rendered on the server with its menu open, the
+  // page filter (buildMenu) on stored sets, and which pages draw it.
+  async setPill() {
+    const fs = await import("node:fs");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const { SetSelector } = await import("../src/components/sets/SetSelector");
+    const { buildMenu } = await import("../src/lib/sets/admissions-page");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const root = new URL("..", import.meta.url).pathname;
+    const row = (k: string, creator: "default" | "smt" | "admissions" | "me", pinned = false) => ({ key: k, name: `Set ${k}`, count: 10, creator, pinned });
+    const school = Array.from({ length: 7 }, (_, i) => row(`s${i}`, i % 2 ? "smt" : "admissions", i < 6));
+    const html = renderToStaticMarkup(createElement(SetSelector, { label: "Compared against", kind: "compared_against", current: { name: "Set d1", count: 10 }, rows: { default: [row("d1", "default")], school, mine: [row("m1", "me")] }, mine: { active: 1, cap: 8 }, selectedKey: "d1", onPick: () => undefined, onEdit: { label: "Edit this set…", onClick: () => undefined }, onNew: { label: "New set…", onClick: () => undefined }, manageHref: "/sets", defaultOpen: true }));
+    const labelOutside = /<span[^>]*>Compared against<\/span><button[^>]*data-set-button/.test(html);
+    const order = ["default", "school", "mine"].map((b) => html.indexOf(`data-set-block="${b}"`));
+    const ordered = order.every((x, i) => x > 0 && (i === 0 || x > order[i - 1]));
+    const ticked = /aria-checked="true"[^>]*data-set-row="d1"/.test(html);
+    const actions = html.indexOf("Edit this set…") > order[2] && html.indexOf("New set…") > html.indexOf("Edit this set…") && html.indexOf("Manage sets") > html.indexOf("New set…");
+    const shown = (html.match(/data-set-row="s\d"/g) ?? []).length;
+    const more = /All school sets \(7\)/.test(html);
+    const tags = (html.match(/data-set-creator=/g) ?? []).length === shown;
+    const mineOf = /My sets.*?1 of 8/.test(html);
+    // The page filter: an 11+ compared-against page leaves out a feeder set and a 16+ set.
+    const mk = (id: string, kind: "compared_against" | "feeders", entryPoint: string) => ({ id, name: id, description: null, kind, entryPoint, phase: null, focusUrn: "110110", ownerScope: "school" as const, schoolAccountId: "a", ownerProfileId: null, creatorKind: "smt" as const, audience: kind === "feeders" ? ("day" as const) : null, rungAge: null, isDefault: false, pinned: false, folder: null, tags: [], archived: false, rule: null, sourceRecipe: null, laBlend: null, config: {}, members: [{ urn: "100000", position: 0, tier: null }], createdBy: null, createdAt: "", updatedBy: null, updatedAt: "" });
+    const ep = entryPoint("11+")!;
+    const menu = buildMenu({ stored: [mk("fits", "compared_against", "11+"), mk("feeder", "feeders", "11+"), mk("sixteen", "compared_against", "16+")], recipes: [], boardingSchool: false }, ep, "compared_against", { key: "x", name: "x", count: 0, block: "default", creator: "default" }, { profileId: null, canCurate: true });
+    const filtered = menu.school.map((r) => r.key).join() === "set:fits";
+    // Teacher's fixed width; every page draws SetSelector; the old Compared against pill is gone.
+    const teacherHtml = renderToStaticMarkup(createElement(SetSelector, { label: "Compared against", kind: "compared_against", current: { name: "A very long set name that goes on and on past the button", count: 12 }, rows: { default: [], school: [], mine: [] }, mine: null, selectedKey: null, onPick: () => undefined, width: 200 }));
+    const fixed = /data-set-button=""[^>]*style="width:200px"/.test(teacherHtml) && /class="[^"]*truncate[^"]*">A very long set name/.test(teacherHtml) && /title="A very long set name/.test(teacherHtml);
+    const src = (f: string) => fs.readFileSync(path.join(root, f), "utf8");
+    const draws = ["src/components/admissions/AdmissionsSets.tsx", "src/components/smt/SmtDashboard.tsx", "src/components/teacher/ComparisonsPanels.tsx"].every((f) => /<SetSelector/.test(src(f)));
+    const oldPill = /<PillMenu label="Compared against"/.test(src("src/components/smt/SmtDashboard.tsx")) || /<FChip[^>]*>\s*Rivals: \{setLabel\}/.test(src("src/components/admissions/AdmissionsDashboard.tsx"));
+    const pass = labelOutside && ordered && ticked && actions && shown === 5 && more && tags && mineOf && filtered && fixed && draws && !oldPill;
+    return { pass, detail: fmt({ labelOutside, blocksInOrder: ordered, ticked, actionsBelow: actions, schoolRowsShown: shown, allSchoolSets: more, creatorTags: tags, mineOfCap: mineOf, pageFilter: filtered, teacherFixedWidth: fixed, everyPageDrawsIt: draws, oldPill }) };
+  },
+  // R-SET-DEFAULTS-ADMISSIONS: the recipes on live reference data, and the school's own sets.
+  async setDefaultsAdmissions() {
+    const { admissionsRecipes } = await import("../src/lib/sets/recipes");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const { resolveChoice } = await import("../src/lib/sets/admissions-page");
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const e11 = entryPoint("11+")!, e16 = entryPoint("16+")!;
+    const lp = await admissionsRecipes("110110", e11, "compared_against");
+    const lpDefault = lp.find((x) => x.isDefaultChoice);
+    const lpOk = lpDefault?.name === "10 nearest | independent" && lp[1]?.key === "adm:nearest-boarding" && lpDefault.urns.length === 10;
+    // A top-two-fifths boarding school with Year 7 entry (boarding_quintiles: quintile 3 or 4).
+    const { data: tops } = await createServerAnonSupabaseClient().from("boarding_quintiles").select("urn, quintile, boarding_school_type").gte("quintile", 3).eq("boarding_school_type", "independent_boarding_senior").limit(40);
+    let top: { urn: string; def: string | undefined } | null = null;
+    for (const r of (tops ?? []) as { urn: string }[]) {
+      const rec = await admissionsRecipes(r.urn, e11, "compared_against");
+      if (rec.some((x) => x.key === "adm:nearest-boarding")) {
+        top = { urn: r.urn, def: rec.find((x) => x.isDefaultChoice)?.key };
+        break;
+      }
+    }
+    const topOk = top?.def === "adm:nearest-boarding";
+    const chase = await admissionsRecipes("137625", e11, "compared_against");
+    const chaseFeeders = await admissionsRecipes("137625", e11, "feeders");
+    const dayOk = !chase.some((x) => x.key === "adm:nearest-boarding") && !chaseFeeders.some((x) => x.audience === "boarding") && chase.find((x) => x.isDefaultChoice)?.key === "adm:nearest-sector";
+    const lp16 = await admissionsRecipes("110110", e16, "compared_against");
+    const la16 = lp16.find((x) => x.key === "adm:la")?.name ?? "";
+    const la16Ok = /^All post-16 in /.test(la16);
+    const lpFeeders = await admissionsRecipes("110110", e11, "feeders");
+    const feedNames = lpFeeders.map((x) => x.name).join(", ");
+    const feedOk = lpFeeders.length === 6 && lpFeeders[0].name === "Day | all sectors" && lpFeeders.every((x) => x.urns.length >= 10 && x.urns.length <= 40);
+    // With the school's own default sets (Leighton Park's 6, converted), the page draws them: the
+    // day and boarding feeders together, exactly the old lists.
+    const fixture = JSON.parse((await import("node:fs")).readFileSync(path.join(ROOT, "supabase/tests/fixtures/sets_r1_leighton_lists.json"), "utf8")) as { rows: { id: string; entry_point: string; kind: string; members: string[] }[] };
+    const stored = fixture.rows.map((r) => ({ id: r.id, name: r.kind, description: null, kind: r.kind === "rivals" ? ("compared_against" as const) : ("feeders" as const), entryPoint: r.entry_point, phase: null, focusUrn: "110110", ownerScope: "school" as const, schoolAccountId: "a", ownerProfileId: null, creatorKind: "admissions" as const, audience: r.kind === "day_feeders" ? ("day" as const) : r.kind === "boarding_feeders" ? ("boarding" as const) : null, rungAge: null, isDefault: true, pinned: true, folder: null, tags: [], archived: false, rule: null, sourceRecipe: null, laBlend: null, config: {}, members: r.members.map((u, i) => ({ urn: u, position: i, tier: null })), createdBy: null, createdAt: "", updatedBy: null, updatedAt: "" }));
+    const { savedListsFromSets } = await import("../src/lib/sets/admissions-lists");
+    const base = savedListsFromSets(stored, "11+");
+    const r = resolveChoice({ stored, recipes: lpFeeders, boardingSchool: true }, e11, "feeders", null, base, null, true);
+    const ownOk = r.choice.key === "school:day+boarding" && JSON.stringify(r.lists) === JSON.stringify(base) && r.choice.count === new Set(fixture.rows.filter((x) => x.entry_point === "11+" && x.kind !== "rivals").flatMap((x) => x.members)).size;
+    const pass = lpOk && topOk && dayOk && la16Ok && feedOk && ownOk;
+    return { pass, detail: fmt({ leightonPark11: `${lpDefault?.name} (${lp.map((x) => x.name).join(" / ")})`, topTwoFifths: top ? `${top.urn} -> ${top.def}` : "none found", theChase: dayOk ? "no boarding set, same-sector default" : "FAIL", leightonPark16La: la16, feeders: feedNames, ownSets: ownOk ? `${r.choice.name} (${r.choice.count}), the old lists exactly` : "FAIL" }) };
+  },
+  // R-PANEL-NAMES-SET: every Admissions view with a set names it (rendered on real data), and the
+  // SMT and Teacher headers carry it.
+  async panelNamesSet() {
+    const fs = await import("node:fs");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const v = await import("../src/lib/admissions/views-api");
+    const { AdmissionsEveryView, setKindOfView } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { OpenInFullscreen } = await import("../src/components/teacher/CardBox");
+    const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
+    const ep = v.entryPoint("11+")!;
+    const urn = "110110";
+    const today = new Date("2026-10-12");
+    const [p, m, r, s] = await Promise.all([v.pipelineView(urn, ep, [], { today }), v.marketView(urn, ep, []), v.rivalsView(urn, ep, []), v.shapeView(urn, ep, [])]);
+    const boarding = (await fetchSchoolTraits([urn])).get(urn)!.boarding;
+    const member = { userId: "", token: "", membershipId: "m", schoolAccountId: "a", schoolUrn: urn, schoolName: urn, roles: ["admissions"], isAdmin: false, isAccountHolder: false, lead: true, access: "lead" as const, canEditLists: true, override: false, canShare: true, canManageTeam: true, readOnly: false, viewAs: null, leadColumn: true };
+    const sets = { feeders: { key: "default:adm:feeders:day:all", name: "Day | all sectors", count: 28, block: "default" as const, creator: "default" as const, main: 6 }, rivals: { key: "default:adm:nearest-sector", name: "10 nearest | independent", count: 10, block: "default" as const, creator: "default" as const } };
+    const html = renderToStaticMarkup(createElement(OpenInFullscreen.Provider, { value: true }, createElement(AdmissionsEveryView, { member, boardingSchool: boarding, entry: ep.id, pipeline: p, market: m, rivals: r, shape: s, lists: null, sets })));
+    const chunks = html.split(/(?=<div data-adm-dash=)/).filter((c) => c.startsWith("<div data-adm-dash="));
+    const dvOf = (c: string) => /data-adm-dv="([^"]+)"/.exec(c)?.[1] ?? "";
+    const missing: string[] = [];
+    const extra: string[] = [];
+    for (const c of chunks) {
+      const dv = dvOf(c);
+      const kind = setKindOfView(dv);
+      const has = /data-set-header=/.test(c);
+      const words = kind === "feeders" ? /Day \| all sectors · 28 · 6 main/.test(c) : kind ? /against 10 nearest \| independent · 10/.test(c) : true;
+      if (kind && (!has || !words)) missing.push(dv);
+      if (!kind && has) extra.push(dv);
+    }
+    const root = new URL("..", import.meta.url).pathname;
+    const src = (f: string) => fs.readFileSync(path.join(root, f), "utf8");
+    const smt = /const set = `\$\{c\.set\.label\} · \$\{c\.set\.urns\.length\}`/.test(src("src/components/smt/SmtDashboard.tsx"));
+    // Teacher: the column's set selector, directly above both panels, names the set and its count.
+    const teacher = /<SetSelector label="Compared against" kind="compared_against" width=\{TEACHER_SET_PILL_WIDTH\}/.test(src("src/components/teacher/ComparisonsPanels.tsx")) && /current: \{ name: activeSetLabel, count: activeCount \}/.test(src("src/components/dashboard-config/TeacherDashboard.tsx"));
+    const wraps = /data-set-header=[^>]*class="[^"]*flex-wrap[^"]*whitespace-normal/.test(html) && !/data-set-header=[^>]*truncate/.test(html);
+    const pass = chunks.length > 30 && missing.length === 0 && extra.length === 0 && smt && teacher && wraps;
+    return { pass, detail: fmt({ admissionsViews: chunks.length, named: chunks.length - missing.length - chunks.filter((c) => !setKindOfView(dvOf(c))).length, missing: missing.join(" ") || 0, noSetViewsWithALine: extra.join(" ") || 0, smtHeaders: smt, teacherPanels: teacher, wrapsOnPhone: wraps }) };
+  },
+  // R-SET-EDITOR-TICK: the pure list (editor.test.ts) and the editor rendered on the server in each mode.
+  async setEditorTick() {
+    const { execFileSync } = await import("node:child_process");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const { AppRouterContext } = await import("next/dist/shared/lib/app-router-context.shared-runtime");
+    const { SetEditor } = await import("../src/components/sets/SetEditor");
+    const root = new URL("..", import.meta.url).pathname;
+    let unit = true;
+    try {
+      execFileSync("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/sets/editor.test.ts"], { cwd: root, stdio: "ignore" });
+    } catch {
+      unit = false;
+    }
+    const router = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
+    const page = { urn: "110110", schoolName: "Leighton Park", kind: "compared_against" as const, entry: "11+", phase: null, back: "/teacher/admissions", usedOn: "Market share at 11+", profileId: "p", schoolAccountId: "a", schoolCreator: null, personalActive: 2, boardingSchool: true, readOnly: false };
+    const set = { id: "s", name: "Rivals", description: null, kind: "compared_against" as const, entryPoint: "11+", phase: null, focusUrn: "110110", ownerScope: "school" as const, schoolAccountId: "a", ownerProfileId: null, creatorKind: "admissions" as const, audience: null, rungAge: null, isDefault: true, pinned: true, folder: null, tags: [], archived: false, rule: null, sourceRecipe: null, laBlend: null, config: {}, members: [{ urn: "110137", position: 0, tier: null }], createdBy: null, createdAt: "", updatedBy: null, updatedAt: "" };
+    const render = (mode: "save" | "copy" | "new", creator: "admissions" | "default" | "me") =>
+      renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router as never }, createElement(SetEditor, { page, start: { set: mode === "save" || creator === "admissions" ? set : null, name: "Rivals", description: null, members: [{ urn: "110137" }], creator, sourceRecipe: null, mode, editableBy: "SMT, Admissions and the School-Admin", lastChanged: null } })));
+    const curator = render("save", "admissions");
+    const teacher = render("copy", "admissions");
+    const dflt = render("copy", "default");
+    const saveBtn = (h: string) => /data-editor-save=""/.test(h);
+    const copyNote = (h: string) => /data-editor-copy=""/.test(h) && /Save as your own…/.test(h);
+    const pass = unit && saveBtn(curator) && !copyNote(curator) && !saveBtn(teacher) && copyNote(teacher) && !saveBtn(dflt) && copyNote(dflt);
+    return { pass, detail: fmt({ unitTests: unit ? "pass" : "FAIL", curatorSaves: saveBtn(curator), teacherCopyOnly: !saveBtn(teacher) && copyNote(teacher), defaultCopyOnly: !saveBtn(dflt) && copyNote(dflt) }) };
+  },
+  // R-SET-HOW-CLOSE: Leighton Park's default 11+ rivals, on live data, through the editor's own route code.
+  async setHowClose() {
+    const { admissionsRecipes } = await import("../src/lib/sets/recipes");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const { editorData } = await import("../src/lib/sets/editor-data");
+    const { closeness, closenessWords, median } = await import("../src/lib/sets/closeness");
+    const { resultsMeasureFor } = await import("../src/lib/sets/results-coverage");
+    const ep = entryPoint("11+")!;
+    const def = (await admissionsRecipes("110110", ep, "compared_against")).find((x) => x.isDefaultChoice)!;
+    const d = await editorData("110110", ep, "compared_against", def.urns, { sector: "all", boardingOnly: false, n: 10 });
+    const c = closeness(d.focus, d.rows, ep.age);
+    const kms = d.rows.map((r) => r.km).filter((k): k is number => k !== null);
+    const exact = c.distance !== null && c.distance.min === Math.min(...kms) && c.distance.max === Math.max(...kms) && c.distance.median === median(kms);
+    const counts = c.results.gcse === d.rows.filter((r) => r.hasGcse).length && c.results.post16 === d.rows.filter((r) => r.hasPost16).length;
+    const rule = resultsMeasureFor(ep.age, d.rows.map((r) => ({ urn: r.urn, hasGcse: r.hasGcse, hasPost16: r.hasPost16, igcse: r.igcse })));
+    const starts = c.results.startsOn === rule.measure;
+    const w = closenessWords(c, "Leighton Park");
+    const says = new RegExp(`${c.results.post16} of ${c.n} have Post-16 results; ${c.results.gcse} have GCSE results`).test(w.results) && /Counts only/.test(w.population);
+    const pass = d.rows.length === 10 && exact && counts && starts && says;
+    return { pass, detail: fmt({ set: def.name, schools: d.rows.length, distance: w.distance, results: `${c.results.gcse} GCSE, ${c.results.post16} Post-16, starts on ${c.results.startsOn}`, matchesDashboardRule: starts, population: w.population.split(". Counts")[0] }) };
+  },
+  // R-FEEDER-TIERS: the feeder table rendered on real data with tiers, and the map's dot rule.
+  async feederTiers() {
+    const fs = await import("node:fs");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const v = await import("../src/lib/admissions/views-api");
+    const { FeederTable } = await import("../src/components/admissions/views/Tables");
+    const { MAIN_DOT_SCALE } = await import("../src/lib/sets/tiers");
+    const ep = v.entryPoint("11+")!;
+    const fixture = JSON.parse(fs.readFileSync(path.join(ROOT, "supabase/tests/fixtures/sets_r1_leighton_lists.json"), "utf8")) as { rows: { entry_point: string; kind: string; members: string[] }[] };
+    const day = fixture.rows.find((r) => r.entry_point === "11+" && r.kind === "day_feeders")!.members;
+    const p = await v.pipelineView("110110", ep, [{ kind: "day_feeders", rung: null, members: day, la_blend: null, confirmed: true }], { today: new Date("2026-10-12") });
+    if ("empty" in p) return { pass: false, detail: "empty pipeline" };
+    const rows = p.feederTable.rows;
+    const red = rows.filter((r) => r.flag?.id === "feeder_red");
+    // Main: the last two rows in the table's order (so a pass proves they move up), and one red-flagged school.
+    const mains = new Set([rows[rows.length - 1]?.urn, rows[rows.length - 2]?.urn, red[0]?.urn].filter(Boolean) as string[]);
+    const occ = red.find((r) => !mains.has(r.urn));
+    const tiers = Object.fromEntries(rows.map((r) => [r.urn, mains.has(r.urn) ? "main" : occ && r.urn === occ.urn ? "occasional" : "regular"]));
+    const html = renderToStaticMarkup(createElement(FeederTable, { p: { ...p, tiers } as never, fullscreen: true }));
+    const order = Array.from(html.matchAll(/<tr[^>]*>[\s\S]*?<\/tr>/g)).map((m) => m[0]).slice(1);
+    const firstN = order.slice(0, mains.size).every((tr) => /data-main-feeder=/.test(tr));
+    const alert = /data-main-feeder-alert=""/.test(html);
+    const names = red.filter((r) => mains.has(r.urn)).map((r) => r.name);
+    const alertNames = names.every((n) => html.includes(n.replace(/&/g, "&amp;").replace(/'/g, "&#x27;")));
+    const occNot = !occ || !/Main feeder[^<]*falling:[^<]*/.test(html) || !html.match(/falling:([^<]*)/)?.[1].includes(occ.name);
+    const mapSrc = fs.readFileSync(path.join(ROOT, "src/components/admissions/views/AdmissionsMap.tsx"), "utf8");
+    const mapLarger = MAIN_DOT_SCALE === 1.5 && /isMain\(tiers, m\.urn\)[\s\S]{0,200}\* MAIN_DOT_SCALE/.test(mapSrc);
+    const pass = rows.length > 3 && firstN && (red.length === 0 || (alert && alertNames)) && occNot && mapLarger;
+    return { pass, detail: fmt({ feeders: rows.length, mains: mains.size, mainFirst: firstN, redFlagged: red.length, alert: alert ? (html.match(/data-main-feeder-alert=""[^>]*>([^<]*)/)?.[1] ?? "") : "none", occasionalNeverAlerts: occNot, mapMainLarger: mapLarger }) };
+  },
+  // R-SETS-MOBILE: the four screens' phone markup, rendered on the server (the pixel half -- no horizontal
+  // scroll, hit boxes, the sheets opening and closing -- is measured in headless Chrome for the report).
+  async setsMobile() {
+    const fs = await import("node:fs");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const { AppRouterContext } = await import("next/dist/shared/lib/app-router-context.shared-runtime");
+    const { SetSelector } = await import("../src/components/sets/SetSelector");
+    const { SetEditor } = await import("../src/components/sets/SetEditor");
+    const { SetsLibrary } = await import("../src/components/sets/SetsLibrary");
+    const { SetView } = await import("../src/components/sets/SetView");
+    const router = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
+    const wrap = (el: ReturnType<typeof createElement>) => createElement(AppRouterContext.Provider, { value: router as never }, el);
+    const row = (k: string, creator: "default" | "smt" | "me") => ({ key: k, name: `Set ${k}`, count: 10, creator });
+    const selector = renderToStaticMarkup(createElement(SetSelector, { label: "Feeder schools", kind: "feeders", current: { name: "Day | all sectors", count: 28, main: 6 }, rows: { default: [row("d", "default")], school: [row("s", "smt")], mine: [row("m", "me")] }, mine: { active: 1, cap: 8 }, selectedKey: "d", onPick: () => undefined, onEdit: { label: "Edit this set…", onClick: () => undefined }, onNew: { label: "New set…", onClick: () => undefined }, manageHref: "/sets", phone: true, defaultOpen: true }));
+    const set = { id: "s", name: "Rivals", description: "why", kind: "compared_against" as const, entryPoint: "11+", phase: null, focusUrn: "110110", ownerScope: "school" as const, schoolAccountId: "a", ownerProfileId: null, creatorKind: "admissions" as const, audience: null, rungAge: null, isDefault: true, pinned: true, folder: null, tags: [], archived: false, rule: null, sourceRecipe: null, laBlend: null, config: {}, members: [{ urn: "110137", position: 0, tier: null }], createdBy: null, createdAt: "2026-11-06T00:00:00Z", updatedBy: null, updatedAt: "2026-11-06T00:00:00Z" };
+    const page = { urn: "110110", schoolName: "Leighton Park", kind: "compared_against" as const, entry: "11+", phase: null, back: "/", usedOn: "Market share", profileId: "p", schoolAccountId: "a", schoolCreator: "admissions" as const, personalActive: 1, boardingSchool: true, readOnly: false };
+    const editor = renderToStaticMarkup(wrap(createElement(SetEditor, { page, start: { set, name: "Rivals", description: null, members: set.members, creator: "admissions", sourceRecipe: null, mode: "save", editableBy: "SMT", lastChanged: null }, phone: true })));
+    const lib = { school: { urn: "110110", name: "Leighton Park", boarding: true }, entries: ["11+", "16+"], defaults: [{ key: "adm:nearest-sector", name: "10 nearest | independent", kind: "compared_against" as const, entryPoint: "11+", urns: ["1"], how: "", count: 1 }], stored: [set], lastUsed: {}, folders: {}, names: {}, curates: { compared_against: true, feeders: true }, creators: { compared_against: "admissions" as const, feeders: "admissions" as const }, profileId: "p", personalActive: 1, cap: 8 };
+    const library = renderToStaticMarkup(createElement(SetsLibrary, { data: lib as never, phone: true }));
+    const view = renderToStaticMarkup(createElement(SetView, { urn: "110110", schoolName: "Leighton Park", set: { id: "s", key: "set:s", name: "Rivals", description: null, kind: "compared_against", entry: "11+", phase: null, creator: "admissions", scope: "school", pinned: true, members: [{ urn: "110137", tier: null }], lastChanged: null, canChange: true }, editHref: "/e", duplicateHref: "/d", phone: true }));
+    const screens: Record<string, string> = { selector, editor, library, view };
+    const wide: string[] = [];
+    const small: string[] = [];
+    for (const [name, html] of Object.entries(screens)) {
+      for (const m of html.matchAll(/(?<![-\w])(?:w|min-w)-\[(\d+)px\]/g)) if (Number(m[1]) > 358) wide.push(`${name}: ${m[0]}`);
+      for (const m of html.matchAll(/style="[^"]*(?<!max-)width:(\d+)px/g)) if (Number(m[1]) > 358) wide.push(`${name}: width ${m[1]}px`);
+      // Every control's opening tag carries a 44 px minimum; a checkbox or radio sits in a 44 px label.
+      const tags = Array.from(html.matchAll(/<(button|a|select|summary|input|textarea)\b[^>]*>/g));
+      for (const t of tags) {
+        const tag = t[0];
+        const cls = /class="([^"]*)"/.exec(tag)?.[1] ?? "";
+        if (/type="(checkbox|radio)"/.test(tag)) {
+          const before = html.slice(Math.max(0, t.index! - 400), t.index!);
+          const label = before.lastIndexOf("<label");
+          if (label < 0 || !/(?:min-)?h-\[44px\]/.test(before.slice(label))) small.push(`${name}: ${tag.slice(0, 80)}`);
+          continue;
+        }
+        // A full-screen backdrop (inset-0) is the whole screen.
+        if (!/(?:^|\s)(?:min-h-\[44px\]|h-\[44px\])/.test(cls) && !/leading-\[44px\]/.test(cls) && !/(?:^|\s)inset-0(?:\s|$)/.test(cls)) small.push(`${name}: ${tag.slice(0, 90)}`);
+      }
+    }
+    const src = fs.readFileSync(path.join(ROOT, "src/components/sets/SetSelector.tsx"), "utf8");
+    const sheet = /data-set-menu="sheet"/.test(selector) && /data-set-sheet-handle=""/.test(selector) && /data-set-sheet-backdrop=""/.test(selector) && /e\.key === "Escape"/.test(src) && selector.indexOf("data-set-actions") > selector.indexOf('data-set-block="mine"');
+    const sticky = /data-editor-sticky=""[^>]*class="[^"]*fixed[^"]*bottom-0/.test(editor) && /data-editor-sticky=""[\s\S]*data-editor-save=""[\s\S]*data-editor-save-as=""/.test(editor) && /data-set-artwork=""[^>]*width:72px/.test(editor);
+    const tabs = /role="tablist"/.test(library) && /data-library-card=/.test(library);
+    const folded = /<details data-view-close|<details data-view-where/.test(view) && /<details data-view-where/.test(view);
+    const pass = wide.length === 0 && small.length === 0 && sheet && sticky && tabs && folded;
+    return { pass, detail: fmt({ fixedWidthsOver358: wide.join(" | ") || 0, controlsUnder44: small.slice(0, 6).join(" | ") || 0, controlsUnder44Count: small.length, menuSheet: sheet, editorStickyBar: sticky, libraryTabsAndCards: tabs, viewFolded: folded }) };
+  },
+  // R-SETS-RLS: the read, write, curate, cap and stamp checks in v08_sets_r1_pglite.mjs.
+  async setsRls() {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    let out = "";
+    let ok = true;
+    try {
+      out = execFileSync("node", ["supabase/tests/v08_sets_r1_pglite.mjs"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 });
+    } catch (e) {
+      ok = false;
+      out = String((e as { stdout?: string }).stdout ?? "");
+    }
+    const sections = ["who reads", "who writes: compared-against school sets", "who writes: feeder school sets", "no set moves or changes hands", "the cap: 8 active personal sets", "the stamp and the per-user state", "save_set"];
+    const bySection: Record<string, string> = {};
+    let cur = "";
+    for (const l of out.split("\n")) {
+      const m = /^-- (.*)$/.exec(l);
+      if (m) cur = sections.find((s) => m[1].startsWith(s)) ?? "";
+      else if (cur && /^(PASS|FAIL)/.test(l)) bySection[cur] = (bySection[cur] ?? "") + (l.startsWith("PASS") ? "+" : "x");
+    }
+    const pass = ok && sections.every((s) => (bySection[s] ?? "").length > 0 && !bySection[s].includes("x"));
+    return { pass, detail: sections.map((s) => `${s}: ${(bySection[s] ?? "").split("").filter((c) => c === "+").length} pass${(bySection[s] ?? "").includes("x") ? ", FAIL" : ""}`).join("; ") };
   },
 };
 

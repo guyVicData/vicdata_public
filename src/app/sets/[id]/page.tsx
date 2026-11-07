@@ -1,95 +1,90 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+// VicData 0.8 sets round 1 (D19): a set, read-only (src/components/sets/SetView.tsx).
+//   /sets/<id>?urn                         a stored set (RLS: the reader's own session)
+//   /sets/default?urn&kind&entry&from&name&urns   a default set, from its schools (computed, never stored)
+// It replaces the old comparator set page (roll ranks and trends), which read the old tables.
+import { Suspense, use, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import PeerTrendChart, { type PeerSchool } from "@/components/PeerTrendChart";
-import { featuredRow, featuredRowVars } from "@/components/shell/accent";
+import { readSet } from "@/lib/sets/store";
+import { canCurate, type SetKind } from "@/lib/sets/model";
+import { SetView, type ViewedSet } from "@/components/sets/SetView";
+import { SetsShell, useSetsMember } from "@/components/sets/SetsShell";
 
-type PeersResponse = {
-  setName: string;
-  schools: PeerSchool[] & { currentRoll: number | null; urn: string }[];
-};
-
-export default function ComparatorSetViewPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
-  const supabase = createBrowserSupabaseClient();
-  const [data, setData] = useState<
-    (PeersResponse & { schools: (PeerSchool & { currentRoll: number | null })[] }) | null
-  >(null);
-  const [error, setError] = useState<string | null>(null);
-
+function View({ id }: { id: string }) {
+  const sp = useSearchParams();
+  const [viewed, setViewed] = useState<ViewedSet | null | "error">(null);
+  const [urnFromSet, setUrnFromSet] = useState<string | null>(sp.get("urn"));
+  const m = useSetsMember(urnFromSet);
   useEffect(() => {
     (async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) {
-        setError("Log in to view this set.");
+      if (id === "default") {
+        const kind: SetKind = sp.get("kind") === "feeders" ? "feeders" : "compared_against";
+        const urns = (sp.get("urns") ?? "").split(",").filter((u) => /^\d{5,7}$/.test(u));
+        setViewed({ id: null, key: sp.get("from") ?? "default:", name: sp.get("name") ?? "Default set", description: null, kind, entry: sp.get("entry") ?? "11+", phase: null, creator: "default", scope: "default", pinned: false, members: urns.map((u) => ({ urn: u, tier: null })), lastChanged: null, canChange: false });
         return;
       }
-      const res = await fetch(`/api/comparator-set-peers?setId=${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        setError("Could not load this set.");
-        return;
+      const supabase = createBrowserSupabaseClient();
+      const s = await readSet(supabase, id);
+      if (!s) return setViewed("error");
+      if (!urnFromSet && s.focusUrn) setUrnFromSet(s.focusUrn);
+      const { data: who } = await supabase.auth.getUser();
+      let canChange = s.ownerScope === "personal" && s.ownerProfileId === who.user?.id;
+      if (s.ownerScope === "school" && who.user && s.schoolAccountId) {
+        const { data: mem } = await supabase.from("school_memberships").select("id, roles, is_admin, admissions_lead, school_accounts!school_memberships_school_account_id_fkey!inner(account_holder_membership_id)").eq("profile_id", who.user.id).eq("status", "approved").eq("school_account_id", s.schoolAccountId).limit(1).maybeSingle<{ id: string; roles: string[] | null; is_admin: boolean | null; admissions_lead: boolean | null; school_accounts: { account_holder_membership_id: string | null } }>();
+        canChange = !!mem && canCurate({ roles: mem.roles ?? [], isAdmin: !!mem.is_admin, isAccountHolder: mem.school_accounts.account_holder_membership_id === mem.id, lead: !!mem.admissions_lead }, s.kind);
       }
-      setData(await res.json());
+      let lastChanged: string | null = null;
+      if (s.updatedBy) {
+        const { data: p } = await supabase.from("profiles").select("full_name, email").eq("id", s.updatedBy).maybeSingle<{ full_name: string | null; email: string | null }>();
+        lastChanged = `${p?.full_name || p?.email || "a colleague"}, ${new Date(s.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+      }
+      setViewed({ id: s.id, key: `set:${s.id}`, name: s.name, description: s.description, kind: s.kind, entry: s.entryPoint ?? (s.phase === "ks5" ? "16+" : "11+"), phase: s.phase, creator: s.creatorKind, scope: s.ownerScope, pinned: s.pinned, members: s.members.map((x) => ({ urn: x.urn, tier: x.tier })), lastChanged, canChange });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  if (error) return <main className="mx-auto max-w-2xl px-6 py-24 text-sm text-neutral-500">{error}</main>;
-  if (!data) return <main className="px-6 py-24 text-center text-sm text-neutral-500">Loading…</main>;
-
-  // Roll-size ranks (rolls spec §6: Comparator Set consumer) -- self-directed, not a
-  // public leaderboard: this ranking only exists within the member's own curated set.
-  const ranked = [...data.schools]
-    .filter((s) => s.currentRoll !== null)
-    .sort((a, b) => (b.currentRoll ?? 0) - (a.currentRoll ?? 0));
-  const anchor = data.schools.find((s) => s.isAnchor);
-  const anchorRank = anchor ? ranked.findIndex((s) => s.urn === anchor.urn) + 1 : null;
-
   return (
-    // F-22 (feedback deploy gate): the set's own school is tinted in the rank table, with the Data View's token.
-    <main className="mx-auto max-w-2xl px-6 py-16" style={featuredRowVars("dataview")}>
-      <h1 className="mb-6 text-xl font-semibold">{data.setName}</h1>
+    <SetsShell>
+      {(phone) => {
+        if (viewed === "error") return <p className="p-6 text-[13px] text-[var(--muted2)]">That set has gone, or isn&rsquo;t one you can see.</p>;
+        if (m.status === "error") return <p className="p-6 text-[13px] text-[var(--muted2)]">{m.message}</p>;
+        if (!viewed || m.status !== "ready") return <p className="p-6 text-[13px] text-[var(--muted2)]">Loading…</p>;
+        const urn = m.member.urn;
+        const base = new URLSearchParams({ urn, kind: viewed.kind, back: `/sets/${id === "default" ? `default?${sp.toString()}` : `${id}?urn=${urn}`}` });
+        if (viewed.phase) base.set("phase", viewed.phase);
+        else base.set("entry", viewed.entry);
+        const edit = new URLSearchParams(base);
+        if (viewed.id) edit.set("set", viewed.id);
+        else {
+          edit.set("from", viewed.key);
+          edit.set("name", viewed.name);
+          edit.set("urns", viewed.members.map((x) => x.urn).join(","));
+        }
+        const dup = new URLSearchParams(base);
+        dup.set("from", viewed.key);
+        dup.set("name", `${viewed.name} (copy)`);
+        dup.set("urns", viewed.members.map((x) => x.urn).join(","));
+        return (
+          <>
+            {!phone && (
+              <nav className="mb-3 text-[12px] text-[var(--muted2)]" aria-label="Breadcrumb">
+                <a href={`/sets?urn=${urn}`} className="hover:underline">Sets</a> › {viewed.name}
+              </nav>
+            )}
+            <SetView urn={urn} schoolName={m.member.schoolName} set={viewed} editHref={`/sets/edit?${edit}`} duplicateHref={`/sets/edit?${dup}`} phone={phone} />
+          </>
+        );
+      }}
+    </SetsShell>
+  );
+}
 
-      <section className="mb-10">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-          Roll-size rank
-        </h2>
-        {anchorRank && (
-          <p className="mb-3 text-sm text-neutral-600 dark:text-neutral-400">
-            {anchor?.name} ranks <strong>{anchorRank}</strong> of {ranked.length} by current
-            roll within this set.
-          </p>
-        )}
-        <table className="w-full text-sm">
-          <tbody>
-            {ranked.map((s, i) => (
-              <tr key={s.urn} {...featuredRow(!!s.isAnchor)} className="border-t border-neutral-100 dark:border-neutral-800">
-                <td className={`py-1.5 ${s.isAnchor ? "text-neutral-600 dark:text-neutral-400" : "text-neutral-500"}`}>{i + 1}</td>
-                <td className="py-1.5">
-                  {s.name}
-                  {s.isAnchor && " (this school)"}
-                </td>
-                <td className="py-1.5 text-right font-medium">{s.currentRoll?.toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-          Peer group trend
-        </h2>
-        <PeerTrendChart schools={data.schools} />
-      </section>
-    </main>
+export default function SetPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return (
+    <Suspense fallback={null}>
+      <View id={id} />
+    </Suspense>
   );
 }

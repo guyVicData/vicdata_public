@@ -13,6 +13,7 @@ import { Empty, FlagPill, Muted, cx, fillHeight, fmtSigned, yearLabel, type Flag
 import { useWidth } from "./charts";
 import { TREND_BASE_PERIOD } from "@/catalogue/years";
 import { signedValue } from "@/lib/signed-delta";
+import { switchedLine } from "@/lib/sets/results-coverage";
 
 type Flag = RivalsView["rows"][number]["momentum"][number];
 const TONE: Record<string, FlagTone> = { results_rising_fast: "up", gaining_pupils: "up", losing_pupils_3y: "down", entry_year_shrinking: "down", new_sixth_form: "note", shape_changed: "note" };
@@ -31,7 +32,46 @@ const flagText = (f: Flag) => (f.id === "shape_changed" ? `Shape changed: ${shap
 export const momentumScope = (stage: RivalsView["stage"]) =>
   stage === "ks4" ? "Schools submitting GCSE results only" : stage === "ks5" ? "Schools submitting A-level results only" : "Schools with published KS2 results only";
 
-export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: { m: MarketView; r: RivalsView; limit?: number; notPlotted?: RivalsView["rows"]; flaggedOnly?: boolean }) {
+/** 0.8 Sets r1 (F25, F-40 / F-41): the results the momentum reads. At 11+ the server's rule
+ * (rivalsView's `momentum`, src/lib/sets/results-coverage.ts) may switch it to post-16 when over 40% of
+ * the rivals have no GCSE results; elsewhere (16+, 4+) the rivals view's own stage, as before. */
+export function momentumResults(r: RivalsView) {
+  const mr = r.momentum;
+  return { stage: mr?.stage ?? r.stage, change: mr?.resultsChange ?? r.resultsChange, switched: !!mr?.switched, rule: mr };
+}
+
+/** The line under the title: at 11+ when switched, "Post-16 results: 6 of 10 rivals have no GCSE
+ * results (mostly IGCSE)"; else the scope words, with the rivals GCSE leaves out named (11+). */
+function MomentumScope({ r }: { r: RivalsView }) {
+  const mr = r.momentum;
+  if (mr?.switched) {
+    return (
+      <div data-momentum-scope="" data-momentum-measure="post16" className="-mt-1 text-[11px] text-[var(--muted2)]">
+        {switchedLine(mr)}
+      </div>
+    );
+  }
+  const out = mr?.leftOut ?? [];
+  return (
+    <div data-momentum-scope="" className="-mt-1 text-[11px] text-[var(--muted2)]">
+      {momentumScope(r.stage)}
+      {out.length > 0 && (
+        // Every school left out is named; past two, the line says how many more and the hover names them
+        // all, so it stays one line in the panel's fixed height (sets round 1 parity: a long list
+        // wrapped and clipped the flag table's last row).
+        <span data-momentum-left-out="" title={`Left out, no GCSE results: ${out.map((x) => `${x.name}${x.igcse ? " (IGCSE)" : ""}`).join(", ")}`}>
+          {". "}Left out, no GCSE results: {out.slice(0, 2).map((x) => `${x.name}${x.igcse ? " (IGCSE)" : ""}`).join(", ")}
+          {out.length > 2 ? ` and ${out.length - 2} more` : ""}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false, results }: { m: MarketView; r: RivalsView; limit?: number; notPlotted?: RivalsView["rows"]; flaggedOnly?: boolean; results?: ReturnType<typeof momentumResults> }) {
+  // The Results column: the momentum's results where it passes them (F25: post-16 when switched), else the rivals view's.
+  const change = results?.change ?? r.resultsChange;
+  const igcseWord = !results?.switched;
   const rows = r.rows.filter((x) => !x.isSchool && (!flaggedOnly || x.momentum.length > 0));
   const sorted = [...rows].sort((a, b) => b.momentum.length - a.momentum.length);
   const shown = limit ? sorted.slice(0, limit) : sorted;
@@ -45,7 +85,7 @@ export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: 
       <div className="min-h-0 overflow-y-auto">
         {shown.map((x) => {
           const e = m.extras.find((q) => q.urn === x.urn);
-          const rc = r.resultsChange[x.urn];
+          const rc = change[x.urn];
           return (
             <div key={x.urn} className="grid grid-cols-[minmax(0,1fr)_54px_54px] items-center gap-[6px] border-b border-[var(--panel-border)] px-1 py-[6px] text-[12px] text-[var(--chip-fg)]">
               <span className="min-w-0">
@@ -69,7 +109,7 @@ export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: 
                 {fmtSigned(e?.entryChangePctAll, 0)}
               </span>
               <span className="text-right tabular-nums" title={rc ? `${rc.from ?? "—"} → ${rc.to ?? "—"}` : undefined}>
-                {x.results.note === "igcse_not_ranked" ? "IGCSE" : fmtSigned(rc?.points, 1, "")}
+                {igcseWord && x.results.note === "igcse_not_ranked" ? "IGCSE" : fmtSigned(rc?.points, 1, "")}
               </span>
             </div>
           );
@@ -78,7 +118,7 @@ export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: 
       <div className="mt-2 text-[10.5px] leading-[1.4] text-[var(--muted2)]">
         {r.thresholds === "not_loaded" ? ADMISSIONS_NOTES.flagsMissing : ADMISSIONS_NOTES.flagsRule}
         {notPlotted.length > 0 && (
-          <span title={notPlotted.map((x) => `${x.name}${x.results.note === "igcse_not_ranked" ? " (IGCSE)" : x.results.note === "no_published_results" ? " (no published results)" : ""}`).join("\n")}>
+          <span title={notPlotted.map((x) => `${x.name}${!igcseWord ? "" : x.results.note === "igcse_not_ranked" ? " (IGCSE)" : x.results.note === "no_published_results" ? " (no published results)" : ""}`).join("\n")}>
             {" "}Not on the scatter: {notPlotted.length} (no change to plot).
           </span>
         )}
@@ -91,8 +131,9 @@ export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: 
 // on hover) and `quadrantNames` (the four corner names). The thresholds are rules, not looks.
 export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames = true }: { m: MarketView; r: RivalsView; fullscreen: boolean; room?: number; labels?: boolean; quadrantNames?: boolean }) {
   const [ref, w] = useWidth<HTMLDivElement>();
+  const res = momentumResults(r);
   const pts = r.rows
-    .map((x) => ({ x, e: m.extras.find((q) => q.urn === x.urn), rc: r.resultsChange[x.urn] }))
+    .map((x) => ({ x, e: m.extras.find((q) => q.urn === x.urn), rc: res.change[x.urn] }))
     .filter((p) => p.e?.entryChangePctAll != null && p.rc?.points != null);
   const left = r.rows.filter((x) => !pts.some((p) => p.x.urn === x.urn));
   const H = fullscreen ? fillHeight(room, 40, 480) : 360;
@@ -102,15 +143,16 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
   const sx = (v: number) => 12 + ((v + maxX) / (2 * maxX)) * (W - 24);
   const sy = (v: number) => 12 + ((maxY - v) / (2 * maxY)) * (H - 50);
   const labelTop = new Map<string, number>();
-  const results = r.stage === "ks4" ? "Attainment 8" : r.stage === "ks5" ? "A-level points per entry" : "KS2 expected standard (%)";
+  const results = res.stage === "ks4" ? "Attainment 8" : res.stage === "ks5" ? "A-level points per entry" : "KS2 expected standard (%)";
   return (
     <>
       <div className="flex items-center gap-2">
         <span className="text-[13px] font-bold text-[var(--fg)]">Who is gaining pupils, and whose results are rising?</span>
       </div>
       {/* 0.8 Admissions fb1 (F-18): the title says which schools it can place -- only those publishing
-          results at this stage (IGCSE-only and no-results schools are listed, not plotted). */}
-      <div data-momentum-scope="" className="-mt-1 text-[11px] text-[var(--muted2)]">{momentumScope(r.stage)}</div>
+          results at this stage (IGCSE-only and no-results schools are listed, not plotted). 0.8 Sets r1
+          (F25): at 11+, post-16 where over 40% of the rivals have no GCSE results, said here. */}
+      <MomentumScope r={r} />
       <div className="flex min-h-0 grow gap-[18px]">
         <div ref={ref} className="relative shrink-0 basis-[470px] rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)]" style={{ height: H }}>
           {w > 0 && (
@@ -169,7 +211,7 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
             </>
           )}
         </div>
-        <FlagList m={m} r={r} notPlotted={left} />
+        <FlagList m={m} r={r} notPlotted={left} results={res} />
       </div>
     </>
   );
@@ -190,7 +232,8 @@ export function FlagsView({ m, r, show = "flagged" }: { m: MarketView; r: Rivals
 }
 
 export function momentumChips(m: MarketView, r: RivalsView | null) {
-  return { pupils: `Pupils: aged ${m.entry.age}`, results: `Results: ${r?.stage === "ks5" ? "A-level points" : r?.stage === "ks2" ? "KS2 expected" : "Attainment 8"}` };
+  const stage = r ? momentumResults(r).stage : null;
+  return { pupils: `Pupils: aged ${m.entry.age}`, results: `Results: ${stage === "ks5" ? "A-level points" : stage === "ks2" ? "KS2 expected" : "Attainment 8"}` };
 }
 
 export function NoRivals() {

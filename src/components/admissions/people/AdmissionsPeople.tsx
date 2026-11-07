@@ -25,7 +25,8 @@ type Audit = {
   action: string;
   at: string;
   actor_profile_id: string | null;
-  detail: { membership_id?: string; profile_id?: string; op?: string; entry_point?: string; kind?: string; rung?: string; added?: string[]; removed?: string[]; changed?: string[] } | null;
+  // 0.8 sets round 1: a School-Admin's change to a school set adds its name (and set_id, retiered).
+  detail: { membership_id?: string; profile_id?: string; op?: string; entry_point?: string; kind?: string; rung?: string; added?: string[]; removed?: string[]; changed?: string[]; name?: string } | null;
 };
 
 const LIST_KIND: Record<string, string> = { day_feeders: "day feeders", boarding_feeders: "boarding feeders", rivals: "rivals" };
@@ -36,9 +37,9 @@ function overrideText(h: Audit): string {
   const verb = d.op === "insert" ? "set" : d.op === "delete" ? "removed" : "changed";
   if (h.action === "admissions_entry_points_override")
     return d.op === "insert" ? `added the ${ep} entry point` : d.op === "delete" ? `removed the ${ep} entry point` : `reordered the ${ep} entry point`;
-  const what = d.kind === "rung" ? `${ep} list for age ${(d.rung ?? "").replace("age:", "")}` : `${ep} ${LIST_KIND[d.kind ?? ""] ?? "list"}`;
+  const what = (d.kind === "rung" ? `${ep} list for age ${(d.rung ?? "").replace("age:", "")}` : `${ep} ${LIST_KIND[d.kind ?? ""] ?? "list"}`) + (d.name ? ` (\u201c${d.name}\u201d)` : "");
   const counts = [d.added?.length ? `+${d.added.length}` : "", d.removed?.length ? `\u2212${d.removed.length}` : ""].filter(Boolean).join(", ");
-  const other = (d.changed ?? []).filter((f) => f !== "members").map((f) => ({ la_blend: "LA blend", fuzzy: "definition", confirmed: "confirmed" })[f] ?? f);
+  const other = (d.changed ?? []).filter((f) => f !== "members").map((f) => ({ la_blend: "LA blend", fuzzy: "definition", rule: "definition", confirmed: "confirmed" })[f] ?? f);
   const extra = [counts, ...other].filter(Boolean).join(", ");
   return `${verb} the ${what}${extra ? ` (${extra})` : ""}`;
 }

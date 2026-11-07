@@ -337,7 +337,7 @@ function StepFeeders({ kind, of, boardingSchool, nextLabel, ep, readOnly, list, 
     setBusy(true);
     // The row is replaced whole: keep its LA blend (saved on the day list by the blend editor).
     const keep = { la_blend: list?.la_blend ?? null };
-    const e = await saveList(member, ep, kind === "day" ? "day_feeders" : "boarding_feeders", kind === "boarding" && fuzzy ? rows.map((r) => r.urn) : [...tick], kind === "boarding" && fuzzy ? { ...keep, fuzzy: { sector: "independent", boarding: true, ...(tops ? { tops: [11, 13] } : {}), las } } : { ...keep, fuzzy: list?.fuzzy ?? null });
+    const e = await saveList(member, ep, kind === "day" ? "day_feeders" : "boarding_feeders", kind === "boarding" && fuzzy ? rows.map((r) => r.urn) : [...tick], kind === "boarding" && fuzzy ? { ...keep, fuzzy: { sector: "independent", ...(tops ? { tops: [11, 13] } : {}), las } } : { ...keep, fuzzy: list?.fuzzy ?? null });
     setBusy(false);
     if (e) return setErr(e);
     onNext();

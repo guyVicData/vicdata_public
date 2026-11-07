@@ -78,6 +78,42 @@
   --row-featured-ks2: #2a2a2e;
 }
 
+/* 0.8 sets round 1 (B21): who made a set, by colour -- Default grey, Admissions cyan, SMT violet, the
+   school's group orange, Victoria Consultancy rose; Me is an outline in --fg. -fg is the text and icon,
+   -bg the pill's fill (the product's featured-row tint where there is one). Text on its fill: 5.8:1 and
+   more light, 7.2:1 and more dark; on the panel, 6.7:1 and more light, 9.5:1 and more dark. On :root so
+   the library and the set pages (outside #teacher-root) have them too. */
+:root {
+  --set-default-fg: #55555c; --set-default-bg: #eeeef0;
+  --set-admissions-fg: #0b6574; --set-admissions-bg: #d7f7fc;
+  --set-smt-fg: #5a3db0; --set-smt-bg: #efeafe;
+  --set-group-fg: #94460d; --set-group-bg: #feebdc;
+  --set-vc-fg: #9e2257; --set-vc-bg: #fde8ef;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]), #teacher-root:not([data-theme="light"]) {
+    --set-default-fg: #c4c4cc; --set-default-bg: #2a2a2e;
+    --set-admissions-fg: #7fe3f2; --set-admissions-bg: #163940;
+    --set-smt-fg: #c8b6ff; --set-smt-bg: #312b43;
+    --set-group-fg: #ffb985; --set-group-bg: #412c1d;
+    --set-vc-fg: #ff9cc2; --set-vc-bg: #45202f;
+  }
+}
+:root[data-theme="dark"], #teacher-root[data-theme="dark"] {
+  --set-default-fg: #c4c4cc; --set-default-bg: #2a2a2e;
+  --set-admissions-fg: #7fe3f2; --set-admissions-bg: #163940;
+  --set-smt-fg: #c8b6ff; --set-smt-bg: #312b43;
+  --set-group-fg: #ffb985; --set-group-bg: #412c1d;
+  --set-vc-fg: #ff9cc2; --set-vc-bg: #45202f;
+}
+#teacher-root[data-theme="light"] {
+  --set-default-fg: #55555c; --set-default-bg: #eeeef0;
+  --set-admissions-fg: #0b6574; --set-admissions-bg: #d7f7fc;
+  --set-smt-fg: #5a3db0; --set-smt-bg: #efeafe;
+  --set-group-fg: #94460d; --set-group-bg: #feebdc;
+  --set-vc-fg: #9e2257; --set-vc-bg: #fde8ef;
+}
+
 /* F-22 (feedback deploy gate): the Data View's featured row. Its pages (the Data View, a saved set) are
    outside #teacher-root and follow the system theme, so the token is on :root, light and dark: the red
    it already drew (red-50, and red-950 at 40% over the dark page), now one token. Text on it: 16:1

@@ -59,7 +59,7 @@ export type Rivals = {
 // per stage; KS2's is dfe_ks2_attainment's latest), with DfE's provisional flag where the ingest
 // sets one. 0.7 year rules: KS2's used to be found by reading every school's KS2 headline from
 // the census year less one; the same year, read the same way as GCSE's and Post-16's.
-async function latestResults(stage: KsStage): Promise<{ period: number | null; provisional: boolean }> {
+export async function latestResults(stage: KsStage): Promise<{ period: number | null; provisional: boolean }> {
   const years = await cachedReference("years:latest", () => lookupAcademicLatestYears());
   const y = years[stage];
   return { period: y?.period ?? null, provisional: y?.provisional ?? false };

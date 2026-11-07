@@ -36,7 +36,11 @@ import { admissionsHasContent } from "./content";
 import { activeWithContent, visibleRail } from "@/lib/rail-content";
 import { DEFAULT_FILTERS, getJson, query, useRoute, type Filters, type ListsAnswer, type Load, type MarketView, type PipelineOk, type PipelineView, type RivalsView, type ShapeView } from "./api";
 import { loadAdmissionsMember, type AdmissionsMember, type MemberState } from "./member";
-import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, FilterChips, PhoneHeader, type DashKey } from "./controls";
+import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, PhoneHeader, type DashKey } from "./controls";
+import { AdmissionsSetSelector, PupilsChip } from "./AdmissionsSets";
+import { SetHeaderLine } from "@/components/sets/SetSelector";
+import type { SetChoice } from "@/lib/sets/admissions-page";
+import type { SetKind } from "@/lib/sets/model";
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { ControlBar } from "@/components/teacher/ControlBar";
@@ -100,13 +104,21 @@ export function defaultEntries(low: number | null, high: number | null): string[
 }
 const chipLabel = (id: string) => entryPoint(id)?.label.replace(/ \(.*\)$/, "") ?? id;
 
-type UrlState = { dash: DashKey; entry: string | null; setup: SetupStep | null };
+// 0.8 sets round 1 (B6-B11): fset / rset, the page's Feeder schools and Compared against set (a key,
+// src/lib/sets/admissions-page.ts); none = the school's own choice, else the default recipe.
+type UrlState = { dash: DashKey; entry: string | null; setup: SetupStep | null; fset: string | null; rset: string | null };
 function readUrl(): UrlState {
-  if (typeof window === "undefined") return { dash: "pipelines", entry: null, setup: null };
+  if (typeof window === "undefined") return { dash: "pipelines", entry: null, setup: null, fset: null, rset: null };
   const sp = new URLSearchParams(window.location.search);
   const step = sp.get("setup");
   const setup = step && (["entry", "day", "boarding", "rivals", "blend"].includes(step) || /^rung:\d+-\d+$/.test(step)) ? (step as SetupStep) : null;
-  return { dash: sp.get("view") === "market-share" ? "market-share" : "pipelines", entry: sp.get("entry"), setup };
+  const key = (k: string) => (sp.get(k) ?? "").slice(0, 120) || null;
+  const dash: DashKey = sp.get("view") === "market-share" ? "market-share" : "pipelines";
+  // 0.8 sets round 1 (D20): back from the set editor's Save (?useSet=<id>), the page uses the set it
+  // saved, for its own kind (writeUrl then drops the parameter).
+  const used = sp.get("useSet");
+  const fromEditor = used && /^[0-9a-f-]{36}$/i.test(used) ? `set:${used}` : null;
+  return { dash, entry: sp.get("entry"), setup, fset: dash === "pipelines" && fromEditor ? fromEditor : key("fset"), rset: dash === "market-share" && fromEditor ? fromEditor : key("rset") };
 }
 function writeUrl(s: UrlState) {
   const sp = new URLSearchParams(window.location.search);
@@ -115,6 +127,11 @@ function writeUrl(s: UrlState) {
   else sp.delete("entry");
   if (s.setup) sp.set("setup", s.setup);
   else sp.delete("setup");
+  sp.delete("useSet");
+  for (const k of ["fset", "rset"] as const) {
+    if (s[k]) sp.set(k, s[k]!);
+    else sp.delete(k);
+  }
   window.history.replaceState(null, "", `${window.location.pathname}?${sp.toString()}`);
 }
 
@@ -213,6 +230,12 @@ function Gate({ member, theme, onTheme, platformAdmin, onDash, reloadTick }: { m
   return <Dashboard member={member} theme={theme} onTheme={onTheme} onDash={onDash} reloadTick={reloadTick} />;
 }
 
+/** The sets a route's answer says it drew (0.8 sets round 1: `setChoices` on pipeline, market share and
+ * shape -- never `sets`, which is the pipeline's own rung sets). */
+function inUseOf(l: Load<unknown>): { feeders?: SetChoice; rivals?: SetChoice } | null {
+  return l.status === "ready" && l.data && typeof l.data === "object" && "setChoices" in (l.data as object) ? ((l.data as { setChoices?: { feeders?: SetChoice; rivals?: SetChoice } }).setChoices ?? null) : null;
+}
+
 // ---------------------------------------------------------------------------------------------
 function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: AdmissionsMember; theme: "dark" | "light"; onTheme: (t: "dark" | "light") => void; onDash: (d: DashKey) => void; reloadTick: number }) {
   // Read once on mount: this component only mounts in the browser, after the member has loaded.
@@ -280,21 +303,24 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   // A day school's filters never carry a boarding choice (the chips aren't drawn for it).
   const filters: Filters = boardingSchool ? filterState : { ...filterState, lists: "both", boardingOnly: false };
   const q = (extra: Record<string, string> = {}) => (entry ? query(member.schoolUrn, entry, filters, extra) : null);
-  const pipeline = useRoute<PipelineView>(entry && (dash === "pipelines" || phone) ? `/api/admissions/pipeline?${q({ ...(projection ? { projection: "1" } : {}), ...(km !== null ? { km: String(km) } : {}) })}` : null);
-  const market = useRoute<MarketView>(entry && dash === "market-share" ? `/api/admissions/market-share?${q()}` : null);
-  const rivals = useRoute<RivalsView>(entry && dash === "market-share" ? `/api/admissions/rivals?${q()}` : null);
-  const shape = useRoute<ShapeView>(entry ? `/api/admissions/shape?${q()}` : null);
+  // 0.8 sets round 1: each route is told the set it draws (none: the school's own, else the default).
+  const fq: Record<string, string> = url.fset ? { fset: url.fset } : {};
+  const rq: Record<string, string> = url.rset ? { rset: url.rset } : {};
+  const pipeline = useRoute<PipelineView>(entry && (dash === "pipelines" || phone) ? `/api/admissions/pipeline?${q({ ...fq, ...(projection ? { projection: "1" } : {}), ...(km !== null ? { km: String(km) } : {}) })}` : null);
+  const market = useRoute<MarketView>(entry && dash === "market-share" ? `/api/admissions/market-share?${q(rq)}` : null);
+  const rivals = useRoute<RivalsView>(entry && dash === "market-share" ? `/api/admissions/rivals?${q(rq)}` : null);
+  const shape = useRoute<ShapeView>(entry ? `/api/admissions/shape?${q({ ...fq, ...rq })}` : null);
   // Warm the other dashboard while this one is read (the switch then draws from the cache).
   useEffect(() => {
     if (!entry) return;
     const t = window.setTimeout(() => {
       if (dash === "pipelines") {
-        void getJson(`/api/admissions/market-share?${q()}`);
-        void getJson(`/api/admissions/rivals?${q()}`);
-      } else void getJson(`/api/admissions/pipeline?${q()}`);
+        void getJson(`/api/admissions/market-share?${q(rq)}`);
+        void getJson(`/api/admissions/rivals?${q(rq)}`);
+      } else void getJson(`/api/admissions/pipeline?${q(fq)}`);
     }, 1200);
     return () => window.clearTimeout(t);
-  }, [dash, entry, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dash, entry, filters, url.fset, url.rset]); // eslint-disable-line react-hooks/exhaustive-deps
   // 0.8 B7: the usage log's page view, and the scope CardBox's full screen reads. Draws nothing.
   // Groups r1 G0: logged once the entry point is known (the lists and the school's ages read), so
   // a load is one page view, not a null-level one and then "11+".
@@ -323,7 +349,9 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
     );
 
   const config = configs[dash];
-  const setLabel = market.status === "ready" ? (market.data.rivalsSource === "saved" ? `${market.data.rivals.length} rivals on your list` : `${market.data.rivals.length} nearest`) : "10 nearest";
+  // 0.8 sets round 1 (B10): the sets in use, as each route drew them, for the headers and the bar.
+  const sets = { feeders: inUseOf(pipeline)?.feeders ?? inUseOf(shape)?.feeders ?? null, rivals: inUseOf(market)?.rivals ?? inUseOf(shape)?.rivals ?? null };
+  const setLabel = sets.rivals ? sets.rivals.name : market.status === "ready" ? (market.data.rivalsSource === "saved" ? `${market.data.rivals.length} rivals on your list` : `${market.data.rivals.length} nearest`) : "10 nearest";
   const focusBar =
     entries.length > 1 ? (
       <span role="group" aria-label="Entry point" className="flex flex-wrap items-center gap-2">
@@ -333,15 +361,23 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
         ))}
       </span>
     ) : undefined;
-  const ctx: Ctx = { boardingSchool, member, dash, entry, filters, projection, setProjection, km, setKm, pipeline, market, rivals, shape, setLabel, edit: (s) => update({ setup: s }), lists: lists.status === "ready" ? lists.data : null, focusBar };
+  const ctx: Ctx = { boardingSchool, member, dash, entry, filters, projection, setProjection, km, setKm, pipeline, market, rivals, shape, setLabel, sets, edit: (s) => update({ setup: s }), lists: lists.status === "ready" ? lists.data : null, focusBar };
   const editEntries = member.canEditLists ? () => update({ setup: "entry" }) : null;
   const editTitle = member.canEditLists ? "Choose entry points" : member.access === "viewAs" ? "View as: read-only" : "The Admissions lead chooses the entry points";
-  const rivalsChip =
-    dash === "market-share" ? (
-      <FChip onClick={member.canEditLists ? () => update({ setup: "rivals" }) : undefined} title={member.canEditLists ? "Choose rivals" : "The Admissions lead chooses the rivals"}>
-        Rivals: {setLabel}
-      </FChip>
-    ) : undefined;
+  // 0.8 sets round 1 (B6, B11): the page's one set and the Pupils filter replace the old filter chips.
+  const pageKind = dash === "pipelines" ? "feeders" : "compared_against";
+  const setBar = entry ? (
+    <AdmissionsSetSelector
+      key={`${pageKind}:${entry}`}
+      member={member}
+      entry={entry}
+      kind={pageKind}
+      choice={pageKind === "feeders" ? url.fset : url.rset}
+      inUse={(pageKind === "feeders" ? sets.feeders : sets.rivals) ?? null}
+      onPick={(k) => update(pageKind === "feeders" ? { fset: k } : { rset: k })}
+      phone={phone}
+    />
+  ) : null;
 
   // 0.8 notes and feedback: each view's private note and feedback icon, with what the page is showing.
   const surface = schoolSurface({
@@ -350,7 +386,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
     urn: member.schoolUrn,
     name: member.schoolName,
     role: "admissions",
-    state: { dashboard: dash, entry: entry ?? null, rivals: dash === "market-share" ? setLabel : null, projection, ...flatState(filters as unknown as Record<string, unknown>, "filters") },
+    state: { dashboard: dash, entry: entry ?? null, rivals: dash === "market-share" ? setLabel : null, feeders: dash === "pipelines" ? (sets.feeders?.name ?? null) : null, projection, ...flatState(filters as unknown as Record<string, unknown>, "filters") },
   });
 
   return (
@@ -364,7 +400,8 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
       </div>
       {phone ? (
         <PhoneStack>
-          <PhoneHeader dash={dash} onDash={(d) => update({ dash: d })} entries={entries.map((id) => ({ id, label: chipLabel(id) }))} entry={entry ?? ""} onEntry={(e) => update({ entry: e })} onEditEntries={editEntries} />
+          <PhoneHeader dash={dash} onDash={(d) => update({ dash: d })} entries={entries.map((id) => ({ id, label: chipLabel(id) }))} entry={entry ?? ""} onEntry={(e) => update({ entry: e })} onEditEntries={editEntries} pupils={<PupilsChip filters={filters} onFilters={setFilters} />} />
+          {setBar}
           <Notes member={member} notSetUp={notSetUp} listsMissing={listsMissing} />
           {entry && <PhoneBody config={config} ctx={ctx} />}
         </PhoneStack>
@@ -387,7 +424,8 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
             chrome={
               <>
                 <Divider />
-                <FilterChips dash={dash} filters={filters} onFilters={setFilters} rivalsChip={rivalsChip} boardingSchool={boardingSchool} />
+                {setBar}
+                <PupilsChip filters={filters} onFilters={setFilters} />
               </>
             }
           />
@@ -470,6 +508,8 @@ export type Ctx = {
   rivals: Load<RivalsView>;
   shape: Load<ShapeView>;
   setLabel: string;
+  // 0.8 sets round 1 (B10): the sets in use, for the panel headers (null while they load).
+  sets?: { feeders: SetChoice | null; rivals: SetChoice | null };
   edit: (s: SetupStep) => void;
   lists: ListsAnswer | null;
   // 0.7 admissions editor s1 (Guy, decision 3): the entry-point chips, in every panel's focus mode.
@@ -712,13 +752,16 @@ function withSexNote(dv: string, c: Ctx, notes: { caption?: ReactNode; visible?:
 }
 
 /** 0.8 Admissions fb1: the (i)'s {placeholders} a view fills from what it drew (the funnel's area,
- * how its radius was set, which age stands in for births). */
-function methodVars(dv: string, c: Ctx): Record<string, string | number | null> {
+ * how its radius was set, which age stands in for births). 0.8 Sets r1 (F24): and `boarding`, so a day
+ * school's (i) drops every boarding sentence (method-conditions.ts). Exported for the rule tests
+ * (R-ADM-BOARDING-ONLY-WHERE-BOARDERS read the (i) as this host fills it). */
+export function methodVars(dv: string, c: Pick<Ctx, "boardingSchool" | "pipeline" | "market">): Record<string, string | number | null> {
   const p = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data : null;
-  if (dv === "DV-ADM-P-FUNNEL" && p) return intakeMethodVars(p.intake);
-  if (dv === "DV-ADM-P-BIRTHS" && p) return localBirthsMethodVars(p.localBirths);
-  if (dv === "DV-ADM-M-SHARE-BAND" && c.market.status === "ready" && !("empty" in c.market.data)) return { band: bandWords(c.market.data.band) };
-  return {};
+  const boarding = { boarding: c.boardingSchool ? 1 : 0 };
+  if (dv === "DV-ADM-P-FUNNEL" && p) return { ...intakeMethodVars(p.intake), ...boarding };
+  if (dv === "DV-ADM-P-BIRTHS" && p) return { ...localBirthsMethodVars(p.localBirths), ...boarding };
+  if (dv === "DV-ADM-M-SHARE-BAND" && c.market.status === "ready" && !("empty" in c.market.data)) return { band: bandWords(c.market.data.band), ...boarding };
+  return boarding;
 }
 
 /** The source note behind each panel's "i". */
@@ -735,7 +778,34 @@ function sourceOf(dv: string, vars: Record<string, string | number | null> = {})
   );
 }
 
+// 0.8 sets round 1 (B10, R-PANEL-NAMES-SET): the views that draw a set name it in their header; the
+// area views (the funnel and local births: the radius; the area's population) and the school's own
+// entry views draw no set.
+export const NO_SET_VIEWS = new Set(["DV-ADM-P-FUNNEL", "DV-ADM-P-BIRTHS", "DV-ADM-P-AREA-POP", "DV-ADM-P-NOW", "DV-ADM-P-ENTRY-BARS", "DV-ADM-P-ENTRY-LINE", "DV-ADM-P-ENTRY-SEX", "DV-ADM-P-ENTRY-TABLE"]);
+export const setKindOfView = (dv: string): SetKind | null => (NO_SET_VIEWS.has(dv) || !dv.startsWith("DV-ADM-") ? null : dv.startsWith("DV-ADM-P") ? "feeders" : "compared_against");
+
 function chipsOf(dv: string, c: Ctx): ReactNode {
+  const kind = setKindOfView(dv);
+  const set = kind ? (kind === "feeders" ? c.sets?.feeders : c.sets?.rivals) : null;
+  const own = chipsOfView(dv, c);
+  if (!kind || !set) return own;
+  return (
+    <>
+      <SetHeaderLine kind={kind} set={set} />
+      {own}
+    </>
+  );
+}
+
+/** G30: on a phone each panel's header names its set too (only the line: the phone draws no chips),
+ * wrapping onto a second line rather than truncating the set's name. */
+export function phoneSetLine(dv: string, c: Ctx): ReactNode {
+  const kind = setKindOfView(dv);
+  const set = kind ? (kind === "feeders" ? c.sets?.feeders : c.sets?.rivals) : null;
+  return kind && set ? <SetHeaderLine kind={kind} set={set} /> : null;
+}
+
+function chipsOfView(dv: string, c: Ctx): ReactNode {
   const p = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data : null;
   const lead = c.member.canEditLists;
   const ro = c.member.access === "viewAs" ? "View as: read-only" : "Read-only: the Admissions lead changes this";
@@ -750,14 +820,9 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
     return <RadiusChip area={area} c={c} />;
   }
   if (["DV-ADM-P-PIPELINE", "DV-ADM-P-MAP", "DV-ADM-P-TABLE"].includes(dv) && p) {
-    const day = c.lists?.lists.find((l) => l.kind === "day_feeders" && l.entry_point === p.entry.id)?.members?.length ?? 0;
-    const boarding = c.boardingSchool ? (c.lists?.lists.find((l) => l.kind === "boarding_feeders" && l.entry_point === p.entry.id)?.members?.length ?? 0) : 0;
-    const feeders = day || boarding ? `Feeders: ${c.boardingSchool ? "Day list" : "your list"} (${day})${boarding ? ` + Boarding list (${boarding})` : ""}` : `Feeders: nearby schools (${p.feederTable.rows.length})`;
+    // 0.8 sets round 1 (B11): the feeder-list pill is gone (the header names the set; the bar changes it).
     return (
       <>
-        <FChip onClick={lead ? () => c.edit("day") : undefined} title={lead ? "Edit the feeder lists" : ro}>
-          {feeders}
-        </FChip>
         <FChip onClick={lead ? () => c.edit("blend") : undefined} chevron={false} title={lead ? "Adjust the LA birth blend" : ro}>
           Births: {p.blend.slice(0, 3).map((b) => `${b.laName ? cleanLaNameForDisplay(b.laName) : b.laCode} ${Math.round(b.weight * 100)}%`).join(" · ")}
           {p.blend.length > 3 ? ` · +${p.blend.length - 3}` : ""}
@@ -793,7 +858,6 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
     return (
       <>
         <FChip chevron={false}>Subject areas</FChip>
-        <FChip chevron={false}>Rivals: {c.setLabel}</FChip>
       </>
     );
   return null;
@@ -951,7 +1015,7 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   return (
     <>
       {now && (
-        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv, methodVars(nowDv, c))} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
+        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" chips={phoneSetLine(nowDv, c)} source={sourceOf(nowDv, methodVars(nowDv, c))} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
           {() =>
             c.dash === "pipelines"
               ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
@@ -960,12 +1024,12 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
         </Panel>
       )}
       {large && (
-        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv, methodVars(largeDv, c))} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
+        <Panel tag={largeTitle} title={largeTitle} height="auto" chips={phoneSetLine(largeDv, c)} source={sourceOf(largeDv, methodVars(largeDv, c))} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
           {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? <InstanceBody dv={largeDv} c={c} o={{ fullscreen, height, spec: specOf(large, largeTab) }} /> : phoneView(largeDv, c, specOf(large, largeTab))}</div>}
         </Panel>
       )}
       {trends.length > 0 && (
-        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv, methodVars(trendDv, c))} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} view={trendPanel ? { panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "", dataview: trendDv || null } : null}>
+        <Panel tag={trendTitle} title={trendTitle} height="auto" chips={phoneSetLine(trendDv, c)} source={sourceOf(trendDv, methodVars(trendDv, c))} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} view={trendPanel ? { panelId: trendPanel.id, panelName: trendPanel.name ?? null, instanceId: stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "", dataview: trendDv || null } : null}>
           {({ fullscreen, height }) => <div className="flex min-h-[160px] flex-col gap-2"><InstanceBody dv={trendDv} c={c} o={{ fullscreen, height, spec: specOf(trendPanel, stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "") }} /></div>}
         </Panel>
       )}
@@ -1023,14 +1087,14 @@ export function AdmissionsViewPreview({ dataview, spec, urn, schoolName, entry, 
 // panel draws it (chips, notes, source) -- what R-ADM-BOARDING-ONLY-WHERE-BOARDERS renders on the
 // server, on real data, to check that a day school sees no boarding and a boarding school sees it
 // all. Rendered under CardBox's OpenInFullscreen, the notes and sources print in full.
-export function AdmissionsEveryView({ member, boardingSchool, entry, pipeline, market, rivals, shape, lists }: { member: AdmissionsMember; boardingSchool: boolean; entry: string; pipeline: PipelineView; market: MarketView; rivals: RivalsView; shape: ShapeView; lists: ListsAnswer | null }) {
+export function AdmissionsEveryView({ member, boardingSchool, entry, pipeline, market, rivals, shape, lists, sets }: { member: AdmissionsMember; boardingSchool: boolean; entry: string; pipeline: PipelineView; market: MarketView; rivals: RivalsView; shape: ShapeView; lists: ListsAnswer | null; sets?: Ctx["sets"] }) {
   const out: ReactNode[] = [];
   ADMISSIONS_DASHBOARDS.forEach((config, i) => {
     const dash: DashKey = i === 0 ? "pipelines" : "market-share";
-    const c: Ctx = { boardingSchool, member, dash, entry, filters: DEFAULT_FILTERS, projection: false, setProjection: () => undefined, pipeline: { status: "ready", data: pipeline }, market: { status: "ready", data: market }, rivals: { status: "ready", data: rivals }, shape: { status: "ready", data: shape }, setLabel: "rivals", edit: () => undefined, lists };
+    const c: Ctx = { boardingSchool, member, dash, entry, filters: DEFAULT_FILTERS, projection: false, setProjection: () => undefined, pipeline: { status: "ready", data: pipeline }, market: { status: "ready", data: market }, rivals: { status: "ready", data: rivals }, shape: { status: "ready", data: shape }, setLabel: sets?.rivals?.name ?? "rivals", sets, edit: () => undefined, lists };
     out.push(
       <div key={`f-${dash}`} data-adm-filters={dash}>
-        <FilterChips dash={dash} filters={DEFAULT_FILTERS} onFilters={() => undefined} boardingSchool={boardingSchool} />
+        <PupilsChip filters={DEFAULT_FILTERS} onFilters={() => undefined} />
       </div>,
     );
     for (const panel of config.panels)
