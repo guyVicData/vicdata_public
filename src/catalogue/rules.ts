@@ -1645,7 +1645,7 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-ADM-ROLL-INDEXED",
-    statement: "The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead.",
+    statement: "The entry age band roll is indexed to the first year the school and the rivals' average share (2019/20 where both have it); the average is over the rivals with a figure in every year. The panel draws you against that average; full screen draws you and each rival in its own colour with a key, except a rival under 30 pupils in the band at its base (ROLL_INDEX_MIN), which is named under the chart instead, plus the rivals' average as one more line, dashed, keyed \"Rivals' average\" (0.8 Sets r1, F23).",
     why: "Guy, 29 Oct 2026 (F-20): grey lines of different sizes can't be read as trends.",
     appliesTo: "DV-ADM-M-ROLL-LINE",
     enforcedIn: ["src/lib/admissions/views-api.ts:rollIndexed", "src/lib/index-base.ts:indexOwn", "src/components/admissions/views/Lines.tsx:RollTrend, YouAndEachRival"],
@@ -1655,11 +1655,11 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-ADM-VS-EACH",
-    statement: "You and the rivals: the panel draws your entry-age cohort against the rivals' average, indexed (as before); full screen draws you and each rival in its own colour with a key and labelled y gridlines, each rival indexed to the same base where it has it, else to its own first year (indexOwn), except a rival under 30 at the entry age at its base (ROLL_INDEX_MIN), which is named under the chart instead. Drawn by the same component as the band roll's (YouAndEachRival, R-ADM-ROLL-INDEXED).",
+    statement: "You and the rivals: the panel draws your entry-age cohort against the rivals' average, indexed (as before); full screen draws you and each rival in its own colour with a key and labelled y gridlines, each rival indexed to the same base where it has it, else to its own first year (indexOwn), except a rival under 30 at the entry age at its base (ROLL_INDEX_MIN), which is named under the chart instead, plus the rivals' average as one more line, dashed, keyed \"Rivals' average\" (0.8 Sets r1, F23). Drawn by the same component as the band roll's (YouAndEachRival, R-ADM-ROLL-INDEXED).",
     why: "Guy, 6 Nov 2026 (F-36): full screen should be per school, with a key, as the band roll is (F-20).",
     appliesTo: "DV-ADM-M-VS-LINE",
     enforcedIn: ["src/lib/index-base.ts:indexOwn", "src/components/admissions/views/Lines.tsx:VsRivals, YouAndEachRival"],
-    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "At 11+, full screen: one key entry per rival with 30 or more aged 11 at its base, the rest named under the chart, and each line recomputed from the census rows; the panel keeps the one average line; RollTrend and VsRivals both draw through YouAndEachRival.", check: "admVsEach" },
+    testCase: { urn: "110110", school: "Leighton Park", phase: "ks4", expect: "At 11+, full screen: one key entry per rival with 30 or more aged 11 at its base, the rest named under the chart, and each line recomputed from the census rows; the full-screen key also has \"Rivals' average\", on this view and the band roll's (F23); the panel keeps the one average line; RollTrend and VsRivals both draw through YouAndEachRival.", check: "admVsEach" },
     origin: "0.8 Admissions feedback round 2 (docs/v0.8/vicdata_0_8_admissions_feedback_round2_claude_code_prompt_v1.md)",
     status: "active",
   },

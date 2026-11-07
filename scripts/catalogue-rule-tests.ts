@@ -1659,14 +1659,20 @@ const RUNNERS: Record<string, Runner> = {
     const drawn = each.filter((x) => !x.small);
     const { yearLabel } = await import("../src/components/admissions/ui");
     const titles = drawn.every((x) => x.last === null || !Number.isFinite(x.last) || full.includes(`${esc(x.name)} ${yearLabel(yrs.at(-1)!)}: ${x.last.toFixed(0)}`));
-    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 1;
+    // 0.8 Sets r1 (F23): full screen also keys the rivals' average (you + each rival drawn + the average),
+    // on this view and on the band roll's (both through YouAndEachRival).
+    const avgKey = (k: string) => k.includes(">Rivals&#x27; average</span>");
+    const keyed = drawn.every((x) => key.includes(`>${esc(x.name)}</span>`)) && (key.match(/<span class="inline-flex/g) ?? []).length === drawn.length + 2 && avgKey(key);
+    const { RollTrend } = await import("../src/components/admissions/views/Lines");
+    const rollFull = renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(RollTrend, { m, fullscreen: true, room: 600 })));
+    const rollAvg = avgKey(rollFull.split("data-roll-key")[1]?.split("</div>")[0] ?? "");
     const named = each.filter((x) => x.small).every((x) => note.includes(esc(x.name)) && !key.includes(`>${esc(x.name)}</span>`));
     const lines = fs.readFileSync(path.join(ROOT, "src/components/admissions/views/Lines.tsx"), "utf8");
     const fn = (n: string) => lines.split(`export function ${n}(`)[1]?.split("\nexport function ")[0] ?? "";
     const shared = ["RollTrend", "VsRivals"].every((n) => fn(n).includes("<YouAndEachRival")) && (lines.match(/var\(--adm-series-\$\{/g) ?? []).length === 1;
     const panelOk = panel.includes("Rivals’ average") && !panel.includes("data-vs-key") && !panel.includes("data-y-grid") && !panel.includes("--adm-series-");
-    const ok = keyed && named && titles && shared && panelOk && full.includes("data-y-grid");
-    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, named, titles, shared, panelOk }) };
+    const ok = keyed && rollAvg && named && titles && shared && panelOk && full.includes("data-y-grid");
+    return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, rollAvg, named, titles, shared, panelOk }) };
   },
   // R-ADM-BAND-SHARE: the band share recomputed; the rail's last view.
   async admBandShare() {
