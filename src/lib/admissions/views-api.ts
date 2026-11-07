@@ -362,7 +362,9 @@ export async function candidatesView(urn: string, ep: EntryPoint, sp: URLSearchP
     .filter((t) => t.urn !== urn)
     .filter((t) => holdsAge(t, age) && (kind !== "rivals" || holdsAge(t, age + 1)))
     .filter((t) => (sector === "state" || sector === "independent" ? t.sector === sector : true))
-    .filter((t) => (kind === "boarding" ? t.sector === "independent" && t.boarding : true))
+    // 0.8 sets round 1 (B8): a boarding feeder set suggests independent preps, day or boarding (not
+    // boarding-only: a day prep sends boarders too); the list shows which board.
+    .filter((t) => (kind === "boarding" ? t.sector === "independent" : true))
     .filter((t) => (sp.get("boarding") === "1" ? t.boarding : true))
     .filter((t) => (sp.get("gender") === "same" && me ? t.gender === me.gender : true))
     .filter((t) => (tops.length ? tops.includes(t.high ?? -1) : true))

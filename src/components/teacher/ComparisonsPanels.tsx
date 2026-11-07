@@ -20,6 +20,7 @@
 // history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
+import { SetHeaderLine, SetSelector, type SetSelectorProps } from "@/components/sets/SetSelector";
 import { igcseTargetLine } from "@/lib/igcse-words";
 import { useEffect, useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
@@ -120,6 +121,7 @@ export function ComparisonsPanels({
   // Which comparator set is active, and what the four are called.
   setId,
   activeSet,
+  setMenu,
   setLabel,
   setNote: setNoteProp,
   schools: allSchoolsProp,
@@ -160,6 +162,9 @@ export function ComparisonsPanels({
   // every change to the chooser (onManageSet) -- it no longer lists other sets itself.
   activeSet: SetOption;
   setLabel: string;
+  // 0.8 sets round 1 (B6, B7, B9, R-SET-PILL): the one set selector's menu -- Default, School sets,
+  // My sets -- built by the page (src/components/sets/teacherMenu.ts). Without it, the old pill.
+  setMenu?: Omit<SetSelectorProps, "label" | "kind" | "width">;
   // The set's own caveat, where it has one ("Independent schools only").
   setNote?: ReactNode;
   schools: ComparatorSchool[];
@@ -1120,6 +1125,16 @@ export function ComparisonsPanels({
             : {}),
         };
 
+  const setLine = setMenu?.current ? <SetHeaderLine kind="compared_against" set={setMenu.current} /> : null;
+  const withSetLine = (controls: ReactNode) =>
+    setLine ? (
+      <div className="flex min-w-0 flex-col items-start gap-1">
+        {controls}
+        {setLine}
+      </div>
+    ) : (
+      controls
+    );
   return (
     <ColumnPanels
       columnId="rankings"
@@ -1131,6 +1146,11 @@ export function ComparisonsPanels({
         <div className="flex flex-col items-start gap-1.5">
           {/* The same PillMenu Context uses, so round 7 §8's "matching Comparisons'
               pattern exactly" is one component rather than two lookalikes. */}
+          {setMenu ? (
+            // Teacher's pill keeps the old pill's width, truncating a long name (full name on hover), so the
+            // grid never shifts (the Post-16 round's lesson).
+            <SetSelector label="Compared against" kind="compared_against" width={TEACHER_SET_PILL_WIDTH} {...setMenu} />
+          ) : (
           <PillMenu label="Compared against" value={setLabel} menuLabel="Compared against" width={260}>
             {(close) => (
               // Comparator dropdown round: the same shape as Context's pill -- what is
@@ -1146,6 +1166,7 @@ export function ComparisonsPanels({
               </>
             )}
           </PillMenu>
+          )}
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }
@@ -1157,13 +1178,17 @@ export function ComparisonsPanels({
           : unavailableNote
             ? { current: notAvailable(current), trend: notAvailable(trend) }
             : {
-                current: { ...current, controls: withSelectionChip(current.controls, selectionChip), frame: currentFrame },
-                trend: { ...trend, controls: withSelectionChip(trend.controls, selectionChip), frame },
+                // 0.8 sets round 1 (B10, R-PANEL-NAMES-SET): each panel's header names the set in use.
+                current: { ...current, controls: withSelectionChip(withSetLine(current.controls), selectionChip), frame: currentFrame },
+                trend: { ...trend, controls: withSelectionChip(withSetLine(trend.controls), selectionChip), frame },
               }
       }
     />
   );
 }
+
+/** 0.8 sets round 1 (B9): Teacher's set button's fixed width in the Comparisons column. */
+export const TEACHER_SET_PILL_WIDTH = 200;
 
 // 0.6.3 S1: before a grade is selected on Grade counts -- the panel's tag and question over
 // a quiet prompt, no frame, so both drawing paths draw the same card.

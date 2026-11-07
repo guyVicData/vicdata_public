@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { admissionsCaller, savedLists } from "@/lib/admissions/auth";
+import { admissionsCaller } from "@/lib/admissions/auth";
+import { listsForRoute } from "@/lib/sets/admissions-route";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
 import { rivalsView } from "@/lib/admissions/views-api";
@@ -11,6 +12,8 @@ import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 //
 // 0.7 r2 (additive): the same rival set as Market share (&sector, &boarding: rival-set.ts);
 // `resultsChange` per school (the momentum scatter's y) and `areaLabels` (views-api.ts rivalsView).
+// 0.8 sets round 1 (B6-B11): &fset= / &rset= choose the Feeder schools / Compared against set
+// (src/lib/sets/admissions-route.ts); the answer names the sets in use (`sets`), for the headers.
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await admissionsCaller(request, sp.get("urn"));
@@ -18,8 +21,8 @@ export async function GET(request: NextRequest) {
   const ep = entryPoint(sp.get("entry") ?? "");
   if (!ep) return NextResponse.json({ error: "entry must be 4+, 11+, 16+ or age:2-17" }, { status: 400 });
   try {
-    const lists = await savedLists(caller.reader, caller.urn, ep.id);
-    return NextResponse.json(await rivalsView(caller.urn, ep, lists, { filters: filtersFrom(sp), subject: latestSubjectNameOrNull(sp.get("subject")), family: sp.get("family"), qual: sp.get("qual"), measure: sp.get("measure") }));
+    const chosen = await listsForRoute(caller, ep, sp, ["compared_against"]);
+    return NextResponse.json(await rivalsView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), subject: latestSubjectNameOrNull(sp.get("subject")), family: sp.get("family"), qual: sp.get("qual"), measure: sp.get("measure") }));
   } catch (err) {
     console.error("[admissions/rivals] failed:", err);
     return NextResponse.json({ error: "Could not build the rivals." }, { status: 502 });

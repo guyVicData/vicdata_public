@@ -16,8 +16,6 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
 import { ControlBar, type FocusSubject } from "@/components/shell/ControlBar";
 import { GroupSwitcher } from "@/components/shell/GroupSwitcher";
-import { PillMenu } from "@/components/shell/PillMenu";
-import { MenuDivider, MenuRow } from "@/components/shell/PanelMenu";
 import { MenuChip } from "@/components/shell/FilterPills";
 import { RailPanel, Tabs, type RailItem } from "@/components/shell/RailPanel";
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
@@ -51,6 +49,8 @@ import { MethodNote } from "@/components/shell/MethodNote";
 import { freshToken } from "@/components/admissions/member";
 import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
+import { SetSelector, setHeaderWords } from "@/components/sets/SetSelector";
+import { NEAREST_KEY, rankingKey, teacherMenuRows } from "@/components/sets/teacherMenu";
 import { arrowOf, dirClass, smtVars, yearOf } from "./ui";
 import { SchoolNow } from "./views/Now";
 import { smtHasContent } from "./content";
@@ -299,36 +299,37 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     </span>
   ) : undefined;
 
+  // 0.8 sets round 1 (B6, B7, R-SET-PILL): the one set selector -- Default, School sets, My sets --
+  // from Teacher's chooser payload (src/components/sets/teacherMenu.ts). Picking a row changes the set
+  // in place; Edit this set… and New set… open Teacher's chooser (the builder, until the set editor);
+  // its other default sets (the LA, the rankings) are built there.
+  const savedId = sets.choice.kind === "saved" ? sets.choice.id : null;
+  const savedNow = savedId ? (sets.savedSets?.sets.find((x) => x.id === savedId) ?? null) : null;
+  const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: sets.choice.kind === "nearest" && set ? set.urns.length : 10 });
+  const selectedKey = sets.choice.kind === "nearest" ? NEAREST_KEY : sets.choice.kind === "saved" ? `saved:${sets.choice.id}` : sets.choice.kind === "ranking" && sets.choice.rankingId ? rankingKey(sets.choice.rankingId) : null;
   const setPill = (
-    <PillMenu label="Compared against" value={set ? set.label : sets.choice.kind === "nearest" ? DEFAULT_SET_LABEL : "Loading…"} menuLabel="Compared against" width={300} align="right" title={set ? `${set.label}: ${set.urns.length} schools` : undefined}>
-      {(close) => {
-        const savedId = sets.choice.kind === "saved" ? sets.choice.id : null;
-        const saved = savedId ? sets.savedSets?.sets.find((x) => x.id === savedId) ?? null : null;
-        return (
-          <>
-            <MenuRow label={`${set?.label ?? "…"} · ${set ? set.urns.length : "…"} schools`} selected onClick={close} />
-            <MenuRow
-              label="Edit this set…"
-              title={saved?.editable ? undefined : "Only a saved set you can edit opens here; choose or save one with Change comparison…"}
-              onClick={() => {
-                close();
-                if (saved?.editable) setChooser({ editing: saved });
-                else setChooser({ editing: null });
-              }}
-            />
-            <MenuDivider />
-            <MenuRow
-              label="Change comparison…"
-              onClick={() => {
-                close();
-                setChooser({ editing: null });
-              }}
-            />
-            <div className="px-3 pb-2 pt-1 text-[11px] leading-snug text-[var(--muted2)]">Teacher&rsquo;s chooser: 10 nearest &middot; schools in the LA &middot; my saved sets &middot; the school&rsquo;s sets &middot; regional and national rankings. One set for the whole dashboard; saved sets are shared with Teacher.</div>
-          </>
-        );
+    <SetSelector
+      label="Compared against"
+      kind="compared_against"
+      current={set ? { name: set.label, count: set.urns.length } : null}
+      loading={!set}
+      rows={menu.rows}
+      mine={menu.mine}
+      selectedKey={selectedKey}
+      onPick={(r) => {
+        if (r.key === NEAREST_KEY) sets.choose({ kind: "nearest" });
+        else if (r.key.startsWith("saved:")) sets.choose({ kind: "saved", id: r.key.slice(6) });
+        else if (r.key.startsWith("ranking:")) {
+          const rk = sets.savedSets?.rankings?.find((x) => rankingKey(x.id) === r.key);
+          if (rk) sets.choose({ kind: "ranking", label: rk.name, filters: rk.filters, rankingId: rk.id });
+        }
       }}
-    </PillMenu>
+      onEdit={savedNow?.editable ? { label: "Edit this set…", onClick: () => setChooser({ editing: savedNow }) } : { label: "Edit this set…", onClick: () => setChooser({ editing: null }), title: "Opens a copy to save as your own" }}
+      onNew={{ label: "New set…", onClick: () => setChooser({ editing: null }) }}
+      extraDefault={[{ label: "Schools in the LA, regional and national rankings…", onClick: () => setChooser({ editing: null }) }]}
+      manageHref="/sets?kind=compared_against"
+      phone={phone}
+    />
   );
   // Context (the board): the Area pill and "Compared against: England" (its comparisons are the LA
   // and England); no set, no gender or boarding (the area's figures have neither split).
@@ -497,8 +498,8 @@ function rowContext(row: string, c: Ctx): string {
       const results = c.school.phases.gcse && !c.school.phases.igcse && ks4 !== undefined ? `results ${yearOf(ks4, "ks4")}` : c.school.phases.post16 && ks5 !== undefined ? `Post-16 results ${yearOf(ks5, "ks5")}` : "";
       return [census !== null ? `January ${census + 1} census` : null, results || null].filter(Boolean).join(" · ");
     }
-    // 0.8 SMT feedback round 2: the trends compare with the selected set.
-    return `against ${c.set.label}`;
+    // 0.8 SMT feedback round 2: the trends compare with the selected set. Sets round 1 (B10): with its count.
+    return setHeaderWords("compared_against", { name: c.set.label, count: c.set.urns.length });
   }
   if (c.dash === "pupils") {
     if (row === "now") return census !== null ? `January ${census + 1} census` : "";
@@ -620,7 +621,8 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
 
 // The panel's header line: its tag (the view's own name or the panel's) and the context after it.
 function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; context: ReactNode } {
-  const set = c.set.label;
+  // 0.8 sets round 1 (B10, R-PANEL-NAMES-SET): every header names the set and its number of schools.
+  const set = `${c.set.label} · ${c.set.urns.length}`;
   switch (dv) {
     case "DV-SMT-O-NOW":
       return { tag: "Current", context: "whole school" };

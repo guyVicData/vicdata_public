@@ -17,7 +17,7 @@ import { readSchoolSetsByUrn } from "../sets/store";
 import { savedListsFromSets } from "../sets/admissions-lists";
 import type { SavedList } from "./lists";
 
-export type AdmissionsCaller = { supabase: SupabaseClient; reader: SupabaseClient; userId: string; urn: string; lead: boolean; roles: string[]; access: ResolvedCaller["access"]; readOnly: boolean };
+export type AdmissionsCaller = { supabase: SupabaseClient; reader: SupabaseClient; userId: string; urn: string; lead: boolean; roles: string[]; access: ResolvedCaller["access"]; readOnly: boolean; isAdmin?: boolean; isAccountHolder?: boolean; viewAs?: boolean };
 
 export const ADMISSIONS_ONLY_MESSAGE = "Admissions is available to the school's Admissions and SMT staff.";
 
@@ -27,7 +27,7 @@ export async function admissionsCaller(request: NextRequest, urn: string | null)
   if (!request.headers.get("authorization") || !urn || !/^\d{5,7}$/.test(urn)) return NextResponse.json({ error: "urn and Authorization are required" }, { status: 400 });
   const c = await resolveCaller(request, urn, { allowed: canSeeAdmissions, refusal: ADMISSIONS_ONLY_MESSAGE });
   if (c instanceof NextResponse) return c;
-  return { supabase: c.supabase, reader: c.reader, userId: c.userId, urn, lead: c.lead, roles: c.roles, access: c.access, readOnly: c.readOnly };
+  return { supabase: c.supabase, reader: c.reader, userId: c.userId, urn, lead: c.lead, roles: c.roles, access: c.access, readOnly: c.readOnly, isAdmin: c.isAdmin, isAccountHolder: c.isAccountHolder, viewAs: !!c.viewAsRole };
 }
 
 /** The school's saved lists for an entry point (RLS decides what the caller sees); [] before the

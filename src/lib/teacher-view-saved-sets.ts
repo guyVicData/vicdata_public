@@ -31,6 +31,9 @@ export type SavedComparatorSet = {
   name: string;
   shared: boolean;
   mine: boolean;
+  // 0.8 sets round 1 (B7): who made it -- the menu tags school sets by creator.
+  creator?: import("@/lib/sets/model").CreatorKind;
+  creatorLabel?: string;
   editable: boolean;
   config: { startedFrom?: string } & Record<string, unknown>;
   members: SetMember[];

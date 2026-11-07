@@ -123,3 +123,38 @@ test("feeder recipes: named by what they hold, sized by the radius (10 to 40), b
   assert.equal(feederRecipes(school("1", { boarding: false }), e11, primaries, { day: 5, boarding: 15 }).length, 3, "a day school has day sets only");
   assert.ok(feederRecipes(me, e16, ring(20, () => ({ low: 11, high: 16 })), { day: 30, boarding: 30 })[0].urns.length === 20, "16+ feeders teach 15-year-olds");
 });
+
+// ------------------------------------------------------------------ the page's choice (B6-B11)
+import { buildMenu, COMBO_KEY, resolveChoice } from "./admissions-page";
+import type { RecipeSet } from "./recipes";
+
+test("a page's choice: the school's own sets as before, a stored or default set by key, a stale key falls back", () => {
+  const m = (urns: string[]) => urns.map((u, i) => ({ urn: u, position: i, tier: i === 0 ? ("main" as const) : null }));
+  const day = set({ id: "day", kind: "feeders", audience: "day", entryPoint: "11+", isDefault: true, members: m(["1", "2"]) });
+  const board = set({ id: "brd", kind: "feeders", audience: "boarding", entryPoint: "11+", isDefault: true, members: m(["3"]) });
+  const other = set({ id: "oth", name: "Close preps", kind: "feeders", audience: "day", entryPoint: "11+", members: m(["9"]) });
+  const mine = set({ id: "mine", kind: "feeders", entryPoint: "11+", ownerScope: "personal", creatorKind: "me", ownerProfileId: "p", schoolAccountId: null, members: m(["8"]) });
+  const recipes: RecipeSet[] = [{ key: "adm:feeders:day:all", name: "Day | all sectors", kind: "feeders", entryPoint: "11+", urns: ["5", "6"], isDefaultChoice: true, how: "" }];
+  const base = savedListsFromSets([day, board], "11+");
+  const ps = { stored: [day, board, other, mine], recipes, boardingSchool: true };
+  const own = resolveChoice(ps, e11, "feeders", null, base, "p", true);
+  assert.equal(own.choice.key, COMBO_KEY, "a boarding school's day and boarding feeders together");
+  assert.equal(own.lists, base, "exactly the old lists, so the figures can't change");
+  assert.equal(own.choice.main, 2);
+  const picked = resolveChoice(ps, e11, "feeders", "set:oth", base, "p", true);
+  assert.deepEqual(picked.lists.map((l) => [l.kind, l.members]), [["day_feeders", ["9"]]]);
+  assert.equal(resolveChoice(ps, e11, "feeders", "set:mine", base, "p", true).choice.block, "mine");
+  assert.equal(resolveChoice(ps, e11, "feeders", "set:mine", base, "someone-else", true).choice.key, COMBO_KEY, "another person's set never resolves");
+  assert.equal(resolveChoice(ps, e11, "feeders", "set:gone", base, "p", true).choice.key, COMBO_KEY, "a stale key falls back to the page's default");
+  assert.deepEqual(resolveChoice(ps, e11, "feeders", "default:adm:feeders:day:all", base, "p", true).urns, ["5", "6"]);
+  const fresh = resolveChoice({ stored: [], recipes, boardingSchool: false }, e11, "feeders", null, [], null, false);
+  assert.equal(fresh.choice.name, "Day | all sectors", "no sets of its own: the default recipe");
+  const dayOnly = resolveChoice({ ...ps, boardingSchool: false }, e11, "feeders", null, base, "p", true);
+  assert.equal(dayOnly.choice.key, "set:day", "a day school never draws a boarding list");
+  const menu = buildMenu(ps, e11, "feeders", own.choice, { profileId: "p", canCurate: true });
+  assert.equal(menu.school[0].key, COMBO_KEY);
+  assert.deepEqual(menu.school.slice(1).map((r) => r.key), ["set:day", "set:brd", "set:oth"]);
+  assert.deepEqual(menu.mine.map((r) => r.key), ["set:mine"]);
+  assert.equal(menu.label, "Feeder schools");
+  assert.equal(menu.default[0].name, "Day | all sectors");
+});

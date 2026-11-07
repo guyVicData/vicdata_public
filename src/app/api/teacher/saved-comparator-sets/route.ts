@@ -3,12 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 import type { KsStage } from "@/lib/academic-data-view";
 import { isIndependent, type PoolSchool } from "@/lib/teacher-view-rankings";
 import { neighbourPool, rankFixedSets, type NeighbourRow } from "@/lib/teacher-view-comparator-series";
-import { PERSONAL_COMPARATOR_CAP, readViewAsStore, type SavedRanking } from "@/lib/teacher-view-saved-sets";
+import { PERSONAL_COMPARATOR_CAP, readViewAsStore, type SavedComparatorSet, type SavedRanking } from "@/lib/teacher-view-saved-sets";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { viewAsForRequest, viewAsMembership, ViewAsUnconfirmed } from "@/lib/view-as";
 import { schoolGroupSets } from "@/lib/groups/school-sets";
 import { readSets } from "@/lib/sets/store";
-import { activePersonalCount, canCurate, creatorFor, type StoredSet } from "@/lib/sets/model";
+import { activePersonalCount, canCurate, creatorFor, setFitsPage, type StoredSet } from "@/lib/sets/model";
 
 // Teacher view, accordion round Part 3: the saved comparator sets a teacher can compare
 // against, ranked exactly like the four algorithmic ones, plus what the chooser needs to
@@ -31,14 +31,17 @@ type SetRow = {
   // 0.8 sets round 1: who owns it -- the school (shared), or a person (personal; mine if theirs).
   shared: boolean;
   mine: boolean;
+  // 0.8 sets round 1 (B7): who made it, for the menu's creator tag.
+  creator: StoredSet["creatorKind"];
   config: Record<string, unknown> | null;
   created_at: string;
   members: { urn: string; schools: { current_name: string; la_name: string | null; establishment_type_group: string | null } | null }[];
 };
 
-// Teacher's own sets, as before this round: whole-school compared-against sets (no entry point),
-// and any made for this phase. (Admissions' 11+ / 16+ sets join Teacher's menu with the selector.)
-const forTeacherPage = (s: StoredSet, phase: string) => s.kind === "compared_against" && !s.entryPoint && (!s.phase || s.phase === phase);
+// The compared-against sets that fit a Teacher page (0.8 sets round 1, B9): whole-school sets, any made
+// for this phase, and Admissions' sets of the matching entry point (11+ on GCSE pages, 16+ on Post-16
+// pages); feeder sets never.
+const forTeacherPage = (s: StoredSet, phase: string) => (phase === "ks4" || phase === "ks5") && setFitsPage(s, { kind: "compared_against", phase });
 
 async function withSchools(client: { from: ReturnType<typeof createClient>["from"] }, sets: StoredSet[], profileId: string | null): Promise<SetRow[]> {
   const urns = Array.from(new Set(sets.flatMap((s) => s.members.map((m) => m.urn))));
@@ -52,6 +55,7 @@ async function withSchools(client: { from: ReturnType<typeof createClient>["from
     name: s.name,
     shared: s.ownerScope === "school",
     mine: s.ownerScope === "personal" && !!profileId && s.ownerProfileId === profileId,
+    creator: s.creatorKind,
     config: s.config,
     created_at: s.createdAt,
     members: s.members.map((m) => ({ urn: m.urn, schools: by.get(m.urn) ?? null })),
@@ -122,6 +126,7 @@ export async function GET(request: NextRequest) {
       name: x.name,
       shared: false,
       mine: true,
+      creator: "me" as const,
       config: x.config,
       created_at: x.createdAt,
       members: x.urns.map((u) => ({ urn: u, schools: schoolBy.get(u) ?? null })),
@@ -175,9 +180,21 @@ export async function GET(request: NextRequest) {
       .from("vc_set_school_visibility")
       .select(VC_SELECT)
       .eq("school_account_id", membership.school_account_id);
+    // 0.8 sets round 1 (B9): saved rankings follow their owner in the set menu -- the school's in
+    // School sets, the member's own in My sets. Read under the member's own token (RLS), as the
+    // chooser reads them.
+    const { data: rankingRows } = await supabase
+      .from("saved_rankings")
+      .select("id, name, phase, filters, owner_membership_id")
+      .eq("school_account_id", membership.school_account_id)
+      .order("created_at", { ascending: true });
+    const memberRankings: SavedRanking[] = ((rankingRows ?? []) as { id: string; name: string; phase: "ks4" | "ks5"; filters: SavedRanking["filters"]; owner_membership_id: string | null }[])
+      .filter((r) => r.phase === phase)
+      .map((r) => ({ id: r.id, name: r.name, shared: r.owner_membership_id === null, mine: r.owner_membership_id === membership.id, editable: r.owner_membership_id === membership.id || (r.owner_membership_id === null && canEditShared), phase: r.phase, filters: r.filters }));
     ctx = {
       membershipId: membership.id,
       profileId: userId,
+      rankings: memberRankings,
       schoolAccountId: membership.school_account_id,
       canEditShared,
       creatorKind: creatorFor(curator, "compared_against", "smt"),
@@ -201,7 +218,7 @@ export async function GET(request: NextRequest) {
         independent: isIndependent(m.schools?.establishment_type_group ?? null),
       }));
     const { shared, mine } = r;
-    return { id: r.id, name: r.name, shared, mine, editable: mine || (shared && canEditShared), config: r.config ?? {}, members, vc: false };
+    return { id: r.id, name: r.name, shared, mine, creator: r.creator as SavedComparatorSet["creator"], editable: mine || (shared && canEditShared), config: r.config ?? {}, members, vc: false };
   });
 
 
@@ -213,6 +230,7 @@ export async function GET(request: NextRequest) {
       name: vc.name,
       shared: true,
       mine: false,
+      creator: "victoria_consultancy" as const,
       editable: false,
       config: {},
       vc: true,

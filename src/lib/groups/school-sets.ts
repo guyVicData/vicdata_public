@@ -25,6 +25,8 @@ export type GroupSet = {
   name: string;
   shared: true;
   mine: false;
+  creator: "group";
+  creatorLabel: string;
   editable: false;
   config: Record<string, never>;
   vc: false;
@@ -66,6 +68,9 @@ export async function groupSetsFor(
       name: groupSetLabel(g.name),
       shared: true,
       mine: false,
+      // 0.8 sets round 1 (A4, B7): under the group's own name in the menu's School sets.
+      creator: "group",
+      creatorLabel: g.name,
       editable: false,
       config: {},
       vc: false,

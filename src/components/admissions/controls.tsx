@@ -106,7 +106,7 @@ export function FilterChips({ dash, filters, onFilters, rivalsChip, boardingScho
 // 0.8 shell (Part A): the row head moved to src/components/shell/Rows.tsx.
 export { RowHead } from "@/components/shell/Rows";
 
-export function PhoneHeader({ dash, onDash, entries, entry, onEntry, onEditEntries }: { dash: DashKey; onDash: (d: DashKey) => void; entries: { id: string; label: string }[]; entry: string; onEntry: (id: string) => void; onEditEntries: (() => void) | null }) {
+export function PhoneHeader({ dash, onDash, entries, entry, onEntry, onEditEntries, pupils }: { dash: DashKey; onDash: (d: DashKey) => void; entries: { id: string; label: string }[]; entry: string; onEntry: (id: string) => void; onEditEntries: (() => void) | null; pupils?: ReactNode }) {
   return (
     <>
       <div className="self-start">
@@ -119,6 +119,8 @@ export function PhoneHeader({ dash, onDash, entries, entry, onEntry, onEditEntri
         <button type="button" onClick={onEditEntries ?? undefined} disabled={!onEditEntries} aria-label="Choose entry points" className="rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-3 py-[6px] text-[12px] font-semibold text-[var(--chip-fg)] disabled:opacity-50">
           &plusmn;
         </button>
+        {/* 0.8 sets round 1 (G26): the Pupils filter beside the entry point buttons. */}
+        {pupils}
       </div>
     </>
   );
