@@ -11,7 +11,8 @@
 //             set, Archive)
 // On a phone: the sidebar becomes tabs (All, Default, School, Mine, Archived) with folders in a sheet;
 // the filters wrap under the search; pinned sets scroll sideways; every set is a card with a ··· sheet.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { returnToHere, savedSetFromEditor, useEditorReturnReload } from "@/lib/sets/editor-return";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { saveSet } from "@/lib/sets/store";
 import type { LibraryData } from "@/lib/sets/library";
@@ -70,9 +71,10 @@ export function viewHref(urn: string, x: LibraryItem): string {
   return `/sets/default?${q.toString()}`;
 }
 
-/** The editor for a set (itself, or a copy of a default) or a duplicate of any. */
+/** The editor for a set (itself, or a copy of a default) or a duplicate of any. Its way back is this
+ * page as it stands, filters and all (returnToHere). */
 export function editHref(urn: string, x: LibraryItem, duplicate = false): string {
-  const q = new URLSearchParams({ urn, kind: x.kind, back: `/sets?urn=${urn}` });
+  const q = new URLSearchParams({ urn, kind: x.kind, returnTo: returnToHere(urn, `/sets?urn=${urn}`) });
   if (x.phase) q.set("phase", x.phase);
   else q.set("entry", x.entry ?? "11+");
   if (x.id && !duplicate) q.set("set", x.id);
@@ -102,7 +104,12 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
   const [folderName, setFolderName] = useState("");
   const [foldersSheet, setFoldersSheet] = useState(false);
   const [newFolder, setNewFolder] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
+  // Back from the editor's Save: the set it saved, highlighted and named.
+  const [saved] = useState<string | null>(() => savedSetFromEditor());
+  const [note, setNote] = useState<string | null>(() => {
+    const x = saved ? items.find((i) => i.id === saved) : null;
+    return x ? `Saved "${x.name}".` : null;
+  });
   const shown = useMemo(() => sortLibrary(filterLibrary(items, filter), sort), [items, filter, sort]);
   const counts = sectionCounts(items);
   const folders = Array.from(new Set([...foldersOf(items), ...(newFolder ? [newFolder] : [])])).sort();
@@ -110,6 +117,25 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
   const urn = data.school.urn;
   const hit = phone ? "min-h-[44px]" : "min-h-[30px]";
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  // The filters live in the address too (replaced, never pushed), so the editor's way back returns to
+  // the library as it was.
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    const put = (k: string, v: string | null) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
+    put("section", filter.section === "all" ? null : filter.section);
+    put("kind", filter.kind === "all" ? null : filter.kind);
+    put("entry", filter.entry);
+    put("q", filter.query.trim() || null);
+    u.searchParams.delete("phase");
+    u.searchParams.delete("useSet");
+    const next = `${u.pathname}${u.search}${u.hash}`;
+    if (next !== `${window.location.pathname}${window.location.search}${window.location.hash}`) window.history.replaceState(window.history.state, "", next);
+  }, [filter]);
+  useEditorReturnReload();
+  useEffect(() => {
+    if (saved) document.querySelector(`[data-library-saved]`)?.scrollIntoView({ block: "nearest" });
+  }, [saved]);
+  const savedRing = (x: LibraryItem) => (saved && x.id === saved ? { "data-library-saved": "", style: { boxShadow: "inset 0 0 0 2px var(--accent, var(--fg))" } } : {});
 
   const update = (key: string, patch: Partial<LibraryItem>) => setItems((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const act = async (x: LibraryItem, what: "pin" | "archive" | "unarchive" | "share" | "propose") => {
@@ -258,7 +284,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
           {shown.map((x) => {
             const c = creatorColours(x.creator);
             return (
-              <div key={x.key} data-library-card={x.key} className="flex items-center gap-3 rounded-[10px] border border-[var(--panel-border)] p-2">
+              <div key={x.key} data-library-card={x.key} {...savedRing(x)} className="flex items-center gap-3 rounded-[10px] border border-[var(--panel-border)] p-2">
                 <span style={{ color: c.fg }}><KindIcon kind={x.kind} size={20} /></span>
                 <a href={viewHref(urn, x)} className="min-h-[44px] min-w-0 flex-1">
                   <div className="truncate text-[13px] font-semibold">{x.name}</div>
@@ -295,7 +321,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
             {shown.map((x) => {
               const c = creatorColours(x.creator);
               return (
-                <tr key={x.key} data-library-row={x.key} className="border-t border-[var(--panel-border)]">
+                <tr key={x.key} data-library-row={x.key} {...savedRing(x)} className="border-t border-[var(--panel-border)]">
                   <td className="py-[6px]">
                     <div className="flex items-center gap-2">
                       <span style={{ color: c.fg }}><KindIcon kind={x.kind} size={16} /></span>
@@ -327,7 +353,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
   );
 
   const newSet = (
-    <a href={`/sets/edit?${new URLSearchParams({ urn, kind: filter.kind === "feeders" ? "feeders" : "compared_against", entry: filter.entry ?? data.entries[0] ?? "11+", back: `/sets?urn=${urn}` })}`} className={`inline-flex items-center rounded-[10px] bg-[var(--accent,var(--fg))] px-4 text-[13px] font-bold text-[var(--bg)] ${phone ? "min-h-[44px]" : "min-h-[34px]"}`}>
+    <a href={`/sets/edit?${new URLSearchParams({ urn, kind: filter.kind === "feeders" ? "feeders" : "compared_against", entry: filter.entry ?? data.entries[0] ?? "11+", returnTo: returnToHere(urn, `/sets?urn=${urn}`) })}`} className={`inline-flex items-center rounded-[10px] bg-[var(--accent,var(--fg))] px-4 text-[13px] font-bold text-[var(--bg)] ${phone ? "min-h-[44px]" : "min-h-[34px]"}`}>
       + New set
     </a>
   );

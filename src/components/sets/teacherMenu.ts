@@ -8,6 +8,7 @@
 //               school's saved rankings
 //   My sets     the person's own sets and saved rankings, "n of 8"
 // Keys: "nearest", "saved:<id>" (savedSetKey), "ranking:<id>".
+import { returnToHere, savedSetFromEditor } from "@/lib/sets/editor-return";
 import type { SavedComparatorSet, SavedRanking, SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import type { CreatorKind } from "@/lib/sets/model";
 import type { SetMenuRow } from "./SetSelector";
@@ -38,8 +39,8 @@ export function teacherMenuRows(payload: SavedSetsPayload | null, o: { nearestLa
  * (a KS2 page: sets there are whole-school and built in the chooser). */
 export function teacherEditorHref(o: { urn: string; phase: string | null; product: "smt" | "teacher"; current: { savedId: string | null; name: string; urns: string[] } | null; fresh: boolean }): string | null {
   if (o.phase !== "ks4" && o.phase !== "ks5") return null;
-  const back = typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
-  const q = new URLSearchParams({ urn: o.urn, kind: "compared_against", phase: o.phase, product: o.product, back });
+  const returnTo = returnToHere(o.urn, o.product === "smt" ? "/teacher/smt" : `/teacher/${o.phase}`);
+  const q = new URLSearchParams({ urn: o.urn, kind: "compared_against", phase: o.phase, product: o.product, returnTo });
   if (!o.fresh && o.current) {
     if (o.current.savedId) q.set("set", o.current.savedId);
     else {
@@ -54,10 +55,12 @@ export function teacherEditorHref(o: { urn: string; phase: string | null; produc
 /** Back from the editor's Save: the id it saved (and the address without it), or null. */
 export function takeUseSet(): string | null {
   if (typeof window === "undefined") return null;
+  // useSet in the address (the editor replaced itself with this page), or the handover (it went back).
+  const id = savedSetFromEditor();
   const u = new URL(window.location.href);
-  const id = u.searchParams.get("useSet");
-  if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return null;
-  u.searchParams.delete("useSet");
-  window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+  if (u.searchParams.has("useSet")) {
+    u.searchParams.delete("useSet");
+    window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+  }
   return id;
 }

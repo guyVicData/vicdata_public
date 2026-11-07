@@ -5,7 +5,10 @@
 //     &set=<id>                      edit a stored set (a copy if you can't change it)
 //     &urns=1,2,3&name=…&from=<key>  a copy of a default set (or any set) to save as your own
 //     (neither)                      New set…: empty, for this page's kind and entry point
-//     &back=<path>                   where Save goes back to, with the set in use (useSet=<id>)
+//     &returnTo=<path>               the page it was opened from (the old name, back=, still read): Back,
+//                                    Cancel and Save go there (Save with the set in use). Only a path on
+//                                    this site, on a page that opens the editor (safeReturnTo); without
+//                                    one, the dashboard the set is for.
 //     &product=admissions|smt|teacher&used=<sentence>  the accent, and "Where this set is used"
 // Everything is read and saved with the member's own session: RLS decides what they may see and change.
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -14,11 +17,12 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { readSet, readSets } from "@/lib/sets/store";
 import { activePersonalCount, canCurate, creatorFor, entryOfPhase, type CreatorKind, type SetKind } from "@/lib/sets/model";
 import { saveModeOf } from "@/lib/sets/editor-state";
-import { SetEditor, type EditorPage, type EditorStart } from "@/components/sets/SetEditor";
+import { BackButton, SetEditor, type EditorPage, type EditorStart } from "@/components/sets/SetEditor";
 import { useTeacherTheme } from "@/components/shell/TeacherChrome";
 import { accentVars, productAccent } from "@/components/shell/accent";
 import { useWidth } from "@/components/admissions/views/charts";
-import { safeReturnTo } from "@/lib/sets/return-to";
+import { fallbackReturn, returnLabel, safeReturnTo } from "@/lib/sets/return-to";
+import { leaveEditor } from "@/lib/sets/editor-return";
 
 const PHONE = 600;
 
@@ -34,8 +38,12 @@ function EditorLoader() {
   const entry = sp.get("entry") ?? entryOfPhase(phase) ?? "11+";
   const setId = sp.get("set");
   const product = sp.get("product") === "smt" ? "smt" : sp.get("product") === "teacher" ? "teacher" : "admissions";
-  // Only a path on this site, on a page that opens the editor (an open redirect, and javascript: URLs, otherwise).
-  const back = safeReturnTo(sp.get("back")) ?? "/sets";
+  // Only a path on this site, on a page that opens the editor (an open redirect, and javascript: URLs, otherwise);
+  // without one (a direct link, a pasted address), the dashboard the set is for.
+  const asked = safeReturnTo(sp.get("returnTo") ?? sp.get("back"));
+  const returnFallback = !asked;
+  const returnTo = asked ?? fallbackReturn({ kind, entry, phase, product, urn });
+  const [label, setLabel] = useState<string | null>(null);
   const [state, setState] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; page: EditorPage; start: EditorStart }>({ status: "loading" });
 
   useEffect(() => {
@@ -74,13 +82,20 @@ function EditorLoader() {
         ? { set, name: set.name, description: set.description, members: set.members, creator, sourceRecipe: set.sourceRecipe, mode, editableBy: set.ownerScope === "personal" ? "you" : editableBy, lastChanged }
         : { set: null, name: sp.get("name") || (kind === "feeders" ? "New feeder set" : "New set"), description: null, members: urns.map((u) => ({ urn: u })), creator, sourceRecipe: fromKey, mode, editableBy: "you, once saved", lastChanged: null };
       const { data: traits } = await supabase.from("schools").select("boarders_name").eq("urn", urn).maybeSingle<{ boarders_name: string | null }>();
+      // "Back to <set>" when it was opened from a set's own view.
+      const viewedId = /^\/sets\/([0-9a-f-]{36})(?:[?#]|$)/i.exec(returnTo)?.[1] ?? null;
+      const originSetName = !viewedId ? null : viewedId === set?.id ? set.name : ((await readSet(supabase, viewedId))?.name ?? null);
+      const backLabel = returnLabel(returnTo, { kind, entry, phase, product, urn, schoolName, originSetName });
+      setLabel(backLabel);
       const page: EditorPage = {
         urn,
         schoolName,
         kind,
         entry,
         phase,
-        back,
+        returnTo,
+        returnFallback,
+        returnLabel: backLabel,
         usedOn: sp.get("used") || (kind === "feeders" ? `Pipelines at ${entry} for Admissions. Not shown in Teacher.` : `Market share at ${entry}${phase ? "" : ""}; teachers see ${entry === "11+" ? "it on GCSE pages" : entry === "16+" ? "it on Post-16 pages" : "it nowhere"} under School sets when it is a school set.`),
         profileId: who.user.id,
         schoolAccountId: mem.school_account_id,
@@ -99,10 +114,11 @@ function EditorLoader() {
   return (
     <main id="teacher-root" data-theme={theme} ref={rootRef} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={accentVars(accent)}>
       <div className={phone ? "" : "mx-auto max-w-[1180px] px-7 py-5"}>
-        {!phone && (
-          <nav className="mb-3 text-[12px] text-[var(--muted2)]" aria-label="Breadcrumb">
-            <a href={back} className="hover:underline">Back</a> › {kind === "feeders" ? "Feeder schools" : "Compared against"} › {setId ? "Edit set" : "New set"}
-          </nav>
+        {state.status !== "ready" && (
+          // While loading, or when the editor can't open: the same way back, nothing to lose.
+          <div className={phone ? "px-4 pt-3" : ""}>
+            <BackButton label={label ?? "Back"} onClick={() => leaveEditor(returnTo, returnFallback)} phone={phone} />
+          </div>
         )}
         {state.status === "loading" ? (
           <p className="p-6 text-[13px] text-[var(--muted2)]">Loading…</p>

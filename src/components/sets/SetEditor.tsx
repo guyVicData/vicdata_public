@@ -15,18 +15,19 @@
 //             set's list, in an "Add schools" side panel for feeders.
 //   How close (compared-against sets) distance, results and pupil population, live as schools change.
 // A set you can't change (a default set, a school set you don't curate) opens as a copy that can only
-// be saved as your own. Save returns to where you came from, with the set in use (useSet=<id>).
+// be saved as your own. Back ("Back to …", named for the page it was opened from), Cancel and Save all
+// return there -- Save with the set in use -- without adding history (src/lib/sets/editor-return.ts).
 // On a phone: one column, the artwork at 72 px, Save and Save as in a sticky bar at the bottom, each
 // row's tick on the left at 44 px with its other figures behind an expand chevron, Add schools as a
 // bottom sheet.
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import SchoolSearch from "@/components/SchoolSearch";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { deleteSet, saveSet } from "@/lib/sets/store";
 import { PERSONAL_SET_CAP, type CreatorKind, type SetKind, type StoredSet, type Tier } from "@/lib/sets/model";
 import type { EditorData, EditorRow } from "@/lib/sets/editor-data";
 import { closeness, closenessWords } from "@/lib/sets/closeness";
-import { safeReturnTo } from "@/lib/sets/return-to";
+import { leaveEditor } from "@/lib/sets/editor-return";
 import { add, changed, feederSummary, groupItems, initItems, isBigFeederSet, setTier, sortByTier, toSave, toggle, type EditorItem, type GroupBy, type SaveMode } from "@/lib/sets/editor-state";
 import { CreatorPill, KindIcon, creatorColours } from "./SetSelector";
 
@@ -51,8 +52,12 @@ export type EditorPage = {
   /** Admissions' entry point ("11+"), or Teacher's phase as its entry point. */
   entry: string;
   phase: "ks4" | "ks5" | null;
-  /** Where Save goes back to. */
-  back: string;
+  /** Where Back, Cancel and Save go: the page it was opened from (checked), else the set's dashboard. */
+  returnTo: string;
+  /** True when there was no usable origin and returnTo is the fallback dashboard. */
+  returnFallback: boolean;
+  /** "Back to Leighton Park · Pipelines 11+", named from returnTo. */
+  returnLabel: string;
   /** Where the set is used, in a sentence. */
   usedOn: string;
   profileId: string | null;
@@ -73,16 +78,14 @@ async function token(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-function withUseSet(back: string, id: string): string {
-  const safe = safeReturnTo(back);
-  if (!safe) return "/sets";
-  try {
-    const u = new URL(safe, window.location.origin);
-    u.searchParams.set("useSet", id);
-    return `${u.pathname}?${u.searchParams.toString()}`;
-  } catch {
-    return "/sets";
-  }
+/** The editor's one way back, named for where it goes. */
+export function BackButton({ label, onClick, phone }: { label: string; onClick: () => void; phone?: boolean }) {
+  return (
+    <button type="button" data-editor-back="" onClick={onClick} className={`mb-2 inline-flex max-w-full items-center gap-1.5 rounded-[8px] text-left text-[13px] font-semibold text-[var(--muted2)] hover:text-[var(--fg)] ${phone ? "min-h-[44px]" : "min-h-[30px]"}`}>
+      <span aria-hidden="true">←</span>
+      <span className="truncate">{label}</span>
+    </button>
+  );
 }
 
 /** The artwork: the set's schools around the focus school (north up), the kind's icon in the creator's colour. */
@@ -126,6 +129,10 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
   const [error, setError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
   const [shared, setShared] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  // Set once the editor is leaving on purpose (saved, discarded, archived), so the browser's own
+  // "leave site?" warning doesn't follow.
+  const leaving = useRef(false);
   const feeders = page.kind === "feeders";
   const mode = page.readOnly ? "copy" : start.mode;
 
@@ -178,9 +185,32 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
   const words = close ? closenessWords(close, page.schoolName) : null;
   const dirty = changed(items, start.members) || name !== start.name || (description || null) !== (start.description || null);
 
-  const done = (id: string) => {
-    window.location.href = withUseSet(page.back, id);
+  // Every way out goes through here: one step back to the origin, or replacing this page (no trap).
+  const leave = (savedId?: string) => {
+    leaving.current = true;
+    leaveEditor(page.returnTo, page.returnFallback, savedId);
   };
+  const done = (id: string) => leave(id);
+  // Back and Cancel: with unsaved changes, ask first (Keep editing is the default).
+  const cancel = () => (dirty && !page.readOnly ? setConfirmLeave(true) : leave());
+  // Browser back, refresh, closing the tab, a typed address: the browser's own warning. The editor is
+  // always opened as a page load, so browser back leaves the page and this covers it -- no fake history.
+  useEffect(() => {
+    if (!dirty || page.readOnly) return;
+    const onBefore = (e: BeforeUnloadEvent) => {
+      if (leaving.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBefore);
+    return () => window.removeEventListener("beforeunload", onBefore);
+  }, [dirty, page.readOnly]);
+  useEffect(() => {
+    if (!confirmLeave) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setConfirmLeave(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmLeave]);
   const save = async () => {
     if (mode !== "save" || !start.set) return;
     setBusy(true);
@@ -220,13 +250,13 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
     if (!start.set) return;
     const r = await saveSet(createBrowserSupabaseClient(), start.set.id, { archived: true }, null);
     if ("error" in r) return setError(r.error);
-    window.location.href = page.back;
+    leave();
   };
   const remove = async () => {
     if (!start.set) return;
     const e = await deleteSet(createBrowserSupabaseClient(), start.set.id);
     if (e) return setError(e);
-    window.location.href = page.back;
+    leave();
   };
   const pin = async () => {
     if (!start.set) return;
@@ -379,6 +409,9 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
       <button type="button" data-editor-save-as="" disabled={busy} onClick={() => setSaveAs({ name: mode === "save" ? `${name} (copy)` : name, owner: "personal" })} className={`rounded-[10px] border border-[var(--accent,var(--fg))] px-4 text-[13px] font-bold ${hit} ${mode !== "save" ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}>
         {mode === "save" ? "Save as…" : "Save as your own…"}
       </button>
+      <button type="button" data-editor-cancel="" disabled={busy} onClick={cancel} className={`rounded-[10px] border border-[var(--panel-border2)] px-4 text-[13px] ${hit}`}>
+        Cancel
+      </button>
       {!phone && start.set && (
         <button type="button" onClick={() => void share()} className={`rounded-[10px] border border-[var(--panel-border2)] px-3 text-[13px] ${hit}`}>
           {shared ? "Link copied" : "Share"}
@@ -494,12 +527,26 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
     </div>
   );
 
+  const discardDialog = confirmLeave && (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 sm:items-center" role="alertdialog" aria-modal="true" aria-labelledby="editor-discard-title" data-editor-discard="">
+      <div className="flex w-full max-w-[420px] flex-col gap-3 rounded-t-[16px] bg-[var(--panel-bg)] p-4 sm:rounded-[16px]">
+        <h2 id="editor-discard-title" className="text-[15px] font-bold">Discard your changes to {start.name}?</h2>
+        <p className="text-[13px] text-[var(--muted2)]">You haven&rsquo;t saved them. {page.returnLabel.replace(/^Back to /, "Going back to ")} leaves the set as it was.</p>
+        <div className="flex justify-end gap-2">
+          <button type="button" autoFocus onClick={() => setConfirmLeave(false)} className="min-h-[44px] rounded-[10px] bg-[var(--accent,var(--fg))] px-4 text-[13px] font-bold text-[var(--bg)]">Keep editing</button>
+          <button type="button" data-editor-discard-confirm="" onClick={() => { setConfirmLeave(false); leave(); }} className="min-h-[44px] rounded-[10px] border border-[var(--panel-border2)] px-4 text-[13px]">Discard</button>
+        </div>
+      </div>
+    </div>
+  );
+  const back = <BackButton label={page.returnLabel} onClick={cancel} phone={phone} />;
   const notice = mode === "copy" ? <p data-editor-copy="" className="rounded-[10px] border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 py-2 text-[12px]">{page.readOnly ? "Read-only here." : "You can't change this set, so this is a copy: save it as your own."}</p> : null;
   const err = error ? <p role="alert" className="text-[12px] text-[var(--fb-open,#b7860b)]">{error}</p> : null;
 
   if (phone)
     return (
-      <div data-set-editor="phone" className="flex flex-col gap-4 px-4 pb-[96px] pt-4">
+      <div data-set-editor="phone" className="flex flex-col gap-4 px-4 pb-[96px] pt-2">
+        <div className="-mb-3">{back}</div>
         {header}
         {notice}
         {err}
@@ -524,10 +571,12 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
           </div>
         )}
         {saveAsDialog}
+        {discardDialog}
       </div>
     );
   return (
     <div data-set-editor="desktop" className="flex flex-col gap-4">
+      <div className="-mb-3">{back}</div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         {header}
         {actions}
@@ -566,6 +615,7 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
         )}
       </div>
       {saveAsDialog}
+      {discardDialog}
     </div>
   );
 }
