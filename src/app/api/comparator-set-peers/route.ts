@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lookupReferenceData, type ReferenceFact } from "@/lib/vicdata-reference";
 import { buildRollSnapshot, buildRollTrend } from "@/lib/roll-data";
+import { readSet } from "@/lib/sets/store";
 
 // Roll-size ranks + peer group trend overlays (rolls spec §6: Comparator Set
-// consumers). RLS on saved_sets/saved_set_members already scopes which sets a caller
+// consumers). RLS on sets/set_members (0.8 sets round 1) already scopes which sets a caller
 // can see (shared sets to any approved member of the school, personal sets to their
 // owner) -- this route passes the caller's own token through rather than
 // re-implementing that check.
@@ -21,29 +22,22 @@ export async function GET(request: NextRequest) {
     { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
   );
 
-  // saved_sets has exactly one FK to school_accounts (school_account_id), unlike
-  // school_memberships<->school_accounts which has three and needs an explicit
-  // relationship name (see /api/paid-trends) -- no ambiguity here, plain embed is fine.
-  const { data: set } = await supabase
-    .from("saved_sets")
-    .select("id, name, set_type, school_accounts!inner(school_urn)")
-    .eq("id", setId)
-    .eq("set_type", "comparator")
-    .maybeSingle();
-
-  if (!set) {
+  // 0.8 sets round 1 (A5): the one sets model (public.sets). RLS shows a school set to every approved
+  // member of its school and a personal set to its owner only.
+  const set = await readSet(supabase, setId);
+  if (!set || set.kind !== "compared_against") {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
-
-  const { data: members } = await supabase
-    .from("saved_set_members")
-    .select("school_urn, schools(current_name)")
-    .eq("saved_set_id", setId)
-    .eq("member_status", "confirmed");
-
-  const anchorUrn = (
-    set as unknown as { school_accounts: { school_urn: string } }
-  ).school_accounts.school_urn;
+  // The school the set is about: its focus school, else its school's own.
+  let anchorUrn = set.focusUrn;
+  if (!anchorUrn && set.schoolAccountId) {
+    const { data: acc } = await supabase.from("school_accounts").select("school_urn").eq("id", set.schoolAccountId).maybeSingle();
+    anchorUrn = (acc as { school_urn: string } | null)?.school_urn ?? null;
+  }
+  if (!anchorUrn) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const memberUrns = set.members.map((m) => m.urn);
+  const { data: memberSchools } = memberUrns.length ? await supabase.from("schools").select("urn, current_name").in("urn", memberUrns) : { data: [] };
+  const nameBy = new Map(((memberSchools ?? []) as { urn: string; current_name: string }[]).map((r) => [r.urn, r.current_name]));
 
   const { data: anchorSchool } = await supabase
     .from("schools")
@@ -51,10 +45,7 @@ export async function GET(request: NextRequest) {
     .eq("urn", anchorUrn)
     .maybeSingle();
 
-  const memberRows = (members ?? []) as unknown as {
-    school_urn: string;
-    schools: { current_name: string } | null;
-  }[];
+  const memberRows = memberUrns.map((u) => ({ school_urn: u, schools: nameBy.has(u) ? { current_name: nameBy.get(u)! } : null }));
 
   const allUrns = Array.from(new Set([anchorUrn, ...memberRows.map((m) => m.school_urn)]));
   const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: allUrns });

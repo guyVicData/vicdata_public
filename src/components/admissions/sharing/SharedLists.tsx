@@ -11,6 +11,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { entryPoint } from "@/lib/admissions/entry-points";
+import { readSets } from "@/lib/sets/store";
+import { listRowsFromSets } from "@/lib/sets/admissions-lists";
 import { TeacherModal } from "@/components/teacher/TeacherModal";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
@@ -27,8 +29,9 @@ export function SharedListsOnly({ member, theme, onTheme }: { member: Admissions
   useEffect(() => {
     (async () => {
       const supabase = createBrowserSupabaseClient();
-      const { data } = await supabase.from("admissions_lists").select("id, entry_point, kind, rung, members, updated_by, updated_at").eq("school_account_id", member.schoolAccountId).order("entry_point");
-      const lists = (data ?? []) as ListRow[];
+      // 0.8 sets round 1 (A5): the lists are the school's sets now (public.sets), read in the old shape.
+      const { sets } = await readSets(supabase, { schoolAccountId: member.schoolAccountId });
+      const lists: ListRow[] = listRowsFromSets(sets).sort((a, b) => a.entry_point.localeCompare(b.entry_point));
       setRows(lists);
       const urns = Array.from(new Set(lists.flatMap((l) => l.members ?? [])));
       const out: Record<string, string> = {};

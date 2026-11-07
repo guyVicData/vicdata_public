@@ -8,6 +8,7 @@
 // (/account, /sets, /sets/[id]) -- there's no server-side session/middleware in this
 // codebase to gate on instead.
 
+import { readVisibleSets, saveSet, schoolNames } from "@/lib/sets/store";
 import { PageSurface } from "@/components/feedback/PageFeedback";
 import { schoolSurface } from "@/components/feedback/surface";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -467,10 +468,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
         const [{ data: schoolRow }, defaultListsRes, savedSetsRows] = await Promise.all([
           supabase.from("schools").select("urn, current_name, town, easting, northing").eq("urn", urn).maybeSingle(),
           fetch(`/api/data-view/default-lists?urn=${urn}`, { headers: { Authorization: `Bearer ${authToken}` } }),
-          supabase
-            .from("saved_sets")
-            .select("id, name, config, saved_set_members(school_urn, member_status, schools(current_name))")
-            .eq("set_type", "comparator"),
+          // 0.8 sets round 1 (A5): the one sets model (public.sets): the school's and the member's own.
+          readVisibleSets(supabase, "compared_against").then(async (r) => ({ sets: r.sets, names: await schoolNames(supabase, r.sets.flatMap((s) => s.members.map((m) => m.urn))) })),
         ]);
 
         if (!schoolRow) {
@@ -518,26 +517,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
         }
         setTargetNation(body.nation);
 
-        type SavedSetRow = {
-          id: string;
-          name: string;
-          config: { filters?: WireDataViewFilterState } | null;
-          saved_set_members: { school_urn: string; member_status: string; schools: { current_name: string } | null }[];
-        };
-        const saved = ((savedSetsRows.data as unknown as SavedSetRow[]) ?? []).map(
+        const saved = savedSetsRows.sets.map(
           (s): SetOption => ({
             kind: "saved",
             id: s.id,
             label: s.name,
-            schools: s.saved_set_members
-              .filter((m) => m.member_status === "confirmed")
-              .map((m) => ({ urn: m.school_urn, name: m.schools?.current_name ?? m.school_urn, distanceKm: null })),
+            schools: s.members.map((m) => ({ urn: m.urn, name: savedSetsRows.names.get(m.urn) ?? m.urn, distanceKm: null })),
             // Older rows (every one saved via /sets/comparator/new/page.tsx, and
             // every row saved before this round) have no real `config.filters` at
             // all -- `config` defaults to `{}` at the schema level, so this is
             // `undefined`, not a malformed value; SetOption's own `filters` field is
             // optional for exactly this reason.
-            filters: s.config?.filters,
+            filters: (s.config as { filters?: WireDataViewFilterState }).filters,
           }),
         );
         setSavedSets(saved);
@@ -1124,7 +1115,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
 
   // 2026-09-06, UX refinements round 1, A2/B3: the one save mechanism shared by the
   // filter row's own Saved Sets control and (once built) B3's richer "Compared with"
-  // rework -- the exact same saved_sets/saved_set_members tables and RLS policies
+  // rework -- the one sets model (public.sets / set_members, 0.8 sets round 1) and its RLS policies
   // /sets/comparator/new/page.tsx's own save flow already uses, with one real
   // addition: `config.filters`, a wire-safe snapshot of the current filter state, so
   // recall restores both halves of "what was I looking at," not just the schools.
@@ -1137,32 +1128,19 @@ export default function DataViewShell({ urn }: { urn: string }) {
     const urnsToSave = Array.from(tickedUrns).filter((u) => u !== target?.urn);
     if (urnsToSave.length === 0) return { ok: false, error: "Tick at least one school to save a set." };
 
-    const { data: set, error: insertError } = await supabase
-      .from("saved_sets")
-      .insert({
-        school_account_id: schoolAccountId,
-        set_type: "comparator",
-        name,
-        owner_membership_id: membershipId,
-        config: { filters: serializeFilterState(filters) },
-      })
-      .select("id")
-      .single();
-    if (insertError || !set) {
-      // The personal-set cap (8 since the 20260925232857 migration, enforced by the DB
-      // trigger -- saved_sets.sql's own
-      // enforce_personal_comparator_cap) surfaces here as a real Postgres exception
-      // message, same as /sets/comparator/new/page.tsx's own save already surfaces
-      // it -- not re-worded, so the two save paths give the member the same answer.
-      return { ok: false, error: insertError?.message ?? "Could not save this set." };
-    }
-
-    const { error: membersError } = await supabase.from("saved_set_members").insert(
-      urnsToSave.map((urn) => ({ saved_set_id: set.id, school_urn: urn, member_status: "confirmed" as const })),
+    // 0.8 sets round 1 (A5): saved to the one sets model as the member's own personal set, the set
+    // and its schools in one call (save_set). The cap (8 active) is the database's trigger; its
+    // refusal is worded once, in src/lib/sets/store.ts, for every save path.
+    const { data: who } = await supabase.auth.getUser();
+    if (!who.user) return { ok: false, error: "Sign in to save." };
+    const res = await saveSet(
+      supabase,
+      null,
+      { name, kind: "compared_against", owner_scope: "personal", owner_profile_id: who.user.id, school_account_id: schoolAccountId, creator_kind: "me", focus_urn: target?.urn ?? null, config: { filters: serializeFilterState(filters) } },
+      urnsToSave.map((urn) => ({ urn })),
     );
-    if (membersError) {
-      return { ok: false, error: membersError.message };
-    }
+    if ("error" in res) return { ok: false, error: res.error };
+    const set = { id: res.id };
 
     const names = new Map(profilesByUrn);
     setSavedSets((prev) => [

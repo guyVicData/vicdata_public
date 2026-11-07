@@ -3176,6 +3176,67 @@ const RUNNERS: Record<string, Runner> = {
     const pass = !unmarkedTables.length && !unlisted.length && !stale.length && tokens;
     return { pass, detail: fmt({ marked: rows.filter((r) => r.marked).length, listed: rows.filter((r) => r.listed).length, unmarkedTables: unmarkedTables.join(", ") || "none", unlisted: unlisted.map((r) => `${r.file}:${r.line}`).join(", ") || "none", stale: stale.length, tokens: Object.keys(FEATURED_ROW_TOKEN).length, tokensLightAndDark: tokens }) };
   },
+  // 0.8 sets round 1: R-SETS-ONE-MODEL -- no src read of the old tables (code, not comments), and the
+  // conversion of Leighton Park's 6 lists and the sets' RLS proved in PGlite (v08_sets_r1_pglite.mjs).
+  async setsOneModel() {
+    const fs = await import("node:fs");
+    const root = new URL("..", import.meta.url).pathname;
+    const files: string[] = [];
+    const walk = (d: string) => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const p = path.join(d, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (/\.(ts|tsx)$/.test(e.name)) files.push(p);
+      }
+    };
+    walk(path.join(root, "src"));
+    const OLD = /\b(saved_sets|saved_set_members|admissions_lists)\b/;
+    const hits: string[] = [];
+    for (const f of files) {
+      fs.readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+        const code = line.replace(/\/\/.*$/, "").replace(/^\s*\*.*$/, "").replace(/\/\*.*?\*\//g, "");
+        // Test names and messages mention the old tables in prose; a read is a from() or an embed.
+        if (OLD.test(code) && /from\(\s*["'`](saved_sets|saved_set_members|admissions_lists)|\b(saved_set_members|saved_sets|admissions_lists)\([a-z_]/.test(code)) hits.push(`${path.relative(root, f)}:${i + 1}`);
+      });
+    }
+    const { execFileSync } = await import("node:child_process");
+    let out = "";
+    let ok = true;
+    try {
+      out = execFileSync("node", ["supabase/tests/v08_sets_r1_pglite.mjs"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 });
+    } catch (e) {
+      ok = false;
+      out = String((e as { stdout?: string }).stdout ?? "");
+    }
+    const lines = out.split("\n");
+    const conv = lines.filter((l) => /^(PASS|FAIL)\s+ {2}(11|16)\+ /.test(l));
+    const twice = lines.filter((l) => /applies a second time|changes nothing/.test(l));
+    const pass = hits.length === 0 && ok && conv.length === 6 && conv.every((l) => l.startsWith("PASS")) && twice.every((l) => l.startsWith("PASS")) && twice.length === 2;
+    return { pass, detail: fmt({ oldTableReadsInSrc: hits.length ? hits.slice(0, 5).join(" ") : 0, filesScanned: files.length, conversion: `${conv.filter((l) => l.startsWith("PASS")).length}/6 rows exact`, runTwice: twice.every((l) => l.startsWith("PASS")) ? "no change" : "CHANGED", pglite: ok ? "all pass" : "FAIL" }) };
+  },
+  // R-SETS-RLS: the read, write, curate, cap and stamp checks in v08_sets_r1_pglite.mjs.
+  async setsRls() {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    let out = "";
+    let ok = true;
+    try {
+      out = execFileSync("node", ["supabase/tests/v08_sets_r1_pglite.mjs"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 });
+    } catch (e) {
+      ok = false;
+      out = String((e as { stdout?: string }).stdout ?? "");
+    }
+    const sections = ["who reads", "who writes: compared-against school sets", "who writes: feeder school sets", "no set moves or changes hands", "the cap: 8 active personal sets", "the stamp and the per-user state", "save_set"];
+    const bySection: Record<string, string> = {};
+    let cur = "";
+    for (const l of out.split("\n")) {
+      const m = /^-- (.*)$/.exec(l);
+      if (m) cur = sections.find((s) => m[1].startsWith(s)) ?? "";
+      else if (cur && /^(PASS|FAIL)/.test(l)) bySection[cur] = (bySection[cur] ?? "") + (l.startsWith("PASS") ? "+" : "x");
+    }
+    const pass = ok && sections.every((s) => (bySection[s] ?? "").length > 0 && !bySection[s].includes("x"));
+    return { pass, detail: sections.map((s) => `${s}: ${(bySection[s] ?? "").split("").filter((c) => c === "+").length} pass${(bySection[s] ?? "").includes("x") ? ", FAIL" : ""}`).join("; ") };
+  },
 };
 
 // --------------------------------------------------------------------------- main

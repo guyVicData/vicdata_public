@@ -305,6 +305,8 @@ export function ComparatorSetChooser({
       urns: customUrns,
       config: asNew || !editingSet ? { startedFrom: custom.baseLabel } : editingSet.config,
       viewAs: me.viewAs ?? null,
+      creatorKind: me.creatorKind ?? undefined,
+      focusUrn: targetUrn,
     });
     if ("error" in result) {
       setBusy(false);

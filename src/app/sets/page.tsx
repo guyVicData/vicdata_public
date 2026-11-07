@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { readSets } from "@/lib/sets/store";
 
-type SavedSet = { id: string; name: string; set_type: string };
+type SavedSet = { id: string; name: string; kind: "compared_against" | "feeders"; personal: boolean };
 
 type Membership = {
   id: string;
@@ -38,13 +39,12 @@ export default function SetsHomePage() {
       if (error) console.error("Failed to load school memberships:", error);
       const rows = (data as unknown as Membership[]) ?? [];
 
+      // 0.8 sets round 1 (A5): the one sets model (public.sets): each school's sets and the member's own.
       const withSets = await Promise.all(
         rows.map(async (m) => {
-          const { data: sets } = await supabase
-            .from("saved_sets")
-            .select("id, name, set_type")
-            .eq("school_account_id", m.school_account_id);
-          return { ...m, savedSets: sets ?? [] };
+          const { sets } = await readSets(supabase, { schoolAccountId: m.school_account_id, profileId: userData.user!.id });
+          const here = sets.filter((s) => s.ownerScope === "school" || s.schoolAccountId === m.school_account_id || (!s.schoolAccountId && s.focusUrn === m.school_accounts.school_urn));
+          return { ...m, savedSets: here.map((s) => ({ id: s.id, name: s.name, kind: s.kind, personal: s.ownerScope === "personal" })) };
         }),
       );
       setMemberships(withSets);
@@ -75,30 +75,17 @@ export default function SetsHomePage() {
           <p className="font-medium">
             {m.school_accounts.schools?.current_name ?? m.school_accounts.school_urn}
           </p>
-          <div className="mt-2 flex gap-4 text-sm">
-            <Link
-              className="underline"
-              href={`/sets/comparator/new?school_account_id=${m.school_account_id}&anchor_urn=${m.school_accounts.school_urn}`}
-            >
-              Build Comparator Set
-            </Link>
-            <Link
-              className="underline"
-              href={`/sets/feeder/new?school_account_id=${m.school_account_id}&receiving_urn=${m.school_accounts.school_urn}`}
-            >
-              Build Feeder Set
-            </Link>
-          </div>
+          <p className="mt-2 text-sm text-neutral-500">Make a set from any page&rsquo;s set menu (New set&hellip;).</p>
           {m.savedSets && m.savedSets.length > 0 && (
             <ul className="mt-3 space-y-1 text-sm">
               {m.savedSets.map((s) => (
                 <li key={s.id}>
-                  {s.set_type === "comparator" ? (
+                  {s.kind === "compared_against" ? (
                     <Link className="underline" href={`/sets/${s.id}`}>
                       {s.name}
                     </Link>
                   ) : (
-                    <span className="text-neutral-500">{s.name} (feeder)</span>
+                    <span className="text-neutral-500">{s.name} (feeder schools)</span>
                   )}
                 </li>
               ))}

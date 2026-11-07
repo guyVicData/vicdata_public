@@ -661,7 +661,7 @@ export default function ComparatorSidebar({
             />
           ))}
           <Link
-            href="/sets/comparator/new"
+            href="/sets"
             className="rounded-full border border-dashed border-neutral-300 px-3 py-1 text-xs text-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
           >
             + Add a list

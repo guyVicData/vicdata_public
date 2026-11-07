@@ -26,8 +26,6 @@ export const FOCUS_TABLES: { file: string; view: string }[] = [
 /** Rows of schools with no focus row to tint, each with why. `has` picks the element (a fragment of its
  * opening tag); without it, every school row in the file. */
 export const NO_FOCUS_ROWS: { file: string; has?: string; why: string }[] = [
-  { file: "src/app/sets/comparator/new/page.tsx", why: "the set builder's search results: no school is the focus" },
-  { file: "src/app/sets/feeder/new/page.tsx", why: "the feeder list builder's search results: no school is the focus" },
   { file: "src/components/admissions/setup/Setup.tsx", why: "Admissions set-up: choosing rivals, no focus row" },
   { file: "src/components/admissions/views/Momentum.tsx", why: "rivals' momentum lists the rivals only (the school is filtered out)" },
   { file: "src/components/admissions/views/ShapeAndSize.tsx", why: "shape cards, a chart (the featured profile is drawn apart)" },

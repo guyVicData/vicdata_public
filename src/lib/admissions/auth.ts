@@ -2,7 +2,7 @@
 // The member's own token (anon key + Authorization), as the Teacher routes. Admissions comes with
 // the whole-school package (Guy): access is by role only -- an approved member of the school
 // with the Admissions or SMT role, its School-Admin, or a platform admin (View as). Teams or roles
-// a list is shared with read the lists through RLS (admissions_lists); the computed views stay
+// a list is shared with read the lists through RLS (0.8 sets round 1: public.sets); the computed views stay
 // with the roles above until round 2 decides otherwise (logged).
 //
 // 0.8 View as: resolved through the one caller helper (view-as-server.ts, resolveCaller). A platform
@@ -13,6 +13,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { resolveCaller, type ResolvedCaller } from "../view-as-server";
+import { readSchoolSetsByUrn } from "../sets/store";
+import { savedListsFromSets } from "../sets/admissions-lists";
+import type { SavedList } from "./lists";
 
 export type AdmissionsCaller = { supabase: SupabaseClient; reader: SupabaseClient; userId: string; urn: string; lead: boolean; roles: string[]; access: ResolvedCaller["access"]; readOnly: boolean };
 
@@ -28,13 +31,11 @@ export async function admissionsCaller(request: NextRequest, urn: string | null)
 }
 
 /** The school's saved lists for an entry point (RLS decides what the caller sees); [] before the
- * migration is applied or when nothing is saved -- the views then use the nearby defaults. */
-export async function savedLists(supabase: SupabaseClient, urn: string, entryPoint: string): Promise<{ kind: string; rung: string | null; members: string[] | null; la_blend: Record<string, number> | null; confirmed: boolean }[]> {
-  const { data, error } = await supabase
-    .from("admissions_lists")
-    .select("kind, rung, members, la_blend, confirmed, school_accounts!inner(school_urn)")
-    .eq("school_accounts.school_urn", urn)
-    .eq("entry_point", entryPoint);
+ * migration is applied or when nothing is saved -- the views then use the nearby defaults.
+ * 0.8 sets round 1 (A5): read from the one sets model (public.sets), the school's own choice of set
+ * for each old list kind (src/lib/sets/admissions-lists.ts), so the figures are unchanged. */
+export async function savedLists(supabase: SupabaseClient, urn: string, entryPoint: string): Promise<SavedList[]> {
+  const { sets, error } = await readSchoolSetsByUrn(supabase, urn, { entryPoint });
   if (error) return [];
-  return (data ?? []) as never;
+  return savedListsFromSets(sets, entryPoint);
 }

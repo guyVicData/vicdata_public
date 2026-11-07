@@ -2423,6 +2423,29 @@ export const RULES: Rule[] = [
     origin: "0.8 feedback deploy gate, F-22 (docs/v0.8/vicdata_0_8_feedback_deploy_gate_claude_code_prompt_v1.md, item 6)",
     status: "active",
   },
+  // ------------------------------------------------------------------ 0.8 sets round 1
+  {
+    id: "R-SETS-ONE-MODEL",
+    statement:
+      "Every set of schools on the site -- Admissions' feeder and rival lists, Teacher's and SMT's comparator sets, the Data View's saved sets -- is one model: public.sets with set_members (urn, order, tier) and set_user_state (last used, folder, per person). Nothing in src reads or writes saved_sets, saved_set_members or admissions_lists. Admissions' old list kinds are read from the school's own default sets (compared_against = rivals; feeders day / boarding = the day and boarding feeder lists; a rung age = the 16+ rung list), so the views' figures are unchanged for the same schools. The migration converts every admissions_lists and saved_sets row, keeping members in order, the fuzzy rule (as rule), the LA blend, the entry point, who changed it and when; running it twice changes nothing; the old tables stay, read by nothing new.",
+    why: "Two list systems that shared nothing, and four editors (sets round 1, Guy 6 Nov): one engine, Admissions first.",
+    appliesTo: "every set of schools: Admissions, Teacher, SMT, the Data View, /sets",
+    enforcedIn: ["supabase/migrations/20261121090000_v08_sets_r1.sql", "src/lib/sets/store.ts", "src/lib/sets/admissions-lists.ts", "src/lib/admissions/auth.ts:savedLists", "src/app/api/admissions/lists/route.ts", "src/app/api/teacher/saved-comparator-sets/route.ts", "src/lib/teacher-view-saved-sets.ts:saveComparatorSet", "src/components/data-view/DataViewShell.tsx", "supabase/tests/v08_sets_r1_pglite.mjs"],
+    testCase: { urn: "110110", school: "Leighton Park (its 6 lists, PGlite) and the source tree", phase: "ks4", expect: "No src read of saved_sets, saved_set_members or admissions_lists (code, not comments). Leighton Park's 6 rows convert exactly: 18, 27, 10, 16, 18 and 10 schools in order, both rivals' rules, no blend, the lead's name and time; a second run changes nothing; the Admissions views read the same lists from the sets.", check: "setsOneModel" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, A1-A5)",
+    status: "active",
+  },
+  {
+    id: "R-SETS-RLS",
+    statement:
+      "A personal set is read and written by its owner only (and if it names a school, they are approved there). A school set is read by every approved member of its school (and platform admins); it is written by its kind's curators: compared-against by SMT, Admissions and the School-Admin (or the account holder); feeders by Admissions. A teacher never writes a school set or its schools. A set can't be moved to another school, made personal, or given away. A school set's creator is a role its writer holds there. Up to 8 active personal sets per person; archiving frees a slot. Who changed it and when is the database's stamp. save_set writes a set and its schools in one call under the caller's RLS.",
+    why: "Curated sets are the school's; personal ones are private; the cap keeps the menu short.",
+    appliesTo: "public.sets, set_members, set_user_state",
+    enforcedIn: ["supabase/migrations/20261121090000_v08_sets_r1.sql:can_curate_sets", "supabase/migrations/20261121090000_v08_sets_r1.sql:enforce_personal_set_cap", "supabase/migrations/20261121090000_v08_sets_r1.sql:save_set", "src/lib/sets/model.ts:canCurate", "supabase/tests/v08_sets_r1_pglite.mjs"],
+    testCase: { urn: "110110", school: "Leighton Park (PGlite)", phase: "ks4", expect: "Owner-only personal sets; every approved member reads school sets, pending members and other schools nothing; SMT, Admissions and the School-Admin write compared-against sets, Admissions only feeders, teachers neither; no move, takeover or forged creator; the 9th active personal set refused until one is archived.", check: "setsRls" },
+    origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, A2, A5)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

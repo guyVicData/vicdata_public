@@ -646,7 +646,7 @@ const BOARDING_CATEGORY_CONFIG = {
 // needing to also unpack a full DefaultList from that function just to read one
 // field off it. A single-row indexed lookup (boarding_quintiles.urn is the PK), not
 // the expensive part of this module.
-async function resolveBoardingQuintileBand(urn: string): Promise<BoardingQuintileBand | null> {
+export async function resolveBoardingQuintileBand(urn: string): Promise<BoardingQuintileBand | null> {
   const supabase = createServerAnonSupabaseClient();
   const { data } = await supabase.from("boarding_quintiles").select("quintile").eq("urn", urn).maybeSingle();
   if (!data) return null;

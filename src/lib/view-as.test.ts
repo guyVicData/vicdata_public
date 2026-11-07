@@ -94,11 +94,15 @@ function recorder(uid = "guy") {
     };
     return b;
   };
-  const supabase = { from: builder, auth: { getUser: async () => ({ data: { user: { id: uid } } }) } } as never;
+  const rpc = async (fn: string, payload: unknown) => {
+    writes.push({ table: `rpc:${fn}`, op: "rpc", payload, filters: [] });
+    return { data: "set-1", error: null };
+  };
+  const supabase = { from: builder, rpc, auth: { getUser: async () => ({ data: { user: { id: uid } } }) } } as never;
   return { supabase, writes };
 }
 
-test("a comparator set saved in View as is the View as's own: never saved_sets", async () => {
+test("a comparator set saved in View as is the View as's own: never the school's sets", async () => {
   const { supabase, writes } = recorder();
   const viewAs = { stateKey: viewAsStateKey("100053", "teacher") };
   const r = await saveComparatorSet(supabase, { id: null, schoolAccountId: "acc", ownerMembershipId: "", name: "Rivals", urns: ["100050"], config: {}, viewAs });
@@ -115,10 +119,12 @@ test("a comparator set saved in View as is the View as's own: never saved_sets",
   assert.deepEqual(del.filters, [["profile_id", "guy"], ["school_urn", "100053~trial~teacher~sets"], ["chart_key", `set:${(r as { id: string }).id}`]]);
 });
 
-test("outside View as, sets still go to saved_sets as before", async () => {
+test("outside View as, sets go to the school's sets (0.8 sets round 1: save_set), the signed-in person's own", async () => {
   const { supabase, writes } = recorder();
   await saveComparatorSet(supabase, { id: null, schoolAccountId: "acc", ownerMembershipId: "m1", name: "Rivals", urns: [], config: {} });
-  assert.equal(writes[0].table, "saved_sets");
+  assert.equal(writes[0].table, "rpc:save_set");
+  const p = writes[0].payload as { p_set: { owner_scope: string; owner_profile_id: string; creator_kind: string; kind: string } };
+  assert.deepEqual([p.p_set.owner_scope, p.p_set.owner_profile_id, p.p_set.creator_kind, p.p_set.kind], ["personal", "guy", "me", "compared_against"]);
 });
 
 // ------------------------------------------------------------------ the client side (item C)
