@@ -2038,7 +2038,7 @@ What a number is allowed to be. 178 rules: 172 active, 6 superseded; 22 must lif
 | Applies to | DV-ADM-M-MOMENTUM |
 | Enforced in | - src/lib/sets/results-coverage.ts:resultsMeasureFor, IGCSE_SWITCH_SHARE<br>- src/lib/admissions/views-api.ts:momentumResults<br>- src/components/admissions/views/Momentum.tsx:Momentum, MomentumScope, momentumChips |
 | Tagged at | - src/lib/admissions/views-api.ts |
-| Test case | Leighton Park; Maiden Erlegh School (136637, state) (110110), ks4: Recomputed from the KS4 and KS5 headlines and the IGCSE rule: Leighton Park's 11+ default set stays on GCSE (2 of 10 rivals without GCSE, both IGCSE) and names them under the title; Leighton Park with a saved list of five IGCSE independents and two state grammars switches ("Post-16 results: 5 of 7 rivals have no GCSE results (mostly IGCSE)"), each dot's y the A-level points change; Maiden Erlegh's set stays on GCSE; 16+ unchanged; the 40% in one place. [runner: admMomentumIgcse] |
+| Test case | Leighton Park; Maiden Erlegh School (136637, state) (110110), ks4: Recomputed from the KS4 and KS5 headlines and the IGCSE rule: Leighton Park's 11+ default set is drawn as the rule says for its real counts (on 6 Nov's data and the pre-sets default: GCSE, 2 of 10 rivals without, both IGCSE, named under the title); Leighton Park with a saved list of five IGCSE independents and two state grammars switches ("Post-16 results: 5 of 7 rivals have no GCSE results (mostly IGCSE)"), each dot's y the A-level points change; Maiden Erlegh's set stays on GCSE; 16+ unchanged; the 40% in one place. [runner: admMomentumIgcse] |
 | Origin | 0.8 Sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, F25) |
 | Status | active |
 | Must lift | — |

@@ -1803,9 +1803,16 @@ const RUNNERS: Record<string, Runner> = {
       const ys = got.measure !== "post16" || r.rows.every((x) => { const a = p5.get(x.urn)?.get(TREND_BASE_PERIOD); const b = p5.get(x.urn)?.get(k5.period!); const pts = got.resultsChange[x.urn]?.points; return a === undefined || b === undefined ? pts === null : Math.abs((pts ?? NaN) - (b - a)) < 1e-9; });
       return { r, got, want, same, scope, ys, chip: momentumChips(m, r).results, html };
     };
-    // Leighton Park's 11+ default set: the share decides.
+    // Leighton Park's 11+ default set: whatever the rule says for its real counts (on 6 Nov's data: GCSE,
+    // 2 of 10 rivals without, both IGCSE), drawn as the rule says.
     const lp = await one("110110", null);
-    const lpOk = lp.same && lp.got.measure === "gcse" && lp.got.noGcse / lp.got.of <= IGCSE_SWITCH_SHARE && lp.got.leftOut.every((x) => lp.scope.includes(esc(x.name))) && (lp.got.leftOut.length === 0 || lp.scope.includes("Left out, no GCSE results")) && lp.scope.includes("Schools submitting GCSE results only") && lp.chip === "Results: Attainment 8";
+    const lpLine = `Post-16 results: ${lp.got.noGcse} of ${lp.got.of} rivals have no GCSE results`;
+    const lpDrawn = lp.got.switched
+      ? lp.scope.includes(esc(lpLine)) && lp.chip === "Results: A-level points" && lp.ys
+      : lp.got.noGcse / lp.got.of <= IGCSE_SWITCH_SHARE || lp.got.noPost16 >= lp.got.noGcse
+        ? lp.got.leftOut.every((x) => lp.scope.includes(esc(x.name))) && (lp.got.leftOut.length === 0 || lp.scope.includes("Left out, no GCSE results")) && lp.scope.includes("Schools submitting GCSE results only") && lp.chip === "Results: Attainment 8"
+        : false;
+    const lpOk = lp.same && lpDrawn;
     // Leighton Park with a saved list of its nearby IGCSE independents and two state grammars: switches.
     const sw = await one("110110", ["110165", "110137", "110109", "110151", "134467", "136449", "136448"]);
     const line = `Post-16 results: ${sw.got.noGcse} of ${sw.got.of} rivals have no GCSE results (mostly IGCSE)`;
