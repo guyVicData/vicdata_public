@@ -3231,7 +3231,8 @@ const RUNNERS: Record<string, Runner> = {
       ok = false;
       out = String((e as { stdout?: string }).stdout ?? "");
     }
-    const passed = /ℹ pass (\d+)/.exec(out)?.[1] ?? "0";
+    // The summary is "ℹ pass N" (spec reporter, a terminal) or "# pass N" (TAP, which Node uses when piped, as here).
+    const passed = /^(?:ℹ|#) pass (\d+)/m.exec(out)?.[1] ?? "0";
     return { pass: ok && Number(passed) >= 2, detail: fmt({ tests: passed, mocked: "/api/version" }) };
   },
   // R-REPORT-COMMANDS-ORDER: every report first committed on or after the template (6 Nov), and any not yet
