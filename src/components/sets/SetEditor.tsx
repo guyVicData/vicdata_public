@@ -154,6 +154,13 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
     };
   }, [page.urn, page.kind, page.entry, urnsKey, filter]);
 
+  // The Add schools sheet closes on Esc, as the menu's does (G27, R-SETS-MOBILE).
+  useEffect(() => {
+    if (!phone || !addOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setAddOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phone, addOpen]);
   const row = (u: string) => cache.get(u);
   const ordered = useMemo(() => {
     const byKm = [...items].sort((a, b) => (row(a.urn)?.km ?? 1e9) - (row(b.urn)?.km ?? 1e9));
@@ -326,7 +333,7 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
           </label>
           <span className="min-w-0 flex-1 truncate text-[12.5px]">{s.name}</span>
           <span className="w-[52px] shrink-0 text-right tabular-nums text-[12px]">{s.km != null ? s.km.toFixed(1) : "—"}</span>
-          {!phone && <span className="w-[86px] shrink-0 text-[12px]">{s.sector === "independent" ? "Independent" : "State"}</span>}
+          {!phone && !feeders && <span className="w-[86px] shrink-0 text-[12px]">{s.sector === "independent" ? "Independent" : "State"}</span>}
           {!phone && !feeders && <span className="w-[56px] shrink-0 text-[12px]">{s.boarding ? "Yes" : "No"}</span>}
           <span className="w-[56px] shrink-0 text-right tabular-nums text-[12px] text-[var(--muted2)]">{fmt(s.pupils)}</span>
         </div>
@@ -507,7 +514,7 @@ export function SetEditor({ page, start, phone }: { page: EditorPage; start: Edi
           <div className="fixed inset-0 z-[60]" data-editor-sheet="">
             <button type="button" aria-label="Close" className="absolute inset-0 h-full w-full bg-black/40" onClick={() => setAddOpen(false)} />
             <div className="absolute inset-x-0 bottom-0 flex max-h-[80vh] flex-col rounded-t-[16px] bg-[var(--panel-bg)] px-3 pb-4">
-              <button type="button" aria-label="Close" onClick={() => setAddOpen(false)} className="mx-auto flex h-[44px] w-[88px] items-center justify-center">
+              <button type="button" aria-label="Close" onClick={() => setAddOpen(false)} className="mx-auto flex h-[44px] w-[88px] shrink-0 items-center justify-center">
                 <span className="block h-[5px] w-[44px] rounded-full bg-[var(--panel-border2)]" />
               </button>
               <div className="min-h-0 overflow-y-auto">{adding}</div>

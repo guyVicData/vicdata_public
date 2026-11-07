@@ -107,9 +107,9 @@ export const setHeaderWords = (kind: SetKind, s: { name: string; count: number |
 export function SetHeaderLine({ kind, set }: { kind: SetKind; set: { name: string; count: number | null; main?: number } | null }) {
   if (!set) return null;
   return (
-    <span data-set-header={kind} className="inline-flex max-w-full flex-wrap items-center gap-x-1 whitespace-normal break-words text-[11.5px] leading-snug text-[var(--muted2)]">
-      <KindIcon kind={kind} size={12} />
-      <span>{setHeaderWords(kind, set)}</span>
+    <span data-set-header={kind} className="inline-flex max-w-full flex-wrap items-start gap-x-1 whitespace-normal break-words text-[11.5px] leading-snug text-[var(--muted2)]">
+      <span className="mt-[2px] shrink-0"><KindIcon kind={kind} size={12} /></span>
+      <span className="min-w-0">{setHeaderWords(kind, set)}</span>
     </span>
   );
 }
@@ -255,7 +255,7 @@ export function SetSelector(p: SetSelectorProps) {
         <div className="fixed inset-0 z-[60]" data-set-menu="sheet">
           <button type="button" aria-label="Close" data-set-sheet-backdrop="" className="absolute inset-0 h-full w-full cursor-default bg-black/40" onClick={() => setOpen(false)} />
           <div id={menuId} role="menu" aria-label={p.label} className="absolute inset-x-0 bottom-0 flex max-h-[80vh] flex-col rounded-t-[16px] border-t border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2 pb-[max(env(safe-area-inset-bottom),8px)]">
-            <button type="button" aria-label="Close" data-set-sheet-handle="" onClick={() => setOpen(false)} className="mx-auto flex h-[44px] w-[88px] items-center justify-center">
+            <button type="button" aria-label="Close" data-set-sheet-handle="" onClick={() => setOpen(false)} className="mx-auto flex h-[44px] w-[88px] shrink-0 items-center justify-center">
               <span className="block h-[5px] w-[44px] rounded-full bg-[var(--panel-border2)]" />
             </button>
             <div className="min-h-0 flex-1 overflow-y-auto">{blocks}</div>

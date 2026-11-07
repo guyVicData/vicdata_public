@@ -20,7 +20,7 @@ const creatorOfSet = (s: SavedComparatorSet): CreatorKind => (s.vc ? "victoria_c
 export function teacherMenuRows(payload: SavedSetsPayload | null, o: { nearestLabel: string; nearestCount: number | null; rankings?: SavedRanking[] }): { rows: { default: SetMenuRow[]; school: SetMenuRow[]; mine: SetMenuRow[] }; mine: { active: number; cap: number } | null } {
   const sets = payload?.sets ?? [];
   const rankings = o.rankings ?? payload?.rankings ?? [];
-  const row = (s: SavedComparatorSet): SetMenuRow => ({ key: `saved:${s.id}`, name: s.name, count: s.members.length, creator: creatorOfSet(s), creatorLabel: s.group ? (s.creatorLabel ?? s.group.sourceLabel) : undefined, pinned: s.vc || !!s.group ? false : s.shared });
+  const row = (s: SavedComparatorSet): SetMenuRow => ({ key: `saved:${s.id}`, name: s.name, count: s.members.length, creator: creatorOfSet(s), creatorLabel: undefined, pinned: s.vc || !!s.group ? false : s.shared });
   const rrow = (r: SavedRanking): SetMenuRow => ({ key: rankingKey(r.id), name: r.name, count: null, creator: r.mine ? "me" : "school_admin", title: `${r.name}: a ranking` });
   return {
     rows: {

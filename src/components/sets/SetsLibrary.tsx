@@ -204,7 +204,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
   const kinds = (
     <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Kind">
       {(["all", "compared_against", "feeders"] as const).map((k) => (
-        <button key={k} type="button" aria-pressed={filter.kind === k} onClick={() => setFilter((f) => ({ ...f, kind: k }))} className={`rounded-full border px-3 text-[12px] font-semibold ${hit} ${filter.kind === k ? "border-[var(--accent,var(--fg))]" : "border-[var(--panel-border2)] text-[var(--chip-fg)]"}`}>
+        <button key={k} type="button" aria-pressed={filter.kind === k} onClick={() => setFilter((f) => ({ ...f, kind: k }))} className={`min-w-[44px] rounded-full border px-3 text-[12px] font-semibold ${hit} ${filter.kind === k ? "border-[var(--accent,var(--fg))]" : "border-[var(--panel-border2)] text-[var(--chip-fg)]"}`}>
           {k === "all" ? "All" : KIND_WORD[k]}
         </button>
       ))}
@@ -251,7 +251,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
     </section>
   ) : null;
   const table = (
-    <section data-library-all="" className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3">
+    <section data-library-all="" className="min-w-0 overflow-x-auto rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3">
       <h2 className="mb-2 text-[13px] font-bold">{sections.find((s) => s.id === filter.section)?.label ?? filter.section.slice(7)} <span className="font-normal text-[var(--muted2)]">· {shown.length} shown</span></h2>
       {phone ? (
         <div className="flex flex-col gap-2">
@@ -272,7 +272,15 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
           })}
         </div>
       ) : (
-        <table className="w-full text-[12.5px]">
+        <table className="w-full table-fixed text-[12.5px]">
+          <colgroup>
+            <col />
+            <col style={{ width: 180 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 64 }} />
+            <col style={{ width: 96 }} />
+            <col style={{ width: 120 }} />
+          </colgroup>
           <thead>
             <tr className="text-left text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">
               <th className="py-1">Set</th>
@@ -291,13 +299,13 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
                   <td className="py-[6px]">
                     <div className="flex items-center gap-2">
                       <span style={{ color: c.fg }}><KindIcon kind={x.kind} size={16} /></span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="truncate font-semibold">{x.name}</div>
                         {x.description && <div className="truncate text-[11px] text-[var(--muted2)]">{x.description}</div>}
                       </div>
                     </div>
                   </td>
-                  <td>{KIND_WORD[x.kind]} · {x.entry ?? (x.phase === "ks5" ? "Post-16" : x.phase === "ks4" ? "GCSE" : "any")}</td>
+                  <td className="truncate whitespace-nowrap">{KIND_WORD[x.kind]} · {x.entry ?? (x.phase === "ks5" ? "Post-16" : x.phase === "ks4" ? "GCSE" : "any")}</td>
                   <td><CreatorPill creator={x.creator} /></td>
                   <td className="text-right tabular-nums">{x.count}</td>
                   <td className="pl-3 text-[var(--muted2)]">{usedWords(x.lastUsedAt)}</td>

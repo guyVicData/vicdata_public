@@ -102,22 +102,22 @@ export function SetView({ urn, schoolName, set, editHref, duplicateHref, phone }
   );
   const list = (
     <section data-view-list="" className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-      <table className="w-full text-[12.5px]">
+      <table className="w-full table-fixed text-[12.5px]">
         <thead>
           <tr className="text-left text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">
-            <th className="w-[28px] py-1">#</th>
+            <th className="w-[32px] py-1">#</th>
             <th>School</th>
-            <th className="text-right">km</th>
-            {!phone && <th className="pl-3">Sector</th>}
-            {!phone && <th className="pl-3">{feeders ? "Tier" : "Boards"}</th>}
-            <th className="text-right">{feeders ? "Aged" : "Pupils at"} {data?.age ?? ""}</th>
+            <th className="w-[52px] text-right">km</th>
+            {!phone && <th className="w-[110px] pl-3">Sector</th>}
+            {!phone && <th className="w-[90px] pl-3">{feeders ? "Tier" : "Boards"}</th>}
+            <th className="w-[84px] text-right">{feeders ? "Aged" : "Pupils at"} {data?.age ?? ""}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map(({ m, r }, i) => (
             <tr key={m.urn} className="border-t border-[var(--panel-border)]">
               <td className="py-[6px] tabular-nums text-[var(--muted2)]">{i + 1}</td>
-              <td className="max-w-[260px] truncate font-semibold">{r?.name ?? m.urn}</td>
+              <td className="truncate pr-2 font-semibold" title={r?.name ?? m.urn}>{r?.name ?? m.urn}</td>
               <td className="text-right tabular-nums">{r?.km != null ? r.km.toFixed(1) : "—"}</td>
               {!phone && <td className="pl-3">{r ? (r.sector === "independent" ? "Independent" : "State") : ""}</td>}
               {!phone && <td className="pl-3">{feeders ? (m.tier ? tierOf(m.tier)[0].toUpperCase() + tierOf(m.tier).slice(1) : "Untiered") : r ? (r.boarding ? "Yes" : "No") : ""}</td>}
@@ -157,12 +157,12 @@ export function SetView({ urn, schoolName, set, editHref, duplicateHref, phone }
         {list}
         {closeBody && (
           <details data-view-close="" className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-            <summary className="min-h-[44px] cursor-pointer text-[14px] font-bold leading-[44px]">How close is this set to {schoolName}?</summary>
+            <summary className="flex min-h-[44px] cursor-pointer items-center text-[14px] font-bold leading-snug">How close is this set to {schoolName}?</summary>
             {closeBody}
           </details>
         )}
         <details data-view-where="" className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-          <summary className="min-h-[44px] cursor-pointer text-[14px] font-bold leading-[44px]">Where this set is used</summary>
+          <summary className="flex min-h-[44px] cursor-pointer items-center text-[14px] font-bold leading-snug">Where this set is used</summary>
           {whereBody}
         </details>
       </div>
