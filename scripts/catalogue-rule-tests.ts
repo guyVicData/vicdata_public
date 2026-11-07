@@ -1771,6 +1771,58 @@ const RUNNERS: Record<string, Runner> = {
     const html = await admRenderAll("110110", "11+");
     return { pass: html.includes("Schools submitting GCSE results only"), detail: "11+ momentum" };
   },
+  // R-ADM-MOMENTUM-IGCSE (0.8 Sets r1, F25): the 11+ results switch recomputed from the KS4 / KS5
+  // headline populations and the IGCSE rule, and the panel rendered on the server from the route's answer.
+  async admMomentumIgcse() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const fs = await import("node:fs");
+    const v = await import("../src/lib/admissions/views-api");
+    const { headlinePopulation } = await import("../src/lib/admissions/ranks");
+    const { latestResults } = await import("../src/lib/admissions/rivals");
+    const { igcseAmong } = await import("../src/lib/igcse");
+    const { resultsMeasureFor, IGCSE_SWITCH_SHARE } = await import("../src/lib/sets/results-coverage");
+    const { Momentum, momentumChips } = await import("../src/components/admissions/views/Momentum");
+    const { InitialWidth } = await import("../src/components/admissions/views/charts");
+    const { TREND_BASE_PERIOD } = await import("../src/catalogue/notes");
+    const [k4, k5] = [await latestResults("ks4"), await latestResults("ks5")];
+    const [p4, p5] = [await headlinePopulation("ks4", k4.period!), await headlinePopulation("ks5", k5.period!)];
+    const ep = v.entryPoint("11+")!;
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const one = async (urn: string, members: string[] | null) => {
+      const lists = members ? [{ kind: "rivals", rung: null, members, la_blend: null, confirmed: true }] : [];
+      const [m, r] = await Promise.all([v.marketView(urn, ep, lists), v.rivalsView(urn, ep, lists)]);
+      const rivals = r.rows.filter((x) => !x.isSchool).map((x) => x.urn);
+      const ig = await igcseAmong(rivals);
+      const want = resultsMeasureFor(11, rivals.map((u) => ({ urn: u, hasGcse: !ig.has(u) && p4.get(u)?.get(k4.period!) !== undefined, hasPost16: p5.get(u)?.get(k5.period!) !== undefined, igcse: ig.has(u) })));
+      const got = r.momentum!;
+      const same = got.measure === want.measure && got.noGcse === want.noGcse && got.noPost16 === want.noPost16 && got.of === want.of && JSON.stringify(got.leftOut.map((x) => x.urn)) === JSON.stringify(want.leftOut);
+      const html = renderToStaticMarkup(createElement(InitialWidth.Provider, { value: 900 }, createElement(Momentum, { m, r, fullscreen: false })));
+      const scope = html.split("data-momentum-scope")[1]?.split("</div>")[0] ?? "";
+      // Each dot's y on the switched measure: the KS5 headline change since 2022/23.
+      const ys = got.measure !== "post16" || r.rows.every((x) => { const a = p5.get(x.urn)?.get(TREND_BASE_PERIOD); const b = p5.get(x.urn)?.get(k5.period!); const pts = got.resultsChange[x.urn]?.points; return a === undefined || b === undefined ? pts === null : Math.abs((pts ?? NaN) - (b - a)) < 1e-9; });
+      return { r, got, want, same, scope, ys, chip: momentumChips(m, r).results, html };
+    };
+    // Leighton Park's 11+ default set: the share decides.
+    const lp = await one("110110", null);
+    const lpOk = lp.same && lp.got.measure === "gcse" && lp.got.noGcse / lp.got.of <= IGCSE_SWITCH_SHARE && lp.got.leftOut.every((x) => lp.scope.includes(esc(x.name))) && (lp.got.leftOut.length === 0 || lp.scope.includes("Left out, no GCSE results")) && lp.scope.includes("Schools submitting GCSE results only") && lp.chip === "Results: Attainment 8";
+    // Leighton Park with a saved list of its nearby IGCSE independents and two state grammars: switches.
+    const sw = await one("110110", ["110165", "110137", "110109", "110151", "134467", "136449", "136448"]);
+    const line = `Post-16 results: ${sw.got.noGcse} of ${sw.got.of} rivals have no GCSE results (mostly IGCSE)`;
+    const swOk = sw.same && sw.got.switched && sw.got.measure === "post16" && sw.scope.includes(esc(line)) && sw.scope.includes('data-momentum-measure="post16"') && sw.ys && sw.chip === "Results: A-level points" && sw.html.includes("A-level points per entry");
+    // A state school's set (Maiden Erlegh School): stays on GCSE.
+    const st = await one("136637", null);
+    const stOk = st.same && st.got.measure === "gcse" && !st.got.switched;
+    // 16+: nothing changes (no momentum rule; the rivals view's own post-16 results).
+    const r16 = await v.rivalsView("110110", v.entryPoint("16+")!, []);
+    const at16 = r16.momentum === null && r16.stage === "ks5";
+    // The 40% in one place: the constant is declared once, and only results-coverage.ts holds 0.4 for it.
+    const src = (f: string) => fs.readFileSync(path.join(ROOT, f), "utf8");
+    const once = (src("src/lib/sets/results-coverage.ts").match(/IGCSE_SWITCH_SHARE = 0\.4\b/g) ?? []).length === 1 && !/resultsMeasureFor|IGCSE_SWITCH_SHARE/.test(src("src/components/admissions/views/Momentum.tsx").replace(/import[^;]+;/g, "")) && src("src/lib/admissions/views-api.ts").includes("resultsMeasureFor(");
+    const pass = lpOk && swOk && stOk && at16 && once;
+    const d = (x: Awaited<ReturnType<typeof one>>) => `${x.got.measure} (no GCSE ${x.got.noGcse}/${x.got.of}, ${x.got.noGcseIgcse} IGCSE; no post-16 ${x.got.noPost16}/${x.got.of}; left out: ${x.got.leftOut.map((y) => y.name).join("; ") || "none"})`;
+    return { pass, detail: fmt({ leightonPark: d(lp), lpOk, saved7: d(sw), swOk, line: sw.got.switched ? line : "not switched", maidenErlegh: d(st), stOk, at16, oneConstant: once }) };
+  },
   async admBoardingOnly() {
     const { createElement } = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");

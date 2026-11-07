@@ -1733,6 +1733,16 @@ export const RULES: Rule[] = [
     origin: "0.8 Admissions feedback round 1 (docs/v0.8/vicdata_0_8_admissions_feedback_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
+  {
+    id: "R-ADM-MOMENTUM-IGCSE",
+    statement: "Rivals' momentum at 11+ counts the rivals with no GCSE results in the latest results year (no Attainment 8, or an IGCSE school, listed but never ranked). Over 40% of them (IGCSE_SWITCH_SHARE, one constant in src/lib/sets/results-coverage.ts), and with post-16 results covering more of the rivals than GCSE does, its results axis and the flag list's Results column read A-level points per entry since 2022/23 instead, and one line under the title says so: \"Post-16 results: 6 of 10 rivals have no GCSE results (mostly IGCSE)\" (real counts). At 40% or below it stays on GCSE and names the rivals it leaves out. At 16+ (post-16 already) and 4+ nothing changes. The decision is one pure function (resultsMeasureFor), shared with the set editor's results switch (C16).",
+    why: "Guy, 7 Nov 2026 (F-40, F-41): \"this data panel needs to [act] when the compare list is largely IGCSE schools, maybe more than 40%\"; \"the IGCSE issue is only relevant for 11+; 16+ uses post-16 results\".",
+    appliesTo: "DV-ADM-M-MOMENTUM",
+    enforcedIn: ["src/lib/sets/results-coverage.ts:resultsMeasureFor, IGCSE_SWITCH_SHARE", "src/lib/admissions/views-api.ts:momentumResults", "src/components/admissions/views/Momentum.tsx:Momentum, MomentumScope, momentumChips"],
+    testCase: { urn: "110110", school: "Leighton Park; Maiden Erlegh School (136637, state)", phase: "ks4", expect: "Recomputed from the KS4 and KS5 headlines and the IGCSE rule: Leighton Park's 11+ default set stays on GCSE (2 of 10 rivals without GCSE, both IGCSE) and names them under the title; Leighton Park with a saved list of five IGCSE independents and two state grammars switches (\"Post-16 results: 5 of 7 rivals have no GCSE results (mostly IGCSE)\"), each dot's y the A-level points change; Maiden Erlegh's set stays on GCSE; 16+ unchanged; the 40% in one place.", check: "admMomentumIgcse" },
+    origin: "0.8 Sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, F25)",
+    status: "active",
+  },
   // ---------------------------------------------------------------- 0.7 admissions editor s1-2
   {
     id: "R-ADM-EDITOR-LOOKS-KEEP-NOTES",
