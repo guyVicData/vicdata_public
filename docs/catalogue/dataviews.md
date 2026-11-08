@@ -2,7 +2,7 @@
 
 # Dataviews
 
-The registered recipes the chooser offers and dashboards place, in host then rail order. 114 dataviews: 111 live, 3 draft.
+The registered recipes the chooser offers and dashboards place, in host then rail order. 120 dataviews: 118 live, 2 draft.
 
 ## Summary
 
@@ -94,18 +94,24 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-SMT-O-RESULTS-TABLE | live | smt.overview · trend · Results, table | smt.results | level | schools | points | trend | table | RD-SMT-TABLE |
 | DV-SMT-O-MARKET-LINE | live | smt.overview · trend · Market share | smt.school | level | schools | market_share | trend | graph | RD-SMT-LINE |
 | DV-SMT-O-MARKET-TABLE | live | smt.overview · trend · Market share, table | smt.school | level | schools | market_share | trend | table | RD-SMT-TABLE |
-| DV-SMT-A-NOW | live | smt.academic · current · The level now | smt.results | level | schools | totals, points, rank | single | numerical | RD-SMT-NOW |
-| DV-SMT-A-AREAS | live | smt.academic · current · Subject areas | smt.subjects | level | schools | points, change_points, rank | single | graph | RD-SMT-AREAS |
-| DV-SMT-A-SUBJECTS | live | smt.academic · current · Subjects | smt.subjects | level | schools | totals, points, rank, change_points | single | table | RD-SMT-SUBJECTS |
-| DV-SMT-A-VA | live | smt.academic · current · Value added | smt.value_added | level | none | points | single | table | RD-SMT-VA |
+| DV-SMT-A-NOW | live | smt.academic · current · The level now | smt.results | level | schools | points, rank | single | numerical | RD-SMT-NOW |
+| DV-SMT-A-CHART | live | smt.academic · current · Chart | smt.results | level | schools | points, rank | single | graph | RD-SMT-RANK-CHART |
+| DV-SMT-A-TABLE | live | smt.academic · current · Ranking table | smt.results | level | schools, averages | points, rank, change_points | single | table | RD-SMT-RANK-TABLE |
+| DV-SMT-A-MAP | live | smt.academic · current · Map | smt.results | level | schools | points | single | map | RD-SMT-MAP |
+| DV-SMT-A-AREAS | live | smt.academic · current · By subject area | smt.subjects | level | schools | points, rank, totals | single | table | RD-SMT-AREAS |
 | DV-SMT-A-GRADES | live | smt.academic · current · Grade profile | smt.subjects | level | none | totals | single | graph | RD-SMT-GRADES |
-| DV-SMT-A-TREND-LINE | live | smt.academic · trend · Results trend | smt.results | level | schools | points | trend | graph | RD-SMT-LINE |
-| DV-SMT-A-TREND-TABLE | live | smt.academic · trend · Results, table | smt.results | level | schools | points | trend | table | RD-SMT-TABLE |
-| DV-SMT-A-BANDS | draft | smt.academic · trend · Results by band | smt.results | level | none | points | trend | graph | RD-SMT-RESERVED |
+| DV-SMT-A-TREND-LINE | live | smt.academic · trend · Trend | smt.results | level | schools | points | trend | graph | RD-SMT-LINE |
+| DV-SMT-A-TREND-TABLE | live | smt.academic · trend · Trend table | smt.results | level | schools | points | trend | table | RD-SMT-TABLE |
+| DV-SMT-A-LINES | live | smt.academic · trend · Every line | smt.results | level | none | change_points | trend | graph | RD-SMT-LINES |
+| DV-SMT-A-MOVES | live | smt.academic · trend · Biggest moves | smt.subjects | level | none | totals | trend | table | RD-SMT-MOVES |
 | DV-SMT-A-MIX | live | smt.academic · trend · Entries mix | smt.subjects | level | none | totals | trend | graph | RD-SMT-MIX |
 | DV-SMT-A-MIX-TABLE | live | smt.academic · trend · Entries mix, table | smt.subjects | level | none | totals | trend | table | RD-SMT-TABLE |
+| DV-SMT-A-AGAINST | live | smt.academic · trend · Against the set | smt.subjects | level | schools | totals | single | table | RD-SMT-AGAINST |
+| DV-SMT-A-SETMOVES | live | smt.academic · trend · The set's schools | smt.results | level | schools | change_points | trend | table | RD-SMT-MOVES |
 | DV-SMT-P-NOW | live | smt.pupils · current · Your pupils now | smt.school | level | averages | totals, pct_change | single | numerical | RD-SMT-NOW |
 | DV-SMT-P-SHAPE | live | smt.pupils · current · Shape and size | smt.school | level | schools | totals | single | graph | RD-SMT-SHAPE |
+| DV-SMT-P-GIRLS-BOYS | live | smt.pupils · current · Girls and boys | smt.school | level | schools | rate, change_pp | single | graph | RD-SMT-GIRLS-BOYS |
+| DV-SMT-P-DAY-BOARDING | live | smt.pupils · current · Day and boarding | smt.school | level | schools | totals, rate, change_pp | trend | graph | RD-SMT-DAY-BOARDING |
 | DV-SMT-P-ENTRIES | live | smt.pupils · current · Entry points | smt.school | level | none | totals | single | table | RD-SMT-ENTRIES |
 | DV-SMT-P-LEAVING | live | smt.pupils · current · Leaving at 16 | smt.school | level | none | totals, pct_change | trend | table | RD-SMT-LEAVING |
 | DV-SMT-P-MARKET | live | smt.pupils · current · Market share | smt.school | level | schools | market_share | trend | graph | RD-SMT-LINE |
@@ -2346,7 +2352,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | The school now |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TilesIcon |
 | Host | smt.overview, current, rail "The school now" (src/components/smt/views/Now.tsx) |
 | Audience | whole-school, rolls |
@@ -2375,7 +2381,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | How [school] compares, headline by headline |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
 | Host | smt.overview, current, rail "Scorecard" (src/components/smt/views/Scorecard.tsx) |
 | Audience | whole-school, academic |
@@ -2404,7 +2410,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | [school] and [set] |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | MapPinIcon |
 | Host | smt.overview, current, rail "Map" (src/components/smt/views/SetMap.tsx) |
 | Audience | whole-school, academic |
@@ -2433,7 +2439,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Flags: large and lasting changes at [school] |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | FlagIcon |
 | Host | smt.overview, current, rail "Flags" (src/components/smt/views/Flags.tsx) |
 | Audience | whole-school, academic |
@@ -2462,7 +2468,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Roll, indexed (the first year every line shares = 100) |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | IndexedLineIcon |
 | Host | smt.overview, trend, rail "Roll, indexed" (src/components/smt/views/Lines.tsx) |
 | Audience | whole-school, rolls |
@@ -2491,7 +2497,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Roll, year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
 | Host | smt.overview, trend, rail "Roll, table" (src/components/smt/views/Tables.tsx) |
 | Audience | whole-school, rolls |
@@ -2520,7 +2526,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Headline results against [set] |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TrendLineIcon |
 | Host | smt.overview, trend, rail "Results trend" (src/components/smt/views/Lines.tsx) |
 | Audience | whole-school, academic |
@@ -2549,7 +2555,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Headline results against [set], year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
 | Host | smt.overview, trend, rail "Results, table" (src/components/smt/views/Tables.tsx) |
 | Audience | whole-school, academic |
@@ -2578,7 +2584,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Market share at 11+, against your rivals |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TrendLineIcon |
 | Host | smt.overview, trend, rail "Market share" (src/components/smt/views/Lines.tsx) |
 | Audience | market, whole-school |
@@ -2607,7 +2613,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Market share at 11+, year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
 | Host | smt.overview, trend, rail "Market share, table" (src/components/smt/views/Tables.tsx) |
 | Audience | market, whole-school |
@@ -2629,111 +2635,140 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | — |
 | Focus | level |
 | Compare | schools |
-| Number types | totals, points, rank |
+| Number types | points, rank |
 | Date mode | single |
 | View type | numerical |
 | Renderer | RD-SMT-NOW |
 | Title template | [level] now |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TilesIcon |
-| Host | smt.academic, current, rail "The level now" (src/components/smt/views/AcademicNow.tsx) |
+| Host | smt.academic, current, rail "The level now" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-ACADEMIC-NOW, R-SMT-P8-REASON, R-SMT-VA-HONEST |
+| Rules | R-SMT-VIEW-ACADEMIC-NOW, R-SMT-COL1-LEVEL, R-SMT-QUAL-GROUPS, R-SMT-VA-BANDS, R-SMT-P8-REASON, R-SMT-VA-HONEST |
 | Used on | SMT Academic › The level now › Now |
 | Note | — |
-| Method | 1. The level chip picks what is shown: Whole school shows each phase the school has, Primary shows KS2, GCSE or Post-16 shows that phase, and a subject area narrows it further.<br>2. Entries are the school's subject entries in the latest year (with an area chosen, the area's entries and their share of all the phase's entries).<br>3. The headline is Attainment 8 and grade 5+ in English and maths (GCSE), or A-level points per entry and A-level value added (Post-16), or reading, writing and maths at the expected standard (KS2). Each shows its rank in the set among schools with that result; if there is no set rank, its England rank.<br>4. With a subject area chosen, the average grade (GCSE) or points per entry (Post-16) for the area's subjects is shown, and its rank among the set's schools with 10 or more entries in that area is its own tile, shown only when the school and at least 2 set schools have that many.<br>5. The top-grades tile is the share of graded entries in the main qualification at grade 7 and above (GCSE) or A*-A (A level).<br>6. Value added and a small grade profile bar follow, with Progress 8's reason where it isn't published.<br>Sources: DfE KS4 and KS5 performance tables; DfE KS2 performance tables; DfE KS4 and KS5 subject tables (subject area averages); the school's subject and grade rows<br>Rounding: Entries to whole numbers; area share of entries to a whole per cent Attainment 8 to 1 dp; A-level points per entry to 2 dp; average grade to 2 dp Per cents to 1 dp Value added signed, 2 dp Ranks whole numbers |
+| Method | 1. Post-16: one line per qualification group the school offers (A level, Applied, EPQ, Core Maths, AS, IB, T level). Applied shows DfE's two headline types, Applied general and Tech level, each with its own line. DfE sorts qualifications into the two types by subject, so one school's BTECs and OCRs can fall in both.<br>2. Results: points per entry with DfE's grade equivalent. Each line is ranked within its own qualification only, among its comparison set's schools with a figure; A-level points never sit beside BTEC points. Top-grade shares are in the views, not here.<br>3. Entries: the group's entries, its share of all the school's entries at the level, the counts for three years, and the set's typical share (the median share among the set's schools offering it).<br>4. Value added: DfE's figure, its 95% range and band. DfE's own progress band where DfE publishes one (A level, Academic, Applied general, Tech level); elsewhere VicData's three, from the range alone: Clearly above (the whole range above 0), In line (it crosses 0), Clearly below (the whole range below 0), deliberately unlike DfE's five.<br>5. GCSE: Progress 8 with its range and England place; its five bands derived exactly from DfE's definition (well above or below beyond ±0.5 with the range clear of 0). For an independent or IGCSE school, why there is none and a summary of the set's state schools.<br>6. The place is the school's rank in that line's set, highest first, ties sharing a place, counting the school and the set's schools with a figure.<br>Sources: DfE KS5 performance tables: points per entry with DfE's grade equivalent, and value added with its 95% range and progress band, for A level, Academic, Applied general and Tech level; VicData's qualification groups (DfE subject tables, the subject-by-qualification rollup): IB and T level points, EPQ, Core Maths and AS entries and points, every group's entries; DfE KS5 value added by subject: the EPQ, Core Maths, AS and IB value-added rows; DfE KS4 performance tables: Attainment 8, grade 5+ in English and maths, Progress 8 and its 95% range<br>Rounding: Points to 2 dp; value added signed to 2 dp; shares to 1 dp per cent Entries whole numbers; ranks whole numbers |
 
-### DV-SMT-A-AREAS — Subject areas
+### DV-SMT-A-CHART — Chart
 
 | Field | Content |
 | --- | --- |
-| Measures | M-SMT-SUBJECTS (Subject areas and subjects) |
-| Data | smt.subjects |
+| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-VA (Value added), M-SMT-SUBJECTS (Subject areas and subjects) |
+| Data | smt.results |
 | Results sub-measures | — |
 | Phases | — |
 | Focus | level |
 | Compare | schools |
-| Number types | points, change_points, rank |
+| Number types | points, rank |
 | Date mode | single |
 | View type | graph |
-| Renderer | RD-SMT-AREAS |
-| Title template | Where [school] leads and trails [set], by subject area |
+| Renderer | RD-SMT-RANK-CHART |
+| Title template | [group], against [set] |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
-| Rail icon | AdmStrengthsIcon |
-| Host | smt.academic, current, rail "Subject areas" (src/components/smt/views/Areas.tsx) |
+| Params | level, set |
+| Rail icon | HorizontalBarsIcon |
+| Host | smt.academic, current, rail "Chart" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-AREAS, R-ADM-FLAG-STRENGTHS, R-SMT-SET-RANKS |
-| Used on | SMT Academic › Subjects › Now |
+| Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS, R-SMT-VA-BANDS, R-SMT-VA-INDEPENDENT |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
-| Method | 1. For each subject area the school entered, we take its average points per entry in the latest year, counted only where it has at least 10 entries; set schools likewise.<br>2. The gap is the school's average minus the average of the set's schools with a figure (IGCSE schools left out at GCSE).<br>3. The rank is the school's place among those schools and itself, highest first, ties sharing a place.<br>4. 'Since 2022/23' shows whether the gap has widened or narrowed since 2022/23.<br>5. A strength is a positive gap in the top third of the set; a weakness a negative gap in the bottom third. 'Growing' or 'widening' is added when the gap has moved further since 2022/23 and the school's own two-year change passes the national threshold. Flags need at least two set schools.<br>6. The overall line ranks the school in the set on Attainment 8 or A-level points per entry.<br>Sources: DfE KS4 and KS5 subject tables (each school's average points and entries per subject area); Admissions' national subject-area thresholds<br>Rounding: Gap and averages to 2 dp in the hover Direction word steady within 0.05 points |
+| Method | 1. Each row is one school, ranked by the figure.<br>2. Value added: the dot is the figure and the line its 95% range; the vertical line is 0, England's average. Overlapping ranges aren't clearly different. The axis fits the data: nothing is drawn at an edge.<br>3. Under the chart, the school's place in England on a strip from lowest to highest.<br>4. With Applied chosen, a switch chooses DfE's type: Applied general or Tech level.<br>Sources: As column 1, for the chosen group and the comparison set's schools offering it<br>Rounding: As column 1 |
 
-### DV-SMT-A-SUBJECTS — Subjects
+### DV-SMT-A-TABLE — Ranking table
 
 | Field | Content |
 | --- | --- |
-| Measures | M-SMT-SUBJECTS (Subject areas and subjects) |
+| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-VA (Value added), M-SMT-SUBJECTS (Subject areas and subjects) |
+| Data | smt.results |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | schools, averages |
+| Number types | points, rank, change_points |
+| Date mode | single |
+| View type | table |
+| Renderer | RD-SMT-RANK-TABLE |
+| Title template | [group], the set ranked |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | TableIcon |
+| Host | smt.academic, current, rail "Ranking table" (src/components/smt/views/Academic.tsx) |
+| Audience | whole-school, academic |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS, R-SMT-VA-BANDS, R-SMT-VA-INDEPENDENT, R-SMT-SET-RANKS |
+| Used on | SMT Academic › The set › Now |
+| Note | — |
+| Method | 1. One row per school: the figure, its 95% range and band (value added), last year's figure and the change, and the school's place in England.<br>2. Above the table: the school's place in the set, its region and England, and how many of the set are clearly above or clearly below average (value added: the whole range above or below 0).<br>Sources: As column 1, for the chosen group and the comparison set's schools offering it; England and region places from every school with the figure that year<br>Rounding: As column 1; changes to the same precision |
+
+### DV-SMT-A-MAP — Map
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-VA (Value added), M-SMT-SUBJECTS (Subject areas and subjects) |
+| Data | smt.results |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | schools |
+| Number types | points |
+| Date mode | single |
+| View type | map |
+| Renderer | RD-SMT-MAP |
+| Title template | [group], the set on the map |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | MapPinIcon |
+| Host | smt.academic, current, rail "Map" (src/components/smt/views/Academic.tsx) |
+| Audience | whole-school, academic |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS, R-SMT-VA-BANDS, R-SMT-VA-INDEPENDENT |
+| Used on | SMT Academic › The set › Now |
+| Note | — |
+| Method | 1. Each school is coloured by its value-added band; grey where none is published.<br>2. Your school is ringed in the SMT accent.<br>Sources: School locations (easting and northing); As column 1, for the chosen group<br>Rounding: None |
+
+### DV-SMT-A-AREAS — By subject area
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-SUBJECTS (Subject areas and subjects), M-SMT-VA (Value added) |
 | Data | smt.subjects |
 | Results sub-measures | — |
 | Phases | — |
 | Focus | level |
 | Compare | schools |
-| Number types | totals, points, rank, change_points |
+| Number types | points, rank, totals |
 | Date mode | single |
 | View type | table |
-| Renderer | RD-SMT-SUBJECTS |
-| Title template | Each subject, its rank, and where it's heading |
+| Renderer | RD-SMT-AREAS |
+| Title template | Each subject area, its subjects by qualification |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
-| Rail icon | TableIcon |
-| Host | smt.academic, current, rail "Subjects" (src/components/smt/views/Subjects.tsx) |
+| Params | level, set |
+| Rail icon | AdmStrengthsIcon |
+| Host | smt.academic, current, rail "By subject area" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-SUBJECTS, R-SMT-SMALL-ENTRIES, R-TREND-FROM-2223 |
-| Used on | SMT Academic › Subjects › Now |
+| Rules | R-SMT-ACADEMIC-MODES, R-VA-SUBJECT-MATCH, R-SMT-SMALL-ENTRIES |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
-| Method | 1. We list the school's subjects in the latest year (in the chosen area, if any), most entries first, up to 16.<br>2. A subject with fewer than 5 entries is listed but not ranked.<br>3. For the rest we take the average points for that subject (and qualification) at the school and at each set school, counting only schools with at least 5 entries.<br>4. The set rank is the school's place among those schools, highest first, ties sharing a place; the England rank is the same across every school in England with that subject (at GCSE leaving out IGCSE schools).<br>5. 'Since 2022/23' is the change in the school's average from 2022/23 to the latest year.<br>Sources: DfE KS4 and KS5 subject tables (GCSE subject average points); DfE KS4 and KS5 subject tables (Post-16 per qualification type); the subject grade rollup (GCSE double award)<br>Rounding: GCSE average grade to 2 dp; Post-16 points to 1 dp Change to 2 dp, steady within 0.05 Ranks whole numbers |
-
-### DV-SMT-A-VA — Value added
-
-| Field | Content |
-| --- | --- |
-| Measures | M-SMT-VA (Value added) |
-| Data | smt.value_added |
-| Results sub-measures | — |
-| Phases | — |
-| Focus | level |
-| Compare | none |
-| Number types | points |
-| Date mode | single |
-| View type | table |
-| Renderer | RD-SMT-VA |
-| Title template | Value added |
-| Title fallback | — |
-| Requires (card warning) | — |
-| Params | level, set, filters |
-| Rail icon | AdmNumbersIcon |
-| Host | smt.academic, current, rail "Value added" (src/components/smt/views/ValueAdded.tsx) |
-| Audience | whole-school, academic |
-| Status | live |
-| Verified at | not yet |
-| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VA-HONEST, R-SMT-P8-REASON |
-| Used on | SMT Academic › Subjects › Now |
-| Note | — |
-| Method | 1. Progress 8 (GCSE) is shown as DfE published it, with its year and 95% range; where it isn't published, the reason that applies is shown instead.<br>2. A-level value added is shown for each qualification type DfE publishes, for the latest two years, with DfE's 95% range and banding.<br>3. Each figure is drawn as a dot on a line where 0 is the national average; the dot is coloured only when the whole range is above or below 0.<br>4. Subject value added is shown for the latest year, largest entries first, up to 14 subjects.<br>Sources: DfE KS4 and KS5 performance tables (Progress 8 and its 95% interval; A-level, Academic, Applied general, Tech level value added with interval and banding); DfE KS5 value added by subject (subject value added)<br>Rounding: Value added signed, to 2 dp Chart axis runs from -1.2 to +1.2; values beyond are drawn at the edge |
+| Method | 1. Each subject area, then its qualifications, then their subjects, most entries first. Each subject is ranked only against the same subject in the same qualification, among the set's schools that teach it (each qualification's own comparison set unless you chose one).<br>2. Value added: each row's dot is the school (ringed) among the set's schools' dots; the band is VicData's three from the 95% range.<br>3. † marks a subject VicData placed in its area: its value-added name has no exact match in the results file. The list is VicData's, checked by hand.<br>4. Entries: each subject's entries over three years, its size against England (XS to XL), its share of the school's entries at the level against the set's typical school offering it, and how many of the set offer it.<br>Sources: The subject-by-qualification rollup (entries and points per subject and qualification); DfE KS5 value added by subject; VicData's value-added subject matches (docs/v0.8/va_subject_matches_draft.md): DfE's value-added file names subjects differently from its results file; The England size table (XS to XL, fifths of every school entering the subject in the qualification that year)<br>Rounding: Points to 1 dp; value added signed to 2 dp; shares to 1 dp per cent |
 
 ### DV-SMT-A-GRADES — Grade profile
 
@@ -2752,23 +2787,23 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Grade profile |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
-| Rail icon | HorizontalBarsIcon |
-| Host | smt.academic, current, rail "Grade profile" (src/components/smt/views/Grades.tsx) |
+| Params | level, set |
+| Rail icon | VerticalBarsIcon |
+| Host | smt.academic, current, rail "Grade profile" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-GRADES |
-| Used on | SMT Academic › Subjects › Now |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
-| Method | 1. We take the school's entries in the main qualification for the latest year: GCSE (9-1) full course, or GCE A level, in the chosen area if any.<br>2. We group the graded entries into bands: GCSE 9-7, 6-5, 4, and 3-1 (with U); A level A*-A, B, C, and D-U (D, E and U).<br>3. Each band is its entries as a share of all graded entries in those bands.<br>Sources: The school's grade rows<br>Rounding: Shares to 1 dp per cent Entries to whole numbers |
+| Method | 1. Each qualification's graded entries in its own scale's bands: A level A*-A, B, C, D-U; AS and Core Maths A, B, C, D-U; IB 7-6, 5-4, 3-1; GCSE 9-7, 6-5, 4, 3-1; BTEC and OCR by grade.<br>2. The top-grade share (A*-A, Distinction*-Distinction, IB 6-7, GCSE 9-7) is the top band's share of the qualification's graded entries.<br>Sources: The school's grade rows (DfE subject tables)<br>Rounding: Shares to whole per cent Entries whole numbers |
 
-### DV-SMT-A-TREND-LINE — Results trend
+### DV-SMT-A-TREND-LINE — Trend
 
 | Field | Content |
 | --- | --- |
-| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-SUBJECTS (Subject areas and subjects) |
+| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-VA (Value added), M-SMT-SUBJECTS (Subject areas and subjects) |
 | Data | smt.results |
 | Results sub-measures | — |
 | Phases | — |
@@ -2778,26 +2813,26 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-LINE |
-| Title template | [level] results against [set] |
+| Title template | [group] against [set] |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TrendLineIcon |
-| Host | smt.academic, trend, rail "Results trend" (src/components/smt/views/Lines.tsx) |
+| Host | smt.academic, trend, rail "Trend" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223 |
+| Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223, R-SMT-YEARS |
 | Used on | SMT Academic › The level now › Trends |
 | Note | — |
-| Method | 1. At Whole school, GCSE or Post-16 (all areas) the line is Attainment 8 or A-level points per entry each year from 2021/22; at Whole school, chips switch between phases.<br>2. With a subject area chosen, the line is the area's average grade (GCSE) or points per entry (Post-16).<br>3. For each year the band runs from the 25th to the 75th percentile of the set's other schools with a figure (IGCSE schools left out at GCSE).<br>4. 2021/22 is shaded because grades that year were more generous.<br>5. The word under the chart compares 2022/23 with the latest year: a move of more than 0.5 points (0.05 for an area's average) is 'Rising' or 'Falling', otherwise 'Steady'.<br>Sources: DfE KS4 and KS5 performance tables (Attainment 8, A-level points per entry); DfE KS4 and KS5 subject tables (an area's average points)<br>Rounding: Attainment 8 to 1 dp; A-level points per entry to 2 dp; average grade to 2 dp |
+| Method | 1. The line is the school's figure each year; the band runs from the 25th to the 75th percentile of the set's schools offering the group with a figure that year.<br>2. With All chosen, the trend follows the group with the most entries.<br>Sources: As column 1, for the chosen group, year by year<br>Rounding: As column 1 |
 
-### DV-SMT-A-TREND-TABLE — Results, table
+### DV-SMT-A-TREND-TABLE — Trend table
 
 | Field | Content |
 | --- | --- |
-| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-SUBJECTS (Subject areas and subjects) |
+| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-VA (Value added), M-SMT-SUBJECTS (Subject areas and subjects) |
 | Data | smt.results |
 | Results sub-measures | — |
 | Phases | — |
@@ -2807,49 +2842,78 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-SMT-TABLE |
-| Title template | [level] results against [set], year by year |
+| Title template | [group] against [set], year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
-| Host | smt.academic, trend, rail "Results, table" (src/components/smt/views/Tables.tsx) |
+| Host | smt.academic, trend, rail "Trend table" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223 |
+| Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223, R-SMT-YEARS |
 | Used on | SMT Academic › The level now › Trends |
 | Note | — |
-| Method | 1. One row per year from 2021/22, for the headline (or the chosen area's average).<br>2. 'You' is the school's figure that year.<br>3. The middle half is the 25th to 75th percentile of the set's other schools with a figure that year.<br>4. 'Schools' is how many set schools had a figure.<br>Sources: DfE KS4 and KS5 performance tables; DfE KS4 and KS5 subject tables<br>Rounding: Attainment 8 to 1 dp; A-level points per entry to 2 dp; average grade to 2 dp |
+| Method | 1. One row per year: the school's figure, the set's middle half and how many set schools had a figure.<br>Sources: As the trend<br>Rounding: As column 1 |
 
-### DV-SMT-A-BANDS — Results by band
+### DV-SMT-A-LINES — Every line
 
 | Field | Content |
 | --- | --- |
-| Measures | M-SMT-RESULTS (Headline results and ranks) |
+| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-VA (Value added), M-SMT-SUBJECTS (Subject areas and subjects) |
 | Data | smt.results |
 | Results sub-measures | — |
 | Phases | — |
 | Focus | level |
 | Compare | none |
-| Number types | points |
+| Number types | change_points |
 | Date mode | trend |
 | View type | graph |
-| Renderer | RD-SMT-RESERVED |
-| Title template | Top 25%, middle 50%, bottom 25% |
+| Renderer | RD-SMT-LINES |
+| Title template | Last year to this, every line |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
-| Rail icon | TrendLineIcon |
-| Host | smt.academic, trend, rail "Results by band" (src/components/smt/views/Reserved.tsx) |
+| Params | level, set |
+| Rail icon | ChangeArrowIcon |
+| Host | smt.academic, trend, rail "Every line" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
-| Status | draft |
+| Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-RESERVED |
-| Used on | SMT Academic › Subjects › Trends |
-| Note | Reserved: arrives with the results-by-band round (roadmap step 4). The slot exists; the data doesn't yet. |
-| Method | 1. This panel is reserved: the slot exists but no data is drawn yet.<br>2. It will show results for the top 25%, middle 50% and bottom 25% of entries when that round arrives.<br>3. Until then, the panel shows only this note and no figure.<br>Sources: None yet (reserved panel)<br>Rounding: None |
+| Rules | R-SMT-VIEW-TRENDS, R-SMT-COL1-LEVEL |
+| Used on | SMT Academic › The set › Trends |
+| Note | — |
+| Method | 1. Each line against its own national average (0): the hollow dot is last year, the filled dot this year.<br>Sources: Column 1's lines<br>Rounding: As column 1 |
+
+### DV-SMT-A-MOVES — Biggest moves
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-SUBJECTS (Subject areas and subjects) |
+| Data | smt.subjects |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | none |
+| Number types | totals |
+| Date mode | trend |
+| View type | table |
+| Renderer | RD-SMT-MOVES |
+| Title template | Biggest moves in entries |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | ChangeArrowIcon |
+| Host | smt.academic, trend, rail "Biggest moves" (src/components/smt/views/Academic.tsx) |
+| Audience | whole-school, academic |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-ACADEMIC-MODES |
+| Used on | SMT Academic › The set › Trends |
+| Note | — |
+| Method | 1. The five subjects whose entries grew most and the five that shrank most, from the first of three years to the latest. Entries, not students.<br>Sources: The subject-by-qualification rollup<br>Rounding: Entries whole numbers |
 
 ### DV-SMT-A-MIX — Entries mix
 
@@ -2865,20 +2929,20 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-MIX |
-| Title template | Entries mix, year by year |
+| Title template | Entries by qualification group, year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | VerticalBarsIcon |
-| Host | smt.academic, trend, rail "Entries mix" (src/components/smt/views/Mix.tsx) |
+| Host | smt.academic, trend, rail "Entries mix" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-MIX |
+| Rules | R-SMT-VIEW-MIX, R-SMT-QUAL-GROUPS |
 | Used on | SMT Academic › Entries › Trends |
 | Note | — |
-| Method | 1. We take the school's entries for each subject each year from 2021/22.<br>2. At All areas we group them by subject area; with an area chosen, by subject within it.<br>3. The six groups with the most entries over all the years are shown by name; everything else is 'The rest'.<br>4. Each column is one year: each group's entries as a share of that year's total.<br>Sources: The school's subject headline rollup<br>Rounding: Shares to 1 dp per cent (in hovers) |
+| Method | 1. Each year's Post-16 entries split by VicData's groups: A level (and AS), BTEC, OCR and VRQ, IB, T level, and Other (EPQ, Core Maths and the rest), as shares of the year. Entries, not students.<br>2. Where a group starts or stops within the years shown, a line says so.<br>Sources: VicData's qualification groups (DfE subject tables): entries by group<br>Rounding: Shares to whole per cent Entries whole numbers |
 
 ### DV-SMT-A-MIX-TABLE — Entries mix, table
 
@@ -2894,20 +2958,78 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-SMT-TABLE |
-| Title template | Entries mix, year by year |
+| Title template | Entries by qualification group, year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
-| Host | smt.academic, trend, rail "Entries mix, table" (src/components/smt/views/Tables.tsx) |
+| Host | smt.academic, trend, rail "Entries mix, table" (src/components/smt/views/Academic.tsx) |
 | Audience | whole-school, academic |
 | Status | live |
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Rules | R-SMT-VIEW-MIX |
+| Rules | R-SMT-VIEW-MIX, R-SMT-QUAL-GROUPS |
 | Used on | SMT Academic › Entries › Trends |
 | Note | — |
-| Method | 1. One row per year from 2021/22.<br>2. Each column is a subject area (or a subject, with an area chosen): its share of that year's entries. The six largest are named; the rest are combined.<br>3. The last column is the year's total entries.<br>Sources: The school's subject headline rollup<br>Rounding: Shares to 1 dp per cent Entries to whole numbers |
+| Method | 1. One row per year: each group's entries and share, and the year's total.<br>Sources: As the entries mix<br>Rounding: Shares to whole per cent Entries whole numbers |
+
+### DV-SMT-A-AGAINST — Against the set
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-SUBJECTS (Subject areas and subjects) |
+| Data | smt.subjects |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | schools |
+| Number types | totals |
+| Date mode | single |
+| View type | table |
+| Renderer | RD-SMT-AGAINST |
+| Title template | Where your mix differs most from the set |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | AdmStrengthsIcon |
+| Host | smt.academic, trend, rail "Against the set" (src/components/smt/views/Academic.tsx) |
+| Audience | whole-school, academic |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-ACADEMIC-MODES |
+| Used on | SMT Academic › Entries › Trends |
+| Note | — |
+| Method | 1. Each subject's share of the school's entries at the level against the set's typical school offering it (the median); the nine furthest apart, either way.<br>Sources: The subject-by-qualification rollup, for the school and its set<br>Rounding: Shares to 1 dp per cent |
+
+### DV-SMT-A-SETMOVES — The set's schools
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-RESULTS (Headline results and ranks), M-SMT-VA (Value added) |
+| Data | smt.results |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | schools |
+| Number types | change_points |
+| Date mode | trend |
+| View type | table |
+| Renderer | RD-SMT-MOVES |
+| Title template | The set's schools, rising and falling |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | ChangeArrowIcon |
+| Host | smt.academic, trend, rail "The set's schools" (src/components/smt/views/Academic.tsx) |
+| Audience | whole-school, academic |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS |
+| Used on | SMT Academic › Entries › Trends |
+| Note | — |
+| Method | 1. The three biggest rises, then the three biggest falls, among the set's schools, on the chart's measure.<br>Sources: As the chart, last year and this<br>Rounding: As column 1 |
 
 ### DV-SMT-P-NOW — Your pupils now
 
@@ -2926,7 +3048,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Your pupils now |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TilesIcon |
 | Host | smt.pupils, current, rail "Your pupils now" (src/components/smt/views/Pupils.tsx) |
 | Audience | whole-school, rolls |
@@ -2955,7 +3077,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Pupils in each year group |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | AdmShapeIcon |
 | Host | smt.pupils, current, rail "Shape and size" (src/components/smt/views/Pupils.tsx) |
 | Audience | whole-school, rolls |
@@ -2966,6 +3088,64 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Used on | SMT Pupils › Shape and size › Now |
 | Note | — |
 | Method | 1. Bars show the school's pupils at each age from Reception (age 4) to Year 13 (age 17) in the latest census; the level's ages are highlighted: GCSE Years 7 to 11 (ages 11 to 15), Post-16 Years 12 and 13 (16 and 17), Primary Reception to Year 6 (4 to 10).<br>2. The shape is the shared classifier's label for the school's pupils by age; 'since' is the year after the last census when it was different.<br>3. For the LA we take nearby schools in the same LA with exactly the same age range and show the most common shape and how many had it.<br>4. For the set we count how many schools have each shape, never ranking them.<br>5. The set's Year 12 against Year 11 is the middle (median) of that figure across set schools whose top age is 17 or more.<br>Sources: DfE school census (January): the school, nearby schools, the comparison set's schools; VicData's shape descriptions<br>Rounding: Year 12 against Year 11 to a whole per cent |
+
+### DV-SMT-P-GIRLS-BOYS — Girls and boys
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-SCHOOL (The school: roll, phases and size) |
+| Data | smt.school |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | schools |
+| Number types | rate, change_pp |
+| Date mode | single |
+| View type | graph |
+| Renderer | RD-SMT-GIRLS-BOYS |
+| Title template | Girls and boys in each year group |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | VerticalBarsIcon |
+| Host | smt.pupils, current, rail "Girls and boys" (src/components/smt/views/Pupils.tsx) |
+| Audience | whole-school, rolls |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-NO-PILLS, R-SMT-PUPILS-LEVEL, R-RAIL-HIDES-EMPTY |
+| Used on | SMT Pupils › Shape and size › Now |
+| Note | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md §1): mixed schools only. |
+| Method | 1. For each year group (Reception, age 4, to Year 13, age 17) we divide the school's girls by its girls and boys in the latest census.<br>2. The set's mark is the middle (median) of the same share across the set's mixed schools with pupils in that year group.<br>3. The change is the school's girls' share across every age now minus the same share in the first census year; the set's is the middle of each mixed school's own change over the same years.<br>4. Where it shifts: Year 7's share (age 11) minus Years 8 to 11's (ages 12 to 15), and the sixth form's (ages 16 and 17) minus Years 7 to 11's (ages 11 to 15); the set's is the middle of each mixed school's same shift.<br>5. The line is the school's girls' share each year, and the middle of the set's mixed schools with a census in every year shown.<br>Sources: DfE school census (January): pupils by single year of age and sex, the school's and the comparison set's schools'; GIAS (Get Information about Schools): gender of entry<br>Rounding: Shares to a whole per cent Changes and shifts to 1 dp percentage points |
+
+### DV-SMT-P-DAY-BOARDING — Day and boarding
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-SCHOOL (The school: roll, phases and size) |
+| Data | smt.school |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | schools |
+| Number types | totals, rate, change_pp |
+| Date mode | trend |
+| View type | graph |
+| Renderer | RD-SMT-DAY-BOARDING |
+| Title template | Day and boarding pupils |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | TrendLineIcon |
+| Host | smt.pupils, current, rail "Day and boarding" (src/components/smt/views/Pupils.tsx) |
+| Audience | whole-school, rolls |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-NO-PILLS, R-SMT-BOARDING-ONLY, R-RAIL-HIDES-EMPTY |
+| Used on | SMT Pupils › Shape and size › Now |
+| Note | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md §1): boarding schools only. |
+| Method | 1. For each census year we take the school's boarders and its whole roll; day pupils are the roll minus the boarders.<br>2. Boarders' share is the boarders divided by the whole roll.<br>3. The change is the share now minus the share in the first census year held.<br>4. The set's figure is the middle (median) of its boarding schools' shares (and of their own changes); its line uses only those with boarders in every year shown.<br>Sources: DfE school census (January): boarders and the whole roll, the school's and the comparison set's schools'; GIAS (Get Information about Schools): boarding status (which schools get the view)<br>Rounding: Pupils to whole numbers Shares to a whole per cent Changes to 1 dp percentage points |
 
 ### DV-SMT-P-ENTRIES — Entry points
 
@@ -2984,7 +3164,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Entry points at a glance |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | AdmFunnelIcon |
 | Host | smt.pupils, current, rail "Entry points" (src/components/smt/views/Pupils.tsx) |
 | Audience | whole-school, rolls |
@@ -3013,7 +3193,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Leaving at 16 |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | ChangeArrowIcon |
 | Host | smt.pupils, current, rail "Leaving at 16" (src/components/smt/views/Pupils.tsx) |
 | Audience | whole-school, rolls |
@@ -3042,7 +3222,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Market share at 11+, against your rivals |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | DonutIcon |
 | Host | smt.pupils, current, rail "Market share" (src/components/smt/views/Lines.tsx) |
 | Audience | market, whole-school |
@@ -3071,7 +3251,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Roll by phase, indexed (the first year every line shares = 100) |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | IndexedLineIcon |
 | Host | smt.pupils, trend, rail "Roll by phase" (src/components/smt/views/Lines.tsx) |
 | Audience | whole-school, rolls |
@@ -3100,7 +3280,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Roll by phase, year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
 | Host | smt.pupils, trend, rail "Roll by phase, table" (src/components/smt/views/Tables.tsx) |
 | Audience | whole-school, rolls |
@@ -3129,7 +3309,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | The pool for your main entry point |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | AdmPipelineIcon |
 | Host | smt.pupils, trend, rail "The pool" (src/components/smt/views/Lines.tsx) |
 | Audience | whole-school, rolls |
@@ -3158,7 +3338,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | The area's school-age population |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | AdmPopulationIcon |
 | Host | smt.pupils, trend, rail "School-age population" (src/components/smt/views/Lines.tsx) |
 | Audience | whole-school, rolls |
@@ -3187,7 +3367,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | The area now |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TilesIcon |
 | Host | smt.context, current, rail "The area now" (src/components/smt/views/Context.tsx) |
 | Audience | geography, whole-school |
@@ -3216,7 +3396,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Where the school-age children live |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | MapPinIcon |
 | Host | smt.context, current, rail "Map" (src/components/smt/views/Context.tsx) |
 | Audience | geography, whole-school |
@@ -3245,7 +3425,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Children by single year of age |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | VerticalBarsIcon |
 | Host | smt.context, current, rail "Population by age" (src/components/smt/views/Context.tsx) |
 | Audience | geography |
@@ -3274,7 +3454,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Births and projections |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TrendLineIcon |
 | Host | smt.context, current, rail "Births and projections" (src/components/smt/views/Context.tsx) |
 | Audience | geography |
@@ -3303,7 +3483,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Children nearby over time |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | IndexedLineIcon |
 | Host | smt.context, current, rail "Children nearby over time" (src/components/smt/views/Context.tsx) |
 | Audience | geography |
@@ -3332,7 +3512,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Births, indexed |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | IndexedLineIcon |
 | Host | smt.context, trend, rail "Births, indexed" (src/components/smt/views/Context.tsx) |
 | Audience | geography |
@@ -3361,7 +3541,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Births, year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TableIcon |
 | Host | smt.context, trend, rail "Births, table" (src/components/smt/views/Context.tsx) |
 | Audience | geography |
@@ -3390,7 +3570,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | School-age population, projected |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | TrendLineIcon |
 | Host | smt.context, trend, rail "Projection" (src/components/smt/views/Context.tsx) |
 | Audience | geography |
@@ -3419,7 +3599,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Title template | Population by single year of age |
 | Title fallback | — |
 | Requires (card warning) | — |
-| Params | level, set, filters |
+| Params | level, set |
 | Rail icon | VerticalBarsIcon |
 | Host | smt.context, trend, rail "By single year of age" (src/components/smt/views/Context.tsx) |
 | Audience | geography |

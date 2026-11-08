@@ -220,7 +220,7 @@ Owner vicdata · dashboard · layout 3 (independent) · group SMT #1
 | Column | Title | Data | Focus | Compare | Host |
 | --- | --- | --- | --- | --- | --- |
 | c1 | The level now | smt.results · ks4 | level | none | smt.academic |
-| c2 | Subjects | smt.subjects · ks4 | level | schools | smt.academic |
+| c2 | The set | smt.results · ks4 | level | schools | smt.academic |
 | c3 | Entries | smt.subjects · ks4 | level | schools | smt.academic |
 
 ### Rows
@@ -235,10 +235,10 @@ Owner vicdata · dashboard · layout 3 (independent) · group SMT #1
 | Panel | Column | Row | Override | Dataviews (rail order) | Default |
 | --- | --- | --- | --- | --- | --- |
 | vicdata.smt.academic.c1.now | c1 | now | — | DV-SMT-A-NOW | DV-SMT-A-NOW |
-| vicdata.smt.academic.c2.now | c2 | now | — | DV-SMT-A-AREAS, DV-SMT-A-SUBJECTS, DV-SMT-A-VA, DV-SMT-A-GRADES | DV-SMT-A-AREAS |
+| vicdata.smt.academic.c2.now | c2 | now | — | DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-MAP, DV-SMT-A-AREAS, DV-SMT-A-GRADES | DV-SMT-A-CHART |
 | vicdata.smt.academic.c1.trends | c1 | trends | — | DV-SMT-A-TREND-LINE, DV-SMT-A-TREND-TABLE | DV-SMT-A-TREND-LINE |
-| vicdata.smt.academic.c2.trends | c2 | trends | — | DV-SMT-A-BANDS | DV-SMT-A-BANDS |
-| vicdata.smt.academic.c3.trends | c3 | trends | — | DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE | DV-SMT-A-MIX |
+| vicdata.smt.academic.c2.trends | c2 | trends | — | DV-SMT-A-LINES, DV-SMT-A-MOVES | DV-SMT-A-LINES |
+| vicdata.smt.academic.c3.trends | c3 | trends | — | DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE, DV-SMT-A-AGAINST, DV-SMT-A-SETMOVES | DV-SMT-A-MIX |
 
 ## SMT Pupils (`vicdata.smt.pupils`)
 
@@ -264,7 +264,7 @@ Owner vicdata · dashboard · layout 3 (independent) · group SMT #2
 | Panel | Column | Row | Override | Dataviews (rail order) | Default |
 | --- | --- | --- | --- | --- | --- |
 | vicdata.smt.pupils.c1.now | c1 | now | — | DV-SMT-P-NOW | DV-SMT-P-NOW |
-| vicdata.smt.pupils.c2.now | c2 | now | — | DV-SMT-P-SHAPE, DV-SMT-P-ENTRIES, DV-SMT-P-LEAVING, DV-SMT-P-MARKET | DV-SMT-P-SHAPE |
+| vicdata.smt.pupils.c2.now | c2 | now | — | DV-SMT-P-SHAPE, DV-SMT-P-GIRLS-BOYS, DV-SMT-P-DAY-BOARDING, DV-SMT-P-ENTRIES, DV-SMT-P-LEAVING, DV-SMT-P-MARKET | DV-SMT-P-SHAPE |
 | vicdata.smt.pupils.c1.trends | c1 | trends | — | DV-SMT-P-PHASES, DV-SMT-P-PHASES-TABLE | DV-SMT-P-PHASES |
 | vicdata.smt.pupils.c2.trends | c2 | trends | — | DV-SMT-P-POOL | DV-SMT-P-POOL |
 | vicdata.smt.pupils.c3.trends | c3 | trends | — | DV-SMT-P-AREA | DV-SMT-P-AREA |

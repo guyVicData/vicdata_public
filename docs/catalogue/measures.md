@@ -27,7 +27,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | M-ADM-MARKET | Market share | admissions.market | — | 2019–2025 | ✓ | ✗ | ✓ | ✗ | ✗ | ✗ | totals, market_share, pct_change, change_pp, index100, rank |
 | M-ADM-CATCHMENT | Children in the catchment | admissions.pipeline | — | 2011–2024 | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | totals, index100 |
 | M-ADM-RIVAL-RESULTS | Rivals' results | admissions.rivals | — | 2022–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, change_points, rank |
-| M-SMT-SCHOOL | The school: roll, phases and size | smt.school | — | 2019–2025 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | totals, pct_change, index100, rank |
+| M-SMT-SCHOOL | The school: roll, phases and size | smt.school | — | 2019–2025 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | totals, pct_change, index100, rank, rate, change_pp |
 | M-SMT-RESULTS | Headline results and ranks | smt.results | — | 2021–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, rate, change_points, change_pp, rank |
 | M-SMT-VA | Value added | smt.value_added | — | 2021–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, rank |
 | M-SMT-SUBJECTS | Subject areas and subjects | smt.subjects | — | 2021–2024 | ✓ | ✗ | ✓ | ✗ | ✗ | ✓ | totals, points, change_points, rank |
@@ -488,8 +488,8 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | LA | ✗ No LA ranks for results (0.6.6 ranks nationally and by region) |
 | Region | ✓ school_region_nation |
 | England | ✓ every school with a figure |
-| Honest number types | totals, pct_change, index100, rank |
-| Rules | R-SMT-SET-RANKS, R-SMT-BOARDING-ONLY, R-SMT-NOTES |
+| Honest number types | totals, pct_change, index100, rank, rate, change_pp |
+| Rules | R-SMT-SET-RANKS, R-SMT-BOARDING-ONLY, R-SMT-NOTES, R-SMT-NO-PILLS |
 | Fetched by | - src/lib/smt/school.ts:smtSchool<br>- src/lib/smt/overview.ts:buildOverview<br>- src/app/api/smt/overview/route.ts |
 | Known gaps | - The LA and England roll lines count pupils aged 5-15 only (the per-year area aggregates).<br>- No boarders by age; boarders aren't ranked. |
 | Briefing | none |
