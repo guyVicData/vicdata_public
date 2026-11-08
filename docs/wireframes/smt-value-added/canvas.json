@@ -1,0 +1,184 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-08T13:10:00Z"
+ },
+ "title": "VicData SMT \u2014 Value added and Academic mock-up",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1230,
+   "title": "Leighton Park \u00b7 Post-16 \u00b7 A level \u00b7 chart (column 1 shows option 1 for applied)"
+  },
+  "LP-GCSE.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1230,
+   "title": "Leighton Park \u00b7 GCSE \u00b7 the set's state schools' Progress 8 \u00b7 ranking table"
+  },
+  "LP-NoState.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1100,
+   "h": 520,
+   "title": "Leighton Park \u00b7 GCSE \u00b7 a chosen set with no state schools"
+  },
+  "Phone.dc.html": {
+   "x": 3040,
+   "y": 640,
+   "w": 390,
+   "h": 844,
+   "title": "Phone \u00b7 Leighton Park \u00b7 column 1, then the views as tabs"
+  },
+  "AB-Areas.dc.html": {
+   "x": 0,
+   "y": 1590,
+   "w": 1440,
+   "h": 1230,
+   "title": "Acland Burghley \u00b7 Post-16 \u00b7 All \u00b7 by subject area, by qualification (F-44)"
+  },
+  "AB-GCSE-Map.dc.html": {
+   "x": 1520,
+   "y": 1590,
+   "w": 1440,
+   "h": 1230,
+   "title": "Acland Burghley \u00b7 GCSE \u00b7 Progress 8 map by DfE band"
+  },
+  "SV-IB.dc.html": {
+   "x": 3040,
+   "y": 1590,
+   "w": 1440,
+   "h": 1230,
+   "title": "Sevenoaks \u00b7 Post-16 \u00b7 IB \u00b7 chart (net widened to 59 km)"
+  },
+  "PM-Option1.dc.html": {
+   "x": 0,
+   "y": 3180,
+   "w": 1440,
+   "h": 1230,
+   "title": "Plumstead Manor \u00b7 Applied \u00b7 OPTION 1: DfE headline types (Applied general, Tech level)"
+  },
+  "PM-Option2.dc.html": {
+   "x": 1520,
+   "y": 3180,
+   "w": 1440,
+   "h": 1230,
+   "title": "Plumstead Manor \u00b7 Applied \u00b7 OPTION 2: one line per qualification and size"
+  },
+  "AC-LP-Chart.dc.html": {
+   "x": 0,
+   "y": 4770,
+   "w": 1440,
+   "h": 1230,
+   "title": "Academic \u00b7 Leighton Park \u00b7 Post-16 \u00b7 A level \u00b7 points chart"
+  },
+  "AC-PM-Table.dc.html": {
+   "x": 1520,
+   "y": 4770,
+   "w": 1440,
+   "h": 1230,
+   "title": "Academic \u00b7 Plumstead Manor \u00b7 Post-16 \u00b7 Applied \u00b7 ranking table"
+  },
+  "AC-PM-Areas.dc.html": {
+   "x": 3040,
+   "y": 4770,
+   "w": 1440,
+   "h": 1230,
+   "title": "Academic \u00b7 Plumstead Manor \u00b7 Post-16 \u00b7 All \u00b7 subject areas by qualification"
+  },
+  "AC-SV-Map.dc.html": {
+   "x": 4560,
+   "y": 4770,
+   "w": 1440,
+   "h": 1230,
+   "title": "Academic \u00b7 Sevenoaks \u00b7 Post-16 \u00b7 IB \u00b7 map by quarter of the set"
+  },
+  "AC-PM-Entries.dc.html": {
+   "x": 6080,
+   "y": 4770,
+   "w": 1440,
+   "h": 1230,
+   "title": "Academic \u00b7 Plumstead Manor \u00b7 Post-16 \u00b7 All \u00b7 ENTRIES mode: share, size against England, moves"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "LP-GCSE.dc.html",
+  "LP-NoState.dc.html",
+  "Phone.dc.html",
+  "AB-Areas.dc.html",
+  "AB-GCSE-Map.dc.html",
+  "SV-IB.dc.html",
+  "PM-Option1.dc.html",
+  "PM-Option2.dc.html",
+  "AC-LP-Chart.dc.html",
+  "AC-PM-Table.dc.html",
+  "AC-PM-Areas.dc.html",
+  "AC-SV-Map.dc.html",
+  "AC-PM-Entries.dc.html"
+ ],
+ "notes": {
+  "t1": {
+   "kind": "title1",
+   "text": "Leighton Park \u2014 an independent school (demo, 27 Nov)",
+   "x": 0,
+   "y": -300,
+   "maxW": 4400
+  },
+  "t2": {
+   "kind": "title1",
+   "text": "Acland Burghley and Sevenoaks \u2014 subject areas, Progress 8 map, the IB",
+   "x": 0,
+   "y": 1290,
+   "maxW": 4400
+  },
+  "t3": {
+   "kind": "title1",
+   "text": "Plumstead Manor \u2014 the two applied options (Option 1 chosen)",
+   "x": 0,
+   "y": 2880,
+   "maxW": 2960
+  },
+  "n1": {
+   "x": 3040,
+   "y": 3180,
+   "w": 520,
+   "size": "m",
+   "fill": "purple",
+   "text": "Real 2023/24\u20132024/25 DfE figures (Progress 8 to 2023/24). Sets drawn by distance for the mock-up: the 10 nearest of the same sector offering the qualification; the build uses Teacher's rule. Region ranks are placeholders. Bands: DfE's for its headline types; Progress 8's derived exactly from DfE's definition; everything else shows only whether the 95% range clears 0."
+  },
+  "t4": {
+   "kind": "title1",
+   "text": "Academic results at Post-16, by qualification group",
+   "x": 0,
+   "y": 4470,
+   "maxW": 7520
+  },
+  "n2": {
+   "x": 4560,
+   "y": 3180,
+   "w": 520,
+   "size": "m",
+   "fill": "purple",
+   "text": "Academic row: real 2022/23\u20132024/25 points per entry (DfE headline types; VicData's IB group). EPQ points are a placeholder: VicData doesn't hold EPQ points yet. Small subjects with no points are DfE suppression; VRQs have no points scale."
+  }
+ },
+ "designSystems": [],
+ "attachments": {},
+ "noteOrder": [
+  "t1",
+  "t2",
+  "t3",
+  "n1",
+  "t4",
+  "n2"
+ ]
+}
