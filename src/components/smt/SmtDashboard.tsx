@@ -1151,7 +1151,7 @@ function academicCaption(dv: string, a: Academic): string {
     case "DV-SMT-A-MAP":
       return [va ? (post16 ? n.vaPost16 : n.bandsP8) : n.quarters, va && post16 ? n.bandsDfe : null, a.set.chosen ? n.setHolds : null, va && !post16 ? n.p8Gap : null].filter(Boolean).join(" ");
     case "DV-SMT-A-AREAS":
-      return [n.subjectsByQual, a.state.mode === "entries" ? `${n.share} ${n.size}` : null, va ? `${n.bandsDfe} ${n.vicdataMatch}` : null, post16 ? n.outsideAreas : null, a.state.mode === "results" ? n.smallEntries : null].filter(Boolean).join(" ");
+      return [n.subjectsByQual, a.state.mode === "entries" ? `${n.share} ${a.areas.sized ? n.size : n.sizePending}` : null, va ? `${n.bandsDfe} ${n.vicdataMatch}` : null, post16 ? n.outsideAreas : null, a.state.mode === "results" ? n.smallEntries : null].filter(Boolean).join(" ");
     case "DV-SMT-A-TREND-LINE":
     case "DV-SMT-A-TREND-TABLE":
       return `${n.middleHalf} ${a.trends.note}`.trim();

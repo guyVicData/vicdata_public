@@ -33,6 +33,7 @@ import { englandQualVa, qualRows, subjectVa, vaMatch, type QualRow, type VaFact 
 import { gcseDefaultSet, groupDefaultSet, offering, stateP8Set, type GroupSet } from "./academic-sets";
 import { APPLIED_KEY, APPLIED_LABEL, GROUP_LABEL, GROUP_ORDER, dfeBandOf, groupChips, groupOfQualification, p8Band, rangeBand, shortQualification, type AcademicMode, type AcademicOffer, type AcademicPhase, type AcademicState, type AppliedType, type DfeBand, type QualGroup, type RangeBand, type RealGroup } from "./qual-groups";
 import { VA_SUBJECT_MATCHES_STATUS } from "./va-subject-matches";
+import { entrySizeBadge, entrySizeFifths, entrySizeKey, type EntrySizeKey } from "../subject-entry-size";
 
 export const MIN_SUBJECT_ENTRIES = MIN_SUBJECT_ENTRIES_UI; // R-SMT-SMALL-ENTRIES: a subject needs this many to be ranked
 
@@ -136,7 +137,8 @@ export type Academic = {
   lines: Line[];
   col1: { title: string; sub: string; note: string | null; summary: { label: string; value: string }[] };
   board: Board;
-  areas: { blocks: AreaBlock[]; outside: AreaSubject[]; none: string | null; period: number | null };
+  // `sized`: whether England's XS-XL table answered (R-SMT-ENTRIES-SIZE); false until it is loaded.
+  areas: { blocks: AreaBlock[]; outside: AreaSubject[]; none: string | null; period: number | null; sized?: boolean };
   grades: GradeBlock[];
   trends: {
     label: string;
@@ -208,6 +210,20 @@ export async function academicOffer(school: SmtSchool): Promise<AcademicOffer> {
     groups = GROUP_ORDER.filter((x): x is RealGroup => x !== "all" && g.has(x as RealGroup));
   }
   return { phases: { gcse: !!school.phases.gcse, post16: !!school.phases.post16 }, main, groups, applied, areas: { gcse: school.areas.gcse.map((a) => a.id) } };
+}
+
+
+// R-SMT-ENTRIES-SIZE: each subject's XS-XL against England (fifths of every school entering the subject in
+// that qualification that year), from the precomputed table (subject-entry-size.ts). GCSE subjects are the
+// full-course GCSE's; a subject the table doesn't size (too few schools, Combined Science's double count,
+// the table not loaded) has no badge. Returns whether the table answered at all.
+async function applySizes(stage: "ks4" | "ks5", subjects: AreaSubject[], period: number | null): Promise<boolean> {
+  if (period === null || !subjects.length) return false;
+  const qualOf = (q: string) => (stage === "ks4" && q === "GCSE" ? "GCSE (9-1) Full Course" : q);
+  const keys: EntrySizeKey[] = subjects.map((x) => ({ qualification: qualOf(x.qualification), subject: x.subject, period }));
+  const fifths = await entrySizeFifths(stage, keys);
+  for (const [i, x] of subjects.entries()) x.size = entrySizeBadge(x.entries, fifths.get(entrySizeKey(keys[i])));
+  return fifths.size > 0;
 }
 
 // ------------------------------------------------------------------------------------------ the build
@@ -547,6 +563,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
   const areaEntries = (b: AreaBlock) => sum(b.quals.flatMap((q) => q.subjects.map((s) => s.entries)));
   blocks.sort((a, b) => areaEntries(b) - areaEntries(a));
   const outside = built.filter(({ it }) => it.outside).map(({ s }) => s);
+  const sized = mode === "entries" ? await applySizes("ks5", blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects)), L) : undefined;
   void areaGroups;
 
   // ---------------------------------------------------------------- grade profile (Results)
@@ -673,7 +690,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     lines,
     col1: { title: mode === "va" ? "Value added now" : mode === "entries" ? "Entries now" : "Results now", sub: `Post-16 · ${periodLabel(L)}${mode === "results" ? " · points per entry" : mode === "entries" ? ` · ${levelEntries(urn, L).toLocaleString("en-GB")} entries` : ""}`, note: null, summary: [] },
     board,
-    areas: { blocks, outside, none: blocks.length || outside.length ? null : smtNote("acNoFigure", { what: "subject" }), period: L },
+    areas: { blocks, outside, none: blocks.length || outside.length ? null : smtNote("acNoFigure", { what: "subject" }), period: L, sized },
     grades,
     trends: { label: `${boardLabel} ${word(measureWord)}`, unit: board.unit, school: schoolPts, band, schoolLabel: names[urn]?.name ?? null, note: trendNote, lines: everyLine, moves, movesKind, mix: { keys: mixKeys, years: mixYears, sentence }, against },
     notes,
@@ -861,6 +878,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
   // ---------------------------------------------------------------- subject areas (Results and Entries; none in Value added)
   const blocks: AreaBlock[] = [];
   let grades: GradeBlock[] = [];
+  let gcseSized: boolean | undefined;
   if (mode !== "va") {
     const famMap = await cachedReference("smt:family-map:ks4", () => lookupAcademicSubjectFamilyMap({ ksStage: "ks4" }));
     const familyOf = new Map(famMap.map((r) => [r.raw_subject, r.family_id]));
@@ -890,6 +908,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
       }
     }
     for (const b of blocks) for (const q of b.quals) q.subjects.sort((a, c) => c.entries - a.entries);
+    if (mode === "entries") gcseSized = await applySizes("ks4", blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects)), subjYear);
     blocks.sort((a, b) => sum(b.quals.flatMap((q) => q.subjects.map((s) => s.entries))) - sum(a.quals.flatMap((q) => q.subjects.map((s) => s.entries))));
     if (mode === "results") {
       const mine = await cachedReference(`smt:subjects:${urn}:ks4`, () => fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" }));
@@ -930,7 +949,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
     lines,
     col1: { title: mode === "va" ? "Value added now" : mode === "entries" ? "Entries now" : "Results now", sub: mode === "va" ? "GCSE · Progress 8" : `GCSE · ${periodLabel(L)}${mode === "entries" ? ` · ${levelEntries(urn, L).toLocaleString("en-GB")} entries` : ""}`, note: col1Note, summary },
     board,
-    areas: { blocks, outside: [], none: mode === "va" ? smtNote("acNoGcseVaSubjects") : blocks.length ? null : smtNote("acNoFigure", { what: "subject" }), period: subjYear },
+    areas: { blocks, outside: [], none: mode === "va" ? smtNote("acNoGcseVaSubjects") : blocks.length ? null : smtNote("acNoFigure", { what: "subject" }), period: subjYear, sized: gcseSized },
     grades,
     trends: {
       label: measureWord,
