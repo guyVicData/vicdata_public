@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 198 rules: 190 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -153,7 +153,8 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | R-SMT-P8-REASON | active | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. 0.8 SMT feedback round 1 (R-INDEP-ENTRY-TILES): on Overview's "The school now" an independent school's tile gives way to its entry tiles, and the reason is said in the view's (i). | no | auto: smtP8 | — |
 | R-SMT-VA-HONEST | active | Value added is shown as DfE publishes it -- A-level value added by qualification type and by subject, with DfE's 95% interval and banding -- and worded from SMT_NOTES: 0 is the national average; a range crossing 0 isn't clearly different from average; GCSE value added by subject has never been published. | no | auto: smtVa | — |
 | R-SMT-YEARS | active | Every SMT year comes from the data or years.ts, never the code: each key stage's latest from academic_current_periods (with "(provisional)" where the ingest says so), change measured from TREND_BASE_PERIOD, the census from CENSUS_FIRST_PERIOD; Context's small-area, LA, projection and FSM years from what the lookups return. When GCSE's latest moves on and Post-16's doesn't, each view labels its own year; when ONS adds an LSOA year, Context moves to it. | no | auto: smtYears | — |
-| R-SMT-BOARDING-ONLY | active | SMT's filters are pills, only where they apply: Gender for a mixed school, Day + boarding for a boarding school (isBoardingSchool). A day school's request for boarding figures is ignored on the server; results aren't split by either, and the views say so. | no | auto: smtBoardingOnly | — |
+| R-SMT-BOARDING-ONLY | active | SMT shows boarding only at a boarding school (isBoardingSchool): its Day · Boarding tile, the Scorecard's boarders row, the day and boarding roll lines and Pupils' Day and boarding view. A day school gets none of them -- no tile, no row, no line, no rail icon. Since 0.8 SMT Academic there is no Day and boarding pill (R-SMT-NO-PILLS); results aren't split by boarding anywhere. | no | auto: smtBoardingOnly | — |
+| R-SMT-NO-PILLS | active | No SMT dashboard has a girls/boys or a day/boarding pill: the control bar is the level chips and "Compared against" (Context: the area and England). The Overview and Pupils builders and their routes take no filters. Gender and boarding are content instead: Pupils' Girls and boys view (mixed schools only) -- girls' share by year group against the middle of the set's mixed schools, its change since CENSUS_FIRST_PERIOD against the set's, and where it shifts (Year 7 against Years 8 to 11, the sixth form against Years 7 to 11) -- and its Day and boarding view (boarding schools only) -- boarders' share over time against the middle of the set's boarding schools (the census has no boarders by phase, and the (i) says so). A view with nothing to show has no rail icon (R-RAIL-HIDES-EMPTY): a single-sex school never sees Girls and boys, a day school never sees Day and boarding. Single-sex set schools are left out of the set's girls' share, never counted as 0; the Scorecard's Roll row is the whole school's roll, ranked on the whole school's roll. "The school now" keeps its Girls · Boys and Day · Boarding tiles. Admissions keeps its own sex filter (ADM_SEX_FILTER). | no | auto: smtNoPills | — |
 | R-SMT-FLAGS | active | Flags on the school appear only for large and lasting changes, with the figures behind them: the roll falling three years running (Admissions' losingPupils), the entry cohort shrinking past the national threshold (entryYearShrinking), and results moving faster than the set's middle by at least SMT_FLAG_RULES.resultsGap over two years, with at least SMT_FLAG_RULES.resultsMinSchools set schools. The thresholds live in src/lib/smt/flags-rules.ts only. | no | auto: smtFlags | — |
 | R-SMT-NOTES | active | SMT's honesty wording comes from one file, SMT_NOTES (src/catalogue/notes.ts), in each view's (i) as its "What this shows" line (0.8 notes and feedback: the caption button is retired) or in the view's own space; no SMT component words a caveat of its own. | no | auto: smtNotes | — |
 | R-SMT-SMALL-ENTRIES | active | A subject with fewer than MIN_SUBJECT_ENTRIES (5) entries isn't ranked and says so; ranks come from Teacher's subjectRanking, so a subject's figures match the subject explorer's. | no | auto: smtSubjects | — |
@@ -161,12 +162,12 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | R-SMT-VIEW-SCORECARD | active | The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its trend over its own period (R-TREND-PERIOD-PER-CELL); its rows follow the school's type (R-SCORECARD-ROWS-BY-TYPE); the flags line follows. | no | auto: smtSetRanks | — |
 | R-SMT-VIEW-MAP | active | The map draws the school and every located school in the comparison set; the school ringed. | no | auto: smtViewMap | — |
 | R-SMT-VIEW-TRENDS | active | Trends draw indexed rolls against the selected set's averages (0.8 SMT feedback round 2, R-ROLL-INDEXED-SET; no longer the LA and England), results against the set's middle half with 2021/22 shaded and the trend note, and market share at 11+ against the set (R-MARKET-FOLLOWS-SET; an empty state with the reason where the school has no 11+ entry). | no | auto: smtViewTrends | — |
-| R-SMT-VIEW-ACADEMIC-NOW | active | The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile. With a subject area chosen the tiles are four, as the Academic board draws them: entries, the average, the top grades, and the rank in the set as its own tile. | no | auto: smtAcademicNow | — |
-| R-SMT-VIEW-AREAS | active | Subject areas are Admissions' strengths and weaknesses (buildRivals), against the comparison set instead of the rivals. | no | auto: smtAreas | — |
-| R-SMT-VIEW-SUBJECTS | active | Subjects list the area's subjects with entries, average, rank in the set and England, since 2022/23, and the subject explorer link carrying ?set=. | no | auto: smtSubjects | — |
+| R-SMT-VIEW-ACADEMIC-NOW | active | The level now follows the level and the mode: at Post-16 one line per qualification group the school offers (Applied as DfE's two headline types), each with its figure (points per entry with DfE's grade equivalent, entries and share against the set's typical share, or value added with its range and band), its place in that line's set and last year's figure; a line without a figure says why (the EPQ's missing points, T level's missing value added). At GCSE, GCSE lines only: Attainment 8 and grade 5+ in English and maths, an area's average, the areas' shares, or Progress 8 with its range, England place and the set's middle half; an independent or IGCSE school gets the reason and a summary of the set's state schools. | no | auto: smtAcademicNow | — |
+| R-SMT-VIEW-AREAS | active | By subject area: each subject area, its subjects by qualification (A-level Business, A-level Economics, BTEC Business under Business & Law), most entries first; each subject ranked only against the same subject in the same qualification, among the set's schools teaching it ('only school' where none does). Results: points (subjects under 5 entries listed, not ranked). Entries: entries over three years, XS-XL against England, share against the set's typical school, how many of the set offer it. Value added: the subject file's figure, VicData's three bands, the set's dots; a dagger where VicData placed the subject. The EPQ sits outside the areas; GCSE value added has no subject areas. | no | auto: smtAreas | — |
+| R-SMT-VIEW-SUBJECTS | superseded by R-SMT-ACADEMIC-MODES | Subjects list the area's subjects with entries, average, rank in the set and England, since 2022/23, and the subject explorer link carrying ?set=. | no | auto: smtSubjects | — |
 | R-SMT-VIEW-GRADES | active | The grade profile bands the main qualification's latest graded entries (GCSE 9-7, 6-5, 4, 3-1; A level A*-A, B, C, D-U); the bands add up to all of them. | no | auto: smtGrades | — |
-| R-SMT-VIEW-MIX | active | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from the subject rollup's first year with entries (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, a year before the results trend beside it); entries count from the first year (not graded, so no 2021/22 note). | no | auto: smtMix | — |
-| R-SMT-VIEW-RESERVED | active | Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its body (0.8 notes and feedback: no longer also its caption -- the (i)'s method says it) -- "the top 25%, middle 50% and bottom 25% of entries" (the bands are of entries, not pupils) -- and no figure. | no | auto: smtReserved | — |
+| R-SMT-VIEW-MIX | active | Entries mix: each Post-16 year's entries split by VicData's qualification groups (bucket:*::entries: A level and AS, BTEC/OCR/VRQ, IB, T level, Other), each year's shares adding to 100%, every year with entries; a group that started or stopped within the years shown gets a sentence (Leighton Park's IB). Results and Entries modes only. | no | auto: smtMix | — |
+| R-SMT-VIEW-RESERVED | superseded by R-SMT-ACADEMIC-MODES | Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its body (0.8 notes and feedback: no longer also its caption -- the (i)'s method says it) -- "the top 25%, middle 50% and bottom 25% of entries" (the bands are of entries, not pupils) -- and no figure. | no | auto: smtReserved | — |
 | R-SCORECARD-ROWS-BY-TYPE | active | The SMT Scorecard's rows follow the school's type (F-3): an IGCSE school has no whole-school GCSE rows (Attainment 8, grade 5+ in English and maths), since it isn't ranked on them; the boarders row shows for a GIAS boarding school only, ranked among the boarding schools with a census boarders count in the set, in its region and in England (each named); Progress 8 is a row where DfE published it. The set's column wears the set's short name (setShortName: "10 nearest"), the full name in the (i). | no | auto: scorecardRows | — |
 | R-TREND-PERIOD-PER-CELL | active | The Scorecard's last column is "Trends", and each cell states its own period (F-3, F-4): results "since 2022/23" (R-TREND-FROM-2223); sixth-form value added from its first published year (SIXTH_FORM_VA_FROM, 2023/24) to its latest, "2023/24 → 2024/25"; Progress 8 its own years, ending PROGRESS8_LAST_PERIOD (2023/24); rolls since the first census year (2019/20). One (i) note says why the years differ, every year from years.ts. A later value-added year extends the cell from the data, with no code change. | no | auto: trendPerCell | — |
 | R-INDEP-ENTRY-TILES | active | On SMT Overview's "The school now", an independent school's GCSE note and Progress 8 note give way to its entry tiles (F-8): "Joining at 11" (Year 7, where GIAS's statutory low age is 11 or more) or "Net change at 11" (Year 7 this census minus Year 6 the census before), and "Net change at 16" (Year 12 minus last census's Year 11). Each tile is the label, this year's number and one change since 2019/20 (the % change in that year group's roll); the arithmetic is in the (i). The 16+ sum is SMT Pupils' Leaving at 16's, the other way round, from the same cohort table. State schools keep their tiles. | no | auto: indepEntryTiles | — |
@@ -196,6 +197,15 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | R-FEEDER-TIERS | active | A feeder set's tiers drive the feeder views (src/lib/sets/tiers.ts): Main feeders go to the top of the feeder health table (marked Main) and are drawn larger on the feeder map (MAIN_DOT_SCALE); an alert shows above the table when a Main feeder's roll is falling, by the existing trend rule (the feeder flag "Falling faster than the area"). Untiered counts as Regular; Occasional is kept in view and never alerts. The pipeline's answer carries the set's tiers. | no | auto: feederTiers | — |
 | R-SETS-MOBILE | active | Every new sets screen has a designed phone layout (G26-G31) from the same components, no phone-only copies of logic: at 390 px the selector (label above a full-width button, its menu a bottom sheet with a handle and the actions pinned at the bottom), the editor (one column, 72 px artwork, Save and Save as in a sticky bottom bar, the tick on the left, other figures behind a row's chevron, Add schools as a bottom sheet), the library (tabs, sideways pinned tiles, cards with a ··· sheet) and the set view (stacked, Edit first, How close and Where used folded) render without horizontal scroll; every control has at least a 44 px hit area; the sheets open and close by Esc, the handle and a tap outside; a panel header naming its set wraps rather than truncating. | no | auto: setsMobile | — |
 | R-SETS-WAY-BACK | active | The sets library (/sets) and a set view (/sets/<id>) always offer a way back to a dashboard, top left ("‹ Back to <page>", a 44 px tap target on a phone). A set menu's Manage sets (Admissions, SMT, Teacher) passes returnTo, the page as it stands (its set choice, filters and school), checked like the editor's (a path on this site, and here a dashboard only, never /sets itself); the label names the page (Back to Pipelines, Back to Market share, Back to GCSE results, Back to Post-16 results, Back to SMT…). The library's set links and the set view's Sets breadcrumb keep returnTo, and the editor opened from either returns to it, so the way back survives a trip through the editor. With no returnTo, or one not allowed, Back goes to the school's dashboard for the person's role (Admissions, else SMT, else Teacher), "Back to dashboard". A stored set chosen or saved there goes back with the person when it is the kind the page uses (and its entry point or phase where the page's address names one), as the editor's Save does. | no | auto: setsWayBack | — |
+| R-SMT-ACADEMIC-MODES | active | SMT keeps four dashboards (Overview, Academic, Pupils, Context); Academic's row 2 carries the Results · Entries · Value added switch (left of the chips), held in the address (?mode=). Every Academic view follows the mode: Results ranks points per entry (quarters within the set, the set's median); Entries ranks the group's (or area's) share of the school's entries, always with the count beside it; Value added ranks the figure with its 95% range and band. The large view rail is chart, ranking table, map, subject areas and (Results) grade profile; row 2 is the trend against the set's middle half, every line's change, and the entries mix (Results, Entries) or the set's schools' moves (Value added). Academic's old single value-added view is gone; nothing is cut at 14 rows. | no | auto: smtAcademicModes | — |
+| R-SMT-QUAL-GROUPS | active | Post-16 chips are the qualification groups the school offers in the latest year, in this order: All (first, wherever it offers more than one), A level, Applied, EPQ, Core Maths, AS, IB, T level. Applied is DfE's two headline types, Applied general and Tech level: two column-1 lines, and a two-chip switch above the chart, table and map; the qualifications and sizes appear only in the subject-areas view. With All chosen, the large view opens on the subject areas and the trends follow the group with the most entries. GCSE keeps its subject-area chips (none in Value added: a line says DfE publishes no GCSE value added by subject). Level chips are GCSE and Post-16 only; an old ?level=whole opens on the school's main level. | no | auto: smtQualGroups | — |
+| R-SMT-GROUP-SETS | active | Each qualification group's default comparison set is the 10 nearest schools offering it (entries or a figure in either of the two latest years), widening the net: Teacher's findSurroundingSchools with the relaxed gender rule and one filter on top. Each of DfE's applied types has its own. The pill names it ("10 nearest offering IB"). A set the SMT chooses holds across groups: each view keeps its schools that offer the group and says how many ("4 of 12 offer EPQ"); Default returns to per-group sets. | no | auto: smtGroupSets | — |
+| R-SMT-COL1-LEVEL | active | Column 1 follows the level: never a Progress 8 line on a Post-16 view, never a Post-16 line at GCSE. | no | auto: smtCol1Level | — |
+| R-SMT-VA-BANDS | active | Value-added bands: DfE's own progress band where DfE publishes one (its Post-16 headline types); Progress 8's five bands derived exactly from DfE's definition (above or below when the 95% range is clear of 0, well above or below beyond ±0.5 as well); everything else (EPQ, Core Maths, AS, IB, every by-area subject) three labels from the 95% range alone: Clearly above (the whole range above 0), In line (it crosses or touches 0), Clearly below (the whole range below 0), deliberately unlike DfE's five. The chart's axis fits the data (no ±1.2 clamp). | no | auto: smtVaBands | — |
+| R-SMT-VA-INDEPENDENT | active | An independent or IGCSE school at GCSE in Value added: the default set is the 10 nearest state schools with Progress 8 (Teacher's rule, state schools only); the school's own row and column 1 say why it has none (no Key Stage 2 tests, so no starting point); the trend has no line for the school. If a chosen set has no state schools, a clear message sits in the middle of the chart, table and map. | no | auto: smtVaIndependent | — |
+| R-VA-SUBJECT-MATCH | active | Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); until that lands, from src/lib/smt/va-subject-matches.ts, which goes once it has. While both exist they agree. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's. | no | auto: vaSubjectMatch | — |
+| R-SMT-ENTRIES-SIZE | active | In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject "All subjects"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says "too few schools to size". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync. | no | auto: smtEntriesSize | — |
+| R-SMT-ENTRIES-ONE-TOTAL | active | One entry total per page: column 1's total, every group line and share, the entries mix, the subject areas' shares and the board's shares all come from the same subject-by-qualification rows (Post-16: academic_subject_qualification_headline, whose sum per year is DfE's own "All subjects" total exam entries; GCSE: the subject rollup), so every total on the page agrees. | no | auto: smtEntriesOneTotal | — |
 
 ## Cards
 
@@ -879,7 +889,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Why | Guy, 16 Oct 2026: the audit fixes left IGCSE schools out of every GCSE ranking, which was too broad. The problem is only with measures missing the subjects a school takes as IGCSE: Leighton Park's GCSE Biology is a GCSE Biology figure like any other. |
 | Applies to | Every single-subject GCSE ranking and comparison in Teacher, SMT and Admissions; Teacher's sets for subject views (subjectRows); the comparator maps on a subject |
 | Enforced in | - src/lib/igcse-words.ts:igcseTakenAsIgcse, igcseFamilyIncomplete, FAMILY_REQUIRED_SUBJECTS<br>- src/lib/subject-ranking.ts:rankedWithIgcse<br>- src/lib/teacher-view-comparator-series.ts:rankFixedSets (subjectRanked)<br>- src/lib/chooser-sets.ts:resolveFixedSet, resolveDefaultNearest (subjectRows)<br>- src/app/api/teacher/saved-comparator-sets/route.ts (subjectRows)<br>- src/components/dashboard-config/TeacherDashboard.tsx:subjectComparatorSets, subjectSets<br>- src/lib/academic-data-view.ts:igcseOutFor<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/smt/academic.ts:stagePart<br>- src/components/smt/SmtDashboard.tsx:academicWhyNot |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/smt/SmtDashboard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/academic-data-view.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/igcse-words.ts<br>- src/lib/igcse.ts<br>- src/lib/smt/academic.ts<br>- src/lib/smt/school.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-saved-sets.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/academic-data-view.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/igcse-words.ts<br>- src/lib/igcse.ts<br>- src/lib/smt/school.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-saved-sets.ts |
 | Test case | Leighton Park; The King's School Worcester 117037; The Chase 137625 (110110), ks4: Leighton Park is ranked in GCSE Biology, Chemistry, Physics, Art and Design and Combined Science, and not in Attainment 8, English and maths, Sciences & Maths or English (Languages & Literature); its Sciences & Maths (i) says 'sciences only: maths taken as IGCSE'. King's Worcester is ranked in Art and Design, History and Geography and in its Humanities family, not in Sciences & Maths or Languages & Literature; it has no GCSE Biology, so no Biology rank, and Biology isn't inferred as IGCSE. Leighton Park's 10 nearest for a subject includes IGCSE schools; its whole-school ten doesn't. [runner: igcseSubject] |
 | Origin | 0.8 IGCSE subjects (docs/v0.8/vicdata_0_8_igcse_subject_rankings_claude_code_prompt_v1.md) |
 | Status | active |
@@ -1071,7 +1081,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Why | Guy, 16 Oct 2026 (year rules leftovers, item 1): keep 2020/21 and extend every entries view to it, so every entries figure starts at the same year. |
 | Applies to | Teacher Candidates (year table, trend, % change, rankings); the Data View's Candidates figures; SMT's entries mix |
 | Enforced in | - src/catalogue/years.ts:entriesFirstPeriod, changeStartFor<br>- src/lib/subject-ranking.ts:changeFrom<br>- src/components/data-view/SubjectAreaSection.tsx:entriesChange, buildCategoryRows, buildSubjectRows<br>- src/lib/smt/academic.ts:mix<br>- src/lib/teacher-view-panels.ts:trimToData (Teacher's Candidates: every year the headline holds, trimmed to the data) |
-| Tagged at | - src/components/data-view/SubjectAreaSection.tsx<br>- src/lib/signed-delta.test.ts<br>- src/lib/smt/academic.ts<br>- src/lib/subject-ranking.ts |
+| Tagged at | - src/components/data-view/SubjectAreaSection.tsx<br>- src/lib/signed-delta.test.ts<br>- src/lib/subject-ranking.ts |
 | Test case | The Chase (137625), ks4, History: GCSE History: entries from 2020/21 (results from 2021/22); Teacher's Candidates draws 2020/21; the Data View's subject-mode change and the ranked list agree (+29% since 2020/21). [runner: entriesFirstYear] |
 | Origin | Year rules leftovers (16 Oct 2026) |
 | Status | active |
@@ -1327,7 +1337,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Why | Strengths and weaknesses against rivals (Guy, 7 Oct 19:32). |
 | Applies to | Admissions rivals |
 | Enforced in | - src/lib/admissions/flags.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/admissions/thresholds.ts<br>- ingest: admissions_flag_thresholds |
-| Tagged at | - src/components/admissions/panels/Academic.tsx<br>- src/components/admissions/views/Strengths.tsx<br>- src/components/smt/views/Areas.tsx<br>- src/lib/admissions-flags.test.ts |
+| Tagged at | - src/components/admissions/panels/Academic.tsx<br>- src/components/admissions/views/Strengths.tsx<br>- src/lib/admissions-flags.test.ts |
 | Test case | The Chase (137625), ks4: Each area's rank and gap equal the raw family rows' arithmetic for The Chase and its rivals; flags follow the rule. [runner: admStrengths] |
 | Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4) |
 | Status | active |
@@ -2445,7 +2455,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | --- | --- |
 | Statement | One comparison set drives the whole SMT dashboard: Teacher's sets (10 nearest, the LA, saved sets, the school's sets, rankings), resolved by Teacher's own route. Every rank among the set is level-aware: only the set's schools with that result are ranked (IGCSE schools left out at GCSE), the school counted too, highest first, ties sharing a place, and the count says so ("2 of 11 with GCSE results"). Regional and England ranks are 0.6.6's whole-population ranks. |
 | Why | A rank is only honest with its count, and a set's preps don't count in a GCSE ranking (spec §2.2, §3.5). |
-| Applies to | DV-SMT-O-SCORECARD, DV-SMT-A-NOW, DV-SMT-A-AREAS, DV-SMT-A-SUBJECTS |
+| Applies to | DV-SMT-O-SCORECARD, DV-SMT-A-NOW, DV-SMT-A-TABLE, DV-SMT-A-AREAS |
 | Enforced in | - src/lib/smt/population.ts:setPlace, placesOn<br>- src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/academic.ts:stagePart |
 | Tagged at | - src/components/smt/views/Scorecard.tsx<br>- src/lib/smt/smt.test.ts |
 | Test case | The Chase (137625), ks4: Attainment 8's set rank and count recomputed from the raw headline rows of the set's schools with a GCSE figure (IGCSE schools out) equal the scorecard's; England's equals the whole-population rank. [runner: smtSetRanks] |
@@ -2477,9 +2487,9 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | --- | --- |
 | Statement | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. 0.8 SMT feedback round 1 (R-INDEP-ENTRY-TILES): on Overview's "The school now" an independent school's tile gives way to its entry tiles, and the reason is said in the view's (i). |
 | Why | Two different absences -- a school type and two lost cohorts -- read the same as a missing figure unless said. |
-| Applies to | DV-SMT-O-NOW, DV-SMT-A-NOW, DV-SMT-A-VA |
+| Applies to | DV-SMT-O-NOW, DV-SMT-A-NOW, DV-SMT-A-CHART, DV-SMT-A-TABLE |
 | Enforced in | - src/lib/smt/overview.ts:p8Of<br>- src/components/smt/views/Now.tsx<br>- src/components/smt/views/ValueAdded.tsx |
-| Tagged at | - src/components/smt/views/AcademicNow.tsx<br>- src/components/smt/views/Now.tsx<br>- src/components/smt/views/ValueAdded.tsx<br>- src/lib/smt/overview.ts<br>- src/lib/smt/smt.test.ts |
+| Tagged at | - src/components/smt/views/Now.tsx<br>- src/lib/smt/overview.ts<br>- src/lib/smt/smt.test.ts |
 | Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: published, 2023/24, +0.08, the text naming 2024/25 as not published; Leighton Park: the independent reason. [runner: smtP8] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
@@ -2493,9 +2503,9 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | --- | --- |
 | Statement | Value added is shown as DfE publishes it -- A-level value added by qualification type and by subject, with DfE's 95% interval and banding -- and worded from SMT_NOTES: 0 is the national average; a range crossing 0 isn't clearly different from average; GCSE value added by subject has never been published. |
 | Why | A value-added figure without its interval overstates what it can tell. |
-| Applies to | DV-SMT-A-VA, DV-SMT-A-NOW, DV-SMT-O-NOW |
-| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/views/ValueAdded.tsx |
-| Tagged at | - src/components/smt/views/AcademicNow.tsx<br>- src/components/smt/views/ValueAdded.tsx |
+| Applies to | DV-SMT-A-NOW, DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-AREAS, DV-SMT-O-NOW |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/views/Academic.tsx:RankChart |
+| Tagged at | — |
 | Test case | The Chase (137625), ks4: A-level value added 2024/25 equals the headline snapshot's A level::value_added (0.1, interval -0.03 to 0.24) and its banding. [runner: smtVa] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
@@ -2511,7 +2521,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Why | GCSE 2025/26 lands on Thursday; nothing in SMT may hard-code a year (prompt, Read first). |
 | Applies to | Every SMT view |
 | Enforced in | - src/lib/smt/school.ts:latestYears<br>- src/lib/smt/overview.ts<br>- src/lib/smt/academic.ts<br>- src/lib/smt/context.ts:buildContext<br>- src/catalogue/years.ts:SMT_PROJECTION_TILE_AHEAD, SMT_PROJECTION_CHART_AHEAD |
-| Tagged at | — |
+| Tagged at | - src/lib/smt/academic.ts |
 | Test case | The Chase (137625), ks4: Today: the GCSE rows read 2024/25. With a synthetic GCSE 2025/26 (scripts/year-rehearsal, provisional), the Attainment 8 row reads 2025, Post-16's stays 2024, and no SMT source line holds a year literal. With a synthetic extra LSOA year (install-lsoa-next.ts), Context's children, population by age and sources read the new year. [runner: smtYears] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
@@ -2523,13 +2533,29 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | SMT's filters are pills, only where they apply: Gender for a mixed school, Day + boarding for a boarding school (isBoardingSchool). A day school's request for boarding figures is ignored on the server; results aren't split by either, and the views say so. |
-| Why | 0.7 r3 F2's rule, carried to SMT (spec §2.2). |
-| Applies to | The SMT control bar; DV-SMT-O-NOW, DV-SMT-O-SCORECARD, DV-SMT-O-ROLL-* |
-| Enforced in | - src/lib/smt/levels.ts:pillsFor<br>- src/lib/smt/overview.ts:buildOverview |
-| Tagged at | - src/lib/smt/levels.ts<br>- src/lib/smt/smt.test.ts |
-| Test case | The Chase (day); Leighton Park 110110 (boarding) (137625), ks4: The Chase: Gender only; a boarding filter is ignored (no boarders row, filters all). Leighton Park: both pills, a boarders row, day and boarding roll lines. [runner: smtBoardingOnly] |
+| Statement | SMT shows boarding only at a boarding school (isBoardingSchool): its Day · Boarding tile, the Scorecard's boarders row, the day and boarding roll lines and Pupils' Day and boarding view. A day school gets none of them -- no tile, no row, no line, no rail icon. Since 0.8 SMT Academic there is no Day and boarding pill (R-SMT-NO-PILLS); results aren't split by boarding anywhere. |
+| Why | 0.7 r3 F2's rule, carried to SMT (spec §2.2); rewritten when the pills came off (docs/v0.8/smt_value_added_plan_v1.md §1). |
+| Applies to | DV-SMT-O-NOW, DV-SMT-O-SCORECARD, DV-SMT-O-ROLL-*, DV-SMT-P-NOW, DV-SMT-P-DAY-BOARDING |
+| Enforced in | - src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/pupils.ts:buildPupils, dayAndBoarding<br>- src/components/smt/content.ts:smtHasContent |
+| Tagged at | - src/lib/smt/smt.test.ts |
+| Test case | The Chase (day); Leighton Park 110110 (boarding) (137625), ks4: The Chase: no boarders row, one roll line, no Day and boarding view (no rail icon). Leighton Park: a boarders row, day and boarding roll lines, and a Day and boarding view with figures. [runner: smtBoardingOnly] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-NO-PILLS
+
+| Field | Content |
+| --- | --- |
+| Statement | No SMT dashboard has a girls/boys or a day/boarding pill: the control bar is the level chips and "Compared against" (Context: the area and England). The Overview and Pupils builders and their routes take no filters. Gender and boarding are content instead: Pupils' Girls and boys view (mixed schools only) -- girls' share by year group against the middle of the set's mixed schools, its change since CENSUS_FIRST_PERIOD against the set's, and where it shifts (Year 7 against Years 8 to 11, the sixth form against Years 7 to 11) -- and its Day and boarding view (boarding schools only) -- boarders' share over time against the middle of the set's boarding schools (the census has no boarders by phase, and the (i) says so). A view with nothing to show has no rail icon (R-RAIL-HIDES-EMPTY): a single-sex school never sees Girls and boys, a day school never sees Day and boarding. Single-sex set schools are left out of the set's girls' share, never counted as 0; the Scorecard's Roll row is the whole school's roll, ranked on the whole school's roll. "The school now" keeps its Girls · Boys and Day · Boarding tiles. Admissions keeps its own sex filter (ADM_SEX_FILTER). |
+| Why | The Girls/Boys pill filtered only the roll figures (about a third of Overview and Pupils), showed on Academic where nothing can be split, and had three bugs: the Scorecard's Roll row showed girls' roll but ranked whole-school roll; Girls with Boarding only silently dropped the sex filter; single-sex set schools counted as 0 in the set's girls or boys average (Guy, 8 Nov 2026; docs/v0.8/smt_value_added_plan_v1.md §1). |
+| Applies to | Every SMT dashboard's control bar; DV-SMT-O-SCORECARD; DV-SMT-P-GIRLS-BOYS; DV-SMT-P-DAY-BOARDING |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:Dashboard<br>- src/lib/smt/overview.ts:buildOverview, rollAt<br>- src/lib/smt/pupils.ts:buildPupils, girlsAndBoys, countsAsMixed, dayAndBoarding<br>- src/app/api/smt/overview/route.ts<br>- src/app/api/smt/pupils/route.ts<br>- src/components/smt/content.ts:smtHasContent<br>- src/components/smt/views/Pupils.tsx:GirlsAndBoys, DayAndBoarding |
+| Tagged at | - src/app/api/smt/overview/route.ts<br>- src/app/api/smt/pupils/route.ts<br>- src/components/smt/SmtDashboard.tsx<br>- src/components/smt/content.ts<br>- src/components/smt/views/Pupils.tsx<br>- src/lib/smt/overview.ts<br>- src/lib/smt/pupils.ts |
+| Test case | Leighton Park 110110 (boarding, mixed); Acland Burghley 100053 (mixed, set with single-sex schools); Parliament Hill 100050 (girls) (110110), ks4: No SMT source draws a Pupils or Day and boarding pill or threads SmtFilters; buildOverview takes (school, set, caller) and buildPupils (school, set, level, caller). Leighton Park: both views have rail icons and figures (girls' share by year group, shifts, boarders' share over time against the set's boarding schools). Acland Burghley: the set's girls' share is the middle of its mixed schools only, its single-sex schools left out and counted. Parliament Hill: no Girls and boys view (no rail icon). The Scorecard's Roll row is the whole roll. [runner: smtNoPills] |
+| Origin | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
@@ -2573,7 +2599,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | --- | --- |
 | Statement | A subject with fewer than MIN_SUBJECT_ENTRIES (5) entries isn't ranked and says so; ranks come from Teacher's subjectRanking, so a subject's figures match the subject explorer's. |
 | Why | One or two pupils would decide a rank. |
-| Applies to | DV-SMT-A-SUBJECTS |
+| Applies to | DV-SMT-A-AREAS |
 | Enforced in | - src/lib/smt/academic.ts:stagePart<br>- src/components/smt/views/Subjects.tsx |
 | Tagged at | - src/lib/smt/academic.ts |
 | Test case | The Chase, GCSE Sciences & Maths (137625), ks4: Every subject under 5 entries is unranked; Biology's set and England ranks equal subjectRanking's own. [runner: smtSubjects] |
@@ -2651,12 +2677,12 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile. With a subject area chosen the tiles are four, as the Academic board draws them: entries, the average, the top grades, and the rank in the set as its own tile. |
+| Statement | The level now follows the level and the mode: at Post-16 one line per qualification group the school offers (Applied as DfE's two headline types), each with its figure (points per entry with DfE's grade equivalent, entries and share against the set's typical share, or value added with its range and band), its place in that line's set and last year's figure; a line without a figure says why (the EPQ's missing points, T level's missing value added). At GCSE, GCSE lines only: Attainment 8 and grade 5+ in English and maths, an area's average, the areas' shares, or Progress 8 with its range, England place and the set's middle half; an independent or IGCSE school gets the reason and a summary of the set's state schools. |
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-A-NOW |
-| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
-| Tagged at | - src/components/smt/views/AcademicNow.tsx |
-| Test case | The Chase (137625), ks4: The GCSE Sciences & Maths entries equal the area's family entries; the area's average equals the family's average points. [runner: smtAcademicNow] |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/views/Academic.tsx:AcademicNow |
+| Tagged at | — |
+| Test case | Leighton Park, Post-16 Results (110110), ks5: One line each for A level (39.95, B), Applied general, Tech level, EPQ (no points: says so) and AS; A level's place counts the school and its 10 nearest offering A level with a figure. [runner: smtAcademicNow] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -2667,12 +2693,12 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | Subject areas are Admissions' strengths and weaknesses (buildRivals), against the comparison set instead of the rivals. |
+| Statement | By subject area: each subject area, its subjects by qualification (A-level Business, A-level Economics, BTEC Business under Business & Law), most entries first; each subject ranked only against the same subject in the same qualification, among the set's schools teaching it ('only school' where none does). Results: points (subjects under 5 entries listed, not ranked). Entries: entries over three years, XS-XL against England, share against the set's typical school, how many of the set offer it. Value added: the subject file's figure, VicData's three bands, the set's dots; a dagger where VicData placed the subject. The EPQ sits outside the areas; GCSE value added has no subject areas. |
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-A-AREAS |
-| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
-| Tagged at | - src/components/smt/views/Areas.tsx |
-| Test case | The Chase (137625), ks4: The areas equal buildRivals' for the set. [runner: smtAreas] |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/views/Academic.tsx:AreasView |
+| Tagged at | — |
+| Test case | Acland Burghley, Post-16 Value added, All (100053), ks5: Sciences & Maths lists A-level Mathematics (23 entries, -0.14) and BTEC Diploma Applied Science (21, +0.43) under their own qualifications; Art and Design is marked VicData's; the EPQ is outside the areas. [runner: smtAreas] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -2687,10 +2713,10 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-A-SUBJECTS |
 | Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
-| Tagged at | - src/components/smt/views/Subjects.tsx |
+| Tagged at | — |
 | Test case | The Chase (137625), ks4: As R-SMT-SMALL-ENTRIES. [runner: smtSubjects] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Status | active |
+| Status | superseded by R-SMT-ACADEMIC-MODES |
 | Must lift | — |
 | Open issue | — |
 | Fixed | — |
@@ -2703,7 +2729,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-A-GRADES |
 | Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
-| Tagged at | - src/components/smt/views/Grades.tsx |
+| Tagged at | — |
 | Test case | The Chase (137625), ks4: The bands' entries add up to the graded entries and their shares to 100%. [runner: smtGrades] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
@@ -2715,12 +2741,12 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from the subject rollup's first year with entries (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, a year before the results trend beside it); entries count from the first year (not graded, so no 2021/22 note). |
+| Statement | Entries mix: each Post-16 year's entries split by VicData's qualification groups (bucket:*::entries: A level and AS, BTEC/OCR/VRQ, IB, T level, Other), each year's shares adding to 100%, every year with entries; a group that started or stopped within the years shown gets a sentence (Leighton Park's IB). Results and Entries modes only. |
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE |
-| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
-| Tagged at | - src/components/smt/views/Mix.tsx<br>- src/components/smt/views/Tables.tsx<br>- src/lib/smt/academic.ts |
-| Test case | The Chase (137625), ks4: The GCSE mix runs from the rollup's first year with entries (2020/21) to the latest year, a year before the results trend's 2021/22; each year's shares add up to 100%. [runner: smtMix] |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/views/Academic.tsx:MixBars |
+| Tagged at | - src/components/smt/views/Tables.tsx |
+| Test case | Leighton Park, Post-16 Results (110110), ks5: Each year's shares add to 100%; the IB's counts are the rollup's IBO components, there in 2021/22 to 2023/24, and the sentence says none in 2024/25. [runner: smtMix] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -2735,10 +2761,10 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Why | A view says what it shows and why, as Admissions' views do. |
 | Applies to | DV-SMT-A-BANDS |
 | Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
-| Tagged at | - src/components/smt/views/Reserved.tsx |
+| Tagged at | — |
 | Test case | The Chase (137625), ks4: The panel draws SMT_NOTES.bandReserved and no number. [runner: smtReserved] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
-| Status | active |
+| Status | superseded by R-SMT-ACADEMIC-MODES |
 | Must lift | — |
 | Open issue | — |
 | Fixed | — |
@@ -3202,6 +3228,150 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Tagged at | — |
 | Test case | Leighton Park's library and a set view, rendered on the server, with and without returnTo; the set menu's Manage sets with a page address (110110), ks4: Manage sets carries returnTo (the page, its set choice and school) on all three products; the library and set view draw Back first, named for the page, 44 px on a phone; set links and the breadcrumb keep returnTo; a missing, foreign or /sets returnTo falls back to the role's dashboard, "Back to dashboard"; a feeder set goes back to Pipelines but not to Market share; the unit tests pass. [runner: setsWayBack] |
 | Origin | 0.8 sets: way back (Guy, 8 Nov) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-ACADEMIC-MODES
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT keeps four dashboards (Overview, Academic, Pupils, Context); Academic's row 2 carries the Results · Entries · Value added switch (left of the chips), held in the address (?mode=). Every Academic view follows the mode: Results ranks points per entry (quarters within the set, the set's median); Entries ranks the group's (or area's) share of the school's entries, always with the count beside it; Value added ranks the figure with its 95% range and band. The large view rail is chart, ranking table, map, subject areas and (Results) grade profile; row 2 is the trend against the set's middle half, every line's change, and the entries mix (Results, Entries) or the set's schools' moves (Value added). Academic's old single value-added view is gone; nothing is cut at 14 rows. |
+| Why | Guy, 8 Nov: value added is a mode of Academic, not a dashboard; the relative popularity of subjects matters as much as grades for SMT. |
+| Applies to | Every Academic view |
+| Enforced in | - src/lib/smt/qual-groups.ts:parseAcademic<br>- src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/useAcademicState.ts:useAcademicAsk<br>- src/catalogue/dashboards/smt.ts:ACADEMIC |
+| Tagged at | - src/lib/smt/qual-groups.test.ts |
+| Test case | Leighton Park, Post-16 A level, each mode (110110), ks5: Results ranks points (39.95, 7th of 11, set median 41.6); Entries ranks the A-level share with the count; Value added ranks the figure with its range (+0.09, -0.06 to +0.24); the dashboard config has no DV-SMT-A-VA, DV-SMT-A-SUBJECTS or DV-SMT-A-BANDS. [runner: smtAcademicModes] |
+| Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-QUAL-GROUPS
+
+| Field | Content |
+| --- | --- |
+| Statement | Post-16 chips are the qualification groups the school offers in the latest year, in this order: All (first, wherever it offers more than one), A level, Applied, EPQ, Core Maths, AS, IB, T level. Applied is DfE's two headline types, Applied general and Tech level: two column-1 lines, and a two-chip switch above the chart, table and map; the qualifications and sizes appear only in the subject-areas view. With All chosen, the large view opens on the subject areas and the trends follow the group with the most entries. GCSE keeps its subject-area chips (none in Value added: a line says DfE publishes no GCSE value added by subject). Level chips are GCSE and Post-16 only; an old ?level=whole opens on the school's main level. |
+| Why | Plan §2 and §3 (Guy, 8 Nov; Option 1 for applied). |
+| Applies to | Academic's control bar; DV-SMT-A-NOW; DV-SMT-A-CHART, -TABLE, -MAP |
+| Enforced in | - src/lib/smt/qual-groups.ts:groupOfQualification<br>- src/lib/smt/qual-groups.ts:groupChips<br>- src/lib/smt/qual-groups.ts:parseAcademic<br>- src/lib/smt/academic.ts:academicOffer |
+| Tagged at | - src/lib/smt/qual-groups.test.ts |
+| Test case | Plumstead Manor; Sevenoaks 118952; Leighton Park 110110 (100183), ks5: Plumstead: All, A level, Applied, EPQ, Core Maths, AS, with both applied types; Sevenoaks: IB only (no All chip); ?level=whole at Leighton Park opens on GCSE, its main level. [runner: smtQualGroups] |
+| Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-GROUP-SETS
+
+| Field | Content |
+| --- | --- |
+| Statement | Each qualification group's default comparison set is the 10 nearest schools offering it (entries or a figure in either of the two latest years), widening the net: Teacher's findSurroundingSchools with the relaxed gender rule and one filter on top. Each of DfE's applied types has its own. The pill names it ("10 nearest offering IB"). A set the SMT chooses holds across groups: each view keeps its schools that offer the group and says how many ("4 of 12 offer EPQ"); Default returns to per-group sets. |
+| Why | Plan §2 'Comparison sets' (one set for every qualification ranked IB schools against A-level ones). |
+| Applies to | DV-SMT-A-NOW, DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-MAP, DV-SMT-A-AREAS, the set pill on Academic |
+| Enforced in | - src/lib/smt/academic-sets.ts:groupDefaultSet<br>- src/lib/smt/academic-sets.ts:offering<br>- src/lib/smt/academic.ts:buildAcademic<br>- src/lib/surrounding-schools.ts:findSurroundingSchools |
+| Tagged at | - src/lib/smt/academic-sets.ts |
+| Test case | Sevenoaks, Post-16 IB (118952), ks5: The default set is 10 schools, every one with IB entries in the latest two years, reaching tens of km; with a chosen set the board notes how many of it offer the IB. [runner: smtGroupSets] |
+| Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-COL1-LEVEL
+
+| Field | Content |
+| --- | --- |
+| Statement | Column 1 follows the level: never a Progress 8 line on a Post-16 view, never a Post-16 line at GCSE. |
+| Why | Plan §2 (Guy, 8 Nov, from the mock-up). |
+| Applies to | DV-SMT-A-NOW, DV-SMT-A-LINES |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic |
+| Tagged at | - src/lib/smt/academic.ts |
+| Test case | Acland Burghley, Value added at both levels (100053), ks4: GCSE: one line, Progress 8; Post-16: A level, Applied general, Tech level, EPQ, Core Maths, AS lines and no Progress 8. [runner: smtCol1Level] |
+| Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VA-BANDS
+
+| Field | Content |
+| --- | --- |
+| Statement | Value-added bands: DfE's own progress band where DfE publishes one (its Post-16 headline types); Progress 8's five bands derived exactly from DfE's definition (above or below when the 95% range is clear of 0, well above or below beyond ±0.5 as well); everything else (EPQ, Core Maths, AS, IB, every by-area subject) three labels from the 95% range alone: Clearly above (the whole range above 0), In line (it crosses or touches 0), Clearly below (the whole range below 0), deliberately unlike DfE's five. The chart's axis fits the data (no ±1.2 clamp). |
+| Why | Plan §2 'Bands' (Guy, 8 Nov). |
+| Applies to | DV-SMT-A-NOW, DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-MAP, DV-SMT-A-AREAS |
+| Enforced in | - src/lib/smt/qual-groups.ts:rangeBand<br>- src/lib/smt/qual-groups.ts:p8Band<br>- src/lib/smt/qual-groups.ts:dfeBandOf<br>- src/components/smt/views/Academic.tsx:RankChart |
+| Tagged at | - src/lib/smt/qual-groups.test.ts<br>- src/lib/smt/qual-groups.ts |
+| Test case | rangeBand and p8Band at each edge; Acland Burghley Core Maths (100053), ks5: rangeBand(0.01, 0.5) Clearly above, (0, 0.5) In line, (-0.5, 0) In line, (-0.5, -0.01) Clearly below; p8Band(0.51, 0.01, 1) Well above, (0.5, 0.01, 1) Above, (0.3, 0, 0.6) Average, (-0.5, -1, -0.01) Below, (-0.51, -1, -0.01) Well below; Acland Burghley Core Maths +0.80 (+0.02 to +1.58) Clearly above. [runner: smtVaBands] |
+| Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VA-INDEPENDENT
+
+| Field | Content |
+| --- | --- |
+| Statement | An independent or IGCSE school at GCSE in Value added: the default set is the 10 nearest state schools with Progress 8 (Teacher's rule, state schools only); the school's own row and column 1 say why it has none (no Key Stage 2 tests, so no starting point); the trend has no line for the school. If a chosen set has no state schools, a clear message sits in the middle of the chart, table and map. |
+| Why | Plan §2 'Independent and IGCSE schools at GCSE' (Leighton Park demo, 27 Nov). |
+| Applies to | DV-SMT-A-NOW, DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-MAP, DV-SMT-A-TREND-LINE |
+| Enforced in | - src/lib/smt/academic-sets.ts:stateP8Set<br>- src/lib/smt/academic.ts:buildAcademic<br>- src/lib/surrounding-schools.ts:findSurroundingSchools |
+| Tagged at | - src/lib/smt/academic-sets.ts<br>- src/lib/surrounding-schools.ts |
+| Test case | Leighton Park, GCSE Value added; a chosen set of independents (110110), ks4: 10 state schools with 2023/24 Progress 8, nearest first, none independent; Leighton Park's row says why; with a set of independent schools only, every board view carries acNoStateSchools. [runner: smtVaIndependent] |
+| Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-VA-SUBJECT-MATCH
+
+| Field | Content |
+| --- | --- |
+| Statement | Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); until that lands, from src/lib/smt/va-subject-matches.ts, which goes once it has. While both exist they agree. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's. |
+| Why | F-44: a quarter of A-level subject value-added rows had no area, and an area chosen at Post-16 silently dropped them. |
+| Applies to | DV-SMT-A-AREAS (Value added) |
+| Enforced in | - src/lib/smt/va-subject-matches.ts:VA_SUBJECT_MATCHES<br>- src/lib/smt/academic-data.ts:vaMatch<br>- docs/v0.8/smt_academic_scripts/va_subject_matches.py |
+| Tagged at | - src/lib/smt/academic-data.ts |
+| Test case | every value-added (qualification, subject) name live (100053), ks5: Approved; every name has a match with an area or is marked outside; once the database carries the value-added names, the database and the file agree name by name. [runner: vaSubjectMatch] |
+| Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-ENTRIES-SIZE
+
+| Field | Content |
+| --- | --- |
+| Statement | In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject "All subjects"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says "too few schools to size". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync. |
+| Why | Plan §3 (Guy, 8 Nov): staffing works from counts, and a count means more against England's spread for that subject; fifths are stable and work for rare subjects. |
+| Applies to | SMT Academic, Entries mode (GCSE and Post-16): the subject areas' size badge, and each qualification's |
+| Enforced in | - src/lib/subject-entry-size.ts:entrySizeFifths<br>- src/lib/subject-entry-size.ts:entrySizeBadge<br>- src/lib/subject-entry-size.ts:fifthsOf<br>- scripts/sync-subject-entry-size-fifths.ts<br>- supabase/migrations/20261122090000_v08_subject_entry_size_fifths.sql<br>- supabase/tests/v08_subject_entry_size_pglite.mjs |
+| Tagged at | - src/lib/smt/academic.ts<br>- src/lib/subject-entry-size.test.ts<br>- src/lib/subject-entry-size.ts |
+| Test case | Leighton Park's A-level Psychology, latest Post-16 year (the fifths on a fixture, the unit tests and PGlite offline; the live table once applied) (110110), ks5: On the fixture the zeros are left out and each badge holds a fifth of the schools; a cut point is the band above; under 10 schools, no badge. The migration's table, key, RLS read and idempotent upsert pass in PGlite. Live (once applied and synced): A-level Psychology has ordered cut points over 1,000+ schools (2024/25: 2,317 schools, 10/17/26/40) and Leighton Park's 17 entries read M. Until the table is applied the live half is MANUAL. [runner: smtEntriesSize] |
+| Origin | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-ENTRIES-ONE-TOTAL
+
+| Field | Content |
+| --- | --- |
+| Statement | One entry total per page: column 1's total, every group line and share, the entries mix, the subject areas' shares and the board's shares all come from the same subject-by-qualification rows (Post-16: academic_subject_qualification_headline, whose sum per year is DfE's own "All subjects" total exam entries; GCSE: the subject rollup), so every total on the page agrees. |
+| Why | Guy, 8 Nov: Plumstead's column 1 read 419 entries while the mix (bucket:*::entries) read 381 for the same year. |
+| Applies to | DV-SMT-A-NOW, DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE, DV-SMT-A-AREAS, DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-TREND-LINE (Entries mode, both levels) |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/lib/smt/academic-data.ts:qualRows |
+| Tagged at | - src/lib/smt/academic.ts |
+| Test case | Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries (100183), ks5: Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total. [runner: smtEntriesOneTotal] |
+| Origin | 0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

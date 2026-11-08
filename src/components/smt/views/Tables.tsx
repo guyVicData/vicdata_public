@@ -6,7 +6,6 @@ import { indexBaseWords } from "@/lib/index-base";
 import { Empty } from "@/components/admissions/ui";
 import { periodLabel } from "@/catalogue/years";
 import type { Overview } from "../api";
-import type { StagePart } from "@/lib/smt/academic";
 import { Td, Th, fmt, type Unit } from "../ui";
 
 type Pt = { year: number; value: number | null };
@@ -111,34 +110,3 @@ export function MarketTable({ o }: { o: Overview }) {
   );
 }
 
-export function MixTable({ part }: { part: StagePart }) {
-  const { keys, years } = part.mix;
-  if (!years.length) return <Empty>No entries.</Empty>;
-  return (
-    <>
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Entries mix, year by year</div>
-      <Frame>
-        <thead className="border-b border-[var(--panel-border)]">
-          <tr>
-            <Th>Year</Th>
-            {keys.map((k) => (
-              <Th key={k.key}>{k.label}</Th>
-            ))}
-            <Th>Entries</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {years.map((y) => (
-            <tr key={y.year} className="border-b border-[var(--panel-border)] last:border-0">
-              <Td>{periodLabel(y.year)}</Td>
-              {keys.map((k) => (
-                <Td key={k.key}>{fmt(y.shares[k.key] ?? 0, "pct")}</Td>
-              ))}
-              <Td>{fmt(y.total, "pupils")}</Td>
-            </tr>
-          ))}
-        </tbody>
-      </Frame>
-    </>
-  );
-}

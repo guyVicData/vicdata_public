@@ -52,7 +52,8 @@ async function admissionsThresholds() {
 }
 
 
-type Outcome = { pass: boolean; detail: string };
+// manual: the check can't run yet (e.g. a migration not applied live): counted MANUAL, not FAIL.
+type Outcome = { pass: boolean; detail: string; manual?: boolean };
 type Runner = (L: Lib, rule: Rule) => Promise<Outcome>;
 
 const round = (v: number | null | undefined, dp = 1) => (v === null || v === undefined ? null : Math.round(v * 10 ** dp) / 10 ** dp);
@@ -105,20 +106,24 @@ async function smtCase(urn: string) {
       const school = (await smtSchool(urn))!;
       const near = await resolveDefaultNearest(urn, setPhaseOf(school.phases));
       const set = { kind: "nearest", label: "10 nearest schools", urns: near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn) };
-      return { school, set, overview: await buildOverview(school, set, { sex: "all", boarding: "all" }, null) };
+      return { school, set, overview: await buildOverview(school, set, null) };
     })().catch((e) => {
       smtMemo.delete(urn); // a failed read isn't kept: the next runner tries again
       throw e;
     }));
   return smtMemo.get(urn) as Promise<Case>;
 }
-async function smtAcademicCase(urn: string, phase: "whole" | "gcse" | "post16" | "primary", area: string | null) {
-  const key = `${urn}|${phase}|${area ?? ""}`;
+// 0.8 SMT Academic by qualification: Academic for an address (?level=&mode=&group=&applied=&area=), the
+// state resolved as the route resolves it; the set Default (each group its own) unless `set` is given.
+async function smtAcademicCase(urn: string, query: string, set?: { kind: string; label: string; urns: string[] }) {
+  const key = `${urn}|${query}|${set ? set.urns.join(",") : "default"}`;
   if (!smtMemo.has(key))
     smtMemo.set(key, (async () => {
       const c = await smtCase(urn);
-      const { buildAcademic } = await import("../src/lib/smt/academic");
-      return buildAcademic(c.school, { phase, area }, c.set);
+      const { academicOffer, buildAcademic } = await import("../src/lib/smt/academic");
+      const { parseAcademic } = await import("../src/lib/smt/qual-groups");
+      const st = parseAcademic(new URLSearchParams(query), await academicOffer(c.school));
+      return buildAcademic(c.school, st, set ?? c.set);
     })().catch((e) => {
       smtMemo.delete(key);
       throw e;
@@ -138,9 +143,8 @@ async function smtRender(urn: string, dv: string, academic?: import("../src/lib/
     member: { userId: "", token: "", membershipId: "m", schoolAccountId: "a", schoolUrn: urn, schoolName: c.school.name, roles: ["smt"], isAdmin: false, isAccountHolder: false, access: "member", readOnly: false, viewAs: null },
     school: c.school,
     dash: dv.startsWith("DV-SMT-O-") ? "overview" : dv.startsWith("DV-SMT-P-") ? "pupils" : dv.startsWith("DV-SMT-C-") ? "context" : "academic",
-    level: academic?.level ?? (more.context ? { phase: more.context.level, area: null } : { phase: "whole", area: null }),
+    level: academic ? { phase: academic.state.phase, area: academic.state.area } : more.context ? { phase: more.context.level, area: null } : { phase: "whole", area: null },
     set: c.set,
-    filters: { sex: "all", boarding: "all" },
     overview: { status: "ready", data: c.overview },
     academic: academic ? { status: "ready", data: academic } : { status: "loading" },
     pupils: more.pupils ? { status: "ready", data: more.pupils } : { status: "loading" },
@@ -151,6 +155,8 @@ async function smtRender(urn: string, dv: string, academic?: import("../src/lib/
     onArea: () => undefined,
     focusBar: null,
     phone: false,
+    ask: { level: academic?.state.phase ?? null, mode: academic?.state.mode ?? "results", group: academic?.state.group ?? null, applied: academic?.state.applied ?? null, area: academic?.state.area ?? null },
+    onAsk: () => undefined,
   };
   return renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router as never }, createElement(InitialWidth.Provider, { value: 800 }, createElement(ViewBody, { dv, c: ctx as never, fullscreen: false }))));
 }
@@ -160,7 +166,7 @@ async function smtPupilsCase(urn: string, phase: "whole" | "gcse" | "post16" | "
     smtMemo.set(key, (async () => {
       const c = await smtCase(urn);
       const { buildPupils } = await import("../src/lib/smt/pupils");
-      return buildPupils(c.school, c.set, { sex: "all", boarding: "all" }, { phase, area: null }, null);
+      return buildPupils(c.school, c.set, { phase, area: null }, null);
     })().catch((e) => {
       smtMemo.delete(key);
       throw e;
@@ -2177,10 +2183,14 @@ const RUNNERS: Record<string, Runner> = {
       out.push(`${urn} ${head?.avgPointScore} (recomputed ${expect}) ${ok ? "ok" : "MISMATCH"}`);
     }
     // Ranked in a set and in England (SMT's Subjects, Teacher's subjectRanking).
-    const a = await smtAcademicCase("137625", "gcse", "sciences_maths");
-    const dbl = a.parts[0].subjects.find((x) => x.subject === "Combined Science");
-    const fsmq = a.parts[0].subjects.find((x) => /FSMQ/.test(x.qualification) || /FSMQ/.test(x.subject));
-    pass &&= !!dbl?.set && !!dbl?.england && dbl.avg !== null && (!fsmq || fsmq.reason === "scale");
+    // 0.8 SMT Academic: SMT's subject areas rank it in the set (England's place is Teacher's, below).
+    const a = await smtAcademicCase("137625", "level=gcse&mode=results&area=sciences_maths");
+    const subjAll = a.areas.blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects));
+    const dblRow = subjAll.find((x) => x.subject === "Combined Science");
+    const dbl = dblRow ? { set: dblRow.place, england: dblRow.place, avg: dblRow.value } : undefined;
+    const fsmqRow = subjAll.find((x) => /FSMQ|Additional\)/.test(x.subject));
+    const fsmq = fsmqRow ? { subject: fsmqRow.subject, reason: fsmqRow.value === null ? "scale" : "ranked" } : undefined;
+    pass &&= !!dbl?.set && dbl.avg !== null && (!fsmq || fsmq.reason === "scale");
     // Teacher's Comparisons asks for GCSE points with no qualification: still ranked.
     const { subjectRanking } = await import("../src/lib/subject-ranking");
     const c = await smtCase("137625");
@@ -2201,19 +2211,19 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ schools: out.join("; "), chaseRanked: dbl?.set && `${dbl.set.rank} of ${dbl.set.of}, England ${dbl.england?.rank} of ${dbl.england?.of}`, teacherAsk: `${t.targetRank} of ${t.ranked} (${t.target?.value})`, column1: col1 ? `${col1.value} in ${col1.period}, BTEC ${btec}` : "none", fsmq: fsmq ? `${fsmq.subject}: ${fsmq.reason}` : "none" }) };
   },
   async smtMix() {
-    const a = await smtAcademicCase("137625", "gcse", null);
-    const p = a.parts[0];
-    const years = p.mix.years.map((y) => y.year);
-    const trendYears = p.trend.school.filter((x) => x.value !== null).map((x) => x.year);
-    const sums = p.mix.years.every((y) => Math.abs(Object.values(y.shares).reduce((s, v) => s + v, 0) - 100) < 1e-6);
-    // R-ENTRIES-FIRST-YEAR (year rules leftovers): the mix starts at the rollup's first year with entries
-    // (2020/21 at GCSE), a year before the results trend's first graded year.
+    // 0.8 SMT Academic: the Post-16 mix by VicData's groups; Leighton Park's IB starts and stops within it.
+    const a = await smtAcademicCase("110110", "level=post16&mode=results&group=alevel");
     const L = await lib();
-    const head = (await L.adv.fetchSubjectHeadlineForSchools(["137625"], "ks4")).get("137625") ?? [];
-    const first = Math.min(...head.filter((e) => e.entriesTotal > 0).map((e) => e.period));
-    const pass = years[0] === first && years.at(-1) === p.period && trendYears[0] === L.notes.GRADING_2122_PERIOD && years[0] < trendYears[0] && sums;
-    return { pass, detail: fmt({ mixYears: years.join("/"), rollupFirst: first, trendFrom: trendYears[0], addsTo100: sums }) };
+    const m = a.trends.mix;
+    const sums = m.years.every((y) => Math.abs(Object.values(y.shares).reduce((s, v) => s + v, 0) - 100) < 1e-6);
+    // R-SMT-ENTRIES-ONE-TOTAL: the mix's counts are the subject-by-qualification rows' (IB = the IBO components).
+    const raw = await L.ref.lookupAcademicSubjectQualificationHeadline({ entityIds: ["110110"], ksStage: "ks5" });
+    const ibAt = (y: number) => raw.filter((r) => Number(r.period) === y && /^(International Baccalaureate|IBO )/.test(r.qualification_type)).reduce((t, r) => t + Number(r.entries_total ?? 0), 0);
+    const ibOk = m.years.every((y) => (y.counts.ib ?? 0) === ibAt(y.year));
+    const pass = m.years.length >= 3 && m.years.at(-1)?.year === a.period && sums && ibOk && !!m.sentence && /IB/.test(m.sentence);
+    return { pass, detail: fmt({ years: m.years.map((y) => `${y.year}:${y.total}`).join(" "), addsTo100: sums, ibMatchesRollup: ibOk, sentence: m.sentence }) };
   },
+
   async smtPupilsLevel() {
     const out: string[] = [];
     let pass = true;
@@ -2731,9 +2741,9 @@ const RUNNERS: Record<string, Runner> = {
     const { SMT_NOTES, smtNote } = await import("../src/catalogue/notes");
     const g = c.overview.rows.filter((r) => r.stage === "ks4");
     const a = c.overview.rows.find((r) => r.key === "A level::aps_per_entry");
-    const academic = await smtAcademicCase("110110", "gcse", null);
-    // 0.8 IGCSE subjects: only the whole-school views keep the note (value added; the headline trend).
-    const html = textOf(await smtRender("110110", "DV-SMT-A-VA", academic));
+    const academic = await smtAcademicCase("110110", "level=gcse&mode=results");
+    // 0.8 IGCSE subjects: only the whole-school views keep the note (column 1 at GCSE, all areas).
+    const html = textOf(await smtRender("110110", "DV-SMT-A-NOW", academic));
     const sc = textOf(await smtRender("110110", "DV-SMT-O-SCORECARD"));
     // 0.8 SMT feedback round 1 (R-SCORECARD-ROWS-BY-TYPE): the Scorecard leaves the GCSE rows out.
     const pass = g.length === 0 && c.overview.igcse && !!a?.set && setPhaseOf(c.school.phases) === "ks5" && html.includes(smtNote("igcseView", { school: c.school.name })) && !/Attainment 8|IGCSE not ranked/.test(sc) && !!SMT_NOTES.igcseChip;
@@ -2747,16 +2757,17 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ chase: chase.status === "published" ? `${chase.value} (${chase.period}) "${chase.text}"` : chase.status, leighton: `${lp.status} "${lp.text}"` }) };
   },
   async smtVa() {
-    const a = await smtAcademicCase("137625", "post16", null);
+    // 0.8 SMT Academic: column 1's A-level value added at Post-16 is DfE's headline, its range and band.
+    const a = await smtAcademicCase("137625", "level=post16&mode=va&group=alevel");
     const L = await lib();
     const latest = (await smtCase("137625")).school.latest.ks5!.period;
     const raw = (await L.ref.lookupAcademicHeadline({ entityIds: ["137625"], ksStage: "ks5", periodMin: latest, periodMax: latest }))[0]?.measures ?? {};
-    const r = a.va.alevel.find((x) => x.qualification === "A level" && x.period === latest);
-    const html = textOf(await smtRender("137625", "DV-SMT-A-VA", a));
-    const { SMT_NOTES } = await import("../src/catalogue/notes");
-    const pass = !!r && r.value === Number(raw["A level::value_added"]) && r.lo === Number(raw["A level::value_added_lower_ci"]) && r.hi === Number(raw["A level::value_added_upper_ci"]) && r.banding === raw["A level::progress_banding"] && html.includes(SMT_NOTES.alevelVa.slice(0, 60));
-    return { pass, detail: fmt({ va: r && `${r.value} (${r.lo} to ${r.hi}) ${r.banding}`, raw: `${raw["A level::value_added"]} (${raw["A level::value_added_lower_ci"]} to ${raw["A level::value_added_upper_ci"]}) ${raw["A level::progress_banding"]}`, wordingShown: html.includes(SMT_NOTES.alevelVa.slice(0, 60)) }) };
+    const r = a.lines.find((x) => x.key === "alevel");
+    const html = textOf(await smtRender("137625", "DV-SMT-A-NOW", a));
+    const pass = !!r && r.value === Number(raw["A level::value_added"]) && r.lo === Number(raw["A level::value_added_lower_ci"]) && r.hi === Number(raw["A level::value_added_upper_ci"]) && String(r.band).toLowerCase() === String(raw["A level::progress_banding"]).toLowerCase() && html.includes("A level") && a.board.unit === "va" && a.board.rows.every((x) => x.value === null || (x.lo !== null && x.hi !== null));
+    return { pass, detail: fmt({ va: r && `${r.value} (${r.lo} to ${r.hi}) ${r.band}`, raw: `${raw["A level::value_added"]} (${raw["A level::value_added_lower_ci"]} to ${raw["A level::value_added_upper_ci"]}) ${raw["A level::progress_banding"]}` }) };
   },
+
   async smtYears() {
     const c = await smtCase("137625");
     const a8 = c.overview.rows.find((r) => r.key === "attainment8_average")!;
@@ -2795,13 +2806,77 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ todayA8: a8.period, latestKs4: c.school.latest.ks4!.period, yearLiterals: literal.join(" ") || "none", rehearsal: r ? `A8 ${r.a8}, Post-16 ${r.aps}, provisional=${r.provisional}` : rehearsal, lsoaRehearsal: l ? `today mid-${ctx.now.children.year}; with a new year: children ${l.children}, by age ${l.byAge}, sources ${l.sources}, nearby to ${l.nearbyLast}` : lsoa }) };
   },
   async smtBoardingOnly() {
-    const { pillsFor } = await import("../src/lib/smt/levels");
-    const { buildOverview } = await import("../src/lib/smt/overview");
+    // 0.8 SMT Academic: rewritten for no pills (R-SMT-NO-PILLS) -- boarding shows only at a boarding school.
+    const { smtHasContent } = await import("../src/components/smt/content");
     const chase = await smtCase("137625");
     const lp = await smtCase("110110");
-    const ignored = await buildOverview(chase.school, chase.set, { sex: "all", boarding: "boarding" }, null);
-    const pass = pillsFor(chase.school).join() === "gender" && pillsFor(lp.school).join() === "gender,boarding" && ignored.filters.boarding === "all" && !ignored.rows.some((r) => r.key === "boarders") && ignored.now.roll === chase.overview.now.roll && lp.overview.rows.some((r) => r.key === "boarders") && lp.overview.trends.roll.lines.some((l) => l.key === "boarding");
-    return { pass, detail: fmt({ chasePills: pillsFor(chase.school).join("+"), leightonPills: pillsFor(lp.school).join("+"), chaseBoardingFilterIgnored: ignored.filters.boarding === "all" && ignored.now.roll === chase.overview.now.roll, leightonBoardersRow: lp.overview.rows.some((r) => r.key === "boarders"), leightonLines: lp.overview.trends.roll.lines.map((l) => l.key).join("/") }) };
+    const [chaseP, lpP] = await Promise.all([smtPupilsCase("137625"), smtPupilsCase("110110")]);
+    const has = (c: { school: import("../src/lib/smt/school").SmtSchool }, p: import("../src/lib/smt/pupils").Pupils, dv: string) => smtHasContent(dv, { school: c.school, dash: "pupils", level: { phase: "whole", area: null }, pupils: { status: "ready", data: p } } as never);
+    const chaseOk = !chase.school.boarding && !chase.overview.rows.some((r) => r.key === "boarders") && chase.overview.trends.roll.lines.every((l) => l.key !== "boarding" && l.key !== "day") && chaseP.dayBoarding === null && chaseP.now.boarding === null && !has(chase, chaseP, "DV-SMT-P-DAY-BOARDING");
+    const lpOk = lp.school.boarding && lp.overview.rows.some((r) => r.key === "boarders") && lp.overview.trends.roll.lines.some((l) => l.key === "boarding") && !!lpP.dayBoarding && lpP.dayBoarding.now.boarders > 0 && has(lp, lpP, "DV-SMT-P-DAY-BOARDING");
+    return { pass: chaseOk && lpOk, detail: fmt({ chaseBoardersRow: chase.overview.rows.some((r) => r.key === "boarders"), chaseLines: chase.overview.trends.roll.lines.map((l) => l.key).join("/"), chaseDayBoardingView: has(chase, chaseP, "DV-SMT-P-DAY-BOARDING"), leightonBoardersRow: lp.overview.rows.some((r) => r.key === "boarders"), leightonLines: lp.overview.trends.roll.lines.map((l) => l.key).join("/"), leightonBoarders: lpP.dayBoarding ? `${lpP.dayBoarding.now.boarders} (${round(lpP.dayBoarding.now.share, 1)}%)` : null }) };
+  },
+  async smtNoPills() {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { smtHasContent } = await import("../src/components/smt/content");
+    const { buildOverview } = await import("../src/lib/smt/overview");
+    const { buildPupils, girlsShare, countsAsMixed } = await import("../src/lib/smt/pupils");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { percentile } = await import("../src/lib/admissions/stats");
+    // 1. No SMT source draws a sex or boarding pill or threads the filters (comments aside).
+    const files = ["src/components/smt", "src/components/smt/views", "src/lib/smt", "src/app/api/smt/overview", "src/app/api/smt/pupils"].flatMap((d) => readdirSync(path.join(ROOT, d)).filter((f) => /\.tsx?$/.test(f)).map((f) => path.join(ROOT, d, f)));
+    const pill: string[] = [];
+    for (const f of files)
+      readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+        const code = line.replace(/\/\/.*$/, "").replace(/^\s*(\/\*\*?|\*).*$/, "");
+        if (/SmtFilters|pillsFor|DEFAULT_SMT_FILTERS|label="Pupils"|label="Day and boarding"|"All pupils"|"Boarding only"|"Day only"|sex: "all"|boarding: "all"|\bc\.filters\b/.test(code)) pill.push(`${path.relative(ROOT, f)}:${i + 1}`);
+      });
+    const arity = buildOverview.length === 3 && buildPupils.length === 4;
+    // 2. Leighton Park (boarding, mixed): both views, with figures and rail icons.
+    const lp = await smtCase("110110");
+    const lpP = await smtPupilsCase("110110");
+    const ctx = (c: { school: import("../src/lib/smt/school").SmtSchool }, p: import("../src/lib/smt/pupils").Pupils | null) => ({ school: c.school, dash: "pupils", level: { phase: "whole", area: null }, pupils: p ? { status: "ready", data: p } : { status: "loading" } }) as never;
+    const g = lpP.girlsBoys;
+    const d = lpP.dayBoarding;
+    const lpOk = !!g && g.years.length > 0 && g.years.every((y) => y.share !== null) && g.whole.change !== null && g.whole.set.change.schools > 0 && g.shifts.some((x) => x.key === "year7") && g.shifts.some((x) => x.key === "sixth") && !!d && d.years.length > 1 && d.set.boardingSchools > 0 && smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(lp, lpP)) && smtHasContent("DV-SMT-P-DAY-BOARDING", ctx(lp, lpP));
+    const lpHtml = textOf(await smtRender("110110", "DV-SMT-P-GIRLS-BOYS", undefined, { pupils: lpP })) + textOf(await smtRender("110110", "DV-SMT-P-DAY-BOARDING", undefined, { pupils: lpP }));
+    const drawn = /Girls['\u2019] share in each year group/.test(lpHtml) && /Where it shifts/.test(lpHtml) && /Boarders['\u2019] share of the roll/.test(lpHtml);
+    // 3. Acland Burghley: the set's girls' share recomputed from the raw census and GIAS -- single-sex schools
+    // left out, never counted as 0 (the third pill bug).
+    const ab = await smtCase("100053");
+    const abP = await smtPupilsCase("100053");
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const { data: gias } = await createServerAnonSupabaseClient().from("schools").select("urn, gender").in("urn", ab.set.urns);
+    const genderOf = new Map(((gias ?? []) as { urn: string; gender: string | null }[]).map((r) => [r.urn, r.gender]));
+    const census = await cachedCensus(ab.set.urns);
+    const P = abP.girlsBoys?.year ?? -1;
+    const mixed = ab.set.urns.filter((u) => countsAsMixed(genderOf.get(u), census.get(u)?.ageGenderByPeriod.get(P)));
+    const singleSex = ab.set.urns.filter((u) => genderOf.get(u) === "Girls" || genderOf.get(u) === "Boys");
+    const want = percentile(mixed.map((u) => girlsShare(census.get(u)!.ageGenderByPeriod.get(P))!), 50);
+    const asZero = percentile(ab.set.urns.map((u) => (mixed.includes(u) ? girlsShare(census.get(u)!.ageGenderByPeriod.get(P))! : 0)), 50);
+    const got = abP.girlsBoys?.whole.set.share;
+    const abOk = !!got && got.median !== null && want !== null && Math.abs(got.median - want) < 1e-9 && got.schools === mixed.length && singleSex.length > 0 && singleSex.every((u) => !mixed.includes(u)) && abP.girlsBoys!.leftOut === ab.set.urns.length - mixed.length;
+    // 4. A single-sex school (Parliament Hill, girls): no Girls and boys view, before or after the data loads.
+    const ph = await smtCase("100050");
+    const phP = await smtPupilsCase("100050");
+    const phOk = !ph.school.mixed && phP.girlsBoys === null && !smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(ph, null)) && !smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(ph, phP));
+    // 5. The Scorecard's Roll row: the whole roll, ranked on it (the first pill bug).
+    const roll = lp.overview.rows.find((r) => r.key === "roll");
+    const rollOk = !!roll && roll.label === "Roll" && roll.value === lp.school.census.at(-1)?.totalRoll;
+    const pass = pill.length === 0 && arity && lpOk && drawn && abOk && phOk && rollOk;
+    return {
+      pass,
+      detail: fmt({
+        pillLines: pill.join(" ") || "none",
+        builderArity: `${buildOverview.length}/${buildPupils.length}`,
+        leightonGirls: g ? `${round(g.whole.share, 1)}% (${g.whole.baseYear}: ${round(g.whole.base, 1)}%, ${round(g.whole.change, 1)} pp; set ${round(g.whole.set.change.median, 1)} pp over ${g.whole.set.change.schools}); Y7 shift ${round(g.shifts.find((x) => x.key === "year7")?.shift, 1)} pp, sixth ${round(g.shifts.find((x) => x.key === "sixth")?.shift, 1)} pp; left out ${g.leftOut}` : null,
+        leightonBoarding: d ? `${d.now.boarders} of ${d.now.boarders + d.now.day} (${round(d.now.share, 1)}%), ${round(d.change, 1)} pp since ${d.baseYear}; set ${round(d.set.share.median, 1)}% over ${d.set.boardingSchools} of ${d.set.of}` : null,
+        drawn,
+        aclandSetGirls: got ? `${round(got.median, 1)}% over ${got.schools} mixed (want ${round(want, 1)}%; as-zero would be ${round(asZero, 1)}%); single-sex ${singleSex.length}, left out ${abP.girlsBoys?.leftOut}` : null,
+        parliamentHillView: smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(ph, phP)),
+        rollRow: roll ? `${roll.label} ${roll.value}` : null,
+      }),
+    };
   },
   async smtFlags(L0) {
     const { expectedFor } = await import("./rule-year-fixtures");
@@ -2851,19 +2926,22 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ p8Reason: c.overview.p8.text === SMT_NOTES.p8Independent, entryTiles: entry, oldTilesGone: !/Not published|IGCSE school/.test(html), copiedSentences: copies.join(" ") || "none" }) };
   },
   async smtSubjects() {
-    const a = await smtAcademicCase("137625", "gcse", "sciences_maths");
+    // 0.8 SMT Academic: the subject areas' subjects (GCSE Sciences & Maths): under 5 entries listed, not
+    // ranked; Biology's place recomputed from the set's own rollup rows.
+    const a = await smtAcademicCase("137625", "level=gcse&mode=results&area=sciences_maths");
     const { MIN_SUBJECT_ENTRIES } = await import("../src/lib/smt/academic");
-    const subs = a.parts[0].subjects;
+    const subs = a.areas.blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects));
     const small = subs.filter((x) => x.entries < MIN_SUBJECT_ENTRIES);
     const bio = subs.find((x) => x.subject === "Biology");
-    const { subjectRanking } = await import("../src/lib/subject-ranking");
-    const c = await smtCase("137625");
-    const s = bio ? await subjectRanking({ urns: ["137625", ...c.set.urns], targetUrn: "137625", phase: "ks4", subject: "Biology", familyId: bio.familyId, qualificationType: bio.qualification, measure: { kind: "points" }, period: null }, "rule:smt") : null;
-    const html = await smtRender("137625", "DV-SMT-A-SUBJECTS", a);
-    const linkOk = /\/teacher\/ks4\?set=\d{6}(,\d{6})*&amp;setLabel=/.test(html);
-    const pass = small.every((x) => !x.ranked && x.set === null) && !!bio && !!s && bio.set?.rank === s.targetRank && bio.set?.of === s.ranked && Math.abs((bio.avg ?? 0) - (s.target?.value ?? -1)) < 1e-9 && linkOk;
-    return { pass, detail: fmt({ subjects: subs.length, unrankedSmall: small.map((x) => `${x.subject}(${x.entries})`).join(" ") || "none", biology: bio && `${bio.avg} ${bio.set?.rank} of ${bio.set?.of}`, subjectRanking: s && `${s.target?.value} ${s.targetRank} of ${s.ranked}`, explorerLink: linkOk }) };
+    const L = await lib();
+    const y = a.areas.period!;
+    const rows = await L.ref.lookupAcademicSubjectHeadline({ entityIds: a.set.urns, ksStage: "ks4", periodMin: y, periodMax: y, bucket: "all" });
+    const peers = rows.filter((r) => r.subject === "Biology" && Number(r.entries_total) >= MIN_SUBJECT_ENTRIES && r.avg_point_score !== null).map((r) => Number(r.avg_point_score));
+    const want = bio && bio.value !== null ? { rank: 1 + peers.filter((v) => v > bio.value!).length, of: peers.length + 1 } : null;
+    const pass = small.every((x) => !x.ranked && x.place === null) && !!bio && !!want && bio.place?.rank === want.rank && bio.place?.of === want.of;
+    return { pass, detail: fmt({ subjects: subs.length, unrankedSmall: small.map((x) => `${x.subject}(${x.entries})`).join(" ") || "none", biology: bio && `${bio.value} ${bio.place?.rank} of ${bio.place?.of}`, recomputed: want && `${want.rank} of ${want.of}` }) };
   },
+
   async smtViewNow() {
     const c = await smtCase("137625");
     const n = c.overview.now;
@@ -2896,46 +2974,149 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ base, linesAt100: at100, band: `${round(b.p25, 2)}-${round(b.p75, 2)} (${b.n})`, recomputed: `${round(percentile(vals, 25), 2)}-${round(percentile(vals, 75), 2)} (${vals.length})` }) };
   },
   async smtAcademicNow() {
-    const a = await smtAcademicCase("137625", "gcse", "sciences_maths");
+    // 0.8 SMT Academic: Leighton Park's Post-16 lines in Results.
+    const a = await smtAcademicCase("110110", "level=post16&mode=results&group=alevel");
     const L = await lib();
-    const p = a.parts[0].period!;
-    const fam = (await L.ref.lookupAcademicSubjectFamily({ entityIds: ["137625"], ksStage: "ks4", familyIds: ["sciences_maths"], periodMin: p, periodMax: p })).find((r) => (r.bucket ?? "all") === "all");
-    const entries = a.parts[0].tiles.find((t) => t.key === "entries")?.value;
-    const avg = a.parts[0].tiles.find((t) => t.key === "area_avg")?.value;
-    // S4: four tiles with an area, the rank its own and last (GCSE and Post-16).
-    const post = await smtAcademicCase("137625", "post16", (await smtCase("137625")).school.areas.post16[0].id);
-    const order = (t: { key: string }[]) => t.map((x) => x.key).join(",");
-    const fourOk = order(a.parts[0].tiles) === "entries,area_avg,top,area_rank" && order(post.parts[0].tiles) === "entries,area_avg,top,area_rank";
-    const pass = !!fam && entries === Number(fam.entries_total) && avg === Number(fam.avg_point_score) && fourOk;
-    return { pass, detail: fmt({ entries, familyEntries: fam?.entries_total, average: avg, familyAverage: fam?.avg_point_score, gcseTiles: order(a.parts[0].tiles), post16Tiles: order(post.parts[0].tiles) }) };
-  },
-  async smtAreas() {
-    const a = await smtAcademicCase("137625", "gcse", null);
-    const c = await smtCase("137625");
-    const { buildRivals } = await import("../src/lib/admissions/rivals");
-    const { entryPoint } = await import("../src/lib/admissions/entry-points");
-    const r = await buildRivals("137625", entryPoint("11+")!, { rivals: c.set.urns });
-    const mine = a.parts[0].areas.map((x) => `${x.familyId}:${x.rank}/${x.of}:${x.gap.toFixed(3)}`).sort().join(" ");
-    const theirs = r.areas.map((x) => `${x.familyId}:${x.rank}/${x.of}:${x.gap.toFixed(3)}`).sort().join(" ");
-    return { pass: mine === theirs && mine.length > 0, detail: fmt({ areas: a.parts[0].areas.length, same: mine === theirs }) };
-  },
-  async smtGrades() {
-    const a = await smtAcademicCase("137625", "gcse", null);
-    const g = a.parts[0].grades;
-    const sum = g.bands.reduce((s, b) => s + b.entries, 0);
-    const pct = g.bands.reduce((s, b) => s + b.pct, 0);
-    const mixOk = a.parts[0].mix.years.every((y) => Math.abs(Object.values(y.shares).reduce((s, v) => s + v, 0) - 100) < 1e-6);
-    const pass = g.entries > 0 && sum === g.entries && Math.abs(pct - 100) < 1e-6 && mixOk;
-    return { pass, detail: fmt({ graded: g.entries, bandsSum: sum, pct: round(pct, 4), mixYears: a.parts[0].mix.years.map((y) => y.year).join("/"), mixAddsTo100: mixOk }) };
-  },
-  async smtReserved() {
-    const a = await smtAcademicCase("137625", "gcse", null);
-    const html = textOf(await smtRender("137625", "DV-SMT-A-BANDS", a));
+    const p = a.period!;
+    const raw = (await L.ref.lookupAcademicHeadline({ entityIds: ["110110"], ksStage: "ks5", periodMin: p, periodMax: p }))[0]?.measures ?? {};
     const { SMT_NOTES } = await import("../src/catalogue/notes");
-    const exact = SMT_NOTES.bandReserved === "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of entries.";
-    const pass = exact && !/pupils/.test(SMT_NOTES.bandReserved) && html.includes(SMT_NOTES.bandReserved) && !/\d+(\.\d+)?%/.test(html.replace(SMT_NOTES.bandReserved, "").replace(/Top 25%, middle 50%, bottom 25%/, ""));
-    return { pass, detail: fmt({ captionOfEntries: exact, shown: html.includes(SMT_NOTES.bandReserved), noFigures: pass }) };
+    const al = a.lines.find((l) => l.key === "alevel");
+    const epq = a.lines.find((l) => l.key === "epq");
+    const keys = a.lines.map((l) => l.key).join(",");
+    const pass = !!al && al.value === Number(raw["A level::aps_per_entry"]) && al.grade === raw["A level::aps_per_entry_grade"] && !!al.place && !!epq && epq.value === null && epq.why === SMT_NOTES.acEpqNoPoints && /applied:ag/.test(keys) && /applied:tl/.test(keys);
+    return { pass, detail: fmt({ lines: keys, alevel: al && `${al.value} ${al.grade} ${al.place?.rank} of ${al.place?.of}`, epq: epq?.why }) };
   },
+
+  async smtAreas() {
+    // 0.8 SMT Academic: Acland Burghley's value added by subject area, by qualification.
+    const a = await smtAcademicCase("100053", "level=post16&mode=va&group=all");
+    const sci = a.areas.blocks.find((b) => b.id === "sciences_maths");
+    const qual = (q: RegExp) => sci?.quals.find((x) => q.test(x.qualification));
+    const maths = qual(/^GCE A level$/)?.subjects.find((s) => s.subject === "Mathematics");
+    const appSci = qual(/^BTEC/)?.subjects.find((s) => /Applied Science/.test(s.subject));
+    const art = a.areas.blocks.flatMap((b) => b.quals).find((q) => q.qualification === "GCE A level" && q.subjects.some((s) => s.subject === "Art and Design"))?.subjects.find((s) => s.subject === "Art and Design");
+    const epqOut = a.areas.outside.length > 0 && !a.areas.blocks.some((b) => b.quals.some((q) => /^Extended Project/.test(q.qualification)));
+    const pass = !!maths && maths.entries === 23 && Math.abs((maths.value ?? 0) + 0.14) < 1e-9 && !!appSci && Math.abs((appSci.value ?? 0) - 0.43) < 1e-9 && !!art?.vicdata && epqOut;
+    return { pass, detail: fmt({ areas: a.areas.blocks.map((b) => b.label).join(" / "), maths: maths && `${maths.entries} ${maths.value}`, appliedScience: appSci && `${appSci.entries} ${appSci.value}`, artVicdata: !!art?.vicdata, epqOutside: epqOut }) };
+  },
+
+  async smtGrades() {
+    const a = await smtAcademicCase("137625", "level=gcse&mode=results");
+    const g = a.grades[0];
+    const sum = g ? g.bands.reduce((s, b) => s + b.entries, 0) : 0;
+    const pct = g ? g.bands.reduce((s, b) => s + b.pct, 0) : 0;
+    const pass = !!g && g.entries > 0 && sum === g.entries && Math.abs(pct - 100) < 1e-6 && g.top !== null;
+    return { pass, detail: fmt({ graded: g?.entries, bandsSum: sum, pct: round(pct, 4), top: g?.top && `${g.top.label} ${round(g.top.pct, 1)}%` }) };
+  },
+
+  async smtReserved() {
+    // Superseded (R-SMT-ACADEMIC-MODES): the reserved "results by band" panel is gone from Academic.
+    const { SMT_DASHBOARDS } = await import("../src/catalogue/dashboards/smt");
+    const views = SMT_DASHBOARDS.flatMap((d) => d.panels.flatMap((p) => p.dataviews.map((v) => (v.kind === "view" ? v.dataview : ""))));
+    const pass = !views.includes("DV-SMT-A-BANDS");
+    return { pass, detail: fmt({ bandsPanel: views.includes("DV-SMT-A-BANDS") ? "still there" : "gone" }) };
+  },
+
+
+  // ------------------------------------------------------------ 0.8 SMT Academic by qualification
+  async smtAcademicModes() {
+    const res = await smtAcademicCase("110110", "level=post16&mode=results&group=alevel");
+    const ent = await smtAcademicCase("110110", "level=post16&mode=entries&group=alevel");
+    const va = await smtAcademicCase("110110", "level=post16&mode=va&group=alevel");
+    const you = (a: typeof res) => a.board.rows.find((r) => r.you)!;
+    const { SMT_DASHBOARDS } = await import("../src/catalogue/dashboards/smt");
+    const views = SMT_DASHBOARDS.flatMap((d) => d.panels.flatMap((p) => p.dataviews.map((v) => (v.kind === "view" ? v.dataview : ""))));
+    const gone = !(["DV-SMT-A-VA", "DV-SMT-A-SUBJECTS", "DV-SMT-A-BANDS"] as const).some((v) => views.includes(v));
+    const pass = res.board.unit === "points" && res.board.median !== null && ent.board.unit === "share" && you(ent).entries !== null && va.board.unit === "va" && you(va).lo !== null && you(va).hi !== null && gone && SMT_DASHBOARDS.length === 4;
+    return { pass, detail: fmt({ results: `${you(res).value} ${res.board.place.set?.rank} of ${res.board.place.set?.of}, median ${round(res.board.median, 2)}`, entries: `${round(you(ent).value, 1)}% (${you(ent).entries} entries)`, va: `${you(va).value} (${you(va).lo} to ${you(va).hi}) ${you(va).band}`, oldViewsGone: gone }) };
+  },
+  async smtQualGroups() {
+    const { academicOffer } = await import("../src/lib/smt/academic");
+    const { groupChips, parseAcademic } = await import("../src/lib/smt/qual-groups");
+    const pm = await academicOffer((await smtCase("100183")).school);
+    const sv = await academicOffer((await smtCase("118952")).school);
+    const lpo = await academicOffer((await smtCase("110110")).school);
+    const whole = parseAcademic(new URLSearchParams("level=whole"), lpo);
+    const pass = groupChips(pm.groups)[0] === "all" && pm.groups.includes("applied") && pm.applied.length === 2 && groupChips(sv.groups).join() === "ib" && whole.phase === lpo.main;
+    return { pass, detail: fmt({ plumstead: groupChips(pm.groups).join(" "), applied: pm.applied.join(" "), sevenoaks: groupChips(sv.groups).join(" "), leightonWhole: `${whole.phase} (main ${lpo.main})` }) };
+  },
+  async smtGroupSets() {
+    const a = await smtAcademicCase("118952", "level=post16&mode=results&group=ib");
+    const { offering } = await import("../src/lib/smt/academic-sets");
+    const offers = await offering("ib", a.set.urns, a.period!);
+    const c = await smtCase("118952");
+    const chosen = await smtAcademicCase("118952", "level=post16&mode=results&group=ib", { kind: "saved", label: "Rule set", urns: c.set.urns });
+    const pass = a.set.size === 10 && offers.size === a.set.size && /offering IB/.test(a.set.label) && (a.set.reachKm ?? 0) > 20 && chosen.set.chosen && !!chosen.board.setNote;
+    return { pass, detail: fmt({ set: a.set.label, offerIb: `${offers.size} of ${a.set.size}`, reachKm: round(a.set.reachKm, 0), chosen: chosen.board.setNote }) };
+  },
+  async smtCol1Level() {
+    const g = await smtAcademicCase("100053", "level=gcse&mode=va");
+    const p = await smtAcademicCase("100053", "level=post16&mode=va&group=all");
+    const pass = g.lines.length === 1 && g.lines[0].key === "p8" && p.lines.length >= 5 && !p.lines.some((l) => l.key === "p8") && p.lines.some((l) => l.key === "coremaths");
+    return { pass, detail: fmt({ gcse: g.lines.map((l) => l.label).join(", "), post16: p.lines.map((l) => `${l.label} ${l.value}`).join(", ") }) };
+  },
+  async smtVaBands() {
+    const { rangeBand, p8Band } = await import("../src/lib/smt/qual-groups");
+    const edges = rangeBand(0.01, 0.5) === "Clearly above" && rangeBand(0, 0.5) === "In line" && rangeBand(-0.5, 0) === "In line" && rangeBand(-0.5, -0.01) === "Clearly below" && p8Band(0.51, 0.01, 1) === "Well above average" && p8Band(0.5, 0.01, 1) === "Above average" && p8Band(0.3, 0, 0.6) === "Average" && p8Band(-0.5, -1, -0.01) === "Below average" && p8Band(-0.51, -1, -0.01) === "Well below average";
+    const a = await smtAcademicCase("100053", "level=post16&mode=va&group=all");
+    const cm = a.lines.find((l) => l.key === "coremaths");
+    const g = await smtAcademicCase("100053", "level=gcse&mode=va");
+    const derived = g.board.rows.every((r) => r.value === null || r.band === p8Band(r.value, r.lo, r.hi));
+    const pass = edges && cm?.band === "Clearly above" && derived;
+    return { pass, detail: fmt({ edges, coreMaths: cm && `${cm.value} (${cm.lo} to ${cm.hi}) ${cm.band}`, p8Derived: derived }) };
+  },
+  async smtVaIndependent() {
+    const a = await smtAcademicCase("110110", "level=gcse&mode=va");
+    const england = await (await import("../src/lib/admissions/ranks")).englandSchools();
+    const state = a.board.rows.filter((r) => !r.you).every((r) => england.get(r.urn)?.group !== "Independent schools" && r.value !== null);
+    const me = a.board.rows.find((r) => r.you);
+    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const indep = Array.from(england.entries()).filter(([u, x]) => x.group === "Independent schools" && u !== "110110").slice(0, 3).map(([u]) => u);
+    const none = await smtAcademicCase("110110", "level=gcse&mode=va", { kind: "saved", label: "Independents", urns: indep });
+    const pass = a.set.size === 10 && state && !!me && me.value === null && me.why === SMT_NOTES.acIndependentP8 && a.trends.schoolLabel === null && none.board.empty === SMT_NOTES.acNoStateSchools;
+    return { pass, detail: fmt({ set: a.set.label, allStateWithP8: state, ownRow: me?.why, noStateMessage: none.board.empty }) };
+  },
+  async smtEntriesOneTotal() {
+    // R-SMT-ENTRIES-ONE-TOTAL: one total per page, and it is DfE's own All-subjects total.
+    const a = await smtAcademicCase("100183", "level=post16&mode=entries&group=all");
+    const L = await lib();
+    const y = a.period!;
+    const facts = await L.ref.lookupReferenceData({ sourceId: "dfe_ks5_subject_results", entityIds: ["100183"], periodMin: y, periodMax: y });
+    const dfe = facts.filter((f) => /::All subjects::[^:]+::Total exam entries$/.test(f.breakdown)).reduce((t, f) => t + Number(f.value_numeric ?? 0), 0);
+    const total = Number(a.col1.sub.match(/([\d,]+) entries/)?.[1].replace(/,/g, "") ?? NaN);
+    const mixTotal = a.trends.mix.years.find((m) => m.year === y)?.total ?? null;
+    const lines = a.lines.reduce((t, l) => t + (l.series.at(-1)?.value ?? 0), 0);
+    const g = await smtAcademicCase("100053", "level=gcse&mode=entries");
+    const gTotal = Number(g.col1.sub.match(/([\d,]+) entries/)?.[1].replace(/,/g, "") ?? NaN);
+    const gAreas = g.lines.reduce((t, l) => t + Number(l.sub.replace(/[^\d]/g, "") || 0), 0);
+    const pass = total === dfe && mixTotal === total && lines <= total && gAreas === gTotal;
+    return { pass, detail: fmt({ column1: total, dfeAllSubjects: dfe, mix: mixTotal, groupLines: lines, gcseTotal: gTotal, gcseAreas: gAreas }) };
+  },
+  async vaSubjectMatch() {
+    // Round 2 (A1): the list is approved; while both the file and the database's crosswalk carry it, they agree.
+    const { VA_SUBJECT_MATCHES, VA_SUBJECT_MATCHES_STATUS } = await import("../src/lib/smt/va-subject-matches");
+    const { vaMatcher, ks5LabelMap } = await import("../src/lib/smt/academic-data");
+    const L = await lib();
+    const facts = await L.ref.lookupReferenceData({ sourceId: "dfe_ks5_subject_value_added", entityIds: ["100053", "110110", "100183", "118952"] });
+    const names = new Set(facts.map((f) => f.breakdown.split("::").slice(0, 2).join("::")).filter((k) => !k.endsWith("::All subjects")));
+    const missing = Array.from(names).filter((k) => !VA_SUBJECT_MATCHES[k]);
+    const noArea = Object.entries(VA_SUBJECT_MATCHES).filter(([, m]) => !m.area && !m.outside).map(([k]) => k);
+    const fam = new Map((await L.ref.lookupAcademicSubjectFamilyMap({ ksStage: "ks5" })).map((r) => [r.raw_subject, r.family_id]));
+    const m = await vaMatcher((x) => fam.get(x) ?? null);
+    const dbRows = (await ks5LabelMap()).filter((r) => r.qualification).length;
+    let disagree: string[] = [];
+    if (m.source === "database")
+      disagree = Object.entries(VA_SUBJECT_MATCHES)
+        .filter(([k, f]) => {
+          const [q, sub] = k.split("::");
+          const d = m.match(q, sub);
+          return d.outside !== f.outside || (!f.outside && (d.subject !== (f.results ?? d.subject) || d.familyId !== f.area));
+        })
+        .map(([k]) => k);
+    const pass = VA_SUBJECT_MATCHES_STATUS === "approved" && missing.length === 0 && noArea.length === 0 && disagree.length === 0;
+    return { pass, detail: fmt({ status: VA_SUBJECT_MATCHES_STATUS, names: Object.keys(VA_SUBJECT_MATCHES).length, fourSchoolsNamesUnlisted: missing.join("; ") || "none", withoutArea: noArea.join("; ") || "none", app_reads: m.source, database: m.source === "database" ? `${dbRows} qualification rows; file and database agree: ${disagree.length ? disagree.slice(0, 5).join("; ") : "yes"}` : "not carrying the value-added names yet (the ingest step, 20261108120000, pending): the file answers" }) };
+  },
+
 
   // ------------------------------------------------------------ 0.8 SMT feedback round 1
   async scorecardRows() {
@@ -3608,6 +3789,51 @@ const RUNNERS: Record<string, Runner> = {
     const pass = unit && manage && products && backFirst(libPhone) && backFirst(libDesk) && phone44 && linksKeep && crumb && fallback && noneShown && goes;
     return { pass, detail: fmt({ unitTests: unit ? "pass" : "FAIL", manageSetsReturnTo: manageRt ?? "none", allThreeProducts: products, libraryBackFirst: backFirst(libPhone) && backFirst(libDesk), phone44, setLinksKeepReturnTo: linksKeep, viewBreadcrumbAndEditor: crumb, fallbackToRoleDashboard: fallback && noneShown, setGoesBackWhenItsKind: goes }) };
   },
+  // R-SMT-ENTRIES-SIZE: the fifths and the badge on a fixture and in the unit tests, the migration in
+  // PGlite, then the live table if it's applied (MANUAL until then: the migration is Guy's to apply).
+  async smtEntriesSize(L) {
+    const { execFileSync } = await import("node:child_process");
+    const es = await import("../src/lib/subject-entry-size");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, a: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, a, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/subject-entry-size.test.ts"]);
+    const unitPassed = Number(/^(?:ℹ|#) pass (\d+)/m.exec(unit.out)?.[1] ?? "0");
+    // Fixture: 50 schools entering (1..50) and 30 that don't (0): the zeros are left out, each badge
+    // holds ten schools, a cut point is the band above, and nine schools are too few to size.
+    const counts = [...Array.from({ length: 50 }, (_, i) => i + 1), ...Array(30).fill(0)];
+    const f = es.fifthsOf(counts)!;
+    const per: Record<string, number> = {};
+    for (const n of counts) {
+      const b = es.entrySizeBadge(n, f);
+      if (b) per[b] = (per[b] ?? 0) + 1;
+    }
+    const fixture =
+      f.schools === 50 && ["XS", "S", "M", "L", "XL"].every((b) => per[b] === 10) && es.entrySizeBadge(f.p20, f) === "S" && es.entrySizeBadge(0, f) === null && es.entrySizeBadge(5, es.fifthsOf([1, 2, 3, 4, 5, 6, 7, 8, 9])) === null && es.MIN_SCHOOLS_TO_SIZE === 10;
+    const pg = run("node", ["supabase/tests/v08_subject_entry_size_pglite.mjs"]);
+    const pgPass = (pg.out.match(/^PASS /gm) ?? []).length;
+    const offline = unit.ok && unitPassed >= 5 && fixture && pg.ok && /all passed/.test(pg.out);
+    const offlineDetail = { unitTests: unit.ok ? unitPassed : "FAIL", fixture: fixture ? `pass (${JSON.stringify(f)})` : "FAIL", pglite: pg.ok ? `${pgPass} pass` : "FAIL" };
+    // Live: the latest Post-16 year in the table (from the data), A-level Psychology, Leighton Park's badge.
+    const sb = L.sb.createServerAnonSupabaseClient();
+    const latest = await sb.from("subject_entry_size_fifths").select("period").eq("ks_stage", "ks5").order("period", { ascending: false }).limit(1);
+    if (latest.error) return { pass: offline, manual: offline, detail: fmt({ ...offlineDetail, live: `table not applied yet (${latest.error.code ?? latest.error.message}): apply 20261122090000 and run the sync` }) };
+    const period = (latest.data?.[0] as { period: number } | undefined)?.period;
+    if (period === undefined) return { pass: offline, manual: offline, detail: fmt({ ...offlineDetail, live: "table applied but empty: run scripts/sync-subject-entry-size-fifths.ts" }) };
+    const key = { qualification: "GCE A level", subject: "Psychology", period };
+    const fifths = (await es.entrySizeFifths("ks5", [key, { ...key, subject: es.ALL_SUBJECTS }])).get(es.entrySizeKey(key));
+    const lp = (await L.ref.lookupAcademicSubjectQualificationHeadline({ entityIds: ["110110"], ksStage: "ks5", qualificationType: "GCE A level", periodMin: period, periodMax: period })).find((r) => r.subject === "Psychology" && r.period === period);
+    const entries = lp ? Number(lp.entries_total) : null;
+    const badge = es.entrySizeBadge(entries, fifths);
+    const ordered = !!fifths && fifths.p20 <= fifths.p40 && fifths.p40 <= fifths.p60 && fifths.p60 <= fifths.p80 && fifths.schools >= 1000;
+    const live = ordered && (entries === null ? badge === null : badge !== null);
+    return { pass: offline && live, detail: fmt({ ...offlineDetail, period, psychology: fifths ? `${fifths.schools} schools, ${fifths.p20}/${fifths.p40}/${fifths.p60}/${fifths.p80}` : "none", leightonPark: `${entries ?? "no"} entries -> ${badge ?? "no badge"}` }) };
+  },
   // R-SETS-RLS: the read, write, curate, cap and stamp checks in v08_sets_r1_pglite.mjs.
   async setsRls() {
     const { execFileSync } = await import("node:child_process");
@@ -3664,6 +3890,11 @@ async function main() {
     const t0 = Date.now();
     try {
       const out = await runner(L, rule);
+      if (out.manual) {
+        counts.MANUAL++;
+        console.log(`MANUAL ${rule.id} [${tc.check}] ${tc.school} (${tc.urn}): ${out.detail} (${Date.now() - t0}ms)`);
+        continue;
+      }
       counts[out.pass ? "PASS" : "FAIL"]++;
       console.log(`${out.pass ? "PASS  " : "FAIL  "} ${rule.id} [${tc.check}] ${tc.school} (${tc.urn}): ${out.detail} (${Date.now() - t0}ms)`);
     } catch (e) {

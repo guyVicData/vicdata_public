@@ -10,8 +10,8 @@ async function one(urn: string) {
   const school = (await smtSchool(urn))!;
   const near = await resolveDefaultNearest(urn, setPhaseOf(school.phases));
   const set = { kind: "nearest", label: setPhaseOf(school.phases) === "ks5" ? "10 nearest with a sixth form or 16+ provision" : "10 nearest schools", urns: near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn) };
-  const o = await buildOverview(school, set, { sex: "all", boarding: "all" }, null);
-  const p = await buildPupils(school, set, { sex: "all", boarding: "all" }, { phase: "whole", area: null }, null);
+  const o = await buildOverview(school, set, null);
+  const p = await buildPupils(school, set, { phase: "whole", area: null }, null);
   console.log(`\n== ${school.name} (${urn}) independent=${school.independent} boarding=${school.boarding} igcse=${!!school.phases.igcse} set="${o.set.label}" short="${o.set.short}"`);
   for (const r of o.rows) console.log(`  ${r.label.padEnd(34)} ${String(r.value).padEnd(10)} set=${r.set ? `${r.set.rank}/${r.set.of}` : "-"} region=${r.region ? `${r.region.rank}/${r.region.of} ${r.region.name}` : "-"} england=${r.england ? `${r.england.rank}/${r.england.of}` : "-"} trend=${r.since ? `${r.since.change.toFixed(2)} ${r.since.unit} ${r.since.period}` : "-"}`);
   console.log("  entry tiles:", JSON.stringify(o.now.entry));

@@ -21,6 +21,13 @@ export const SMT_MEASURES = {
 // The qualification types DfE publishes A-level-stage value added for (the headline's prefixes).
 export const VA_QUALS = ["A level", "Academic", "Applied general", "Tech level"] as const;
 
+// 0.8 SMT Academic by qualification: DfE's Post-16 headline types (points per entry with the grade
+// equivalent, value added with its range and band) and VicData's qualification groups (points and
+// entries, the entries mix), as the headline snapshot names them.
+export const KS5_TYPES = ["A level", "Academic", "Applied general", "Tech level", "Technical certificate"] as const;
+export const KS5_BUCKET_KEYS = ["alevel", "btec_ocr", "ib", "tlevel", "other"] as const;
+const KS5_TYPE_MEASURES = ["aps_per_entry", "aps_per_entry_grade", "value_added", "value_added_lower_ci", "value_added_upper_ci", "progress_banding"];
+
 type ByYear = Map<number, Record<string, number | string>>;
 export type Population = Map<string, ByYear>;
 
@@ -44,7 +51,10 @@ function readPopulation(stage: "ks2" | "ks4" | "ks5"): Promise<Population> {
       return out;
     }
     const keep = new Set<string>(Object.values(SMT_MEASURES[stage]));
-    if (stage === "ks5") for (const q of VA_QUALS) for (const k of ["value_added", "value_added_lower_ci", "value_added_upper_ci", "progress_banding"]) keep.add(`${q}::${k}`);
+    if (stage === "ks5") {
+      for (const q of KS5_TYPES) for (const k of KS5_TYPE_MEASURES) keep.add(`${q}::${k}`);
+      for (const b of KS5_BUCKET_KEYS) for (const k of ["aps_per_entry", "entries"]) keep.add(`bucket:${b}::${k}`);
+    }
     const rows = await lookupAcademicHeadline({ ksStage: stage, periodMin: HISTORIC_GRADE_FROM });
     for (const r of rows) for (const [k, v] of Object.entries(r.measures)) if (keep.has(k) && v !== null && v !== undefined && v !== "") put(r.entity_id, r.period, k, v);
     return out;

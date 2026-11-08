@@ -1,0 +1,2946 @@
+[
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Computer Architecture / Systems",
+  "results": "Computer Architecture / Systems",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Computing and IT Advanced Technician",
+  "results": "Computing and IT Advanced Technician",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Law / Legal Studies",
+  "results": "Law / Legal Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Music performance: Group",
+  "results": "Music Performance (Group)",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Psychology",
+  "results": "Psychology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Small Business Management",
+  "results": "Small Business Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Level 3 National Certificate (Band D)",
+  "va_subject": "Tourism",
+  "results": "Travel and Tourism",
+  "area": "enterprise_applied",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Animal Husbandry: Specific Animals",
+  "results": "Animal Husbandry (Specific Animals)",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Building / Construction Operations (General / Combined)",
+  "results": "Building / Construction Operations (General / Combined)",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Childcare Skills",
+  "results": "Childcare Skills",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Computing and IT Advanced Technician",
+  "results": "Computing and IT Advanced Technician",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Film / Video / Television Production",
+  "results": "Film / Video / Television Production",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Horses / Ponies Keeping",
+  "results": "Horses / Ponies Keeping",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Manufacturing Engineering",
+  "results": "Manufacturing Engineering",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Music Technology (Electronic)",
+  "results": "Music Technology (Electronic)",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Small Business Management",
+  "results": "Small Business Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Sports / Movement Science",
+  "results": "Sports / Movement Science",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Diploma L3 - Band J - PP-D*D*",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Agriculture (General)",
+  "results": "Agriculture (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Animal Husbandry: Specific Animals",
+  "results": "Animal Husbandry (Specific Animals)",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Biology",
+  "results": "Biology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Building / Construction Operations (General / Combined)",
+  "results": "Building / Construction Operations (General / Combined)",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Childcare Skills",
+  "results": "Childcare Skills",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Computer Architecture / Systems",
+  "results": "Computer Architecture / Systems",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Computer Games",
+  "results": "Computer Games",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Film / Video / Television Production",
+  "results": "Film / Video / Television Production",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Horses / Ponies Keeping",
+  "results": "Horses / Ponies Keeping",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Law / Legal Studies",
+  "results": "Law / Legal Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Music Technology (Electronic)",
+  "results": "Music Technology (Electronic)",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Music performance: Group",
+  "results": "Music Performance (Group)",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Psychology",
+  "results": "Psychology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Small Business Management",
+  "results": "Small Business Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Sound Recording",
+  "results": "Sound Recording",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Sports / Movement Science",
+  "results": "Sports / Movement Science",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "va_subject": "Tourism",
+  "results": "Travel and Tourism",
+  "area": "enterprise_applied",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Aerospace Engineering",
+  "results": "Aerospace Engineering",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Agriculture (General)",
+  "results": "Agriculture (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Animal Husbandry: Specific Animals",
+  "results": "Animal Husbandry (Specific Animals)",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Building / Construction Operations (General / Combined)",
+  "results": "Building / Construction Operations (General / Combined)",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Childcare Skills",
+  "results": "Childcare Skills",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Computing and IT Advanced Technician",
+  "results": "Computing and IT Advanced Technician",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Electronic / Electrical Engineering",
+  "results": "Electronic / Electrical Engineering",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Environmental Management",
+  "results": "Environmental Management",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Horses / Ponies Keeping",
+  "results": "Horses / Ponies Keeping",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Manufacturing Engineering",
+  "results": "Manufacturing Engineering",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Mechanical Engineering (General)",
+  "results": "Mechanical Engineering (General)",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Small Business Management",
+  "results": "Small Business Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Sports / Movement Science",
+  "results": "Sports / Movement Science",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Animal Husbandry: Specific Animals",
+  "results": "Animal Husbandry (Specific Animals)",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Arboriculture",
+  "results": "Arboriculture",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Building / Construction Operations (General / Combined)",
+  "results": "Building / Construction Operations (General / Combined)",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Childcare Skills",
+  "results": "Childcare Skills",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Computer Architecture / Systems",
+  "results": "Computer Architecture / Systems",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Horses / Ponies Keeping",
+  "results": "Horses / Ponies Keeping",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Small Business Management",
+  "results": "Small Business Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Sports / Movement Science",
+  "results": "Sports / Movement Science",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC National Foundation Diploma L3 - Band H - P-D*",
+  "va_subject": "Tourism",
+  "results": "Travel and Tourism",
+  "area": "enterprise_applied",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Technical Certificate L2 - Band E - P-D",
+  "va_subject": "Administrative Management",
+  "results": "Administrative Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Technical Certificate L2 - Band E - P-D",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Technical Certificate L2 - Band E - P-D",
+  "va_subject": "Small Business Management",
+  "results": "Small Business Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Technical Diploma L2 - Band F - PP-DD",
+  "va_subject": "Animal Care (Non-Agricultural)",
+  "results": "Animal Care",
+  "area": "enterprise_applied",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Technical Diploma L2 - Band F - PP-DD",
+  "va_subject": "Childcare Skills",
+  "results": "Childcare Skills",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Technical Diploma L2 - Band F - PP-DD",
+  "va_subject": "Computing and IT Advanced Technician",
+  "results": "Computing and IT Advanced Technician",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "BTEC Technical Diploma L2 - Band F - PP-DD",
+  "va_subject": "Horses / Ponies Keeping",
+  "results": "Horses / Ponies Keeping",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "Core Maths Qualifications at Level 3",
+  "va_subject": "Mathematical Studies",
+  "results": "Mathematical Studies",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "Core Maths Qualifications at Level 3",
+  "va_subject": "Mathematics (Numeracy)",
+  "results": "Mathematics (Numeracy)",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "Extended Project (Diploma)",
+  "va_subject": "Study Skills",
+  "results": null,
+  "area": null,
+  "how": "the EPQ sits outside the subject areas",
+  "outside": true
+ },
+ {
+  "qualification": "Free standing Maths Qual Level 3",
+  "va_subject": "Additional Mathematics FSMQ",
+  "results": "Mathematics (Additional)",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Accounting/Finance",
+  "results": "Accounting and Finance",
+  "area": "business_law",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Ancient History",
+  "results": "Ancient History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Arabic",
+  "results": "Arabic",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Art & Design (3d Studies)",
+  "results": "3D Studies",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Art & Design (Critical Studies)",
+  "results": "Critical Studies",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Art & Design (Fine Art)",
+  "results": "Fine Art",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Art & Design (Graphics)",
+  "results": "Graphics",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Art & Design (Photography)",
+  "results": "Photography",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Art & Design (Textiles)",
+  "results": "Textiles",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Biology",
+  "results": "Biology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Business Studies:Single",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Chemistry",
+  "results": "Chemistry",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Chinese",
+  "results": "Chinese",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Classical Civilisation",
+  "results": "Classical Civilisation",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Classical Greek",
+  "results": "Classical Greek",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Computer Studies/Computing",
+  "results": "Computer Science",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "D&T Engineering",
+  "results": "Design and Technology (Engineering)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "D&T Product Design",
+  "results": "Design and Technology (Product Design)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "D&T Textiles Technology",
+  "results": "Design and Technology (Textiles Technology)",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Dance",
+  "results": "Dance",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Drama & Theatre Studies",
+  "results": "Drama and Theatre Studies",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Economics",
+  "results": "Economics",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Electronics",
+  "results": "Electronics",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "English Language",
+  "results": "English Language",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "English Language & Literature",
+  "results": "English Language and Literature",
+  "area": "languages_literature",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "English Literature",
+  "results": "English Literature",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Environmental Science",
+  "results": "Environmental Science",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Film Studies",
+  "results": "Film Studies",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "French",
+  "results": "French",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Geography",
+  "results": "Geography",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Geology",
+  "results": "Geology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "German",
+  "results": "German",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Government & Politics",
+  "results": "Government and Politics",
+  "area": "humanities_social",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "History",
+  "results": "History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "History of Art",
+  "results": "History of Art",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Italian",
+  "results": "Italian",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Latin",
+  "results": "Latin",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Law",
+  "results": "Law",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Logic/ Philosophy",
+  "results": "Logic / Philosophy",
+  "area": "humanities_social",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Mathematics",
+  "results": "Mathematics",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Mathematics (Further)",
+  "results": "Mathematics (Further)",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Mathematics (Statistics)",
+  "results": "Mathematics (Statistics)",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Media/Film/Tv Studies",
+  "results": "Media / Film / TV Studies",
+  "area": "arts_media_design",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Modern Hebrew",
+  "results": "Modern Hebrew",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Music",
+  "results": "Music",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Music Technology",
+  "results": "Music Technology",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Other Classical Languages",
+  "results": "Other Classical Languages",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Physical Education/Sports Studies",
+  "results": "Physical Education / Sports Studies",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Physics",
+  "results": "Physics",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Polish",
+  "results": "Polish",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Portuguese",
+  "results": "Portuguese",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Psychology",
+  "results": "Psychology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Punjabi",
+  "results": "Punjabi",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Religious Studies",
+  "results": "Religious Studies",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Russian",
+  "results": "Russian",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Sociology",
+  "results": "Sociology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Spanish",
+  "results": "Spanish",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Turkish",
+  "results": "Turkish",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE A level",
+  "va_subject": "Urdu",
+  "results": "Urdu",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Ancient History",
+  "results": "Ancient History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Art & Design (3d Studies)",
+  "results": "3D Studies",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Art & Design (Fine Art)",
+  "results": "Fine Art",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Art & Design (Graphics)",
+  "results": "Graphics",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Art & Design (Photography)",
+  "results": "Photography",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Art & Design (Textiles)",
+  "results": "Textiles",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Biology",
+  "results": "Biology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Business Studies:Single",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Chemistry",
+  "results": "Chemistry",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Classical Civilisation",
+  "results": "Classical Civilisation",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Computer Studies/Computing",
+  "results": "Computer Science",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "D&T Product Design",
+  "results": "Design and Technology (Product Design)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Drama & Theatre Studies",
+  "results": "Drama and Theatre Studies",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Economics",
+  "results": "Economics",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Electronics",
+  "results": "Electronics",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "English Language",
+  "results": "English Language",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "English Language & Literature",
+  "results": "English Language and Literature",
+  "area": "languages_literature",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "English Literature",
+  "results": "English Literature",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Film Studies",
+  "results": "Film Studies",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "French",
+  "results": "French",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Geography",
+  "results": "Geography",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Geology",
+  "results": "Geology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "German",
+  "results": "German",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Government & Politics",
+  "results": "Government and Politics",
+  "area": "humanities_social",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "History",
+  "results": "History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Latin",
+  "results": "Latin",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Law",
+  "results": "Law",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Mathematics",
+  "results": "Mathematics",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Mathematics (Further)",
+  "results": "Mathematics (Further)",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Media/Film/Tv Studies",
+  "results": "Media / Film / TV Studies",
+  "area": "arts_media_design",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Music",
+  "results": "Music",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Music Technology",
+  "results": "Music Technology",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Physical Education/Sports Studies",
+  "results": "Physical Education / Sports Studies",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Physics",
+  "results": "Physics",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Psychology",
+  "results": "Psychology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Religious Studies",
+  "results": "Religious Studies",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Sociology",
+  "results": "Sociology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (All)",
+  "va_subject": "Spanish",
+  "results": "Spanish",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Ancient History",
+  "results": "Ancient History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Art & Design (3d Studies)",
+  "results": "3D Studies",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Art & Design (Fine Art)",
+  "results": "Fine Art",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Art & Design (Graphics)",
+  "results": "Graphics",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Art & Design (Photography)",
+  "results": "Photography",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Art & Design (Textiles)",
+  "results": "Textiles",
+  "area": "arts_media_design",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Biology",
+  "results": "Biology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Business Studies:Single",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Chemistry",
+  "results": "Chemistry",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Classical Civilisation",
+  "results": "Classical Civilisation",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Computer Studies/Computing",
+  "results": "Computer Science",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "D&T Product Design",
+  "results": "Design and Technology (Product Design)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Drama & Theatre Studies",
+  "results": "Drama and Theatre Studies",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Economics",
+  "results": "Economics",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Electronics",
+  "results": "Electronics",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "English Language",
+  "results": "English Language",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "English Language & Literature",
+  "results": "English Language and Literature",
+  "area": "languages_literature",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "English Literature",
+  "results": "English Literature",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Film Studies",
+  "results": "Film Studies",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "French",
+  "results": "French",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Geography",
+  "results": "Geography",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Geology",
+  "results": "Geology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "German",
+  "results": "German",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Government & Politics",
+  "results": "Government and Politics",
+  "area": "humanities_social",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "History",
+  "results": "History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Latin",
+  "results": "Latin",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Law",
+  "results": "Law",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Mathematics",
+  "results": "Mathematics",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Mathematics (Further)",
+  "results": "Mathematics (Further)",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Media/Film/Tv Studies",
+  "results": "Media / Film / TV Studies",
+  "area": "arts_media_design",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Music Technology",
+  "results": "Music Technology",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Physical Education/Sports Studies",
+  "results": "Physical Education / Sports Studies",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Physics",
+  "results": "Physics",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Psychology",
+  "results": "Psychology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Religious Studies",
+  "results": "Religious Studies",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Sociology",
+  "results": "Sociology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "GCE AS level (Not continued to A2)",
+  "va_subject": "Spanish",
+  "results": "Spanish",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Diploma Programme Core",
+  "va_subject": "Learning Skills",
+  "results": null,
+  "area": null,
+  "how": "IB core: outside the subject areas",
+  "outside": true
+ },
+ {
+  "qualification": "IBO Diploma Programme Core",
+  "va_subject": "Self Development",
+  "results": null,
+  "area": null,
+  "how": "IB core (CAS, Theory of Knowledge, Extended Essay): outside the subject areas",
+  "outside": true
+ },
+ {
+  "qualification": "IBO Diploma Programme Core",
+  "va_subject": "Study Skills",
+  "results": null,
+  "area": null,
+  "how": "IB core: outside the subject areas",
+  "outside": true
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Biology",
+  "results": "Biology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Chemistry",
+  "results": "Chemistry",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Computer Studies/Computing",
+  "results": "Computer Science",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Economics",
+  "results": "Economics",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Film Studies",
+  "results": "Film Studies",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Geography",
+  "results": "Geography",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Government & Politics",
+  "results": "Government and Politics",
+  "area": "humanities_social",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "History",
+  "results": "History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Management Studies / Science",
+  "results": "Management Studies / Science",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Mathematical Studies",
+  "results": "Mathematical Studies",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Physics",
+  "results": "Physics",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Psychology",
+  "results": "Psychology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Sociology",
+  "results": "Sociology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Untranslated Literature",
+  "results": "Untranslated Literature",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Higher level component",
+  "va_subject": "Visual Arts",
+  "results": "Visual Arts",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Biology",
+  "results": "Biology",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Film Studies",
+  "results": "Film Studies",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Geography",
+  "results": "Geography",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "History",
+  "results": "History",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Mathematical Studies",
+  "results": "Mathematical Studies",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Other Languages",
+  "results": "Other Languages",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Psychology",
+  "results": "Psychology",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Untranslated Literature",
+  "results": "Untranslated Literature",
+  "area": "languages_literature",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "IBO Standard level component",
+  "va_subject": "Visual Arts",
+  "results": "Visual Arts",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "International Baccalaureate",
+  "va_subject": "Baccalaureate",
+  "results": null,
+  "area": null,
+  "how": "the IB Diploma as a whole: outside the subject areas",
+  "outside": true
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 2",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 2",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 3",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 3",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 3",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 3",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 3",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 3",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Certificate at Level 3",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 2",
+  "va_subject": "Administrative Management",
+  "results": "Administrative Management",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 2",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 2",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 2",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Diploma at Level 3",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Certificate at Level 3",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Diploma at Level 3",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Diploma at Level 3",
+  "va_subject": "Computing and IT Advanced Technician",
+  "results": "Computing and IT Advanced Technician",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Diploma at Level 3",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Diploma at Level 3",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Diploma at Level 3",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Diploma at Level 3",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Extended Diploma at Level 3",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Foundation Diploma at Level 3",
+  "va_subject": "Business Studies",
+  "results": "Business Studies",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Foundation Diploma at Level 3",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Foundation Diploma at Level 3",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Foundation Diploma at Level 3",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Foundation Diploma at Level 3",
+  "va_subject": "Multimedia",
+  "results": "Multimedia",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Foundation Diploma at Level 3",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Foundation Diploma at Level 3",
+  "va_subject": "Sports Studies",
+  "results": "Sports Studies",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "OCR Cambridge Technical Introductory Diploma at Level 3",
+  "va_subject": "Computer Appreciation / Introduction",
+  "results": "Computer Appreciation (Introduction)",
+  "area": "technology_eng_construction",
+  "how": "VicData match",
+  "outside": false
+ },
+ {
+  "qualification": "Other General Qualification at Level 2",
+  "va_subject": "Electrical installation (Buildings / Construction)",
+  "results": "Electrical Installation (Buildings / Construction)",
+  "area": "technology_eng_construction",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "Other General Qualification at Level 3",
+  "va_subject": "Electrical installation (Buildings / Construction)",
+  "results": "Electrical Installation (Buildings / Construction)",
+  "area": "technology_eng_construction",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Agricultural Engineering",
+  "results": "Agricultural Engineering",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Agriculture (General)",
+  "results": "Agriculture (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Animal Care (Non-Agricultural)",
+  "results": "Animal Care",
+  "area": "enterprise_applied",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Arboriculture",
+  "results": "Arboriculture",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Beauty Therapy",
+  "results": "Beauty Therapy",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Brickwork/Masonry",
+  "results": "Brickwork / Masonry",
+  "area": "technology_eng_construction",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Construction Carpentry / Shopfitting / Erection",
+  "results": "Construction Carpentry / Shopfitting / Erection",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Electrical installation (Buildings / Construction)",
+  "results": "Electrical Installation (Buildings / Construction)",
+  "area": "technology_eng_construction",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Environmental Management",
+  "results": "Environmental Management",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Floristry",
+  "results": "Floristry",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Food Preparation (General)",
+  "results": "Food Preparation (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Hairdressing Services",
+  "results": "Hairdressing Services",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Horses / Ponies Keeping",
+  "results": "Horses / Ponies Keeping",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Horticulture (General)",
+  "results": "Horticulture (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Men's Hairdressing",
+  "results": "Men's Hairdressing",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Motorcycle Maintenance / Repair",
+  "results": "Motorcycle Maintenance / Repair",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Painting & Decorating",
+  "results": "Painting and Decorating",
+  "area": "technology_eng_construction",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Plastering",
+  "results": "Plastering",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Plumbing (Building Work)",
+  "results": "Plumbing (Building Work)",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 2",
+  "va_subject": "Theatrical Makeup",
+  "results": "Theatrical Makeup",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Agricultural Engineering",
+  "results": "Agricultural Engineering",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Agriculture (General)",
+  "results": "Agriculture (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Animal Husbandry: Specific Animals",
+  "results": "Animal Husbandry (Specific Animals)",
+  "area": "enterprise_applied",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Applied Business",
+  "results": "Applied Business",
+  "area": "business_law",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Applied Sciences",
+  "results": "Applied Science",
+  "area": "sciences_maths",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Arboriculture",
+  "results": "Arboriculture",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Art & Design",
+  "results": "Art and Design",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Beauty Therapy",
+  "results": "Beauty Therapy",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Childcare Skills",
+  "results": "Childcare Skills",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Computing and IT Advanced Technician",
+  "results": "Computing and IT Advanced Technician",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Construction Carpentry / Shopfitting / Erection",
+  "results": "Construction Carpentry / Shopfitting / Erection",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Electrical installation (Buildings / Construction)",
+  "results": "Electrical Installation (Buildings / Construction)",
+  "area": "technology_eng_construction",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Engineering Studies",
+  "results": "Engineering Studies",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Environmental Management",
+  "results": "Environmental Management",
+  "area": "sciences_maths",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Finance / Accounting (General)",
+  "results": "Finance",
+  "area": "business_law",
+  "how": "DfE's rename (subject_label_map)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Food Preparation (General)",
+  "results": "Food Preparation (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Hairdressing Services",
+  "results": "Hairdressing Services",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Health Studies",
+  "results": "Health Studies",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Horses / Ponies Keeping",
+  "results": "Horses / Ponies Keeping",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Horticulture (General)",
+  "results": "Horticulture (General)",
+  "area": "enterprise_applied",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Medical Science",
+  "results": "Medical Science",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Music performance: Group",
+  "results": "Music Performance (Group)",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Nutrition / Diet",
+  "results": "Nutrition / Diet",
+  "area": "health_care",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Plumbing (Building Work)",
+  "results": "Plumbing (Building Work)",
+  "area": "technology_eng_construction",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Social Science",
+  "results": "Social Science",
+  "area": "humanities_social",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Speech & Drama",
+  "results": "Speech and Drama",
+  "area": "arts_media_design",
+  "how": "spelling (& / : and case)",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Theatrical Makeup",
+  "results": "Theatrical Makeup",
+  "area": "arts_media_design",
+  "how": "same name",
+  "outside": false
+ },
+ {
+  "qualification": "VRQ Level 3",
+  "va_subject": "Tourism",
+  "results": "Travel and Tourism",
+  "area": "enterprise_applied",
+  "how": "VicData match",
+  "outside": false
+ }
+]

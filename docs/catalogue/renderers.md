@@ -2,7 +2,7 @@
 
 # Renderers
 
-Shape requirements only, no rules. 45 renderers.
+Shape requirements only, no rules. 49 renderers.
 
 ### RD-NUMBER-TILES — NumberTiles
 
@@ -452,7 +452,7 @@ Shape requirements only, no rules. 45 renderers.
 | Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
 | Fullscreen | The panel's full screen (focus mode), the same view larger. |
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
-| Used by | DV-SMT-O-MAP |
+| Used by | DV-SMT-O-MAP, DV-SMT-A-MAP |
 
 ### RD-SMT-FLAGS — SchoolFlags
 
@@ -499,13 +499,13 @@ Shape requirements only, no rules. 45 renderers.
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
 | Used by | DV-SMT-O-ROLL-TABLE, DV-SMT-O-RESULTS-TABLE, DV-SMT-O-MARKET-TABLE, DV-SMT-A-TREND-TABLE, DV-SMT-A-MIX-TABLE, DV-SMT-P-PHASES-TABLE, DV-SMT-C-BIRTHS-TABLE |
 
-### RD-SMT-AREAS — SubjectAreas
+### RD-SMT-AREAS — AreasView
 
 | Field | Content |
 | --- | --- |
-| File | src/components/smt/views/Areas.tsx |
-| Accepts | Admissions' strengths and weaknesses against the comparison set. |
-| Empty | No subject area with set schools to compare. |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | Each subject area, its subjects by qualification: entries, the figure (points, share or value added), the set's schools as dots, the place among the set's schools teaching it; XS-XL against England in Entries mode; † where VicData placed a value-added subject. |
+| Empty | No subjects at this level, or GCSE value added (none published by subject): says so. |
 | Suppressed | — |
 | Partial | — |
 | Loading | The panel's skeleton until the route answers. |
@@ -514,42 +514,12 @@ Shape requirements only, no rules. 45 renderers.
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
 | Used by | DV-SMT-A-AREAS |
 
-### RD-SMT-SUBJECTS — Subjects
+### RD-SMT-GRADES — GradesView
 
 | Field | Content |
 | --- | --- |
-| File | src/components/smt/views/Subjects.tsx |
-| Accepts | The area's subjects: entries, average, rank in the set and England, since 2022/23, the subject explorer link. |
-| Empty | No subjects in this area. |
-| Suppressed | — |
-| Partial | — |
-| Loading | The panel's skeleton until the route answers. |
-| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
-| Fullscreen | The panel's full screen (focus mode), the same view larger. |
-| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
-| Used by | DV-SMT-A-SUBJECTS |
-
-### RD-SMT-VA — ValueAdded
-
-| Field | Content |
-| --- | --- |
-| File | src/components/smt/views/ValueAdded.tsx |
-| Accepts | A-level value added by qualification type and by subject with confidence intervals; Progress 8 or its reason. |
-| Empty | Not published: says which reason applies. |
-| Suppressed | — |
-| Partial | — |
-| Loading | The panel's skeleton until the route answers. |
-| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
-| Fullscreen | The panel's full screen (focus mode), the same view larger. |
-| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
-| Used by | DV-SMT-A-VA |
-
-### RD-SMT-GRADES — GradeProfile
-
-| Field | Content |
-| --- | --- |
-| File | src/components/smt/views/Grades.tsx |
-| Accepts | The grade profile in bands (9-7, 6-5, 4, 3-1; A*-A, B, C, D-U). |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | The grade profile per qualification, in its own scale's bands, with the top-grade share. |
 | Empty | No graded entries. |
 | Suppressed | — |
 | Partial | — |
@@ -559,12 +529,12 @@ Shape requirements only, no rules. 45 renderers.
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
 | Used by | DV-SMT-A-GRADES |
 
-### RD-SMT-MIX — EntriesMix
+### RD-SMT-MIX — MixBars
 
 | Field | Content |
 | --- | --- |
-| File | src/components/smt/views/Mix.tsx |
-| Accepts | Each area's (or subject's) share of the entries, year by year. |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | Each qualification group's share of the year's Post-16 entries (VicData's groups), year by year, and a line where a group starts or stops. |
 | Empty | No entries. |
 | Suppressed | — |
 | Partial | — |
@@ -574,20 +544,80 @@ Shape requirements only, no rules. 45 renderers.
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
 | Used by | DV-SMT-A-MIX |
 
-### RD-SMT-RESERVED — ReservedPanel
+### RD-SMT-RANK-CHART — RankChart
 
 | Field | Content |
 | --- | --- |
-| File | src/components/smt/views/Reserved.tsx |
-| Accepts | A reserved panel: the slot exists, the data doesn't yet. |
-| Empty | Always its caption. |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | The set's schools offering the group, ranked: dot and 95% range (value added) or dot (points, share), coloured by band or quarter of the set; a line at 0 or the set's median; the axis fits the data; England's place on a strip (value added). |
+| Empty | Nothing to rank (T-level value added, a set with no state schools at GCSE value added): the reason in the middle of the view. |
 | Suppressed | — |
 | Partial | — |
 | Loading | The panel's skeleton until the route answers. |
 | Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
 | Fullscreen | The panel's full screen (focus mode), the same view larger. |
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
-| Used by | DV-SMT-A-BANDS |
+| Used by | DV-SMT-A-CHART |
+
+### RD-SMT-RANK-TABLE — RankTable
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | The same schools, row by row: figure, range, band, last year, change, England place; above, the place in the set, region and England and how many are clearly above or below. |
+| Empty | Nothing to rank: the reason in the middle of the view. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-TABLE |
+
+### RD-SMT-LINES — EveryLine
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | Every column-1 line, last year to this: value added against its own national average (0); points and shares as the change. |
+| Empty | No line with two years. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-LINES |
+
+### RD-SMT-MOVES — Moves
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | The biggest moves: subjects' entries over three years (Entries), or the set's schools' change last year to this. |
+| Empty | Fewer than two years: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-MOVES, DV-SMT-A-SETMOVES |
+
+### RD-SMT-AGAINST — Against
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | Subjects whose share of the school's entries differs most from the set's typical school offering them. |
+| Empty | No subject to compare. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-AGAINST |
 
 ### RD-SMT-SHAPE — ShapeAndSize
 
@@ -618,6 +648,36 @@ Shape requirements only, no rules. 45 renderers.
 | Fullscreen | The panel's full screen (focus mode), the same view larger. |
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
 | Used by | DV-SMT-P-ENTRIES |
+
+### RD-SMT-GIRLS-BOYS — GirlsAndBoys
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Pupils.tsx |
+| Accepts | Girls' share in each year group against the middle of the set's mixed schools, its change since the census's first year against the set's, and where it shifts (Year 7, the sixth form); the share year by year. Single-sex set schools left out. |
+| Empty | A single-sex school: no view (no rail icon). |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-P-GIRLS-BOYS |
+
+### RD-SMT-DAY-BOARDING — DayAndBoarding
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Pupils.tsx |
+| Accepts | Boarders and day pupils census by census, and boarders' share of the roll against the middle of the set's boarding schools, now and over time. |
+| Empty | A day school: no view (no rail icon). |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-P-DAY-BOARDING |
 
 ### RD-SMT-LEAVING — LeavingAt16
 

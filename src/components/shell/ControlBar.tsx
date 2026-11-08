@@ -41,7 +41,10 @@ export type FocusSubject = {
 
 // 0.8 SMT: a second, lighter row of chips under the selected one (spec §2.2: subject areas under
 // GCSE or Post-16), in the bar, right-aligned under the first row. Absent = no second row.
-export type FocusSubRow = { label: string; chips: FocusSubject[]; focusKey: string; onFocus: (key: string) => void };
+// 0.8 SMT Academic: `lead` sits at the row's left (Academic's Results · Entries · Value added switch),
+// `chipsLabel` names the chips ("Qualification") and `note` takes the chips' place when there are none.
+// All absent = exactly as before.
+export type FocusSubRow = { label: string; chips: FocusSubject[]; focusKey: string; onFocus: (key: string) => void; lead?: ReactNode; chipsLabel?: string; note?: ReactNode };
 
 function chipStyle(s: FocusSubject, on: boolean): React.CSSProperties {
   if (s.colour) return on ? { borderColor: s.colour, background: `${s.colour}29`, color: s.colour } : { borderColor: "var(--panel-border2)", background: "transparent", color: "var(--muted2)" };
@@ -193,6 +196,9 @@ export function ControlBar({
       </div>
       {subRow && (
         <div className="flex basis-full flex-wrap items-center justify-end gap-1 border-t border-[var(--panel-border)] pt-2.5 print:hidden" role="group" aria-label={subRow.label}>
+          {subRow.lead && <span className="mr-auto">{subRow.lead}</span>}
+          {subRow.chipsLabel && subRow.chips.length > 0 && <span className="mr-1.5 text-[10.5px] text-[var(--muted2)]">{subRow.chipsLabel}</span>}
+          {subRow.note && subRow.chips.length === 0 && <span className="text-[11.5px] text-[var(--muted2)]">{subRow.note}</span>}
           {subRow.chips.map((s) => {
             const on = s.key === subRow.focusKey;
             return (

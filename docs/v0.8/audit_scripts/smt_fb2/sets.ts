@@ -23,7 +23,7 @@ export async function threeSets(urn: string): Promise<{ school: SmtSchool; sets:
   };
 }
 
-export const overviewFor = (school: SmtSchool, set: SmtSet) => buildOverview(school, set, { sex: "all", boarding: "all" }, null);
+export const overviewFor = (school: SmtSchool, set: SmtSet) => buildOverview(school, set, null);
 
 export function summary(o: Overview): string[] {
   const out = [`set "${o.set.label}" (${o.set.size} schools), short "${o.set.short}"`];

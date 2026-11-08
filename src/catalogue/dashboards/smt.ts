@@ -34,15 +34,15 @@ const OVERVIEW: Cell[] = [
 
 const ACADEMIC: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-A-NOW"], defaultView: "DV-SMT-A-NOW" },
-  { column: "c2", row: "now", span: 2, name: "Subjects", views: ["DV-SMT-A-AREAS", "DV-SMT-A-SUBJECTS", "DV-SMT-A-VA", "DV-SMT-A-GRADES"], defaultView: "DV-SMT-A-AREAS" },
+  { column: "c2", row: "now", span: 2, name: "The set", views: ["DV-SMT-A-CHART", "DV-SMT-A-TABLE", "DV-SMT-A-MAP", "DV-SMT-A-AREAS", "DV-SMT-A-GRADES"], defaultView: "DV-SMT-A-CHART" },
   { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-A-TREND-LINE", "DV-SMT-A-TREND-TABLE"], defaultView: "DV-SMT-A-TREND-LINE" },
-  { column: "c2", row: "trends", name: "Trends", views: ["DV-SMT-A-BANDS"], defaultView: "DV-SMT-A-BANDS" },
-  { column: "c3", row: "trends", name: "Trends", views: ["DV-SMT-A-MIX", "DV-SMT-A-MIX-TABLE"], defaultView: "DV-SMT-A-MIX" },
+  { column: "c2", row: "trends", name: "Trends", views: ["DV-SMT-A-LINES", "DV-SMT-A-MOVES"], defaultView: "DV-SMT-A-LINES" },
+  { column: "c3", row: "trends", name: "Trends", views: ["DV-SMT-A-MIX", "DV-SMT-A-MIX-TABLE", "DV-SMT-A-AGAINST", "DV-SMT-A-SETMOVES"], defaultView: "DV-SMT-A-MIX" },
 ];
 
 const PUPILS: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-P-NOW"], defaultView: "DV-SMT-P-NOW" },
-  { column: "c2", row: "now", span: 2, name: "Shape and size", views: ["DV-SMT-P-SHAPE", "DV-SMT-P-ENTRIES", "DV-SMT-P-LEAVING", "DV-SMT-P-MARKET"], defaultView: "DV-SMT-P-SHAPE" },
+  { column: "c2", row: "now", span: 2, name: "Shape and size", views: ["DV-SMT-P-SHAPE", "DV-SMT-P-GIRLS-BOYS", "DV-SMT-P-DAY-BOARDING", "DV-SMT-P-ENTRIES", "DV-SMT-P-LEAVING", "DV-SMT-P-MARKET"], defaultView: "DV-SMT-P-SHAPE" },
   { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-P-PHASES", "DV-SMT-P-PHASES-TABLE"], defaultView: "DV-SMT-P-PHASES" },
   { column: "c2", row: "trends", name: "From Admissions", views: ["DV-SMT-P-POOL"], defaultView: "DV-SMT-P-POOL" },
   { column: "c3", row: "trends", name: "Area", views: ["DV-SMT-P-AREA"], defaultView: "DV-SMT-P-AREA" },
@@ -92,7 +92,7 @@ function smtDashboard(id: string, name: string, order: number, host: SmtHostId, 
 
 export const SMT_DASHBOARDS: DashboardConfig[] = [
   smtDashboard(SMT_OVERVIEW_ID, "SMT Overview", 0, "smt.overview", OVERVIEW, columns("smt.overview", ["smt.school", "smt.results", "smt.school"], ["The school now", "Scorecard", "From Admissions"])),
-  smtDashboard(SMT_ACADEMIC_ID, "SMT Academic", 1, "smt.academic", ACADEMIC, columns("smt.academic", ["smt.results", "smt.subjects", "smt.subjects"], ["The level now", "Subjects", "Entries"])),
+  smtDashboard(SMT_ACADEMIC_ID, "SMT Academic", 1, "smt.academic", ACADEMIC, columns("smt.academic", ["smt.results", "smt.results", "smt.subjects"], ["The level now", "The set", "Entries"])),
   smtDashboard(SMT_PUPILS_ID, "SMT Pupils", 2, "smt.pupils", PUPILS, columns("smt.pupils", ["smt.school", "smt.school", "smt.school"], ["Your pupils now", "Shape and size", "Area"])),
   smtDashboard(SMT_CONTEXT_ID, "SMT Context", 3, "smt.context", CONTEXT, columns("smt.context", ["smt.area", "smt.area", "smt.area"], ["The area now", "Map", "Area"])),
 ];

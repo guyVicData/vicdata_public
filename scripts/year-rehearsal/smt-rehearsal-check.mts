@@ -8,7 +8,7 @@ import { resolveDefaultNearest } from "../../src/lib/chooser-sets";
 const urn = "137625";
 const school = (await smtSchool(urn))!;
 const near = await resolveDefaultNearest(urn, "ks4");
-const o = await buildOverview(school, { kind: "nearest", label: "10 nearest schools", urns: near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn) }, { sex: "all", boarding: "all" }, null);
+const o = await buildOverview(school, { kind: "nearest", label: "10 nearest schools", urns: near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn) }, null);
 const a8 = o.rows.find((r) => r.key === "attainment8_average")?.period ?? null;
 const aps = o.rows.find((r) => r.key === "A level::aps_per_entry")?.period ?? null;
 console.log(JSON.stringify({ a8, aps, provisional: school.latest.ks4?.provisional ?? false }));

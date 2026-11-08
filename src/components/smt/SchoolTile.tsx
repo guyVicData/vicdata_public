@@ -47,7 +47,7 @@ function Summary({ member }: { member: SmtMember }) {
   const school = useSmt<SmtSchool>(`/api/smt/school?urn=${member.schoolUrn}`, null);
   const s = school.status === "ready" ? school.data : null;
   const sets = useSmtSet(member.schoolUrn, s ? setPhaseOf(s.phases) : null);
-  const o = useSmt<Overview>(s && sets.set ? "/api/smt/overview" : null, sets.set ? { urn: member.schoolUrn, set: sets.set, filters: { sex: "all", boarding: "all" } } : null);
+  const o = useSmt<Overview>(s && sets.set ? "/api/smt/overview" : null, sets.set ? { urn: member.schoolUrn, set: sets.set } : null);
   return <p className="mt-2.5 text-[12.5px] text-[var(--muted2)]" data-smt-summary="">{o.status === "ready" ? summaryLine(o.data) : o.status === "error" ? "" : "…"}</p>;
 }
 

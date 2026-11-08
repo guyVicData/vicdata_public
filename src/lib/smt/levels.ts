@@ -59,12 +59,6 @@ export function setPhaseOf(p: SchoolPhases): "ks2" | "ks4" | "ks5" {
 // The minimum entries for a subject to be ranked (academic.ts MIN_SUBJECT_ENTRIES), for the page's words.
 export const MIN_SUBJECT_ENTRIES_UI = 5;
 
-// R-SMT-BOARDING-ONLY (spec §2.2): the filter pills a school gets -- Gender for a mixed school only,
-// Day + boarding for a boarding school only (isBoardingSchool, 0.7 r3 F2). Phase is a chip, never a pill.
-export function pillsFor(s: { mixed: boolean; boarding: boolean }): ("gender" | "boarding")[] {
-  return [...(s.mixed ? (["gender"] as const) : []), ...(s.boarding ? (["boarding"] as const) : [])];
-}
-
 // Context's "around the school" radius, for the page's words (context.ts AROUND_MILES).
 export const AROUND_MILES_UI = 5;
 
