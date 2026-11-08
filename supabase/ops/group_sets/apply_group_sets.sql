@@ -332,5 +332,5 @@ $$;
 revoke execute on function public.save_set(uuid, jsonb, jsonb) from public, anon;
 grant execute on function public.save_set(uuid, jsonb, jsonb) to authenticated;
 
-insert into supabase_migrations.schema_migrations (version, name) values ('20261123090000', 'v08_group_sets') on conflict (version) do nothing;
+insert into supabase_migrations.schema_migrations (version, name) values ('20261121100000', 'v08_group_sets') on conflict (version) do nothing;
 commit;

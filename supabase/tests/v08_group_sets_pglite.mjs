@@ -1,5 +1,5 @@
 // Run from the repo root: npm i --no-save @electric-sql/pglite@0.2 && node supabase/tests/v08_group_sets_pglite.mjs
-// VicData 0.8 group sets, M2 (storage): 20261123090000_v08_group_sets.sql over sets round 1 and groups
+// VicData 0.8 group sets, M2 (storage): 20261121100000_v08_group_sets.sql over sets round 1 and groups
 // round 1, in PGlite (WASM Postgres), on the same stub of the live schema as v08_groups_r1_pglite.mjs.
 // Proves R-GROUP-SETS-RLS: who reads and writes a head office's sets, personal sets for a group, the cap
 // of 8 groups, Share with the group (moves), Duplicate (a personal copy), the group's one default, and
@@ -44,10 +44,10 @@ const MIGRATIONS = ["20261103090000_v06_s1_roles_teams_platform.sql", "202611040
   "20260925232857_personal_comparator_cap_8.sql", "20261106090000_v07_admissions_r1.sql", "20261108090000_v07_admissions_r2b_school_admin_override.sql",
   "20261110090000_v08_groups_r1_accounts.sql", "20261121090000_v08_sets_r1.sql"];
 for (const f of MIGRATIONS) { await ex(readFileSync(repo + f, "utf8")); console.log("applied", f); }
-const M2 = readFileSync(repo + "20261123090000_v08_group_sets.sql", "utf8");
+const M2 = readFileSync(repo + "20261121100000_v08_group_sets.sql", "utf8");
 await ex(M2);
 await ex(M2);
-console.log("applied 20261123090000_v08_group_sets.sql (twice)");
+console.log("applied 20261121100000_v08_group_sets.sql (twice)");
 await ex(`grant all on all tables in schema public to authenticated, anon, service_role;`);
 // The app's grants as live: anon reads no set tables.
 await ex(`revoke all on public.sets, public.set_members, public.set_group_members from anon;`);

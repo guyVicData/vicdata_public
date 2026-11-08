@@ -1,4 +1,4 @@
--- ROLLBACK for 20261123090000_v08_group_sets (VicData 0.8 group sets, M2). PREPARED, NOT RUN.
+-- ROLLBACK for 20261121100000_v08_group_sets (VicData 0.8 group sets, M2). PREPARED, NOT RUN.
 --
 -- Undoes exactly what the migration did: the head offices' sets and personal sets for a group (DATA
 -- LOSS: every row with a group_account_id, and every set_group_members row), the new table, triggers
@@ -174,5 +174,5 @@ alter table public.sets add constraint sets_check3 check (not is_default or owne
 
 revoke execute on function public.save_set(uuid, jsonb, jsonb) from public, anon;
 grant execute on function public.save_set(uuid, jsonb, jsonb) to authenticated;
-delete from supabase_migrations.schema_migrations where version = '20261123090000';
+delete from supabase_migrations.schema_migrations where version = '20261121100000';
 commit;
