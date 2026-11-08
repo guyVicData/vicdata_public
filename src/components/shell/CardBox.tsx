@@ -458,7 +458,10 @@ export function CardBox({
                 {actions && (
                   <div className="mr-3 flex shrink-0 flex-col gap-1 border-r border-[var(--panel-border)] pr-3 print:hidden">{actions}</div>
                 )}
-                <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
+                {/* F-46: the figure scrolls in its own box, as the card's content box does -- a chart at its
+                    natural height (VerticalBars on its side over a whole school's subjects) otherwise ran
+                    over the caption and footer. lg only: below it the area grows and the modal scrolls. */}
+                <div className="flex min-w-0 flex-grow flex-col lg:min-h-0 lg:overflow-y-auto">{children({ fullscreen: true })}</div>
               </div>
               {focus ? <div className="hidden print:block">{captionLine}</div> : captionLine}
               {/* The source is print-only here, in every mode: since 0.8 SMT r4 it carries the
