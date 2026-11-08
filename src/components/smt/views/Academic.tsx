@@ -17,7 +17,7 @@ import { useMemo, type CSSProperties, type ReactNode } from "react";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
 import { Empty, EntryChip, Key, fillHeight } from "@/components/admissions/ui";
 import { scale, useWidth } from "@/components/admissions/views/charts";
-import { productAccent } from "@/components/shell/accent";
+import { FEATURED_ROW_BG, featuredRow, productAccent } from "@/components/shell/accent";
 import { periodLabel } from "@/catalogue/years";
 import { signedDelta } from "@/lib/signed-delta";
 import type { Theme } from "@/components/shell/TeacherChrome";
@@ -42,7 +42,6 @@ export function acVars(theme: Theme): CSSProperties {
     "--ac-below": dark ? "#f5b97a" : "#fb923c",
     "--ac-below2": dark ? "#f97316" : "#c2410c",
     "--ac-none": dark ? "#3f3f46" : "#d4d4d8",
-    "--ac-you-row": dark ? "#1d1730" : "#f1ecff",
     "--ac-zero": dark ? "#4a4a50" : "#a1a1aa",
   } as CSSProperties;
 }
@@ -223,7 +222,7 @@ export function RankChart({ a, fullscreen, room }: { a: Academic; fullscreen: bo
             const label = `${r.name}: ${fmtAc(r.value, b.unit)}${va && r.lo !== null ? ` (95% range ${fmtAc(r.lo, "va")} to ${fmtAc(r.hi, "va")})` : ""}${r.band ? `, ${r.band}` : ""}${r.entries !== null && b.unit === "share" ? `, ${r.entries} entries` : ""}`;
             return (
               <g key={r.urn} data-ac-row={r.you ? "you" : ""}>
-                {r.you && <rect x={0} y={y - 17} width={W} height={25} rx={5} style={{ fill: "var(--ac-you-row)" }} />}
+                {r.you && <rect x={0} y={y - 17} width={W} height={25} rx={5} style={{ fill: FEATURED_ROW_BG }} data-featured-row="" />}
                 <text x={8} y={y} fontSize={12} fontWeight={r.you ? 700 : 500} style={{ fill: r.you ? "var(--fg)" : "var(--chip-fg)" }}>
                   <title>{r.name}</title>
                   {clip(r.name, nameW)}
@@ -355,7 +354,7 @@ export function RankTable({ a }: { a: Academic }) {
               const rank = r.value === null ? "–" : String(b.rows.filter((x) => x.value !== null && x.value > r.value!).length + 1);
               void i;
               return (
-                <tr key={r.urn} className="border-b border-[var(--panel-border)] last:border-0" style={r.you ? { background: "var(--ac-you-row)" } : undefined} data-ac-row={r.you ? "you" : ""}>
+                <tr key={r.urn} className="border-b border-[var(--panel-border)] last:border-0" {...featuredRow(r.you)} data-ac-row={r.you ? "you" : ""}>
                   <Td>{rank}</Td>
                   <Td className={r.you ? "font-bold text-[var(--fg)]" : ""}>
                     {r.name}
