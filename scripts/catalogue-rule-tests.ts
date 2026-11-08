@@ -3093,15 +3093,30 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ column1: total, dfeAllSubjects: dfe, mix: mixTotal, groupLines: lines, gcseTotal: gTotal, gcseAreas: gAreas }) };
   },
   async vaSubjectMatch() {
+    // Round 2 (A1): the list is approved; while both the file and the database's crosswalk carry it, they agree.
     const { VA_SUBJECT_MATCHES, VA_SUBJECT_MATCHES_STATUS } = await import("../src/lib/smt/va-subject-matches");
+    const { vaMatcher, ks5LabelMap } = await import("../src/lib/smt/academic-data");
     const L = await lib();
     const facts = await L.ref.lookupReferenceData({ sourceId: "dfe_ks5_subject_value_added", entityIds: ["100053", "110110", "100183", "118952"] });
     const names = new Set(facts.map((f) => f.breakdown.split("::").slice(0, 2).join("::")).filter((k) => !k.endsWith("::All subjects")));
     const missing = Array.from(names).filter((k) => !VA_SUBJECT_MATCHES[k]);
     const noArea = Object.entries(VA_SUBJECT_MATCHES).filter(([, m]) => !m.area && !m.outside).map(([k]) => k);
-    const pass = missing.length === 0 && noArea.length === 0;
-    return { pass, detail: fmt({ status: VA_SUBJECT_MATCHES_STATUS, names: Object.keys(VA_SUBJECT_MATCHES).length, fourSchoolsNamesUnlisted: missing.join("; ") || "none", withoutArea: noArea.join("; ") || "none" }) };
+    const fam = new Map((await L.ref.lookupAcademicSubjectFamilyMap({ ksStage: "ks5" })).map((r) => [r.raw_subject, r.family_id]));
+    const m = await vaMatcher((x) => fam.get(x) ?? null);
+    const dbRows = (await ks5LabelMap()).filter((r) => r.qualification).length;
+    let disagree: string[] = [];
+    if (m.source === "database")
+      disagree = Object.entries(VA_SUBJECT_MATCHES)
+        .filter(([k, f]) => {
+          const [q, sub] = k.split("::");
+          const d = m.match(q, sub);
+          return d.outside !== f.outside || (!f.outside && (d.subject !== (f.results ?? d.subject) || d.familyId !== f.area));
+        })
+        .map(([k]) => k);
+    const pass = VA_SUBJECT_MATCHES_STATUS === "approved" && missing.length === 0 && noArea.length === 0 && disagree.length === 0;
+    return { pass, detail: fmt({ status: VA_SUBJECT_MATCHES_STATUS, names: Object.keys(VA_SUBJECT_MATCHES).length, fourSchoolsNamesUnlisted: missing.join("; ") || "none", withoutArea: noArea.join("; ") || "none", app_reads: m.source, database: m.source === "database" ? `${dbRows} qualification rows; file and database agree: ${disagree.length ? disagree.slice(0, 5).join("; ") : "yes"}` : "not carrying the value-added names yet (the ingest step, 20261108120000, pending): the file answers" }) };
   },
+
 
   // ------------------------------------------------------------ 0.8 SMT feedback round 1
   async scorecardRows() {

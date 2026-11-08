@@ -137,7 +137,7 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     rounding: ["None"],
   },
   "DV-SMT-A-AREAS": {
-    sources: ["The subject-by-qualification rollup (entries and points per subject and qualification)", "DfE KS5 value added by subject", "VicData's value-added subject matches (docs/v0.8/va_subject_matches_draft.md): DfE's value-added file names subjects differently from its results file", "The England size table (XS to XL, fifths of every school entering the subject in the qualification that year)"],
+    sources: ["The subject-by-qualification rollup (entries and points per subject and qualification)", "DfE KS5 value added by subject", "VicData's value-added subject matches (docs/v0.8/va_subject_matches_v1.md): DfE's value-added file names subjects differently from its results file", "The England size table (XS to XL, fifths of every school entering the subject in the qualification that year)"],
     geography: "The school; each subject against the set's schools teaching the same subject in the same qualification",
     years: "The latest year for subjects; three years of entries",
     leftOut: ["Subjects with fewer than 5 entries are listed, not ranked", "Qualifications with no points scale (VRQ): listed, not ranked", "GCSE value added: DfE has never published it by subject", "The EPQ sits outside the subject areas"],

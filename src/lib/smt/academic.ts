@@ -29,7 +29,7 @@ import { MIN_SUBJECT_ENTRIES_UI } from "./levels";
 import { figure, num, population, SMT_MEASURES, type Population } from "./population";
 import type { SmtSchool } from "./school";
 import { igcseExcluded, setNames, type BandPt, type Pt, type Rank, type SmtSet } from "./overview";
-import { englandQualVa, qualRows, subjectVa, vaMatch, type QualRow, type VaFact } from "./academic-data";
+import { englandQualVa, qualRows, subjectVa, vaMatcher, type QualRow, type VaFact } from "./academic-data";
 import { gcseDefaultSet, groupDefaultSet, offering, stateP8Set, type GroupSet } from "./academic-sets";
 import { APPLIED_KEY, APPLIED_LABEL, GROUP_LABEL, GROUP_ORDER, dfeBandOf, groupChips, groupOfQualification, p8Band, rangeBand, shortQualification, type AcademicMode, type AcademicOffer, type AcademicPhase, type AcademicState, type AppliedType, type DfeBand, type QualGroup, type RangeBand, type RealGroup } from "./qual-groups";
 import { VA_SUBJECT_MATCHES_STATUS } from "./va-subject-matches";
@@ -262,7 +262,7 @@ const noticeNotes = (): Record<string, string> => ({
   tlevelNoVa: smtNote("acTlevelNoVa"),
   quarters: smtNote("acQuarters"),
   subjectsByQual: smtNote("acSubjectsByQual"),
-  vicdataMatch: smtNote("acVicdataMatch", { status: VA_SUBJECT_MATCHES_STATUS === "draft" ? "VicData's draft list, being checked" : "VicData's list" }),
+  vicdataMatch: smtNote("acVicdataMatch", { status: VA_SUBJECT_MATCHES_STATUS === "draft" ? "VicData's draft list, being checked" : "VicData's list, approved 8 Nov 2026" }),
   outsideAreas: smtNote("acOutsideAreas"),
   size: smtNote("acSize"),
   sizePending: smtNote("acSizePending"),
@@ -496,13 +496,15 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     const g = groupOfQualification(r.qualification);
     return st.group === "all" ? true : g === mainGroup;
   });
+  const vm = mode === "va" ? await vaMatcher(famOf) : null;
+  const vaMatch = (q: string, subj: string) => vm!.match(q, subj);
   type Item = { subject: string; qualification: string; familyId: string | null; vicdata: boolean; outside: boolean; entries: number; vaRow: VaFact | null; row: QualRow | null };
   const items: Item[] = [];
   if (mode === "va") {
     for (const r of va.filter((x) => x.urn === urn && x.period === L && x.subject !== "All subjects")) {
       const g = groupOfQualification(r.qualification);
       if (st.group !== "all" && g !== mainGroup) continue;
-      const m = vaMatch(r.qualification, r.subject, famOf);
+      const m = vaMatch(r.qualification, r.subject);
       items.push({ subject: g === "epq" ? "Extended Project" : m.subject, qualification: r.qualification, familyId: m.familyId, vicdata: m.vicdata, outside: m.outside || g === "epq", entries: r.entries ?? 0, vaRow: r, row: null });
     }
   } else {
@@ -520,7 +522,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     if (mode === "va") {
       const r = it.vaRow!;
       const peerVals = peers
-        .map((u) => va.find((x) => x.urn === u && x.period === L && x.qualification === it.qualification && vaMatch(x.qualification, x.subject, famOf).subject === it.subject)?.value ?? null)
+        .map((u) => va.find((x) => x.urn === u && x.period === L && x.qualification === it.qualification && vaMatch(x.qualification, x.subject).subject === it.subject)?.value ?? null)
         .filter((v): v is number => v !== null);
       const all = new Map<string, number | null>([[urn, r.value], ...peerVals.map((v, i) => [`p${i}`, v] as [string, number])]);
       return { ...base, counts, value: r.value, lo: r.lo, hi: r.hi, band: rangeBand(r.lo, r.hi), setValues: peerVals, place: placeIn(all, urn), only: peerVals.length === 0, ranked: true, why: null };
