@@ -91,7 +91,8 @@ export function smtHasContent(dv: string, c: Ctx): boolean {
     case "DV-SMT-A-MOVES":
       return m === "entries" && a.trends.movesKind === "subjects" && a.trends.moves.length > 0;
     case "DV-SMT-A-SETMOVES":
-      return m !== "entries" && a.trends.movesKind === "schools" && a.trends.moves.length > 0;
+      // Kept with no moves (it says so): Value added's third panel never falls back to the entries mix.
+      return m !== "entries" && a.trends.movesKind === "schools";
     case "DV-SMT-A-TREND-LINE":
       return drawsLine(a.trends.school) || a.trends.band.filter((x) => x.p25 !== null).length >= 2 || !!a.board.empty;
     case "DV-SMT-A-TREND-TABLE":
