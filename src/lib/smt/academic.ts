@@ -559,8 +559,11 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
       if (at) at.entries += r.entries;
       else arr.push({ grade: r.grade, entries: r.entries });
     }
-    for (const [q, gs] of byQual) {
+    for (const [q, all] of byQual) {
       const scale = TOP.find((t) => t.test.test(q));
+      // Graded entries in the scale's bands only (an absent or pending grade isn't graded).
+      const inBands = scale?.bands.length ? new Set(scale.bands.flatMap((x) => x.grades)) : null;
+      const gs = inBands ? all.filter((x) => inBands.has(x.grade)) : all;
       const total = sum(gs.map((x) => x.entries));
       if (!total) continue;
       const top = scale ? sum(gs.filter((x) => scale.grades.includes(x.grade)).map((x) => x.entries)) : 0;
@@ -889,9 +892,11 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
     blocks.sort((a, b) => sum(b.quals.flatMap((q) => q.subjects.map((s) => s.entries))) - sum(a.quals.flatMap((q) => q.subjects.map((s) => s.entries))));
     if (mode === "results") {
       const mine = await cachedReference(`smt:subjects:${urn}:ks4`, () => fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" }));
-      const g = (mine.byUrn.get(urn)?.gradeDistribution ?? []).filter((r) => r.period === subjYear && /^GCSE \(9-1\) Full Course$/.test(r.qualificationType) && (!st.area || familyOf.get(r.subject) === st.area));
-      const total = sum(g.map((x) => x.entries));
+      let g = (mine.byUrn.get(urn)?.gradeDistribution ?? []).filter((r) => r.period === subjYear && /^GCSE \(9-1\) Full Course$/.test(r.qualificationType) && (!st.area || familyOf.get(r.subject) === st.area));
       const scale = TOP.find((t) => t.test.test("GCSE (9-1) Full Course"))!;
+      const graded = new Set(scale.bands.flatMap((x) => x.grades));
+      g = g.filter((x) => graded.has(x.grade));
+      const total = sum(g.map((x) => x.entries));
       if (total) grades = [{ qualification: "GCSE (9-1) Full Course", short: "GCSE", entries: total, top: { label: scale.label, pct: (sum(g.filter((x) => scale.grades.includes(x.grade)).map((x) => x.entries)) / total) * 100 }, bands: scale.bands.map((b) => { const e = sum(g.filter((x) => b.grades.includes(x.grade)).map((x) => x.entries)); return { label: b.label, entries: e, pct: (e / total) * 100 }; }) }];
     }
   }
