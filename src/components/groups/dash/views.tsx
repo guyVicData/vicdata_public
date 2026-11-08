@@ -14,7 +14,7 @@ import { FEATURED_ROW_BG, featuredRow, productAccent } from "@/components/shell/
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
 import { periodLabel, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexedLabel } from "@/lib/index-base";
-import { FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, ordinal, PHASE_NOUN, type GroupOverview, type GroupSchools, type SchoolRow } from "@/lib/groups/dash";
+import { FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, ordinal, PHASE_NOUN, POOL_MIN_NOTE, tooFewWords, type GroupOverview, type GroupSchools, type SchoolRow } from "@/lib/groups/dash";
 import { arrowOf, dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
 import { ARROW, arrowed, flatBand } from "@/lib/signed-delta";
 
@@ -59,7 +59,12 @@ export function GroupNow({ o, compact }: { o: GroupOverview; compact: boolean })
     <div className="flex flex-col gap-2.5">
       {!compact && <div className="text-[13px] font-bold text-[var(--fg)]">The group now</div>}
       <div className="grid grid-cols-2 gap-2">
-        <Stat label="Schools" value={<span className="text-[var(--accent)]">{n.schools}</span>} sub={phaseLine || " "} accent />
+        <Stat
+          label="Schools"
+          value={<span className="text-[var(--accent)]">{n.notCounted ? <>{n.schools} <span className="text-[13px] font-semibold text-[var(--muted2)]">of {n.notCounted.total}</span></> : n.schools}</span>}
+          sub={n.notCounted ? `${n.schools} of ${n.notCounted.total} schools; ${n.notCounted.words}` : phaseLine || " "}
+          accent
+        />
         <Stat label="Combined roll" value={fmt(n.roll, "pupils")} sub={n.sinceFirst !== null ? `${pctText(n.sinceFirst)} since ${periodLabel(o.years.first)}` : " "} />
         <Stat label="Schools growing" value={<>{g.growing} <span className="text-[13px] font-semibold text-[var(--muted2)]">of {g.of}</span></>} sub={`since ${periodLabel(g.from)}, like for like`} />
         <Stat label="Areas" value={`${n.las.length} LA${n.las.length === 1 ? "" : "s"}`} sub={n.regions.filter((r) => r.code !== "outside_england").map((r) => r.name).join(", ") || " "} />
@@ -154,9 +159,15 @@ export function AgainstOthers({ o, average, candidates = [], onNamed, highlightN
                   const c = r.cells[m];
                   const v = average ? c?.average : c?.value;
                   return (
-                    <Td key={m} className="whitespace-nowrap" title={c && c.n !== null ? `${c.n.toLocaleString("en-GB")} schools with ${MEASURE_LABEL[m]}, ${yearOfCol(m)}` : "no figure"}>
-                      {fmt(v ?? null, unitOf(m), m === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}
-                      {c && c.n !== null && <span className="ml-1 text-[10px] font-normal text-[var(--muted2)]">({c.n.toLocaleString("en-GB")})</span>}
+                    <Td key={m} className="whitespace-nowrap" title={c?.tooFew ? POOL_MIN_NOTE : c && c.n !== null ? `${c.n.toLocaleString("en-GB")} schools with ${MEASURE_LABEL[m]}, ${yearOfCol(m)}` : "no figure"}>
+                      {c?.tooFew && c.n !== null ? (
+                        <i className="text-[11px] font-normal text-[var(--muted2)]">{tooFewWords(c.n)}</i>
+                      ) : (
+                        <>
+                          {fmt(v ?? null, unitOf(m), m === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}
+                          {c && c.n !== null && <span className="ml-1 text-[10px] font-normal text-[var(--muted2)]">({c.n.toLocaleString("en-GB")})</span>}
+                        </>
+                      )}
                     </Td>
                   );
                 })}

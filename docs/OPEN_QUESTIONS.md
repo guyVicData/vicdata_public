@@ -2842,3 +2842,26 @@ From `docs/v0.8/smt_value_added_plan_v1.md` §1. Decided in the build; **confirm
 - **"The set" is the middle (median) of the set's schools**, as Pupils' other set figures (Year 12 against Year 11): for girls' share, the set's mixed schools (GIAS "Mixed" with girls and boys in that census); for boarders' share, its schools with boarders in the census. Single-sex schools are left out and counted in the (i), never counted as 0. The set's lines keep only schools with a figure in every year shown (F-11's rule), so a school joining doesn't move them. **Decided (Guy, 8 Nov): accepted** (single-sex and non-boarding schools left out, not counted as 0).
 - **"Where it shifts"** is read as Year 7 (the newest intake) against Years 8 to 11, and the sixth form (Years 12 and 13) against Years 7 to 11, in percentage points, with the set's middle of the same shift. **Decided (Guy, 8 Nov): accepted.**
 - **Live step:** the published SMT Pupils config in the store wins over the code copy, so the two new rail views appear only once SMT Pupils is republished (as any new view).
+
+---
+
+## 2026-11-08 — City technology colleges count as state-funded (Guy, E2, group sets)
+
+GIAS types the three open city technology colleges as **Independent schools** (establishment type
+"City technology college"), but they are state-funded, and DfE counts them in state-funded
+mainstream (2025/26 KS4: 3 schools, 639 pupils, A8 53.6). Decision (Guy, 8 Nov): they count as
+**state-funded** wherever VicData splits state from independent. One override list, with the reason:
+
+| URN | School | Reason |
+|---|---|---|
+| 108420 | Emmanuel College | City technology college: state-funded; GIAS types it independent |
+| 101849 | BRIT School for Performing Arts and Technology | City technology college: state-funded; GIAS types it independent |
+| 123627 | Thomas Telford School | City technology college: state-funded; GIAS types it independent |
+
+The 12 closed CTCs all closed by 2008 and carry no figures in VicData's years.
+
+**Where it is applied:** the group aggregates (`~/dev/vicdata` `ingest/group_aggregates.py`,
+`STATE_FUNDED_OVERRIDES`): England state, non-group state and the sector of any group they join.
+**Not yet elsewhere:** Teacher's `sectorTag` (src/lib/typology.ts) and SMT/Admissions still read GIAS's
+type group. Using the same list there belongs to the 0.85 review's "England aligned across pages" item
+(E3), so this round changes nothing outside the Group pages.

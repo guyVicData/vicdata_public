@@ -152,7 +152,7 @@ export const RULES: Rule[] = [
   {
     id: "R-MIN-SCHOOLS",
     statement:
-      "An LA or region benchmark row is suppressed below 5 schools. England is exempt (minimum 1) for points and entries geography and the England anchor, but not for grade-grain geography, where every grade row needs 5 schools.",
+      "An LA or region benchmark row is suppressed below 5 schools. England is exempt (minimum 1) for points and entries geography and the England anchor, but not for grade-grain geography, where every grade row needs 5 schools. 0.8 group sets (D9): every group pool -- the size band, non-group, single-academy trusts, the group's areas, mix-matched -- withholds a figure resting on fewer than 5 schools, reading \"Too few schools (n)\"; England, a named group and the group itself are exempt.",
     why: "A figure from one or two schools identifies them and swings wildly; it is not a benchmark.",
     appliesTo: "Every LA / region / England figure",
     enforcedIn: [
@@ -161,6 +161,7 @@ export const RULES: Rule[] = [
       "src/app/api/teacher/subject-geography/route.ts:59 (national passes 1)",
       "src/app/api/teacher/dashboard/route.ts:66,74 (national passes 1)",
       "src/lib/vicdata-reference.ts:lookupAcademicSubjectGradeGeography (633, passes null)",
+      "src/lib/groups/dash.ts:setsFor / withheld (POOL_MIN_SCHOOLS; group pools)",
     ],
     testCase: {
       urn: "100053",

@@ -39,135 +39,135 @@
     "share": {
      "las": [
       {
-       "pct": 11.78,
+       "pct": 11.97,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 64634,
+       "la_pupils": 63638,
        "group_pupils": 7616
       },
       {
-       "pct": 2.63,
+       "pct": 2.66,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 224591,
+       "la_pupils": 222115,
        "group_pupils": 5912
       },
       {
-       "pct": 8.78,
+       "pct": 8.84,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 56683,
+       "la_pupils": 56272,
        "group_pupils": 4975
       },
       {
-       "pct": 15.23,
+       "pct": 15.47,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 29824,
+       "la_pupils": 29373,
        "group_pupils": 4543
       },
       {
-       "pct": 7.74,
+       "pct": 7.89,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 48881,
+       "la_pupils": 47954,
        "group_pupils": 3783
       },
       {
-       "pct": 9.15,
+       "pct": 9.17,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 32599,
+       "la_pupils": 32537,
        "group_pupils": 2984
       },
       {
-       "pct": 5.59,
+       "pct": 5.65,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 44540,
+       "la_pupils": 44084,
        "group_pupils": 2489
       },
       {
-       "pct": 3.77,
+       "pct": 3.85,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 65364,
+       "la_pupils": 64019,
        "group_pupils": 2462
       },
       {
-       "pct": 4.52,
+       "pct": 4.58,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 42112,
+       "la_pupils": 41531,
        "group_pupils": 1904
       },
       {
-       "pct": 5.97,
+       "pct": 6.05,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 31558,
+       "la_pupils": 31158,
        "group_pupils": 1884
       },
       {
-       "pct": 3.66,
+       "pct": 3.75,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50764,
+       "la_pupils": 49582,
        "group_pupils": 1859
       },
       {
-       "pct": 2.38,
+       "pct": 2.45,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 48198,
+       "la_pupils": 46820,
        "group_pupils": 1146
       },
       {
-       "pct": 2.29,
+       "pct": 2.32,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 43749,
+       "la_pupils": 43211,
        "group_pupils": 1003
       },
       {
-       "pct": 2.3,
+       "pct": 2.32,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 40686,
+       "la_pupils": 40456,
        "group_pupils": 937
       },
       {
-       "pct": 2,
+       "pct": 2.04,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 40969,
+       "la_pupils": 40246,
        "group_pupils": 820
       },
       {
        "pct": 0,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 39387,
+       "la_pupils": 38691,
        "group_pupils": 0
       }
      ],
-     "pct": 1.82,
+     "pct": 1.84,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.05,
+       "pct": 1.07,
        "region_code": "E12000006",
        "group_pupils": 10455,
-       "region_pupils": 993799
+       "region_pupils": 981289
       },
       {
-       "pct": 2.35,
+       "pct": 2.38,
        "region_code": "E12000007",
        "group_pupils": 33862,
-       "region_pupils": 1441727
+       "region_pupils": 1423009
       }
      ],
-     "area_pupils": 2435526,
+     "area_pupils": 2404298,
      "group_pupils": 44317
     },
     "regions": {
@@ -224,7 +224,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -263,7 +263,7 @@
       }
      ]
     },
-    "n_schools": 59,
+    "n_schools": 58,
     "confidence": {
      "confirmed": 59
     },
@@ -322,9 +322,9 @@
      "ks5": []
     },
     "schools_by_phase": {
-     "post16": 34,
+     "post16": 33,
      "primary": 23,
-     "secondary": 37
+     "secondary": 36
     }
    }
   },
@@ -343,10 +343,10 @@
     "share": {
      "las": [
       {
-       "pct": 24.82,
+       "pct": 25.01,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 5275,
+       "la_pupils": 5233,
        "group_pupils": 1309
       },
       {
@@ -357,87 +357,87 @@
        "group_pupils": 910
       },
       {
-       "pct": 4.78,
+       "pct": 4.88,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 12165,
+       "la_pupils": 11901,
        "group_pupils": 581
       },
       {
-       "pct": 69.11,
+       "pct": 74.29,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 790,
+       "la_pupils": 735,
        "group_pupils": 546
       },
       {
-       "pct": 7.27,
+       "pct": 7.33,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 5957,
+       "la_pupils": 5910,
        "group_pupils": 433
       },
       {
-       "pct": 9.44,
+       "pct": 9.54,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 3463,
+       "la_pupils": 3428,
        "group_pupils": 327
       },
       {
-       "pct": 8.26,
+       "pct": 8.3,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 3523,
+       "la_pupils": 3504,
        "group_pupils": 291
       },
       {
-       "pct": 8.52,
+       "pct": 8.62,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 3405,
+       "la_pupils": 3366,
        "group_pupils": 290
       },
       {
-       "pct": 11.76,
+       "pct": 11.77,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 1955,
+       "la_pupils": 1954,
        "group_pupils": 230
       },
       {
-       "pct": 5.45,
+       "pct": 5.58,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 3797,
+       "la_pupils": 3713,
        "group_pupils": 207
       },
       {
-       "pct": 5.11,
+       "pct": 5.19,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 3838,
+       "la_pupils": 3775,
        "group_pupils": 196
       },
       {
-       "pct": 6.78,
+       "pct": 7.01,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 2816,
+       "la_pupils": 2725,
        "group_pupils": 191
       },
       {
-       "pct": 2.33,
+       "pct": 2.34,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 2788,
+       "la_pupils": 2777,
        "group_pupils": 65
       },
       {
        "pct": 0,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 1624,
+       "la_pupils": 1594,
        "group_pupils": 0
       },
       {
@@ -448,23 +448,23 @@
        "group_pupils": 0
       }
      ],
-     "pct": 3.25,
+     "pct": 3.28,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.79,
+       "pct": 1.81,
        "region_code": "E12000006",
        "group_pupils": 1127,
-       "region_pupils": 62997
+       "region_pupils": 62331
       },
       {
-       "pct": 4.09,
+       "pct": 4.13,
        "region_code": "E12000007",
        "group_pupils": 4449,
-       "region_pupils": 108766
+       "region_pupils": 107670
       }
      ],
-     "area_pupils": 171763,
+     "area_pupils": 170001,
      "group_pupils": 5576
     },
     "results": {
@@ -488,7 +488,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -517,7 +517,7 @@
       }
      ]
     },
-    "n_schools": 34,
+    "n_schools": 33,
     "n_with_roll": 29,
     "value_added": {
      "ks5_va_alevel": {
@@ -548,59 +548,59 @@
     "share": {
      "las": [
       {
-       "pct": 6.46,
+       "pct": 6.47,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 25370,
+       "la_pupils": 25335,
        "group_pupils": 1639
       },
       {
-       "pct": 5.18,
+       "pct": 5.19,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 29562,
+       "la_pupils": 29472,
        "group_pupils": 1531
       },
       {
-       "pct": 7.37,
+       "pct": 7.42,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 14837,
+       "la_pupils": 14721,
        "group_pupils": 1093
       },
       {
-       "pct": 4.24,
+       "pct": 4.25,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 19165,
+       "la_pupils": 19146,
        "group_pupils": 813
       },
       {
-       "pct": 2.7,
+       "pct": 2.74,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 23639,
+       "la_pupils": 23323,
        "group_pupils": 638
       },
       {
        "pct": 1.84,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 29414,
+       "la_pupils": 29381,
        "group_pupils": 542
       },
       {
        "pct": 2.51,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 21042,
+       "la_pupils": 21041,
        "group_pupils": 528
       },
       {
-       "pct": 2.38,
+       "pct": 2.4,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 15979,
+       "la_pupils": 15869,
        "group_pupils": 381
       },
       {
@@ -611,10 +611,10 @@
        "group_pupils": 374
       },
       {
-       "pct": 1.82,
+       "pct": 1.84,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 19918,
+       "la_pupils": 19698,
        "group_pupils": 363
       }
      ],
@@ -625,16 +625,16 @@
        "pct": 0.24,
        "region_code": "E12000006",
        "group_pupils": 1093,
-       "region_pupils": 459238
+       "region_pupils": 456829
       },
       {
        "pct": 1.04,
        "region_code": "E12000007",
        "group_pupils": 6809,
-       "region_pupils": 657694
+       "region_pupils": 655320
       }
      ],
-     "area_pupils": 1116932,
+     "area_pupils": 1112149,
      "group_pupils": 7902
     },
     "results": {
@@ -680,135 +680,135 @@
     "share": {
      "las": [
       {
-       "pct": 6.41,
+       "pct": 6.5,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 83216,
+       "la_pupils": 81981,
        "group_pupils": 5330
       },
       {
-       "pct": 19.88,
+       "pct": 20.17,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 22371,
+       "la_pupils": 22048,
        "group_pupils": 4447
       },
       {
-       "pct": 15.81,
+       "pct": 16,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 17813,
+       "la_pupils": 17604,
        "group_pupils": 2817
       },
       {
-       "pct": 24.8,
+       "pct": 25.46,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 10409,
+       "la_pupils": 10138,
        "group_pupils": 2581
       },
       {
-       "pct": 12.53,
+       "pct": 12.74,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 20102,
+       "la_pupils": 19773,
        "group_pupils": 2519
       },
       {
-       "pct": 22.7,
+       "pct": 22.84,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 9828,
+       "la_pupils": 9767,
        "group_pupils": 2231
       },
       {
-       "pct": 10.92,
+       "pct": 11.05,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 16499,
+       "la_pupils": 16305,
        "group_pupils": 1802
       },
       {
-       "pct": 6.26,
+       "pct": 6.31,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 22975,
+       "la_pupils": 22782,
        "group_pupils": 1438
       },
       {
-       "pct": 7.45,
+       "pct": 7.52,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 13029,
+       "la_pupils": 12920,
        "group_pupils": 971
       },
       {
-       "pct": 6.24,
+       "pct": 6.37,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 15298,
+       "la_pupils": 14981,
        "group_pupils": 954
       },
       {
-       "pct": 6.34,
+       "pct": 6.4,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 14743,
+       "la_pupils": 14619,
        "group_pupils": 935
       },
       {
-       "pct": 5.42,
+       "pct": 5.52,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17118,
+       "la_pupils": 16808,
        "group_pupils": 927
       },
       {
-       "pct": 6.33,
+       "pct": 6.42,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 12679,
+       "la_pupils": 12497,
        "group_pupils": 802
       },
       {
-       "pct": 5.39,
+       "pct": 5.44,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 14463,
+       "la_pupils": 14329,
        "group_pupils": 780
       },
       {
-       "pct": 2.67,
+       "pct": 2.73,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 16455,
+       "la_pupils": 16087,
        "group_pupils": 439
       },
       {
        "pct": 0,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 12022,
+       "la_pupils": 11966,
        "group_pupils": 0
       }
      ],
-     "pct": 3.39,
+     "pct": 3.43,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.17,
+       "pct": 2.2,
        "region_code": "E12000006",
        "group_pupils": 7911,
-       "region_pupils": 364197
+       "region_pupils": 359651
       },
       {
-       "pct": 4.3,
+       "pct": 4.35,
        "region_code": "E12000007",
        "group_pupils": 21062,
-       "region_pupils": 489772
+       "region_pupils": 484046
       }
      ],
-     "area_pupils": 853969,
+     "area_pupils": 843697,
      "group_pupils": 28973
     },
     "results": {
@@ -839,7 +839,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -868,7 +868,7 @@
       }
      ]
     },
-    "n_schools": 37,
+    "n_schools": 36,
     "n_with_roll": 32,
     "value_added": {
      "ks4_p8": {
@@ -923,135 +923,135 @@
     "share": {
      "las": [
       {
-       "pct": 11.98,
+       "pct": 12.14,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 63813,
+       "la_pupils": 62954,
        "group_pupils": 7642
       },
       {
-       "pct": 2.62,
+       "pct": 2.65,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 226646,
+       "la_pupils": 224092,
        "group_pupils": 5945
       },
       {
-       "pct": 16.55,
+       "pct": 16.8,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 30325,
+       "la_pupils": 29875,
        "group_pupils": 5019
       },
       {
-       "pct": 8.6,
+       "pct": 8.66,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 57197,
+       "la_pupils": 56769,
        "group_pupils": 4919
       },
       {
-       "pct": 7.98,
+       "pct": 8.12,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 48682,
+       "la_pupils": 47820,
        "group_pupils": 3883
       },
       {
-       "pct": 10.01,
+       "pct": 10.03,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 32104,
+       "la_pupils": 32057,
        "group_pupils": 3214
       },
       {
-       "pct": 4,
+       "pct": 4.08,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 65107,
+       "la_pupils": 63722,
        "group_pupils": 2603
       },
       {
-       "pct": 5.77,
+       "pct": 5.84,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 44515,
+       "la_pupils": 43999,
        "group_pupils": 2570
       },
       {
-       "pct": 5,
+       "pct": 5.07,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 41614,
+       "la_pupils": 41033,
        "group_pupils": 2082
       },
       {
-       "pct": 6.26,
+       "pct": 6.34,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 31012,
+       "la_pupils": 30648,
        "group_pupils": 1942
       },
       {
-       "pct": 3.85,
+       "pct": 3.94,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50217,
+       "la_pupils": 49045,
        "group_pupils": 1932
       },
       {
-       "pct": 2.47,
+       "pct": 2.54,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 48037,
+       "la_pupils": 46727,
        "group_pupils": 1185
       },
       {
-       "pct": 2.47,
+       "pct": 2.5,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 43340,
+       "la_pupils": 42820,
        "group_pupils": 1071
       },
       {
-       "pct": 2.48,
+       "pct": 2.52,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 41499,
+       "la_pupils": 40778,
        "group_pupils": 1029
       },
       {
-       "pct": 2.23,
+       "pct": 2.25,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 41042,
+       "la_pupils": 40808,
        "group_pupils": 917
       },
       {
        "pct": 0.5,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 38896,
+       "la_pupils": 38231,
        "group_pupils": 193
       }
      ],
-     "pct": 1.89,
+     "pct": 1.92,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.1,
+       "pct": 1.11,
        "region_code": "E12000006",
        "group_pupils": 10964,
-       "region_pupils": 999747
+       "region_pupils": 987180
       },
       {
-       "pct": 2.45,
+       "pct": 2.48,
        "region_code": "E12000007",
        "group_pupils": 35182,
-       "region_pupils": 1437416
+       "region_pupils": 1419783
       }
      ],
-     "area_pupils": 2437163,
+     "area_pupils": 2406963,
      "group_pupils": 46146
     },
     "change": {
@@ -1137,7 +1137,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -1166,7 +1166,7 @@
       }
      ]
     },
-    "n_schools": 59,
+    "n_schools": 58,
     "confidence": {
      "confirmed": 59
     },
@@ -1225,9 +1225,9 @@
      "ks5": []
     },
     "schools_by_phase": {
-     "post16": 32,
+     "post16": 31,
      "primary": 23,
-     "secondary": 36
+     "secondary": 35
     }
    }
   },
@@ -1252,10 +1252,10 @@
     "share": {
      "las": [
       {
-       "pct": 24.99,
+       "pct": 25.17,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 5451,
+       "la_pupils": 5411,
        "group_pupils": 1362
       },
       {
@@ -1266,52 +1266,52 @@
        "group_pupils": 955
       },
       {
-       "pct": 71.34,
+       "pct": 75.83,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 928,
+       "la_pupils": 873,
        "group_pupils": 662
       },
       {
-       "pct": 4.56,
+       "pct": 4.67,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 13238,
+       "la_pupils": 12923,
        "group_pupils": 603
       },
       {
-       "pct": 6.36,
+       "pct": 6.41,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 6175,
+       "la_pupils": 6129,
        "group_pupils": 393
       },
       {
-       "pct": 10.51,
+       "pct": 10.62,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 3719,
+       "la_pupils": 3682,
        "group_pupils": 391
       },
       {
-       "pct": 8.25,
+       "pct": 8.34,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 3719,
+       "la_pupils": 3683,
        "group_pupils": 307
       },
       {
-       "pct": 7.3,
+       "pct": 7.32,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 3754,
+       "la_pupils": 3741,
        "group_pupils": 274
       },
       {
-       "pct": 6.13,
+       "pct": 6.28,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 4048,
+       "la_pupils": 3950,
        "group_pupils": 248
       },
       {
@@ -1322,31 +1322,31 @@
        "group_pupils": 235
       },
       {
-       "pct": 8.22,
+       "pct": 8.49,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 2833,
+       "la_pupils": 2745,
        "group_pupils": 233
       },
       {
-       "pct": 5.63,
+       "pct": 5.72,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 4034,
+       "la_pupils": 3972,
        "group_pupils": 227
       },
       {
-       "pct": 3.44,
+       "pct": 3.46,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 3027,
+       "la_pupils": 3010,
        "group_pupils": 104
       },
       {
        "pct": 0,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 1734,
+       "la_pupils": 1692,
        "group_pupils": 0
       },
       {
@@ -1357,23 +1357,23 @@
        "group_pupils": 0
       }
      ],
-     "pct": 3.29,
+     "pct": 3.33,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.9,
+       "pct": 1.92,
        "region_code": "E12000006",
        "group_pupils": 1265,
-       "region_pupils": 66627
+       "region_pupils": 65847
       },
       {
-       "pct": 4.1,
+       "pct": 4.14,
        "region_code": "E12000007",
        "group_pupils": 4729,
-       "region_pupils": 115440
+       "region_pupils": 114278
       }
      ],
-     "area_pupils": 182067,
+     "area_pupils": 180125,
      "group_pupils": 5994
     },
     "change": {
@@ -1426,7 +1426,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -1450,7 +1450,7 @@
       }
      ]
     },
-    "n_schools": 32,
+    "n_schools": 31,
     "n_with_roll": 28,
     "value_added": {
      "ks5_va_alevel": {
@@ -1487,59 +1487,59 @@
     "share": {
      "las": [
       {
-       "pct": 6.75,
+       "pct": 6.77,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 25349,
+       "la_pupils": 25300,
        "group_pupils": 1712
       },
       {
-       "pct": 5.11,
+       "pct": 5.12,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 28998,
+       "la_pupils": 28915,
        "group_pupils": 1481
       },
       {
-       "pct": 8.36,
+       "pct": 8.43,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 14852,
+       "la_pupils": 14741,
        "group_pupils": 1242
       },
       {
-       "pct": 4.66,
+       "pct": 4.67,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 18530,
+       "la_pupils": 18501,
        "group_pupils": 864
       },
       {
-       "pct": 2.75,
+       "pct": 2.79,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 23007,
+       "la_pupils": 22675,
        "group_pupils": 633
       },
       {
        "pct": 2.86,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 20504,
+       "la_pupils": 20476,
        "group_pupils": 586
       },
       {
        "pct": 1.85,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 28979,
+       "la_pupils": 28935,
        "group_pupils": 536
       },
       {
-       "pct": 2.38,
+       "pct": 2.4,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 15977,
+       "la_pupils": 15883,
        "group_pupils": 381
       },
       {
@@ -1550,10 +1550,10 @@
        "group_pupils": 376
       },
       {
-       "pct": 1.65,
+       "pct": 1.67,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 19766,
+       "la_pupils": 19520,
        "group_pupils": 326
       }
      ],
@@ -1564,16 +1564,16 @@
        "pct": 0.27,
        "region_code": "E12000006",
        "group_pupils": 1242,
-       "region_pupils": 457165
+       "region_pupils": 454612
       },
       {
        "pct": 1.07,
        "region_code": "E12000007",
        "group_pupils": 6895,
-       "region_pupils": 647110
+       "region_pupils": 644734
       }
      ],
-     "area_pupils": 1104275,
+     "area_pupils": 1099346,
      "group_pupils": 8137
     },
     "change": {
@@ -1649,135 +1649,135 @@
     "share": {
      "las": [
       {
-       "pct": 6.32,
+       "pct": 6.41,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 84554,
+       "la_pupils": 83287,
        "group_pupils": 5342
       },
       {
-       "pct": 19.78,
+       "pct": 20.05,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 22514,
+       "la_pupils": 22215,
        "group_pupils": 4454
       },
       {
-       "pct": 15.73,
+       "pct": 15.92,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 18299,
+       "la_pupils": 18087,
        "group_pupils": 2879
       },
       {
-       "pct": 25.93,
+       "pct": 26.61,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 10743,
+       "la_pupils": 10468,
        "group_pupils": 2786
       },
       {
-       "pct": 24.8,
+       "pct": 24.92,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 9970,
+       "la_pupils": 9923,
        "group_pupils": 2473
       },
       {
-       "pct": 12.04,
+       "pct": 12.24,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 20467,
+       "la_pupils": 20134,
        "group_pupils": 2464
       },
       {
-       "pct": 11.64,
+       "pct": 11.8,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 16568,
+       "la_pupils": 16337,
        "group_pupils": 1928
       },
       {
-       "pct": 6.5,
+       "pct": 6.57,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 23379,
+       "la_pupils": 23125,
        "group_pupils": 1519
       },
       {
-       "pct": 7.49,
+       "pct": 7.55,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 13174,
+       "la_pupils": 13077,
        "group_pupils": 987
       },
       {
-       "pct": 6.04,
+       "pct": 6.16,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 15774,
+       "la_pupils": 15460,
        "group_pupils": 952
       },
       {
-       "pct": 5.36,
+       "pct": 5.45,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17174,
+       "la_pupils": 16866,
        "group_pupils": 920
       },
       {
-       "pct": 6.13,
+       "pct": 6.18,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 14938,
+       "la_pupils": 14817,
        "group_pupils": 915
       },
       {
-       "pct": 6.1,
+       "pct": 6.14,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 14679,
+       "la_pupils": 14569,
        "group_pupils": 895
       },
       {
-       "pct": 6.53,
+       "pct": 6.62,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 12902,
+       "la_pupils": 12722,
        "group_pupils": 842
       },
       {
-       "pct": 3.83,
+       "pct": 3.91,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 16936,
+       "la_pupils": 16573,
        "group_pupils": 648
       },
       {
-       "pct": 1.58,
+       "pct": 1.59,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 12222,
+       "la_pupils": 12150,
        "group_pupils": 193
       }
      ],
-     "pct": 3.48,
+     "pct": 3.52,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.19,
+       "pct": 2.22,
        "region_code": "E12000006",
        "group_pupils": 8128,
-       "region_pupils": 371230
+       "region_pupils": 366420
       },
       {
-       "pct": 4.43,
+       "pct": 4.48,
        "region_code": "E12000007",
        "group_pupils": 22069,
-       "region_pupils": 497683
+       "region_pupils": 492174
       }
      ],
-     "area_pupils": 868913,
+     "area_pupils": 858594,
      "group_pupils": 30197
     },
     "change": {
@@ -1837,7 +1837,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "149431",
@@ -1856,7 +1856,7 @@
       }
      ]
     },
-    "n_schools": 36,
+    "n_schools": 35,
     "n_with_roll": 33,
     "value_added": {
      "ks4_p8": {
@@ -1941,135 +1941,135 @@
     "share": {
      "las": [
       {
-       "pct": 11.68,
+       "pct": 11.85,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 64104,
+       "la_pupils": 63208,
        "group_pupils": 7489
       },
       {
-       "pct": 2.61,
+       "pct": 2.64,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 229163,
+       "la_pupils": 226570,
        "group_pupils": 5983
       },
       {
-       "pct": 17.34,
+       "pct": 17.62,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 30952,
+       "la_pupils": 30455,
        "group_pupils": 5367
       },
       {
-       "pct": 8.43,
+       "pct": 8.49,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 57696,
+       "la_pupils": 57231,
        "group_pupils": 4861
       },
       {
-       "pct": 7.91,
+       "pct": 8.06,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 48520,
+       "la_pupils": 47657,
        "group_pupils": 3840
       },
       {
-       "pct": 10.75,
+       "pct": 10.76,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 31812,
+       "la_pupils": 31763,
        "group_pupils": 3419
       },
       {
-       "pct": 4.09,
+       "pct": 4.17,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 65391,
+       "la_pupils": 64009,
        "group_pupils": 2672
       },
       {
-       "pct": 5.95,
+       "pct": 6.03,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 44485,
+       "la_pupils": 43892,
        "group_pupils": 2648
       },
       {
-       "pct": 5.21,
+       "pct": 5.29,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 41447,
+       "la_pupils": 40831,
        "group_pupils": 2159
       },
       {
-       "pct": 6.34,
+       "pct": 6.41,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 31158,
+       "la_pupils": 30790,
        "group_pupils": 1975
       },
       {
-       "pct": 3.81,
+       "pct": 3.9,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50288,
+       "la_pupils": 49116,
        "group_pupils": 1917
       },
       {
-       "pct": 2.96,
+       "pct": 3.02,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 42126,
+       "la_pupils": 41422,
        "group_pupils": 1249
       },
       {
-       "pct": 2.42,
+       "pct": 2.49,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 48147,
+       "la_pupils": 46838,
        "group_pupils": 1165
       },
       {
-       "pct": 2.61,
+       "pct": 2.64,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 42830,
+       "la_pupils": 42344,
        "group_pupils": 1117
       },
       {
-       "pct": 2.16,
+       "pct": 2.18,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 41858,
+       "la_pupils": 41605,
        "group_pupils": 906
       },
       {
-       "pct": 1.29,
+       "pct": 1.31,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 38509,
+       "la_pupils": 37930,
        "group_pupils": 498
       }
      ],
-     "pct": 1.93,
+     "pct": 1.95,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.12,
+       "pct": 1.14,
        "region_code": "E12000006",
        "group_pupils": 11350,
-       "region_pupils": 1011277
+       "region_pupils": 998463
       },
       {
-       "pct": 2.49,
+       "pct": 2.52,
        "region_code": "E12000007",
        "group_pupils": 35915,
-       "region_pupils": 1441615
+       "region_pupils": 1423361
       }
      ],
-     "area_pupils": 2452892,
+     "area_pupils": 2421824,
      "group_pupils": 47265
     },
     "change": {
@@ -2155,7 +2155,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -2182,7 +2182,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -2219,7 +2219,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -2256,7 +2256,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -2293,7 +2293,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -2330,7 +2330,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "140952",
@@ -2367,7 +2367,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "140952",
@@ -2401,7 +2401,7 @@
       }
      ]
     },
-    "n_schools": 59,
+    "n_schools": 58,
     "confidence": {
      "confirmed": 59
     },
@@ -2574,9 +2574,9 @@
      ]
     },
     "schools_by_phase": {
-     "post16": 32,
+     "post16": 31,
      "primary": 23,
-     "secondary": 36
+     "secondary": 35
     }
    }
   },
@@ -2611,66 +2611,66 @@
     "share": {
      "las": [
       {
-       "pct": 23.2,
+       "pct": 23.35,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 5669,
+       "la_pupils": 5632,
        "group_pupils": 1315
       },
       {
-       "pct": 20.72,
+       "pct": 20.73,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 4570,
+       "la_pupils": 4568,
        "group_pupils": 947
       },
       {
-       "pct": 74.23,
+       "pct": 78.92,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 1044,
+       "la_pupils": 982,
        "group_pupils": 775
       },
       {
-       "pct": 4.37,
+       "pct": 4.48,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 13488,
+       "la_pupils": 13161,
        "group_pupils": 590
       },
       {
-       "pct": 11.86,
+       "pct": 11.96,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 3878,
+       "la_pupils": 3846,
        "group_pupils": 460
       },
       {
-       "pct": 5.83,
+       "pct": 5.88,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 6223,
+       "la_pupils": 6175,
        "group_pupils": 363
       },
       {
-       "pct": 7.67,
+       "pct": 7.73,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 4029,
+       "la_pupils": 3995,
        "group_pupils": 309
       },
       {
-       "pct": 7.72,
+       "pct": 7.76,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 4004,
+       "la_pupils": 3984,
        "group_pupils": 309
       },
       {
-       "pct": 6.54,
+       "pct": 6.71,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 4187,
+       "la_pupils": 4085,
        "group_pupils": 274
       },
       {
@@ -2681,58 +2681,58 @@
        "group_pupils": 240
       },
       {
-       "pct": 5.91,
+       "pct": 5.98,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 4042,
+       "la_pupils": 3997,
        "group_pupils": 239
       },
       {
-       "pct": 7.54,
+       "pct": 7.76,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 2998,
+       "la_pupils": 2912,
        "group_pupils": 226
       },
       {
-       "pct": 4.1,
+       "pct": 4.12,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 3219,
+       "la_pupils": 3207,
        "group_pupils": 132
       },
       {
        "pct": 3.51,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 2967,
+       "la_pupils": 2964,
        "group_pupils": 104
       },
       {
        "pct": 0,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 1772,
+       "la_pupils": 1730,
        "group_pupils": 0
       }
      ],
-     "pct": 3.33,
+     "pct": 3.36,
      "sector": "all",
      "regions": [
       {
-       "pct": 2,
+       "pct": 2.02,
        "region_code": "E12000006",
        "group_pupils": 1365,
-       "region_pupils": 68409
+       "region_pupils": 67603
       },
       {
-       "pct": 4.08,
+       "pct": 4.12,
        "region_code": "E12000007",
        "group_pupils": 4918,
-       "region_pupils": 120532
+       "region_pupils": 119339
       }
      ],
-     "area_pupils": 188941,
+     "area_pupils": 186942,
      "group_pupils": 6283
     },
     "change": {
@@ -2785,7 +2785,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -2807,7 +2807,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "140952",
@@ -2844,7 +2844,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "140952",
@@ -2878,7 +2878,7 @@
       }
      ]
     },
-    "n_schools": 32,
+    "n_schools": 31,
     "n_with_roll": 29,
     "value_added": {
      "ks5_va_alevel": {
@@ -2961,7 +2961,7 @@
      "places": {
       "roll_change_1": {
        "of": 16,
-       "rank": 8,
+       "rank": 7,
        "tied": false
       }
      },
@@ -2972,59 +2972,59 @@
     "share": {
      "las": [
       {
-       "pct": 6.83,
+       "pct": 6.84,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 25386,
+       "la_pupils": 25343,
        "group_pupils": 1733
       },
       {
-       "pct": 4.97,
+       "pct": 4.99,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 28737,
+       "la_pupils": 28621,
        "group_pupils": 1429
       },
       {
-       "pct": 8.67,
+       "pct": 8.75,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 15095,
+       "la_pupils": 14947,
        "group_pupils": 1308
       },
       {
-       "pct": 4.78,
+       "pct": 4.79,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 18204,
+       "la_pupils": 18168,
        "group_pupils": 870
       },
       {
-       "pct": 2.82,
+       "pct": 2.86,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22732,
+       "la_pupils": 22421,
        "group_pupils": 641
       },
       {
        "pct": 2.74,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 19985,
+       "la_pupils": 19946,
        "group_pupils": 547
       },
       {
        "pct": 1.89,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 28447,
+       "la_pupils": 28404,
        "group_pupils": 538
       },
       {
-       "pct": 2.39,
+       "pct": 2.41,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 16229,
+       "la_pupils": 16128,
        "group_pupils": 388
       },
       {
@@ -3035,10 +3035,10 @@
        "group_pupils": 376
       },
       {
-       "pct": 1.59,
+       "pct": 1.62,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 19571,
+       "la_pupils": 19312,
        "group_pupils": 312
       }
      ],
@@ -3049,16 +3049,16 @@
        "pct": 0.29,
        "region_code": "E12000006",
        "group_pupils": 1308,
-       "region_pupils": 458532
+       "region_pupils": 455900
       },
       {
        "pct": 1.07,
        "region_code": "E12000007",
        "group_pupils": 6834,
-       "region_pupils": 639730
+       "region_pupils": 637089
       }
      ],
-     "area_pupils": 1098262,
+     "area_pupils": 1092989,
      "group_pupils": 8142
     },
     "change": {
@@ -3154,135 +3154,135 @@
     "share": {
      "las": [
       {
-       "pct": 6.25,
+       "pct": 6.35,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 86275,
+       "la_pupils": 84950,
        "group_pupils": 5393
       },
       {
-       "pct": 19.44,
+       "pct": 19.69,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 22730,
+       "la_pupils": 22442,
        "group_pupils": 4419
       },
       {
-       "pct": 26.67,
+       "pct": 27.34,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 11095,
+       "la_pupils": 10823,
        "group_pupils": 2959
       },
       {
-       "pct": 15.56,
+       "pct": 15.74,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 18506,
+       "la_pupils": 18296,
        "group_pupils": 2880
       },
       {
-       "pct": 26.29,
+       "pct": 26.41,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 10157,
+       "la_pupils": 10108,
        "group_pupils": 2670
       },
       {
-       "pct": 11.48,
+       "pct": 11.69,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 21056,
+       "la_pupils": 20682,
        "group_pupils": 2418
       },
       {
-       "pct": 12.06,
+       "pct": 12.28,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 16565,
+       "la_pupils": 16274,
        "group_pupils": 1998
       },
       {
-       "pct": 6.43,
+       "pct": 6.5,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 23735,
+       "la_pupils": 23479,
        "group_pupils": 1525
       },
       {
-       "pct": 7.64,
+       "pct": 7.69,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 13422,
+       "la_pupils": 13322,
        "group_pupils": 1025
       },
       {
-       "pct": 5.8,
+       "pct": 5.93,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 16158,
+       "la_pupils": 15814,
        "group_pupils": 937
       },
       {
-       "pct": 6.27,
+       "pct": 6.32,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 14905,
+       "la_pupils": 14798,
        "group_pupils": 935
       },
       {
-       "pct": 6,
+       "pct": 6.05,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 15095,
+       "la_pupils": 14968,
        "group_pupils": 906
       },
       {
-       "pct": 5.17,
+       "pct": 5.27,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17263,
+       "la_pupils": 16936,
        "group_pupils": 893
       },
       {
-       "pct": 6.63,
+       "pct": 6.73,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 13197,
+       "la_pupils": 13002,
        "group_pupils": 875
       },
       {
-       "pct": 4.96,
+       "pct": 5.06,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 17367,
+       "la_pupils": 17001,
        "group_pupils": 861
       },
       {
-       "pct": 3.18,
+       "pct": 3.2,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 12397,
+       "la_pupils": 12327,
        "group_pupils": 394
       }
      ],
-     "pct": 3.51,
+     "pct": 3.55,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.2,
+       "pct": 2.23,
        "region_code": "E12000006",
        "group_pupils": 8352,
-       "region_pupils": 379663
+       "region_pupils": 374673
       },
       {
-       "pct": 4.49,
+       "pct": 4.54,
        "region_code": "E12000007",
        "group_pupils": 22736,
-       "region_pupils": 506289
+       "region_pupils": 500408
       }
      ],
-     "area_pupils": 885952,
+     "area_pupils": 875081,
      "group_pupils": 31088
     },
     "change": {
@@ -3342,7 +3342,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "149431",
@@ -3364,7 +3364,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -3401,7 +3401,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -3438,7 +3438,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -3475,7 +3475,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -3509,7 +3509,7 @@
       }
      ]
     },
-    "n_schools": 36,
+    "n_schools": 35,
     "n_with_roll": 33,
     "value_added": {
      "ks4_p8": {
@@ -3625,7 +3625,7 @@
       },
       "ks4_em4": {
        "of": 14,
-       "rank": 4,
+       "rank": 5,
        "tied": false
       },
       "ks4_em5": {
@@ -3641,7 +3641,7 @@
       "roll_change_1": {
        "of": 16,
        "rank": 3,
-       "tied": true
+       "tied": false
       },
       "ks5_aps_alevel": {
        "of": 14,
@@ -3656,135 +3656,135 @@
     "share": {
      "las": [
       {
-       "pct": 11.76,
+       "pct": 11.93,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 64605,
+       "la_pupils": 63719,
        "group_pupils": 7600
       },
       {
-       "pct": 2.57,
+       "pct": 2.6,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 231795,
+       "la_pupils": 229012,
        "group_pupils": 5957
       },
       {
-       "pct": 17.85,
+       "pct": 18.17,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 31613,
+       "la_pupils": 31059,
        "group_pupils": 5643
       },
       {
-       "pct": 8.45,
+       "pct": 8.52,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 57713,
+       "la_pupils": 57234,
        "group_pupils": 4879
       },
       {
-       "pct": 7.95,
+       "pct": 8.09,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 48320,
+       "la_pupils": 47481,
        "group_pupils": 3841
       },
       {
-       "pct": 11.27,
+       "pct": 11.29,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 31859,
+       "la_pupils": 31793,
        "group_pupils": 3589
       },
       {
-       "pct": 6.25,
+       "pct": 6.35,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 44278,
+       "la_pupils": 43602,
        "group_pupils": 2767
       },
       {
-       "pct": 3.95,
+       "pct": 4.04,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 65642,
+       "la_pupils": 64181,
        "group_pupils": 2595
       },
       {
-       "pct": 5.29,
+       "pct": 5.37,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 41444,
+       "la_pupils": 40810,
        "group_pupils": 2192
       },
       {
-       "pct": 3.95,
+       "pct": 4.05,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50519,
+       "la_pupils": 49303,
        "group_pupils": 1997
       },
       {
-       "pct": 6.41,
+       "pct": 6.49,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 30770,
+       "la_pupils": 30385,
        "group_pupils": 1972
       },
       {
-       "pct": 3.27,
+       "pct": 3.33,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 42617,
+       "la_pupils": 41852,
        "group_pupils": 1393
       },
       {
-       "pct": 2.4,
+       "pct": 2.46,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 48518,
+       "la_pupils": 47246,
        "group_pupils": 1163
       },
       {
-       "pct": 2.43,
+       "pct": 2.46,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 42390,
+       "la_pupils": 41897,
        "group_pupils": 1031
       },
       {
-       "pct": 2.1,
+       "pct": 2.11,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 42745,
+       "la_pupils": 42526,
        "group_pupils": 896
       },
       {
-       "pct": 2.28,
+       "pct": 2.32,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 37991,
+       "la_pupils": 37397,
        "group_pupils": 867
       }
      ],
-     "pct": 1.96,
+     "pct": 1.99,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.13,
+       "pct": 1.15,
        "region_code": "E12000006",
        "group_pupils": 11600,
-       "region_pupils": 1022517
+       "region_pupils": 1009010
       },
       {
-       "pct": 2.55,
+       "pct": 2.58,
        "region_code": "E12000007",
        "group_pupils": 36782,
-       "region_pupils": 1444349
+       "region_pupils": 1425896
       }
      ],
-     "area_pupils": 2466866,
+     "area_pupils": 2434906,
      "group_pupils": 48382
     },
     "change": {
@@ -3870,7 +3870,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -3892,7 +3892,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -3914,7 +3914,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -3943,7 +3943,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -3965,7 +3965,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -3987,7 +3987,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -4004,7 +4004,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "145197",
@@ -4023,7 +4023,7 @@
       }
      ]
     },
-    "n_schools": 59,
+    "n_schools": 58,
     "confidence": {
      "confirmed": 59
     },
@@ -4196,9 +4196,9 @@
      ]
     },
     "schools_by_phase": {
-     "post16": 32,
+     "post16": 31,
      "primary": 23,
-     "secondary": 36
+     "secondary": 35
     }
    }
   },
@@ -4233,80 +4233,80 @@
     "share": {
      "las": [
       {
-       "pct": 23.91,
+       "pct": 24.08,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 5742,
+       "la_pupils": 5703,
        "group_pupils": 1373
       },
       {
        "pct": 20.26,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 4655,
+       "la_pupils": 4654,
        "group_pupils": 943
       },
       {
-       "pct": 76.14,
+       "pct": 80.59,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 1140,
+       "la_pupils": 1077,
        "group_pupils": 868
       },
       {
-       "pct": 4.32,
+       "pct": 4.44,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 13227,
+       "la_pupils": 12870,
        "group_pupils": 572
       },
       {
-       "pct": 7.11,
+       "pct": 7.17,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 6174,
+       "la_pupils": 6126,
        "group_pupils": 439
       },
       {
-       "pct": 10.13,
+       "pct": 10.25,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 3948,
+       "la_pupils": 3903,
        "group_pupils": 400
       },
       {
-       "pct": 9.52,
+       "pct": 9.57,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 3939,
+       "la_pupils": 3918,
        "group_pupils": 375
       },
       {
-       "pct": 8.11,
+       "pct": 8.17,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 4244,
+       "la_pupils": 4211,
        "group_pupils": 344
       },
       {
-       "pct": 9.13,
+       "pct": 9.16,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 3121,
+       "la_pupils": 3112,
        "group_pupils": 285
       },
       {
-       "pct": 6.36,
+       "pct": 6.55,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 4074,
+       "la_pupils": 3952,
        "group_pupils": 259
       },
       {
-       "pct": 7.16,
+       "pct": 7.37,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 3212,
+       "la_pupils": 3121,
        "group_pupils": 230
       },
       {
@@ -4317,44 +4317,44 @@
        "group_pupils": 224
       },
       {
-       "pct": 5.06,
+       "pct": 5.14,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 4048,
+       "la_pupils": 3991,
        "group_pupils": 205
       },
       {
-       "pct": 4.32,
+       "pct": 4.35,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 3220,
+       "la_pupils": 3199,
        "group_pupils": 139
       },
       {
        "pct": 0,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 1724,
+       "la_pupils": 1693,
        "group_pupils": 0
       }
      ],
-     "pct": 3.5,
+     "pct": 3.54,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.12,
+       "pct": 2.14,
        "region_code": "E12000006",
        "group_pupils": 1440,
-       "region_pupils": 67965
+       "region_pupils": 67145
       },
       {
-       "pct": 4.27,
+       "pct": 4.31,
        "region_code": "E12000007",
        "group_pupils": 5216,
-       "region_pupils": 122199
+       "region_pupils": 120944
       }
      ],
-     "area_pupils": 190164,
+     "area_pupils": 188089,
      "group_pupils": 6656
     },
     "change": {
@@ -4407,7 +4407,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -4424,7 +4424,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143759",
@@ -4441,7 +4441,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "145197",
@@ -4460,7 +4460,7 @@
       }
      ]
     },
-    "n_schools": 32,
+    "n_schools": 31,
     "n_with_roll": 29,
     "value_added": {
      "ks5_va_alevel": {
@@ -4548,7 +4548,7 @@
       },
       "roll_change_1": {
        "of": 16,
-       "rank": 3,
+       "rank": 4,
        "tied": false
       }
      },
@@ -4559,52 +4559,52 @@
     "share": {
      "las": [
       {
-       "pct": 6.73,
+       "pct": 6.74,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 25233,
+       "la_pupils": 25193,
        "group_pupils": 1698
       },
       {
-       "pct": 5.28,
+       "pct": 5.3,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 28843,
+       "la_pupils": 28716,
        "group_pupils": 1523
       },
       {
-       "pct": 8.99,
+       "pct": 9.1,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 15238,
+       "la_pupils": 15058,
        "group_pupils": 1370
       },
       {
-       "pct": 5.01,
+       "pct": 5.02,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 17993,
+       "la_pupils": 17957,
        "group_pupils": 902
       },
       {
-       "pct": 3.15,
+       "pct": 3.2,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22877,
+       "la_pupils": 22536,
        "group_pupils": 721
       },
       {
-       "pct": 1.89,
+       "pct": 1.9,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 28468,
+       "la_pupils": 28416,
        "group_pupils": 539
       },
       {
        "pct": 2.72,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 19409,
+       "la_pupils": 19364,
        "group_pupils": 527
       },
       {
@@ -4615,37 +4615,37 @@
        "group_pupils": 377
       },
       {
-       "pct": 2.17,
+       "pct": 2.19,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 16419,
+       "la_pupils": 16315,
        "group_pupils": 357
       },
       {
-       "pct": 1.39,
+       "pct": 1.41,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 19441,
+       "la_pupils": 19162,
        "group_pupils": 271
       }
      ],
-     "pct": 0.75,
+     "pct": 0.76,
      "sector": "all",
      "regions": [
       {
        "pct": 0.3,
        "region_code": "E12000006",
        "group_pupils": 1370,
-       "region_pupils": 460689
+       "region_pupils": 457885
       },
       {
        "pct": 1.09,
        "region_code": "E12000007",
        "group_pupils": 6915,
-       "region_pupils": 636667
+       "region_pupils": 633935
       }
      ],
-     "area_pupils": 1097356,
+     "area_pupils": 1091820,
      "group_pupils": 8285
     },
     "change": {
@@ -4727,7 +4727,7 @@
       },
       "ks4_em4": {
        "of": 14,
-       "rank": 4,
+       "rank": 5,
        "tied": false
       },
       "ks4_em5": {
@@ -4748,135 +4748,135 @@
     "share": {
      "las": [
       {
-       "pct": 6.12,
+       "pct": 6.22,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 88038,
+       "la_pupils": 86606,
        "group_pupils": 5385
       },
       {
-       "pct": 18.89,
+       "pct": 19.14,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 23199,
+       "la_pupils": 22889,
        "group_pupils": 4382
       },
       {
-       "pct": 26.68,
+       "pct": 27.38,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 11535,
+       "la_pupils": 11239,
        "group_pupils": 3077
       },
       {
-       "pct": 15.2,
+       "pct": 15.38,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 18850,
+       "la_pupils": 18625,
        "group_pupils": 2865
       },
       {
-       "pct": 27.01,
+       "pct": 27.18,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 10577,
+       "la_pupils": 10511,
        "group_pupils": 2857
       },
       {
-       "pct": 11.27,
+       "pct": 11.48,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 21307,
+       "la_pupils": 20916,
        "group_pupils": 2401
       },
       {
-       "pct": 12.55,
+       "pct": 12.83,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 16588,
+       "la_pupils": 16227,
        "group_pupils": 2082
       },
       {
-       "pct": 6.28,
+       "pct": 6.36,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 24109,
+       "la_pupils": 23821,
        "group_pupils": 1515
       },
       {
-       "pct": 5.83,
+       "pct": 5.97,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 17731,
+       "la_pupils": 17318,
        "group_pupils": 1034
       },
       {
-       "pct": 7.65,
+       "pct": 7.71,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 13444,
+       "la_pupils": 13334,
        "group_pupils": 1028
       },
       {
-       "pct": 6.23,
+       "pct": 6.28,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 15058,
+       "la_pupils": 14940,
        "group_pupils": 938
       },
       {
-       "pct": 5.63,
+       "pct": 5.76,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 16560,
+       "la_pupils": 16201,
        "group_pupils": 933
       },
       {
-       "pct": 5.08,
+       "pct": 5.19,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17645,
+       "la_pupils": 17299,
        "group_pupils": 897
       },
       {
-       "pct": 5.75,
+       "pct": 5.8,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 15539,
+       "la_pupils": 15420,
        "group_pupils": 894
       },
       {
-       "pct": 6.23,
+       "pct": 6.32,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 13260,
+       "la_pupils": 13062,
        "group_pupils": 826
       },
       {
-       "pct": 4.66,
+       "pct": 4.69,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 12502,
+       "la_pupils": 12404,
        "group_pupils": 582
       }
      ],
-     "pct": 3.5,
+     "pct": 3.55,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.17,
+       "pct": 2.2,
        "region_code": "E12000006",
        "group_pupils": 8462,
-       "region_pupils": 389569
+       "region_pupils": 384081
       },
       {
-       "pct": 4.51,
+       "pct": 4.56,
        "region_code": "E12000007",
        "group_pupils": 23234,
-       "region_pupils": 515297
+       "region_pupils": 508983
       }
      ],
-     "area_pupils": 904866,
+     "area_pupils": 893064,
      "group_pupils": 31696
     },
     "change": {
@@ -4936,7 +4936,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "150055",
@@ -4953,7 +4953,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -4975,7 +4975,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -4997,7 +4997,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -5019,7 +5019,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -5038,7 +5038,7 @@
       }
      ]
     },
-    "n_schools": 36,
+    "n_schools": 35,
     "n_with_roll": 33,
     "value_added": {
      "ks4_p8": {
@@ -5190,135 +5190,135 @@
     "share": {
      "las": [
       {
-       "pct": 11.75,
+       "pct": 11.92,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 64309,
+       "la_pupils": 63394,
        "group_pupils": 7556
       },
       {
-       "pct": 2.53,
+       "pct": 2.57,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 233410,
+       "la_pupils": 230445,
        "group_pupils": 5911
       },
       {
-       "pct": 17.72,
+       "pct": 18.06,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 31978,
+       "la_pupils": 31392,
        "group_pupils": 5668
       },
       {
-       "pct": 8.55,
+       "pct": 8.62,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 57678,
+       "la_pupils": 57175,
        "group_pupils": 4930
       },
       {
-       "pct": 8.27,
+       "pct": 8.4,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 47812,
+       "la_pupils": 47034,
        "group_pupils": 3953
       },
       {
-       "pct": 11.56,
+       "pct": 11.58,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 31747,
+       "la_pupils": 31679,
        "group_pupils": 3670
       },
       {
-       "pct": 6.33,
+       "pct": 6.44,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 43987,
+       "la_pupils": 43234,
        "group_pupils": 2785
       },
       {
-       "pct": 3.83,
+       "pct": 3.92,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 65385,
+       "la_pupils": 63892,
        "group_pupils": 2504
       },
       {
-       "pct": 5.34,
+       "pct": 5.42,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 41109,
+       "la_pupils": 40517,
        "group_pupils": 2194
       },
       {
-       "pct": 3.93,
+       "pct": 4.03,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50632,
+       "la_pupils": 49367,
        "group_pupils": 1989
       },
       {
-       "pct": 6.34,
+       "pct": 6.42,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 30477,
+       "la_pupils": 30083,
        "group_pupils": 1932
       },
       {
-       "pct": 3.52,
+       "pct": 3.58,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 42658,
+       "la_pupils": 41905,
        "group_pupils": 1502
       },
       {
-       "pct": 2.4,
+       "pct": 2.47,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 48612,
+       "la_pupils": 47341,
        "group_pupils": 1167
       },
       {
-       "pct": 2.95,
+       "pct": 3.01,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 37268,
+       "la_pupils": 36614,
        "group_pupils": 1101
       },
       {
-       "pct": 2.27,
+       "pct": 2.29,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 43566,
+       "la_pupils": 43322,
        "group_pupils": 991
       },
       {
-       "pct": 2.21,
+       "pct": 2.24,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 41789,
+       "la_pupils": 41278,
        "group_pupils": 924
       }
      ],
-     "pct": 1.98,
+     "pct": 2.01,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.13,
+       "pct": 1.14,
        "region_code": "E12000006",
        "group_pupils": 11579,
-       "region_pupils": 1028246
+       "region_pupils": 1014027
       },
       {
-       "pct": 2.59,
+       "pct": 2.62,
        "region_code": "E12000007",
        "group_pupils": 37198,
-       "region_pupils": 1437029
+       "region_pupils": 1417861
       }
      ],
-     "area_pupils": 2465275,
+     "area_pupils": 2431888,
      "group_pupils": 48777
     },
     "change": {
@@ -5404,7 +5404,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "151162",
@@ -5416,7 +5416,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -5433,7 +5433,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -5457,7 +5457,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -5474,7 +5474,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -5491,7 +5491,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -5513,7 +5513,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -5540,7 +5540,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -5564,7 +5564,7 @@
       }
      ]
     },
-    "n_schools": 59,
+    "n_schools": 58,
     "confidence": {
      "confirmed": 59
     },
@@ -5736,9 +5736,9 @@
      ]
     },
     "schools_by_phase": {
-     "post16": 33,
+     "post16": 32,
      "primary": 23,
-     "secondary": 36
+     "secondary": 35
     }
    }
   },
@@ -5778,10 +5778,10 @@
     "share": {
      "las": [
       {
-       "pct": 22.98,
+       "pct": 23.2,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 5623,
+       "la_pupils": 5570,
        "group_pupils": 1292
       },
       {
@@ -5792,121 +5792,121 @@
        "group_pupils": 933
       },
       {
-       "pct": 69.6,
+       "pct": 73.93,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 1194,
+       "la_pupils": 1124,
        "group_pupils": 831
       },
       {
-       "pct": 4.45,
+       "pct": 4.59,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 13270,
+       "la_pupils": 12861,
        "group_pupils": 590
       },
       {
-       "pct": 7.96,
+       "pct": 8.04,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 6216,
+       "la_pupils": 6155,
        "group_pupils": 495
       },
       {
-       "pct": 10.78,
+       "pct": 10.86,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 3895,
+       "la_pupils": 3868,
        "group_pupils": 420
       },
       {
-       "pct": 9.4,
+       "pct": 9.53,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 4030,
+       "la_pupils": 3975,
        "group_pupils": 379
       },
       {
-       "pct": 8.7,
+       "pct": 8.79,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 4345,
+       "la_pupils": 4299,
        "group_pupils": 378
       },
       {
-       "pct": 9.8,
+       "pct": 9.93,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 3409,
+       "la_pupils": 3363,
        "group_pupils": 334
       },
       {
-       "pct": 12.36,
+       "pct": 12.37,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 2338,
+       "la_pupils": 2337,
        "group_pupils": 289
       },
       {
-       "pct": 7.54,
+       "pct": 7.81,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 3275,
+       "la_pupils": 3163,
        "group_pupils": 247
       },
       {
-       "pct": 5.21,
+       "pct": 5.38,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 4144,
+       "la_pupils": 4018,
        "group_pupils": 216
       },
       {
-       "pct": 3.92,
+       "pct": 3.98,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 4104,
+       "la_pupils": 4046,
        "group_pupils": 161
       },
       {
-       "pct": 4.15,
+       "pct": 4.18,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 3373,
+       "la_pupils": 3347,
        "group_pupils": 140
       },
       {
-       "pct": 2.3,
+       "pct": 2.33,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 4694,
+       "la_pupils": 4636,
        "group_pupils": 108
       },
       {
-       "pct": 5.09,
+       "pct": 5.2,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 1866,
+       "la_pupils": 1828,
        "group_pupils": 95
       }
      ],
-     "pct": 3.59,
+     "pct": 3.63,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.06,
+       "pct": 2.09,
        "region_code": "E12000006",
        "group_pupils": 1421,
-       "region_pupils": 68958
+       "region_pupils": 68087
       },
       {
-       "pct": 4.44,
+       "pct": 4.49,
        "region_code": "E12000007",
        "group_pupils": 5487,
-       "region_pupils": 123718
+       "region_pupils": 122269
       }
      ],
-     "area_pupils": 192676,
+     "area_pupils": 190356,
      "group_pupils": 6908
     },
     "change": {
@@ -5959,14 +5959,14 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       }
      ],
      "ks5_aps_all": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -5988,7 +5988,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -6015,7 +6015,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "143706",
@@ -6039,7 +6039,7 @@
       }
      ]
     },
-    "n_schools": 33,
+    "n_schools": 32,
     "n_with_roll": 32,
     "value_added": {
      "ks5_va_alevel": {
@@ -6138,52 +6138,52 @@
     "share": {
      "las": [
       {
-       "pct": 6.87,
+       "pct": 6.88,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 25211,
+       "la_pupils": 25168,
        "group_pupils": 1731
       },
       {
-       "pct": 5.48,
+       "pct": 5.5,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 28720,
+       "la_pupils": 28603,
        "group_pupils": 1573
       },
       {
-       "pct": 8.89,
+       "pct": 9,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 15357,
+       "la_pupils": 15181,
        "group_pupils": 1366
       },
       {
-       "pct": 5.14,
+       "pct": 5.15,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 17755,
+       "la_pupils": 17718,
        "group_pupils": 913
       },
       {
-       "pct": 3.22,
+       "pct": 3.27,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22796,
+       "la_pupils": 22449,
        "group_pupils": 734
       },
       {
-       "pct": 3.31,
+       "pct": 3.32,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 18980,
+       "la_pupils": 18931,
        "group_pupils": 628
       },
       {
        "pct": 1.9,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 28240,
+       "la_pupils": 28181,
        "group_pupils": 536
       },
       {
@@ -6194,17 +6194,17 @@
        "group_pupils": 380
       },
       {
-       "pct": 2.22,
+       "pct": 2.23,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 16173,
+       "la_pupils": 16068,
        "group_pupils": 359
       },
       {
-       "pct": 1.42,
+       "pct": 1.44,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 19353,
+       "la_pupils": 19056,
        "group_pupils": 274
       }
      ],
@@ -6215,16 +6215,16 @@
        "pct": 0.3,
        "region_code": "E12000006",
        "group_pupils": 1366,
-       "region_pupils": 460097
+       "region_pupils": 457074
       },
       {
-       "pct": 1.13,
+       "pct": 1.14,
        "region_code": "E12000007",
        "group_pupils": 7128,
-       "region_pupils": 629616
+       "region_pupils": 626705
       }
      ],
-     "area_pupils": 1089713,
+     "area_pupils": 1083779,
      "group_pupils": 8494
     },
     "change": {
@@ -6327,135 +6327,135 @@
     "share": {
      "las": [
       {
-       "pct": 5.96,
+       "pct": 6.06,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 89242,
+       "la_pupils": 87735,
        "group_pupils": 5321
       },
       {
-       "pct": 18.82,
+       "pct": 19.08,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 23113,
+       "la_pupils": 22794,
        "group_pupils": 4349
       },
       {
-       "pct": 26.88,
+       "pct": 27.65,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 11708,
+       "la_pupils": 11381,
        "group_pupils": 3147
       },
       {
-       "pct": 26.86,
+       "pct": 27.02,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 10761,
+       "la_pupils": 10694,
        "group_pupils": 2890
       },
       {
-       "pct": 14.93,
+       "pct": 15.12,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 19030,
+       "la_pupils": 18800,
        "group_pupils": 2842
       },
       {
-       "pct": 11.09,
+       "pct": 11.3,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 21377,
+       "la_pupils": 20978,
        "group_pupils": 2371
       },
       {
-       "pct": 12.48,
+       "pct": 12.81,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 16382,
+       "la_pupils": 15967,
        "group_pupils": 2045
       },
       {
-       "pct": 5.99,
+       "pct": 6.06,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 24158,
+       "la_pupils": 23853,
        "group_pupils": 1446
       },
       {
-       "pct": 5.74,
+       "pct": 5.88,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 18002,
+       "la_pupils": 17572,
        "group_pupils": 1034
       },
       {
-       "pct": 7.45,
+       "pct": 7.52,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 13407,
+       "la_pupils": 13292,
        "group_pupils": 999
       },
       {
-       "pct": 6.24,
+       "pct": 6.28,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 14914,
+       "la_pupils": 14805,
        "group_pupils": 930
       },
       {
-       "pct": 5.41,
+       "pct": 5.53,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 17006,
+       "la_pupils": 16651,
        "group_pupils": 920
       },
       {
-       "pct": 5.08,
+       "pct": 5.2,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17807,
+       "la_pupils": 17406,
        "group_pupils": 905
       },
       {
-       "pct": 5.6,
+       "pct": 5.65,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 15880,
+       "la_pupils": 15745,
        "group_pupils": 890
       },
       {
-       "pct": 6.23,
+       "pct": 6.32,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 12269,
+       "la_pupils": 12097,
        "group_pupils": 764
       },
       {
-       "pct": 5.84,
+       "pct": 5.94,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 13069,
+       "la_pupils": 12840,
        "group_pupils": 763
       }
      ],
-     "pct": 3.46,
+     "pct": 3.51,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.14,
+       "pct": 2.17,
        "region_code": "E12000006",
        "group_pupils": 8468,
-       "region_pupils": 396273
+       "region_pupils": 390118
       },
       {
-       "pct": 4.47,
+       "pct": 4.53,
        "region_code": "E12000007",
        "group_pupils": 23148,
-       "region_pupils": 518419
+       "region_pupils": 511458
       }
      ],
-     "area_pupils": 914692,
+     "area_pupils": 901576,
      "group_pupils": 31616
     },
     "change": {
@@ -6515,7 +6515,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       },
       {
        "urn": "151162",
@@ -6527,7 +6527,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -6544,7 +6544,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -6561,7 +6561,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -6578,7 +6578,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "147543",
@@ -6592,7 +6592,7 @@
       }
      ]
     },
-    "n_schools": 36,
+    "n_schools": 35,
     "n_with_roll": 34,
     "value_added": {
      "ks4_p8": {
@@ -6739,135 +6739,135 @@
     "share": {
      "las": [
       {
-       "pct": 11.89,
+       "pct": 12.07,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 63207,
+       "la_pupils": 62275,
        "group_pupils": 7514
       },
       {
-       "pct": 2.53,
+       "pct": 2.56,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 233141,
+       "la_pupils": 229746,
        "group_pupils": 5890
       },
       {
-       "pct": 17.81,
+       "pct": 18.17,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 31712,
+       "la_pupils": 31089,
        "group_pupils": 5649
       },
       {
-       "pct": 8.59,
+       "pct": 8.68,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 57550,
+       "la_pupils": 56916,
        "group_pupils": 4943
       },
       {
-       "pct": 11.99,
+       "pct": 12.01,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 31333,
+       "la_pupils": 31279,
        "group_pupils": 3756
       },
       {
-       "pct": 7.99,
+       "pct": 8.12,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 46919,
+       "la_pupils": 46171,
        "group_pupils": 3747
       },
       {
-       "pct": 6.47,
+       "pct": 6.6,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 43604,
+       "la_pupils": 42767,
        "group_pupils": 2822
       },
       {
-       "pct": 3.87,
+       "pct": 3.97,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 64169,
+       "la_pupils": 62627,
        "group_pupils": 2485
       },
       {
-       "pct": 5.41,
+       "pct": 5.49,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 40355,
+       "la_pupils": 39787,
        "group_pupils": 2183
       },
       {
-       "pct": 6.56,
+       "pct": 6.65,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 29546,
+       "la_pupils": 29149,
        "group_pupils": 1938
       },
       {
-       "pct": 3.64,
+       "pct": 3.74,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50436,
+       "la_pupils": 49191,
        "group_pupils": 1838
       },
       {
-       "pct": 3.89,
+       "pct": 3.95,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 42469,
+       "la_pupils": 41747,
        "group_pupils": 1650
       },
       {
-       "pct": 3.51,
+       "pct": 3.56,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 36346,
+       "la_pupils": 35749,
        "group_pupils": 1274
       },
       {
-       "pct": 2.46,
+       "pct": 2.53,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 47678,
+       "la_pupils": 46374,
        "group_pupils": 1172
       },
       {
-       "pct": 2.6,
+       "pct": 2.62,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 43851,
+       "la_pupils": 43563,
        "group_pupils": 1141
       },
       {
-       "pct": 2.19,
+       "pct": 2.21,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 40929,
+       "la_pupils": 40440,
        "group_pupils": 895
       }
      ],
-     "pct": 2,
+     "pct": 2.03,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.13,
+       "pct": 1.14,
        "region_code": "E12000006",
        "group_pupils": 11539,
-       "region_pupils": 1023561
+       "region_pupils": 1008350
       },
       {
-       "pct": 2.63,
+       "pct": 2.67,
        "region_code": "E12000007",
        "group_pupils": 37358,
-       "region_pupils": 1418583
+       "region_pupils": 1399007
       }
      ],
-     "area_pupils": 2442144,
+     "area_pupils": 2407357,
      "group_pupils": 48897
     },
     "change": {
@@ -6953,35 +6953,35 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       }
      ],
      "ks4_a8": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       }
      ],
      "ks4_em4": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       }
      ],
      "ks4_em5": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       }
      ],
      "ks5_aps_all": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "150055",
@@ -6993,7 +6993,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "145197",
@@ -7010,7 +7010,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "145197",
@@ -7024,7 +7024,7 @@
       }
      ]
     },
-    "n_schools": 59,
+    "n_schools": 58,
     "confidence": {
      "confirmed": 59
     },
@@ -7196,9 +7196,9 @@
      ]
     },
     "schools_by_phase": {
-     "post16": 34,
+     "post16": 33,
      "primary": 23,
-     "secondary": 35
+     "secondary": 34
     }
    }
   },
@@ -7238,66 +7238,66 @@
     "share": {
      "las": [
       {
-       "pct": 22.65,
+       "pct": 22.88,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 5359,
+       "la_pupils": 5306,
        "group_pupils": 1214
       },
       {
        "pct": 19.42,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 4810,
+       "la_pupils": 4809,
        "group_pupils": 934
       },
       {
-       "pct": 65.68,
+       "pct": 70.77,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 1154,
+       "la_pupils": 1071,
        "group_pupils": 758
       },
       {
-       "pct": 4.37,
+       "pct": 4.53,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 13263,
+       "la_pupils": 12800,
        "group_pupils": 580
       },
       {
-       "pct": 8.76,
+       "pct": 8.88,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 6299,
+       "la_pupils": 6217,
        "group_pupils": 552
       },
       {
-       "pct": 10.92,
+       "pct": 11.01,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 4019,
+       "la_pupils": 3988,
        "group_pupils": 439
       },
       {
-       "pct": 10.34,
+       "pct": 10.49,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 4186,
+       "la_pupils": 4129,
        "group_pupils": 433
       },
       {
-       "pct": 9,
+       "pct": 9.09,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 4569,
+       "la_pupils": 4519,
        "group_pupils": 411
       },
       {
-       "pct": 10.54,
+       "pct": 10.65,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 3625,
+       "la_pupils": 3586,
        "group_pupils": 382
       },
       {
@@ -7308,65 +7308,65 @@
        "group_pupils": 372
       },
       {
-       "pct": 5.17,
+       "pct": 5.24,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 4775,
+       "la_pupils": 4713,
        "group_pupils": 247
       },
       {
-       "pct": 7.26,
+       "pct": 7.54,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 3387,
+       "la_pupils": 3261,
        "group_pupils": 246
       },
       {
-       "pct": 11.77,
+       "pct": 11.97,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 2039,
+       "la_pupils": 2005,
        "group_pupils": 240
       },
       {
-       "pct": 5.08,
+       "pct": 5.26,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 4271,
+       "la_pupils": 4127,
        "group_pupils": 217
       },
       {
-       "pct": 4.71,
+       "pct": 4.74,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 3482,
+       "la_pupils": 3457,
        "group_pupils": 164
       },
       {
-       "pct": 3.89,
+       "pct": 3.96,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 4059,
+       "la_pupils": 3992,
        "group_pupils": 158
       }
      ],
-     "pct": 3.76,
+     "pct": 3.81,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.94,
+       "pct": 1.97,
        "region_code": "E12000006",
        "group_pupils": 1338,
-       "region_pupils": 68887
+       "region_pupils": 67919
       },
       {
-       "pct": 4.75,
+       "pct": 4.81,
        "region_code": "E12000007",
        "group_pupils": 6009,
-       "region_pupils": 126445
+       "region_pupils": 124826
       }
      ],
-     "area_pupils": 195332,
+     "area_pupils": 192745,
      "group_pupils": 7347
     },
     "change": {
@@ -7419,14 +7419,14 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       }
      ],
      "ks5_aps_all": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "150055",
@@ -7438,7 +7438,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "145197",
@@ -7455,7 +7455,7 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       },
       {
        "urn": "145197",
@@ -7469,7 +7469,7 @@
       }
      ]
     },
-    "n_schools": 34,
+    "n_schools": 33,
     "n_with_roll": 33,
     "value_added": {
      "ks5_va_alevel": {
@@ -7568,52 +7568,52 @@
     "share": {
      "las": [
       {
-       "pct": 6.98,
+       "pct": 7.01,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 25112,
+       "la_pupils": 25023,
        "group_pupils": 1754
       },
       {
-       "pct": 5.81,
+       "pct": 5.84,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 28343,
+       "la_pupils": 28204,
        "group_pupils": 1648
       },
       {
-       "pct": 9.25,
+       "pct": 9.35,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 15204,
+       "la_pupils": 15039,
        "group_pupils": 1406
       },
       {
-       "pct": 5.17,
+       "pct": 5.18,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 17364,
+       "la_pupils": 17323,
        "group_pupils": 897
       },
       {
-       "pct": 2.88,
+       "pct": 2.93,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22447,
+       "la_pupils": 22107,
        "group_pupils": 647
       },
       {
-       "pct": 2.9,
+       "pct": 2.91,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 18490,
+       "la_pupils": 18442,
        "group_pupils": 536
       },
       {
        "pct": 1.95,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 27541,
+       "la_pupils": 27487,
        "group_pupils": 536
       },
       {
@@ -7624,17 +7624,17 @@
        "group_pupils": 384
       },
       {
-       "pct": 2.22,
+       "pct": 2.23,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 15978,
+       "la_pupils": 15868,
        "group_pupils": 354
       },
       {
-       "pct": 1.62,
+       "pct": 1.64,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 19284,
+       "la_pupils": 18981,
        "group_pupils": 312
       }
      ],
@@ -7645,16 +7645,16 @@
        "pct": 0.31,
        "region_code": "E12000006",
        "group_pupils": 1406,
-       "region_pupils": 455891
+       "region_pupils": 452590
       },
       {
-       "pct": 1.14,
+       "pct": 1.15,
        "region_code": "E12000007",
        "group_pupils": 7068,
-       "region_pupils": 617392
+       "region_pupils": 614280
       }
      ],
-     "area_pupils": 1073283,
+     "area_pupils": 1066870,
      "group_pupils": 8474
     },
     "change": {
@@ -7737,135 +7737,135 @@
     "share": {
      "las": [
       {
-       "pct": 5.93,
+       "pct": 6.04,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 89563,
+       "la_pupils": 87885,
        "group_pupils": 5310
       },
       {
-       "pct": 18.71,
+       "pct": 18.97,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 22741,
+       "la_pupils": 22425,
        "group_pupils": 4255
       },
       {
-       "pct": 27.16,
+       "pct": 28.03,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 11622,
+       "la_pupils": 11262,
        "group_pupils": 3157
       },
       {
-       "pct": 26.94,
+       "pct": 27.08,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 10731,
+       "la_pupils": 10677,
        "group_pupils": 2891
       },
       {
-       "pct": 14.41,
+       "pct": 14.6,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 18773,
+       "la_pupils": 18532,
        "group_pupils": 2705
       },
       {
-       "pct": 10.84,
+       "pct": 11.08,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 21306,
+       "la_pupils": 20846,
        "group_pupils": 2309
       },
       {
-       "pct": 12.62,
+       "pct": 13.01,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 16194,
+       "la_pupils": 15708,
        "group_pupils": 2043
       },
       {
-       "pct": 5.83,
+       "pct": 5.91,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 23774,
+       "la_pupils": 23448,
        "group_pupils": 1385
       },
       {
-       "pct": 5.83,
+       "pct": 5.96,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 18003,
+       "la_pupils": 17597,
        "group_pupils": 1049
       },
       {
-       "pct": 7.67,
+       "pct": 7.74,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 13086,
+       "la_pupils": 12964,
        "group_pupils": 1004
       },
       {
-       "pct": 5.41,
+       "pct": 5.54,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 17109,
+       "la_pupils": 16728,
        "group_pupils": 926
       },
       {
-       "pct": 6.28,
+       "pct": 6.33,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 14511,
+       "la_pupils": 14403,
        "group_pupils": 912
       },
       {
-       "pct": 5.04,
+       "pct": 5.16,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17925,
+       "la_pupils": 17509,
        "group_pupils": 903
       },
       {
-       "pct": 5.59,
+       "pct": 5.65,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 16068,
+       "la_pupils": 15912,
        "group_pupils": 899
       },
       {
-       "pct": 7.42,
+       "pct": 7.53,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 12000,
+       "la_pupils": 11825,
        "group_pupils": 891
       },
       {
-       "pct": 5.73,
+       "pct": 5.83,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 12856,
+       "la_pupils": 12632,
        "group_pupils": 737
       }
      ],
-     "pct": 3.44,
+     "pct": 3.5,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.13,
+       "pct": 2.17,
        "region_code": "E12000006",
        "group_pupils": 8467,
-       "region_pupils": 397200
+       "region_pupils": 390559
       },
       {
-       "pct": 4.45,
+       "pct": 4.52,
        "region_code": "E12000007",
        "group_pupils": 22909,
-       "region_pupils": 514383
+       "region_pupils": 507127
       }
      ],
-     "area_pupils": 911583,
+     "area_pupils": 897686,
      "group_pupils": 31376
     },
     "change": {
@@ -7925,32 +7925,32 @@
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_census"
+       "reason": "ap"
       }
      ],
      "ks4_a8": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       }
      ],
      "ks4_em4": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       }
      ],
      "ks4_em5": [
       {
        "urn": "139829",
        "name": "Harris Aspire Academy",
-       "reason": "no_results_published"
+       "reason": "ap"
       }
      ]
     },
-    "n_schools": 35,
+    "n_schools": 34,
     "n_with_roll": 34,
     "value_added": {
      "ks4_p8": {
@@ -8073,147 +8073,147 @@
      "set_id": "peer:mat:41+",
      "n_groups": 16
     },
-    "roll": 48960,
+    "roll": 48958,
     "share": {
      "las": [
       {
-       "pct": 12.21,
+       "pct": 12.39,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 61774,
-       "group_pupils": 7544
+       "la_pupils": 60854,
+       "group_pupils": 7542
       },
       {
-       "pct": 2.59,
+       "pct": 2.63,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 232257,
+       "la_pupils": 228668,
        "group_pupils": 6020
       },
       {
-       "pct": 18.41,
+       "pct": 18.79,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 31239,
+       "la_pupils": 30606,
        "group_pupils": 5752
       },
       {
-       "pct": 8.76,
+       "pct": 8.86,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 56775,
+       "la_pupils": 56127,
        "group_pupils": 4972
       },
       {
-       "pct": 12.35,
+       "pct": 12.37,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 30802,
+       "la_pupils": 30752,
        "group_pupils": 3803
       },
       {
-       "pct": 7.7,
+       "pct": 7.82,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 46049,
+       "la_pupils": 45343,
        "group_pupils": 3548
       },
       {
-       "pct": 6.54,
+       "pct": 6.67,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 42842,
+       "la_pupils": 41952,
        "group_pupils": 2800
       },
       {
-       "pct": 4.09,
+       "pct": 4.19,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 62532,
+       "la_pupils": 61043,
        "group_pupils": 2560
       },
       {
-       "pct": 5.5,
+       "pct": 5.58,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 39522,
+       "la_pupils": 38909,
        "group_pupils": 2173
       },
       {
-       "pct": 6.89,
+       "pct": 6.98,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 28096,
+       "la_pupils": 27725,
        "group_pupils": 1936
       },
       {
-       "pct": 3.53,
+       "pct": 3.62,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 49836,
+       "la_pupils": 48558,
        "group_pupils": 1759
       },
       {
-       "pct": 3.92,
+       "pct": 3.99,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 42155,
+       "la_pupils": 41402,
        "group_pupils": 1652
       },
       {
-       "pct": 2.77,
+       "pct": 2.79,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 43856,
+       "la_pupils": 43547,
        "group_pupils": 1217
       },
       {
-       "pct": 3.43,
+       "pct": 3.48,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 34911,
+       "la_pupils": 34336,
        "group_pupils": 1196
       },
       {
-       "pct": 2.45,
+       "pct": 2.52,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 46511,
+       "la_pupils": 45231,
        "group_pupils": 1138
       },
       {
-       "pct": 2.23,
+       "pct": 2.26,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 39881,
+       "la_pupils": 39371,
        "group_pupils": 890
       }
      ],
-     "pct": 2.04,
+     "pct": 2.07,
      "sector": "all",
      "regions": [
       {
-       "pct": 1.16,
+       "pct": 1.18,
        "region_code": "E12000006",
        "group_pupils": 11772,
-       "region_pupils": 1013632
+       "region_pupils": 997978
       },
       {
-       "pct": 2.68,
+       "pct": 2.71,
        "region_code": "E12000007",
-       "group_pupils": 37188,
-       "region_pupils": 1390193
+       "group_pupils": 37186,
+       "region_pupils": 1370512
       }
      ],
-     "area_pupils": 2403825,
-     "group_pupils": 48960
+     "area_pupils": 2368490,
+     "group_pupils": 48958
     },
     "change": {
      "1": {
       "growing": 29,
       "shrinking": 28,
       "from_period": 2024,
-      "combined_pct": 0.13,
+      "combined_pct": 0.12,
       "same_schools": 58,
       "combined_base": 48897,
       "same_schools_pct": 0.12
@@ -8231,7 +8231,7 @@
       "growing": 26,
       "shrinking": 28,
       "from_period": 2020,
-      "combined_pct": 6.1,
+      "combined_pct": 6.09,
       "same_schools": 55,
       "combined_base": 46146,
       "same_schools_pct": 2.39
@@ -8286,8 +8286,16 @@
      }
     },
     "boarders": 0,
-    "excluded": {},
-    "n_schools": 59,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "ap"
+      }
+     ]
+    },
+    "n_schools": 58,
     "confidence": {
      "confirmed": 59
     },
@@ -8297,7 +8305,7 @@
      "S": 1,
      "XL": 27
     },
-    "n_with_roll": 59,
+    "n_with_roll": 58,
     "roll_by_age": [
      0,
      0,
@@ -8314,7 +8322,7 @@
      6266,
      6254,
      6269,
-     6188,
+     6186,
      3781,
      3639,
      197,
@@ -8339,7 +8347,7 @@
     "roll_by_phase": {
      "post16": 7617,
      "primary": 8388,
-     "secondary": 31278
+     "secondary": 31276
     },
     "subject_areas": {
      "ks4": [
@@ -8430,66 +8438,66 @@
     "share": {
      "las": [
       {
-       "pct": 22.83,
+       "pct": 23.13,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 5326,
+       "la_pupils": 5258,
        "group_pupils": 1216
       },
       {
-       "pct": 18.87,
+       "pct": 18.88,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 4822,
+       "la_pupils": 4821,
        "group_pupils": 910
       },
       {
-       "pct": 67.61,
+       "pct": 73.3,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 1161,
+       "la_pupils": 1071,
        "group_pupils": 785
       },
       {
-       "pct": 4.95,
+       "pct": 5.14,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 13442,
+       "la_pupils": 12961,
        "group_pupils": 666
       },
       {
-       "pct": 9.01,
+       "pct": 9.14,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 6294,
+       "la_pupils": 6206,
        "group_pupils": 567
       },
       {
-       "pct": 11.44,
+       "pct": 11.6,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 4457,
+       "la_pupils": 4398,
        "group_pupils": 510
       },
       {
-       "pct": 10.83,
+       "pct": 10.9,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 4063,
+       "la_pupils": 4036,
        "group_pupils": 440
       },
       {
-       "pct": 8.4,
+       "pct": 8.49,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 4811,
+       "la_pupils": 4756,
        "group_pupils": 404
       },
       {
-       "pct": 11.87,
+       "pct": 12.01,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 3319,
+       "la_pupils": 3281,
        "group_pupils": 394
       },
       {
@@ -8500,65 +8508,65 @@
        "group_pupils": 387
       },
       {
-       "pct": 14.5,
+       "pct": 14.78,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 2096,
+       "la_pupils": 2057,
        "group_pupils": 304
       },
       {
-       "pct": 5.08,
+       "pct": 5.16,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 4878,
+       "la_pupils": 4804,
        "group_pupils": 248
       },
       {
-       "pct": 6.71,
+       "pct": 6.98,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 3502,
+       "la_pupils": 3366,
        "group_pupils": 235
       },
       {
-       "pct": 4.99,
+       "pct": 5.14,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 4348,
+       "la_pupils": 4219,
        "group_pupils": 217
       },
       {
-       "pct": 4.59,
+       "pct": 4.67,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 4008,
+       "la_pupils": 3942,
        "group_pupils": 184
       },
       {
-       "pct": 4.13,
+       "pct": 4.16,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 3487,
+       "la_pupils": 3459,
        "group_pupils": 144
       }
      ],
-     "pct": 3.86,
+     "pct": 3.91,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.1,
+       "pct": 2.14,
        "region_code": "E12000006",
        "group_pupils": 1451,
-       "region_pupils": 68958
+       "region_pupils": 67921
       },
       {
-       "pct": 4.8,
+       "pct": 4.86,
        "region_code": "E12000007",
        "group_pupils": 6160,
-       "region_pupils": 128446
+       "region_pupils": 126787
       }
      ],
-     "area_pupils": 197404,
+     "area_pupils": 194708,
      "group_pupils": 7611
     },
     "change": {
@@ -8633,7 +8641,7 @@
      "places": {
       "roll_change_1": {
        "of": 16,
-       "rank": 6,
+       "rank": 5,
        "tied": false
       }
      },
@@ -8644,93 +8652,93 @@
     "share": {
      "las": [
       {
-       "pct": 6.95,
+       "pct": 6.98,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 24833,
+       "la_pupils": 24741,
        "group_pupils": 1726
       },
       {
-       "pct": 6.04,
+       "pct": 6.07,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 27651,
+       "la_pupils": 27510,
        "group_pupils": 1671
       },
       {
-       "pct": 9.52,
+       "pct": 9.61,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 15046,
+       "la_pupils": 14906,
        "group_pupils": 1433
       },
       {
-       "pct": 5.36,
+       "pct": 5.37,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 17001,
+       "la_pupils": 16969,
        "group_pupils": 911
       },
       {
-       "pct": 2.56,
+       "pct": 2.6,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22101,
+       "la_pupils": 21767,
        "group_pupils": 565
       },
       {
-       "pct": 2.03,
+       "pct": 2.04,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 26492,
+       "la_pupils": 26430,
        "group_pupils": 538
       },
       {
-       "pct": 2.87,
+       "pct": 2.88,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 17788,
+       "la_pupils": 17740,
        "group_pupils": 511
       },
       {
-       "pct": 2.79,
+       "pct": 2.8,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 13704,
+       "la_pupils": 13703,
        "group_pupils": 383
       },
       {
-       "pct": 2.27,
+       "pct": 2.29,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 15780,
+       "la_pupils": 15666,
        "group_pupils": 358
       },
       {
-       "pct": 1.56,
+       "pct": 1.59,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 18744,
+       "la_pupils": 18420,
        "group_pupils": 292
       }
      ],
-     "pct": 0.8,
+     "pct": 0.81,
      "sector": "all",
      "regions": [
       {
        "pct": 0.32,
        "region_code": "E12000006",
        "group_pupils": 1433,
-       "region_pupils": 447800
+       "region_pupils": 444194
       },
       {
        "pct": 1.16,
        "region_code": "E12000007",
        "group_pupils": 6955,
-       "region_pupils": 600844
+       "region_pupils": 597530
       }
      ],
-     "area_pupils": 1048644,
+     "area_pupils": 1041724,
      "group_pupils": 8388
     },
     "change": {
@@ -8813,135 +8821,135 @@
     "share": {
      "las": [
       {
-       "pct": 5.97,
+       "pct": 6.1,
        "la_code": "881",
        "la_name": "Essex",
-       "la_pupils": 89647,
+       "la_pupils": 87787,
        "group_pupils": 5354
       },
       {
-       "pct": 18.96,
+       "pct": 19.2,
        "la_code": "306",
        "la_name": "Croydon",
-       "la_pupils": 22405,
+       "la_pupils": 22117,
        "group_pupils": 4247
       },
       {
-       "pct": 28.03,
+       "pct": 29.01,
        "la_code": "883",
        "la_name": "Thurrock",
-       "la_pupils": 11419,
+       "la_pupils": 11034,
        "group_pupils": 3201
       },
       {
-       "pct": 27.31,
+       "pct": 27.43,
        "la_code": "315",
        "la_name": "Merton",
-       "la_pupils": 10729,
+       "la_pupils": 10680,
        "group_pupils": 2930
       },
       {
-       "pct": 13.79,
+       "pct": 13.97,
        "la_code": "210",
        "la_name": "Southwark",
-       "la_pupils": 18519,
+       "la_pupils": 18274,
        "group_pupils": 2553
       },
       {
-       "pct": 11.24,
+       "pct": 11.5,
        "la_code": "305",
        "la_name": "Bromley",
-       "la_pupils": 20908,
+       "la_pupils": 20445,
        "group_pupils": 2351
       },
       {
-       "pct": 12.65,
+       "pct": 13.08,
        "la_code": "303",
        "la_name": "Bexley",
-       "la_pupils": 16009,
+       "la_pupils": 15481,
        "group_pupils": 2025
       },
       {
-       "pct": 5.92,
+       "pct": 6,
        "la_code": "316",
        "la_name": "Newham",
-       "la_pupils": 23245,
+       "la_pupils": 22951,
        "group_pupils": 1377
       },
       {
-       "pct": 5.84,
+       "pct": 5.98,
        "la_code": "319",
        "la_name": "Sutton",
-       "la_pupils": 17904,
+       "la_pupils": 17503,
        "group_pupils": 1046
       },
       {
-       "pct": 8.13,
+       "pct": 8.2,
        "la_code": "213",
        "la_name": "Westminster",
-       "la_pupils": 12608,
+       "la_pupils": 12498,
        "group_pupils": 1025
       },
       {
-       "pct": 5.21,
+       "pct": 5.35,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17894,
+       "la_pupils": 17413,
        "group_pupils": 932
       },
       {
-       "pct": 5.66,
+       "pct": 5.72,
        "la_code": "311",
        "la_name": "Havering",
-       "la_pupils": 16112,
+       "la_pupils": 15955,
        "group_pupils": 912
       },
       {
-       "pct": 6.44,
+       "pct": 6.5,
        "la_code": "309",
        "la_name": "Haringey",
-       "la_pupils": 14125,
+       "la_pupils": 13987,
        "group_pupils": 909
       },
       {
-       "pct": 5.34,
+       "pct": 5.48,
        "la_code": "203",
        "la_name": "Greenwich",
-       "la_pupils": 16914,
+       "la_pupils": 16491,
        "group_pupils": 903
       },
       {
-       "pct": 6.85,
+       "pct": 6.96,
        "la_code": "208",
        "la_name": "Lambeth",
-       "la_pupils": 11671,
+       "la_pupils": 11496,
        "group_pupils": 800
       },
       {
-       "pct": 5.55,
+       "pct": 5.65,
        "la_code": "212",
        "la_name": "Wandsworth",
-       "la_pupils": 12719,
+       "la_pupils": 12506,
        "group_pupils": 706
       }
      ],
-     "pct": 3.46,
+     "pct": 3.52,
      "sector": "all",
      "regions": [
       {
-       "pct": 2.16,
+       "pct": 2.2,
        "region_code": "E12000006",
        "group_pupils": 8555,
-       "region_pupils": 396469
+       "region_pupils": 389548
       },
       {
-       "pct": 4.48,
+       "pct": 4.55,
        "region_code": "E12000007",
        "group_pupils": 22716,
-       "region_pupils": 506714
+       "region_pupils": 499324
       }
      ],
-     "area_pupils": 903183,
+     "area_pupils": 888872,
      "group_pupils": 31271
     },
     "change": {
@@ -9082,7 +9090,7 @@
     "3320",
     "club_iss:dukes-education"
    ],
-   "commit": "a60334f",
+   "commit": "db7a27b",
    "periods": [
     2019,
     2020,
@@ -9093,8 +9101,12 @@
     2025
    ],
    "reasons": {
+    "ap": "alternative provision: not counted in group figures",
+    "pru": "pupil referral unit: not counted in group figures",
     "igcse": "IGCSE: not ranked at GCSE",
     "closed": "closed",
+    "nursery": "nursery school: not counted in group figures",
+    "special": "special school: not counted in group figures",
     "no_census": "no census return",
     "prep_no_ks2": "prep: no KS2 published",
     "not_yet_open": "not yet open",
@@ -9201,6 +9213,12 @@
     "21-40",
     "41+"
    ],
+   "not_counted": [
+    "ap",
+    "nursery",
+    "pru",
+    "special"
+   ],
    "subject_min": {
     "entries": 10,
     "schools": 2
@@ -9258,11 +9276,17 @@
      "family_id": "enterprise_applied"
     }
    ],
-   "inputs_fetched_at": "2026-11-08 17:03:50",
-   "min_group_schools": 2
+   "inputs_fetched_at": "2026-11-08 17:20:04",
+   "min_group_schools": 2,
+   "non_mainstream_groups": 190,
+   "state_funded_overrides": {
+    "101849": "City technology college (BRIT School): state-funded; GIAS types it independent",
+    "108420": "City technology college (Emmanuel College): state-funded; GIAS types it independent",
+    "123627": "City technology college (Thomas Telford School): state-funded; GIAS types it independent"
+   }
   },
   "build_id": 1,
-  "computed_at": "2026-11-08T17:06:05.168+00:00"
+  "computed_at": "2026-11-08T18:09:40.212+00:00"
  },
  "group": {
   "name": "HARRIS FEDERATION",

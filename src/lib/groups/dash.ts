@@ -106,6 +106,28 @@ export const DEFAULT_COMPARE: CompareKey = "peer_band";
 
 /** The non-group source note (0.8 group sets, D1): production's non-group state schools exclude the
  * single-academy trusts (their own pooled benchmark) and every school in a listed group. */
+/** E1, E2 (Guy, 8 Nov): England follows the group's sector, as non-group does. */
+export function englandWords(sector: "state" | "independent"): { label: string; info: string } {
+  return sector === "independent"
+    ? { label: "England, independent mainstream", info: "Independent mainstream schools with published results, from DfE's school-level file." }
+    : { label: "England, mainstream state-funded", info: "From DfE's school-level results for state-funded mainstream schools; DfE's own England headline also counts city technology colleges, FE 14–16 colleges and pupils not in any school's figures, so it reads slightly lower (47.4 in 2025/26)." };
+}
+
+/** LF4: a member school of these kinds is listed but not counted in group figures. */
+export const NOT_COUNTED_WORDS: Record<string, [string, string, string]> = {
+  // kind: [tag, one, many]
+  special: ["Special", "special school", "special schools"],
+  ap: ["AP", "alternative provision", "alternative provision"],
+  pru: ["PRU", "pupil referral unit", "pupil referral units"],
+  nursery: ["Nursery", "nursery school", "nursery schools"],
+};
+/** "1 alternative provision not counted", "2 special schools and 1 nursery school not counted". */
+export function notCountedWords(by: Record<string, number>): string | null {
+  const parts = Object.entries(NOT_COUNTED_WORDS).filter(([k]) => by[k]).map(([k, [, one, many]]) => `${by[k]} ${by[k] === 1 ? one : many}`);
+  if (!parts.length) return null;
+  return `${parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0]} not counted`;
+}
+
 export const NON_GROUP_STATE_NOTE = "State schools in England in no listed group (MAT, federation or foundation trust of 2 or more schools) and not a single-academy trust: mostly LA-maintained schools. Single-academy trusts are a benchmark of their own.";
 
 /** "peer_named:3317,4072" (up to three) or a kind; anything else is the default. */
@@ -187,6 +209,23 @@ export type SetRef = { key: string; label: string; kind: ComparisonKind | "peer_
 export const NOT_OFFERED = new Set(["mix_matched:england"]);
 export const mixMatchedLabel = (group: string) => `Non-group schools, same regions and phases as ${group}`;
 
+/** R-MIN-SCHOOLS, extended to every group pool (0.8 group sets D9, Guy 8 Nov): a pooled figure needs at
+ * least 5 schools with the figure; below that it is withheld ("Too few schools (n)"). Production keeps the
+ * figure and its n; the app withholds it. England is exempt as in R-MIN-SCHOOLS (it never falls that low). */
+export const POOL_MIN_SCHOOLS = 5;
+export const POOL_MIN_NOTE = "A pooled figure needs at least 5 schools with the figure (R-MIN-SCHOOLS); fewer would identify them and swing too much to be a benchmark.";
+export const tooFewWords = (n: number) => `Too few schools (${n})`;
+
+function withheld(f: Figures): Figures {
+  const cap = (g: Record<string, MeasureFig> | undefined) =>
+    g ? Object.fromEntries(Object.entries(g).map(([k, v]) => [k, v.n_with_figure > 0 && v.n_with_figure < POOL_MIN_SCHOOLS ? { ...v, weighted: null, average_school: null, tooFew: true } : v])) : g;
+  const out: Figures = { ...f, results: cap(f.results) ?? {}, value_added: cap(f.value_added) ?? {} };
+  if (f.n_schools > 0 && f.n_schools < POOL_MIN_SCHOOLS && f.change) {
+    out.change = Object.fromEntries(Object.entries(f.change).map(([k, c]) => [k, { ...c, combined_pct: null, same_schools_pct: null }])) as Figures["change"];
+  }
+  return out;
+}
+
 /** The comparison sets as rows of one reading: the group itself first, then each kind's variants. */
 export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Reading, groupLabel: string): SetRef[] {
   const out: SetRef[] = [{ key: "group", label: groupLabel, kind: "group", variant: "group", rows: agg.rows }];
@@ -197,7 +236,9 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
     if (NOT_OFFERED.has(key)) continue;
     const label = r.kind === "peer_named" ? displayName(r.label) : key === "mix_matched:non_group" ? mixMatchedLabel(groupLabel) : r.label;
     const s = by.get(key) ?? { key, label, kind: r.kind, variant: r.variant, rows: [] };
-    s.rows.push({ period: r.period, phase: r.phase, figures: r.figures });
+    // D9: every pool but England; a named group is one group's own figures, not a pool.
+    const pooled = r.kind !== "england" && r.kind !== "peer_named";
+    s.rows.push({ period: r.period, phase: r.phase, figures: pooled ? withheld(r.figures) : r.figures });
     by.set(key, s);
   }
   const order = ["peer_band:band", "non_group:england", "non_group:areas", "areas:la", "areas:region", "england:england", "mix_matched:non_group"];
@@ -219,7 +260,7 @@ export function chosenSets(sets: SetRef[], k: CompareKey): SetRef[] {
 
 // --------------------------------------------------------------------------------- the overview
 
-export type AgainstCell = { value: number | null; n: number | null; average: number | null };
+export type AgainstCell = { value: number | null; n: number | null; average: number | null; tooFew?: boolean };
 export type AgainstRow = { key: string; label: string; kind: SetRef["kind"]; schools: number | null; roll: { pct: number | null; years: number }; growing: { pct: number | null; n: number; of: number }; cells: Record<string, AgainstCell> };
 
 export type GroupOverview = {
@@ -231,6 +272,7 @@ export type GroupOverview = {
   years: { census: number; first: number; results: Record<string, number | null> };
   now: {
     schools: number;
+    notCounted: { n: number; total: number; words: string } | null;
     byPhase: Record<"primary" | "secondary" | "post16", number>;
     roll: number;
     change: Record<"1" | "3" | "5", { combined: number | null; sameSchools: number | null; from: number; growing: number; shrinking: number; of: number }>;
@@ -262,7 +304,7 @@ function againstRows(sets: SetRef[], focus: Focus, measures: string[], latest: R
     for (const m of measures) {
       const y = latest[m];
       const f = y !== null ? fig(at(y, focus === "all" ? MEASURE_PHASE[m] : focus), m) : null;
-      cells[m] = { value: f?.weighted ?? null, n: f ? f.n_with_figure : null, average: f?.average_school ?? null };
+      cells[m] = { value: f?.weighted ?? null, n: f ? f.n_with_figure : null, average: f?.average_school ?? null, ...(f?.tooFew ? { tooFew: true } : {}) };
     }
     const of = ch3?.same_schools ?? (ch3 ? ch3.growing + ch3.shrinking : 0);
     return {
@@ -326,7 +368,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
     ...(peer ? [opt("peer_band", "peer_band:band", peerWords(peer).set, peerWords(peer).info(name))] : []),
     opt("non_group", "non_group:england", "Non-group schools", sector === "independent" ? "Standalone independent schools in England (in no independent group of 2 or more schools)." : NON_GROUP_STATE_NOTE),
     opt("areas", "areas:la", `All schools in ${name}’s areas`, `Every school in the LAs where ${name}’s schools sit, weighted to ${name}’s pupils in each.`),
-    opt("england", "england:england", "England", "Every school in England with the figure."),
+    opt("england", "england:england", englandWords(sector).label, englandWords(sector).info),
     opt("mix_matched", "mix_matched:non_group", mixMatchedLabel(name), `Non-group schools in ${name}’s regions, reweighted to its mix of phases and regions, so the gap isn’t geography.`),
     ...namedIds(input.compare).map((id) => opt(`peer_named:${id}` as CompareKey, `peer_named:${id}`, input.namedLabels?.[id] ?? sets.find((s) => s.key === `peer_named:${id}`)?.label ?? id, "A named group of the same type, its own figures.")),
   ];
@@ -363,6 +405,13 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
     years: { census, first, results: latest },
     now: {
       schools: ph.n_schools,
+      // LF4: "54 of 55 schools; 1 alternative provision not counted" (members of the kinds left out).
+      notCounted: (() => {
+        const by: Record<string, number> = {};
+        for (const e of excludedRoll) if (e.reason in NOT_COUNTED_WORDS) by[e.reason] = (by[e.reason] ?? 0) + 1;
+        const n = Object.values(by).reduce((a, b) => a + b, 0);
+        return n ? { n, total: all.n_schools + n, words: notCountedWords(by)! } : null;
+      })(),
       byPhase: all.schools_by_phase ?? { primary: 0, secondary: 0, post16: 0 },
       roll: ph.roll,
       change: changes,
@@ -530,7 +579,11 @@ export function buildSchools(input: {
     let headline: SchoolRow["headline"] = null;
     let reason: string | null = null;
     let national: Place | null = null;
-    if (hm) {
+    const kindNow = (f ?? lastWith)?.kind;
+    if ((f ?? lastWith)?.counted === false && kindNow && kindNow in NOT_COUNTED_WORDS) {
+      // LF4: listed with its own roll; the tag in place of results.
+      reason = `${NOT_COUNTED_WORDS[kindNow][0]} · not in group figures`;
+    } else if (hm) {
       const y = latest[hm];
       const yf = y !== null ? s.years.find((x) => x.period === y)?.figures : null;
       const v = yf?.results[hm];

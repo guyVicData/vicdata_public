@@ -11,7 +11,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { COMPARISON_KINDS, groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, namedCandidates, type ComparisonRow, type Figures, type GroupAggregate } from "./aggregates";
-import { buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE, NOT_OFFERED, mixMatchedLabel, setsFor, type CompareKey, type SetRef } from "./dash";
+import { englandWords, notCountedWords, tooFewWords, buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE, NOT_OFFERED, mixMatchedLabel, setsFor, type CompareKey, type SetRef } from "./dash";
 
 const HARRIS = "3320";
 const DUKES = "club_iss:dukes-education";
@@ -44,7 +44,11 @@ test("R-GROUP-COUNTS: every figure the views show carries the lookup's n", async
           const f = src.find((r) => r.period === y && r.phase === ph)?.figures;
           const want = f ? (f.results[m] ?? f.value_added[m] ?? null) : null;
           assert.equal(cell.n, want ? want.n_with_figure : null, `${g} ${focus} ${row.key} ${m}: n`);
-          assert.equal(cell.value, want ? want.weighted : null, `${g} ${focus} ${row.key} ${m}: value`);
+          // D9 (R-MIN-SCHOOLS): a pool's figure on fewer than 5 schools is withheld, its n kept.
+          const pooled = row.key !== "group" && !row.key.startsWith("england:") && !row.key.startsWith("peer_named:");
+          const withheld = pooled && want && want.n_with_figure > 0 && want.n_with_figure < 5;
+          assert.equal(cell.value, withheld ? null : want ? want.weighted : null, `${g} ${focus} ${row.key} ${m}: value`);
+          assert.equal(!!cell.tooFew, !!withheld, `${g} ${focus} ${row.key} ${m}: too few`);
         }
       }
     }
@@ -89,14 +93,16 @@ test("R-GROUP-PEERS: no self-declared group in any peer set; the peer band is th
   assert.equal((await agg(DUKES, "at_time")).peer?.set_id, "peer:independent_company:21-40");
 });
 
-test("R-GROUP-HARRIS-ROLL: Harris' combined roll equals the sum of its schools' census rolls (the ingest's G5)", async () => {
+// 0.8 group pools (LF1, LF4): the combined roll counts mainstream schools; Harris' one AP school (2 pupils)
+// is a member, listed, not counted.
+test("R-GROUP-HARRIS-ROLL: Harris' combined roll equals the sum of its counted schools' census rolls (the ingest's G5)", async () => {
   const schools = await groupSchoolsYear(HARRIS);
-  for (const [rd, want] of [["at_time", 42940], ["listed_now", 48960]] as const) {
+  for (const [rd, want] of [["at_time", 42938], ["listed_now", 48958]] as const) {
     const a = await agg(HARRIS, rd);
     const p = 2025;
     const sum = schools.reduce((t, s) => {
       const y = s.years.find((x) => x.period === p);
-      return t + (y && y[rd] && y.figures ? y.figures.roll : 0);
+      return t + (y && y[rd] && y.figures && y.figures.counted !== false ? y.figures.roll : 0);
     }, 0);
     assert.equal(at(a, p).roll, want, `${rd}: the ingest's G5 figure`);
     assert.equal(sum, want, `${rd}: the sum of its schools' rolls`);
@@ -267,4 +273,43 @@ test("R-GROUP-SETS-DISTINCT: no two offered sets have identical figures in every
             assert.ok(!same, `${g} ${reading}: ${sets[i].key} and ${sets[j].key} have identical ${ph} figures in every year`);
           }
     }
+});
+
+// ------------------------------------------------------------------ 0.8 group pools (like for like, D9)
+
+test("R-MIN-SCHOOLS (group pools, D9): a pooled figure on fewer than 5 schools is withheld; England and the group itself never", async () => {
+  const a = await agg(HARRIS, "at_time");
+  const comps = await groupComparisons(HARRIS, kindsFor(DEFAULT_COMPARE));
+  const thin = (c: ComparisonRow, n: number): ComparisonRow => ({ ...c, figures: { ...c.figures, results: Object.fromEntries(Object.entries(c.figures.results).map(([k, v]) => [k, { ...v, n_with_figure: n }])) } });
+  const tweaked = comps.map((c) => (c.kind === "non_group" || c.kind === "england" ? thin(c, 3) : c));
+  const sets = setsFor(a, tweaked, "at_time", "Harris");
+  const ng = sets.find((s) => s.key === "non_group:england")!;
+  const eng = sets.find((s) => s.key === "england:england")!;
+  const anyRes = (s: SetRef) => s.rows.flatMap((r) => Object.values(r.figures.results));
+  assert.ok(anyRes(ng).length > 0 && anyRes(ng).every((v) => v.weighted === null && v.average_school === null && v.tooFew), "non-group withheld");
+  assert.ok(anyRes(eng).some((v) => v.weighted !== null), "England exempt");
+  assert.equal(tooFewWords(3), "Too few schools (3)");
+});
+
+test("E1: England follows the group's sector, worded and explained", async () => {
+  for (const [g, label] of [[HARRIS, "England, mainstream state-funded"], [DUKES, "England, independent mainstream"]] as const) {
+    const o = buildOverview({ agg: await agg(g, "at_time"), comps: await groupComparisons(g, kindsFor(DEFAULT_COMPARE)), compare: DEFAULT_COMPARE, focus: "all" });
+    assert.equal(o.compare.options.find((x) => x.key === "england")?.label, label);
+  }
+  assert.match(englandWords("state").info, /47\.4 in 2025\/26/);
+  assert.doesNotMatch(englandWords("independent").info, /47\.4/);
+});
+
+test("LF4: Harris counts 54 of 55 schools, its alternative provision listed and tagged, not counted", async () => {
+  const a = await agg(HARRIS, "at_time");
+  const o = buildOverview({ agg: a, comps: await groupComparisons(HARRIS, kindsFor(DEFAULT_COMPARE)), compare: DEFAULT_COMPARE, focus: "all" });
+  assert.deepEqual(o.now.notCounted, { n: 1, total: 55, words: "1 alternative provision not counted" });
+  assert.equal(o.now.schools, 54);
+  const schools = await groupSchoolsYear(HARRIS);
+  const ap = schools.find((s) => s.years.some((y) => y.figures?.kind === "ap"))!;
+  const row = buildSchools({ agg: a, schools, focus: "all" }).rows.find((r) => r.urn === ap.urn)!;
+  assert.equal(row.reason, "AP · not in group figures");
+  assert.equal(row.headline, null);
+  assert.ok(row.roll !== null, "its own roll shown");
+  assert.equal(notCountedWords({ special: 2, nursery: 1 }), "2 special schools and 1 nursery school not counted");
 });

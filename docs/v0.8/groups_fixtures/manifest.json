@@ -1,11 +1,12 @@
 {
  "note": "Dry-run results in the exact shape the production lookups return (PostgREST: jsonb as is; table functions as json_agg of the rows). For the app's tests, parity harnesses and screenshots until the promote; the same tests then run against production unchanged.",
- "ingest_commit": "a60334f",
- "inputs_fetched_at": "2026-11-08 17:03:50",
+ "ingest_commit": "db7a27b",
+ "inputs_fetched_at": "2026-11-08 17:20:04",
  "migrations": [
   "20261017090000_group_aggregates.sql",
   "20261017100000_group_comparison_lookup_order.sql",
-  "20261108130000_group_sets.sql"
+  "20261108130000_group_sets.sql",
+  "20261108140000_group_england_by_sector.sql"
  ],
  "calls": {
   "group_index_lookup()": "group_index_lookup.json",

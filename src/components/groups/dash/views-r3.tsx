@@ -10,7 +10,7 @@ import { periodLabel } from "@/catalogue/years";
 import { MEASURE_LABEL, MEASURE_UNIT, ordinal, PEER_PLURAL, PHASE_NOUN } from "@/lib/groups/dash";
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
-import { reasonWords } from "@/lib/groups/dash";
+import { reasonWords, tooFewWords } from "@/lib/groups/dash";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 import { featuredRow } from "@/components/shell/accent";
 
@@ -37,7 +37,7 @@ export function AcademicNow({ a, average }: { a: GroupAcademic; average: boolean
             <div className="grid grid-cols-2 gap-2">
               <Tile label={`Schools with ${h.phase === "secondary" ? "GCSE" : h.phase === "post16" ? "A-level" : "KS2"} results`} value={<span className="text-[var(--accent)]">{h.withFigure}</span>} sub={`of ${h.inPhase} · the rest listed, with the reason`} accent />
               {h.measures.slice(0, 2).map((m) => (
-                <Tile key={m.measure} label={m.label} value={f(average ? m.group?.average_school : m.group?.weighted, m.measure)} sub={`${average ? "average school" : "pupil-weighted"} · ${o.compare.label.toLowerCase().startsWith("peer") ? "peers" : o.compare.label} ${f(average ? m.set?.average_school : m.set?.weighted, m.measure)} · England ${f(m.england?.weighted, m.measure)}`} />
+                <Tile key={m.measure} label={m.label} value={f(average ? m.group?.average_school : m.group?.weighted, m.measure)} sub={`${average ? "average school" : "pupil-weighted"} · ${o.compare.label.toLowerCase().startsWith("peer") ? "peers" : o.compare.label} ${m.set?.tooFew ? tooFewWords(m.set.n_with_figure) : f(average ? m.set?.average_school : m.set?.weighted, m.measure)} · England ${f(m.england?.weighted, m.measure)}`} />
               ))}
               <Tile label={`Rank among peer ${peer}`} value={place ? ordinal(place.rank, place.tied) : "—"} sub={place ? `of ${place.of} ${peer} with ${o.group.type === "mat" ? "the same size band" : "a similar size"}` : "no peer figure this year"} />
             </div>
@@ -104,7 +104,7 @@ export function SchoolsRanked({ a, highlight, fullscreen }: { a: GroupAcademic; 
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[var(--muted2)]">
         <span>Group median {f(r.groupMedian, r.measure)}</span>
-        {r.set && <span>{r.set.label} {f(r.set.value, r.measure)}{r.set.n !== null ? ` (${r.set.n} schools)` : ""}</span>}
+        {r.set && <span>{r.set.label} {r.set.value === null && r.set.n !== null && r.set.n > 0 && r.set.n < 5 ? tooFewWords(r.set.n) : <>{f(r.set.value, r.measure)}{r.set.n !== null ? ` (${r.set.n} schools)` : ""}</>}</span>}
         <span>Non-group {f(r.nonGroup, r.measure)}</span>
         <span>England {f(r.england, r.measure)}</span>
       </div>

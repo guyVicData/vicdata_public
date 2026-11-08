@@ -14,7 +14,7 @@ export type Reading = "at_time" | "listed_now";
 export type Phase = "all" | "primary" | "secondary" | "post16";
 export const READINGS: Reading[] = ["at_time", "listed_now"];
 
-export type MeasureFig = { weighted: number | null; average_school: number | null; n_with_figure: number; n_weighted?: number; weight?: number | null };
+export type MeasureFig = { weighted: number | null; average_school: number | null; n_with_figure: number; n_weighted?: number; weight?: number | null; /** R-MIN-SCHOOLS (D9): a pooled figure on fewer than 5 schools, withheld */ tooFew?: boolean };
 export type Change = { from_period?: number; combined_pct: number | null; combined_base?: number | null; same_schools_pct: number | null; same_schools?: number; growing: number; shrinking: number };
 export type Excluded = { urn: string; name: string; reason: string };
 export type Place = { rank: number; of: number; tied: boolean };
@@ -93,6 +93,10 @@ export type SchoolYearFigures = {
   trend: Record<"1" | "3" | "5", number | null>;
   igcse: boolean;
   ks4_pupils: number | null;
+  /** 0.8 group pools (LF4): the school's kind, and whether it counts in group figures (special, AP, PRU
+   * and nursery schools are members but don't). Absent in builds before the like-for-like rule. */
+  kind?: "mainstream" | "special" | "ap" | "pru" | "nursery";
+  counted?: boolean;
 };
 export type SchoolYearRow = {
   urn: string;

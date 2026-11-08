@@ -32,7 +32,7 @@ import { groupMethodOf } from "@/catalogue/methods-groups";
 import { periodLabel, ROLL_WORD, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexBaseWords } from "@/lib/index-base";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
-import { FOCI, FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, parseCompare, type CompareKey, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
+import { englandWords, FOCI, FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, parseCompare, type CompareKey, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
 import type { Reading } from "@/lib/groups/aggregates";
 import { AcademicNow, BandsReserved, EntryCohorts, GroupShape, GrowingShrinking, ImprovingDeclining, LeavingAt16, MarketShare, ProjectionPerSchool, PupilsNow, SchoolsRanked, SubjectAreasAcross, ValueAddedPanel, type ProjectionRow } from "./views-r3";
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
@@ -571,6 +571,9 @@ function methodVars(c: Ctx): Record<string, string | number | null> {
     reading: c.params.reading === "at_time" ? GROUP_NOTES.readingAtTime : GROUP_NOTES.readingListed,
     from: periodLabel(c.o.years.first),
     base: indexBaseWords(base),
+    // E1, E2: England follows the group's sector.
+    england: englandWords(c.o.group.type.startsWith("independent") ? "independent" : "state").label,
+    englandNote: englandWords(c.o.group.type.startsWith("independent") ? "independent" : "state").info,
   };
 }
 

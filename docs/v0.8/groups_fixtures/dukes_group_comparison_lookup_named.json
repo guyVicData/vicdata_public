@@ -32,7 +32,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 5352,
+   "roll": 5270,
    "share": {
     "las": [
      {
@@ -106,13 +106,6 @@
       "group_pupils": 226
      },
      {
-      "pct": 7.97,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 2296,
-      "group_pupils": 183
-     },
-     {
       "pct": 16.46,
       "la_code": "311",
       "la_name": "Havering",
@@ -134,6 +127,13 @@
       "group_pupils": 103
      },
      {
+      "pct": 4.4,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 2296,
+      "group_pupils": 101
+     },
+     {
       "pct": 7.8,
       "la_code": "319",
       "la_name": "Sutton",
@@ -141,7 +141,7 @@
       "group_pupils": 93
      }
     ],
-    "pct": 1.12,
+    "pct": 1.11,
     "sector": "independent",
     "regions": [
      {
@@ -151,10 +151,10 @@
       "region_pupils": 28117
      },
      {
-      "pct": 1.2,
+      "pct": 1.24,
       "region_code": "E12000005",
       "group_pupils": 499,
-      "region_pupils": 41579
+      "region_pupils": 40140
      },
      {
       "pct": 2.13,
@@ -163,10 +163,10 @@
       "region_pupils": 66053
      },
      {
-      "pct": 0.43,
+      "pct": 0.37,
       "region_code": "E12000007",
-      "group_pupils": 620,
-      "region_pupils": 145040
+      "group_pupils": 538,
+      "region_pupils": 143662
      },
      {
       "pct": 0.86,
@@ -181,8 +181,8 @@
       "region_pupils": 51605
      }
     ],
-    "area_pupils": 477566,
-    "group_pupils": 5352
+    "area_pupils": 474749,
+    "group_pupils": 5270
    },
    "regions": {
     "E12000004": 1,
@@ -237,8 +237,16 @@
     }
    },
    "boarders": 865,
-   "excluded": {},
-   "n_schools": 21,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -248,19 +256,19 @@
     "S": 7,
     "XS": 10
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     4,
-    49,
-    163,
-    321,
-    223,
-    252,
-    242,
-    322,
-    320,
-    346,
-    350,
+    48,
+    154,
+    313,
+    216,
+    241,
+    234,
+    315,
+    311,
+    335,
+    339,
     414,
     373,
     386,
@@ -289,7 +297,7 @@
    },
    "roll_by_phase": {
     "post16": 670,
-    "primary": 1832,
+    "primary": 1775,
     "secondary": 2090
    },
    "subject_areas": {
@@ -298,7 +306,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -365,7 +373,7 @@
       "group_pupils": 53
      }
     ],
-    "pct": 2.04,
+    "pct": 2.08,
     "sector": "independent",
     "regions": [
      {
@@ -375,10 +383,10 @@
       "region_pupils": 4863
      },
      {
-      "pct": 1.18,
+      "pct": 1.27,
       "region_code": "E12000005",
       "group_pupils": 87,
-      "region_pupils": 7370
+      "region_pupils": 6846
      },
      {
       "pct": 3.09,
@@ -393,7 +401,7 @@
       "region_pupils": 10198
      }
     ],
-    "area_pupils": 32796,
+    "area_pupils": 32272,
     "group_pupils": 670
    },
    "results": {
@@ -445,7 +453,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1832,
+   "roll": 1775,
    "share": {
     "las": [
      {
@@ -484,13 +492,6 @@
       "group_pupils": 133
      },
      {
-      "pct": 14.16,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 918,
-      "group_pupils": 130
-     },
-     {
       "pct": 10.28,
       "la_code": "893",
       "la_name": "Shropshire",
@@ -517,6 +518,13 @@
       "la_name": "Suffolk",
       "la_pupils": 1986,
       "group_pupils": 74
+     },
+     {
+      "pct": 7.95,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 918,
+      "group_pupils": 73
      },
      {
       "pct": 10.65,
@@ -554,7 +562,7 @@
       "group_pupils": 49
      }
     ],
-    "pct": 1.15,
+    "pct": 1.11,
     "sector": "independent",
     "regions": [
      {
@@ -576,9 +584,9 @@
       "region_pupils": 21278
      },
      {
-      "pct": 0.69,
+      "pct": 0.59,
       "region_code": "E12000007",
-      "group_pupils": 404,
+      "group_pupils": 347,
       "region_pupils": 58398
      },
      {
@@ -595,7 +603,7 @@
      }
     ],
     "area_pupils": 159519,
-    "group_pupils": 1832
+    "group_pupils": 1775
    },
    "results": {
     "ks2_rwm": {
@@ -606,9 +614,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -688,7 +704,7 @@
       "group_pupils": 35
      }
     ],
-    "pct": 1.45,
+    "pct": 1.46,
     "sector": "independent",
     "regions": [
      {
@@ -698,10 +714,10 @@
       "region_pupils": 12087
      },
      {
-      "pct": 1.46,
+      "pct": 1.54,
       "region_code": "E12000005",
       "group_pupils": 282,
-      "region_pupils": 19260
+      "region_pupils": 18345
      },
      {
       "pct": 3.15,
@@ -722,7 +738,7 @@
       "region_pupils": 23296
      }
     ],
-    "area_pupils": 144007,
+    "area_pupils": 143092,
     "group_pupils": 2083
    },
    "results": {
@@ -804,7 +820,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4976,
+   "roll": 4901,
    "share": {
     "las": [
      {
@@ -878,13 +894,6 @@
       "group_pupils": 234
      },
      {
-      "pct": 7.51,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 2078,
-      "group_pupils": 156
-     },
-     {
       "pct": 7.83,
       "la_code": "308",
       "la_name": "Enfield",
@@ -911,9 +920,16 @@
       "la_name": "Kingston upon Thames",
       "la_pupils": 4064,
       "group_pupils": 93
+     },
+     {
+      "pct": 3.9,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 2078,
+      "group_pupils": 81
      }
     ],
-    "pct": 1.06,
+    "pct": 1.05,
     "sector": "independent",
     "regions": [
      {
@@ -923,10 +939,10 @@
       "region_pupils": 27011
      },
      {
-      "pct": 1.08,
+      "pct": 1.12,
       "region_code": "E12000005",
       "group_pupils": 433,
-      "region_pupils": 40243
+      "region_pupils": 38743
      },
      {
       "pct": 2.02,
@@ -935,10 +951,10 @@
       "region_pupils": 64850
      },
      {
-      "pct": 0.4,
+      "pct": 0.35,
       "region_code": "E12000007",
-      "group_pupils": 579,
-      "region_pupils": 144892
+      "group_pupils": 504,
+      "region_pupils": 143513
      },
      {
       "pct": 0.82,
@@ -953,18 +969,18 @@
       "region_pupils": 49951
      }
     ],
-    "area_pupils": 469251,
-    "group_pupils": 4976
+    "area_pupils": 466372,
+    "group_pupils": 4901
    },
    "change": {
     "1": {
      "growing": 4,
-     "shrinking": 17,
+     "shrinking": 16,
      "from_period": 2019,
-     "combined_pct": -7.03,
-     "same_schools": 21,
-     "combined_base": 5352,
-     "same_schools_pct": -7.03
+     "combined_pct": -7,
+     "same_schools": 20,
+     "combined_base": 5270,
+     "same_schools_pct": -7
     },
     "3": {
      "growing": 0,
@@ -1038,8 +1054,16 @@
     }
    },
    "boarders": 425,
-   "excluded": {},
-   "n_schools": 21,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -1049,19 +1073,19 @@
     "S": 7,
     "XS": 10
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     9,
     34,
-    154,
-    276,
-    185,
-    228,
-    248,
-    265,
-    314,
-    337,
-    352,
+    151,
+    263,
+    179,
+    220,
+    238,
+    258,
+    307,
+    326,
+    342,
     314,
     407,
     376,
@@ -1090,7 +1114,7 @@
    },
    "roll_by_phase": {
     "post16": 641,
-    "primary": 1744,
+    "primary": 1691,
     "secondary": 1933
    },
    "subject_areas": {
@@ -1099,7 +1123,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 12
    }
   }
@@ -1172,7 +1196,7 @@
       "group_pupils": 47
      }
     ],
-    "pct": 2.01,
+    "pct": 2.04,
     "sector": "independent",
     "regions": [
      {
@@ -1182,10 +1206,10 @@
       "region_pupils": 4519
      },
      {
-      "pct": 1.05,
+      "pct": 1.14,
       "region_code": "E12000005",
       "group_pupils": 77,
-      "region_pupils": 7356
+      "region_pupils": 6782
      },
      {
       "pct": 2.97,
@@ -1200,7 +1224,7 @@
       "region_pupils": 9928
      }
     ],
-    "area_pupils": 31897,
+    "area_pupils": 31323,
     "group_pupils": 640
    },
    "change": {
@@ -1287,7 +1311,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1744,
+   "roll": 1691,
    "share": {
     "las": [
      {
@@ -1324,13 +1348,6 @@
       "la_name": "Wiltshire",
       "la_pupils": 1470,
       "group_pupils": 128
-     },
-     {
-      "pct": 13.32,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 811,
-      "group_pupils": 108
      },
      {
       "pct": 22.82,
@@ -1382,6 +1399,13 @@
       "group_pupils": 57
      },
      {
+      "pct": 6.78,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 811,
+      "group_pupils": 55
+     },
+     {
       "pct": 3.45,
       "la_code": "314",
       "la_name": "Kingston upon Thames",
@@ -1396,7 +1420,7 @@
       "group_pupils": 44
      }
     ],
-    "pct": 1.12,
+    "pct": 1.08,
     "sector": "independent",
     "regions": [
      {
@@ -1418,9 +1442,9 @@
       "region_pupils": 20759
      },
      {
-      "pct": 0.68,
+      "pct": 0.59,
       "region_code": "E12000007",
-      "group_pupils": 396,
+      "group_pupils": 343,
       "region_pupils": 58049
      },
      {
@@ -1437,17 +1461,17 @@
      }
     ],
     "area_pupils": 156065,
-    "group_pupils": 1744
+    "group_pupils": 1691
    },
    "change": {
     "1": {
      "growing": 5,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2019,
-     "combined_pct": -4.8,
-     "same_schools": 20,
-     "combined_base": 1832,
-     "same_schools_pct": -4.8
+     "combined_pct": -4.73,
+     "same_schools": 19,
+     "combined_base": 1775,
+     "same_schools_pct": -4.73
     },
     "3": {
      "growing": 0,
@@ -1477,9 +1501,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -1572,7 +1604,7 @@
       "group_pupils": 12
      }
     ],
-    "pct": 1,
+    "pct": 1.01,
     "sector": "independent",
     "regions": [
      {
@@ -1582,10 +1614,10 @@
       "region_pupils": 11923
      },
      {
-      "pct": 1.36,
+      "pct": 1.44,
       "region_code": "E12000005",
       "group_pupils": 255,
-      "region_pupils": 18687
+      "region_pupils": 17761
      },
      {
       "pct": 2.97,
@@ -1597,7 +1629,7 @@
       "pct": 0.02,
       "region_code": "E12000007",
       "group_pupils": 12,
-      "region_pupils": 51282
+      "region_pupils": 50897
      },
      {
       "pct": 0.29,
@@ -1612,7 +1644,7 @@
       "region_pupils": 22406
      }
     ],
-    "area_pupils": 193383,
+    "area_pupils": 192072,
     "group_pupils": 1933
    },
    "change": {
@@ -1748,7 +1780,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4882,
+   "roll": 4811,
    "share": {
     "las": [
      {
@@ -1822,13 +1854,6 @@
       "group_pupils": 219
      },
      {
-      "pct": 8.02,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 2008,
-      "group_pupils": 161
-     },
-     {
       "pct": 9.27,
       "la_code": "308",
       "la_name": "Enfield",
@@ -1850,6 +1875,13 @@
       "group_pupils": 108
      },
      {
+      "pct": 4.48,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 2008,
+      "group_pupils": 90
+     },
+     {
       "pct": 2.12,
       "la_code": "314",
       "la_name": "Kingston upon Thames",
@@ -1857,7 +1889,7 @@
       "group_pupils": 87
      }
     ],
-    "pct": 1.02,
+    "pct": 1.01,
     "sector": "independent",
     "regions": [
      {
@@ -1867,10 +1899,10 @@
       "region_pupils": 27417
      },
      {
-      "pct": 0.89,
+      "pct": 0.92,
       "region_code": "E12000005",
       "group_pupils": 368,
-      "region_pupils": 41505
+      "region_pupils": 39938
      },
      {
       "pct": 2.03,
@@ -1879,10 +1911,10 @@
       "region_pupils": 65686
      },
      {
-      "pct": 0.43,
+      "pct": 0.38,
       "region_code": "E12000007",
-      "group_pupils": 622,
-      "region_pupils": 146035
+      "group_pupils": 551,
+      "region_pupils": 144616
      },
      {
       "pct": 0.77,
@@ -1897,18 +1929,18 @@
       "region_pupils": 51313
      }
     ],
-    "area_pupils": 477283,
-    "group_pupils": 4882
+    "area_pupils": 474297,
+    "group_pupils": 4811
    },
    "change": {
     "1": {
      "growing": 11,
-     "shrinking": 9,
+     "shrinking": 8,
      "from_period": 2020,
-     "combined_pct": -1.89,
-     "same_schools": 21,
-     "combined_base": 4976,
-     "same_schools_pct": -1.89
+     "combined_pct": -1.84,
+     "same_schools": 20,
+     "combined_base": 4901,
+     "same_schools_pct": -1.84
     },
     "3": {
      "growing": 0,
@@ -1983,6 +2015,13 @@
    },
    "boarders": 805,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -2152,7 +2191,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -2162,19 +2201,19 @@
     "S": 7,
     "XS": 9
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     5,
-    44,
-    155,
-    248,
-    206,
-    203,
-    241,
-    264,
-    279,
-    341,
-    358,
+    41,
+    149,
+    237,
+    199,
+    197,
+    235,
+    256,
+    272,
+    334,
+    348,
     278,
     331,
     388,
@@ -2203,7 +2242,7 @@
    },
    "roll_by_phase": {
     "post16": 681,
-    "primary": 1686,
+    "primary": 1642,
     "secondary": 1855
    },
    "subject_areas": {
@@ -2312,7 +2351,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -2395,7 +2434,7 @@
       "group_pupils": 40
      }
     ],
-    "pct": 2.06,
+    "pct": 2.1,
     "sector": "independent",
     "regions": [
      {
@@ -2405,10 +2444,10 @@
       "region_pupils": 4628
      },
      {
-      "pct": 1.14,
+      "pct": 1.24,
       "region_code": "E12000005",
       "group_pupils": 88,
-      "region_pupils": 7697
+      "region_pupils": 7079
      },
      {
       "pct": 3.05,
@@ -2423,7 +2462,7 @@
       "region_pupils": 10185
      }
     ],
-    "area_pupils": 32962,
+    "area_pupils": 32344,
     "group_pupils": 678
    },
    "change": {
@@ -2560,7 +2599,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1686,
+   "roll": 1642,
    "share": {
     "las": [
      {
@@ -2597,13 +2636,6 @@
       "la_name": "Wiltshire",
       "la_pupils": 1449,
       "group_pupils": 116
-     },
-     {
-      "pct": 13.66,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 776,
-      "group_pupils": 106
      },
      {
       "pct": 12,
@@ -2648,6 +2680,13 @@
       "group_pupils": 66
      },
      {
+      "pct": 7.99,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 776,
+      "group_pupils": 62
+     },
+     {
       "pct": 11.58,
       "la_code": "831",
       "la_name": "Derby",
@@ -2669,7 +2708,7 @@
       "group_pupils": 44
      }
     ],
-    "pct": 1.08,
+    "pct": 1.05,
     "sector": "independent",
     "regions": [
      {
@@ -2691,9 +2730,9 @@
       "region_pupils": 20601
      },
      {
-      "pct": 0.7,
+      "pct": 0.62,
       "region_code": "E12000007",
-      "group_pupils": 401,
+      "group_pupils": 357,
       "region_pupils": 57416
      },
      {
@@ -2710,17 +2749,17 @@
      }
     ],
     "area_pupils": 156010,
-    "group_pupils": 1686
+    "group_pupils": 1642
    },
    "change": {
     "1": {
      "growing": 8,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2020,
-     "combined_pct": -3.33,
-     "same_schools": 20,
-     "combined_base": 1744,
-     "same_schools_pct": -3.33
+     "combined_pct": -2.9,
+     "same_schools": 19,
+     "combined_base": 1691,
+     "same_schools_pct": -2.9
     },
     "3": {
      "growing": 0,
@@ -2750,9 +2789,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -2853,7 +2900,7 @@
       "group_pupils": 15
      }
     ],
-    "pct": 1.27,
+    "pct": 1.28,
     "sector": "independent",
     "regions": [
      {
@@ -2863,10 +2910,10 @@
       "region_pupils": 11917
      },
      {
-      "pct": 1.18,
+      "pct": 1.24,
       "region_code": "E12000005",
       "group_pupils": 226,
-      "region_pupils": 19215
+      "region_pupils": 18266
      },
      {
       "pct": 2.91,
@@ -2887,7 +2934,7 @@
       "region_pupils": 23283
      }
     ],
-    "area_pupils": 145899,
+    "area_pupils": 144950,
     "group_pupils": 1852
    },
    "change": {
@@ -3242,7 +3289,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4770,
+   "roll": 4682,
    "share": {
     "las": [
      {
@@ -3316,13 +3363,6 @@
       "group_pupils": 208
      },
      {
-      "pct": 9.35,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1990,
-      "group_pupils": 186
-     },
-     {
       "pct": 8.54,
       "la_code": "308",
       "la_name": "Enfield",
@@ -3349,9 +3389,16 @@
       "la_name": "Kingston upon Thames",
       "la_pupils": 4149,
       "group_pupils": 102
+     },
+     {
+      "pct": 4.92,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1990,
+      "group_pupils": 98
      }
     ],
-    "pct": 0.99,
+    "pct": 0.97,
     "sector": "independent",
     "regions": [
      {
@@ -3361,10 +3408,10 @@
       "region_pupils": 28009
      },
      {
-      "pct": 0.85,
+      "pct": 0.88,
       "region_code": "E12000005",
       "group_pupils": 357,
-      "region_pupils": 41931
+      "region_pupils": 40386
      },
      {
       "pct": 1.92,
@@ -3373,10 +3420,10 @@
       "region_pupils": 66555
      },
      {
-      "pct": 0.44,
+      "pct": 0.38,
       "region_code": "E12000007",
-      "group_pupils": 645,
-      "region_pupils": 147424
+      "group_pupils": 557,
+      "region_pupils": 146027
      },
      {
       "pct": 0.75,
@@ -3391,27 +3438,27 @@
       "region_pupils": 51876
      }
     ],
-    "area_pupils": 483906,
-    "group_pupils": 4770
+    "area_pupils": 480964,
+    "group_pupils": 4682
    },
    "change": {
     "1": {
-     "growing": 8,
+     "growing": 7,
      "shrinking": 12,
      "from_period": 2021,
-     "combined_pct": -2.29,
-     "same_schools": 21,
-     "combined_base": 4882,
-     "same_schools_pct": -2.29
+     "combined_pct": -2.68,
+     "same_schools": 20,
+     "combined_base": 4811,
+     "same_schools_pct": -2.68
     },
     "3": {
-     "growing": 5,
+     "growing": 4,
      "shrinking": 16,
      "from_period": 2019,
-     "combined_pct": -10.87,
-     "same_schools": 21,
-     "combined_base": 5352,
-     "same_schools_pct": -10.87
+     "combined_pct": -11.16,
+     "same_schools": 20,
+     "combined_base": 5270,
+     "same_schools_pct": -11.16
     },
     "5": {
      "growing": 0,
@@ -3477,6 +3524,13 @@
    },
    "boarders": 740,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -3575,7 +3629,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -3762,7 +3816,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -3771,20 +3825,20 @@
     "S": 4,
     "XS": 9
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     6,
     43,
-    152,
-    225,
-    208,
-    214,
-    212,
-    260,
-    294,
-    309,
-    349,
-    311,
+    144,
+    211,
+    196,
+    209,
+    203,
+    252,
+    281,
+    295,
+    345,
+    310,
     293,
     359,
     417,
@@ -3812,8 +3866,8 @@
    },
    "roll_by_phase": {
     "post16": 672,
-    "primary": 1638,
-    "secondary": 1825
+    "primary": 1585,
+    "secondary": 1824
    },
    "subject_areas": {
     "ks4": [
@@ -3921,7 +3975,7 @@
    },
    "schools_by_phase": {
     "post16": 8,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -4011,7 +4065,7 @@
       "group_pupils": 10
      }
     ],
-    "pct": 1.16,
+    "pct": 1.17,
     "sector": "independent",
     "regions": [
      {
@@ -4021,10 +4075,10 @@
       "region_pupils": 4733
      },
      {
-      "pct": 1.09,
+      "pct": 1.18,
       "region_code": "E12000005",
       "group_pupils": 85,
-      "region_pupils": 7807
+      "region_pupils": 7233
      },
      {
       "pct": 3.18,
@@ -4045,7 +4099,7 @@
       "region_pupils": 10349
      }
     ],
-    "area_pupils": 58035,
+    "area_pupils": 57461,
     "group_pupils": 672
    },
    "change": {
@@ -4202,7 +4256,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1637,
+   "roll": 1584,
    "share": {
     "las": [
      {
@@ -4232,13 +4286,6 @@
       "la_name": "Dorset",
       "la_pupils": 1287,
       "group_pupils": 141
-     },
-     {
-      "pct": 15.36,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 788,
-      "group_pupils": 121
      },
      {
       "pct": 7.76,
@@ -4283,6 +4330,13 @@
       "group_pupils": 69
      },
      {
+      "pct": 8.63,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 788,
+      "group_pupils": 68
+     },
+     {
       "pct": 3.52,
       "la_code": "878",
       "la_name": "Devon",
@@ -4311,7 +4365,7 @@
       "group_pupils": 42
      }
     ],
-    "pct": 1.05,
+    "pct": 1.01,
     "sector": "independent",
     "regions": [
      {
@@ -4333,9 +4387,9 @@
       "region_pupils": 20817
      },
      {
-      "pct": 0.73,
+      "pct": 0.64,
       "region_code": "E12000007",
-      "group_pupils": 421,
+      "group_pupils": 368,
       "region_pupils": 57646
      },
      {
@@ -4352,26 +4406,26 @@
      }
     ],
     "area_pupils": 156299,
-    "group_pupils": 1637
+    "group_pupils": 1584
    },
    "change": {
     "1": {
-     "growing": 8,
+     "growing": 7,
      "shrinking": 11,
      "from_period": 2021,
-     "combined_pct": -2.91,
-     "same_schools": 20,
-     "combined_base": 1686,
-     "same_schools_pct": -2.91
+     "combined_pct": -3.53,
+     "same_schools": 19,
+     "combined_base": 1642,
+     "same_schools_pct": -3.53
     },
     "3": {
      "growing": 4,
-     "shrinking": 16,
+     "shrinking": 15,
      "from_period": 2019,
-     "combined_pct": -10.64,
-     "same_schools": 20,
-     "combined_base": 1832,
-     "same_schools_pct": -10.64
+     "combined_pct": -10.76,
+     "same_schools": 19,
+     "combined_base": 1775,
+     "same_schools_pct": -10.76
     },
     "5": {
      "growing": 0,
@@ -4393,11 +4447,18 @@
     }
    },
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks2_rwm": [
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -4491,8 +4552,8 @@
      }
     ]
    },
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -4593,7 +4654,7 @@
       "group_pupils": 20
      }
     ],
-    "pct": 1.22,
+    "pct": 1.23,
     "sector": "independent",
     "regions": [
      {
@@ -4603,10 +4664,10 @@
       "region_pupils": 12338
      },
      {
-      "pct": 1.06,
+      "pct": 1.11,
       "region_code": "E12000005",
       "group_pupils": 207,
-      "region_pupils": 19539
+      "region_pupils": 18568
      },
      {
       "pct": 2.68,
@@ -4627,7 +4688,7 @@
       "region_pupils": 23695
      }
     ],
-    "area_pupils": 149338,
+    "area_pupils": 148367,
     "group_pupils": 1819
    },
    "change": {
@@ -4987,7 +5048,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4565,
+   "roll": 4494,
    "share": {
     "las": [
      {
@@ -5061,13 +5122,6 @@
       "group_pupils": 181
      },
      {
-      "pct": 8.89,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1969,
-      "group_pupils": 175
-     },
-     {
       "pct": 20.23,
       "la_code": "311",
       "la_name": "Havering",
@@ -5089,6 +5143,13 @@
       "group_pupils": 119
      },
      {
+      "pct": 5.28,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1969,
+      "group_pupils": 104
+     },
+     {
       "pct": 2.36,
       "la_code": "314",
       "la_name": "Kingston upon Thames",
@@ -5096,7 +5157,7 @@
       "group_pupils": 97
      }
     ],
-    "pct": 0.95,
+    "pct": 0.94,
     "sector": "independent",
     "regions": [
      {
@@ -5106,10 +5167,10 @@
       "region_pupils": 27566
      },
      {
-      "pct": 0.83,
+      "pct": 0.86,
       "region_code": "E12000005",
       "group_pupils": 348,
-      "region_pupils": 41933
+      "region_pupils": 40344
      },
      {
       "pct": 1.72,
@@ -5118,10 +5179,10 @@
       "region_pupils": 66395
      },
      {
-      "pct": 0.45,
+      "pct": 0.41,
       "region_code": "E12000007",
-      "group_pupils": 667,
-      "region_pupils": 146670
+      "group_pupils": 596,
+      "region_pupils": 145234
      },
      {
       "pct": 0.72,
@@ -5136,27 +5197,27 @@
       "region_pupils": 51468
      }
     ],
-    "area_pupils": 481984,
-    "group_pupils": 4565
+    "area_pupils": 478959,
+    "group_pupils": 4494
    },
    "change": {
     "1": {
      "growing": 7,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2022,
-     "combined_pct": -4.3,
-     "same_schools": 21,
-     "combined_base": 4770,
-     "same_schools_pct": -4.3
+     "combined_pct": -4.02,
+     "same_schools": 20,
+     "combined_base": 4682,
+     "same_schools_pct": -4.02
     },
     "3": {
      "growing": 8,
-     "shrinking": 13,
+     "shrinking": 12,
      "from_period": 2020,
-     "combined_pct": -8.26,
-     "same_schools": 21,
-     "combined_base": 4976,
-     "same_schools_pct": -8.26
+     "combined_pct": -8.3,
+     "same_schools": 20,
+     "combined_base": 4901,
+     "same_schools_pct": -8.3
     },
     "5": {
      "growing": 0,
@@ -5222,6 +5283,13 @@
    },
    "boarders": 700,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -5320,7 +5388,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -5500,7 +5568,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -5509,20 +5577,20 @@
     "S": 2,
     "XS": 10
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     21,
-    43,
-    194,
-    270,
-    180,
-    201,
-    211,
-    247,
-    267,
-    300,
-    299,
-    245,
+    39,
+    189,
+    260,
+    176,
+    191,
+    207,
+    241,
+    258,
+    292,
+    289,
+    244,
     315,
     340,
     386,
@@ -5550,8 +5618,8 @@
    },
    "roll_by_phase": {
     "post16": 635,
-    "primary": 1525,
-    "secondary": 1693
+    "primary": 1478,
+    "secondary": 1692
    },
    "subject_areas": {
     "ks4": [
@@ -5659,7 +5727,7 @@
    },
    "schools_by_phase": {
     "post16": 8,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -5754,7 +5822,7 @@
       "group_pupils": 11
      }
     ],
-    "pct": 1.08,
+    "pct": 1.09,
     "sector": "independent",
     "regions": [
      {
@@ -5764,10 +5832,10 @@
       "region_pupils": 4645
      },
      {
-      "pct": 1.01,
+      "pct": 1.09,
       "region_code": "E12000005",
       "group_pupils": 78,
-      "region_pupils": 7722
+      "region_pupils": 7161
      },
      {
       "pct": 3.01,
@@ -5788,7 +5856,7 @@
       "region_pupils": 10376
      }
     ],
-    "area_pupils": 58663,
+    "area_pupils": 58102,
     "group_pupils": 635
    },
    "change": {
@@ -5938,7 +6006,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1525,
+   "roll": 1478,
    "share": {
     "las": [
      {
@@ -5970,13 +6038,6 @@
       "group_pupils": 134
      },
      {
-      "pct": 14.48,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 794,
-      "group_pupils": 115
-     },
-     {
       "pct": 7.4,
       "la_code": "865",
       "la_name": "Wiltshire",
@@ -6003,6 +6064,13 @@
       "la_name": "Havering",
       "la_pupils": 370,
       "group_pupils": 72
+     },
+     {
+      "pct": 8.56,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 794,
+      "group_pupils": 68
      },
      {
       "pct": 0.92,
@@ -6047,7 +6115,7 @@
       "group_pupils": 42
      }
     ],
-    "pct": 0.99,
+    "pct": 0.96,
     "sector": "independent",
     "regions": [
      {
@@ -6069,9 +6137,9 @@
       "region_pupils": 20436
      },
      {
-      "pct": 0.7,
+      "pct": 0.62,
       "region_code": "E12000007",
-      "group_pupils": 399,
+      "group_pupils": 352,
       "region_pupils": 56829
      },
      {
@@ -6088,26 +6156,26 @@
      }
     ],
     "area_pupils": 153285,
-    "group_pupils": 1525
+    "group_pupils": 1478
    },
    "change": {
     "1": {
      "growing": 4,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2022,
-     "combined_pct": -6.84,
-     "same_schools": 20,
-     "combined_base": 1637,
-     "same_schools_pct": -6.84
+     "combined_pct": -6.69,
+     "same_schools": 19,
+     "combined_base": 1584,
+     "same_schools_pct": -6.69
     },
     "3": {
      "growing": 4,
-     "shrinking": 16,
+     "shrinking": 15,
      "from_period": 2020,
-     "combined_pct": -12.56,
-     "same_schools": 20,
-     "combined_base": 1744,
-     "same_schools_pct": -12.56
+     "combined_pct": -12.6,
+     "same_schools": 19,
+     "combined_base": 1691,
+     "same_schools_pct": -12.6
     },
     "5": {
      "growing": 0,
@@ -6129,11 +6197,18 @@
     }
    },
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks2_rwm": [
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -6227,8 +6302,8 @@
      }
     ]
    },
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -6339,10 +6414,10 @@
       "region_pupils": 12188
      },
      {
-      "pct": 1.03,
+      "pct": 1.09,
       "region_code": "E12000005",
       "group_pupils": 206,
-      "region_pupils": 19982
+      "region_pupils": 18954
      },
      {
       "pct": 2.31,
@@ -6363,7 +6438,7 @@
       "region_pupils": 23669
      }
     ],
-    "area_pupils": 149965,
+    "area_pupils": 148937,
     "group_pupils": 1690
    },
    "change": {
@@ -6723,7 +6798,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4327,
+   "roll": 4287,
    "share": {
     "las": [
      {
@@ -6797,13 +6872,6 @@
       "group_pupils": 161
      },
      {
-      "pct": 8.55,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1731,
-      "group_pupils": 148
-     },
-     {
       "pct": 2.59,
       "la_code": "868",
       "la_name": "Windsor and Maidenhead",
@@ -6830,6 +6898,13 @@
       "la_name": "Enfield",
       "la_pupils": 1492,
       "group_pupils": 119
+     },
+     {
+      "pct": 6.24,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1731,
+      "group_pupils": 108
      }
     ],
     "pct": 0.92,
@@ -6842,10 +6917,10 @@
       "region_pupils": 26905
      },
      {
-      "pct": 0.83,
+      "pct": 0.86,
       "region_code": "E12000005",
       "group_pupils": 338,
-      "region_pupils": 40817
+      "region_pupils": 39184
      },
      {
       "pct": 1.67,
@@ -6854,10 +6929,10 @@
       "region_pupils": 64496
      },
      {
-      "pct": 0.47,
+      "pct": 0.45,
       "region_code": "E12000007",
-      "group_pupils": 677,
-      "region_pupils": 143499
+      "group_pupils": 637,
+      "region_pupils": 142052
      },
      {
       "pct": 0.68,
@@ -6872,36 +6947,36 @@
       "region_pupils": 50018
      }
     ],
-    "area_pupils": 469346,
-    "group_pupils": 4327
+    "area_pupils": 466266,
+    "group_pupils": 4287
    },
    "change": {
     "1": {
      "growing": 6,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2023,
-     "combined_pct": -5.21,
-     "same_schools": 21,
-     "combined_base": 4565,
-     "same_schools_pct": -5.21
+     "combined_pct": -4.61,
+     "same_schools": 20,
+     "combined_base": 4494,
+     "same_schools_pct": -4.61
     },
     "3": {
      "growing": 7,
-     "shrinking": 13,
+     "shrinking": 12,
      "from_period": 2021,
-     "combined_pct": -11.37,
-     "same_schools": 21,
-     "combined_base": 4882,
-     "same_schools_pct": -11.37
+     "combined_pct": -10.89,
+     "same_schools": 20,
+     "combined_base": 4811,
+     "same_schools_pct": -10.89
     },
     "5": {
      "growing": 7,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2019,
-     "combined_pct": -19.15,
-     "same_schools": 21,
-     "combined_base": 5352,
-     "same_schools_pct": -19.15
+     "combined_pct": -18.65,
+     "same_schools": 20,
+     "combined_base": 5270,
+     "same_schools_pct": -18.65
     }
    },
    "regions": {
@@ -6958,6 +7033,13 @@
    },
    "boarders": 625,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -6999,7 +7081,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "113912",
@@ -7186,7 +7268,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -7195,19 +7277,19 @@
     "S": 3,
     "XS": 10
    },
-   "n_with_roll": 21,
+   "n_with_roll": 20,
    "roll_by_age": [
     34,
     64,
     193,
     310,
-    178,
-    180,
-    199,
-    222,
-    246,
-    267,
-    316,
+    177,
+    176,
+    190,
+    217,
+    240,
+    259,
+    309,
     240,
     252,
     306,
@@ -7236,7 +7318,7 @@
    },
    "roll_by_phase": {
     "post16": 596,
-    "primary": 1430,
+    "primary": 1391,
     "secondary": 1521
    },
    "subject_areas": {
@@ -7345,7 +7427,7 @@
    },
    "schools_by_phase": {
     "post16": 8,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -7440,7 +7522,7 @@
       "group_pupils": 12
      }
     ],
-    "pct": 1.02,
+    "pct": 1.03,
     "sector": "independent",
     "regions": [
      {
@@ -7450,10 +7532,10 @@
       "region_pupils": 4561
      },
      {
-      "pct": 0.89,
+      "pct": 0.96,
       "region_code": "E12000005",
       "group_pupils": 70,
-      "region_pupils": 7841
+      "region_pupils": 7291
      },
      {
       "pct": 2.78,
@@ -7474,7 +7556,7 @@
       "region_pupils": 10352
      }
     ],
-    "area_pupils": 58529,
+    "area_pupils": 57979,
     "group_pupils": 596
    },
    "change": {
@@ -7626,7 +7708,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1430,
+   "roll": 1391,
    "share": {
     "las": [
      {
@@ -7649,13 +7731,6 @@
       "la_name": "Dorset",
       "la_pupils": 1254,
       "group_pupils": 130
-     },
-     {
-      "pct": 17.23,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 621,
-      "group_pupils": 107
      },
      {
       "pct": 7.67,
@@ -7691,6 +7766,13 @@
       "la_name": "Kingston upon Thames",
       "la_pupils": 1353,
       "group_pupils": 71
+     },
+     {
+      "pct": 10.95,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 621,
+      "group_pupils": 68
      },
      {
       "pct": 0.93,
@@ -7735,7 +7817,7 @@
       "group_pupils": 29
      }
     ],
-    "pct": 0.97,
+    "pct": 0.94,
     "sector": "independent",
     "regions": [
      {
@@ -7757,9 +7839,9 @@
       "region_pupils": 19791
      },
      {
-      "pct": 0.74,
+      "pct": 0.67,
       "region_code": "E12000007",
-      "group_pupils": 408,
+      "group_pupils": 369,
       "region_pupils": 55047
      },
      {
@@ -7776,35 +7858,35 @@
      }
     ],
     "area_pupils": 147209,
-    "group_pupils": 1430
+    "group_pupils": 1391
    },
    "change": {
     "1": {
      "growing": 5,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2023,
-     "combined_pct": -6.23,
-     "same_schools": 20,
-     "combined_base": 1525,
-     "same_schools_pct": -6.23
+     "combined_pct": -5.89,
+     "same_schools": 19,
+     "combined_base": 1478,
+     "same_schools_pct": -5.89
     },
     "3": {
      "growing": 6,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2021,
-     "combined_pct": -15.18,
-     "same_schools": 20,
-     "combined_base": 1686,
-     "same_schools_pct": -15.18
+     "combined_pct": -15.29,
+     "same_schools": 19,
+     "combined_base": 1642,
+     "same_schools_pct": -15.29
     },
     "5": {
      "growing": 3,
-     "shrinking": 17,
+     "shrinking": 16,
      "from_period": 2019,
-     "combined_pct": -21.94,
-     "same_schools": 20,
-     "combined_base": 1832,
-     "same_schools_pct": -21.94
+     "combined_pct": -21.63,
+     "same_schools": 19,
+     "combined_base": 1775,
+     "same_schools_pct": -21.63
     }
    },
    "results": {
@@ -7817,11 +7899,18 @@
     }
    },
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks2_rwm": [
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "113912",
@@ -7920,8 +8009,8 @@
      }
     ]
    },
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -8022,7 +8111,7 @@
       "group_pupils": 10
      }
     ],
-    "pct": 1.04,
+    "pct": 1.05,
     "sector": "independent",
     "regions": [
      {
@@ -8032,10 +8121,10 @@
       "region_pupils": 11816
      },
      {
-      "pct": 1.05,
+      "pct": 1.11,
       "region_code": "E12000005",
       "group_pupils": 204,
-      "region_pupils": 19470
+      "region_pupils": 18387
      },
      {
       "pct": 2.16,
@@ -8056,7 +8145,7 @@
       "region_pupils": 22901
      }
     ],
-    "area_pupils": 145998,
+    "area_pupils": 144915,
     "group_pupils": 1520
    },
    "change": {
@@ -8337,14 +8426,14 @@
      },
      "roll_change_1": {
       "of": 2,
-      "rank": 2,
+      "rank": 1,
       "tied": false
      }
     },
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 3921,
+   "roll": 3908,
    "share": {
     "las": [
      {
@@ -8425,18 +8514,18 @@
       "group_pupils": 125
      },
      {
-      "pct": 7.57,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1599,
-      "group_pupils": 121
-     },
-     {
       "pct": 8.1,
       "la_code": "319",
       "la_name": "Sutton",
       "la_pupils": 1382,
       "group_pupils": 112
+     },
+     {
+      "pct": 6.75,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1599,
+      "group_pupils": 108
      },
      {
       "pct": 2.53,
@@ -8463,10 +8552,10 @@
       "region_pupils": 24985
      },
      {
-      "pct": 0.79,
+      "pct": 0.82,
       "region_code": "E12000005",
       "group_pupils": 309,
-      "region_pupils": 39187
+      "region_pupils": 37530
      },
      {
       "pct": 1.61,
@@ -8477,8 +8566,8 @@
      {
       "pct": 0.45,
       "region_code": "E12000007",
-      "group_pupils": 619,
-      "region_pupils": 136910
+      "group_pupils": 606,
+      "region_pupils": 135465
      },
      {
       "pct": 0.69,
@@ -8493,36 +8582,36 @@
       "region_pupils": 47656
      }
     ],
-    "area_pupils": 446131,
-    "group_pupils": 3921
+    "area_pupils": 443029,
+    "group_pupils": 3908
    },
    "change": {
     "1": {
      "growing": 5,
-     "shrinking": 15,
+     "shrinking": 14,
      "from_period": 2024,
-     "combined_pct": -9.38,
-     "same_schools": 21,
-     "combined_base": 4327,
-     "same_schools_pct": -9.38
+     "combined_pct": -8.84,
+     "same_schools": 20,
+     "combined_base": 4287,
+     "same_schools_pct": -8.84
     },
     "3": {
      "growing": 6,
-     "shrinking": 15,
+     "shrinking": 14,
      "from_period": 2022,
-     "combined_pct": -17.8,
-     "same_schools": 21,
-     "combined_base": 4770,
-     "same_schools_pct": -17.8
+     "combined_pct": -16.53,
+     "same_schools": 20,
+     "combined_base": 4682,
+     "same_schools_pct": -16.53
     },
     "5": {
      "growing": 9,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2020,
-     "combined_pct": -21.2,
-     "same_schools": 21,
-     "combined_base": 4976,
-     "same_schools_pct": -21.2
+     "combined_pct": -20.26,
+     "same_schools": 20,
+     "combined_base": 4901,
+     "same_schools_pct": -20.26
     }
    },
    "regions": {
@@ -8579,6 +8668,13 @@
    },
    "boarders": 492,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -8676,7 +8772,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -8685,7 +8781,7 @@
     "S": 2,
     "XS": 11
    },
-   "n_with_roll": 21,
+   "n_with_roll": 20,
    "roll_by_age": [
     43,
     118,
@@ -8693,9 +8789,9 @@
     253,
     146,
     164,
-    170,
-    187,
-    226,
+    167,
+    185,
+    218,
     239,
     270,
     243,
@@ -8726,7 +8822,7 @@
    },
    "roll_by_phase": {
     "post16": 542,
-    "primary": 1256,
+    "primary": 1243,
     "secondary": 1368
    },
    "subject_areas": {
@@ -8785,7 +8881,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 10
    }
   }
@@ -8858,7 +8954,7 @@
       "group_pupils": 28
      }
     ],
-    "pct": 1.69,
+    "pct": 1.72,
     "sector": "independent",
     "regions": [
      {
@@ -8868,10 +8964,10 @@
       "region_pupils": 4292
      },
      {
-      "pct": 0.81,
+      "pct": 0.87,
       "region_code": "E12000005",
       "group_pupils": 62,
-      "region_pupils": 7642
+      "region_pupils": 7091
      },
      {
       "pct": 2.68,
@@ -8886,7 +8982,7 @@
       "region_pupils": 9646
      }
     ],
-    "area_pupils": 31643,
+    "area_pupils": 31092,
     "group_pupils": 536
    },
    "change": {
@@ -8966,14 +9062,14 @@
     "places": {
      "roll_change_1": {
       "of": 2,
-      "rank": 2,
+      "rank": 1,
       "tied": false
      }
     },
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1255,
+   "roll": 1242,
    "share": {
     "las": [
      {
@@ -9012,13 +9108,6 @@
       "group_pupils": 86
      },
      {
-      "pct": 13.82,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 615,
-      "group_pupils": 85
-     },
-     {
       "pct": 5.91,
       "la_code": "868",
       "la_name": "Windsor and Maidenhead",
@@ -9031,6 +9120,13 @@
       "la_name": "Enfield",
       "la_pupils": 638,
       "group_pupils": 80
+     },
+     {
+      "pct": 11.71,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 615,
+      "group_pupils": 72
      },
      {
       "pct": 11.23,
@@ -9082,7 +9178,7 @@
       "group_pupils": 29
      }
     ],
-    "pct": 0.91,
+    "pct": 0.9,
     "sector": "independent",
     "regions": [
      {
@@ -9104,9 +9200,9 @@
       "region_pupils": 18638
      },
      {
-      "pct": 0.74,
+      "pct": 0.71,
       "region_code": "E12000007",
-      "group_pupils": 384,
+      "group_pupils": 371,
       "region_pupils": 51998
      },
      {
@@ -9123,35 +9219,35 @@
      }
     ],
     "area_pupils": 138345,
-    "group_pupils": 1255
+    "group_pupils": 1242
    },
    "change": {
     "1": {
      "growing": 7,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2024,
-     "combined_pct": -12.24,
-     "same_schools": 20,
-     "combined_base": 1430,
-     "same_schools_pct": -12.24
+     "combined_pct": -10.71,
+     "same_schools": 19,
+     "combined_base": 1391,
+     "same_schools_pct": -10.71
     },
     "3": {
      "growing": 4,
-     "shrinking": 16,
+     "shrinking": 15,
      "from_period": 2022,
-     "combined_pct": -23.34,
-     "same_schools": 20,
-     "combined_base": 1637,
-     "same_schools_pct": -23.34
+     "combined_pct": -21.59,
+     "same_schools": 19,
+     "combined_base": 1584,
+     "same_schools_pct": -21.59
     },
     "5": {
      "growing": 4,
-     "shrinking": 15,
+     "shrinking": 14,
      "from_period": 2020,
-     "combined_pct": -28.04,
-     "same_schools": 20,
-     "combined_base": 1744,
-     "same_schools_pct": -28.04
+     "combined_pct": -26.55,
+     "same_schools": 19,
+     "combined_base": 1691,
+     "same_schools_pct": -26.55
     }
    },
    "results": {
@@ -9163,9 +9259,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -9269,10 +9373,10 @@
       "region_pupils": 10941
      },
      {
-      "pct": 0.96,
+      "pct": 1.02,
       "region_code": "E12000005",
       "group_pupils": 181,
-      "region_pupils": 18861
+      "region_pupils": 17755
      },
      {
       "pct": 2.07,
@@ -9293,7 +9397,7 @@
       "region_pupils": 22159
      }
     ],
-    "area_pupils": 139977,
+    "area_pupils": 138871,
     "group_pupils": 1366
    },
    "change": {
@@ -9545,7 +9649,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 5352,
+   "roll": 5270,
    "share": {
     "las": [
      {
@@ -9619,13 +9723,6 @@
       "group_pupils": 226
      },
      {
-      "pct": 7.97,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 2296,
-      "group_pupils": 183
-     },
-     {
       "pct": 16.46,
       "la_code": "311",
       "la_name": "Havering",
@@ -9647,6 +9744,13 @@
       "group_pupils": 103
      },
      {
+      "pct": 4.4,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 2296,
+      "group_pupils": 101
+     },
+     {
       "pct": 7.8,
       "la_code": "319",
       "la_name": "Sutton",
@@ -9654,7 +9758,7 @@
       "group_pupils": 93
      }
     ],
-    "pct": 1.12,
+    "pct": 1.11,
     "sector": "independent",
     "regions": [
      {
@@ -9664,10 +9768,10 @@
       "region_pupils": 28117
      },
      {
-      "pct": 1.2,
+      "pct": 1.24,
       "region_code": "E12000005",
       "group_pupils": 499,
-      "region_pupils": 41579
+      "region_pupils": 40140
      },
      {
       "pct": 2.13,
@@ -9676,10 +9780,10 @@
       "region_pupils": 66053
      },
      {
-      "pct": 0.43,
+      "pct": 0.37,
       "region_code": "E12000007",
-      "group_pupils": 620,
-      "region_pupils": 145040
+      "group_pupils": 538,
+      "region_pupils": 143662
      },
      {
       "pct": 0.86,
@@ -9694,8 +9798,8 @@
       "region_pupils": 51605
      }
     ],
-    "area_pupils": 477566,
-    "group_pupils": 5352
+    "area_pupils": 474749,
+    "group_pupils": 5270
    },
    "regions": {
     "E12000004": 1,
@@ -9750,8 +9854,16 @@
     }
    },
    "boarders": 865,
-   "excluded": {},
-   "n_schools": 21,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -9761,19 +9873,19 @@
     "S": 7,
     "XS": 10
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     4,
-    49,
-    163,
-    321,
-    223,
-    252,
-    242,
-    322,
-    320,
-    346,
-    350,
+    48,
+    154,
+    313,
+    216,
+    241,
+    234,
+    315,
+    311,
+    335,
+    339,
     414,
     373,
     386,
@@ -9802,7 +9914,7 @@
    },
    "roll_by_phase": {
     "post16": 670,
-    "primary": 1832,
+    "primary": 1775,
     "secondary": 2090
    },
    "subject_areas": {
@@ -9811,7 +9923,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -9878,7 +9990,7 @@
       "group_pupils": 53
      }
     ],
-    "pct": 2.04,
+    "pct": 2.08,
     "sector": "independent",
     "regions": [
      {
@@ -9888,10 +10000,10 @@
       "region_pupils": 4863
      },
      {
-      "pct": 1.18,
+      "pct": 1.27,
       "region_code": "E12000005",
       "group_pupils": 87,
-      "region_pupils": 7370
+      "region_pupils": 6846
      },
      {
       "pct": 3.09,
@@ -9906,7 +10018,7 @@
       "region_pupils": 10198
      }
     ],
-    "area_pupils": 32796,
+    "area_pupils": 32272,
     "group_pupils": 670
    },
    "results": {
@@ -9958,7 +10070,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1832,
+   "roll": 1775,
    "share": {
     "las": [
      {
@@ -9997,13 +10109,6 @@
       "group_pupils": 133
      },
      {
-      "pct": 14.16,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 918,
-      "group_pupils": 130
-     },
-     {
       "pct": 10.28,
       "la_code": "893",
       "la_name": "Shropshire",
@@ -10030,6 +10135,13 @@
       "la_name": "Suffolk",
       "la_pupils": 1986,
       "group_pupils": 74
+     },
+     {
+      "pct": 7.95,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 918,
+      "group_pupils": 73
      },
      {
       "pct": 10.65,
@@ -10067,7 +10179,7 @@
       "group_pupils": 49
      }
     ],
-    "pct": 1.15,
+    "pct": 1.11,
     "sector": "independent",
     "regions": [
      {
@@ -10089,9 +10201,9 @@
       "region_pupils": 21278
      },
      {
-      "pct": 0.69,
+      "pct": 0.59,
       "region_code": "E12000007",
-      "group_pupils": 404,
+      "group_pupils": 347,
       "region_pupils": 58398
      },
      {
@@ -10108,7 +10220,7 @@
      }
     ],
     "area_pupils": 159519,
-    "group_pupils": 1832
+    "group_pupils": 1775
    },
    "results": {
     "ks2_rwm": {
@@ -10119,9 +10231,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -10201,7 +10321,7 @@
       "group_pupils": 35
      }
     ],
-    "pct": 1.45,
+    "pct": 1.46,
     "sector": "independent",
     "regions": [
      {
@@ -10211,10 +10331,10 @@
       "region_pupils": 12087
      },
      {
-      "pct": 1.46,
+      "pct": 1.54,
       "region_code": "E12000005",
       "group_pupils": 282,
-      "region_pupils": 19260
+      "region_pupils": 18345
      },
      {
       "pct": 3.15,
@@ -10235,7 +10355,7 @@
       "region_pupils": 23296
      }
     ],
-    "area_pupils": 144007,
+    "area_pupils": 143092,
     "group_pupils": 2083
    },
    "results": {
@@ -10317,7 +10437,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4976,
+   "roll": 4901,
    "share": {
     "las": [
      {
@@ -10391,13 +10511,6 @@
       "group_pupils": 234
      },
      {
-      "pct": 7.51,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 2078,
-      "group_pupils": 156
-     },
-     {
       "pct": 7.83,
       "la_code": "308",
       "la_name": "Enfield",
@@ -10424,9 +10537,16 @@
       "la_name": "Kingston upon Thames",
       "la_pupils": 4064,
       "group_pupils": 93
+     },
+     {
+      "pct": 3.9,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 2078,
+      "group_pupils": 81
      }
     ],
-    "pct": 1.06,
+    "pct": 1.05,
     "sector": "independent",
     "regions": [
      {
@@ -10436,10 +10556,10 @@
       "region_pupils": 27011
      },
      {
-      "pct": 1.08,
+      "pct": 1.12,
       "region_code": "E12000005",
       "group_pupils": 433,
-      "region_pupils": 40243
+      "region_pupils": 38743
      },
      {
       "pct": 2.02,
@@ -10448,10 +10568,10 @@
       "region_pupils": 64850
      },
      {
-      "pct": 0.4,
+      "pct": 0.35,
       "region_code": "E12000007",
-      "group_pupils": 579,
-      "region_pupils": 144892
+      "group_pupils": 504,
+      "region_pupils": 143513
      },
      {
       "pct": 0.82,
@@ -10466,18 +10586,18 @@
       "region_pupils": 49951
      }
     ],
-    "area_pupils": 469251,
-    "group_pupils": 4976
+    "area_pupils": 466372,
+    "group_pupils": 4901
    },
    "change": {
     "1": {
      "growing": 4,
-     "shrinking": 17,
+     "shrinking": 16,
      "from_period": 2019,
-     "combined_pct": -7.03,
-     "same_schools": 21,
-     "combined_base": 5352,
-     "same_schools_pct": -7.03
+     "combined_pct": -7,
+     "same_schools": 20,
+     "combined_base": 5270,
+     "same_schools_pct": -7
     },
     "3": {
      "growing": 0,
@@ -10551,8 +10671,16 @@
     }
    },
    "boarders": 425,
-   "excluded": {},
-   "n_schools": 21,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -10562,19 +10690,19 @@
     "S": 7,
     "XS": 10
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     9,
     34,
-    154,
-    276,
-    185,
-    228,
-    248,
-    265,
-    314,
-    337,
-    352,
+    151,
+    263,
+    179,
+    220,
+    238,
+    258,
+    307,
+    326,
+    342,
     314,
     407,
     376,
@@ -10603,7 +10731,7 @@
    },
    "roll_by_phase": {
     "post16": 641,
-    "primary": 1744,
+    "primary": 1691,
     "secondary": 1933
    },
    "subject_areas": {
@@ -10612,7 +10740,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 12
    }
   }
@@ -10685,7 +10813,7 @@
       "group_pupils": 47
      }
     ],
-    "pct": 2.01,
+    "pct": 2.04,
     "sector": "independent",
     "regions": [
      {
@@ -10695,10 +10823,10 @@
       "region_pupils": 4519
      },
      {
-      "pct": 1.05,
+      "pct": 1.14,
       "region_code": "E12000005",
       "group_pupils": 77,
-      "region_pupils": 7356
+      "region_pupils": 6782
      },
      {
       "pct": 2.97,
@@ -10713,7 +10841,7 @@
       "region_pupils": 9928
      }
     ],
-    "area_pupils": 31897,
+    "area_pupils": 31323,
     "group_pupils": 640
    },
    "change": {
@@ -10800,7 +10928,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1744,
+   "roll": 1691,
    "share": {
     "las": [
      {
@@ -10837,13 +10965,6 @@
       "la_name": "Wiltshire",
       "la_pupils": 1470,
       "group_pupils": 128
-     },
-     {
-      "pct": 13.32,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 811,
-      "group_pupils": 108
      },
      {
       "pct": 22.82,
@@ -10895,6 +11016,13 @@
       "group_pupils": 57
      },
      {
+      "pct": 6.78,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 811,
+      "group_pupils": 55
+     },
+     {
       "pct": 3.45,
       "la_code": "314",
       "la_name": "Kingston upon Thames",
@@ -10909,7 +11037,7 @@
       "group_pupils": 44
      }
     ],
-    "pct": 1.12,
+    "pct": 1.08,
     "sector": "independent",
     "regions": [
      {
@@ -10931,9 +11059,9 @@
       "region_pupils": 20759
      },
      {
-      "pct": 0.68,
+      "pct": 0.59,
       "region_code": "E12000007",
-      "group_pupils": 396,
+      "group_pupils": 343,
       "region_pupils": 58049
      },
      {
@@ -10950,17 +11078,17 @@
      }
     ],
     "area_pupils": 156065,
-    "group_pupils": 1744
+    "group_pupils": 1691
    },
    "change": {
     "1": {
      "growing": 5,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2019,
-     "combined_pct": -4.8,
-     "same_schools": 20,
-     "combined_base": 1832,
-     "same_schools_pct": -4.8
+     "combined_pct": -4.73,
+     "same_schools": 19,
+     "combined_base": 1775,
+     "same_schools_pct": -4.73
     },
     "3": {
      "growing": 0,
@@ -10990,9 +11118,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -11085,7 +11221,7 @@
       "group_pupils": 12
      }
     ],
-    "pct": 1,
+    "pct": 1.01,
     "sector": "independent",
     "regions": [
      {
@@ -11095,10 +11231,10 @@
       "region_pupils": 11923
      },
      {
-      "pct": 1.36,
+      "pct": 1.44,
       "region_code": "E12000005",
       "group_pupils": 255,
-      "region_pupils": 18687
+      "region_pupils": 17761
      },
      {
       "pct": 2.97,
@@ -11110,7 +11246,7 @@
       "pct": 0.02,
       "region_code": "E12000007",
       "group_pupils": 12,
-      "region_pupils": 51282
+      "region_pupils": 50897
      },
      {
       "pct": 0.29,
@@ -11125,7 +11261,7 @@
       "region_pupils": 22406
      }
     ],
-    "area_pupils": 193383,
+    "area_pupils": 192072,
     "group_pupils": 1933
    },
    "change": {
@@ -11261,7 +11397,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4882,
+   "roll": 4811,
    "share": {
     "las": [
      {
@@ -11335,13 +11471,6 @@
       "group_pupils": 219
      },
      {
-      "pct": 8.02,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 2008,
-      "group_pupils": 161
-     },
-     {
       "pct": 9.27,
       "la_code": "308",
       "la_name": "Enfield",
@@ -11363,6 +11492,13 @@
       "group_pupils": 108
      },
      {
+      "pct": 4.48,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 2008,
+      "group_pupils": 90
+     },
+     {
       "pct": 2.12,
       "la_code": "314",
       "la_name": "Kingston upon Thames",
@@ -11370,7 +11506,7 @@
       "group_pupils": 87
      }
     ],
-    "pct": 1.02,
+    "pct": 1.01,
     "sector": "independent",
     "regions": [
      {
@@ -11380,10 +11516,10 @@
       "region_pupils": 27417
      },
      {
-      "pct": 0.89,
+      "pct": 0.92,
       "region_code": "E12000005",
       "group_pupils": 368,
-      "region_pupils": 41505
+      "region_pupils": 39938
      },
      {
       "pct": 2.03,
@@ -11392,10 +11528,10 @@
       "region_pupils": 65686
      },
      {
-      "pct": 0.43,
+      "pct": 0.38,
       "region_code": "E12000007",
-      "group_pupils": 622,
-      "region_pupils": 146035
+      "group_pupils": 551,
+      "region_pupils": 144616
      },
      {
       "pct": 0.77,
@@ -11410,18 +11546,18 @@
       "region_pupils": 51313
      }
     ],
-    "area_pupils": 477283,
-    "group_pupils": 4882
+    "area_pupils": 474297,
+    "group_pupils": 4811
    },
    "change": {
     "1": {
      "growing": 11,
-     "shrinking": 9,
+     "shrinking": 8,
      "from_period": 2020,
-     "combined_pct": -1.89,
-     "same_schools": 21,
-     "combined_base": 4976,
-     "same_schools_pct": -1.89
+     "combined_pct": -1.84,
+     "same_schools": 20,
+     "combined_base": 4901,
+     "same_schools_pct": -1.84
     },
     "3": {
      "growing": 0,
@@ -11496,6 +11632,13 @@
    },
    "boarders": 805,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -11665,7 +11808,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -11675,19 +11818,19 @@
     "S": 7,
     "XS": 9
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     5,
-    44,
-    155,
-    248,
-    206,
-    203,
-    241,
-    264,
-    279,
-    341,
-    358,
+    41,
+    149,
+    237,
+    199,
+    197,
+    235,
+    256,
+    272,
+    334,
+    348,
     278,
     331,
     388,
@@ -11716,7 +11859,7 @@
    },
    "roll_by_phase": {
     "post16": 681,
-    "primary": 1686,
+    "primary": 1642,
     "secondary": 1855
    },
    "subject_areas": {
@@ -11825,7 +11968,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -11908,7 +12051,7 @@
       "group_pupils": 40
      }
     ],
-    "pct": 2.06,
+    "pct": 2.1,
     "sector": "independent",
     "regions": [
      {
@@ -11918,10 +12061,10 @@
       "region_pupils": 4628
      },
      {
-      "pct": 1.14,
+      "pct": 1.24,
       "region_code": "E12000005",
       "group_pupils": 88,
-      "region_pupils": 7697
+      "region_pupils": 7079
      },
      {
       "pct": 3.05,
@@ -11936,7 +12079,7 @@
       "region_pupils": 10185
      }
     ],
-    "area_pupils": 32962,
+    "area_pupils": 32344,
     "group_pupils": 678
    },
    "change": {
@@ -12073,7 +12216,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1686,
+   "roll": 1642,
    "share": {
     "las": [
      {
@@ -12110,13 +12253,6 @@
       "la_name": "Wiltshire",
       "la_pupils": 1449,
       "group_pupils": 116
-     },
-     {
-      "pct": 13.66,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 776,
-      "group_pupils": 106
      },
      {
       "pct": 12,
@@ -12161,6 +12297,13 @@
       "group_pupils": 66
      },
      {
+      "pct": 7.99,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 776,
+      "group_pupils": 62
+     },
+     {
       "pct": 11.58,
       "la_code": "831",
       "la_name": "Derby",
@@ -12182,7 +12325,7 @@
       "group_pupils": 44
      }
     ],
-    "pct": 1.08,
+    "pct": 1.05,
     "sector": "independent",
     "regions": [
      {
@@ -12204,9 +12347,9 @@
       "region_pupils": 20601
      },
      {
-      "pct": 0.7,
+      "pct": 0.62,
       "region_code": "E12000007",
-      "group_pupils": 401,
+      "group_pupils": 357,
       "region_pupils": 57416
      },
      {
@@ -12223,17 +12366,17 @@
      }
     ],
     "area_pupils": 156010,
-    "group_pupils": 1686
+    "group_pupils": 1642
    },
    "change": {
     "1": {
      "growing": 8,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2020,
-     "combined_pct": -3.33,
-     "same_schools": 20,
-     "combined_base": 1744,
-     "same_schools_pct": -3.33
+     "combined_pct": -2.9,
+     "same_schools": 19,
+     "combined_base": 1691,
+     "same_schools_pct": -2.9
     },
     "3": {
      "growing": 0,
@@ -12263,9 +12406,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -12366,7 +12517,7 @@
       "group_pupils": 15
      }
     ],
-    "pct": 1.27,
+    "pct": 1.28,
     "sector": "independent",
     "regions": [
      {
@@ -12376,10 +12527,10 @@
       "region_pupils": 11917
      },
      {
-      "pct": 1.18,
+      "pct": 1.24,
       "region_code": "E12000005",
       "group_pupils": 226,
-      "region_pupils": 19215
+      "region_pupils": 18266
      },
      {
       "pct": 2.91,
@@ -12400,7 +12551,7 @@
       "region_pupils": 23283
      }
     ],
-    "area_pupils": 145899,
+    "area_pupils": 144950,
     "group_pupils": 1852
    },
    "change": {
@@ -12755,7 +12906,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4770,
+   "roll": 4682,
    "share": {
     "las": [
      {
@@ -12829,13 +12980,6 @@
       "group_pupils": 208
      },
      {
-      "pct": 9.35,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1990,
-      "group_pupils": 186
-     },
-     {
       "pct": 8.54,
       "la_code": "308",
       "la_name": "Enfield",
@@ -12862,9 +13006,16 @@
       "la_name": "Kingston upon Thames",
       "la_pupils": 4149,
       "group_pupils": 102
+     },
+     {
+      "pct": 4.92,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1990,
+      "group_pupils": 98
      }
     ],
-    "pct": 0.99,
+    "pct": 0.97,
     "sector": "independent",
     "regions": [
      {
@@ -12874,10 +13025,10 @@
       "region_pupils": 28009
      },
      {
-      "pct": 0.85,
+      "pct": 0.88,
       "region_code": "E12000005",
       "group_pupils": 357,
-      "region_pupils": 41931
+      "region_pupils": 40386
      },
      {
       "pct": 1.92,
@@ -12886,10 +13037,10 @@
       "region_pupils": 66555
      },
      {
-      "pct": 0.44,
+      "pct": 0.38,
       "region_code": "E12000007",
-      "group_pupils": 645,
-      "region_pupils": 147424
+      "group_pupils": 557,
+      "region_pupils": 146027
      },
      {
       "pct": 0.75,
@@ -12904,27 +13055,27 @@
       "region_pupils": 51876
      }
     ],
-    "area_pupils": 483906,
-    "group_pupils": 4770
+    "area_pupils": 480964,
+    "group_pupils": 4682
    },
    "change": {
     "1": {
-     "growing": 8,
+     "growing": 7,
      "shrinking": 12,
      "from_period": 2021,
-     "combined_pct": -2.29,
-     "same_schools": 21,
-     "combined_base": 4882,
-     "same_schools_pct": -2.29
+     "combined_pct": -2.68,
+     "same_schools": 20,
+     "combined_base": 4811,
+     "same_schools_pct": -2.68
     },
     "3": {
-     "growing": 5,
+     "growing": 4,
      "shrinking": 16,
      "from_period": 2019,
-     "combined_pct": -10.87,
-     "same_schools": 21,
-     "combined_base": 5352,
-     "same_schools_pct": -10.87
+     "combined_pct": -11.16,
+     "same_schools": 20,
+     "combined_base": 5270,
+     "same_schools_pct": -11.16
     },
     "5": {
      "growing": 0,
@@ -12990,6 +13141,13 @@
    },
    "boarders": 740,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -13088,7 +13246,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -13275,7 +13433,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -13284,20 +13442,20 @@
     "S": 4,
     "XS": 9
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     6,
     43,
-    152,
-    225,
-    208,
-    214,
-    212,
-    260,
-    294,
-    309,
-    349,
-    311,
+    144,
+    211,
+    196,
+    209,
+    203,
+    252,
+    281,
+    295,
+    345,
+    310,
     293,
     359,
     417,
@@ -13325,8 +13483,8 @@
    },
    "roll_by_phase": {
     "post16": 672,
-    "primary": 1638,
-    "secondary": 1825
+    "primary": 1585,
+    "secondary": 1824
    },
    "subject_areas": {
     "ks4": [
@@ -13434,7 +13592,7 @@
    },
    "schools_by_phase": {
     "post16": 8,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -13524,7 +13682,7 @@
       "group_pupils": 10
      }
     ],
-    "pct": 1.16,
+    "pct": 1.17,
     "sector": "independent",
     "regions": [
      {
@@ -13534,10 +13692,10 @@
       "region_pupils": 4733
      },
      {
-      "pct": 1.09,
+      "pct": 1.18,
       "region_code": "E12000005",
       "group_pupils": 85,
-      "region_pupils": 7807
+      "region_pupils": 7233
      },
      {
       "pct": 3.18,
@@ -13558,7 +13716,7 @@
       "region_pupils": 10349
      }
     ],
-    "area_pupils": 58035,
+    "area_pupils": 57461,
     "group_pupils": 672
    },
    "change": {
@@ -13715,7 +13873,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1637,
+   "roll": 1584,
    "share": {
     "las": [
      {
@@ -13745,13 +13903,6 @@
       "la_name": "Dorset",
       "la_pupils": 1287,
       "group_pupils": 141
-     },
-     {
-      "pct": 15.36,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 788,
-      "group_pupils": 121
      },
      {
       "pct": 7.76,
@@ -13796,6 +13947,13 @@
       "group_pupils": 69
      },
      {
+      "pct": 8.63,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 788,
+      "group_pupils": 68
+     },
+     {
       "pct": 3.52,
       "la_code": "878",
       "la_name": "Devon",
@@ -13824,7 +13982,7 @@
       "group_pupils": 42
      }
     ],
-    "pct": 1.05,
+    "pct": 1.01,
     "sector": "independent",
     "regions": [
      {
@@ -13846,9 +14004,9 @@
       "region_pupils": 20817
      },
      {
-      "pct": 0.73,
+      "pct": 0.64,
       "region_code": "E12000007",
-      "group_pupils": 421,
+      "group_pupils": 368,
       "region_pupils": 57646
      },
      {
@@ -13865,26 +14023,26 @@
      }
     ],
     "area_pupils": 156299,
-    "group_pupils": 1637
+    "group_pupils": 1584
    },
    "change": {
     "1": {
-     "growing": 8,
+     "growing": 7,
      "shrinking": 11,
      "from_period": 2021,
-     "combined_pct": -2.91,
-     "same_schools": 20,
-     "combined_base": 1686,
-     "same_schools_pct": -2.91
+     "combined_pct": -3.53,
+     "same_schools": 19,
+     "combined_base": 1642,
+     "same_schools_pct": -3.53
     },
     "3": {
      "growing": 4,
-     "shrinking": 16,
+     "shrinking": 15,
      "from_period": 2019,
-     "combined_pct": -10.64,
-     "same_schools": 20,
-     "combined_base": 1832,
-     "same_schools_pct": -10.64
+     "combined_pct": -10.76,
+     "same_schools": 19,
+     "combined_base": 1775,
+     "same_schools_pct": -10.76
     },
     "5": {
      "growing": 0,
@@ -13906,11 +14064,18 @@
     }
    },
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks2_rwm": [
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -14004,8 +14169,8 @@
      }
     ]
    },
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -14106,7 +14271,7 @@
       "group_pupils": 20
      }
     ],
-    "pct": 1.22,
+    "pct": 1.23,
     "sector": "independent",
     "regions": [
      {
@@ -14116,10 +14281,10 @@
       "region_pupils": 12338
      },
      {
-      "pct": 1.06,
+      "pct": 1.11,
       "region_code": "E12000005",
       "group_pupils": 207,
-      "region_pupils": 19539
+      "region_pupils": 18568
      },
      {
       "pct": 2.68,
@@ -14140,7 +14305,7 @@
       "region_pupils": 23695
      }
     ],
-    "area_pupils": 149338,
+    "area_pupils": 148367,
     "group_pupils": 1819
    },
    "change": {
@@ -14500,7 +14665,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4565,
+   "roll": 4494,
    "share": {
     "las": [
      {
@@ -14574,13 +14739,6 @@
       "group_pupils": 181
      },
      {
-      "pct": 8.89,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1969,
-      "group_pupils": 175
-     },
-     {
       "pct": 20.23,
       "la_code": "311",
       "la_name": "Havering",
@@ -14602,6 +14760,13 @@
       "group_pupils": 119
      },
      {
+      "pct": 5.28,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1969,
+      "group_pupils": 104
+     },
+     {
       "pct": 2.36,
       "la_code": "314",
       "la_name": "Kingston upon Thames",
@@ -14609,7 +14774,7 @@
       "group_pupils": 97
      }
     ],
-    "pct": 0.95,
+    "pct": 0.94,
     "sector": "independent",
     "regions": [
      {
@@ -14619,10 +14784,10 @@
       "region_pupils": 27566
      },
      {
-      "pct": 0.83,
+      "pct": 0.86,
       "region_code": "E12000005",
       "group_pupils": 348,
-      "region_pupils": 41933
+      "region_pupils": 40344
      },
      {
       "pct": 1.72,
@@ -14631,10 +14796,10 @@
       "region_pupils": 66395
      },
      {
-      "pct": 0.45,
+      "pct": 0.41,
       "region_code": "E12000007",
-      "group_pupils": 667,
-      "region_pupils": 146670
+      "group_pupils": 596,
+      "region_pupils": 145234
      },
      {
       "pct": 0.72,
@@ -14649,27 +14814,27 @@
       "region_pupils": 51468
      }
     ],
-    "area_pupils": 481984,
-    "group_pupils": 4565
+    "area_pupils": 478959,
+    "group_pupils": 4494
    },
    "change": {
     "1": {
      "growing": 7,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2022,
-     "combined_pct": -4.3,
-     "same_schools": 21,
-     "combined_base": 4770,
-     "same_schools_pct": -4.3
+     "combined_pct": -4.02,
+     "same_schools": 20,
+     "combined_base": 4682,
+     "same_schools_pct": -4.02
     },
     "3": {
      "growing": 8,
-     "shrinking": 13,
+     "shrinking": 12,
      "from_period": 2020,
-     "combined_pct": -8.26,
-     "same_schools": 21,
-     "combined_base": 4976,
-     "same_schools_pct": -8.26
+     "combined_pct": -8.3,
+     "same_schools": 20,
+     "combined_base": 4901,
+     "same_schools_pct": -8.3
     },
     "5": {
      "growing": 0,
@@ -14735,6 +14900,13 @@
    },
    "boarders": 700,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -14833,7 +15005,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -15013,7 +15185,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -15022,20 +15194,20 @@
     "S": 2,
     "XS": 10
    },
-   "n_with_roll": 22,
+   "n_with_roll": 21,
    "roll_by_age": [
     21,
-    43,
-    194,
-    270,
-    180,
-    201,
-    211,
-    247,
-    267,
-    300,
-    299,
-    245,
+    39,
+    189,
+    260,
+    176,
+    191,
+    207,
+    241,
+    258,
+    292,
+    289,
+    244,
     315,
     340,
     386,
@@ -15063,8 +15235,8 @@
    },
    "roll_by_phase": {
     "post16": 635,
-    "primary": 1525,
-    "secondary": 1693
+    "primary": 1478,
+    "secondary": 1692
    },
    "subject_areas": {
     "ks4": [
@@ -15172,7 +15344,7 @@
    },
    "schools_by_phase": {
     "post16": 8,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -15267,7 +15439,7 @@
       "group_pupils": 11
      }
     ],
-    "pct": 1.08,
+    "pct": 1.09,
     "sector": "independent",
     "regions": [
      {
@@ -15277,10 +15449,10 @@
       "region_pupils": 4645
      },
      {
-      "pct": 1.01,
+      "pct": 1.09,
       "region_code": "E12000005",
       "group_pupils": 78,
-      "region_pupils": 7722
+      "region_pupils": 7161
      },
      {
       "pct": 3.01,
@@ -15301,7 +15473,7 @@
       "region_pupils": 10376
      }
     ],
-    "area_pupils": 58663,
+    "area_pupils": 58102,
     "group_pupils": 635
    },
    "change": {
@@ -15451,7 +15623,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1525,
+   "roll": 1478,
    "share": {
     "las": [
      {
@@ -15483,13 +15655,6 @@
       "group_pupils": 134
      },
      {
-      "pct": 14.48,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 794,
-      "group_pupils": 115
-     },
-     {
       "pct": 7.4,
       "la_code": "865",
       "la_name": "Wiltshire",
@@ -15516,6 +15681,13 @@
       "la_name": "Havering",
       "la_pupils": 370,
       "group_pupils": 72
+     },
+     {
+      "pct": 8.56,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 794,
+      "group_pupils": 68
      },
      {
       "pct": 0.92,
@@ -15560,7 +15732,7 @@
       "group_pupils": 42
      }
     ],
-    "pct": 0.99,
+    "pct": 0.96,
     "sector": "independent",
     "regions": [
      {
@@ -15582,9 +15754,9 @@
       "region_pupils": 20436
      },
      {
-      "pct": 0.7,
+      "pct": 0.62,
       "region_code": "E12000007",
-      "group_pupils": 399,
+      "group_pupils": 352,
       "region_pupils": 56829
      },
      {
@@ -15601,26 +15773,26 @@
      }
     ],
     "area_pupils": 153285,
-    "group_pupils": 1525
+    "group_pupils": 1478
    },
    "change": {
     "1": {
      "growing": 4,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2022,
-     "combined_pct": -6.84,
-     "same_schools": 20,
-     "combined_base": 1637,
-     "same_schools_pct": -6.84
+     "combined_pct": -6.69,
+     "same_schools": 19,
+     "combined_base": 1584,
+     "same_schools_pct": -6.69
     },
     "3": {
      "growing": 4,
-     "shrinking": 16,
+     "shrinking": 15,
      "from_period": 2020,
-     "combined_pct": -12.56,
-     "same_schools": 20,
-     "combined_base": 1744,
-     "same_schools_pct": -12.56
+     "combined_pct": -12.6,
+     "same_schools": 19,
+     "combined_base": 1691,
+     "same_schools_pct": -12.6
     },
     "5": {
      "growing": 0,
@@ -15642,11 +15814,18 @@
     }
    },
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks2_rwm": [
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "103017",
@@ -15740,8 +15919,8 @@
      }
     ]
    },
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -15852,10 +16031,10 @@
       "region_pupils": 12188
      },
      {
-      "pct": 1.03,
+      "pct": 1.09,
       "region_code": "E12000005",
       "group_pupils": 206,
-      "region_pupils": 19982
+      "region_pupils": 18954
      },
      {
       "pct": 2.31,
@@ -15876,7 +16055,7 @@
       "region_pupils": 23669
      }
     ],
-    "area_pupils": 149965,
+    "area_pupils": 148937,
     "group_pupils": 1690
    },
    "change": {
@@ -16236,7 +16415,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 4327,
+   "roll": 4287,
    "share": {
     "las": [
      {
@@ -16310,13 +16489,6 @@
       "group_pupils": 161
      },
      {
-      "pct": 8.55,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1731,
-      "group_pupils": 148
-     },
-     {
       "pct": 2.59,
       "la_code": "868",
       "la_name": "Windsor and Maidenhead",
@@ -16343,6 +16515,13 @@
       "la_name": "Enfield",
       "la_pupils": 1492,
       "group_pupils": 119
+     },
+     {
+      "pct": 6.24,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1731,
+      "group_pupils": 108
      }
     ],
     "pct": 0.92,
@@ -16355,10 +16534,10 @@
       "region_pupils": 26905
      },
      {
-      "pct": 0.83,
+      "pct": 0.86,
       "region_code": "E12000005",
       "group_pupils": 338,
-      "region_pupils": 40817
+      "region_pupils": 39184
      },
      {
       "pct": 1.67,
@@ -16367,10 +16546,10 @@
       "region_pupils": 64496
      },
      {
-      "pct": 0.47,
+      "pct": 0.45,
       "region_code": "E12000007",
-      "group_pupils": 677,
-      "region_pupils": 143499
+      "group_pupils": 637,
+      "region_pupils": 142052
      },
      {
       "pct": 0.68,
@@ -16385,36 +16564,36 @@
       "region_pupils": 50018
      }
     ],
-    "area_pupils": 469346,
-    "group_pupils": 4327
+    "area_pupils": 466266,
+    "group_pupils": 4287
    },
    "change": {
     "1": {
      "growing": 6,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2023,
-     "combined_pct": -5.21,
-     "same_schools": 21,
-     "combined_base": 4565,
-     "same_schools_pct": -5.21
+     "combined_pct": -4.61,
+     "same_schools": 20,
+     "combined_base": 4494,
+     "same_schools_pct": -4.61
     },
     "3": {
      "growing": 7,
-     "shrinking": 13,
+     "shrinking": 12,
      "from_period": 2021,
-     "combined_pct": -11.37,
-     "same_schools": 21,
-     "combined_base": 4882,
-     "same_schools_pct": -11.37
+     "combined_pct": -10.89,
+     "same_schools": 20,
+     "combined_base": 4811,
+     "same_schools_pct": -10.89
     },
     "5": {
      "growing": 7,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2019,
-     "combined_pct": -19.15,
-     "same_schools": 21,
-     "combined_base": 5352,
-     "same_schools_pct": -19.15
+     "combined_pct": -18.65,
+     "same_schools": 20,
+     "combined_base": 5270,
+     "same_schools_pct": -18.65
     }
    },
    "regions": {
@@ -16471,6 +16650,13 @@
    },
    "boarders": 625,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -16512,7 +16698,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "113912",
@@ -16699,7 +16885,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -16708,19 +16894,19 @@
     "S": 3,
     "XS": 10
    },
-   "n_with_roll": 21,
+   "n_with_roll": 20,
    "roll_by_age": [
     34,
     64,
     193,
     310,
-    178,
-    180,
-    199,
-    222,
-    246,
-    267,
-    316,
+    177,
+    176,
+    190,
+    217,
+    240,
+    259,
+    309,
     240,
     252,
     306,
@@ -16749,7 +16935,7 @@
    },
    "roll_by_phase": {
     "post16": 596,
-    "primary": 1430,
+    "primary": 1391,
     "secondary": 1521
    },
    "subject_areas": {
@@ -16858,7 +17044,7 @@
    },
    "schools_by_phase": {
     "post16": 8,
-    "primary": 20,
+    "primary": 19,
     "secondary": 11
    }
   }
@@ -16953,7 +17139,7 @@
       "group_pupils": 12
      }
     ],
-    "pct": 1.02,
+    "pct": 1.03,
     "sector": "independent",
     "regions": [
      {
@@ -16963,10 +17149,10 @@
       "region_pupils": 4561
      },
      {
-      "pct": 0.89,
+      "pct": 0.96,
       "region_code": "E12000005",
       "group_pupils": 70,
-      "region_pupils": 7841
+      "region_pupils": 7291
      },
      {
       "pct": 2.78,
@@ -16987,7 +17173,7 @@
       "region_pupils": 10352
      }
     ],
-    "area_pupils": 58529,
+    "area_pupils": 57979,
     "group_pupils": 596
    },
    "change": {
@@ -17139,7 +17325,7 @@
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1430,
+   "roll": 1391,
    "share": {
     "las": [
      {
@@ -17162,13 +17348,6 @@
       "la_name": "Dorset",
       "la_pupils": 1254,
       "group_pupils": 130
-     },
-     {
-      "pct": 17.23,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 621,
-      "group_pupils": 107
      },
      {
       "pct": 7.67,
@@ -17204,6 +17383,13 @@
       "la_name": "Kingston upon Thames",
       "la_pupils": 1353,
       "group_pupils": 71
+     },
+     {
+      "pct": 10.95,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 621,
+      "group_pupils": 68
      },
      {
       "pct": 0.93,
@@ -17248,7 +17434,7 @@
       "group_pupils": 29
      }
     ],
-    "pct": 0.97,
+    "pct": 0.94,
     "sector": "independent",
     "regions": [
      {
@@ -17270,9 +17456,9 @@
       "region_pupils": 19791
      },
      {
-      "pct": 0.74,
+      "pct": 0.67,
       "region_code": "E12000007",
-      "group_pupils": 408,
+      "group_pupils": 369,
       "region_pupils": 55047
      },
      {
@@ -17289,35 +17475,35 @@
      }
     ],
     "area_pupils": 147209,
-    "group_pupils": 1430
+    "group_pupils": 1391
    },
    "change": {
     "1": {
      "growing": 5,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2023,
-     "combined_pct": -6.23,
-     "same_schools": 20,
-     "combined_base": 1525,
-     "same_schools_pct": -6.23
+     "combined_pct": -5.89,
+     "same_schools": 19,
+     "combined_base": 1478,
+     "same_schools_pct": -5.89
     },
     "3": {
      "growing": 6,
-     "shrinking": 14,
+     "shrinking": 13,
      "from_period": 2021,
-     "combined_pct": -15.18,
-     "same_schools": 20,
-     "combined_base": 1686,
-     "same_schools_pct": -15.18
+     "combined_pct": -15.29,
+     "same_schools": 19,
+     "combined_base": 1642,
+     "same_schools_pct": -15.29
     },
     "5": {
      "growing": 3,
-     "shrinking": 17,
+     "shrinking": 16,
      "from_period": 2019,
-     "combined_pct": -21.94,
-     "same_schools": 20,
-     "combined_base": 1832,
-     "same_schools_pct": -21.94
+     "combined_pct": -21.63,
+     "same_schools": 19,
+     "combined_base": 1775,
+     "same_schools_pct": -21.63
     }
    },
    "results": {
@@ -17330,11 +17516,18 @@
     }
    },
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks2_rwm": [
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "no_results_published"
+      "reason": "special"
      },
      {
       "urn": "113912",
@@ -17433,8 +17626,8 @@
      }
     ]
    },
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -17535,7 +17728,7 @@
       "group_pupils": 10
      }
     ],
-    "pct": 1.04,
+    "pct": 1.05,
     "sector": "independent",
     "regions": [
      {
@@ -17545,10 +17738,10 @@
       "region_pupils": 11816
      },
      {
-      "pct": 1.05,
+      "pct": 1.11,
       "region_code": "E12000005",
       "group_pupils": 204,
-      "region_pupils": 19470
+      "region_pupils": 18387
      },
      {
       "pct": 2.16,
@@ -17569,7 +17762,7 @@
       "region_pupils": 22901
      }
     ],
-    "area_pupils": 145998,
+    "area_pupils": 144915,
     "group_pupils": 1520
    },
    "change": {
@@ -17850,14 +18043,14 @@
      },
      "roll_change_1": {
       "of": 2,
-      "rank": 2,
+      "rank": 1,
       "tied": false
      }
     },
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 3921,
+   "roll": 3908,
    "share": {
     "las": [
      {
@@ -17938,18 +18131,18 @@
       "group_pupils": 125
      },
      {
-      "pct": 7.57,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 1599,
-      "group_pupils": 121
-     },
-     {
       "pct": 8.1,
       "la_code": "319",
       "la_name": "Sutton",
       "la_pupils": 1382,
       "group_pupils": 112
+     },
+     {
+      "pct": 6.75,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 1599,
+      "group_pupils": 108
      },
      {
       "pct": 2.53,
@@ -17976,10 +18169,10 @@
       "region_pupils": 24985
      },
      {
-      "pct": 0.79,
+      "pct": 0.82,
       "region_code": "E12000005",
       "group_pupils": 309,
-      "region_pupils": 39187
+      "region_pupils": 37530
      },
      {
       "pct": 1.61,
@@ -17990,8 +18183,8 @@
      {
       "pct": 0.45,
       "region_code": "E12000007",
-      "group_pupils": 619,
-      "region_pupils": 136910
+      "group_pupils": 606,
+      "region_pupils": 135465
      },
      {
       "pct": 0.69,
@@ -18006,36 +18199,36 @@
       "region_pupils": 47656
      }
     ],
-    "area_pupils": 446131,
-    "group_pupils": 3921
+    "area_pupils": 443029,
+    "group_pupils": 3908
    },
    "change": {
     "1": {
      "growing": 5,
-     "shrinking": 15,
+     "shrinking": 14,
      "from_period": 2024,
-     "combined_pct": -9.38,
-     "same_schools": 21,
-     "combined_base": 4327,
-     "same_schools_pct": -9.38
+     "combined_pct": -8.84,
+     "same_schools": 20,
+     "combined_base": 4287,
+     "same_schools_pct": -8.84
     },
     "3": {
      "growing": 6,
-     "shrinking": 15,
+     "shrinking": 14,
      "from_period": 2022,
-     "combined_pct": -17.8,
-     "same_schools": 21,
-     "combined_base": 4770,
-     "same_schools_pct": -17.8
+     "combined_pct": -16.53,
+     "same_schools": 20,
+     "combined_base": 4682,
+     "same_schools_pct": -16.53
     },
     "5": {
      "growing": 9,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2020,
-     "combined_pct": -21.2,
-     "same_schools": 21,
-     "combined_base": 4976,
-     "same_schools_pct": -21.2
+     "combined_pct": -20.26,
+     "same_schools": 20,
+     "combined_base": 4901,
+     "same_schools_pct": -20.26
     }
    },
    "regions": {
@@ -18092,6 +18285,13 @@
    },
    "boarders": 492,
    "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "113912",
@@ -18189,7 +18389,7 @@
      }
     ]
    },
-   "n_schools": 21,
+   "n_schools": 20,
    "confidence": {
     "likely": 21
    },
@@ -18198,7 +18398,7 @@
     "S": 2,
     "XS": 11
    },
-   "n_with_roll": 21,
+   "n_with_roll": 20,
    "roll_by_age": [
     43,
     118,
@@ -18206,9 +18406,9 @@
     253,
     146,
     164,
-    170,
-    187,
-    226,
+    167,
+    185,
+    218,
     239,
     270,
     243,
@@ -18239,7 +18439,7 @@
    },
    "roll_by_phase": {
     "post16": 542,
-    "primary": 1256,
+    "primary": 1243,
     "secondary": 1368
    },
    "subject_areas": {
@@ -18298,7 +18498,7 @@
    },
    "schools_by_phase": {
     "post16": 7,
-    "primary": 20,
+    "primary": 19,
     "secondary": 10
    }
   }
@@ -18371,7 +18571,7 @@
       "group_pupils": 28
      }
     ],
-    "pct": 1.69,
+    "pct": 1.72,
     "sector": "independent",
     "regions": [
      {
@@ -18381,10 +18581,10 @@
       "region_pupils": 4292
      },
      {
-      "pct": 0.81,
+      "pct": 0.87,
       "region_code": "E12000005",
       "group_pupils": 62,
-      "region_pupils": 7642
+      "region_pupils": 7091
      },
      {
       "pct": 2.68,
@@ -18399,7 +18599,7 @@
       "region_pupils": 9646
      }
     ],
-    "area_pupils": 31643,
+    "area_pupils": 31092,
     "group_pupils": 536
    },
    "change": {
@@ -18479,14 +18679,14 @@
     "places": {
      "roll_change_1": {
       "of": 2,
-      "rank": 2,
+      "rank": 1,
       "tied": false
      }
     },
     "set_id": "peer:independent_company:21-40",
     "n_groups": 2
    },
-   "roll": 1255,
+   "roll": 1242,
    "share": {
     "las": [
      {
@@ -18525,13 +18725,6 @@
       "group_pupils": 86
      },
      {
-      "pct": 13.82,
-      "la_code": "304",
-      "la_name": "Brent",
-      "la_pupils": 615,
-      "group_pupils": 85
-     },
-     {
       "pct": 5.91,
       "la_code": "868",
       "la_name": "Windsor and Maidenhead",
@@ -18544,6 +18737,13 @@
       "la_name": "Enfield",
       "la_pupils": 638,
       "group_pupils": 80
+     },
+     {
+      "pct": 11.71,
+      "la_code": "304",
+      "la_name": "Brent",
+      "la_pupils": 615,
+      "group_pupils": 72
      },
      {
       "pct": 11.23,
@@ -18595,7 +18795,7 @@
       "group_pupils": 29
      }
     ],
-    "pct": 0.91,
+    "pct": 0.9,
     "sector": "independent",
     "regions": [
      {
@@ -18617,9 +18817,9 @@
       "region_pupils": 18638
      },
      {
-      "pct": 0.74,
+      "pct": 0.71,
       "region_code": "E12000007",
-      "group_pupils": 384,
+      "group_pupils": 371,
       "region_pupils": 51998
      },
      {
@@ -18636,35 +18836,35 @@
      }
     ],
     "area_pupils": 138345,
-    "group_pupils": 1255
+    "group_pupils": 1242
    },
    "change": {
     "1": {
      "growing": 7,
-     "shrinking": 12,
+     "shrinking": 11,
      "from_period": 2024,
-     "combined_pct": -12.24,
-     "same_schools": 20,
-     "combined_base": 1430,
-     "same_schools_pct": -12.24
+     "combined_pct": -10.71,
+     "same_schools": 19,
+     "combined_base": 1391,
+     "same_schools_pct": -10.71
     },
     "3": {
      "growing": 4,
-     "shrinking": 16,
+     "shrinking": 15,
      "from_period": 2022,
-     "combined_pct": -23.34,
-     "same_schools": 20,
-     "combined_base": 1637,
-     "same_schools_pct": -23.34
+     "combined_pct": -21.59,
+     "same_schools": 19,
+     "combined_base": 1584,
+     "same_schools_pct": -21.59
     },
     "5": {
      "growing": 4,
-     "shrinking": 15,
+     "shrinking": 14,
      "from_period": 2020,
-     "combined_pct": -28.04,
-     "same_schools": 20,
-     "combined_base": 1744,
-     "same_schools_pct": -28.04
+     "combined_pct": -26.55,
+     "same_schools": 19,
+     "combined_base": 1691,
+     "same_schools_pct": -26.55
     }
    },
    "results": {
@@ -18676,9 +18876,17 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 20,
-   "n_with_roll": 20,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "101569",
+      "name": "Buxlow School",
+      "reason": "special"
+     }
+    ]
+   },
+   "n_schools": 19,
+   "n_with_roll": 19,
    "value_added": {}
   }
  },
@@ -18782,10 +18990,10 @@
       "region_pupils": 10941
      },
      {
-      "pct": 0.96,
+      "pct": 1.02,
       "region_code": "E12000005",
       "group_pupils": 181,
-      "region_pupils": 18861
+      "region_pupils": 17755
      },
      {
       "pct": 2.07,
@@ -18806,7 +19014,7 @@
       "region_pupils": 22159
      }
     ],
-    "area_pupils": 139977,
+    "area_pupils": 138871,
     "group_pupils": 1366
    },
    "change": {
