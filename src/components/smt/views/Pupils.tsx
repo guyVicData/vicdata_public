@@ -312,7 +312,7 @@ export function DayAndBoarding({ p, school, fullscreen = false, room }: { p: Pup
             xLabels={[yr(years[0]), yr(years[years.length - 1])]}
             series={[
               { id: "school", label: short, colour: "var(--accent)", width: 2.6, points: d.years.map((x) => ({ x: x.year, y: x.share })), title: (pt) => `${short} ${yr(pt.x)}: ${pct(pt.y)}` },
-              ...(d.set.trend.length ? [{ id: "set", label: `Middle of ${p.set.label}'s boarding schools`, colour: "var(--adm-grey-2)", width: 1.8, dashed: "2 3", points: d.set.trend.map((x) => ({ x: x.year, y: x.value })), title: (pt: { x: number; y: number | null }) => `Middle of ${p.set.label}'s boarding schools ${yr(pt.x)}: ${pct(pt.y)}` }] : []),
+              ...(d.set.trend.length ? [{ id: "set", label: `Middle of boarding schools in ${p.set.label}`, colour: "var(--adm-grey-2)", width: 1.8, dashed: "2 3", points: d.set.trend.map((x) => ({ x: x.year, y: x.value })), title: (pt: { x: number; y: number | null }) => `Middle of boarding schools in ${p.set.label} ${yr(pt.x)}: ${pct(pt.y)}` }] : []),
             ]}
           />
         ) : (
@@ -349,7 +349,7 @@ export function DayAndBoarding({ p, school, fullscreen = false, room }: { p: Pup
         <Lbl>Now · {yr(d.year)}</Lbl>
         <Row label="Boarders" value={`${fmt(d.now.boarders, "pupils")} · ${pct(d.now.share)}`} />
         <Row label="Day" value={fmt(d.now.day, "pupils")} />
-        <Row label={`${p.set.label}'s boarding schools, middle`} value={pct(d.set.share.median)} title={`The middle of ${d.set.share.schools} boarding schools`} />
+        <Row label={`boarding schools in ${p.set.label}, middle`} value={pct(d.set.share.median)} title={`The middle of ${d.set.share.schools} boarding schools`} />
         <Row label={`Boarding schools in ${p.set.label}`} value={`${d.set.boardingSchools} of ${d.set.of}`} strong={false} />
         {d.baseYear !== null && (
           <>
@@ -357,7 +357,7 @@ export function DayAndBoarding({ p, school, fullscreen = false, room }: { p: Pup
               <Lbl>Since {yr(d.baseYear)}</Lbl>
             </div>
             <Row label={`${short}, boarders' share`} value={pp(d.change)} />
-            <Row label={`${p.set.label}'s boarding schools, middle`} value={pp(d.set.change.median)} strong={false} title={`The middle of ${d.set.change.schools} boarding schools' own change`} />
+            <Row label={`boarding schools in ${p.set.label}, middle`} value={pp(d.set.change.median)} strong={false} title={`The middle of ${d.set.change.schools} boarding schools' own change`} />
           </>
         )}
       </div>
