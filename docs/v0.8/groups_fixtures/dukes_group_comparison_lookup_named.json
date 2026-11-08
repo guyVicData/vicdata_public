@@ -106,10 +106,10 @@
       "group_pupils": 226
      },
      {
-      "pct": 7.7,
+      "pct": 7.97,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2378,
+      "la_pupils": 2296,
       "group_pupils": 183
      },
      {
@@ -166,7 +166,7 @@
       "pct": 0.43,
       "region_code": "E12000007",
       "group_pupils": 620,
-      "region_pupils": 145122
+      "region_pupils": 145040
      },
      {
       "pct": 0.86,
@@ -181,7 +181,7 @@
       "region_pupils": 51605
      }
     ],
-    "area_pupils": 477648,
+    "area_pupils": 477566,
     "group_pupils": 5352
    },
    "regions": {
@@ -484,10 +484,10 @@
       "group_pupils": 133
      },
      {
-      "pct": 13.33,
+      "pct": 14.16,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 975,
+      "la_pupils": 918,
       "group_pupils": 130
      },
      {
@@ -579,7 +579,7 @@
       "pct": 0.69,
       "region_code": "E12000007",
       "group_pupils": 404,
-      "region_pupils": 58455
+      "region_pupils": 58398
      },
      {
       "pct": 1.62,
@@ -594,7 +594,7 @@
       "region_pupils": 13752
      }
     ],
-    "area_pupils": 159576,
+    "area_pupils": 159519,
     "group_pupils": 1832
    },
    "results": {
@@ -878,10 +878,10 @@
       "group_pupils": 234
      },
      {
-      "pct": 7.25,
+      "pct": 7.51,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2153,
+      "la_pupils": 2078,
       "group_pupils": 156
      },
      {
@@ -938,7 +938,7 @@
       "pct": 0.4,
       "region_code": "E12000007",
       "group_pupils": 579,
-      "region_pupils": 144967
+      "region_pupils": 144892
      },
      {
       "pct": 0.82,
@@ -953,7 +953,7 @@
       "region_pupils": 49951
      }
     ],
-    "area_pupils": 469326,
+    "area_pupils": 469251,
     "group_pupils": 4976
    },
    "change": {
@@ -1326,10 +1326,10 @@
       "group_pupils": 128
      },
      {
-      "pct": 12.5,
+      "pct": 13.32,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 864,
+      "la_pupils": 811,
       "group_pupils": 108
      },
      {
@@ -1421,7 +1421,7 @@
       "pct": 0.68,
       "region_code": "E12000007",
       "group_pupils": 396,
-      "region_pupils": 58102
+      "region_pupils": 58049
      },
      {
       "pct": 1.64,
@@ -1436,7 +1436,7 @@
       "region_pupils": 13473
      }
     ],
-    "area_pupils": 156118,
+    "area_pupils": 156065,
     "group_pupils": 1744
    },
    "change": {
@@ -1822,10 +1822,10 @@
       "group_pupils": 219
      },
      {
-      "pct": 7.74,
+      "pct": 8.02,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2079,
+      "la_pupils": 2008,
       "group_pupils": 161
      },
      {
@@ -1882,7 +1882,7 @@
       "pct": 0.43,
       "region_code": "E12000007",
       "group_pupils": 622,
-      "region_pupils": 146106
+      "region_pupils": 146035
      },
      {
       "pct": 0.77,
@@ -1897,7 +1897,7 @@
       "region_pupils": 51313
      }
     ],
-    "area_pupils": 477354,
+    "area_pupils": 477283,
     "group_pupils": 4882
    },
    "change": {
@@ -2599,10 +2599,10 @@
       "group_pupils": 116
      },
      {
-      "pct": 12.93,
+      "pct": 13.66,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 820,
+      "la_pupils": 776,
       "group_pupils": 106
      },
      {
@@ -2694,7 +2694,7 @@
       "pct": 0.7,
       "region_code": "E12000007",
       "group_pupils": 401,
-      "region_pupils": 57460
+      "region_pupils": 57416
      },
      {
       "pct": 1.5,
@@ -2709,7 +2709,7 @@
       "region_pupils": 13655
      }
     ],
-    "area_pupils": 156054,
+    "area_pupils": 156010,
     "group_pupils": 1686
    },
    "change": {
@@ -3316,10 +3316,10 @@
       "group_pupils": 208
      },
      {
-      "pct": 8.95,
+      "pct": 9.35,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2078,
+      "la_pupils": 1990,
       "group_pupils": 186
      },
      {
@@ -3376,7 +3376,7 @@
       "pct": 0.44,
       "region_code": "E12000007",
       "group_pupils": 645,
-      "region_pupils": 147512
+      "region_pupils": 147424
      },
      {
       "pct": 0.75,
@@ -3391,7 +3391,7 @@
       "region_pupils": 51876
      }
     ],
-    "area_pupils": 483994,
+    "area_pupils": 483906,
     "group_pupils": 4770
    },
    "change": {
@@ -3575,7 +3575,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -4234,10 +4234,10 @@
       "group_pupils": 141
      },
      {
-      "pct": 14.39,
+      "pct": 15.36,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 841,
+      "la_pupils": 788,
       "group_pupils": 121
      },
      {
@@ -4336,7 +4336,7 @@
       "pct": 0.73,
       "region_code": "E12000007",
       "group_pupils": 421,
-      "region_pupils": 57699
+      "region_pupils": 57646
      },
      {
       "pct": 1.47,
@@ -4351,7 +4351,7 @@
       "region_pupils": 13651
      }
     ],
-    "area_pupils": 156352,
+    "area_pupils": 156299,
     "group_pupils": 1637
    },
    "change": {
@@ -4397,7 +4397,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -5061,10 +5061,10 @@
       "group_pupils": 181
      },
      {
-      "pct": 8.58,
+      "pct": 8.89,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2040,
+      "la_pupils": 1969,
       "group_pupils": 175
      },
      {
@@ -5121,7 +5121,7 @@
       "pct": 0.45,
       "region_code": "E12000007",
       "group_pupils": 667,
-      "region_pupils": 146741
+      "region_pupils": 146670
      },
      {
       "pct": 0.72,
@@ -5136,7 +5136,7 @@
       "region_pupils": 51468
      }
     ],
-    "area_pupils": 482055,
+    "area_pupils": 481984,
     "group_pupils": 4565
    },
    "change": {
@@ -5320,7 +5320,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -5970,10 +5970,10 @@
       "group_pupils": 134
      },
      {
-      "pct": 13.67,
+      "pct": 14.48,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 841,
+      "la_pupils": 794,
       "group_pupils": 115
      },
      {
@@ -6072,7 +6072,7 @@
       "pct": 0.7,
       "region_code": "E12000007",
       "group_pupils": 399,
-      "region_pupils": 56876
+      "region_pupils": 56829
      },
      {
       "pct": 1.35,
@@ -6087,7 +6087,7 @@
       "region_pupils": 13368
      }
     ],
-    "area_pupils": 153332,
+    "area_pupils": 153285,
     "group_pupils": 1525
    },
    "change": {
@@ -6133,7 +6133,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -6797,10 +6797,10 @@
       "group_pupils": 161
      },
      {
-      "pct": 8.36,
+      "pct": 8.55,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 1771,
+      "la_pupils": 1731,
       "group_pupils": 148
      },
      {
@@ -6857,7 +6857,7 @@
       "pct": 0.47,
       "region_code": "E12000007",
       "group_pupils": 677,
-      "region_pupils": 143539
+      "region_pupils": 143499
      },
      {
       "pct": 0.68,
@@ -6872,7 +6872,7 @@
       "region_pupils": 50018
      }
     ],
-    "area_pupils": 469386,
+    "area_pupils": 469346,
     "group_pupils": 4327
    },
    "change": {
@@ -6999,7 +6999,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "113912",
@@ -7651,10 +7651,10 @@
       "group_pupils": 130
      },
      {
-      "pct": 16.21,
+      "pct": 17.23,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 660,
+      "la_pupils": 621,
       "group_pupils": 107
      },
      {
@@ -7760,7 +7760,7 @@
       "pct": 0.74,
       "region_code": "E12000007",
       "group_pupils": 408,
-      "region_pupils": 55086
+      "region_pupils": 55047
      },
      {
       "pct": 1.27,
@@ -7775,7 +7775,7 @@
       "region_pupils": 12788
      }
     ],
-    "area_pupils": 147248,
+    "area_pupils": 147209,
     "group_pupils": 1430
    },
    "change": {
@@ -7821,7 +7821,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "113912",
@@ -8425,10 +8425,10 @@
       "group_pupils": 125
      },
      {
-      "pct": 7.51,
+      "pct": 7.57,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 1612,
+      "la_pupils": 1599,
       "group_pupils": 121
      },
      {
@@ -8478,7 +8478,7 @@
       "pct": 0.45,
       "region_code": "E12000007",
       "group_pupils": 619,
-      "region_pupils": 136923
+      "region_pupils": 136910
      },
      {
       "pct": 0.69,
@@ -8493,7 +8493,7 @@
       "region_pupils": 47656
      }
     ],
-    "area_pupils": 446144,
+    "area_pupils": 446131,
     "group_pupils": 3921
    },
    "change": {
@@ -8733,17 +8733,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 85,
-      "family_id": "technology_eng_construction",
-      "n_schools": 3,
-      "points_per_entry": 5.92
-     },
-     {
-      "shown": true,
       "entries": 238,
       "family_id": "arts_media_design",
       "n_schools": 7,
       "points_per_entry": 6.25
+     },
+     {
+      "shown": true,
+      "entries": 85,
+      "family_id": "technology_eng_construction",
+      "n_schools": 3,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
@@ -8768,17 +8768,17 @@
      },
      {
       "shown": true,
-      "entries": 307,
-      "family_id": "languages_literature",
-      "n_schools": 5,
-      "points_per_entry": 5.88
-     },
-     {
-      "shown": true,
       "entries": 84,
       "family_id": "business_law",
       "n_schools": 4,
       "points_per_entry": 5.51
+     },
+     {
+      "shown": true,
+      "entries": 307,
+      "family_id": "languages_literature",
+      "n_schools": 5,
+      "points_per_entry": 5.88
      }
     ],
     "ks5": []
@@ -9012,10 +9012,10 @@
       "group_pupils": 86
      },
      {
-      "pct": 13.54,
+      "pct": 13.82,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 628,
+      "la_pupils": 615,
       "group_pupils": 85
      },
      {
@@ -9107,7 +9107,7 @@
       "pct": 0.74,
       "region_code": "E12000007",
       "group_pupils": 384,
-      "region_pupils": 52011
+      "region_pupils": 51998
      },
      {
       "pct": 1.11,
@@ -9122,7 +9122,7 @@
       "region_pupils": 11906
      }
     ],
-    "area_pupils": 138358,
+    "area_pupils": 138345,
     "group_pupils": 1255
    },
    "change": {
@@ -9461,17 +9461,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 85,
-      "family_id": "technology_eng_construction",
-      "n_schools": 3,
-      "points_per_entry": 5.92
-     },
-     {
-      "shown": true,
       "entries": 238,
       "family_id": "arts_media_design",
       "n_schools": 7,
       "points_per_entry": 6.25
+     },
+     {
+      "shown": true,
+      "entries": 85,
+      "family_id": "technology_eng_construction",
+      "n_schools": 3,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
@@ -9496,17 +9496,17 @@
      },
      {
       "shown": true,
-      "entries": 307,
-      "family_id": "languages_literature",
-      "n_schools": 5,
-      "points_per_entry": 5.88
-     },
-     {
-      "shown": true,
       "entries": 84,
       "family_id": "business_law",
       "n_schools": 4,
       "points_per_entry": 5.51
+     },
+     {
+      "shown": true,
+      "entries": 307,
+      "family_id": "languages_literature",
+      "n_schools": 5,
+      "points_per_entry": 5.88
      }
     ]
    }
@@ -9619,10 +9619,10 @@
       "group_pupils": 226
      },
      {
-      "pct": 7.7,
+      "pct": 7.97,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2378,
+      "la_pupils": 2296,
       "group_pupils": 183
      },
      {
@@ -9679,7 +9679,7 @@
       "pct": 0.43,
       "region_code": "E12000007",
       "group_pupils": 620,
-      "region_pupils": 145122
+      "region_pupils": 145040
      },
      {
       "pct": 0.86,
@@ -9694,7 +9694,7 @@
       "region_pupils": 51605
      }
     ],
-    "area_pupils": 477648,
+    "area_pupils": 477566,
     "group_pupils": 5352
    },
    "regions": {
@@ -9997,10 +9997,10 @@
       "group_pupils": 133
      },
      {
-      "pct": 13.33,
+      "pct": 14.16,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 975,
+      "la_pupils": 918,
       "group_pupils": 130
      },
      {
@@ -10092,7 +10092,7 @@
       "pct": 0.69,
       "region_code": "E12000007",
       "group_pupils": 404,
-      "region_pupils": 58455
+      "region_pupils": 58398
      },
      {
       "pct": 1.62,
@@ -10107,7 +10107,7 @@
       "region_pupils": 13752
      }
     ],
-    "area_pupils": 159576,
+    "area_pupils": 159519,
     "group_pupils": 1832
    },
    "results": {
@@ -10391,10 +10391,10 @@
       "group_pupils": 234
      },
      {
-      "pct": 7.25,
+      "pct": 7.51,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2153,
+      "la_pupils": 2078,
       "group_pupils": 156
      },
      {
@@ -10451,7 +10451,7 @@
       "pct": 0.4,
       "region_code": "E12000007",
       "group_pupils": 579,
-      "region_pupils": 144967
+      "region_pupils": 144892
      },
      {
       "pct": 0.82,
@@ -10466,7 +10466,7 @@
       "region_pupils": 49951
      }
     ],
-    "area_pupils": 469326,
+    "area_pupils": 469251,
     "group_pupils": 4976
    },
    "change": {
@@ -10839,10 +10839,10 @@
       "group_pupils": 128
      },
      {
-      "pct": 12.5,
+      "pct": 13.32,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 864,
+      "la_pupils": 811,
       "group_pupils": 108
      },
      {
@@ -10934,7 +10934,7 @@
       "pct": 0.68,
       "region_code": "E12000007",
       "group_pupils": 396,
-      "region_pupils": 58102
+      "region_pupils": 58049
      },
      {
       "pct": 1.64,
@@ -10949,7 +10949,7 @@
       "region_pupils": 13473
      }
     ],
-    "area_pupils": 156118,
+    "area_pupils": 156065,
     "group_pupils": 1744
    },
    "change": {
@@ -11335,10 +11335,10 @@
       "group_pupils": 219
      },
      {
-      "pct": 7.74,
+      "pct": 8.02,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2079,
+      "la_pupils": 2008,
       "group_pupils": 161
      },
      {
@@ -11395,7 +11395,7 @@
       "pct": 0.43,
       "region_code": "E12000007",
       "group_pupils": 622,
-      "region_pupils": 146106
+      "region_pupils": 146035
      },
      {
       "pct": 0.77,
@@ -11410,7 +11410,7 @@
       "region_pupils": 51313
      }
     ],
-    "area_pupils": 477354,
+    "area_pupils": 477283,
     "group_pupils": 4882
    },
    "change": {
@@ -12112,10 +12112,10 @@
       "group_pupils": 116
      },
      {
-      "pct": 12.93,
+      "pct": 13.66,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 820,
+      "la_pupils": 776,
       "group_pupils": 106
      },
      {
@@ -12207,7 +12207,7 @@
       "pct": 0.7,
       "region_code": "E12000007",
       "group_pupils": 401,
-      "region_pupils": 57460
+      "region_pupils": 57416
      },
      {
       "pct": 1.5,
@@ -12222,7 +12222,7 @@
       "region_pupils": 13655
      }
     ],
-    "area_pupils": 156054,
+    "area_pupils": 156010,
     "group_pupils": 1686
    },
    "change": {
@@ -12829,10 +12829,10 @@
       "group_pupils": 208
      },
      {
-      "pct": 8.95,
+      "pct": 9.35,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2078,
+      "la_pupils": 1990,
       "group_pupils": 186
      },
      {
@@ -12889,7 +12889,7 @@
       "pct": 0.44,
       "region_code": "E12000007",
       "group_pupils": 645,
-      "region_pupils": 147512
+      "region_pupils": 147424
      },
      {
       "pct": 0.75,
@@ -12904,7 +12904,7 @@
       "region_pupils": 51876
      }
     ],
-    "area_pupils": 483994,
+    "area_pupils": 483906,
     "group_pupils": 4770
    },
    "change": {
@@ -13088,7 +13088,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -13747,10 +13747,10 @@
       "group_pupils": 141
      },
      {
-      "pct": 14.39,
+      "pct": 15.36,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 841,
+      "la_pupils": 788,
       "group_pupils": 121
      },
      {
@@ -13849,7 +13849,7 @@
       "pct": 0.73,
       "region_code": "E12000007",
       "group_pupils": 421,
-      "region_pupils": 57699
+      "region_pupils": 57646
      },
      {
       "pct": 1.47,
@@ -13864,7 +13864,7 @@
       "region_pupils": 13651
      }
     ],
-    "area_pupils": 156352,
+    "area_pupils": 156299,
     "group_pupils": 1637
    },
    "change": {
@@ -13910,7 +13910,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -14574,10 +14574,10 @@
       "group_pupils": 181
      },
      {
-      "pct": 8.58,
+      "pct": 8.89,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 2040,
+      "la_pupils": 1969,
       "group_pupils": 175
      },
      {
@@ -14634,7 +14634,7 @@
       "pct": 0.45,
       "region_code": "E12000007",
       "group_pupils": 667,
-      "region_pupils": 146741
+      "region_pupils": 146670
      },
      {
       "pct": 0.72,
@@ -14649,7 +14649,7 @@
       "region_pupils": 51468
      }
     ],
-    "area_pupils": 482055,
+    "area_pupils": 481984,
     "group_pupils": 4565
    },
    "change": {
@@ -14833,7 +14833,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -15483,10 +15483,10 @@
       "group_pupils": 134
      },
      {
-      "pct": 13.67,
+      "pct": 14.48,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 841,
+      "la_pupils": 794,
       "group_pupils": 115
      },
      {
@@ -15585,7 +15585,7 @@
       "pct": 0.7,
       "region_code": "E12000007",
       "group_pupils": 399,
-      "region_pupils": 56876
+      "region_pupils": 56829
      },
      {
       "pct": 1.35,
@@ -15600,7 +15600,7 @@
       "region_pupils": 13368
      }
     ],
-    "area_pupils": 153332,
+    "area_pupils": 153285,
     "group_pupils": 1525
    },
    "change": {
@@ -15646,7 +15646,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "103017",
@@ -16310,10 +16310,10 @@
       "group_pupils": 161
      },
      {
-      "pct": 8.36,
+      "pct": 8.55,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 1771,
+      "la_pupils": 1731,
       "group_pupils": 148
      },
      {
@@ -16370,7 +16370,7 @@
       "pct": 0.47,
       "region_code": "E12000007",
       "group_pupils": 677,
-      "region_pupils": 143539
+      "region_pupils": 143499
      },
      {
       "pct": 0.68,
@@ -16385,7 +16385,7 @@
       "region_pupils": 50018
      }
     ],
-    "area_pupils": 469386,
+    "area_pupils": 469346,
     "group_pupils": 4327
    },
    "change": {
@@ -16512,7 +16512,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "113912",
@@ -17164,10 +17164,10 @@
       "group_pupils": 130
      },
      {
-      "pct": 16.21,
+      "pct": 17.23,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 660,
+      "la_pupils": 621,
       "group_pupils": 107
      },
      {
@@ -17273,7 +17273,7 @@
       "pct": 0.74,
       "region_code": "E12000007",
       "group_pupils": 408,
-      "region_pupils": 55086
+      "region_pupils": 55047
      },
      {
       "pct": 1.27,
@@ -17288,7 +17288,7 @@
       "region_pupils": 12788
      }
     ],
-    "area_pupils": 147248,
+    "area_pupils": 147209,
     "group_pupils": 1430
    },
    "change": {
@@ -17334,7 +17334,7 @@
      {
       "urn": "101569",
       "name": "Buxlow School",
-      "reason": "prep_no_ks2"
+      "reason": "no_results_published"
      },
      {
       "urn": "113912",
@@ -17938,10 +17938,10 @@
       "group_pupils": 125
      },
      {
-      "pct": 7.51,
+      "pct": 7.57,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 1612,
+      "la_pupils": 1599,
       "group_pupils": 121
      },
      {
@@ -17991,7 +17991,7 @@
       "pct": 0.45,
       "region_code": "E12000007",
       "group_pupils": 619,
-      "region_pupils": 136923
+      "region_pupils": 136910
      },
      {
       "pct": 0.69,
@@ -18006,7 +18006,7 @@
       "region_pupils": 47656
      }
     ],
-    "area_pupils": 446144,
+    "area_pupils": 446131,
     "group_pupils": 3921
    },
    "change": {
@@ -18246,17 +18246,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 85,
-      "family_id": "technology_eng_construction",
-      "n_schools": 3,
-      "points_per_entry": 5.92
-     },
-     {
-      "shown": true,
       "entries": 238,
       "family_id": "arts_media_design",
       "n_schools": 7,
       "points_per_entry": 6.25
+     },
+     {
+      "shown": true,
+      "entries": 85,
+      "family_id": "technology_eng_construction",
+      "n_schools": 3,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
@@ -18281,17 +18281,17 @@
      },
      {
       "shown": true,
-      "entries": 307,
-      "family_id": "languages_literature",
-      "n_schools": 5,
-      "points_per_entry": 5.88
-     },
-     {
-      "shown": true,
       "entries": 84,
       "family_id": "business_law",
       "n_schools": 4,
       "points_per_entry": 5.51
+     },
+     {
+      "shown": true,
+      "entries": 307,
+      "family_id": "languages_literature",
+      "n_schools": 5,
+      "points_per_entry": 5.88
      }
     ],
     "ks5": []
@@ -18525,10 +18525,10 @@
       "group_pupils": 86
      },
      {
-      "pct": 13.54,
+      "pct": 13.82,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 628,
+      "la_pupils": 615,
       "group_pupils": 85
      },
      {
@@ -18620,7 +18620,7 @@
       "pct": 0.74,
       "region_code": "E12000007",
       "group_pupils": 384,
-      "region_pupils": 52011
+      "region_pupils": 51998
      },
      {
       "pct": 1.11,
@@ -18635,7 +18635,7 @@
       "region_pupils": 11906
      }
     ],
-    "area_pupils": 138358,
+    "area_pupils": 138345,
     "group_pupils": 1255
    },
    "change": {
@@ -18974,17 +18974,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 85,
-      "family_id": "technology_eng_construction",
-      "n_schools": 3,
-      "points_per_entry": 5.92
-     },
-     {
-      "shown": true,
       "entries": 238,
       "family_id": "arts_media_design",
       "n_schools": 7,
       "points_per_entry": 6.25
+     },
+     {
+      "shown": true,
+      "entries": 85,
+      "family_id": "technology_eng_construction",
+      "n_schools": 3,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
@@ -19009,17 +19009,17 @@
      },
      {
       "shown": true,
-      "entries": 307,
-      "family_id": "languages_literature",
-      "n_schools": 5,
-      "points_per_entry": 5.88
-     },
-     {
-      "shown": true,
       "entries": 84,
       "family_id": "business_law",
       "n_schools": 4,
       "points_per_entry": 5.51
+     },
+     {
+      "shown": true,
+      "entries": 307,
+      "family_id": "languages_literature",
+      "n_schools": 5,
+      "points_per_entry": 5.88
      }
     ]
    }

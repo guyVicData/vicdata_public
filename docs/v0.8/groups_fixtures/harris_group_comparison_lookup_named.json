@@ -44,10 +44,10 @@
       "group_pupils": 4603
      },
      {
-      "pct": 6.37,
+      "pct": 6.38,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50846,
+      "la_pupils": 50764,
       "group_pupils": 3241
      },
      {
@@ -162,7 +162,7 @@
       "pct": 1.3,
       "region_code": "E12000007",
       "group_pupils": 18735,
-      "region_pupils": 1441809
+      "region_pupils": 1441727
      },
      {
       "pct": 0.3,
@@ -171,7 +171,7 @@
       "region_pupils": 1427960
      }
     ],
-    "area_pupils": 3833505,
+    "area_pupils": 3833423,
     "group_pupils": 27637
    },
    "regions": {
@@ -472,10 +472,10 @@
       "group_pupils": 1167
      },
      {
-      "pct": 3.6,
+      "pct": 3.61,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 23696,
+      "la_pupils": 23639,
       "group_pupils": 853
      },
      {
@@ -562,7 +562,7 @@
       "pct": 0.81,
       "region_code": "E12000007",
       "group_pupils": 5304,
-      "region_pupils": 657751
+      "region_pupils": 657694
      },
      {
       "pct": 0.28,
@@ -571,7 +571,7 @@
       "region_pupils": 665759
      }
     ],
-    "area_pupils": 1771254,
+    "area_pupils": 1771197,
     "group_pupils": 8458
    },
    "results": {
@@ -823,10 +823,10 @@
       "group_pupils": 4700
      },
      {
-      "pct": 6.6,
+      "pct": 6.61,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50292,
+      "la_pupils": 50217,
       "group_pupils": 3320
      },
      {
@@ -941,7 +941,7 @@
       "pct": 1.35,
       "region_code": "E12000007",
       "group_pupils": 19475,
-      "region_pupils": 1437491
+      "region_pupils": 1437416
      },
      {
       "pct": 0.31,
@@ -950,7 +950,7 @@
       "region_pupils": 1436272
      }
     ],
-    "area_pupils": 3838312,
+    "area_pupils": 3838237,
     "group_pupils": 28571
    },
    "change": {
@@ -1331,7 +1331,7 @@
       "pct": 3.69,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 23060,
+      "la_pupils": 23007,
       "group_pupils": 850
      },
      {
@@ -1411,7 +1411,7 @@
       "pct": 0.83,
       "region_code": "E12000007",
       "group_pupils": 5359,
-      "region_pupils": 647163
+      "region_pupils": 647110
      },
      {
       "pct": 0.28,
@@ -1420,7 +1420,7 @@
       "region_pupils": 662674
      }
     ],
-    "area_pupils": 1754188,
+    "area_pupils": 1754135,
     "group_pupils": 8478
    },
    "change": {
@@ -1773,10 +1773,10 @@
       "group_pupils": 4732
      },
      {
-      "pct": 6.94,
+      "pct": 6.95,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50359,
+      "la_pupils": 50288,
       "group_pupils": 3496
      },
      {
@@ -1891,7 +1891,7 @@
       "pct": 1.41,
       "region_code": "E12000007",
       "group_pupils": 20296,
-      "region_pupils": 1441686
+      "region_pupils": 1441615
      },
      {
       "pct": 0.31,
@@ -1900,7 +1900,7 @@
       "region_pupils": 1454900
      }
     ],
-    "area_pupils": 3872098,
+    "area_pupils": 3872027,
     "group_pupils": 29586
    },
    "change": {
@@ -2532,7 +2532,7 @@
       "pct": 3.81,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22776,
+      "la_pupils": 22732,
       "group_pupils": 867
      },
      {
@@ -2612,7 +2612,7 @@
       "pct": 0.85,
       "region_code": "E12000007",
       "group_pupils": 5468,
-      "region_pupils": 639774
+      "region_pupils": 639730
      },
      {
       "pct": 0.29,
@@ -2621,7 +2621,7 @@
       "region_pupils": 665327
      }
     ],
-    "area_pupils": 1751765,
+    "area_pupils": 1751721,
     "group_pupils": 8578
    },
    "change": {
@@ -3125,10 +3125,10 @@
       "group_pupils": 4668
      },
      {
-      "pct": 7.06,
+      "pct": 7.07,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50607,
+      "la_pupils": 50519,
       "group_pupils": 3571
      },
      {
@@ -3243,7 +3243,7 @@
       "pct": 1.43,
       "region_code": "E12000007",
       "group_pupils": 20679,
-      "region_pupils": 1444437
+      "region_pupils": 1444349
      },
      {
       "pct": 0.32,
@@ -3252,7 +3252,7 @@
       "region_pupils": 1473339
      }
     ],
-    "area_pupils": 3903961,
+    "area_pupils": 3903873,
     "group_pupils": 30084
    },
    "change": {
@@ -3886,10 +3886,10 @@
       "group_pupils": 1174
      },
      {
-      "pct": 3.78,
+      "pct": 3.79,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22930,
+      "la_pupils": 22877,
       "group_pupils": 867
      },
      {
@@ -3976,7 +3976,7 @@
       "pct": 0.84,
       "region_code": "E12000007",
       "group_pupils": 5334,
-      "region_pupils": 636720
+      "region_pupils": 636667
      },
      {
       "pct": 0.29,
@@ -3985,7 +3985,7 @@
       "region_pupils": 666875
      }
     ],
-    "area_pupils": 1751614,
+    "area_pupils": 1751561,
     "group_pupils": 8437
    },
    "change": {
@@ -4103,7 +4103,7 @@
       "pct": 11.05,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 17646,
+      "la_pupils": 17645,
       "group_pupils": 1950
      },
      {
@@ -4204,7 +4204,7 @@
       "pct": 2.31,
       "region_code": "E12000007",
       "group_pupils": 11884,
-      "region_pupils": 515298
+      "region_pupils": 515297
      },
      {
       "pct": 0.41,
@@ -4213,7 +4213,7 @@
       "region_pupils": 569582
      }
     ],
-    "area_pupils": 1460297,
+    "area_pupils": 1460296,
     "group_pupils": 17195
    },
    "change": {
@@ -4502,10 +4502,10 @@
       "group_pupils": 4564
      },
      {
-      "pct": 7.11,
+      "pct": 7.12,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50703,
+      "la_pupils": 50632,
       "group_pupils": 3603
      },
      {
@@ -4620,7 +4620,7 @@
       "pct": 1.45,
       "region_code": "E12000007",
       "group_pupils": 20907,
-      "region_pupils": 1437100
+      "region_pupils": 1437029
      },
      {
       "pct": 0.32,
@@ -4629,7 +4629,7 @@
       "region_pupils": 1478290
      }
     ],
-    "area_pupils": 3908402,
+    "area_pupils": 3908331,
     "group_pupils": 30222
    },
    "change": {
@@ -4843,10 +4843,10 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1558,
-      "family_id": "arts_media_design",
+      "entries": 5165,
+      "family_id": "humanities_social",
       "n_schools": 21,
-      "points_per_entry": 4.51
+      "points_per_entry": 4.62
      },
      {
       "shown": true,
@@ -4854,6 +4854,27 @@
       "family_id": "sciences_maths",
       "n_schools": 21,
       "points_per_entry": 4.72
+     },
+     {
+      "shown": true,
+      "entries": 8859,
+      "family_id": "languages_literature",
+      "n_schools": 21,
+      "points_per_entry": 4.81
+     },
+     {
+      "shown": true,
+      "entries": 914,
+      "family_id": "enterprise_applied",
+      "n_schools": 19,
+      "points_per_entry": 3.64
+     },
+     {
+      "shown": true,
+      "entries": 1558,
+      "family_id": "arts_media_design",
+      "n_schools": 21,
+      "points_per_entry": 4.51
      },
      {
       "shown": true,
@@ -4868,27 +4889,6 @@
       "family_id": "technology_eng_construction",
       "n_schools": 15,
       "points_per_entry": 4.63
-     },
-     {
-      "shown": true,
-      "entries": 8859,
-      "family_id": "languages_literature",
-      "n_schools": 21,
-      "points_per_entry": 4.81
-     },
-     {
-      "shown": true,
-      "entries": 5165,
-      "family_id": "humanities_social",
-      "n_schools": 21,
-      "points_per_entry": 4.62
-     },
-     {
-      "shown": true,
-      "entries": 914,
-      "family_id": "enterprise_applied",
-      "n_schools": 19,
-      "points_per_entry": 3.64
      },
      {
       "shown": false,
@@ -5282,10 +5282,10 @@
       "group_pupils": 871
      },
      {
-      "pct": 3.8,
+      "pct": 3.81,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22843,
+      "la_pupils": 22796,
       "group_pupils": 868
      },
      {
@@ -5365,7 +5365,7 @@
       "pct": 0.84,
       "region_code": "E12000007",
       "group_pupils": 5263,
-      "region_pupils": 629663
+      "region_pupils": 629616
      },
      {
       "pct": 0.29,
@@ -5374,7 +5374,7 @@
       "region_pupils": 662278
      }
     ],
-    "area_pupils": 1739659,
+    "area_pupils": 1739612,
     "group_pupils": 8336
    },
    "change": {
@@ -5484,7 +5484,7 @@
       "pct": 11.07,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 17808,
+      "la_pupils": 17807,
       "group_pupils": 1971
      },
      {
@@ -5585,7 +5585,7 @@
       "pct": 2.38,
       "region_code": "E12000007",
       "group_pupils": 12346,
-      "region_pupils": 518420
+      "region_pupils": 518419
      },
      {
       "pct": 0.41,
@@ -5594,7 +5594,7 @@
       "region_pupils": 579224
      }
     ],
-    "area_pupils": 1480604,
+    "area_pupils": 1480603,
     "group_pupils": 17689
    },
    "change": {
@@ -5714,10 +5714,10 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1558,
-      "family_id": "arts_media_design",
+      "entries": 5165,
+      "family_id": "humanities_social",
       "n_schools": 21,
-      "points_per_entry": 4.51
+      "points_per_entry": 4.62
      },
      {
       "shown": true,
@@ -5725,6 +5725,27 @@
       "family_id": "sciences_maths",
       "n_schools": 21,
       "points_per_entry": 4.72
+     },
+     {
+      "shown": true,
+      "entries": 8859,
+      "family_id": "languages_literature",
+      "n_schools": 21,
+      "points_per_entry": 4.81
+     },
+     {
+      "shown": true,
+      "entries": 914,
+      "family_id": "enterprise_applied",
+      "n_schools": 19,
+      "points_per_entry": 3.64
+     },
+     {
+      "shown": true,
+      "entries": 1558,
+      "family_id": "arts_media_design",
+      "n_schools": 21,
+      "points_per_entry": 4.51
      },
      {
       "shown": true,
@@ -5739,27 +5760,6 @@
       "family_id": "technology_eng_construction",
       "n_schools": 15,
       "points_per_entry": 4.63
-     },
-     {
-      "shown": true,
-      "entries": 8859,
-      "family_id": "languages_literature",
-      "n_schools": 21,
-      "points_per_entry": 4.81
-     },
-     {
-      "shown": true,
-      "entries": 5165,
-      "family_id": "humanities_social",
-      "n_schools": 21,
-      "points_per_entry": 4.62
-     },
-     {
-      "shown": true,
-      "entries": 914,
-      "family_id": "enterprise_applied",
-      "n_schools": 19,
-      "points_per_entry": 3.64
      },
      {
       "shown": false,
@@ -5861,7 +5861,7 @@
       "pct": 7.16,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50476,
+      "la_pupils": 50436,
       "group_pupils": 3612
      },
      {
@@ -5976,7 +5976,7 @@
       "pct": 1.47,
       "region_code": "E12000007",
       "group_pupils": 20840,
-      "region_pupils": 1418623
+      "region_pupils": 1418583
      },
      {
       "pct": 0.32,
@@ -5985,7 +5985,7 @@
       "region_pupils": 1471456
      }
     ],
-    "area_pupils": 3879199,
+    "area_pupils": 3879159,
     "group_pupils": 30090
    },
    "change": {
@@ -6655,10 +6655,10 @@
       "group_pupils": 1121
      },
      {
-      "pct": 3.87,
+      "pct": 3.88,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22486,
+      "la_pupils": 22447,
       "group_pupils": 871
      },
      {
@@ -6745,7 +6745,7 @@
       "pct": 0.84,
       "region_code": "E12000007",
       "group_pupils": 5191,
-      "region_pupils": 617431
+      "region_pupils": 617392
      },
      {
       "pct": 0.3,
@@ -6754,7 +6754,7 @@
       "region_pupils": 655294
      }
     ],
-    "area_pupils": 1715600,
+    "area_pupils": 1715561,
     "group_pupils": 8247
    },
    "change": {
@@ -7186,10 +7186,10 @@
       "group_pupils": 4382
      },
      {
-      "pct": 7.25,
+      "pct": 7.26,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 49849,
+      "la_pupils": 49836,
       "group_pupils": 3616
      },
      {
@@ -7304,7 +7304,7 @@
       "pct": 1.5,
       "region_code": "E12000007",
       "group_pupils": 20883,
-      "region_pupils": 1390206
+      "region_pupils": 1390193
      },
      {
       "pct": 0.32,
@@ -7313,7 +7313,7 @@
       "region_pupils": 1453357
      }
     ],
-    "area_pupils": 3824363,
+    "area_pupils": 3824350,
     "group_pupils": 29865
    },
    "change": {
@@ -7454,6 +7454,20 @@
     "ks4": [
      {
       "shown": true,
+      "entries": 9191,
+      "family_id": "languages_literature",
+      "n_schools": 23,
+      "points_per_entry": 5.06
+     },
+     {
+      "shown": true,
+      "entries": 5399,
+      "family_id": "humanities_social",
+      "n_schools": 23,
+      "points_per_entry": 5.05
+     },
+     {
+      "shown": true,
       "entries": 1468,
       "family_id": "arts_media_design",
       "n_schools": 23,
@@ -7482,24 +7496,10 @@
      },
      {
       "shown": true,
-      "entries": 9191,
-      "family_id": "languages_literature",
-      "n_schools": 23,
-      "points_per_entry": 5.06
-     },
-     {
-      "shown": true,
       "entries": 879,
       "family_id": "enterprise_applied",
       "n_schools": 18,
       "points_per_entry": 3.83
-     },
-     {
-      "shown": true,
-      "entries": 5399,
-      "family_id": "humanities_social",
-      "n_schools": 23,
-      "points_per_entry": 5.05
      },
      {
       "shown": false,
@@ -7738,7 +7738,7 @@
       "pct": 3.98,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22114,
+      "la_pupils": 22101,
       "group_pupils": 880
      },
      {
@@ -7825,7 +7825,7 @@
       "pct": 0.86,
       "region_code": "E12000007",
       "group_pupils": 5158,
-      "region_pupils": 600857
+      "region_pupils": 600844
      },
      {
       "pct": 0.3,
@@ -7834,7 +7834,7 @@
       "region_pupils": 642321
      }
     ],
-    "area_pupils": 1678298,
+    "area_pupils": 1678285,
     "group_pupils": 8147
    },
    "change": {
@@ -8120,6 +8120,20 @@
     "ks4": [
      {
       "shown": true,
+      "entries": 9191,
+      "family_id": "languages_literature",
+      "n_schools": 23,
+      "points_per_entry": 5.06
+     },
+     {
+      "shown": true,
+      "entries": 5399,
+      "family_id": "humanities_social",
+      "n_schools": 23,
+      "points_per_entry": 5.05
+     },
+     {
+      "shown": true,
       "entries": 1468,
       "family_id": "arts_media_design",
       "n_schools": 23,
@@ -8148,24 +8162,10 @@
      },
      {
       "shown": true,
-      "entries": 9191,
-      "family_id": "languages_literature",
-      "n_schools": 23,
-      "points_per_entry": 5.06
-     },
-     {
-      "shown": true,
       "entries": 879,
       "family_id": "enterprise_applied",
       "n_schools": 18,
       "points_per_entry": 3.83
-     },
-     {
-      "shown": true,
-      "entries": 5399,
-      "family_id": "humanities_social",
-      "n_schools": 23,
-      "points_per_entry": 5.05
      },
      {
       "shown": false,
@@ -8231,10 +8231,10 @@
       "group_pupils": 4157
      },
      {
-      "pct": 6.37,
+      "pct": 6.38,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50846,
+      "la_pupils": 50764,
       "group_pupils": 3241
      },
      {
@@ -8355,7 +8355,7 @@
       "pct": 1.3,
       "region_code": "E12000007",
       "group_pupils": 18735,
-      "region_pupils": 1441809
+      "region_pupils": 1441727
      },
      {
       "pct": 0.3,
@@ -8364,7 +8364,7 @@
       "region_pupils": 1427960
      }
     ],
-    "area_pupils": 4696560,
+    "area_pupils": 4696478,
     "group_pupils": 31794
    },
    "regions": {
@@ -8432,7 +8432,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -8711,10 +8711,10 @@
       "group_pupils": 1167
      },
      {
-      "pct": 3.6,
+      "pct": 3.61,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 23696,
+      "la_pupils": 23639,
       "group_pupils": 853
      },
      {
@@ -8807,7 +8807,7 @@
       "pct": 0.81,
       "region_code": "E12000007",
       "group_pupils": 5304,
-      "region_pupils": 657751
+      "region_pupils": 657694
      },
      {
       "pct": 0.28,
@@ -8816,7 +8816,7 @@
       "region_pupils": 665759
      }
     ],
-    "area_pupils": 2174150,
+    "area_pupils": 2174093,
     "group_pupils": 10180
    },
    "results": {
@@ -8832,7 +8832,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -9042,7 +9042,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -9122,10 +9122,10 @@
       "group_pupils": 4176
      },
      {
-      "pct": 6.6,
+      "pct": 6.61,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50292,
+      "la_pupils": 50217,
       "group_pupils": 3320
      },
      {
@@ -9246,7 +9246,7 @@
       "pct": 1.35,
       "region_code": "E12000007",
       "group_pupils": 19475,
-      "region_pupils": 1437491
+      "region_pupils": 1437416
      },
      {
       "pct": 0.31,
@@ -9255,7 +9255,7 @@
       "region_pupils": 1436272
      }
     ],
-    "area_pupils": 4700315,
+    "area_pupils": 4700240,
     "group_pupils": 32747
    },
    "change": {
@@ -9347,7 +9347,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -9665,7 +9665,7 @@
       "pct": 3.69,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 23060,
+      "la_pupils": 23007,
       "group_pupils": 850
      },
      {
@@ -9751,7 +9751,7 @@
       "pct": 0.83,
       "region_code": "E12000007",
       "group_pupils": 5359,
-      "region_pupils": 647163
+      "region_pupils": 647110
      },
      {
       "pct": 0.28,
@@ -9760,7 +9760,7 @@
       "region_pupils": 662674
      }
     ],
-    "area_pupils": 2153582,
+    "area_pupils": 2153529,
     "group_pupils": 10221
    },
    "change": {
@@ -9805,7 +9805,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -10045,7 +10045,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -10155,10 +10155,10 @@
       "group_pupils": 4220
      },
      {
-      "pct": 6.94,
+      "pct": 6.95,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50359,
+      "la_pupils": 50288,
       "group_pupils": 3496
      },
      {
@@ -10279,7 +10279,7 @@
       "pct": 1.41,
       "region_code": "E12000007",
       "group_pupils": 20296,
-      "region_pupils": 1441686
+      "region_pupils": 1441615
      },
      {
       "pct": 0.31,
@@ -10288,7 +10288,7 @@
       "region_pupils": 1454900
      }
     ],
-    "area_pupils": 4741454,
+    "area_pupils": 4741383,
     "group_pupils": 33806
    },
    "change": {
@@ -10375,7 +10375,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -10397,7 +10397,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -10419,7 +10419,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -10441,7 +10441,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -10463,7 +10463,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -10955,7 +10955,7 @@
       "pct": 3.81,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22776,
+      "la_pupils": 22732,
       "group_pupils": 867
      },
      {
@@ -11041,7 +11041,7 @@
       "pct": 0.85,
       "region_code": "E12000007",
       "group_pupils": 5468,
-      "region_pupils": 639774
+      "region_pupils": 639730
      },
      {
       "pct": 0.29,
@@ -11050,7 +11050,7 @@
       "region_pupils": 665327
      }
     ],
-    "area_pupils": 2150989,
+    "area_pupils": 2150945,
     "group_pupils": 10350
    },
    "change": {
@@ -11095,7 +11095,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -11350,7 +11350,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11372,7 +11372,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11394,7 +11394,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11416,7 +11416,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11438,7 +11438,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -11610,10 +11610,10 @@
       "group_pupils": 4290
      },
      {
-      "pct": 7.06,
+      "pct": 7.07,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50607,
+      "la_pupils": 50519,
       "group_pupils": 3571
      },
      {
@@ -11734,7 +11734,7 @@
       "pct": 1.43,
       "region_code": "E12000007",
       "group_pupils": 20679,
-      "region_pupils": 1444437
+      "region_pupils": 1444349
      },
      {
       "pct": 0.32,
@@ -11743,7 +11743,7 @@
       "region_pupils": 1473339
      }
     ],
-    "area_pupils": 4776944,
+    "area_pupils": 4776856,
     "group_pupils": 34374
    },
    "change": {
@@ -11830,7 +11830,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11852,7 +11852,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11874,7 +11874,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11886,7 +11886,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11908,7 +11908,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -11930,7 +11930,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -12417,10 +12417,10 @@
       "group_pupils": 1174
      },
      {
-      "pct": 3.78,
+      "pct": 3.79,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22930,
+      "la_pupils": 22877,
       "group_pupils": 867
      },
      {
@@ -12513,7 +12513,7 @@
       "pct": 0.84,
       "region_code": "E12000007",
       "group_pupils": 5334,
-      "region_pupils": 636720
+      "region_pupils": 636667
      },
      {
       "pct": 0.29,
@@ -12522,7 +12522,7 @@
       "region_pupils": 666875
      }
     ],
-    "area_pupils": 2151240,
+    "area_pupils": 2151187,
     "group_pupils": 10221
    },
    "change": {
@@ -12567,7 +12567,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -12579,7 +12579,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -12659,7 +12659,7 @@
       "pct": 11.05,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 17646,
+      "la_pupils": 17645,
       "group_pupils": 1950
      },
      {
@@ -12766,7 +12766,7 @@
       "pct": 2.31,
       "region_code": "E12000007",
       "group_pupils": 11884,
-      "region_pupils": 515298
+      "region_pupils": 515297
      },
      {
       "pct": 0.41,
@@ -12775,7 +12775,7 @@
       "region_pupils": 569582
      }
     ],
-    "area_pupils": 1793180,
+    "area_pupils": 1793179,
     "group_pupils": 19257
    },
    "change": {
@@ -12834,7 +12834,7 @@
     "roll": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -12856,7 +12856,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -12878,7 +12878,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -12900,7 +12900,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ],
@@ -12922,7 +12922,7 @@
      },
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "not_yet_open"
      }
     ]
@@ -13099,10 +13099,10 @@
       "group_pupils": 4265
      },
      {
-      "pct": 7.11,
+      "pct": 7.12,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50703,
+      "la_pupils": 50632,
       "group_pupils": 3603
      },
      {
@@ -13223,7 +13223,7 @@
       "pct": 1.45,
       "region_code": "E12000007",
       "group_pupils": 20907,
-      "region_pupils": 1437100
+      "region_pupils": 1437029
      },
      {
       "pct": 0.32,
@@ -13232,7 +13232,7 @@
       "region_pupils": 1478290
      }
     ],
-    "area_pupils": 4780316,
+    "area_pupils": 4780245,
     "group_pupils": 34487
    },
    "change": {
@@ -13343,7 +13343,7 @@
     "ks2_rwm": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "no_results_published"
      }
     ],
@@ -13454,10 +13454,10 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1803,
-      "family_id": "arts_media_design",
+      "entries": 5625,
+      "family_id": "humanities_social",
       "n_schools": 23,
-      "points_per_entry": 4.61
+      "points_per_entry": 4.6
      },
      {
       "shown": true,
@@ -13465,6 +13465,27 @@
       "family_id": "sciences_maths",
       "n_schools": 23,
       "points_per_entry": 4.73
+     },
+     {
+      "shown": true,
+      "entries": 9947,
+      "family_id": "languages_literature",
+      "n_schools": 23,
+      "points_per_entry": 4.78
+     },
+     {
+      "shown": true,
+      "entries": 1104,
+      "family_id": "enterprise_applied",
+      "n_schools": 21,
+      "points_per_entry": 3.74
+     },
+     {
+      "shown": true,
+      "entries": 1803,
+      "family_id": "arts_media_design",
+      "n_schools": 23,
+      "points_per_entry": 4.61
      },
      {
       "shown": true,
@@ -13479,27 +13500,6 @@
       "family_id": "technology_eng_construction",
       "n_schools": 17,
       "points_per_entry": 4.53
-     },
-     {
-      "shown": true,
-      "entries": 9947,
-      "family_id": "languages_literature",
-      "n_schools": 23,
-      "points_per_entry": 4.78
-     },
-     {
-      "shown": true,
-      "entries": 5625,
-      "family_id": "humanities_social",
-      "n_schools": 23,
-      "points_per_entry": 4.6
-     },
-     {
-      "shown": true,
-      "entries": 1104,
-      "family_id": "enterprise_applied",
-      "n_schools": 21,
-      "points_per_entry": 3.74
      },
      {
       "shown": false,
@@ -13900,10 +13900,10 @@
       "group_pupils": 871
      },
      {
-      "pct": 3.8,
+      "pct": 3.81,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22843,
+      "la_pupils": 22796,
       "group_pupils": 868
      },
      {
@@ -13989,7 +13989,7 @@
       "pct": 0.84,
       "region_code": "E12000007",
       "group_pupils": 5263,
-      "region_pupils": 629663
+      "region_pupils": 629616
      },
      {
       "pct": 0.29,
@@ -13998,7 +13998,7 @@
       "region_pupils": 662278
      }
     ],
-    "area_pupils": 2136272,
+    "area_pupils": 2136225,
     "group_pupils": 10111
    },
    "change": {
@@ -14043,7 +14043,7 @@
     "ks2_rwm": [
      {
       "urn": "150309",
-      "name": "Northfield Primary School",
+      "name": "Ark Northfield Primary School",
       "reason": "no_results_published"
      }
     ]
@@ -14123,7 +14123,7 @@
       "pct": 11.07,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 17808,
+      "la_pupils": 17807,
       "group_pupils": 1971
      },
      {
@@ -14230,7 +14230,7 @@
       "pct": 2.38,
       "region_code": "E12000007",
       "group_pupils": 12346,
-      "region_pupils": 518420
+      "region_pupils": 518419
      },
      {
       "pct": 0.41,
@@ -14239,7 +14239,7 @@
       "region_pupils": 579224
      }
     ],
-    "area_pupils": 1818593,
+    "area_pupils": 1818592,
     "group_pupils": 19739
    },
    "change": {
@@ -14359,10 +14359,10 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1803,
-      "family_id": "arts_media_design",
+      "entries": 5625,
+      "family_id": "humanities_social",
       "n_schools": 23,
-      "points_per_entry": 4.61
+      "points_per_entry": 4.6
      },
      {
       "shown": true,
@@ -14370,6 +14370,27 @@
       "family_id": "sciences_maths",
       "n_schools": 23,
       "points_per_entry": 4.73
+     },
+     {
+      "shown": true,
+      "entries": 9947,
+      "family_id": "languages_literature",
+      "n_schools": 23,
+      "points_per_entry": 4.78
+     },
+     {
+      "shown": true,
+      "entries": 1104,
+      "family_id": "enterprise_applied",
+      "n_schools": 21,
+      "points_per_entry": 3.74
+     },
+     {
+      "shown": true,
+      "entries": 1803,
+      "family_id": "arts_media_design",
+      "n_schools": 23,
+      "points_per_entry": 4.61
      },
      {
       "shown": true,
@@ -14384,27 +14405,6 @@
       "family_id": "technology_eng_construction",
       "n_schools": 17,
       "points_per_entry": 4.53
-     },
-     {
-      "shown": true,
-      "entries": 9947,
-      "family_id": "languages_literature",
-      "n_schools": 23,
-      "points_per_entry": 4.78
-     },
-     {
-      "shown": true,
-      "entries": 5625,
-      "family_id": "humanities_social",
-      "n_schools": 23,
-      "points_per_entry": 4.6
-     },
-     {
-      "shown": true,
-      "entries": 1104,
-      "family_id": "enterprise_applied",
-      "n_schools": 21,
-      "points_per_entry": 3.74
      },
      {
       "shown": false,
@@ -14451,7 +14451,7 @@
     "places": {
      "ks4_a8": {
       "of": 14,
-      "rank": 6,
+      "rank": 5,
       "tied": false
      },
      "ks2_rwm": {
@@ -14514,7 +14514,7 @@
       "pct": 7.16,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 50476,
+      "la_pupils": 50436,
       "group_pupils": 3612
      },
      {
@@ -14635,7 +14635,7 @@
       "pct": 1.47,
       "region_code": "E12000007",
       "group_pupils": 20840,
-      "region_pupils": 1418623
+      "region_pupils": 1418583
      },
      {
       "pct": 0.32,
@@ -14644,7 +14644,7 @@
       "region_pupils": 1471456
      }
     ],
-    "area_pupils": 4744296,
+    "area_pupils": 4744256,
     "group_pupils": 34360
    },
    "change": {
@@ -15322,10 +15322,10 @@
       "group_pupils": 1121
      },
      {
-      "pct": 3.87,
+      "pct": 3.88,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22486,
+      "la_pupils": 22447,
       "group_pupils": 871
      },
      {
@@ -15418,7 +15418,7 @@
       "pct": 0.84,
       "region_code": "E12000007",
       "group_pupils": 5191,
-      "region_pupils": 617431
+      "region_pupils": 617392
      },
      {
       "pct": 0.3,
@@ -15427,7 +15427,7 @@
       "region_pupils": 655294
      }
     ],
-    "area_pupils": 2107395,
+    "area_pupils": 2107356,
     "group_pupils": 10031
    },
    "change": {
@@ -15489,7 +15489,7 @@
     "places": {
      "ks4_a8": {
       "of": 14,
-      "rank": 6,
+      "rank": 5,
       "tied": false
      },
      "ks4_em4": {
@@ -15880,10 +15880,10 @@
       "group_pupils": 4267
      },
      {
-      "pct": 7.25,
+      "pct": 7.26,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 49849,
+      "la_pupils": 49836,
       "group_pupils": 3616
      },
      {
@@ -16004,7 +16004,7 @@
       "pct": 1.5,
       "region_code": "E12000007",
       "group_pupils": 20883,
-      "region_pupils": 1390206
+      "region_pupils": 1390193
      },
      {
       "pct": 0.32,
@@ -16013,7 +16013,7 @@
       "region_pupils": 1453357
      }
     ],
-    "area_pupils": 4676583,
+    "area_pupils": 4676570,
     "group_pupils": 34132
    },
    "change": {
@@ -16155,6 +16155,20 @@
     "ks4": [
      {
       "shown": true,
+      "entries": 10197,
+      "family_id": "languages_literature",
+      "n_schools": 25,
+      "points_per_entry": 5.03
+     },
+     {
+      "shown": true,
+      "entries": 5823,
+      "family_id": "humanities_social",
+      "n_schools": 25,
+      "points_per_entry": 5.03
+     },
+     {
+      "shown": true,
       "entries": 1674,
       "family_id": "arts_media_design",
       "n_schools": 25,
@@ -16183,24 +16197,10 @@
      },
      {
       "shown": true,
-      "entries": 10197,
-      "family_id": "languages_literature",
-      "n_schools": 25,
-      "points_per_entry": 5.03
-     },
-     {
-      "shown": true,
       "entries": 1094,
       "family_id": "enterprise_applied",
       "n_schools": 20,
       "points_per_entry": 3.97
-     },
-     {
-      "shown": true,
-      "entries": 5823,
-      "family_id": "humanities_social",
-      "n_schools": 25,
-      "points_per_entry": 5.03
      },
      {
       "shown": false,
@@ -16446,7 +16446,7 @@
       "pct": 3.98,
       "la_code": "304",
       "la_name": "Brent",
-      "la_pupils": 22114,
+      "la_pupils": 22101,
       "group_pupils": 880
      },
      {
@@ -16539,7 +16539,7 @@
       "pct": 0.86,
       "region_code": "E12000007",
       "group_pupils": 5158,
-      "region_pupils": 600857
+      "region_pupils": 600844
      },
      {
       "pct": 0.3,
@@ -16548,7 +16548,7 @@
       "region_pupils": 642321
      }
     ],
-    "area_pupils": 2062212,
+    "area_pupils": 2062199,
     "group_pupils": 9913
    },
    "change": {
@@ -16847,6 +16847,20 @@
     "ks4": [
      {
       "shown": true,
+      "entries": 10197,
+      "family_id": "languages_literature",
+      "n_schools": 25,
+      "points_per_entry": 5.03
+     },
+     {
+      "shown": true,
+      "entries": 5823,
+      "family_id": "humanities_social",
+      "n_schools": 25,
+      "points_per_entry": 5.03
+     },
+     {
+      "shown": true,
       "entries": 1674,
       "family_id": "arts_media_design",
       "n_schools": 25,
@@ -16875,24 +16889,10 @@
      },
      {
       "shown": true,
-      "entries": 10197,
-      "family_id": "languages_literature",
-      "n_schools": 25,
-      "points_per_entry": 5.03
-     },
-     {
-      "shown": true,
       "entries": 1094,
       "family_id": "enterprise_applied",
       "n_schools": 20,
       "points_per_entry": 3.97
-     },
-     {
-      "shown": true,
-      "entries": 5823,
-      "family_id": "humanities_social",
-      "n_schools": 25,
-      "points_per_entry": 5.03
      },
      {
       "shown": false,
@@ -17204,7 +17204,7 @@
       "pct": 0.73,
       "region_code": "E12000007",
       "group_pupils": 10536,
-      "region_pupils": 1441809
+      "region_pupils": 1441727
      },
      {
       "pct": 0.75,
@@ -17219,7 +17219,7 @@
       "region_pupils": 804852
      }
     ],
-    "area_pupils": 8387288,
+    "area_pupils": 8387206,
     "group_pupils": 49222
    },
    "regions": {
@@ -17761,7 +17761,7 @@
       "pct": 0.32,
       "region_code": "E12000007",
       "group_pupils": 2072,
-      "region_pupils": 657751
+      "region_pupils": 657694
      },
      {
       "pct": 0.42,
@@ -17776,7 +17776,7 @@
       "region_pupils": 376237
      }
     ],
-    "area_pupils": 3899756,
+    "area_pupils": 3899699,
     "group_pupils": 10384
    },
    "results": {
@@ -18398,7 +18398,7 @@
       "pct": 0.8,
       "region_code": "E12000007",
       "group_pupils": 11505,
-      "region_pupils": 1437491
+      "region_pupils": 1437416
      },
      {
       "pct": 0.75,
@@ -18413,7 +18413,7 @@
       "region_pupils": 807182
      }
     ],
-    "area_pupils": 8405914,
+    "area_pupils": 8405839,
     "group_pupils": 52070
    },
    "change": {
@@ -19039,7 +19039,7 @@
       "pct": 0.33,
       "region_code": "E12000007",
       "group_pupils": 2163,
-      "region_pupils": 647163
+      "region_pupils": 647110
      },
      {
       "pct": 0.41,
@@ -19054,7 +19054,7 @@
       "region_pupils": 373809
      }
     ],
-    "area_pupils": 3870449,
+    "area_pupils": 3870396,
     "group_pupils": 10425
    },
    "change": {
@@ -19777,7 +19777,7 @@
       "pct": 0.82,
       "region_code": "E12000007",
       "group_pupils": 11867,
-      "region_pupils": 1441686
+      "region_pupils": 1441615
      },
      {
       "pct": 0.73,
@@ -19792,7 +19792,7 @@
       "region_pupils": 814080
      }
     ],
-    "area_pupils": 8487630,
+    "area_pupils": 8487559,
     "group_pupils": 54251
    },
    "change": {
@@ -20657,7 +20657,7 @@
       "pct": 0.34,
       "region_code": "E12000007",
       "group_pupils": 2155,
-      "region_pupils": 639774
+      "region_pupils": 639730
      },
      {
       "pct": 0.39,
@@ -20672,7 +20672,7 @@
       "region_pupils": 373838
      }
     ],
-    "area_pupils": 3873526,
+    "area_pupils": 3873482,
     "group_pupils": 10198
    },
    "change": {
@@ -21485,7 +21485,7 @@
       "pct": 0.98,
       "region_code": "E12000007",
       "group_pupils": 14096,
-      "region_pupils": 1444437
+      "region_pupils": 1444349
      },
      {
       "pct": 0.73,
@@ -21500,7 +21500,7 @@
       "region_pupils": 818792
      }
     ],
-    "area_pupils": 8554916,
+    "area_pupils": 8554828,
     "group_pupils": 57285
    },
    "change": {
@@ -22402,7 +22402,7 @@
       "pct": 0.42,
       "region_code": "E12000007",
       "group_pupils": 2681,
-      "region_pupils": 636720
+      "region_pupils": 636667
      },
      {
       "pct": 0.38,
@@ -22417,7 +22417,7 @@
       "region_pupils": 372420
      }
     ],
-    "area_pupils": 3876438,
+    "area_pupils": 3876385,
     "group_pupils": 10586
    },
    "change": {
@@ -22745,7 +22745,7 @@
       "pct": 1.72,
       "region_code": "E12000007",
       "group_pupils": 8876,
-      "region_pupils": 515298
+      "region_pupils": 515297
      },
      {
       "pct": 1.18,
@@ -22760,7 +22760,7 @@
       "region_pupils": 318544
      }
     ],
-    "area_pupils": 2871914,
+    "area_pupils": 2871913,
     "group_pupils": 39931
    },
    "change": {
@@ -23311,7 +23311,7 @@
       "pct": 1.04,
       "region_code": "E12000007",
       "group_pupils": 14884,
-      "region_pupils": 1437100
+      "region_pupils": 1437029
      },
      {
       "pct": 0.77,
@@ -23326,7 +23326,7 @@
       "region_pupils": 817873
      }
     ],
-    "area_pupils": 8567765,
+    "area_pupils": 8567694,
     "group_pupils": 65455
    },
    "change": {
@@ -23568,34 +23568,6 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 28883,
-      "family_id": "sciences_maths",
-      "n_schools": 53,
-      "points_per_entry": 4.94
-     },
-     {
-      "shown": true,
-      "entries": 2118,
-      "family_id": "business_law",
-      "n_schools": 33,
-      "points_per_entry": 4.99
-     },
-     {
-      "shown": false,
-      "entries": 1035,
-      "family_id": "health_care",
-      "n_schools": 33,
-      "points_per_entry": null
-     },
-     {
-      "shown": true,
-      "entries": 4944,
-      "family_id": "arts_media_design",
-      "n_schools": 52,
-      "points_per_entry": 4.65
-     },
-     {
-      "shown": true,
       "entries": 22576,
       "family_id": "languages_literature",
       "n_schools": 53,
@@ -23610,10 +23582,38 @@
      },
      {
       "shown": true,
+      "entries": 28883,
+      "family_id": "sciences_maths",
+      "n_schools": 53,
+      "points_per_entry": 4.94
+     },
+     {
+      "shown": true,
+      "entries": 4944,
+      "family_id": "arts_media_design",
+      "n_schools": 52,
+      "points_per_entry": 4.65
+     },
+     {
+      "shown": true,
+      "entries": 2118,
+      "family_id": "business_law",
+      "n_schools": 33,
+      "points_per_entry": 4.99
+     },
+     {
+      "shown": true,
       "entries": 3569,
       "family_id": "enterprise_applied",
       "n_schools": 52,
       "points_per_entry": 4.78
+     },
+     {
+      "shown": false,
+      "entries": 1035,
+      "family_id": "health_care",
+      "n_schools": 33,
+      "points_per_entry": null
      },
      {
       "shown": true,
@@ -24295,7 +24295,7 @@
       "pct": 0.4,
       "region_code": "E12000007",
       "group_pupils": 2538,
-      "region_pupils": 629663
+      "region_pupils": 629616
      },
      {
       "pct": 0.45,
@@ -24310,7 +24310,7 @@
       "region_pupils": 367854
      }
     ],
-    "area_pupils": 3853275,
+    "area_pupils": 3853228,
     "group_pupils": 10978
    },
    "change": {
@@ -24677,7 +24677,7 @@
       "pct": 1.86,
       "region_code": "E12000007",
       "group_pupils": 9627,
-      "region_pupils": 518420
+      "region_pupils": 518419
      },
      {
       "pct": 1.21,
@@ -24692,7 +24692,7 @@
       "region_pupils": 322758
      }
     ],
-    "area_pupils": 3295775,
+    "area_pupils": 3295774,
     "group_pupils": 47159
    },
    "change": {
@@ -24832,34 +24832,6 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 28883,
-      "family_id": "sciences_maths",
-      "n_schools": 53,
-      "points_per_entry": 4.94
-     },
-     {
-      "shown": true,
-      "entries": 2118,
-      "family_id": "business_law",
-      "n_schools": 33,
-      "points_per_entry": 4.99
-     },
-     {
-      "shown": false,
-      "entries": 1035,
-      "family_id": "health_care",
-      "n_schools": 33,
-      "points_per_entry": null
-     },
-     {
-      "shown": true,
-      "entries": 4944,
-      "family_id": "arts_media_design",
-      "n_schools": 52,
-      "points_per_entry": 4.65
-     },
-     {
-      "shown": true,
       "entries": 22576,
       "family_id": "languages_literature",
       "n_schools": 53,
@@ -24874,10 +24846,38 @@
      },
      {
       "shown": true,
+      "entries": 28883,
+      "family_id": "sciences_maths",
+      "n_schools": 53,
+      "points_per_entry": 4.94
+     },
+     {
+      "shown": true,
+      "entries": 4944,
+      "family_id": "arts_media_design",
+      "n_schools": 52,
+      "points_per_entry": 4.65
+     },
+     {
+      "shown": true,
+      "entries": 2118,
+      "family_id": "business_law",
+      "n_schools": 33,
+      "points_per_entry": 4.99
+     },
+     {
+      "shown": true,
       "entries": 3569,
       "family_id": "enterprise_applied",
       "n_schools": 52,
       "points_per_entry": 4.78
+     },
+     {
+      "shown": false,
+      "entries": 1035,
+      "family_id": "health_care",
+      "n_schools": 33,
+      "points_per_entry": null
      },
      {
       "shown": true,
@@ -25278,7 +25278,7 @@
       "pct": 1.1,
       "region_code": "E12000007",
       "group_pupils": 15626,
-      "region_pupils": 1418623
+      "region_pupils": 1418583
      },
      {
       "pct": 0.78,
@@ -25293,7 +25293,7 @@
       "region_pupils": 810248
      }
     ],
-    "area_pupils": 8507446,
+    "area_pupils": 8507406,
     "group_pupils": 66300
    },
    "change": {
@@ -25487,10 +25487,10 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 2186,
-      "family_id": "business_law",
-      "n_schools": 36,
-      "points_per_entry": 4.76
+      "entries": 4629,
+      "family_id": "arts_media_design",
+      "n_schools": 52,
+      "points_per_entry": 4.82
      },
      {
       "shown": true,
@@ -25501,17 +25501,17 @@
      },
      {
       "shown": true,
+      "entries": 2186,
+      "family_id": "business_law",
+      "n_schools": 36,
+      "points_per_entry": 4.76
+     },
+     {
+      "shown": true,
       "entries": 2414,
       "family_id": "technology_eng_construction",
       "n_schools": 44,
       "points_per_entry": 4.65
-     },
-     {
-      "shown": true,
-      "entries": 4629,
-      "family_id": "arts_media_design",
-      "n_schools": 52,
-      "points_per_entry": 4.82
      },
      {
       "shown": true,
@@ -26206,7 +26206,7 @@
       "pct": 0.39,
       "region_code": "E12000007",
       "group_pupils": 2437,
-      "region_pupils": 617431
+      "region_pupils": 617392
      },
      {
       "pct": 0.43,
@@ -26221,7 +26221,7 @@
       "region_pupils": 362445
      }
     ],
-    "area_pupils": 3806043,
+    "area_pupils": 3806004,
     "group_pupils": 10557
    },
    "change": {
@@ -26686,10 +26686,10 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 2186,
-      "family_id": "business_law",
-      "n_schools": 36,
-      "points_per_entry": 4.76
+      "entries": 4629,
+      "family_id": "arts_media_design",
+      "n_schools": 52,
+      "points_per_entry": 4.82
      },
      {
       "shown": true,
@@ -26700,17 +26700,17 @@
      },
      {
       "shown": true,
+      "entries": 2186,
+      "family_id": "business_law",
+      "n_schools": 36,
+      "points_per_entry": 4.76
+     },
+     {
+      "shown": true,
       "entries": 2414,
       "family_id": "technology_eng_construction",
       "n_schools": 44,
       "points_per_entry": 4.65
-     },
-     {
-      "shown": true,
-      "entries": 4629,
-      "family_id": "arts_media_design",
-      "n_schools": 52,
-      "points_per_entry": 4.82
      },
      {
       "shown": true,
@@ -27128,7 +27128,7 @@
       "pct": 1.14,
       "region_code": "E12000007",
       "group_pupils": 15824,
-      "region_pupils": 1390206
+      "region_pupils": 1390193
      },
      {
       "pct": 0.84,
@@ -27143,7 +27143,7 @@
       "region_pupils": 799641
      }
     ],
-    "area_pupils": 8397545,
+    "area_pupils": 8397532,
     "group_pupils": 69906
    },
    "change": {
@@ -27363,31 +27363,10 @@
      },
      {
       "shown": true,
-      "entries": 24814,
-      "family_id": "languages_literature",
-      "n_schools": 58,
-      "points_per_entry": 5.05
-     },
-     {
-      "shown": true,
-      "entries": 4273,
-      "family_id": "enterprise_applied",
-      "n_schools": 57,
-      "points_per_entry": 4.66
-     },
-     {
-      "shown": true,
       "entries": 31728,
       "family_id": "sciences_maths",
       "n_schools": 58,
       "points_per_entry": 5.04
-     },
-     {
-      "shown": true,
-      "entries": 13001,
-      "family_id": "humanities_social",
-      "n_schools": 58,
-      "points_per_entry": 5.01
      },
      {
       "shown": true,
@@ -27402,6 +27381,27 @@
       "family_id": "technology_eng_construction",
       "n_schools": 47,
       "points_per_entry": 4.59
+     },
+     {
+      "shown": true,
+      "entries": 24814,
+      "family_id": "languages_literature",
+      "n_schools": 58,
+      "points_per_entry": 5.05
+     },
+     {
+      "shown": true,
+      "entries": 13001,
+      "family_id": "humanities_social",
+      "n_schools": 58,
+      "points_per_entry": 5.01
+     },
+     {
+      "shown": true,
+      "entries": 4273,
+      "family_id": "enterprise_applied",
+      "n_schools": 57,
+      "points_per_entry": 4.66
      },
      {
       "shown": false,
@@ -27928,7 +27928,7 @@
       "pct": 0.41,
       "region_code": "E12000007",
       "group_pupils": 2435,
-      "region_pupils": 600857
+      "region_pupils": 600844
      },
      {
       "pct": 0.41,
@@ -27943,7 +27943,7 @@
       "region_pupils": 353056
      }
     ],
-    "area_pupils": 3726621,
+    "area_pupils": 3726608,
     "group_pupils": 10383
    },
    "change": {
@@ -28466,31 +28466,10 @@
      },
      {
       "shown": true,
-      "entries": 24814,
-      "family_id": "languages_literature",
-      "n_schools": 58,
-      "points_per_entry": 5.05
-     },
-     {
-      "shown": true,
-      "entries": 4273,
-      "family_id": "enterprise_applied",
-      "n_schools": 57,
-      "points_per_entry": 4.66
-     },
-     {
-      "shown": true,
       "entries": 31728,
       "family_id": "sciences_maths",
       "n_schools": 58,
       "points_per_entry": 5.04
-     },
-     {
-      "shown": true,
-      "entries": 13001,
-      "family_id": "humanities_social",
-      "n_schools": 58,
-      "points_per_entry": 5.01
      },
      {
       "shown": true,
@@ -28505,6 +28484,27 @@
       "family_id": "technology_eng_construction",
       "n_schools": 47,
       "points_per_entry": 4.59
+     },
+     {
+      "shown": true,
+      "entries": 24814,
+      "family_id": "languages_literature",
+      "n_schools": 58,
+      "points_per_entry": 5.05
+     },
+     {
+      "shown": true,
+      "entries": 13001,
+      "family_id": "humanities_social",
+      "n_schools": 58,
+      "points_per_entry": 5.01
+     },
+     {
+      "shown": true,
+      "entries": 4273,
+      "family_id": "enterprise_applied",
+      "n_schools": 57,
+      "points_per_entry": 4.66
      },
      {
       "shown": false,
@@ -28530,6 +28530,7 @@
     "886|Kent": 2,
     "302|Barnet": 1,
     "332|Dudley": 1,
+    "838|Dorset": 1,
     "208|Lambeth": 1,
     "305|Bromley": 1,
     "355|Salford": 8,
@@ -28538,7 +28539,7 @@
     "333|Sandwell": 2,
     "358|Trafford": 1,
     "370|Barnsley": 3,
-    "933|Somerset": 1,
+    "933|Somerset": 2,
     "203|Greenwich": 1,
     "210|Southwark": 1,
     "317|Redbridge": 1,
@@ -28573,7 +28574,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 67214,
+   "roll": 69820,
    "share": {
     "las": [
      {
@@ -28654,6 +28655,13 @@
       "group_pupils": 2509
      },
      {
+      "pct": 2.96,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 78428,
+      "group_pupils": 2321
+     },
+     {
       "pct": 2.32,
       "la_code": "873",
       "la_name": "Cambridgeshire",
@@ -28675,6 +28683,13 @@
       "group_pupils": 1999
      },
      {
+      "pct": 3.3,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 53240,
+      "group_pupils": 1756
+     },
+     {
       "pct": 4.2,
       "la_code": "942",
       "la_name": "Cumberland",
@@ -28694,13 +28709,6 @@
       "la_name": "Hammersmith and Fulham",
       "la_pupils": 27065,
       "group_pupils": 1483
-     },
-     {
-      "pct": 1.88,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 78428,
-      "group_pupils": 1471
      },
      {
       "pct": 4.22,
@@ -28843,7 +28851,7 @@
       "group_pupils": 175
      }
     ],
-    "pct": 0.8,
+    "pct": 0.83,
     "sector": "all",
     "regions": [
      {
@@ -28880,7 +28888,7 @@
       "pct": 1.11,
       "region_code": "E12000007",
       "group_pupils": 16022,
-      "region_pupils": 1441809
+      "region_pupils": 1441727
      },
      {
       "pct": 0.84,
@@ -28889,14 +28897,14 @@
       "region_pupils": 1427960
      },
      {
-      "pct": 1.02,
+      "pct": 1.35,
       "region_code": "E12000009",
-      "group_pupils": 8249,
+      "group_pupils": 10855,
       "region_pupils": 804852
      }
     ],
-    "area_pupils": 8387288,
-    "group_pupils": 67214
+    "area_pupils": 8387206,
+    "group_pupils": 69820
    },
    "regions": {
     "E12000002": 19,
@@ -28906,7 +28914,7 @@
     "E12000006": 5,
     "E12000007": 24,
     "E12000008": 18,
-    "E12000009": 9
+    "E12000009": 11
    },
    "results": {
     "ks4_a8": {
@@ -29044,20 +29052,30 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 96,
+   "n_schools": 98,
    "confidence": {
-    "confirmed": 96
+    "confirmed": 98
    },
    "size_bands": {
-    "L": 38,
+    "L": 39,
     "M": 27,
     "S": 7,
-    "XL": 22
+    "XL": 23
    },
-   "n_with_roll": 94,
+   "n_with_roll": 96,
    "roll_by_age": [
     0,
     5,
@@ -29070,14 +29088,14 @@
     2095,
     1939,
     1824,
-    10356,
-    9980,
-    9589,
-    9162,
-    8865,
-    2235,
-    1869,
-    214,
+    10852,
+    10442,
+    10029,
+    9598,
+    9268,
+    2424,
+    2034,
+    229,
     4
    ],
    "value_added": {
@@ -29097,18 +29115,18 @@
     }
    },
    "roll_by_phase": {
-    "post16": 4318,
+    "post16": 4687,
     "primary": 11882,
-    "secondary": 47952
+    "secondary": 50189
    },
    "subject_areas": {
     "ks4": [],
     "ks5": []
    },
    "schools_by_phase": {
-    "post16": 37,
+    "post16": 39,
     "primary": 41,
-    "secondary": 64
+    "secondary": 66
    }
   }
  },
@@ -29128,7 +29146,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 4310,
+   "roll": 4676,
    "share": {
     "las": [
      {
@@ -29151,6 +29169,13 @@
       "la_name": "West Northamptonshire",
       "la_pupils": 4648,
       "group_pupils": 370
+     },
+     {
+      "pct": 7.69,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 4759,
+      "group_pupils": 366
      },
      {
       "pct": 5.04,
@@ -29314,7 +29339,7 @@
       "group_pupils": 0
      }
     ],
-    "pct": 0.9,
+    "pct": 0.98,
     "sector": "all",
     "regions": [
      {
@@ -29360,14 +29385,14 @@
       "region_pupils": 90819
      },
      {
-      "pct": 0.8,
+      "pct": 1.55,
       "region_code": "E12000009",
-      "group_pupils": 386,
+      "group_pupils": 752,
       "region_pupils": 48527
      }
     ],
     "area_pupils": 477992,
-    "group_pupils": 4310
+    "group_pupils": 4676
    },
    "results": {
     "ks5_aps_all": {
@@ -29456,11 +29481,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 37,
-   "n_with_roll": 28,
+   "n_schools": 39,
+   "n_with_roll": 29,
    "value_added": {
     "ks5_va_alevel": {
      "weight": 0,
@@ -29665,7 +29700,7 @@
       "pct": 0.4,
       "region_code": "E12000007",
       "group_pupils": 2625,
-      "region_pupils": 657751
+      "region_pupils": 657694
      },
      {
       "pct": 0.49,
@@ -29680,7 +29715,7 @@
       "region_pupils": 376237
      }
     ],
-    "area_pupils": 3899756,
+    "area_pupils": 3899699,
     "group_pupils": 11882
    },
    "results": {
@@ -29737,7 +29772,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 47952,
+   "roll": 50189,
    "share": {
     "las": [
      {
@@ -29790,6 +29825,13 @@
       "group_pupils": 2331
      },
      {
+      "pct": 7.26,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 29728,
+      "group_pupils": 2159
+     },
+     {
       "pct": 10.13,
       "la_code": "940",
       "la_name": "North Northamptonshire",
@@ -29839,11 +29881,11 @@
       "group_pupils": 1468
      },
      {
-      "pct": 4.41,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 29728,
-      "group_pupils": 1312
+      "pct": 6.55,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 21219,
+      "group_pupils": 1390
      },
      {
       "pct": 15.82,
@@ -29979,7 +30021,7 @@
       "group_pupils": 443
      }
     ],
-    "pct": 1.57,
+    "pct": 1.65,
     "sector": "all",
     "regions": [
      {
@@ -30025,14 +30067,14 @@
       "region_pupils": 529166
      },
      {
-      "pct": 2.15,
+      "pct": 2.9,
       "region_code": "E12000009",
-      "group_pupils": 6453,
+      "group_pupils": 8690,
       "region_pupils": 299769
      }
     ],
     "area_pupils": 3048900,
-    "group_pupils": 47952
+    "group_pupils": 50189
    },
    "results": {
     "ks4_a8": {
@@ -30148,11 +30190,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 64,
-   "n_with_roll": 59,
+   "n_schools": 66,
+   "n_with_roll": 61,
    "value_added": {
     "ks4_p8": {
      "weight": 0,
@@ -30180,6 +30232,7 @@
     "886|Kent": 2,
     "302|Barnet": 1,
     "332|Dudley": 1,
+    "838|Dorset": 1,
     "208|Lambeth": 1,
     "305|Bromley": 1,
     "355|Salford": 8,
@@ -30188,7 +30241,7 @@
     "333|Sandwell": 2,
     "358|Trafford": 1,
     "370|Barnsley": 3,
-    "933|Somerset": 1,
+    "933|Somerset": 2,
     "203|Greenwich": 1,
     "210|Southwark": 1,
     "317|Redbridge": 1,
@@ -30229,7 +30282,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 68344,
+   "roll": 70992,
    "share": {
     "las": [
      {
@@ -30310,6 +30363,13 @@
       "group_pupils": 2544
      },
      {
+      "pct": 2.99,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 78372,
+      "group_pupils": 2346
+     },
+     {
       "pct": 2.35,
       "la_code": "873",
       "la_name": "Cambridgeshire",
@@ -30329,6 +30389,13 @@
       "la_name": "Westminster",
       "la_pupils": 31012,
       "group_pupils": 2014
+     },
+     {
+      "pct": 3.32,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 52962,
+      "group_pupils": 1757
      },
      {
       "pct": 4.56,
@@ -30357,13 +30424,6 @@
       "la_name": "Barnsley",
       "la_pupils": 34702,
       "group_pupils": 1494
-     },
-     {
-      "pct": 1.86,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 78372,
-      "group_pupils": 1455
      },
      {
       "pct": 4.85,
@@ -30499,7 +30559,7 @@
       "group_pupils": 182
      }
     ],
-    "pct": 0.81,
+    "pct": 0.84,
     "sector": "all",
     "regions": [
      {
@@ -30536,7 +30596,7 @@
       "pct": 1.12,
       "region_code": "E12000007",
       "group_pupils": 16155,
-      "region_pupils": 1437491
+      "region_pupils": 1437416
      },
      {
       "pct": 0.85,
@@ -30545,23 +30605,23 @@
       "region_pupils": 1436272
      },
      {
-      "pct": 1.06,
+      "pct": 1.39,
       "region_code": "E12000009",
-      "group_pupils": 8544,
+      "group_pupils": 11192,
       "region_pupils": 807182
      }
     ],
-    "area_pupils": 8405914,
-    "group_pupils": 68344
+    "area_pupils": 8405839,
+    "group_pupils": 70992
    },
    "change": {
     "1": {
-     "growing": 53,
+     "growing": 55,
      "shrinking": 40,
      "from_period": 2019,
      "combined_pct": 1.68,
-     "same_schools": 94,
-     "combined_base": 67214,
+     "same_schools": 96,
+     "combined_base": 69820,
      "same_schools_pct": 1.68
     },
     "3": {
@@ -30591,7 +30651,7 @@
     "E12000006": 5,
     "E12000007": 24,
     "E12000008": 18,
-    "E12000009": 9
+    "E12000009": 11
    },
    "results": {
     "ks4_a8": {
@@ -30719,20 +30779,30 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 96,
+   "n_schools": 98,
    "confidence": {
-    "confirmed": 96
+    "confirmed": 98
    },
    "size_bands": {
-    "L": 40,
+    "L": 41,
     "M": 27,
     "S": 5,
-    "XL": 22
+    "XL": 23
    },
-   "n_with_roll": 94,
+   "n_with_roll": 96,
    "roll_by_age": [
     0,
     6,
@@ -30745,14 +30815,14 @@
     2041,
     2091,
     1949,
-    10265,
-    10305,
-    9921,
-    9496,
-    9090,
-    2305,
-    2061,
-    132,
+    10734,
+    10797,
+    10371,
+    9939,
+    9520,
+    2489,
+    2233,
+    140,
     3
    ],
    "value_added": {
@@ -30772,18 +30842,18 @@
     }
    },
    "roll_by_phase": {
-    "post16": 4498,
+    "post16": 4862,
     "primary": 11931,
-    "secondary": 49077
+    "secondary": 51361
    },
    "subject_areas": {
     "ks4": [],
     "ks5": []
    },
    "schools_by_phase": {
-    "post16": 37,
+    "post16": 39,
     "primary": 41,
-    "secondary": 64
+    "secondary": 66
    }
   }
  },
@@ -30802,14 +30872,14 @@
     "places": {
      "roll_change_1": {
       "of": 14,
-      "rank": 11,
+      "rank": 12,
       "tied": false
      }
     },
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 4483,
+   "roll": 4846,
    "share": {
     "las": [
      {
@@ -30839,6 +30909,13 @@
       "la_name": "Bromley",
       "la_pupils": 6175,
       "group_pupils": 364
+     },
+     {
+      "pct": 7.52,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 4826,
+      "group_pupils": 363
      },
      {
       "pct": 8.45,
@@ -31002,7 +31079,7 @@
       "group_pupils": 0
      }
     ],
-    "pct": 0.89,
+    "pct": 0.97,
     "sector": "all",
     "regions": [
      {
@@ -31048,24 +31125,24 @@
       "region_pupils": 94659
      },
      {
-      "pct": 0.68,
+      "pct": 1.4,
       "region_code": "E12000009",
-      "group_pupils": 343,
+      "group_pupils": 706,
       "region_pupils": 50463
      }
     ],
     "area_pupils": 501962,
-    "group_pupils": 4483
+    "group_pupils": 4846
    },
    "change": {
     "1": {
      "growing": 17,
-     "shrinking": 10,
+     "shrinking": 11,
      "from_period": 2019,
-     "combined_pct": 4.01,
-     "same_schools": 28,
-     "combined_base": 4310,
-     "same_schools_pct": 3.18
+     "combined_pct": 3.64,
+     "same_schools": 29,
+     "combined_base": 4676,
+     "same_schools_pct": 2.87
     },
     "3": {
      "growing": 0,
@@ -31163,11 +31240,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 37,
-   "n_with_roll": 29,
+   "n_schools": 39,
+   "n_with_roll": 30,
    "value_added": {
     "ks5_va_alevel": {
      "weight": 0,
@@ -31378,7 +31465,7 @@
       "pct": 0.42,
       "region_code": "E12000007",
       "group_pupils": 2716,
-      "region_pupils": 647163
+      "region_pupils": 647110
      },
      {
       "pct": 0.48,
@@ -31393,7 +31480,7 @@
       "region_pupils": 373809
      }
     ],
-    "area_pupils": 3870449,
+    "area_pupils": 3870396,
     "group_pupils": 11931
    },
    "change": {
@@ -31479,13 +31566,13 @@
      "roll_change_1": {
       "of": 14,
       "rank": 6,
-      "tied": false
+      "tied": true
      }
     },
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 49075,
+   "roll": 51359,
    "share": {
     "las": [
      {
@@ -31538,6 +31625,13 @@
       "group_pupils": 2382
      },
      {
+      "pct": 7.29,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 29984,
+      "group_pupils": 2187
+     },
+     {
       "pct": 9.82,
       "la_code": "940",
       "la_name": "North Northamptonshire",
@@ -31587,11 +31681,11 @@
       "group_pupils": 1453
      },
      {
-      "pct": 4.33,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 29984,
-      "group_pupils": 1297
+      "pct": 6.58,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 21173,
+      "group_pupils": 1394
      },
      {
       "pct": 15.81,
@@ -31727,7 +31821,7 @@
       "group_pupils": 494
      }
     ],
-    "pct": 1.58,
+    "pct": 1.65,
     "sector": "all",
     "regions": [
      {
@@ -31773,24 +31867,24 @@
       "region_pupils": 539614
      },
      {
-      "pct": 2.21,
+      "pct": 2.96,
       "region_code": "E12000009",
-      "group_pupils": 6720,
+      "group_pupils": 9004,
       "region_pupils": 304344
      }
     ],
     "area_pupils": 3104559,
-    "group_pupils": 49075
+    "group_pupils": 51359
    },
    "change": {
     "1": {
-     "growing": 42,
+     "growing": 44,
      "shrinking": 15,
      "from_period": 2019,
-     "combined_pct": 2.34,
-     "same_schools": 59,
-     "combined_base": 47952,
-     "same_schools_pct": 2.34
+     "combined_pct": 2.33,
+     "same_schools": 61,
+     "combined_base": 50189,
+     "same_schools_pct": 2.33
     },
     "3": {
      "growing": 0,
@@ -31915,11 +32009,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 64,
-   "n_with_roll": 59,
+   "n_schools": 66,
+   "n_with_roll": 61,
    "value_added": {
     "ks4_p8": {
      "weight": 0,
@@ -31947,6 +32051,7 @@
     "886|Kent": 2,
     "302|Barnet": 1,
     "332|Dudley": 1,
+    "838|Dorset": 1,
     "208|Lambeth": 1,
     "305|Bromley": 1,
     "355|Salford": 8,
@@ -31955,7 +32060,7 @@
     "333|Sandwell": 2,
     "358|Trafford": 1,
     "370|Barnsley": 3,
-    "933|Somerset": 1,
+    "933|Somerset": 2,
     "203|Greenwich": 1,
     "210|Southwark": 1,
     "317|Redbridge": 1,
@@ -32026,7 +32131,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 69803,
+   "roll": 72504,
    "share": {
     "las": [
      {
@@ -32107,6 +32212,13 @@
       "group_pupils": 2638
      },
      {
+      "pct": 3,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 79263,
+      "group_pupils": 2381
+     },
+     {
       "pct": 2.35,
       "la_code": "873",
       "la_name": "Cambridgeshire",
@@ -32135,6 +32247,13 @@
       "group_pupils": 1837
      },
      {
+      "pct": 3.33,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 52929,
+      "group_pupils": 1760
+     },
+     {
       "pct": 6.08,
       "la_code": "205",
       "la_name": "Hammersmith and Fulham",
@@ -32154,13 +32273,6 @@
       "la_name": "Barnsley",
       "la_pupils": 35125,
       "group_pupils": 1505
-     },
-     {
-      "pct": 1.82,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 79263,
-      "group_pupils": 1440
      },
      {
       "pct": 4.73,
@@ -32296,7 +32408,7 @@
       "group_pupils": 171
      }
     ],
-    "pct": 0.82,
+    "pct": 0.85,
     "sector": "all",
     "regions": [
      {
@@ -32333,7 +32445,7 @@
       "pct": 1.14,
       "region_code": "E12000007",
       "group_pupils": 16462,
-      "region_pupils": 1441686
+      "region_pupils": 1441615
      },
      {
       "pct": 0.83,
@@ -32342,24 +32454,24 @@
       "region_pupils": 1454900
      },
      {
-      "pct": 1.07,
+      "pct": 1.41,
       "region_code": "E12000009",
-      "group_pupils": 8743,
+      "group_pupils": 11444,
       "region_pupils": 814080
      }
     ],
-    "area_pupils": 8487630,
-    "group_pupils": 69803
+    "area_pupils": 8487559,
+    "group_pupils": 72504
    },
    "change": {
     "1": {
-     "growing": 52,
+     "growing": 54,
      "shrinking": 41,
      "from_period": 2020,
      "combined_pct": 2.13,
-     "same_schools": 94,
-     "combined_base": 68344,
-     "same_schools_pct": 1.3
+     "same_schools": 96,
+     "combined_base": 70992,
+     "same_schools_pct": 1.33
     },
     "3": {
      "growing": 0,
@@ -32388,15 +32500,15 @@
     "E12000006": 5,
     "E12000007": 24,
     "E12000008": 18,
-    "E12000009": 9
+    "E12000009": 11
    },
    "results": {
     "ks4_a8": {
-     "weight": 9517,
-     "weighted": 48.48,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 48.7
+     "weight": 9958,
+     "weighted": 48.45,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 48.62
     },
     "ks2_rwm": {
      "weight": 0,
@@ -32406,32 +32518,32 @@
      "average_school": null
     },
     "ks4_em4": {
-     "weight": 9517,
-     "weighted": 68.23,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 68.44
+     "weight": 9958,
+     "weighted": 68.26,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 68.38
     },
     "ks4_em5": {
-     "weight": 9517,
-     "weighted": 51.05,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 51.36
+     "weight": 9958,
+     "weighted": 50.75,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 51.07
     },
     "ks5_aps_all": {
-     "weight": 5099,
-     "weighted": 37.72,
-     "n_weighted": 28,
-     "n_with_figure": 28,
-     "average_school": 35.74
-    },
-    "ks5_aps_alevel": {
-     "weight": 4267,
-     "weighted": 38.32,
+     "weight": 5589,
+     "weighted": 37.35,
      "n_weighted": 29,
      "n_with_figure": 29,
-     "average_school": 35.56
+     "average_school": 35.67
+    },
+    "ks5_aps_alevel": {
+     "weight": 4705,
+     "weighted": 37.9,
+     "n_weighted": 30,
+     "n_with_figure": 30,
+     "average_school": 35.51
     }
    },
    "boarders": 0,
@@ -32506,6 +32618,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_a8": [
@@ -32577,6 +32699,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -32650,6 +32782,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em4": [
@@ -32721,6 +32863,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -32794,6 +32946,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_all": [
@@ -32861,6 +33023,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_alevel": [
@@ -32923,21 +33095,31 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 96,
+   "n_schools": 98,
    "confidence": {
-    "confirmed": 96
+    "confirmed": 98
    },
    "size_bands": {
-    "L": 41,
+    "L": 42,
     "M": 23,
     "S": 7,
-    "XL": 23,
+    "XL": 24,
     "XS": 1
    },
-   "n_with_roll": 95,
+   "n_with_roll": 97,
    "roll_by_age": [
     0,
     14,
@@ -32950,23 +33132,23 @@
     2007,
     2053,
     2101,
-    10359,
-    10334,
-    10354,
-    9892,
-    9517,
-    2535,
-    2121,
-    117,
+    10845,
+    10797,
+    10854,
+    10339,
+    9958,
+    2721,
+    2287,
+    129,
     2
    ],
    "value_added": {
     "ks4_p8": {
-     "weight": 8709,
-     "weighted": 0.09,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 0.13
+     "weight": 9133,
+     "weighted": 0.08,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 0.12
     },
     "ks5_va_alevel": {
      "weight": 0,
@@ -32977,111 +33159,111 @@
     }
    },
    "roll_by_phase": {
-    "post16": 4773,
+    "post16": 5137,
     "primary": 11711,
-    "secondary": 50456
+    "secondary": 52793
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 4016,
+      "entries": 4156,
       "family_id": "enterprise_applied",
-      "n_schools": 57,
-      "points_per_entry": 5.3
+      "n_schools": 59,
+      "points_per_entry": 5.31
      },
      {
       "shown": false,
-      "entries": 1136,
+      "entries": 1173,
       "family_id": "health_care",
-      "n_schools": 35,
+      "n_schools": 36,
       "points_per_entry": null
      },
      {
       "shown": true,
-      "entries": 5705,
+      "entries": 6029,
       "family_id": "arts_media_design",
-      "n_schools": 58,
-      "points_per_entry": 4.92
+      "n_schools": 60,
+      "points_per_entry": 4.98
      },
      {
       "shown": true,
-      "entries": 2451,
+      "entries": 2578,
       "family_id": "business_law",
-      "n_schools": 40,
-      "points_per_entry": 5.24
+      "n_schools": 42,
+      "points_per_entry": 5.26
      },
      {
       "shown": true,
-      "entries": 23679,
+      "entries": 24807,
       "family_id": "languages_literature",
-      "n_schools": 59,
-      "points_per_entry": 5
+      "n_schools": 61,
+      "points_per_entry": 4.99
      },
      {
       "shown": true,
-      "entries": 30281,
+      "entries": 31761,
       "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 5
+      "n_schools": 61,
+      "points_per_entry": 4.98
      },
      {
       "shown": true,
-      "entries": 12381,
+      "entries": 12927,
       "family_id": "humanities_social",
-      "n_schools": 59,
+      "n_schools": 61,
       "points_per_entry": 4.93
      },
      {
       "shown": true,
-      "entries": 2556,
+      "entries": 2702,
       "family_id": "technology_eng_construction",
-      "n_schools": 48,
-      "points_per_entry": 4.69
+      "n_schools": 50,
+      "points_per_entry": 4.68
      }
     ],
     "ks5": [
      {
       "shown": true,
-      "entries": 396,
+      "entries": 451,
       "family_id": "languages_literature",
-      "n_schools": 17,
-      "points_per_entry": 41.67
+      "n_schools": 18,
+      "points_per_entry": 40.3
      },
      {
       "shown": true,
-      "entries": 333,
+      "entries": 385,
       "family_id": "arts_media_design",
-      "n_schools": 16,
-      "points_per_entry": 36.78
+      "n_schools": 17,
+      "points_per_entry": 37.28
      },
      {
       "shown": true,
-      "entries": 2206,
+      "entries": 2326,
       "family_id": "sciences_maths",
-      "n_schools": 28,
-      "points_per_entry": 38.75
-     },
-     {
-      "shown": true,
-      "entries": 713,
-      "family_id": "business_law",
-      "n_schools": 21,
+      "n_schools": 29,
       "points_per_entry": 38.6
      },
      {
       "shown": true,
-      "entries": 1465,
-      "family_id": "humanities_social",
-      "n_schools": 29,
-      "points_per_entry": 39.83
+      "entries": 798,
+      "family_id": "business_law",
+      "n_schools": 22,
+      "points_per_entry": 38.18
      },
      {
       "shown": true,
-      "entries": 270,
+      "entries": 1604,
+      "family_id": "humanities_social",
+      "n_schools": 30,
+      "points_per_entry": 39.36
+     },
+     {
+      "shown": true,
+      "entries": 302,
       "family_id": "technology_eng_construction",
-      "n_schools": 13,
-      "points_per_entry": 35.84
+      "n_schools": 14,
+      "points_per_entry": 35.86
      },
      {
       "shown": false,
@@ -33092,17 +33274,17 @@
      },
      {
       "shown": true,
-      "entries": 406,
+      "entries": 461,
       "family_id": "enterprise_applied",
-      "n_schools": 15,
-      "points_per_entry": 40.35
+      "n_schools": 16,
+      "points_per_entry": 36.31
      }
     ]
    },
    "schools_by_phase": {
-    "post16": 37,
+    "post16": 39,
     "primary": 40,
-    "secondary": 63
+    "secondary": 65
    }
   }
  },
@@ -33138,7 +33320,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 4764,
+   "roll": 5128,
    "share": {
     "las": [
      {
@@ -33175,6 +33357,13 @@
       "la_name": "North Northamptonshire",
       "la_pupils": 3997,
       "group_pupils": 371
+     },
+     {
+      "pct": 7.59,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 4797,
+      "group_pupils": 364
      },
      {
       "pct": 5.54,
@@ -33331,7 +33520,7 @@
       "group_pupils": 0
      }
     ],
-    "pct": 0.93,
+    "pct": 1,
     "sector": "all",
     "regions": [
      {
@@ -33377,24 +33566,24 @@
       "region_pupils": 96089
      },
      {
-      "pct": 0.63,
+      "pct": 1.35,
       "region_code": "E12000009",
-      "group_pupils": 322,
+      "group_pupils": 686,
       "region_pupils": 50938
      }
     ],
     "area_pupils": 514882,
-    "group_pupils": 4764
+    "group_pupils": 5128
    },
    "change": {
     "1": {
-     "growing": 18,
+     "growing": 19,
      "shrinking": 11,
      "from_period": 2020,
-     "combined_pct": 6.27,
-     "same_schools": 29,
-     "combined_base": 4483,
-     "same_schools_pct": 4.95
+     "combined_pct": 5.82,
+     "same_schools": 30,
+     "combined_base": 4846,
+     "same_schools_pct": 4.6
     },
     "3": {
      "growing": 0,
@@ -33417,18 +33606,18 @@
    },
    "results": {
     "ks5_aps_all": {
-     "weight": 5099,
-     "weighted": 37.72,
-     "n_weighted": 28,
-     "n_with_figure": 28,
-     "average_school": 35.74
-    },
-    "ks5_aps_alevel": {
-     "weight": 4267,
-     "weighted": 38.32,
+     "weight": 5589,
+     "weighted": 37.35,
      "n_weighted": 29,
      "n_with_figure": 29,
-     "average_school": 35.56
+     "average_school": 35.67
+    },
+    "ks5_aps_alevel": {
+     "weight": 4705,
+     "weighted": 37.9,
+     "n_weighted": 30,
+     "n_with_figure": 30,
+     "average_school": 35.51
     }
    },
    "excluded": {
@@ -33486,6 +33675,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -33554,6 +33753,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_alevel": [
@@ -33616,11 +33825,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 37,
-   "n_with_roll": 30,
+   "n_schools": 39,
+   "n_with_roll": 31,
    "value_added": {
     "ks5_va_alevel": {
      "weight": 0,
@@ -33634,45 +33853,45 @@
     "ks5": [
      {
       "shown": true,
-      "entries": 396,
+      "entries": 451,
       "family_id": "languages_literature",
-      "n_schools": 17,
-      "points_per_entry": 41.67
+      "n_schools": 18,
+      "points_per_entry": 40.3
      },
      {
       "shown": true,
-      "entries": 333,
+      "entries": 385,
       "family_id": "arts_media_design",
-      "n_schools": 16,
-      "points_per_entry": 36.78
+      "n_schools": 17,
+      "points_per_entry": 37.28
      },
      {
       "shown": true,
-      "entries": 2206,
+      "entries": 2326,
       "family_id": "sciences_maths",
-      "n_schools": 28,
-      "points_per_entry": 38.75
-     },
-     {
-      "shown": true,
-      "entries": 713,
-      "family_id": "business_law",
-      "n_schools": 21,
+      "n_schools": 29,
       "points_per_entry": 38.6
      },
      {
       "shown": true,
-      "entries": 1465,
-      "family_id": "humanities_social",
-      "n_schools": 29,
-      "points_per_entry": 39.83
+      "entries": 798,
+      "family_id": "business_law",
+      "n_schools": 22,
+      "points_per_entry": 38.18
      },
      {
       "shown": true,
-      "entries": 270,
+      "entries": 1604,
+      "family_id": "humanities_social",
+      "n_schools": 30,
+      "points_per_entry": 39.36
+     },
+     {
+      "shown": true,
+      "entries": 302,
       "family_id": "technology_eng_construction",
-      "n_schools": 13,
-      "points_per_entry": 35.84
+      "n_schools": 14,
+      "points_per_entry": 35.86
      },
      {
       "shown": false,
@@ -33683,10 +33902,10 @@
      },
      {
       "shown": true,
-      "entries": 406,
+      "entries": 461,
       "family_id": "enterprise_applied",
-      "n_schools": 15,
-      "points_per_entry": 40.35
+      "n_schools": 16,
+      "points_per_entry": 36.31
      }
     ]
    }
@@ -33888,7 +34107,7 @@
       "pct": 0.42,
       "region_code": "E12000007",
       "group_pupils": 2707,
-      "region_pupils": 639774
+      "region_pupils": 639730
      },
      {
       "pct": 0.47,
@@ -33903,7 +34122,7 @@
       "region_pupils": 373838
      }
     ],
-    "area_pupils": 3873526,
+    "area_pupils": 3873482,
     "group_pupils": 11706
    },
    "change": {
@@ -34010,7 +34229,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 50456,
+   "roll": 52793,
    "share": {
     "las": [
      {
@@ -34063,6 +34282,13 @@
       "group_pupils": 2481
      },
      {
+      "pct": 7.25,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 30737,
+      "group_pupils": 2227
+     },
+     {
       "pct": 9.74,
       "la_code": "940",
       "la_name": "North Northamptonshire",
@@ -34112,11 +34338,11 @@
       "group_pupils": 1418
      },
      {
-      "pct": 4.18,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 30737,
-      "group_pupils": 1286
+      "pct": 6.55,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 21324,
+      "group_pupils": 1396
      },
      {
       "pct": 15.35,
@@ -34252,7 +34478,7 @@
       "group_pupils": 495
      }
     ],
-    "pct": 1.59,
+    "pct": 1.66,
     "sector": "all",
     "regions": [
      {
@@ -34298,24 +34524,24 @@
       "region_pupils": 553800
      },
      {
-      "pct": 2.24,
+      "pct": 2.99,
       "region_code": "E12000009",
-      "group_pupils": 6970,
+      "group_pupils": 9307,
       "region_pupils": 310846
      }
     ],
     "area_pupils": 3173004,
-    "group_pupils": 50456
+    "group_pupils": 52793
    },
    "change": {
     "1": {
-     "growing": 44,
+     "growing": 46,
      "shrinking": 15,
      "from_period": 2020,
-     "combined_pct": 2.81,
-     "same_schools": 59,
-     "combined_base": 49075,
-     "same_schools_pct": 2.81
+     "combined_pct": 2.79,
+     "same_schools": 61,
+     "combined_base": 51359,
+     "same_schools_pct": 2.79
     },
     "3": {
      "growing": 0,
@@ -34338,25 +34564,25 @@
    },
    "results": {
     "ks4_a8": {
-     "weight": 9517,
-     "weighted": 48.48,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 48.7
+     "weight": 9958,
+     "weighted": 48.45,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 48.62
     },
     "ks4_em4": {
-     "weight": 9517,
-     "weighted": 68.23,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 68.44
+     "weight": 9958,
+     "weighted": 68.26,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 68.38
     },
     "ks4_em5": {
-     "weight": 9517,
-     "weighted": 51.05,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 51.36
+     "weight": 9958,
+     "weighted": 50.75,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 51.07
     }
    },
    "excluded": {
@@ -34430,6 +34656,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_a8": [
@@ -34501,6 +34737,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -34574,6 +34820,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em4": [
@@ -34645,6 +34901,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -34718,77 +34984,87 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 63,
-   "n_with_roll": 59,
+   "n_schools": 65,
+   "n_with_roll": 61,
    "value_added": {
     "ks4_p8": {
-     "weight": 8709,
-     "weighted": 0.09,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 0.13
+     "weight": 9133,
+     "weighted": 0.08,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 0.12
     }
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 4016,
+      "entries": 4156,
       "family_id": "enterprise_applied",
-      "n_schools": 57,
-      "points_per_entry": 5.3
+      "n_schools": 59,
+      "points_per_entry": 5.31
      },
      {
       "shown": false,
-      "entries": 1136,
+      "entries": 1173,
       "family_id": "health_care",
-      "n_schools": 35,
+      "n_schools": 36,
       "points_per_entry": null
      },
      {
       "shown": true,
-      "entries": 5705,
+      "entries": 6029,
       "family_id": "arts_media_design",
-      "n_schools": 58,
-      "points_per_entry": 4.92
+      "n_schools": 60,
+      "points_per_entry": 4.98
      },
      {
       "shown": true,
-      "entries": 2451,
+      "entries": 2578,
       "family_id": "business_law",
-      "n_schools": 40,
-      "points_per_entry": 5.24
+      "n_schools": 42,
+      "points_per_entry": 5.26
      },
      {
       "shown": true,
-      "entries": 23679,
+      "entries": 24807,
       "family_id": "languages_literature",
-      "n_schools": 59,
-      "points_per_entry": 5
+      "n_schools": 61,
+      "points_per_entry": 4.99
      },
      {
       "shown": true,
-      "entries": 30281,
+      "entries": 31761,
       "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 5
+      "n_schools": 61,
+      "points_per_entry": 4.98
      },
      {
       "shown": true,
-      "entries": 12381,
+      "entries": 12927,
       "family_id": "humanities_social",
-      "n_schools": 59,
+      "n_schools": 61,
       "points_per_entry": 4.93
      },
      {
       "shown": true,
-      "entries": 2556,
+      "entries": 2702,
       "family_id": "technology_eng_construction",
-      "n_schools": 48,
-      "points_per_entry": 4.69
+      "n_schools": 50,
+      "points_per_entry": 4.68
      }
     ]
    }
@@ -34807,6 +35083,7 @@
     "886|Kent": 2,
     "302|Barnet": 1,
     "332|Dudley": 1,
+    "838|Dorset": 1,
     "208|Lambeth": 1,
     "305|Bromley": 1,
     "355|Salford": 8,
@@ -34815,7 +35092,7 @@
     "333|Sandwell": 2,
     "358|Trafford": 1,
     "370|Barnsley": 3,
-    "933|Somerset": 1,
+    "933|Somerset": 2,
     "203|Greenwich": 1,
     "210|Southwark": 1,
     "317|Redbridge": 1,
@@ -34849,7 +35126,7 @@
     "places": {
      "ks4_a8": {
       "of": 14,
-      "rank": 5,
+      "rank": 6,
       "tied": false
      },
      "ks4_p8": {
@@ -34874,7 +35151,7 @@
      },
      "ks5_aps_all": {
       "of": 14,
-      "rank": 5,
+      "rank": 6,
       "tied": false
      },
      "roll_change_1": {
@@ -34884,14 +35161,14 @@
      },
      "ks5_aps_alevel": {
       "of": 14,
-      "rank": 3,
+      "rank": 4,
       "tied": false
      }
     },
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 70824,
+   "roll": 73552,
    "share": {
     "las": [
      {
@@ -34979,6 +35256,13 @@
       "group_pupils": 2447
      },
      {
+      "pct": 2.99,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 79924,
+      "group_pupils": 2390
+     },
+     {
       "pct": 5.03,
       "la_code": "320",
       "la_name": "Waltham Forest",
@@ -34998,6 +35282,13 @@
       "la_name": "Cumberland",
       "la_pupils": 40127,
       "group_pupils": 1896
+     },
+     {
+      "pct": 3.33,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 52769,
+      "group_pupils": 1755
      },
      {
       "pct": 6.34,
@@ -35026,13 +35317,6 @@
       "la_name": "Portsmouth",
       "la_pupils": 30046,
       "group_pupils": 1426
-     },
-     {
-      "pct": 1.77,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 79924,
-      "group_pupils": 1417
      },
      {
       "pct": 5.29,
@@ -35161,7 +35445,7 @@
       "group_pupils": 160
      }
     ],
-    "pct": 0.83,
+    "pct": 0.86,
     "sector": "all",
     "regions": [
      {
@@ -35198,7 +35482,7 @@
       "pct": 1.14,
       "region_code": "E12000007",
       "group_pupils": 16499,
-      "region_pupils": 1444437
+      "region_pupils": 1444349
      },
      {
       "pct": 0.82,
@@ -35207,33 +35491,33 @@
       "region_pupils": 1473339
      },
      {
-      "pct": 1.1,
+      "pct": 1.43,
       "region_code": "E12000009",
-      "group_pupils": 8976,
+      "group_pupils": 11704,
       "region_pupils": 818792
      }
     ],
-    "area_pupils": 8554916,
-    "group_pupils": 70824
+    "area_pupils": 8554828,
+    "group_pupils": 73552
    },
    "change": {
     "1": {
-     "growing": 58,
-     "shrinking": 35,
+     "growing": 59,
+     "shrinking": 36,
      "from_period": 2021,
-     "combined_pct": 1.46,
-     "same_schools": 95,
-     "combined_base": 69803,
-     "same_schools_pct": 1.46
+     "combined_pct": 1.45,
+     "same_schools": 97,
+     "combined_base": 72504,
+     "same_schools_pct": 1.45
     },
     "3": {
-     "growing": 53,
-     "shrinking": 41,
+     "growing": 54,
+     "shrinking": 42,
      "from_period": 2019,
-     "combined_pct": 5.37,
-     "same_schools": 94,
-     "combined_base": 67214,
-     "same_schools_pct": 4.57
+     "combined_pct": 5.35,
+     "same_schools": 96,
+     "combined_base": 69820,
+     "same_schools_pct": 4.58
     },
     "5": {
      "growing": 0,
@@ -35253,15 +35537,15 @@
     "E12000006": 5,
     "E12000007": 24,
     "E12000008": 18,
-    "E12000009": 9
+    "E12000009": 11
    },
    "results": {
     "ks4_a8": {
-     "weight": 9749,
-     "weighted": 46.6,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 46.49
+     "weight": 10191,
+     "weighted": 46.45,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 46.34
     },
     "ks2_rwm": {
      "weight": 1943,
@@ -35271,32 +35555,32 @@
      "average_school": 56.03
     },
     "ks4_em4": {
-     "weight": 9749,
-     "weighted": 65.55,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 65.32
+     "weight": 10191,
+     "weighted": 65.28,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 65.06
     },
     "ks4_em5": {
-     "weight": 9749,
-     "weighted": 47.16,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 47
+     "weight": 10191,
+     "weighted": 46.8,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 46.63
     },
     "ks5_aps_all": {
-     "weight": 5614,
-     "weighted": 34.12,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 32.08
+     "weight": 6054,
+     "weighted": 33.86,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.03
     },
     "ks5_aps_alevel": {
-     "weight": 4751,
-     "weighted": 35.05,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 32.43
+     "weight": 5177,
+     "weighted": 34.67,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.37
     }
    },
    "boarders": 0,
@@ -35365,6 +35649,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -35438,6 +35732,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_p8": [
@@ -35509,6 +35813,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -35599,6 +35913,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em5": [
@@ -35671,6 +35995,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_all": [
@@ -35727,6 +36061,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -35785,21 +36129,31 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 96,
+   "n_schools": 98,
    "confidence": {
-    "confirmed": 96
+    "confirmed": 98
    },
    "size_bands": {
-    "L": 42,
+    "L": 43,
     "M": 25,
     "S": 5,
-    "XL": 22,
+    "XL": 23,
     "XS": 1
    },
-   "n_with_roll": 95,
+   "n_with_roll": 97,
    "roll_by_age": [
     0,
     14,
@@ -35812,23 +36166,23 @@
     1925,
     2016,
     2056,
-    10663,
-    10473,
-    10367,
-    10243,
-    9846,
-    2471,
-    2348,
-    84,
+    11159,
+    10954,
+    10831,
+    10731,
+    10284,
+    2659,
+    2513,
+    92,
     3
    ],
    "value_added": {
     "ks4_p8": {
-     "weight": 8854,
-     "weighted": 0.09,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 0.09
+     "weight": 9276,
+     "weighted": 0.07,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 0.07
     },
     "ks5_va_alevel": {
      "weight": 0,
@@ -35839,104 +36193,104 @@
     }
    },
    "roll_by_phase": {
-    "post16": 4903,
+    "post16": 5264,
     "primary": 11501,
-    "secondary": 51592
+    "secondary": 53959
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 31494,
+      "entries": 33008,
       "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 4.82
-     },
-     {
-      "shown": true,
-      "entries": 3774,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
-      "points_per_entry": 4.71
-     },
-     {
-      "shown": false,
-      "entries": 1177,
-      "family_id": "health_care",
-      "n_schools": 36,
-      "points_per_entry": null
-     },
-     {
-      "shown": true,
-      "entries": 5502,
-      "family_id": "arts_media_design",
-      "n_schools": 58,
-      "points_per_entry": 4.58
-     },
-     {
-      "shown": true,
-      "entries": 2638,
-      "family_id": "business_law",
-      "n_schools": 39,
-      "points_per_entry": 4.74
-     },
-     {
-      "shown": true,
-      "entries": 24175,
-      "family_id": "languages_literature",
-      "n_schools": 59,
+      "n_schools": 61,
       "points_per_entry": 4.79
      },
      {
       "shown": true,
-      "entries": 12875,
-      "family_id": "humanities_social",
-      "n_schools": 59,
+      "entries": 3960,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
       "points_per_entry": 4.68
      },
      {
+      "shown": false,
+      "entries": 1223,
+      "family_id": "health_care",
+      "n_schools": 37,
+      "points_per_entry": null
+     },
+     {
       "shown": true,
-      "entries": 2725,
+      "entries": 5806,
+      "family_id": "arts_media_design",
+      "n_schools": 60,
+      "points_per_entry": 4.6
+     },
+     {
+      "shown": true,
+      "entries": 2785,
+      "family_id": "business_law",
+      "n_schools": 41,
+      "points_per_entry": 4.73
+     },
+     {
+      "shown": true,
+      "entries": 25321,
+      "family_id": "languages_literature",
+      "n_schools": 61,
+      "points_per_entry": 4.76
+     },
+     {
+      "shown": true,
+      "entries": 13436,
+      "family_id": "humanities_social",
+      "n_schools": 61,
+      "points_per_entry": 4.65
+     },
+     {
+      "shown": true,
+      "entries": 2887,
       "family_id": "technology_eng_construction",
-      "n_schools": 50,
-      "points_per_entry": 4.39
+      "n_schools": 52,
+      "points_per_entry": 4.34
      }
     ],
     "ks5": [
      {
       "shown": true,
-      "entries": 486,
+      "entries": 535,
       "family_id": "languages_literature",
-      "n_schools": 20,
-      "points_per_entry": 37.43
+      "n_schools": 21,
+      "points_per_entry": 36.81
      },
      {
       "shown": true,
-      "entries": 374,
+      "entries": 450,
       "family_id": "arts_media_design",
-      "n_schools": 18,
-      "points_per_entry": 37.42
+      "n_schools": 19,
+      "points_per_entry": 36.11
      },
      {
       "shown": true,
-      "entries": 2265,
+      "entries": 2330,
       "family_id": "sciences_maths",
-      "n_schools": 28,
-      "points_per_entry": 37
+      "n_schools": 29,
+      "points_per_entry": 36.87
      },
      {
       "shown": true,
-      "entries": 800,
+      "entries": 886,
       "family_id": "business_law",
-      "n_schools": 22,
-      "points_per_entry": 35.43
+      "n_schools": 23,
+      "points_per_entry": 35.39
      },
      {
       "shown": true,
-      "entries": 1678,
+      "entries": 1828,
       "family_id": "humanities_social",
-      "n_schools": 30,
-      "points_per_entry": 36.92
+      "n_schools": 31,
+      "points_per_entry": 36.6
      },
      {
       "shown": false,
@@ -35947,24 +36301,24 @@
      },
      {
       "shown": true,
-      "entries": 274,
+      "entries": 305,
       "family_id": "technology_eng_construction",
-      "n_schools": 13,
-      "points_per_entry": 30.78
+      "n_schools": 14,
+      "points_per_entry": 30.8
      },
      {
       "shown": true,
-      "entries": 384,
+      "entries": 445,
       "family_id": "enterprise_applied",
-      "n_schools": 19,
-      "points_per_entry": 32
+      "n_schools": 20,
+      "points_per_entry": 31.74
      }
     ]
    },
    "schools_by_phase": {
-    "post16": 37,
+    "post16": 39,
     "primary": 40,
-    "secondary": 63
+    "secondary": 65
    }
   }
  },
@@ -35983,7 +36337,7 @@
     "places": {
      "ks5_aps_all": {
       "of": 14,
-      "rank": 5,
+      "rank": 6,
       "tied": false
      },
      "roll_change_1": {
@@ -35993,14 +36347,14 @@
      },
      "ks5_aps_alevel": {
       "of": 14,
-      "rank": 3,
+      "rank": 4,
       "tied": false
      }
     },
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 4884,
+   "roll": 5241,
    "share": {
     "las": [
      {
@@ -36037,6 +36391,13 @@
       "la_name": "North Northamptonshire",
       "la_pupils": 3960,
       "group_pupils": 378
+     },
+     {
+      "pct": 7.55,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 4726,
+      "group_pupils": 357
      },
      {
       "pct": 3.8,
@@ -36193,7 +36554,7 @@
       "group_pupils": 0
      }
     ],
-    "pct": 0.95,
+    "pct": 1.02,
     "sector": "all",
     "regions": [
      {
@@ -36239,33 +36600,33 @@
       "region_pupils": 96485
      },
      {
-      "pct": 0.66,
+      "pct": 1.38,
       "region_code": "E12000009",
-      "group_pupils": 330,
+      "group_pupils": 687,
       "region_pupils": 49774
      }
     ],
     "area_pupils": 512831,
-    "group_pupils": 4884
+    "group_pupils": 5241
    },
    "change": {
     "1": {
      "growing": 20,
-     "shrinking": 9,
+     "shrinking": 10,
      "from_period": 2021,
-     "combined_pct": 2.52,
-     "same_schools": 30,
-     "combined_base": 4764,
-     "same_schools_pct": 2.52
+     "combined_pct": 2.2,
+     "same_schools": 31,
+     "combined_base": 5128,
+     "same_schools_pct": 2.2
     },
     "3": {
      "growing": 17,
-     "shrinking": 11,
+     "shrinking": 12,
      "from_period": 2019,
-     "combined_pct": 13.32,
-     "same_schools": 28,
-     "combined_base": 4310,
-     "same_schools_pct": 9.28
+     "combined_pct": 12.08,
+     "same_schools": 29,
+     "combined_base": 4676,
+     "same_schools_pct": 8.36
     },
     "5": {
      "growing": 0,
@@ -36279,18 +36640,18 @@
    },
    "results": {
     "ks5_aps_all": {
-     "weight": 5614,
-     "weighted": 34.12,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 32.08
+     "weight": 6054,
+     "weighted": 33.86,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.03
     },
     "ks5_aps_alevel": {
-     "weight": 4751,
-     "weighted": 35.05,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 32.43
+     "weight": 5177,
+     "weighted": 34.67,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.37
     }
    },
    "excluded": {
@@ -36343,6 +36704,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -36401,6 +36772,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_alevel": [
@@ -36458,11 +36839,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 37,
-   "n_with_roll": 30,
+   "n_schools": 39,
+   "n_with_roll": 31,
    "value_added": {
     "ks5_va_alevel": {
      "weight": 0,
@@ -36476,38 +36867,38 @@
     "ks5": [
      {
       "shown": true,
-      "entries": 486,
+      "entries": 535,
       "family_id": "languages_literature",
-      "n_schools": 20,
-      "points_per_entry": 37.43
+      "n_schools": 21,
+      "points_per_entry": 36.81
      },
      {
       "shown": true,
-      "entries": 374,
+      "entries": 450,
       "family_id": "arts_media_design",
-      "n_schools": 18,
-      "points_per_entry": 37.42
+      "n_schools": 19,
+      "points_per_entry": 36.11
      },
      {
       "shown": true,
-      "entries": 2265,
+      "entries": 2330,
       "family_id": "sciences_maths",
-      "n_schools": 28,
-      "points_per_entry": 37
+      "n_schools": 29,
+      "points_per_entry": 36.87
      },
      {
       "shown": true,
-      "entries": 800,
+      "entries": 886,
       "family_id": "business_law",
-      "n_schools": 22,
-      "points_per_entry": 35.43
+      "n_schools": 23,
+      "points_per_entry": 35.39
      },
      {
       "shown": true,
-      "entries": 1678,
+      "entries": 1828,
       "family_id": "humanities_social",
-      "n_schools": 30,
-      "points_per_entry": 36.92
+      "n_schools": 31,
+      "points_per_entry": 36.6
      },
      {
       "shown": false,
@@ -36518,17 +36909,17 @@
      },
      {
       "shown": true,
-      "entries": 274,
+      "entries": 305,
       "family_id": "technology_eng_construction",
-      "n_schools": 13,
-      "points_per_entry": 30.78
+      "n_schools": 14,
+      "points_per_entry": 30.8
      },
      {
       "shown": true,
-      "entries": 384,
+      "entries": 445,
       "family_id": "enterprise_applied",
-      "n_schools": 19,
-      "points_per_entry": 32
+      "n_schools": 20,
+      "points_per_entry": 31.74
      }
     ]
    }
@@ -36735,7 +37126,7 @@
       "pct": 0.42,
       "region_code": "E12000007",
       "group_pupils": 2681,
-      "region_pupils": 636720
+      "region_pupils": 636667
      },
      {
       "pct": 0.45,
@@ -36750,7 +37141,7 @@
       "region_pupils": 372420
      }
     ],
-    "area_pupils": 3876438,
+    "area_pupils": 3876385,
     "group_pupils": 11500
    },
    "change": {
@@ -36847,7 +37238,7 @@
     "places": {
      "ks4_a8": {
       "of": 14,
-      "rank": 5,
+      "rank": 6,
       "tied": false
      },
      "ks4_p8": {
@@ -36874,7 +37265,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 51590,
+   "roll": 53957,
    "share": {
     "las": [
      {
@@ -36927,6 +37318,13 @@
       "group_pupils": 2576
      },
      {
+      "pct": 7.15,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 31341,
+      "group_pupils": 2240
+     },
+     {
       "pct": 9.64,
       "la_code": "940",
       "la_name": "North Northamptonshire",
@@ -36976,11 +37374,11 @@
       "group_pupils": 1486
      },
      {
-      "pct": 4.06,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 31341,
-      "group_pupils": 1271
+      "pct": 6.48,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 21562,
+      "group_pupils": 1398
      },
      {
       "pct": 14.57,
@@ -37116,7 +37514,7 @@
       "group_pupils": 504
      }
     ],
-    "pct": 1.59,
+    "pct": 1.66,
     "sector": "all",
     "regions": [
      {
@@ -37153,7 +37551,7 @@
       "pct": 2.12,
       "region_code": "E12000007",
       "group_pupils": 10926,
-      "region_pupils": 515298
+      "region_pupils": 515297
      },
      {
       "pct": 1.34,
@@ -37162,33 +37560,33 @@
       "region_pupils": 569582
      },
      {
-      "pct": 2.28,
+      "pct": 3.03,
       "region_code": "E12000009",
-      "group_pupils": 7271,
+      "group_pupils": 9638,
       "region_pupils": 318544
      }
     ],
-    "area_pupils": 3247331,
-    "group_pupils": 51590
+    "area_pupils": 3247330,
+    "group_pupils": 53957
    },
    "change": {
     "1": {
-     "growing": 39,
+     "growing": 41,
      "shrinking": 20,
      "from_period": 2021,
-     "combined_pct": 2.25,
-     "same_schools": 59,
-     "combined_base": 50456,
-     "same_schools_pct": 2.25
+     "combined_pct": 2.2,
+     "same_schools": 61,
+     "combined_base": 52793,
+     "same_schools_pct": 2.2
     },
     "3": {
-     "growing": 48,
+     "growing": 50,
      "shrinking": 11,
      "from_period": 2019,
-     "combined_pct": 7.59,
-     "same_schools": 59,
-     "combined_base": 47952,
-     "same_schools_pct": 7.59
+     "combined_pct": 7.51,
+     "same_schools": 61,
+     "combined_base": 50189,
+     "same_schools_pct": 7.51
     },
     "5": {
      "growing": 0,
@@ -37202,25 +37600,25 @@
    },
    "results": {
     "ks4_a8": {
-     "weight": 9749,
-     "weighted": 46.6,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 46.49
+     "weight": 10191,
+     "weighted": 46.45,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 46.34
     },
     "ks4_em4": {
-     "weight": 9749,
-     "weighted": 65.55,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 65.32
+     "weight": 10191,
+     "weighted": 65.28,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 65.06
     },
     "ks4_em5": {
-     "weight": 9749,
-     "weighted": 47.16,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 47
+     "weight": 10191,
+     "weighted": 46.8,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 46.63
     }
    },
    "excluded": {
@@ -37288,6 +37686,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -37361,6 +37769,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_p8": [
@@ -37432,6 +37850,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -37505,6 +37933,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em5": [
@@ -37577,77 +38015,87 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 63,
-   "n_with_roll": 59,
+   "n_schools": 65,
+   "n_with_roll": 61,
    "value_added": {
     "ks4_p8": {
-     "weight": 8854,
-     "weighted": 0.09,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 0.09
+     "weight": 9276,
+     "weighted": 0.07,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 0.07
     }
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 31494,
+      "entries": 33008,
       "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 4.82
-     },
-     {
-      "shown": true,
-      "entries": 3774,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
-      "points_per_entry": 4.71
-     },
-     {
-      "shown": false,
-      "entries": 1177,
-      "family_id": "health_care",
-      "n_schools": 36,
-      "points_per_entry": null
-     },
-     {
-      "shown": true,
-      "entries": 5502,
-      "family_id": "arts_media_design",
-      "n_schools": 58,
-      "points_per_entry": 4.58
-     },
-     {
-      "shown": true,
-      "entries": 2638,
-      "family_id": "business_law",
-      "n_schools": 39,
-      "points_per_entry": 4.74
-     },
-     {
-      "shown": true,
-      "entries": 24175,
-      "family_id": "languages_literature",
-      "n_schools": 59,
+      "n_schools": 61,
       "points_per_entry": 4.79
      },
      {
       "shown": true,
-      "entries": 12875,
-      "family_id": "humanities_social",
-      "n_schools": 59,
+      "entries": 3960,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
       "points_per_entry": 4.68
      },
      {
+      "shown": false,
+      "entries": 1223,
+      "family_id": "health_care",
+      "n_schools": 37,
+      "points_per_entry": null
+     },
+     {
       "shown": true,
-      "entries": 2725,
+      "entries": 5806,
+      "family_id": "arts_media_design",
+      "n_schools": 60,
+      "points_per_entry": 4.6
+     },
+     {
+      "shown": true,
+      "entries": 2785,
+      "family_id": "business_law",
+      "n_schools": 41,
+      "points_per_entry": 4.73
+     },
+     {
+      "shown": true,
+      "entries": 25321,
+      "family_id": "languages_literature",
+      "n_schools": 61,
+      "points_per_entry": 4.76
+     },
+     {
+      "shown": true,
+      "entries": 13436,
+      "family_id": "humanities_social",
+      "n_schools": 61,
+      "points_per_entry": 4.65
+     },
+     {
+      "shown": true,
+      "entries": 2887,
       "family_id": "technology_eng_construction",
-      "n_schools": 50,
-      "points_per_entry": 4.39
+      "n_schools": 52,
+      "points_per_entry": 4.34
      }
     ]
    }
@@ -37666,6 +38114,7 @@
     "886|Kent": 2,
     "302|Barnet": 1,
     "332|Dudley": 1,
+    "838|Dorset": 1,
     "208|Lambeth": 1,
     "305|Bromley": 1,
     "355|Salford": 8,
@@ -37674,7 +38123,7 @@
     "333|Sandwell": 2,
     "358|Trafford": 1,
     "370|Barnsley": 3,
-    "933|Somerset": 1,
+    "933|Somerset": 2,
     "203|Greenwich": 1,
     "210|Southwark": 1,
     "317|Redbridge": 1,
@@ -37713,8 +38162,8 @@
      },
      "ks4_p8": {
       "of": 14,
-      "rank": 6,
-      "tied": true
+      "rank": 7,
+      "tied": false
      },
      "ks2_rwm": {
       "of": 16,
@@ -37739,7 +38188,7 @@
      "ks5_va_alevel": {
       "of": 14,
       "rank": 7,
-      "tied": true
+      "tied": false
      },
      "roll_change_1": {
       "of": 16,
@@ -37748,14 +38197,14 @@
      },
      "ks5_aps_alevel": {
       "of": 14,
-      "rank": 4,
+      "rank": 6,
       "tied": false
      }
     },
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 71279,
+   "roll": 74031,
    "share": {
     "las": [
      {
@@ -37843,6 +38292,13 @@
       "group_pupils": 2492
      },
      {
+      "pct": 2.99,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 79871,
+      "group_pupils": 2391
+     },
+     {
       "pct": 4.98,
       "la_code": "320",
       "la_name": "Waltham Forest",
@@ -37862,6 +38318,13 @@
       "la_name": "Cumberland",
       "la_pupils": 40240,
       "group_pupils": 1938
+     },
+     {
+      "pct": 3.28,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 52079,
+      "group_pupils": 1706
      },
      {
       "pct": 4.11,
@@ -37890,13 +38353,6 @@
       "la_name": "Portsmouth",
       "la_pupils": 30341,
       "group_pupils": 1454
-     },
-     {
-      "pct": 1.68,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 79871,
-      "group_pupils": 1345
      },
      {
       "pct": 5.24,
@@ -38025,7 +38481,7 @@
       "group_pupils": 150
      }
     ],
-    "pct": 0.83,
+    "pct": 0.86,
     "sector": "all",
     "regions": [
      {
@@ -38062,7 +38518,7 @@
       "pct": 1.14,
       "region_code": "E12000007",
       "group_pupils": 16417,
-      "region_pupils": 1437100
+      "region_pupils": 1437029
      },
      {
       "pct": 0.83,
@@ -38071,33 +38527,33 @@
       "region_pupils": 1478290
      },
      {
-      "pct": 1.12,
+      "pct": 1.45,
       "region_code": "E12000009",
-      "group_pupils": 9135,
+      "group_pupils": 11887,
       "region_pupils": 817873
      }
     ],
-    "area_pupils": 8567765,
-    "group_pupils": 71279
+    "area_pupils": 8567694,
+    "group_pupils": 74031
    },
    "change": {
     "1": {
-     "growing": 48,
-     "shrinking": 47,
+     "growing": 49,
+     "shrinking": 48,
      "from_period": 2022,
-     "combined_pct": 0.64,
-     "same_schools": 95,
-     "combined_base": 70824,
-     "same_schools_pct": 0.47
+     "combined_pct": 0.65,
+     "same_schools": 97,
+     "combined_base": 73552,
+     "same_schools_pct": 0.49
     },
     "3": {
-     "growing": 57,
-     "shrinking": 37,
+     "growing": 58,
+     "shrinking": 38,
      "from_period": 2020,
-     "combined_pct": 4.29,
-     "same_schools": 94,
-     "combined_base": 68344,
-     "same_schools_pct": 3.36
+     "combined_pct": 4.28,
+     "same_schools": 96,
+     "combined_base": 70992,
+     "same_schools_pct": 3.38
     },
     "5": {
      "growing": 0,
@@ -38117,15 +38573,15 @@
     "E12000006": 5,
     "E12000007": 24,
     "E12000008": 18,
-    "E12000009": 9
+    "E12000009": 11
    },
    "results": {
     "ks4_a8": {
-     "weight": 9946,
-     "weighted": 46.41,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 46.52
+     "weight": 10419,
+     "weighted": 46.25,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 46.38
     },
     "ks2_rwm": {
      "weight": 1997,
@@ -38135,31 +38591,31 @@
      "average_school": 63.58
     },
     "ks4_em4": {
-     "weight": 9946,
-     "weighted": 65.87,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 65.81
+     "weight": 10419,
+     "weighted": 65.65,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 65.61
     },
     "ks4_em5": {
-     "weight": 9946,
-     "weighted": 48.22,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 48.12
+     "weight": 10419,
+     "weighted": 47.85,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 47.82
     },
     "ks5_aps_all": {
-     "weight": 5646,
-     "weighted": 34.54,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 32.44
+     "weight": 6105,
+     "weighted": 34.38,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.45
     },
     "ks5_aps_alevel": {
-     "weight": 4822,
-     "weighted": 35.16,
-     "n_weighted": 29,
-     "n_with_figure": 29,
+     "weight": 5262,
+     "weighted": 34.96,
+     "n_weighted": 30,
+     "n_with_figure": 30,
      "average_school": 32.88
     }
    },
@@ -38194,6 +38650,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -38242,6 +38708,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_p8": [
@@ -38288,6 +38764,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -38353,6 +38839,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em5": [
@@ -38400,6 +38896,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_all": [
@@ -38426,6 +38932,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -38459,6 +38975,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_alevel": [
@@ -38491,21 +39017,31 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 96,
+   "n_schools": 98,
    "confidence": {
-    "confirmed": 96
+    "confirmed": 98
    },
    "size_bands": {
     "L": 43,
     "M": 18,
     "S": 5,
-    "XL": 29,
+    "XL": 31,
     "XS": 1
    },
-   "n_with_roll": 96,
+   "n_with_roll": 98,
    "roll_by_age": [
     0,
     13,
@@ -38518,138 +39054,138 @@
     1917,
     1912,
     2032,
-    10832,
-    10780,
-    10438,
-    10272,
-    10092,
-    2544,
-    2242,
-    138,
+    11338,
+    11276,
+    10923,
+    10735,
+    10571,
+    2695,
+    2409,
+    143,
     5
    ],
    "value_added": {
     "ks4_p8": {
-     "weight": 9049,
-     "weighted": 0.11,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 0.12
+     "weight": 9506,
+     "weighted": 0.09,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 0.11
     },
     "ks5_va_alevel": {
-     "weight": 1931,
-     "weighted": -0.06,
-     "n_weighted": 29,
-     "n_with_figure": 29,
+     "weight": 2092,
+     "weighted": -0.05,
+     "n_weighted": 30,
+     "n_with_figure": 30,
      "average_school": -0.1
     }
    },
    "roll_by_phase": {
-    "post16": 4924,
+    "post16": 5247,
     "primary": 11239,
-    "secondary": 52414
+    "secondary": 54843
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 31983,
-      "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 4.86
-     },
-     {
-      "shown": true,
-      "entries": 2406,
-      "family_id": "business_law",
-      "n_schools": 38,
-      "points_per_entry": 4.88
-     },
-     {
-      "shown": false,
-      "entries": 1181,
-      "family_id": "health_care",
-      "n_schools": 37,
-      "points_per_entry": null
-     },
-     {
-      "shown": true,
-      "entries": 5477,
-      "family_id": "arts_media_design",
-      "n_schools": 58,
-      "points_per_entry": 4.57
-     },
-     {
-      "shown": true,
-      "entries": 24953,
+      "entries": 26172,
       "family_id": "languages_literature",
-      "n_schools": 59,
-      "points_per_entry": 4.79
+      "n_schools": 61,
+      "points_per_entry": 4.77
      },
      {
       "shown": true,
-      "entries": 13126,
+      "entries": 13681,
       "family_id": "humanities_social",
-      "n_schools": 59,
-      "points_per_entry": 4.68
+      "n_schools": 61,
+      "points_per_entry": 4.66
      },
      {
       "shown": true,
-      "entries": 4007,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
+      "entries": 33549,
+      "family_id": "sciences_maths",
+      "n_schools": 61,
+      "points_per_entry": 4.83
+     },
+     {
+      "shown": true,
+      "entries": 5828,
+      "family_id": "arts_media_design",
+      "n_schools": 60,
       "points_per_entry": 4.59
      },
      {
       "shown": true,
-      "entries": 2790,
-      "family_id": "technology_eng_construction",
-      "n_schools": 48,
+      "entries": 2531,
+      "family_id": "business_law",
+      "n_schools": 40,
+      "points_per_entry": 4.86
+     },
+     {
+      "shown": true,
+      "entries": 4177,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
       "points_per_entry": 4.56
+     },
+     {
+      "shown": false,
+      "entries": 1206,
+      "family_id": "health_care",
+      "n_schools": 38,
+      "points_per_entry": null
+     },
+     {
+      "shown": true,
+      "entries": 2944,
+      "family_id": "technology_eng_construction",
+      "n_schools": 50,
+      "points_per_entry": 4.54
      }
     ],
     "ks5": [
      {
       "shown": true,
-      "entries": 323,
+      "entries": 386,
       "family_id": "arts_media_design",
-      "n_schools": 15,
-      "points_per_entry": 36.26
+      "n_schools": 16,
+      "points_per_entry": 36.24
      },
      {
       "shown": true,
-      "entries": 2593,
+      "entries": 2726,
       "family_id": "sciences_maths",
-      "n_schools": 30,
-      "points_per_entry": 37.77
+      "n_schools": 31,
+      "points_per_entry": 37.76
      },
      {
       "shown": true,
-      "entries": 708,
+      "entries": 795,
       "family_id": "business_law",
-      "n_schools": 23,
-      "points_per_entry": 36.12
+      "n_schools": 24,
+      "points_per_entry": 36.01
      },
      {
       "shown": true,
-      "entries": 511,
+      "entries": 576,
       "family_id": "languages_literature",
-      "n_schools": 22,
-      "points_per_entry": 36.86
+      "n_schools": 23,
+      "points_per_entry": 36.39
      },
      {
       "shown": true,
-      "entries": 1585,
+      "entries": 1701,
       "family_id": "humanities_social",
-      "n_schools": 29,
-      "points_per_entry": 35.92
+      "n_schools": 30,
+      "points_per_entry": 35.8
      },
      {
       "shown": true,
-      "entries": 254,
+      "entries": 283,
       "family_id": "technology_eng_construction",
-      "n_schools": 14,
-      "points_per_entry": 32.42
+      "n_schools": 15,
+      "points_per_entry": 32.38
      },
      {
       "shown": false,
@@ -38660,17 +39196,17 @@
      },
      {
       "shown": true,
-      "entries": 326,
+      "entries": 359,
       "family_id": "enterprise_applied",
-      "n_schools": 15,
-      "points_per_entry": 36
+      "n_schools": 16,
+      "points_per_entry": 34.96
      }
     ]
    },
    "schools_by_phase": {
-    "post16": 36,
+    "post16": 38,
     "primary": 40,
-    "secondary": 61
+    "secondary": 63
    }
   }
  },
@@ -38695,7 +39231,7 @@
      "ks5_va_alevel": {
       "of": 14,
       "rank": 7,
-      "tied": true
+      "tied": false
      },
      "roll_change_1": {
       "of": 14,
@@ -38704,14 +39240,14 @@
      },
      "ks5_aps_alevel": {
       "of": 14,
-      "rank": 4,
+      "rank": 6,
       "tied": false
      }
     },
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 4901,
+   "roll": 5224,
    "share": {
     "las": [
      {
@@ -38748,6 +39284,13 @@
       "la_name": "North Northamptonshire",
       "la_pupils": 3864,
       "group_pupils": 365
+     },
+     {
+      "pct": 6.91,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 4677,
+      "group_pupils": 323
      },
      {
       "pct": 6.59,
@@ -38904,7 +39447,7 @@
       "group_pupils": 0
      }
     ],
-    "pct": 0.95,
+    "pct": 1.02,
     "sector": "all",
     "regions": [
      {
@@ -38950,33 +39493,33 @@
       "region_pupils": 97257
      },
      {
-      "pct": 0.82,
+      "pct": 1.47,
       "region_code": "E12000009",
-      "group_pupils": 408,
+      "group_pupils": 731,
       "region_pupils": 49761
      }
     ],
     "area_pupils": 513396,
-    "group_pupils": 4901
+    "group_pupils": 5224
    },
    "change": {
     "1": {
      "growing": 12,
-     "shrinking": 18,
+     "shrinking": 19,
      "from_period": 2022,
-     "combined_pct": 0.35,
-     "same_schools": 30,
-     "combined_base": 4884,
-     "same_schools_pct": 0.35
+     "combined_pct": -0.32,
+     "same_schools": 31,
+     "combined_base": 5241,
+     "same_schools_pct": -0.32
     },
     "3": {
      "growing": 20,
-     "shrinking": 9,
+     "shrinking": 10,
      "from_period": 2020,
-     "combined_pct": 9.32,
-     "same_schools": 29,
-     "combined_base": 4483,
-     "same_schools_pct": 7.74
+     "combined_pct": 7.8,
+     "same_schools": 30,
+     "combined_base": 4846,
+     "same_schools_pct": 6.34
     },
     "5": {
      "growing": 0,
@@ -38990,17 +39533,17 @@
    },
    "results": {
     "ks5_aps_all": {
-     "weight": 5646,
-     "weighted": 34.54,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 32.44
+     "weight": 6105,
+     "weighted": 34.38,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.45
     },
     "ks5_aps_alevel": {
-     "weight": 4822,
-     "weighted": 35.16,
-     "n_weighted": 29,
-     "n_with_figure": 29,
+     "weight": 5262,
+     "weighted": 34.96,
+     "n_weighted": 30,
+     "n_with_figure": 30,
      "average_school": 32.88
     }
    },
@@ -39030,6 +39573,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_all": [
@@ -39056,6 +39609,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -39089,6 +39652,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_alevel": [
@@ -39121,17 +39694,27 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 36,
-   "n_with_roll": 30,
+   "n_schools": 38,
+   "n_with_roll": 31,
    "value_added": {
     "ks5_va_alevel": {
-     "weight": 1931,
-     "weighted": -0.06,
-     "n_weighted": 29,
-     "n_with_figure": 29,
+     "weight": 2092,
+     "weighted": -0.05,
+     "n_weighted": 30,
+     "n_with_figure": 30,
      "average_school": -0.1
     }
    },
@@ -39139,45 +39722,45 @@
     "ks5": [
      {
       "shown": true,
-      "entries": 323,
+      "entries": 386,
       "family_id": "arts_media_design",
-      "n_schools": 15,
-      "points_per_entry": 36.26
+      "n_schools": 16,
+      "points_per_entry": 36.24
      },
      {
       "shown": true,
-      "entries": 2593,
+      "entries": 2726,
       "family_id": "sciences_maths",
-      "n_schools": 30,
-      "points_per_entry": 37.77
+      "n_schools": 31,
+      "points_per_entry": 37.76
      },
      {
       "shown": true,
-      "entries": 708,
+      "entries": 795,
       "family_id": "business_law",
-      "n_schools": 23,
-      "points_per_entry": 36.12
+      "n_schools": 24,
+      "points_per_entry": 36.01
      },
      {
       "shown": true,
-      "entries": 511,
+      "entries": 576,
       "family_id": "languages_literature",
-      "n_schools": 22,
-      "points_per_entry": 36.86
+      "n_schools": 23,
+      "points_per_entry": 36.39
      },
      {
       "shown": true,
-      "entries": 1585,
+      "entries": 1701,
       "family_id": "humanities_social",
-      "n_schools": 29,
-      "points_per_entry": 35.92
+      "n_schools": 30,
+      "points_per_entry": 35.8
      },
      {
       "shown": true,
-      "entries": 254,
+      "entries": 283,
       "family_id": "technology_eng_construction",
-      "n_schools": 14,
-      "points_per_entry": 32.42
+      "n_schools": 15,
+      "points_per_entry": 32.38
      },
      {
       "shown": false,
@@ -39188,10 +39771,10 @@
      },
      {
       "shown": true,
-      "entries": 326,
+      "entries": 359,
       "family_id": "enterprise_applied",
-      "n_schools": 15,
-      "points_per_entry": 36
+      "n_schools": 16,
+      "points_per_entry": 34.96
      }
     ]
    }
@@ -39398,7 +39981,7 @@
       "pct": 0.4,
       "region_code": "E12000007",
       "group_pupils": 2538,
-      "region_pupils": 629663
+      "region_pupils": 629616
      },
      {
       "pct": 0.45,
@@ -39413,7 +39996,7 @@
       "region_pupils": 367854
      }
     ],
-    "area_pupils": 3853275,
+    "area_pupils": 3853228,
     "group_pupils": 11238
    },
    "change": {
@@ -39505,8 +40088,8 @@
      },
      "ks4_p8": {
       "of": 14,
-      "rank": 6,
-      "tied": true
+      "rank": 7,
+      "tied": false
      },
      "ks4_em4": {
       "of": 14,
@@ -39527,7 +40110,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 52411,
+   "roll": 54840,
    "share": {
     "las": [
      {
@@ -39580,6 +40163,13 @@
       "group_pupils": 2576
      },
      {
+      "pct": 7.15,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 31569,
+      "group_pupils": 2258
+     },
+     {
       "pct": 9.53,
       "la_code": "940",
       "la_name": "North Northamptonshire",
@@ -39629,11 +40219,11 @@
       "group_pupils": 1474
      },
      {
-      "pct": 3.84,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 31569,
-      "group_pupils": 1212
+      "pct": 6.45,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 21452,
+      "group_pupils": 1383
      },
      {
       "pct": 14.26,
@@ -39769,7 +40359,7 @@
       "group_pupils": 576
      }
     ],
-    "pct": 1.59,
+    "pct": 1.66,
     "sector": "all",
     "regions": [
      {
@@ -39806,7 +40396,7 @@
       "pct": 2.12,
       "region_code": "E12000007",
       "group_pupils": 11006,
-      "region_pupils": 518420
+      "region_pupils": 518419
      },
      {
       "pct": 1.36,
@@ -39815,33 +40405,33 @@
       "region_pupils": 579224
      },
      {
-      "pct": 2.29,
+      "pct": 3.05,
       "region_code": "E12000009",
-      "group_pupils": 7407,
+      "group_pupils": 9836,
       "region_pupils": 322758
      }
     ],
-    "area_pupils": 3295775,
-    "group_pupils": 52411
+    "area_pupils": 3295774,
+    "group_pupils": 54840
    },
    "change": {
     "1": {
-     "growing": 40,
-     "shrinking": 17,
+     "growing": 41,
+     "shrinking": 18,
      "from_period": 2022,
-     "combined_pct": 1.59,
-     "same_schools": 59,
-     "combined_base": 51590,
-     "same_schools_pct": 1.35
+     "combined_pct": 1.64,
+     "same_schools": 61,
+     "combined_base": 53957,
+     "same_schools_pct": 1.41
     },
     "3": {
-     "growing": 47,
-     "shrinking": 11,
+     "growing": 48,
+     "shrinking": 12,
      "from_period": 2020,
-     "combined_pct": 6.8,
-     "same_schools": 59,
-     "combined_base": 49075,
-     "same_schools_pct": 6.55
+     "combined_pct": 6.78,
+     "same_schools": 61,
+     "combined_base": 51359,
+     "same_schools_pct": 6.54
     },
     "5": {
      "growing": 0,
@@ -39855,25 +40445,25 @@
    },
    "results": {
     "ks4_a8": {
-     "weight": 9946,
-     "weighted": 46.41,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 46.52
+     "weight": 10419,
+     "weighted": 46.25,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 46.38
     },
     "ks4_em4": {
-     "weight": 9946,
-     "weighted": 65.87,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 65.81
+     "weight": 10419,
+     "weighted": 65.65,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 65.61
     },
     "ks4_em5": {
-     "weight": 9946,
-     "weighted": 48.22,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 48.12
+     "weight": 10419,
+     "weighted": 47.85,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 47.82
     }
    },
    "excluded": {
@@ -39906,6 +40496,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -39954,6 +40554,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_p8": [
@@ -40000,6 +40610,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -40048,6 +40668,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em5": [
@@ -40095,77 +40725,87 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 61,
-   "n_with_roll": 60,
+   "n_schools": 63,
+   "n_with_roll": 62,
    "value_added": {
     "ks4_p8": {
-     "weight": 9049,
-     "weighted": 0.11,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 0.12
+     "weight": 9506,
+     "weighted": 0.09,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 0.11
     }
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 31983,
-      "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 4.86
-     },
-     {
-      "shown": true,
-      "entries": 2406,
-      "family_id": "business_law",
-      "n_schools": 38,
-      "points_per_entry": 4.88
-     },
-     {
-      "shown": false,
-      "entries": 1181,
-      "family_id": "health_care",
-      "n_schools": 37,
-      "points_per_entry": null
-     },
-     {
-      "shown": true,
-      "entries": 5477,
-      "family_id": "arts_media_design",
-      "n_schools": 58,
-      "points_per_entry": 4.57
-     },
-     {
-      "shown": true,
-      "entries": 24953,
+      "entries": 26172,
       "family_id": "languages_literature",
-      "n_schools": 59,
-      "points_per_entry": 4.79
+      "n_schools": 61,
+      "points_per_entry": 4.77
      },
      {
       "shown": true,
-      "entries": 13126,
+      "entries": 13681,
       "family_id": "humanities_social",
-      "n_schools": 59,
-      "points_per_entry": 4.68
+      "n_schools": 61,
+      "points_per_entry": 4.66
      },
      {
       "shown": true,
-      "entries": 4007,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
+      "entries": 33549,
+      "family_id": "sciences_maths",
+      "n_schools": 61,
+      "points_per_entry": 4.83
+     },
+     {
+      "shown": true,
+      "entries": 5828,
+      "family_id": "arts_media_design",
+      "n_schools": 60,
       "points_per_entry": 4.59
      },
      {
       "shown": true,
-      "entries": 2790,
-      "family_id": "technology_eng_construction",
-      "n_schools": 48,
+      "entries": 2531,
+      "family_id": "business_law",
+      "n_schools": 40,
+      "points_per_entry": 4.86
+     },
+     {
+      "shown": true,
+      "entries": 4177,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
       "points_per_entry": 4.56
+     },
+     {
+      "shown": false,
+      "entries": 1206,
+      "family_id": "health_care",
+      "n_schools": 38,
+      "points_per_entry": null
+     },
+     {
+      "shown": true,
+      "entries": 2944,
+      "family_id": "technology_eng_construction",
+      "n_schools": 50,
+      "points_per_entry": 4.54
      }
     ]
    }
@@ -40184,6 +40824,7 @@
     "886|Kent": 2,
     "302|Barnet": 1,
     "332|Dudley": 1,
+    "838|Dorset": 1,
     "208|Lambeth": 1,
     "305|Bromley": 1,
     "355|Salford": 8,
@@ -40192,7 +40833,7 @@
     "333|Sandwell": 2,
     "358|Trafford": 1,
     "370|Barnsley": 3,
-    "933|Somerset": 1,
+    "933|Somerset": 2,
     "203|Greenwich": 1,
     "210|Southwark": 1,
     "317|Redbridge": 1,
@@ -40226,7 +40867,7 @@
     "places": {
      "ks4_a8": {
       "of": 14,
-      "rank": 5,
+      "rank": 7,
       "tied": false
      },
      "ks2_rwm": {
@@ -40252,7 +40893,7 @@
      "ks5_va_alevel": {
       "of": 14,
       "rank": 6,
-      "tied": true
+      "tied": false
      },
      "roll_change_1": {
       "of": 16,
@@ -40268,7 +40909,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 71121,
+   "roll": 73833,
    "share": {
     "las": [
      {
@@ -40356,6 +40997,13 @@
       "group_pupils": 2539
      },
      {
+      "pct": 2.91,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 78718,
+      "group_pupils": 2292
+     },
+     {
       "pct": 4.84,
       "la_code": "320",
       "la_name": "Waltham Forest",
@@ -40375,6 +41023,13 @@
       "la_name": "Cumberland",
       "la_pupils": 39811,
       "group_pupils": 1917
+     },
+     {
+      "pct": 3.24,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 51539,
+      "group_pupils": 1670
      },
      {
       "pct": 4.26,
@@ -40417,13 +41072,6 @@
       "la_name": "Bromley",
       "la_pupils": 57550,
       "group_pupils": 1262
-     },
-     {
-      "pct": 1.59,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 78718,
-      "group_pupils": 1250
      },
      {
       "pct": 2.42,
@@ -40538,7 +41186,7 @@
       "group_pupils": 142
      }
     ],
-    "pct": 0.84,
+    "pct": 0.87,
     "sector": "all",
     "regions": [
      {
@@ -40575,7 +41223,7 @@
       "pct": 1.15,
       "region_code": "E12000007",
       "group_pupils": 16260,
-      "region_pupils": 1418623
+      "region_pupils": 1418583
      },
      {
       "pct": 0.83,
@@ -40584,42 +41232,42 @@
       "region_pupils": 1471456
      },
      {
-      "pct": 1.13,
+      "pct": 1.46,
       "region_code": "E12000009",
-      "group_pupils": 9151,
+      "group_pupils": 11863,
       "region_pupils": 810248
      }
     ],
-    "area_pupils": 8507446,
-    "group_pupils": 71121
+    "area_pupils": 8507406,
+    "group_pupils": 73833
    },
    "change": {
     "1": {
      "growing": 36,
-     "shrinking": 57,
+     "shrinking": 59,
      "from_period": 2023,
-     "combined_pct": -0.22,
-     "same_schools": 96,
-     "combined_base": 71279,
-     "same_schools_pct": -0.22
+     "combined_pct": -0.27,
+     "same_schools": 98,
+     "combined_base": 74031,
+     "same_schools_pct": -0.27
     },
     "3": {
-     "growing": 48,
-     "shrinking": 43,
+     "growing": 49,
+     "shrinking": 44,
      "from_period": 2021,
-     "combined_pct": 1.89,
-     "same_schools": 95,
-     "combined_base": 69803,
-     "same_schools_pct": 1.5
+     "combined_pct": 1.83,
+     "same_schools": 97,
+     "combined_base": 72504,
+     "same_schools_pct": 1.46
     },
     "5": {
-     "growing": 54,
-     "shrinking": 40,
+     "growing": 55,
+     "shrinking": 41,
      "from_period": 2019,
-     "combined_pct": 5.81,
-     "same_schools": 94,
-     "combined_base": 67214,
-     "same_schools_pct": 4.69
+     "combined_pct": 5.75,
+     "same_schools": 96,
+     "combined_base": 69820,
+     "same_schools_pct": 4.67
     }
    },
    "regions": {
@@ -40630,15 +41278,15 @@
     "E12000006": 5,
     "E12000007": 24,
     "E12000008": 18,
-    "E12000009": 9
+    "E12000009": 11
    },
    "results": {
     "ks4_a8": {
-     "weight": 9983,
-     "weighted": 47.85,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 47.8
+     "weight": 10432,
+     "weighted": 47.63,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 47.63
     },
     "ks2_rwm": {
      "weight": 1897,
@@ -40648,32 +41296,32 @@
      "average_school": 67.62
     },
     "ks4_em4": {
-     "weight": 9983,
-     "weighted": 67.83,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 67.9
+     "weight": 10432,
+     "weighted": 67.54,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 67.68
     },
     "ks4_em5": {
-     "weight": 9983,
-     "weighted": 49.95,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 49.76
+     "weight": 10432,
+     "weighted": 49.55,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 49.45
     },
     "ks5_aps_all": {
-     "weight": 5870,
-     "weighted": 34.77,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 33.02
+     "weight": 6275,
+     "weighted": 34.55,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.96
     },
     "ks5_aps_alevel": {
-     "weight": 4909,
-     "weighted": 35.39,
-     "n_weighted": 28,
-     "n_with_figure": 28,
-     "average_school": 33.76
+     "weight": 5280,
+     "weighted": 35.12,
+     "n_weighted": 29,
+     "n_with_figure": 29,
+     "average_school": 33.69
     }
    },
    "boarders": 0,
@@ -40702,6 +41350,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -40734,6 +41392,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -40779,6 +41447,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em5": [
@@ -40811,6 +41489,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_all": [
@@ -40832,6 +41520,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -40859,6 +41557,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -40892,20 +41600,30 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 96,
+   "n_schools": 98,
    "confidence": {
-    "confirmed": 96
+    "confirmed": 98
    },
    "size_bands": {
     "L": 45,
     "M": 15,
     "S": 7,
-    "XL": 29
+    "XL": 31
    },
-   "n_with_roll": 96,
+   "n_with_roll": 98,
    "roll_by_age": [
     0,
     16,
@@ -40918,14 +41636,14 @@
     1855,
     1897,
     1897,
-    10813,
-    10900,
-    10748,
-    10315,
-    10100,
-    2460,
-    2326,
-    132,
+    11319,
+    11398,
+    11240,
+    10780,
+    10558,
+    2608,
+    2464,
+    139,
     6
    ],
    "value_added": {
@@ -40937,126 +41655,126 @@
      "average_school": null
     },
     "ks5_va_alevel": {
-     "weight": 1986,
-     "weighted": -0.04,
-     "n_weighted": 29,
-     "n_with_figure": 29,
+     "weight": 2128,
+     "weighted": -0.02,
+     "n_weighted": 30,
+     "n_with_figure": 30,
      "average_school": -0.05
     }
    },
    "roll_by_phase": {
-    "post16": 4918,
+    "post16": 5211,
     "primary": 10774,
-    "secondary": 52876
+    "secondary": 55295
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 2413,
-      "family_id": "business_law",
-      "n_schools": 40,
-      "points_per_entry": 4.68
-     },
-     {
-      "shown": true,
-      "entries": 32165,
-      "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 4.96
-     },
-     {
-      "shown": true,
-      "entries": 2718,
-      "family_id": "technology_eng_construction",
-      "n_schools": 49,
-      "points_per_entry": 4.57
-     },
-     {
-      "shown": true,
-      "entries": 5003,
+      "entries": 5345,
       "family_id": "arts_media_design",
-      "n_schools": 57,
-      "points_per_entry": 4.75
-     },
-     {
-      "shown": true,
-      "entries": 25210,
-      "family_id": "languages_literature",
       "n_schools": 59,
-      "points_per_entry": 4.96
-     },
-     {
-      "shown": true,
-      "entries": 12847,
-      "family_id": "humanities_social",
-      "n_schools": 59,
-      "points_per_entry": 4.88
-     },
-     {
-      "shown": true,
-      "entries": 4027,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
       "points_per_entry": 4.73
      },
      {
+      "shown": true,
+      "entries": 33689,
+      "family_id": "sciences_maths",
+      "n_schools": 61,
+      "points_per_entry": 4.93
+     },
+     {
+      "shown": true,
+      "entries": 2567,
+      "family_id": "business_law",
+      "n_schools": 42,
+      "points_per_entry": 4.63
+     },
+     {
+      "shown": true,
+      "entries": 2909,
+      "family_id": "technology_eng_construction",
+      "n_schools": 51,
+      "points_per_entry": 4.54
+     },
+     {
+      "shown": true,
+      "entries": 26362,
+      "family_id": "languages_literature",
+      "n_schools": 61,
+      "points_per_entry": 4.94
+     },
+     {
+      "shown": true,
+      "entries": 13344,
+      "family_id": "humanities_social",
+      "n_schools": 61,
+      "points_per_entry": 4.85
+     },
+     {
+      "shown": true,
+      "entries": 4178,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
+      "points_per_entry": 4.71
+     },
+     {
       "shown": false,
-      "entries": 1106,
+      "entries": 1141,
       "family_id": "health_care",
-      "n_schools": 34,
+      "n_schools": 35,
       "points_per_entry": null
      }
     ],
     "ks5": [
      {
       "shown": true,
-      "entries": 437,
+      "entries": 482,
       "family_id": "languages_literature",
-      "n_schools": 19,
-      "points_per_entry": 37.76
+      "n_schools": 20,
+      "points_per_entry": 37.33
      },
      {
       "shown": true,
-      "entries": 284,
+      "entries": 350,
       "family_id": "arts_media_design",
-      "n_schools": 14,
-      "points_per_entry": 36.18
-     },
-     {
-      "shown": true,
-      "entries": 2487,
-      "family_id": "sciences_maths",
-      "n_schools": 30,
-      "points_per_entry": 37.16
-     },
-     {
-      "shown": true,
-      "entries": 847,
-      "family_id": "business_law",
-      "n_schools": 24,
-      "points_per_entry": 36.45
-     },
-     {
-      "shown": true,
-      "entries": 1798,
-      "family_id": "humanities_social",
-      "n_schools": 30,
-      "points_per_entry": 36.9
-     },
-     {
-      "shown": true,
-      "entries": 304,
-      "family_id": "technology_eng_construction",
-      "n_schools": 14,
-      "points_per_entry": 33.53
-     },
-     {
-      "shown": true,
-      "entries": 411,
-      "family_id": "enterprise_applied",
       "n_schools": 15,
-      "points_per_entry": 31.79
+      "points_per_entry": 36
+     },
+     {
+      "shown": true,
+      "entries": 2581,
+      "family_id": "sciences_maths",
+      "n_schools": 31,
+      "points_per_entry": 36.98
+     },
+     {
+      "shown": true,
+      "entries": 922,
+      "family_id": "business_law",
+      "n_schools": 25,
+      "points_per_entry": 36.53
+     },
+     {
+      "shown": true,
+      "entries": 1905,
+      "family_id": "humanities_social",
+      "n_schools": 31,
+      "points_per_entry": 36.73
+     },
+     {
+      "shown": true,
+      "entries": 331,
+      "family_id": "technology_eng_construction",
+      "n_schools": 15,
+      "points_per_entry": 32.48
+     },
+     {
+      "shown": true,
+      "entries": 448,
+      "family_id": "enterprise_applied",
+      "n_schools": 16,
+      "points_per_entry": 31.11
      },
      {
       "shown": false,
@@ -41068,9 +41786,9 @@
     ]
    },
    "schools_by_phase": {
-    "post16": 33,
+    "post16": 35,
     "primary": 40,
-    "secondary": 61
+    "secondary": 63
    }
   }
  },
@@ -41095,11 +41813,11 @@
      "ks5_va_alevel": {
       "of": 14,
       "rank": 6,
-      "tied": true
+      "tied": false
      },
      "roll_change_1": {
       "of": 14,
-      "rank": 7,
+      "rank": 9,
       "tied": false
      },
      "ks5_aps_alevel": {
@@ -41111,7 +41829,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 4904,
+   "roll": 5194,
    "share": {
     "las": [
      {
@@ -41148,6 +41866,13 @@
       "la_name": "North Northamptonshire",
       "la_pupils": 3865,
       "group_pupils": 305
+     },
+     {
+      "pct": 6.2,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 4678,
+      "group_pupils": 290
      },
      {
       "pct": 7,
@@ -41297,7 +42022,7 @@
       "group_pupils": 0
      }
     ],
-    "pct": 1.06,
+    "pct": 1.12,
     "sector": "all",
     "regions": [
      {
@@ -41337,58 +42062,58 @@
       "region_pupils": 98902
      },
      {
-      "pct": 0.92,
+      "pct": 1.51,
       "region_code": "E12000009",
-      "group_pupils": 459,
+      "group_pupils": 749,
       "region_pupils": 49759
      }
     ],
     "area_pupils": 463980,
-    "group_pupils": 4904
+    "group_pupils": 5194
    },
    "change": {
     "1": {
      "growing": 14,
-     "shrinking": 16,
+     "shrinking": 17,
      "from_period": 2023,
-     "combined_pct": 0.06,
-     "same_schools": 30,
-     "combined_base": 4901,
-     "same_schools_pct": 0.06
+     "combined_pct": -0.57,
+     "same_schools": 31,
+     "combined_base": 5224,
+     "same_schools_pct": -0.57
     },
     "3": {
      "growing": 14,
-     "shrinking": 15,
+     "shrinking": 16,
      "from_period": 2021,
-     "combined_pct": 2.94,
-     "same_schools": 30,
-     "combined_base": 4764,
-     "same_schools_pct": 2.94
+     "combined_pct": 1.29,
+     "same_schools": 31,
+     "combined_base": 5128,
+     "same_schools_pct": 1.29
     },
     "5": {
      "growing": 15,
-     "shrinking": 13,
+     "shrinking": 14,
      "from_period": 2019,
-     "combined_pct": 13.78,
-     "same_schools": 28,
-     "combined_base": 4310,
-     "same_schools_pct": 9.07
+     "combined_pct": 11.08,
+     "same_schools": 29,
+     "combined_base": 4676,
+     "same_schools_pct": 6.74
     }
    },
    "results": {
     "ks5_aps_all": {
-     "weight": 5870,
-     "weighted": 34.77,
-     "n_weighted": 30,
-     "n_with_figure": 30,
-     "average_school": 33.02
+     "weight": 6275,
+     "weighted": 34.55,
+     "n_weighted": 31,
+     "n_with_figure": 31,
+     "average_school": 32.96
     },
     "ks5_aps_alevel": {
-     "weight": 4909,
-     "weighted": 35.39,
-     "n_weighted": 28,
-     "n_with_figure": 28,
-     "average_school": 33.76
+     "weight": 5280,
+     "weighted": 35.12,
+     "n_weighted": 29,
+     "n_with_figure": 29,
+     "average_school": 33.69
     }
    },
    "excluded": {
@@ -41412,6 +42137,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks5_aps_all": [
@@ -41433,6 +42168,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -41460,6 +42205,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -41493,17 +42248,27 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 33,
-   "n_with_roll": 30,
+   "n_schools": 35,
+   "n_with_roll": 31,
    "value_added": {
     "ks5_va_alevel": {
-     "weight": 1986,
-     "weighted": -0.04,
-     "n_weighted": 29,
-     "n_with_figure": 29,
+     "weight": 2128,
+     "weighted": -0.02,
+     "n_weighted": 30,
+     "n_with_figure": 30,
      "average_school": -0.05
     }
    },
@@ -41511,52 +42276,52 @@
     "ks5": [
      {
       "shown": true,
-      "entries": 437,
+      "entries": 482,
       "family_id": "languages_literature",
-      "n_schools": 19,
-      "points_per_entry": 37.76
+      "n_schools": 20,
+      "points_per_entry": 37.33
      },
      {
       "shown": true,
-      "entries": 284,
+      "entries": 350,
       "family_id": "arts_media_design",
-      "n_schools": 14,
-      "points_per_entry": 36.18
-     },
-     {
-      "shown": true,
-      "entries": 2487,
-      "family_id": "sciences_maths",
-      "n_schools": 30,
-      "points_per_entry": 37.16
-     },
-     {
-      "shown": true,
-      "entries": 847,
-      "family_id": "business_law",
-      "n_schools": 24,
-      "points_per_entry": 36.45
-     },
-     {
-      "shown": true,
-      "entries": 1798,
-      "family_id": "humanities_social",
-      "n_schools": 30,
-      "points_per_entry": 36.9
-     },
-     {
-      "shown": true,
-      "entries": 304,
-      "family_id": "technology_eng_construction",
-      "n_schools": 14,
-      "points_per_entry": 33.53
-     },
-     {
-      "shown": true,
-      "entries": 411,
-      "family_id": "enterprise_applied",
       "n_schools": 15,
-      "points_per_entry": 31.79
+      "points_per_entry": 36
+     },
+     {
+      "shown": true,
+      "entries": 2581,
+      "family_id": "sciences_maths",
+      "n_schools": 31,
+      "points_per_entry": 36.98
+     },
+     {
+      "shown": true,
+      "entries": 922,
+      "family_id": "business_law",
+      "n_schools": 25,
+      "points_per_entry": 36.53
+     },
+     {
+      "shown": true,
+      "entries": 1905,
+      "family_id": "humanities_social",
+      "n_schools": 31,
+      "points_per_entry": 36.73
+     },
+     {
+      "shown": true,
+      "entries": 331,
+      "family_id": "technology_eng_construction",
+      "n_schools": 15,
+      "points_per_entry": 32.48
+     },
+     {
+      "shown": true,
+      "entries": 448,
+      "family_id": "enterprise_applied",
+      "n_schools": 16,
+      "points_per_entry": 31.11
      },
      {
       "shown": false,
@@ -41770,7 +42535,7 @@
       "pct": 0.39,
       "region_code": "E12000007",
       "group_pupils": 2437,
-      "region_pupils": 617431
+      "region_pupils": 617392
      },
      {
       "pct": 0.43,
@@ -41785,7 +42550,7 @@
       "region_pupils": 362445
      }
     ],
-    "area_pupils": 3806043,
+    "area_pupils": 3806004,
     "group_pupils": 10774
    },
    "change": {
@@ -41867,7 +42632,7 @@
     "places": {
      "ks4_a8": {
       "of": 14,
-      "rank": 5,
+      "rank": 7,
       "tied": false
      },
      "ks4_em4": {
@@ -41889,7 +42654,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 52873,
+   "roll": 55292,
    "share": {
     "las": [
      {
@@ -41942,6 +42707,13 @@
       "group_pupils": 2640
      },
      {
+      "pct": 6.95,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 31095,
+      "group_pupils": 2160
+     },
+     {
       "pct": 9.43,
       "la_code": "940",
       "la_name": "North Northamptonshire",
@@ -41991,18 +42763,18 @@
       "group_pupils": 1427
      },
      {
+      "pct": 6.53,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 21125,
+      "group_pupils": 1380
+     },
+     {
       "pct": 14.54,
       "la_code": "207",
       "la_name": "Kensington and Chelsea",
       "la_pupils": 7717,
       "group_pupils": 1122
-     },
-     {
-      "pct": 3.61,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 31095,
-      "group_pupils": 1121
      },
      {
       "pct": 6.08,
@@ -42131,7 +42903,7 @@
       "group_pupils": 469
      }
     ],
-    "pct": 1.6,
+    "pct": 1.68,
     "sector": "all",
     "regions": [
      {
@@ -42177,65 +42949,65 @@
       "region_pupils": 579188
      },
      {
-      "pct": 2.32,
+      "pct": 3.07,
       "region_code": "E12000009",
-      "group_pupils": 7455,
+      "group_pupils": 9874,
       "region_pupils": 321876
      }
     ],
     "area_pupils": 3294730,
-    "group_pupils": 52873
+    "group_pupils": 55292
    },
    "change": {
     "1": {
      "growing": 35,
-     "shrinking": 25,
+     "shrinking": 27,
      "from_period": 2023,
-     "combined_pct": 0.88,
-     "same_schools": 60,
-     "combined_base": 52411,
-     "same_schools_pct": 0.88
+     "combined_pct": 0.82,
+     "same_schools": 62,
+     "combined_base": 54840,
+     "same_schools_pct": 0.82
     },
     "3": {
-     "growing": 41,
-     "shrinking": 16,
+     "growing": 42,
+     "shrinking": 17,
      "from_period": 2021,
-     "combined_pct": 4.79,
-     "same_schools": 59,
-     "combined_base": 50456,
-     "same_schools_pct": 4.25
+     "combined_pct": 4.73,
+     "same_schools": 61,
+     "combined_base": 52793,
+     "same_schools_pct": 4.21
     },
     "5": {
-     "growing": 47,
-     "shrinking": 12,
+     "growing": 48,
+     "shrinking": 13,
      "from_period": 2019,
-     "combined_pct": 10.26,
-     "same_schools": 59,
-     "combined_base": 47952,
-     "same_schools_pct": 9.69
+     "combined_pct": 10.17,
+     "same_schools": 61,
+     "combined_base": 50189,
+     "same_schools_pct": 9.62
     }
    },
    "results": {
     "ks4_a8": {
-     "weight": 9983,
-     "weighted": 47.85,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 47.8
+     "weight": 10432,
+     "weighted": 47.63,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 47.63
     },
     "ks4_em4": {
-     "weight": 9983,
-     "weighted": 67.83,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 67.9
+     "weight": 10432,
+     "weighted": 67.54,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 67.68
     },
     "ks4_em5": {
-     "weight": 9983,
-     "weighted": 49.95,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 49.76
+     "weight": 10432,
+     "weighted": 49.55,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 49.45
     }
    },
    "excluded": {
@@ -42263,6 +43035,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -42296,6 +43078,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em4": [
@@ -42327,6 +43119,16 @@
      {
       "urn": "152205",
       "name": "Regents Park Community College",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
       "reason": "not_yet_open"
      }
     ],
@@ -42360,11 +43162,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "not_yet_open"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 61,
-   "n_with_roll": 60,
+   "n_schools": 63,
+   "n_with_roll": 62,
    "value_added": {
     "ks4_p8": {
      "weight": 0,
@@ -42378,58 +43190,58 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 2413,
-      "family_id": "business_law",
-      "n_schools": 40,
-      "points_per_entry": 4.68
-     },
-     {
-      "shown": true,
-      "entries": 32165,
-      "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 4.96
-     },
-     {
-      "shown": true,
-      "entries": 2718,
-      "family_id": "technology_eng_construction",
-      "n_schools": 49,
-      "points_per_entry": 4.57
-     },
-     {
-      "shown": true,
-      "entries": 5003,
+      "entries": 5345,
       "family_id": "arts_media_design",
-      "n_schools": 57,
-      "points_per_entry": 4.75
-     },
-     {
-      "shown": true,
-      "entries": 25210,
-      "family_id": "languages_literature",
       "n_schools": 59,
-      "points_per_entry": 4.96
-     },
-     {
-      "shown": true,
-      "entries": 12847,
-      "family_id": "humanities_social",
-      "n_schools": 59,
-      "points_per_entry": 4.88
-     },
-     {
-      "shown": true,
-      "entries": 4027,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
       "points_per_entry": 4.73
      },
      {
+      "shown": true,
+      "entries": 33689,
+      "family_id": "sciences_maths",
+      "n_schools": 61,
+      "points_per_entry": 4.93
+     },
+     {
+      "shown": true,
+      "entries": 2567,
+      "family_id": "business_law",
+      "n_schools": 42,
+      "points_per_entry": 4.63
+     },
+     {
+      "shown": true,
+      "entries": 2909,
+      "family_id": "technology_eng_construction",
+      "n_schools": 51,
+      "points_per_entry": 4.54
+     },
+     {
+      "shown": true,
+      "entries": 26362,
+      "family_id": "languages_literature",
+      "n_schools": 61,
+      "points_per_entry": 4.94
+     },
+     {
+      "shown": true,
+      "entries": 13344,
+      "family_id": "humanities_social",
+      "n_schools": 61,
+      "points_per_entry": 4.85
+     },
+     {
+      "shown": true,
+      "entries": 4178,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
+      "points_per_entry": 4.71
+     },
+     {
       "shown": false,
-      "entries": 1106,
+      "entries": 1141,
       "family_id": "health_care",
-      "n_schools": 34,
+      "n_schools": 35,
       "points_per_entry": null
      }
     ]
@@ -42449,6 +43261,7 @@
     "886|Kent": 2,
     "302|Barnet": 1,
     "332|Dudley": 1,
+    "838|Dorset": 1,
     "208|Lambeth": 1,
     "305|Bromley": 1,
     "355|Salford": 8,
@@ -42457,7 +43270,7 @@
     "333|Sandwell": 2,
     "358|Trafford": 1,
     "370|Barnsley": 3,
-    "933|Somerset": 1,
+    "933|Somerset": 2,
     "203|Greenwich": 1,
     "210|Southwark": 1,
     "317|Redbridge": 1,
@@ -42513,7 +43326,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 70467,
+   "roll": 73165,
    "share": {
     "las": [
      {
@@ -42601,6 +43414,13 @@
       "group_pupils": 2499
      },
      {
+      "pct": 2.84,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 77696,
+      "group_pupils": 2206
+     },
+     {
       "pct": 4.9,
       "la_code": "320",
       "la_name": "Waltham Forest",
@@ -42620,6 +43440,13 @@
       "la_name": "Cumberland",
       "la_pupils": 39156,
       "group_pupils": 1940
+     },
+     {
+      "pct": 3.34,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 50348,
+      "group_pupils": 1684
      },
      {
       "pct": 4.37,
@@ -42662,13 +43489,6 @@
       "la_name": "Bromley",
       "la_pupils": 56775,
       "group_pupils": 1347
-     },
-     {
-      "pct": 1.53,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 77696,
-      "group_pupils": 1192
      },
      {
       "pct": 2.39,
@@ -42783,7 +43603,7 @@
       "group_pupils": 152
      }
     ],
-    "pct": 0.84,
+    "pct": 0.87,
     "sector": "all",
     "regions": [
      {
@@ -42820,7 +43640,7 @@
       "pct": 1.18,
       "region_code": "E12000007",
       "group_pupils": 16385,
-      "region_pupils": 1390206
+      "region_pupils": 1390193
      },
      {
       "pct": 0.84,
@@ -42829,42 +43649,42 @@
       "region_pupils": 1453357
      },
      {
-      "pct": 1.12,
+      "pct": 1.46,
       "region_code": "E12000009",
-      "group_pupils": 8967,
+      "group_pupils": 11665,
       "region_pupils": 799641
      }
     ],
-    "area_pupils": 8397545,
-    "group_pupils": 70467
+    "area_pupils": 8397532,
+    "group_pupils": 73165
    },
    "change": {
     "1": {
-     "growing": 31,
-     "shrinking": 60,
+     "growing": 32,
+     "shrinking": 61,
      "from_period": 2024,
-     "combined_pct": -0.92,
-     "same_schools": 96,
-     "combined_base": 71121,
-     "same_schools_pct": -0.92
+     "combined_pct": -0.9,
+     "same_schools": 98,
+     "combined_base": 73833,
+     "same_schools_pct": -0.9
     },
     "3": {
-     "growing": 42,
-     "shrinking": 51,
+     "growing": 43,
+     "shrinking": 52,
      "from_period": 2022,
-     "combined_pct": -0.5,
-     "same_schools": 95,
-     "combined_base": 70824,
+     "combined_pct": -0.53,
+     "same_schools": 97,
+     "combined_base": 73552,
      "same_schools_pct": -1.14
     },
     "5": {
-     "growing": 49,
-     "shrinking": 45,
+     "growing": 50,
+     "shrinking": 46,
      "from_period": 2020,
-     "combined_pct": 3.11,
-     "same_schools": 94,
-     "combined_base": 68344,
-     "same_schools_pct": 1.78
+     "combined_pct": 3.06,
+     "same_schools": 96,
+     "combined_base": 70992,
+     "same_schools_pct": 1.79
     }
    },
    "regions": {
@@ -42875,15 +43695,15 @@
     "E12000006": 5,
     "E12000007": 24,
     "E12000008": 18,
-    "E12000009": 9
+    "E12000009": 11
    },
    "results": {
     "ks4_a8": {
-     "weight": 10063,
-     "weighted": 48.61,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 48.79
+     "weight": 10532,
+     "weighted": 48.47,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 48.67
     },
     "ks2_rwm": {
      "weight": 0,
@@ -42893,18 +43713,18 @@
      "average_school": null
     },
     "ks4_em4": {
-     "weight": 10063,
-     "weighted": 68.59,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 69.01
+     "weight": 10532,
+     "weighted": 68.34,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 68.8
     },
     "ks4_em5": {
-     "weight": 10063,
-     "weighted": 52.53,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 52.88
+     "weight": 10532,
+     "weighted": 52.18,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 52.61
     },
     "ks5_aps_all": {
      "weight": 0,
@@ -42923,6 +43743,18 @@
    },
    "boarders": 0,
    "excluded": {
+    "roll": [
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "149840",
@@ -42943,6 +43775,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "no_results_published"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em4": [
@@ -42965,6 +43807,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "no_results_published"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em5": [
@@ -42987,20 +43839,30 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "no_results_published"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 96,
+   "n_schools": 98,
    "confidence": {
-    "confirmed": 96
+    "confirmed": 98
    },
    "size_bands": {
     "L": 40,
     "M": 14,
     "S": 10,
-    "XL": 32
+    "XL": 34
    },
-   "n_with_roll": 96,
+   "n_with_roll": 98,
    "roll_by_age": [
     0,
     24,
@@ -43013,14 +43875,14 @@
     1728,
     1821,
     1863,
-    10571,
-    10705,
-    10773,
-    10553,
-    10152,
-    2288,
-    2297,
-    121,
+    11014,
+    11204,
+    11267,
+    11040,
+    10620,
+    2448,
+    2438,
+    127,
     4
    ],
    "value_added": {
@@ -43040,75 +43902,75 @@
     }
    },
    "roll_by_phase": {
-    "post16": 4706,
+    "post16": 5013,
     "primary": 10386,
-    "secondary": 52754
+    "secondary": 55145
    },
    "subject_areas": {
     "ks4": [
      {
       "shown": true,
-      "entries": 5368,
+      "entries": 5773,
       "family_id": "arts_media_design",
-      "n_schools": 57,
-      "points_per_entry": 4.82
-     },
-     {
-      "shown": true,
-      "entries": 25138,
-      "family_id": "languages_literature",
       "n_schools": 59,
-      "points_per_entry": 5.05
+      "points_per_entry": 4.8
      },
      {
       "shown": true,
-      "entries": 4294,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
-      "points_per_entry": 4.66
-     },
-     {
-      "shown": true,
-      "entries": 32119,
+      "entries": 33646,
       "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 5.04
+      "n_schools": 61,
+      "points_per_entry": 5.02
      },
      {
       "shown": true,
-      "entries": 13105,
-      "family_id": "humanities_social",
-      "n_schools": 59,
-      "points_per_entry": 5
-     },
-     {
-      "shown": true,
-      "entries": 2507,
+      "entries": 2661,
       "family_id": "business_law",
-      "n_schools": 40,
-      "points_per_entry": 4.41
+      "n_schools": 42,
+      "points_per_entry": 4.43
      },
      {
       "shown": true,
-      "entries": 2618,
+      "entries": 2733,
       "family_id": "technology_eng_construction",
-      "n_schools": 48,
+      "n_schools": 50,
       "points_per_entry": 4.57
      },
      {
+      "shown": true,
+      "entries": 26347,
+      "family_id": "languages_literature",
+      "n_schools": 61,
+      "points_per_entry": 5.02
+     },
+     {
+      "shown": true,
+      "entries": 13661,
+      "family_id": "humanities_social",
+      "n_schools": 61,
+      "points_per_entry": 4.98
+     },
+     {
+      "shown": true,
+      "entries": 4463,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
+      "points_per_entry": 4.63
+     },
+     {
       "shown": false,
-      "entries": 1220,
+      "entries": 1277,
       "family_id": "health_care",
-      "n_schools": 31,
+      "n_schools": 32,
       "points_per_entry": null
      }
     ],
     "ks5": []
    },
    "schools_by_phase": {
-    "post16": 30,
+    "post16": 32,
     "primary": 40,
-    "secondary": 60
+    "secondary": 62
    }
   }
  },
@@ -43134,7 +43996,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 4696,
+   "roll": 5000,
    "share": {
     "las": [
      {
@@ -43164,6 +44026,13 @@
       "la_name": "West Northamptonshire",
       "la_pupils": 4788,
       "group_pupils": 353
+     },
+     {
+      "pct": 6.85,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 4436,
+      "group_pupils": 304
      },
      {
       "pct": 7.56,
@@ -43313,7 +44182,7 @@
       "group_pupils": 0
      }
     ],
-    "pct": 1.01,
+    "pct": 1.08,
     "sector": "all",
     "regions": [
      {
@@ -43353,42 +44222,42 @@
       "region_pupils": 98588
      },
      {
-      "pct": 0.93,
+      "pct": 1.56,
       "region_code": "E12000009",
-      "group_pupils": 453,
+      "group_pupils": 757,
       "region_pupils": 48645
      }
     ],
     "area_pupils": 464870,
-    "group_pupils": 4696
+    "group_pupils": 5000
    },
    "change": {
     "1": {
-     "growing": 12,
+     "growing": 13,
      "shrinking": 16,
      "from_period": 2024,
-     "combined_pct": -4.24,
-     "same_schools": 28,
-     "combined_base": 4904,
-     "same_schools_pct": -3.33
+     "combined_pct": -3.74,
+     "same_schools": 29,
+     "combined_base": 5194,
+     "same_schools_pct": -2.87
     },
     "3": {
      "growing": 13,
-     "shrinking": 15,
+     "shrinking": 16,
      "from_period": 2022,
-     "combined_pct": -3.85,
-     "same_schools": 28,
-     "combined_base": 4884,
-     "same_schools_pct": 0.23
+     "combined_pct": -4.6,
+     "same_schools": 29,
+     "combined_base": 5241,
+     "same_schools_pct": -0.83
     },
     "5": {
      "growing": 16,
-     "shrinking": 11,
+     "shrinking": 12,
      "from_period": 2020,
-     "combined_pct": 4.75,
-     "same_schools": 27,
-     "combined_base": 4483,
-     "same_schools_pct": 6.95
+     "combined_pct": 3.18,
+     "same_schools": 28,
+     "combined_base": 4846,
+     "same_schools_pct": 5.14
     }
    },
    "results": {
@@ -43407,9 +44276,22 @@
      "average_school": null
     }
    },
-   "excluded": {},
-   "n_schools": 30,
-   "n_with_roll": 28,
+   "excluded": {
+    "roll": [
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
+     }
+    ]
+   },
+   "n_schools": 32,
+   "n_with_roll": 29,
    "value_added": {
     "ks5_va_alevel": {
      "weight": 0,
@@ -43620,7 +44502,7 @@
       "pct": 0.41,
       "region_code": "E12000007",
       "group_pupils": 2435,
-      "region_pupils": 600857
+      "region_pupils": 600844
      },
      {
       "pct": 0.41,
@@ -43635,7 +44517,7 @@
       "region_pupils": 353056
      }
     ],
-    "area_pupils": 3726621,
+    "area_pupils": 3726608,
     "group_pupils": 10383
    },
    "change": {
@@ -43719,7 +44601,7 @@
     "set_id": "peer:mat:41+",
     "n_groups": 16
    },
-   "roll": 52751,
+   "roll": 55142,
    "share": {
     "las": [
      {
@@ -43786,6 +44668,13 @@
       "group_pupils": 2128
      },
      {
+      "pct": 6.73,
+      "la_code": "933",
+      "la_name": "Somerset",
+      "la_pupils": 30785,
+      "group_pupils": 2071
+     },
+     {
       "pct": 14.34,
       "la_code": "866",
       "la_name": "Swindon",
@@ -43814,6 +44703,13 @@
       "group_pupils": 1530
      },
      {
+      "pct": 6.7,
+      "la_code": "838",
+      "la_name": "Dorset",
+      "la_pupils": 20582,
+      "group_pupils": 1380
+     },
+     {
       "pct": 10.88,
       "la_code": "213",
       "la_name": "Westminster",
@@ -43833,13 +44729,6 @@
       "la_name": "Trafford",
       "la_pupils": 17721,
       "group_pupils": 1102
-     },
-     {
-      "pct": 3.44,
-      "la_code": "933",
-      "la_name": "Somerset",
-      "la_pupils": 30785,
-      "group_pupils": 1060
      },
      {
       "pct": 5.67,
@@ -43961,7 +44850,7 @@
       "group_pupils": 457
      }
     ],
-    "pct": 1.61,
+    "pct": 1.68,
     "sector": "all",
     "regions": [
      {
@@ -44007,68 +44896,80 @@
       "region_pupils": 576103
      },
      {
-      "pct": 2.29,
+      "pct": 3.04,
       "region_code": "E12000009",
-      "group_pupils": 7343,
+      "group_pupils": 9734,
       "region_pupils": 320520
      }
     ],
     "area_pupils": 3276707,
-    "group_pupils": 52751
+    "group_pupils": 55142
    },
    "change": {
     "1": {
      "growing": 28,
-     "shrinking": 32,
+     "shrinking": 33,
      "from_period": 2024,
-     "combined_pct": -0.23,
-     "same_schools": 60,
-     "combined_base": 52873,
-     "same_schools_pct": -0.23
+     "combined_pct": -0.27,
+     "same_schools": 62,
+     "combined_base": 55292,
+     "same_schools_pct": -0.27
     },
     "3": {
-     "growing": 34,
-     "shrinking": 23,
+     "growing": 35,
+     "shrinking": 24,
      "from_period": 2022,
-     "combined_pct": 2.25,
-     "same_schools": 59,
-     "combined_base": 51590,
-     "same_schools_pct": 1.38
+     "combined_pct": 2.2,
+     "same_schools": 61,
+     "combined_base": 53957,
+     "same_schools_pct": 1.36
     },
     "5": {
-     "growing": 42,
-     "shrinking": 16,
+     "growing": 43,
+     "shrinking": 17,
      "from_period": 2020,
-     "combined_pct": 7.49,
-     "same_schools": 59,
-     "combined_base": 49075,
-     "same_schools_pct": 6.58
+     "combined_pct": 7.37,
+     "same_schools": 61,
+     "combined_base": 51359,
+     "same_schools_pct": 6.49
     }
    },
    "results": {
     "ks4_a8": {
-     "weight": 10063,
-     "weighted": 48.61,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 48.79
+     "weight": 10532,
+     "weighted": 48.47,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 48.67
     },
     "ks4_em4": {
-     "weight": 10063,
-     "weighted": 68.59,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 69.01
+     "weight": 10532,
+     "weighted": 68.34,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 68.8
     },
     "ks4_em5": {
-     "weight": 10063,
-     "weighted": 52.53,
-     "n_weighted": 59,
-     "n_with_figure": 59,
-     "average_school": 52.88
+     "weight": 10532,
+     "weighted": 52.18,
+     "n_weighted": 61,
+     "n_with_figure": 61,
+     "average_school": 52.61
     }
    },
    "excluded": {
+    "roll": [
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
+     }
+    ],
     "ks4_a8": [
      {
       "urn": "149840",
@@ -44089,6 +44990,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "no_results_published"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em4": [
@@ -44111,6 +45022,16 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "no_results_published"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ],
     "ks4_em5": [
@@ -44133,11 +45054,21 @@
       "urn": "152205",
       "name": "Regents Park Community College",
       "reason": "no_results_published"
+     },
+     {
+      "urn": "151626",
+      "name": "Robert Blake Academy",
+      "reason": "not_yet_open"
+     },
+     {
+      "urn": "152446",
+      "name": "Gillingham School",
+      "reason": "not_yet_open"
      }
     ]
    },
-   "n_schools": 60,
-   "n_with_roll": 60,
+   "n_schools": 62,
+   "n_with_roll": 62,
    "value_added": {
     "ks4_p8": {
      "weight": 0,
@@ -44151,58 +45082,58 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5368,
+      "entries": 5773,
       "family_id": "arts_media_design",
-      "n_schools": 57,
-      "points_per_entry": 4.82
-     },
-     {
-      "shown": true,
-      "entries": 25138,
-      "family_id": "languages_literature",
       "n_schools": 59,
-      "points_per_entry": 5.05
+      "points_per_entry": 4.8
      },
      {
       "shown": true,
-      "entries": 4294,
-      "family_id": "enterprise_applied",
-      "n_schools": 58,
-      "points_per_entry": 4.66
-     },
-     {
-      "shown": true,
-      "entries": 32119,
+      "entries": 33646,
       "family_id": "sciences_maths",
-      "n_schools": 59,
-      "points_per_entry": 5.04
+      "n_schools": 61,
+      "points_per_entry": 5.02
      },
      {
       "shown": true,
-      "entries": 13105,
-      "family_id": "humanities_social",
-      "n_schools": 59,
-      "points_per_entry": 5
-     },
-     {
-      "shown": true,
-      "entries": 2507,
+      "entries": 2661,
       "family_id": "business_law",
-      "n_schools": 40,
-      "points_per_entry": 4.41
+      "n_schools": 42,
+      "points_per_entry": 4.43
      },
      {
       "shown": true,
-      "entries": 2618,
+      "entries": 2733,
       "family_id": "technology_eng_construction",
-      "n_schools": 48,
+      "n_schools": 50,
       "points_per_entry": 4.57
      },
      {
+      "shown": true,
+      "entries": 26347,
+      "family_id": "languages_literature",
+      "n_schools": 61,
+      "points_per_entry": 5.02
+     },
+     {
+      "shown": true,
+      "entries": 13661,
+      "family_id": "humanities_social",
+      "n_schools": 61,
+      "points_per_entry": 4.98
+     },
+     {
+      "shown": true,
+      "entries": 4463,
+      "family_id": "enterprise_applied",
+      "n_schools": 60,
+      "points_per_entry": 4.63
+     },
+     {
       "shown": false,
-      "entries": 1220,
+      "entries": 1277,
       "family_id": "health_care",
-      "n_schools": 31,
+      "n_schools": 32,
       "points_per_entry": null
      }
     ]

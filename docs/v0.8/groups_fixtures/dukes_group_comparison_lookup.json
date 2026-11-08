@@ -3242,7 +3242,7 @@
   "period": 2019,
   "phase": "all",
   "figures": {
-   "roll": 3863568,
+   "roll": 3863486,
    "cells": 3,
    "change": {
     "1": {
@@ -3296,7 +3296,7 @@
      "average_school": null
     }
    },
-   "n_schools": 9206,
+   "n_schools": 9204,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -3373,7 +3373,7 @@
   "period": 2019,
   "phase": "primary",
   "figures": {
-   "roll": 1116722,
+   "roll": 1116665,
    "cells": 2,
    "change": {
     "1": {
@@ -3402,7 +3402,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4397,
+   "n_schools": 4395,
    "value_added": {}
   }
  },
@@ -3473,12 +3473,12 @@
   "period": 2020,
   "phase": "all",
   "figures": {
-   "roll": 3873510,
+   "roll": 3873435,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 3782,
-     "shrinking": 4995,
+     "growing": 3781,
+     "shrinking": 4994,
      "combined_pct": -0.18,
      "same_schools_pct": -0.39
     },
@@ -3527,7 +3527,7 @@
      "average_school": null
     }
    },
-   "n_schools": 9236,
+   "n_schools": 9234,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -3604,12 +3604,12 @@
   "period": 2020,
   "phase": "primary",
   "figures": {
-   "roll": 1104062,
+   "roll": 1104009,
    "cells": 2,
    "change": {
     "1": {
      "growing": 1535,
-     "shrinking": 2614,
+     "shrinking": 2612,
      "combined_pct": -1.57,
      "same_schools_pct": -1.82
     },
@@ -3633,7 +3633,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4398,
+   "n_schools": 4396,
    "value_added": {}
   }
  },
@@ -3704,12 +3704,12 @@
   "period": 2021,
   "phase": "all",
   "figures": {
-   "roll": 3907863,
+   "roll": 3907792,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 4455,
-     "shrinking": 4312,
+     "growing": 4454,
+     "shrinking": 4311,
      "combined_pct": 0.42,
      "same_schools_pct": 0.44
     },
@@ -3758,7 +3758,7 @@
      "average_school": 37.75
     }
    },
-   "n_schools": 9250,
+   "n_schools": 9248,
    "value_added": {
     "ks4_p8": {
      "weighted": 0.22,
@@ -3835,14 +3835,14 @@
   "period": 2021,
   "phase": "primary",
   "figures": {
-   "roll": 1098037,
+   "roll": 1097993,
    "cells": 2,
    "change": {
     "1": {
-     "growing": 1858,
-     "shrinking": 2286,
+     "growing": 1857,
+     "shrinking": 2285,
      "combined_pct": -1.1,
-     "same_schools_pct": -1.06
+     "same_schools_pct": -1.05
     },
     "3": {
      "growing": 0,
@@ -3864,7 +3864,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4397,
+   "n_schools": 4395,
    "value_added": {}
   }
  },
@@ -3935,18 +3935,18 @@
   "period": 2022,
   "phase": "all",
   "figures": {
-   "roll": 3940293,
+   "roll": 3940205,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 4698,
+     "growing": 4696,
      "shrinking": 4122,
      "combined_pct": 0.34,
-     "same_schools_pct": 0.32
+     "same_schools_pct": 0.31
     },
     "3": {
-     "growing": 4156,
-     "shrinking": 4695,
+     "growing": 4155,
+     "shrinking": 4694,
      "combined_pct": 0.61,
      "same_schools_pct": 0.34
     },
@@ -3989,7 +3989,7 @@
      "average_school": 34.29
     }
    },
-   "n_schools": 9250,
+   "n_schools": 9248,
    "value_added": {
     "ks4_p8": {
      "weighted": 0.27,
@@ -4047,7 +4047,7 @@
      "average_school": 34.29
     }
    },
-   "n_schools": 1403,
+   "n_schools": 1404,
    "value_added": {
     "ks5_va_alevel": {
      "weighted": null,
@@ -4066,18 +4066,18 @@
   "period": 2022,
   "phase": "primary",
   "figures": {
-   "roll": 1097176,
+   "roll": 1097123,
    "cells": 2,
    "change": {
     "1": {
-     "growing": 2052,
+     "growing": 2050,
      "shrinking": 2062,
      "combined_pct": -0.44,
-     "same_schools_pct": -0.52
+     "same_schools_pct": -0.53
     },
     "3": {
      "growing": 1666,
-     "shrinking": 2524,
+     "shrinking": 2522,
      "combined_pct": -3.08,
      "same_schools_pct": -3.38
     },
@@ -4095,7 +4095,7 @@
      "average_school": 66.03
     }
    },
-   "n_schools": 4404,
+   "n_schools": 4402,
    "value_added": {}
   }
  },
@@ -4166,18 +4166,18 @@
   "period": 2023,
   "phase": "all",
   "figures": {
-   "roll": 3943636,
+   "roll": 3943565,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 4145,
-     "shrinking": 4637,
+     "growing": 4144,
+     "shrinking": 4636,
      "combined_pct": -0.36,
      "same_schools_pct": -0.33
     },
     "3": {
      "growing": 4481,
-     "shrinking": 4403,
+     "shrinking": 4401,
      "combined_pct": 0.43,
      "same_schools_pct": 0.44
     },
@@ -4220,7 +4220,7 @@
      "average_school": 34.54
     }
    },
-   "n_schools": 9242,
+   "n_schools": 9240,
    "value_added": {
     "ks4_p8": {
      "weighted": 0.27,
@@ -4278,7 +4278,7 @@
      "average_school": 34.54
     }
    },
-   "n_schools": 1431,
+   "n_schools": 1432,
    "value_added": {
     "ks5_va_alevel": {
      "weighted": 0.04,
@@ -4297,18 +4297,18 @@
   "period": 2023,
   "phase": "primary",
   "figures": {
-   "roll": 1089515,
+   "roll": 1089468,
    "cells": 2,
    "change": {
     "1": {
      "growing": 1939,
-     "shrinking": 2182,
+     "shrinking": 2181,
      "combined_pct": -1.08,
      "same_schools_pct": -0.95
     },
     "3": {
      "growing": 1922,
-     "shrinking": 2253,
+     "shrinking": 2251,
      "combined_pct": -2.6,
      "same_schools_pct": -2.47
     },
@@ -4326,7 +4326,7 @@
      "average_school": 67.8
     }
    },
-   "n_schools": 4392,
+   "n_schools": 4390,
    "value_added": {}
   }
  },
@@ -4397,26 +4397,26 @@
   "period": 2024,
   "phase": "all",
   "figures": {
-   "roll": 3913640,
+   "roll": 3913600,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 3635,
-     "shrinking": 5134,
-     "combined_pct": -1.15,
+     "growing": 3634,
+     "shrinking": 5133,
+     "combined_pct": -1.14,
      "same_schools_pct": -1.1
     },
     "3": {
-     "growing": 4040,
-     "shrinking": 4834,
+     "growing": 4039,
+     "shrinking": 4833,
      "combined_pct": -1.13,
-     "same_schools_pct": -1.06
+     "same_schools_pct": -1.05
     },
     "5": {
      "growing": 3823,
-     "shrinking": 5030,
+     "shrinking": 5028,
      "combined_pct": -0.83,
-     "same_schools_pct": -1.1
+     "same_schools_pct": -1.09
     }
    },
    "results": {
@@ -4451,7 +4451,7 @@
      "average_school": 34.87
     }
    },
-   "n_schools": 9224,
+   "n_schools": 9222,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -4528,26 +4528,26 @@
   "period": 2024,
   "phase": "primary",
   "figures": {
-   "roll": 1073141,
+   "roll": 1073102,
    "cells": 2,
    "change": {
     "1": {
-     "growing": 1600,
-     "shrinking": 2524,
-     "combined_pct": -1.91,
+     "growing": 1599,
+     "shrinking": 2523,
+     "combined_pct": -1.9,
      "same_schools_pct": -1.81
     },
     "3": {
-     "growing": 1786,
-     "shrinking": 2389,
+     "growing": 1785,
+     "shrinking": 2388,
      "combined_pct": -3.38,
      "same_schools_pct": -3.15
     },
     "5": {
      "growing": 1555,
-     "shrinking": 2622,
+     "shrinking": 2620,
      "combined_pct": -5.94,
-     "same_schools_pct": -5.89
+     "same_schools_pct": -5.88
     }
    },
    "results": {
@@ -4557,7 +4557,7 @@
      "average_school": 69.02
     }
    },
-   "n_schools": 4387,
+   "n_schools": 4385,
    "value_added": {}
   }
  },
@@ -4628,24 +4628,24 @@
   "period": 2025,
   "phase": "all",
   "figures": {
-   "roll": 3857195,
+   "roll": 3857182,
    "cells": 3,
    "change": {
     "1": {
      "growing": 3300,
-     "shrinking": 5487,
+     "shrinking": 5485,
      "combined_pct": -1.85,
      "same_schools_pct": -1.75
     },
     "3": {
-     "growing": 3440,
-     "shrinking": 5438,
+     "growing": 3439,
+     "shrinking": 5437,
      "combined_pct": -3.3,
      "same_schools_pct": -3.1
     },
     "5": {
-     "growing": 3754,
-     "shrinking": 5105,
+     "growing": 3753,
+     "shrinking": 5104,
      "combined_pct": -2.51,
      "same_schools_pct": -2.37
     }
@@ -4682,7 +4682,7 @@
      "average_school": null
     }
    },
-   "n_schools": 9188,
+   "n_schools": 9186,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -4759,26 +4759,26 @@
   "period": 2025,
   "phase": "primary",
   "figures": {
-   "roll": 1048408,
+   "roll": 1048395,
    "cells": 2,
    "change": {
     "1": {
      "growing": 1387,
-     "shrinking": 2729,
-     "combined_pct": -2.66,
+     "shrinking": 2728,
+     "combined_pct": -2.65,
      "same_schools_pct": -2.34
     },
     "3": {
-     "growing": 1432,
+     "growing": 1431,
      "shrinking": 2745,
      "combined_pct": -5.53,
      "same_schools_pct": -4.87
     },
     "5": {
-     "growing": 1525,
+     "growing": 1524,
      "shrinking": 2626,
-     "combined_pct": -6.97,
-     "same_schools_pct": -6.34
+     "combined_pct": -6.96,
+     "same_schools_pct": -6.33
     }
    },
    "results": {
@@ -4788,7 +4788,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4359,
+   "n_schools": 4358,
    "value_added": {}
   }
  },
@@ -4859,7 +4859,7 @@
   "period": 2019,
   "phase": "all",
   "figures": {
-   "roll": 3863568,
+   "roll": 3863486,
    "cells": 3,
    "change": {
     "1": {
@@ -4913,7 +4913,7 @@
      "average_school": null
     }
    },
-   "n_schools": 9206,
+   "n_schools": 9204,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -4990,7 +4990,7 @@
   "period": 2019,
   "phase": "primary",
   "figures": {
-   "roll": 1116722,
+   "roll": 1116665,
    "cells": 2,
    "change": {
     "1": {
@@ -5019,7 +5019,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4397,
+   "n_schools": 4395,
    "value_added": {}
   }
  },
@@ -5090,12 +5090,12 @@
   "period": 2020,
   "phase": "all",
   "figures": {
-   "roll": 3873510,
+   "roll": 3873435,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 3782,
-     "shrinking": 4995,
+     "growing": 3781,
+     "shrinking": 4994,
      "combined_pct": -0.18,
      "same_schools_pct": -0.39
     },
@@ -5144,7 +5144,7 @@
      "average_school": null
     }
    },
-   "n_schools": 9236,
+   "n_schools": 9234,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -5221,12 +5221,12 @@
   "period": 2020,
   "phase": "primary",
   "figures": {
-   "roll": 1104062,
+   "roll": 1104009,
    "cells": 2,
    "change": {
     "1": {
      "growing": 1535,
-     "shrinking": 2614,
+     "shrinking": 2612,
      "combined_pct": -1.57,
      "same_schools_pct": -1.82
     },
@@ -5250,7 +5250,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4398,
+   "n_schools": 4396,
    "value_added": {}
   }
  },
@@ -5321,12 +5321,12 @@
   "period": 2021,
   "phase": "all",
   "figures": {
-   "roll": 3907863,
+   "roll": 3907792,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 4455,
-     "shrinking": 4312,
+     "growing": 4454,
+     "shrinking": 4311,
      "combined_pct": 0.42,
      "same_schools_pct": 0.44
     },
@@ -5375,7 +5375,7 @@
      "average_school": 37.75
     }
    },
-   "n_schools": 9250,
+   "n_schools": 9248,
    "value_added": {
     "ks4_p8": {
      "weighted": 0.22,
@@ -5452,14 +5452,14 @@
   "period": 2021,
   "phase": "primary",
   "figures": {
-   "roll": 1098037,
+   "roll": 1097993,
    "cells": 2,
    "change": {
     "1": {
-     "growing": 1858,
-     "shrinking": 2286,
+     "growing": 1857,
+     "shrinking": 2285,
      "combined_pct": -1.1,
-     "same_schools_pct": -1.06
+     "same_schools_pct": -1.05
     },
     "3": {
      "growing": 0,
@@ -5481,7 +5481,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4397,
+   "n_schools": 4395,
    "value_added": {}
   }
  },
@@ -5552,18 +5552,18 @@
   "period": 2022,
   "phase": "all",
   "figures": {
-   "roll": 3940293,
+   "roll": 3940205,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 4698,
+     "growing": 4696,
      "shrinking": 4122,
      "combined_pct": 0.34,
-     "same_schools_pct": 0.32
+     "same_schools_pct": 0.31
     },
     "3": {
-     "growing": 4156,
-     "shrinking": 4695,
+     "growing": 4155,
+     "shrinking": 4694,
      "combined_pct": 0.61,
      "same_schools_pct": 0.34
     },
@@ -5606,7 +5606,7 @@
      "average_school": 34.29
     }
    },
-   "n_schools": 9250,
+   "n_schools": 9248,
    "value_added": {
     "ks4_p8": {
      "weighted": 0.27,
@@ -5664,7 +5664,7 @@
      "average_school": 34.29
     }
    },
-   "n_schools": 1403,
+   "n_schools": 1404,
    "value_added": {
     "ks5_va_alevel": {
      "weighted": null,
@@ -5683,18 +5683,18 @@
   "period": 2022,
   "phase": "primary",
   "figures": {
-   "roll": 1097176,
+   "roll": 1097123,
    "cells": 2,
    "change": {
     "1": {
-     "growing": 2052,
+     "growing": 2050,
      "shrinking": 2062,
      "combined_pct": -0.44,
-     "same_schools_pct": -0.52
+     "same_schools_pct": -0.53
     },
     "3": {
      "growing": 1666,
-     "shrinking": 2524,
+     "shrinking": 2522,
      "combined_pct": -3.08,
      "same_schools_pct": -3.38
     },
@@ -5712,7 +5712,7 @@
      "average_school": 66.03
     }
    },
-   "n_schools": 4404,
+   "n_schools": 4402,
    "value_added": {}
   }
  },
@@ -5783,18 +5783,18 @@
   "period": 2023,
   "phase": "all",
   "figures": {
-   "roll": 3943636,
+   "roll": 3943565,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 4145,
-     "shrinking": 4637,
+     "growing": 4144,
+     "shrinking": 4636,
      "combined_pct": -0.36,
      "same_schools_pct": -0.33
     },
     "3": {
      "growing": 4481,
-     "shrinking": 4403,
+     "shrinking": 4401,
      "combined_pct": 0.43,
      "same_schools_pct": 0.44
     },
@@ -5837,7 +5837,7 @@
      "average_school": 34.54
     }
    },
-   "n_schools": 9242,
+   "n_schools": 9240,
    "value_added": {
     "ks4_p8": {
      "weighted": 0.27,
@@ -5895,7 +5895,7 @@
      "average_school": 34.54
     }
    },
-   "n_schools": 1431,
+   "n_schools": 1432,
    "value_added": {
     "ks5_va_alevel": {
      "weighted": 0.04,
@@ -5914,18 +5914,18 @@
   "period": 2023,
   "phase": "primary",
   "figures": {
-   "roll": 1089515,
+   "roll": 1089468,
    "cells": 2,
    "change": {
     "1": {
      "growing": 1939,
-     "shrinking": 2182,
+     "shrinking": 2181,
      "combined_pct": -1.08,
      "same_schools_pct": -0.95
     },
     "3": {
      "growing": 1922,
-     "shrinking": 2253,
+     "shrinking": 2251,
      "combined_pct": -2.6,
      "same_schools_pct": -2.47
     },
@@ -5943,7 +5943,7 @@
      "average_school": 67.8
     }
    },
-   "n_schools": 4392,
+   "n_schools": 4390,
    "value_added": {}
   }
  },
@@ -6014,26 +6014,26 @@
   "period": 2024,
   "phase": "all",
   "figures": {
-   "roll": 3913640,
+   "roll": 3913600,
    "cells": 3,
    "change": {
     "1": {
-     "growing": 3635,
-     "shrinking": 5134,
-     "combined_pct": -1.15,
+     "growing": 3634,
+     "shrinking": 5133,
+     "combined_pct": -1.14,
      "same_schools_pct": -1.1
     },
     "3": {
-     "growing": 4040,
-     "shrinking": 4834,
+     "growing": 4039,
+     "shrinking": 4833,
      "combined_pct": -1.13,
-     "same_schools_pct": -1.06
+     "same_schools_pct": -1.05
     },
     "5": {
      "growing": 3823,
-     "shrinking": 5030,
+     "shrinking": 5028,
      "combined_pct": -0.83,
-     "same_schools_pct": -1.1
+     "same_schools_pct": -1.09
     }
    },
    "results": {
@@ -6068,7 +6068,7 @@
      "average_school": 34.87
     }
    },
-   "n_schools": 9224,
+   "n_schools": 9222,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -6145,26 +6145,26 @@
   "period": 2024,
   "phase": "primary",
   "figures": {
-   "roll": 1073141,
+   "roll": 1073102,
    "cells": 2,
    "change": {
     "1": {
-     "growing": 1600,
-     "shrinking": 2524,
-     "combined_pct": -1.91,
+     "growing": 1599,
+     "shrinking": 2523,
+     "combined_pct": -1.9,
      "same_schools_pct": -1.81
     },
     "3": {
-     "growing": 1786,
-     "shrinking": 2389,
+     "growing": 1785,
+     "shrinking": 2388,
      "combined_pct": -3.38,
      "same_schools_pct": -3.15
     },
     "5": {
      "growing": 1555,
-     "shrinking": 2622,
+     "shrinking": 2620,
      "combined_pct": -5.94,
-     "same_schools_pct": -5.89
+     "same_schools_pct": -5.88
     }
    },
    "results": {
@@ -6174,7 +6174,7 @@
      "average_school": 69.02
     }
    },
-   "n_schools": 4387,
+   "n_schools": 4385,
    "value_added": {}
   }
  },
@@ -6245,24 +6245,24 @@
   "period": 2025,
   "phase": "all",
   "figures": {
-   "roll": 3857195,
+   "roll": 3857182,
    "cells": 3,
    "change": {
     "1": {
      "growing": 3300,
-     "shrinking": 5487,
+     "shrinking": 5485,
      "combined_pct": -1.85,
      "same_schools_pct": -1.75
     },
     "3": {
-     "growing": 3440,
-     "shrinking": 5438,
+     "growing": 3439,
+     "shrinking": 5437,
      "combined_pct": -3.3,
      "same_schools_pct": -3.1
     },
     "5": {
-     "growing": 3754,
-     "shrinking": 5105,
+     "growing": 3753,
+     "shrinking": 5104,
      "combined_pct": -2.51,
      "same_schools_pct": -2.37
     }
@@ -6299,7 +6299,7 @@
      "average_school": null
     }
    },
-   "n_schools": 9188,
+   "n_schools": 9186,
    "value_added": {
     "ks4_p8": {
      "weighted": null,
@@ -6376,26 +6376,26 @@
   "period": 2025,
   "phase": "primary",
   "figures": {
-   "roll": 1048408,
+   "roll": 1048395,
    "cells": 2,
    "change": {
     "1": {
      "growing": 1387,
-     "shrinking": 2729,
-     "combined_pct": -2.66,
+     "shrinking": 2728,
+     "combined_pct": -2.65,
      "same_schools_pct": -2.34
     },
     "3": {
-     "growing": 1432,
+     "growing": 1431,
      "shrinking": 2745,
      "combined_pct": -5.53,
      "same_schools_pct": -4.87
     },
     "5": {
-     "growing": 1525,
+     "growing": 1524,
      "shrinking": 2626,
-     "combined_pct": -6.97,
-     "same_schools_pct": -6.34
+     "combined_pct": -6.96,
+     "same_schools_pct": -6.33
     }
    },
    "results": {
@@ -6405,7 +6405,7 @@
      "average_school": null
     }
    },
-   "n_schools": 4359,
+   "n_schools": 4358,
    "value_added": {}
   }
  },
@@ -6476,7 +6476,7 @@
   "period": 2019,
   "phase": "all",
   "figures": {
-   "roll": 8787310,
+   "roll": 8787228,
    "results": {
     "ks4_a8": {
      "weight": 0,
@@ -6522,20 +6522,20 @@
     }
    },
    "boarders": 73875,
-   "n_schools": 22886,
-   "n_with_roll": 23061,
+   "n_schools": 22882,
+   "n_with_roll": 23060,
    "roll_by_age": [
     1042,
-    9175,
-    77376,
-    275723,
-    651524,
-    659972,
-    674488,
-    693878,
-    695061,
-    684354,
-    674885,
+    9174,
+    77367,
+    275715,
+    651517,
+    659961,
+    674480,
+    693871,
+    695052,
+    684343,
+    674874,
     676601,
     652924,
     633482,
@@ -6564,7 +6564,7 @@
    },
    "roll_by_phase": {
     "post16": 495307,
-    "primary": 4082638,
+    "primary": 4082581,
     "secondary": 3192239
    },
    "subject_areas": {
@@ -6624,7 +6624,7 @@
   "period": 2019,
   "phase": "primary",
   "figures": {
-   "roll": 4081763,
+   "roll": 4081706,
    "results": {
     "ks2_rwm": {
      "weight": 0,
@@ -6634,8 +6634,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18481,
-   "n_with_roll": 18610,
+   "n_schools": 18477,
+   "n_with_roll": 18609,
    "value_added": {}
   }
  },
@@ -6697,15 +6697,15 @@
   "period": 2020,
   "phase": "all",
   "figures": {
-   "roll": 8805816,
+   "roll": 8805741,
    "change": {
     "1": {
-     "growing": 9418,
-     "shrinking": 12377,
+     "growing": 9416,
+     "shrinking": 12375,
      "from_period": 2019,
      "combined_pct": 0.21,
-     "same_schools": 22804,
-     "combined_base": 8787310,
+     "same_schools": 22800,
+     "combined_base": 8787228,
      "same_schools_pct": 0.13
     },
     "3": {
@@ -6772,20 +6772,20 @@
     }
    },
    "boarders": 61150,
-   "n_schools": 22933,
-   "n_with_roll": 23089,
+   "n_schools": 22929,
+   "n_with_roll": 23088,
    "roll_by_age": [
     808,
     7858,
-    67911,
-    257142,
-    647733,
-    654345,
-    658042,
-    672383,
-    691489,
-    692926,
-    682895,
+    67908,
+    257129,
+    647727,
+    654337,
+    658032,
+    672376,
+    691482,
+    692915,
+    682885,
     669311,
     674986,
     652644,
@@ -6814,7 +6814,7 @@
    },
    "roll_by_phase": {
     "post16": 520337,
-    "primary": 4052080,
+    "primary": 4052027,
     "secondary": 3250089
    },
    "subject_areas": {
@@ -6903,15 +6903,15 @@
   "period": 2020,
   "phase": "primary",
   "figures": {
-   "roll": 4051166,
+   "roll": 4051113,
    "change": {
     "1": {
      "growing": 6991,
-     "shrinking": 10223,
+     "shrinking": 10219,
      "from_period": 2019,
      "combined_pct": -0.75,
-     "same_schools": 18405,
-     "combined_base": 4081763,
+     "same_schools": 18401,
+     "combined_base": 4081706,
      "same_schools_pct": -0.79
     },
     "3": {
@@ -6942,8 +6942,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18490,
-   "n_with_roll": 18602,
+   "n_schools": 18486,
+   "n_with_roll": 18601,
    "value_added": {}
   }
  },
@@ -7034,15 +7034,15 @@
   "period": 2021,
   "phase": "all",
   "figures": {
-   "roll": 8889445,
+   "roll": 8889374,
    "change": {
     "1": {
-     "growing": 11282,
-     "shrinking": 10532,
+     "growing": 11280,
+     "shrinking": 10530,
      "from_period": 2020,
      "combined_pct": 0.95,
-     "same_schools": 22857,
-     "combined_base": 8805816,
+     "same_schools": 22853,
+     "combined_base": 8805741,
      "same_schools_pct": 0.89
     },
     "3": {
@@ -7109,20 +7109,20 @@
     }
    },
    "boarders": 69060,
-   "n_schools": 23018,
-   "n_with_roll": 23104,
+   "n_schools": 23014,
+   "n_with_roll": 23103,
    "roll_by_age": [
     1036,
-    9442,
-    75646,
-    257088,
-    635523,
-    660062,
-    660407,
-    663180,
-    677228,
-    696270,
-    697659,
+    9439,
+    75640,
+    257077,
+    635516,
+    660056,
+    660401,
+    663172,
+    677221,
+    696263,
+    697649,
     682043,
     672175,
     678222,
@@ -7151,7 +7151,7 @@
    },
    "roll_by_phase": {
     "post16": 533345,
-    "primary": 4054806,
+    "primary": 4054762,
     "secondary": 3320963
    },
    "subject_areas": {
@@ -7411,15 +7411,15 @@
   "period": 2021,
   "phase": "primary",
   "figures": {
-   "roll": 4053910,
+   "roll": 4053866,
    "change": {
     "1": {
-     "growing": 8591,
-     "shrinking": 8687,
+     "growing": 8588,
+     "shrinking": 8686,
      "from_period": 2020,
      "combined_pct": 0.07,
-     "same_schools": 18433,
-     "combined_base": 4051166,
+     "same_schools": 18429,
+     "combined_base": 4051113,
      "same_schools_pct": 0.02
     },
     "3": {
@@ -7450,8 +7450,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18508,
-   "n_with_roll": 18603,
+   "n_schools": 18504,
+   "n_with_roll": 18602,
    "value_added": {}
   }
  },
@@ -7599,24 +7599,24 @@
   "period": 2022,
   "phase": "all",
   "figures": {
-   "roll": 8957875,
+   "roll": 8957787,
    "change": {
     "1": {
-     "growing": 11445,
-     "shrinking": 10470,
+     "growing": 11442,
+     "shrinking": 10469,
      "from_period": 2021,
      "combined_pct": 0.77,
-     "same_schools": 22897,
-     "combined_base": 8889445,
+     "same_schools": 22893,
+     "combined_base": 8889374,
      "same_schools_pct": 0.74
     },
     "3": {
-     "growing": 10355,
-     "shrinking": 11760,
+     "growing": 10353,
+     "shrinking": 11758,
      "from_period": 2019,
      "combined_pct": 1.94,
-     "same_schools": 22677,
-     "combined_base": 8787310,
+     "same_schools": 22673,
+     "combined_base": 8787228,
      "same_schools_pct": 1.66
     },
     "5": {
@@ -7674,21 +7674,21 @@
     }
    },
    "boarders": 69830,
-   "n_schools": 23028,
-   "n_with_roll": 23081,
+   "n_schools": 23024,
+   "n_with_roll": 23080,
    "roll_by_age": [
     1081,
     9627,
-    75340,
-    255431,
-    628691,
-    651564,
-    670693,
-    670312,
-    672841,
-    686590,
-    705099,
-    698771,
+    75332,
+    255417,
+    628679,
+    651559,
+    670684,
+    670304,
+    672828,
+    686576,
+    705095,
+    698770,
     686710,
     676494,
     681116,
@@ -7716,8 +7716,8 @@
    },
    "roll_by_phase": {
     "post16": 530813,
-    "primary": 4057099,
-    "secondary": 3398285
+    "primary": 4057046,
+    "secondary": 3398284
    },
    "subject_areas": {
     "ks4": [
@@ -7894,7 +7894,7 @@
      "average_school": 33.31
     }
    },
-   "n_schools": 2814,
+   "n_schools": 2815,
    "n_with_roll": 2760,
    "value_added": {
     "ks5_va_alevel": {
@@ -7976,24 +7976,24 @@
   "period": 2022,
   "phase": "primary",
   "figures": {
-   "roll": 4056269,
+   "roll": 4056216,
    "change": {
     "1": {
-     "growing": 8686,
+     "growing": 8682,
      "shrinking": 8590,
      "from_period": 2021,
      "combined_pct": 0.06,
-     "same_schools": 18457,
-     "combined_base": 4053910,
+     "same_schools": 18453,
+     "combined_base": 4053866,
      "same_schools_pct": 0.03
     },
     "3": {
-     "growing": 7826,
-     "shrinking": 9762,
+     "growing": 7825,
+     "shrinking": 9759,
      "from_period": 2019,
      "combined_pct": -0.62,
-     "same_schools": 18332,
-     "combined_base": 4081763,
+     "same_schools": 18328,
+     "combined_base": 4081706,
      "same_schools_pct": -0.83
     },
     "5": {
@@ -8015,8 +8015,8 @@
      "average_school": 59.45
     }
    },
-   "n_schools": 18549,
-   "n_with_roll": 18621,
+   "n_schools": 18545,
+   "n_with_roll": 18620,
    "value_added": {}
   }
  },
@@ -8164,24 +8164,24 @@
   "period": 2023,
   "phase": "all",
   "figures": {
-   "roll": 8971271,
+   "roll": 8971200,
    "change": {
     "1": {
-     "growing": 10218,
-     "shrinking": 11638,
+     "growing": 10215,
+     "shrinking": 11636,
      "from_period": 2022,
      "combined_pct": 0.15,
-     "same_schools": 22893,
-     "combined_base": 8957875,
+     "same_schools": 22889,
+     "combined_base": 8957787,
      "same_schools_pct": 0.12
     },
     "3": {
-     "growing": 11026,
-     "shrinking": 11075,
+     "growing": 11025,
+     "shrinking": 11072,
      "from_period": 2020,
      "combined_pct": 1.88,
-     "same_schools": 22720,
-     "combined_base": 8805816,
+     "same_schools": 22716,
+     "combined_base": 8805741,
      "same_schools_pct": 1.63
     },
     "5": {
@@ -8239,21 +8239,21 @@
     }
    },
    "boarders": 69180,
-   "n_schools": 23034,
-   "n_with_roll": 23060,
+   "n_schools": 23030,
+   "n_with_roll": 23059,
    "roll_by_age": [
     1083,
-    10002,
-    74925,
-    252219,
-    618436,
-    642658,
-    660456,
-    678539,
-    678201,
-    679990,
-    693476,
-    704229,
+    9998,
+    74920,
+    252209,
+    618432,
+    642648,
+    660452,
+    678533,
+    678192,
+    679982,
+    693466,
+    704228,
     700702,
     688258,
     676445,
@@ -8281,8 +8281,8 @@
    },
    "roll_by_phase": {
     "post16": 531064,
-    "primary": 4033320,
-    "secondary": 3448696
+    "primary": 4033273,
+    "secondary": 3448695
    },
    "subject_areas": {
     "ks4": [
@@ -8459,7 +8459,7 @@
      "average_school": 33.72
     }
    },
-   "n_schools": 2861,
+   "n_schools": 2862,
    "n_with_roll": 2803,
    "value_added": {
     "ks5_va_alevel": {
@@ -8541,24 +8541,24 @@
   "period": 2023,
   "phase": "primary",
   "figures": {
-   "roll": 4032485,
+   "roll": 4032438,
    "change": {
     "1": {
-     "growing": 7796,
-     "shrinking": 9489,
+     "growing": 7794,
+     "shrinking": 9488,
      "from_period": 2022,
      "combined_pct": -0.59,
-     "same_schools": 18453,
-     "combined_base": 4056269,
+     "same_schools": 18449,
+     "combined_base": 4056216,
      "same_schools_pct": -0.58
     },
     "3": {
-     "growing": 8347,
-     "shrinking": 9276,
+     "growing": 8346,
+     "shrinking": 9273,
      "from_period": 2020,
      "combined_pct": -0.46,
-     "same_schools": 18331,
-     "combined_base": 4051166,
+     "same_schools": 18327,
+     "combined_base": 4051113,
      "same_schools_pct": -0.58
     },
     "5": {
@@ -8580,8 +8580,8 @@
      "average_school": 60.33
     }
    },
-   "n_schools": 18535,
-   "n_with_roll": 18588,
+   "n_schools": 18531,
+   "n_with_roll": 18587,
    "value_added": {}
   }
  },
@@ -8729,33 +8729,33 @@
   "period": 2024,
   "phase": "all",
   "figures": {
-   "roll": 8907054,
+   "roll": 8907014,
    "change": {
     "1": {
-     "growing": 8927,
-     "shrinking": 13013,
+     "growing": 8926,
+     "shrinking": 13011,
      "from_period": 2023,
      "combined_pct": -0.72,
-     "same_schools": 22910,
-     "combined_base": 8971271,
+     "same_schools": 22906,
+     "combined_base": 8971200,
      "same_schools_pct": -0.76
     },
     "3": {
-     "growing": 9868,
-     "shrinking": 12319,
+     "growing": 9866,
+     "shrinking": 12318,
      "from_period": 2021,
      "combined_pct": 0.2,
-     "same_schools": 22762,
-     "combined_base": 8889445,
+     "same_schools": 22758,
+     "combined_base": 8889374,
      "same_schools_pct": 0.01
     },
     "5": {
-     "growing": 9478,
-     "shrinking": 12646,
+     "growing": 9477,
+     "shrinking": 12643,
      "from_period": 2019,
      "combined_pct": 1.36,
-     "same_schools": 22549,
-     "combined_base": 8787310,
+     "same_schools": 22545,
+     "combined_base": 8787228,
      "same_schools_pct": 0.77
     }
    },
@@ -8804,20 +8804,20 @@
     }
    },
    "boarders": 66370,
-   "n_schools": 23030,
-   "n_with_roll": 23041,
+   "n_schools": 23026,
+   "n_with_roll": 23040,
    "roll_by_age": [
     1225,
     11112,
     78726,
     248703,
-    600538,
-    627208,
-    646447,
-    663640,
-    681740,
-    681398,
-    683308,
+    600537,
+    627204,
+    646438,
+    663635,
+    681734,
+    681390,
+    683301,
     688489,
     702365,
     698477,
@@ -8846,7 +8846,7 @@
    },
    "roll_by_phase": {
     "post16": 534908,
-    "primary": 3983741,
+    "primary": 3983702,
     "secondary": 3446859
    },
    "subject_areas": {
@@ -8888,13 +8888,6 @@
      },
      {
       "shown": true,
-      "entries": 173012,
-      "family_id": "business_law",
-      "n_schools": 2721,
-      "points_per_entry": 4.71
-     },
-     {
-      "shown": true,
       "entries": 279494,
       "family_id": "enterprise_applied",
       "n_schools": 3668,
@@ -8906,6 +8899,13 @@
       "family_id": "health_care",
       "n_schools": 2055,
       "points_per_entry": null
+     },
+     {
+      "shown": true,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
      }
     ],
     "ks5": [
@@ -9106,33 +9106,33 @@
   "period": 2024,
   "phase": "primary",
   "figures": {
-   "roll": 3982974,
+   "roll": 3982935,
    "change": {
     "1": {
-     "growing": 6866,
-     "shrinking": 10501,
+     "growing": 6865,
+     "shrinking": 10499,
      "from_period": 2023,
      "combined_pct": -1.23,
-     "same_schools": 18463,
-     "combined_base": 4032485,
+     "same_schools": 18459,
+     "combined_base": 4032438,
      "same_schools_pct": -1.24
     },
     "3": {
-     "growing": 7354,
-     "shrinking": 10257,
+     "growing": 7352,
+     "shrinking": 10255,
      "from_period": 2021,
      "combined_pct": -1.75,
-     "same_schools": 18351,
-     "combined_base": 4053910,
+     "same_schools": 18347,
+     "combined_base": 4053866,
      "same_schools_pct": -1.82
     },
     "5": {
-     "growing": 6860,
-     "shrinking": 10781,
+     "growing": 6859,
+     "shrinking": 10778,
      "from_period": 2019,
      "combined_pct": -2.42,
-     "same_schools": 18229,
-     "combined_base": 4081763,
+     "same_schools": 18225,
+     "combined_base": 4081706,
      "same_schools_pct": -2.74
     }
    },
@@ -9145,8 +9145,8 @@
      "average_school": 61.7
     }
    },
-   "n_schools": 18544,
-   "n_with_roll": 18585,
+   "n_schools": 18540,
+   "n_with_roll": 18584,
    "value_added": {}
   }
  },
@@ -9262,13 +9262,6 @@
      },
      {
       "shown": true,
-      "entries": 173012,
-      "family_id": "business_law",
-      "n_schools": 2721,
-      "points_per_entry": 4.71
-     },
-     {
-      "shown": true,
       "entries": 279494,
       "family_id": "enterprise_applied",
       "n_schools": 3668,
@@ -9280,6 +9273,13 @@
       "family_id": "health_care",
       "n_schools": 2055,
       "points_per_entry": null
+     },
+     {
+      "shown": true,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
      }
     ]
    }
@@ -9294,33 +9294,33 @@
   "period": 2025,
   "phase": "all",
   "figures": {
-   "roll": 8791017,
+   "roll": 8791004,
    "change": {
     "1": {
-     "growing": 8192,
-     "shrinking": 13774,
+     "growing": 8191,
+     "shrinking": 13771,
      "from_period": 2024,
      "combined_pct": -1.3,
-     "same_schools": 22898,
-     "combined_base": 8907054,
+     "same_schools": 22894,
+     "combined_base": 8907014,
      "same_schools_pct": -1.3
     },
     "3": {
-     "growing": 8441,
-     "shrinking": 13782,
+     "growing": 8440,
+     "shrinking": 13779,
      "from_period": 2022,
      "combined_pct": -1.86,
-     "same_schools": 22744,
-     "combined_base": 8957875,
+     "same_schools": 22740,
+     "combined_base": 8957787,
      "same_schools_pct": -1.99
     },
     "5": {
-     "growing": 9228,
-     "shrinking": 12900,
+     "growing": 9227,
+     "shrinking": 12897,
      "from_period": 2020,
      "combined_pct": -0.17,
-     "same_schools": 22577,
-     "combined_base": 8805816,
+     "same_schools": 22573,
+     "combined_base": 8805741,
      "same_schools_pct": -0.67
     }
    },
@@ -9369,8 +9369,8 @@
     }
    },
    "boarders": 60795,
-   "n_schools": 22990,
-   "n_with_roll": 23004,
+   "n_schools": 22986,
+   "n_with_roll": 23003,
    "roll_by_age": [
     1390,
     11492,
@@ -9378,9 +9378,9 @@
     248936,
     587848,
     605056,
-    626286,
-    644827,
-    662592,
+    626283,
+    644825,
+    662584,
     680390,
     680658,
     674495,
@@ -9411,7 +9411,7 @@
    },
    "roll_by_phase": {
     "post16": 535529,
-    "primary": 3899809,
+    "primary": 3899796,
     "secondary": 3427878
    },
    "subject_areas": {
@@ -9453,17 +9453,17 @@
      },
      {
       "shown": true,
-      "entries": 179183,
-      "family_id": "business_law",
-      "n_schools": 2723,
-      "points_per_entry": 4.68
-     },
-     {
-      "shown": true,
       "entries": 284556,
       "family_id": "enterprise_applied",
       "n_schools": 3683,
       "points_per_entry": 4.93
+     },
+     {
+      "shown": true,
+      "entries": 179183,
+      "family_id": "business_law",
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": false,
@@ -9557,33 +9557,33 @@
   "period": 2025,
   "phase": "primary",
   "figures": {
-   "roll": 3898943,
+   "roll": 3898930,
    "change": {
     "1": {
-     "growing": 5895,
-     "shrinking": 11557,
+     "growing": 5894,
+     "shrinking": 11555,
      "from_period": 2024,
      "combined_pct": -2.11,
-     "same_schools": 18439,
-     "combined_base": 3982974,
+     "same_schools": 18436,
+     "combined_base": 3982935,
      "same_schools_pct": -2.06
     },
     "3": {
-     "growing": 5832,
-     "shrinking": 11860,
+     "growing": 5831,
+     "shrinking": 11858,
      "from_period": 2022,
      "combined_pct": -3.88,
-     "same_schools": 18325,
-     "combined_base": 4056269,
+     "same_schools": 18322,
+     "combined_base": 4056216,
      "same_schools_pct": -3.84
     },
     "5": {
-     "growing": 6491,
-     "shrinking": 11178,
+     "growing": 6490,
+     "shrinking": 11176,
      "from_period": 2020,
      "combined_pct": -3.76,
-     "same_schools": 18204,
-     "combined_base": 4051166,
+     "same_schools": 18201,
+     "combined_base": 4051113,
      "same_schools_pct": -3.93
     }
    },
@@ -9596,8 +9596,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18518,
-   "n_with_roll": 18530,
+   "n_schools": 18515,
+   "n_with_roll": 18529,
    "value_added": {}
   }
  },
@@ -9713,17 +9713,17 @@
      },
      {
       "shown": true,
-      "entries": 179183,
-      "family_id": "business_law",
-      "n_schools": 2723,
-      "points_per_entry": 4.68
-     },
-     {
-      "shown": true,
       "entries": 284556,
       "family_id": "enterprise_applied",
       "n_schools": 3683,
       "points_per_entry": 4.93
+     },
+     {
+      "shown": true,
+      "entries": 179183,
+      "family_id": "business_law",
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": false,
@@ -9745,7 +9745,7 @@
   "period": 2019,
   "phase": "all",
   "figures": {
-   "roll": 8787310,
+   "roll": 8787228,
    "results": {
     "ks4_a8": {
      "weight": 0,
@@ -9791,20 +9791,20 @@
     }
    },
    "boarders": 73875,
-   "n_schools": 22886,
-   "n_with_roll": 23061,
+   "n_schools": 22882,
+   "n_with_roll": 23060,
    "roll_by_age": [
     1042,
-    9175,
-    77376,
-    275723,
-    651524,
-    659972,
-    674488,
-    693878,
-    695061,
-    684354,
-    674885,
+    9174,
+    77367,
+    275715,
+    651517,
+    659961,
+    674480,
+    693871,
+    695052,
+    684343,
+    674874,
     676601,
     652924,
     633482,
@@ -9833,7 +9833,7 @@
    },
    "roll_by_phase": {
     "post16": 495307,
-    "primary": 4082638,
+    "primary": 4082581,
     "secondary": 3192239
    },
    "subject_areas": {
@@ -9893,7 +9893,7 @@
   "period": 2019,
   "phase": "primary",
   "figures": {
-   "roll": 4081763,
+   "roll": 4081706,
    "results": {
     "ks2_rwm": {
      "weight": 0,
@@ -9903,8 +9903,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18481,
-   "n_with_roll": 18610,
+   "n_schools": 18477,
+   "n_with_roll": 18609,
    "value_added": {}
   }
  },
@@ -9966,15 +9966,15 @@
   "period": 2020,
   "phase": "all",
   "figures": {
-   "roll": 8805816,
+   "roll": 8805741,
    "change": {
     "1": {
-     "growing": 9418,
-     "shrinking": 12377,
+     "growing": 9416,
+     "shrinking": 12375,
      "from_period": 2019,
      "combined_pct": 0.21,
-     "same_schools": 22804,
-     "combined_base": 8787310,
+     "same_schools": 22800,
+     "combined_base": 8787228,
      "same_schools_pct": 0.13
     },
     "3": {
@@ -10041,20 +10041,20 @@
     }
    },
    "boarders": 61150,
-   "n_schools": 22933,
-   "n_with_roll": 23089,
+   "n_schools": 22929,
+   "n_with_roll": 23088,
    "roll_by_age": [
     808,
     7858,
-    67911,
-    257142,
-    647733,
-    654345,
-    658042,
-    672383,
-    691489,
-    692926,
-    682895,
+    67908,
+    257129,
+    647727,
+    654337,
+    658032,
+    672376,
+    691482,
+    692915,
+    682885,
     669311,
     674986,
     652644,
@@ -10083,7 +10083,7 @@
    },
    "roll_by_phase": {
     "post16": 520337,
-    "primary": 4052080,
+    "primary": 4052027,
     "secondary": 3250089
    },
    "subject_areas": {
@@ -10172,15 +10172,15 @@
   "period": 2020,
   "phase": "primary",
   "figures": {
-   "roll": 4051166,
+   "roll": 4051113,
    "change": {
     "1": {
      "growing": 6991,
-     "shrinking": 10223,
+     "shrinking": 10219,
      "from_period": 2019,
      "combined_pct": -0.75,
-     "same_schools": 18405,
-     "combined_base": 4081763,
+     "same_schools": 18401,
+     "combined_base": 4081706,
      "same_schools_pct": -0.79
     },
     "3": {
@@ -10211,8 +10211,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18490,
-   "n_with_roll": 18602,
+   "n_schools": 18486,
+   "n_with_roll": 18601,
    "value_added": {}
   }
  },
@@ -10303,15 +10303,15 @@
   "period": 2021,
   "phase": "all",
   "figures": {
-   "roll": 8889445,
+   "roll": 8889374,
    "change": {
     "1": {
-     "growing": 11282,
-     "shrinking": 10532,
+     "growing": 11280,
+     "shrinking": 10530,
      "from_period": 2020,
      "combined_pct": 0.95,
-     "same_schools": 22857,
-     "combined_base": 8805816,
+     "same_schools": 22853,
+     "combined_base": 8805741,
      "same_schools_pct": 0.89
     },
     "3": {
@@ -10378,20 +10378,20 @@
     }
    },
    "boarders": 69060,
-   "n_schools": 23018,
-   "n_with_roll": 23104,
+   "n_schools": 23014,
+   "n_with_roll": 23103,
    "roll_by_age": [
     1036,
-    9442,
-    75646,
-    257088,
-    635523,
-    660062,
-    660407,
-    663180,
-    677228,
-    696270,
-    697659,
+    9439,
+    75640,
+    257077,
+    635516,
+    660056,
+    660401,
+    663172,
+    677221,
+    696263,
+    697649,
     682043,
     672175,
     678222,
@@ -10420,7 +10420,7 @@
    },
    "roll_by_phase": {
     "post16": 533345,
-    "primary": 4054806,
+    "primary": 4054762,
     "secondary": 3320963
    },
    "subject_areas": {
@@ -10680,15 +10680,15 @@
   "period": 2021,
   "phase": "primary",
   "figures": {
-   "roll": 4053910,
+   "roll": 4053866,
    "change": {
     "1": {
-     "growing": 8591,
-     "shrinking": 8687,
+     "growing": 8588,
+     "shrinking": 8686,
      "from_period": 2020,
      "combined_pct": 0.07,
-     "same_schools": 18433,
-     "combined_base": 4051166,
+     "same_schools": 18429,
+     "combined_base": 4051113,
      "same_schools_pct": 0.02
     },
     "3": {
@@ -10719,8 +10719,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18508,
-   "n_with_roll": 18603,
+   "n_schools": 18504,
+   "n_with_roll": 18602,
    "value_added": {}
   }
  },
@@ -10868,24 +10868,24 @@
   "period": 2022,
   "phase": "all",
   "figures": {
-   "roll": 8957875,
+   "roll": 8957787,
    "change": {
     "1": {
-     "growing": 11445,
-     "shrinking": 10470,
+     "growing": 11442,
+     "shrinking": 10469,
      "from_period": 2021,
      "combined_pct": 0.77,
-     "same_schools": 22897,
-     "combined_base": 8889445,
+     "same_schools": 22893,
+     "combined_base": 8889374,
      "same_schools_pct": 0.74
     },
     "3": {
-     "growing": 10355,
-     "shrinking": 11760,
+     "growing": 10353,
+     "shrinking": 11758,
      "from_period": 2019,
      "combined_pct": 1.94,
-     "same_schools": 22677,
-     "combined_base": 8787310,
+     "same_schools": 22673,
+     "combined_base": 8787228,
      "same_schools_pct": 1.66
     },
     "5": {
@@ -10943,21 +10943,21 @@
     }
    },
    "boarders": 69830,
-   "n_schools": 23028,
-   "n_with_roll": 23081,
+   "n_schools": 23024,
+   "n_with_roll": 23080,
    "roll_by_age": [
     1081,
     9627,
-    75340,
-    255431,
-    628691,
-    651564,
-    670693,
-    670312,
-    672841,
-    686590,
-    705099,
-    698771,
+    75332,
+    255417,
+    628679,
+    651559,
+    670684,
+    670304,
+    672828,
+    686576,
+    705095,
+    698770,
     686710,
     676494,
     681116,
@@ -10985,8 +10985,8 @@
    },
    "roll_by_phase": {
     "post16": 530813,
-    "primary": 4057099,
-    "secondary": 3398285
+    "primary": 4057046,
+    "secondary": 3398284
    },
    "subject_areas": {
     "ks4": [
@@ -11163,7 +11163,7 @@
      "average_school": 33.31
     }
    },
-   "n_schools": 2814,
+   "n_schools": 2815,
    "n_with_roll": 2760,
    "value_added": {
     "ks5_va_alevel": {
@@ -11245,24 +11245,24 @@
   "period": 2022,
   "phase": "primary",
   "figures": {
-   "roll": 4056269,
+   "roll": 4056216,
    "change": {
     "1": {
-     "growing": 8686,
+     "growing": 8682,
      "shrinking": 8590,
      "from_period": 2021,
      "combined_pct": 0.06,
-     "same_schools": 18457,
-     "combined_base": 4053910,
+     "same_schools": 18453,
+     "combined_base": 4053866,
      "same_schools_pct": 0.03
     },
     "3": {
-     "growing": 7826,
-     "shrinking": 9762,
+     "growing": 7825,
+     "shrinking": 9759,
      "from_period": 2019,
      "combined_pct": -0.62,
-     "same_schools": 18332,
-     "combined_base": 4081763,
+     "same_schools": 18328,
+     "combined_base": 4081706,
      "same_schools_pct": -0.83
     },
     "5": {
@@ -11284,8 +11284,8 @@
      "average_school": 59.45
     }
    },
-   "n_schools": 18549,
-   "n_with_roll": 18621,
+   "n_schools": 18545,
+   "n_with_roll": 18620,
    "value_added": {}
   }
  },
@@ -11433,24 +11433,24 @@
   "period": 2023,
   "phase": "all",
   "figures": {
-   "roll": 8971271,
+   "roll": 8971200,
    "change": {
     "1": {
-     "growing": 10218,
-     "shrinking": 11638,
+     "growing": 10215,
+     "shrinking": 11636,
      "from_period": 2022,
      "combined_pct": 0.15,
-     "same_schools": 22893,
-     "combined_base": 8957875,
+     "same_schools": 22889,
+     "combined_base": 8957787,
      "same_schools_pct": 0.12
     },
     "3": {
-     "growing": 11026,
-     "shrinking": 11075,
+     "growing": 11025,
+     "shrinking": 11072,
      "from_period": 2020,
      "combined_pct": 1.88,
-     "same_schools": 22720,
-     "combined_base": 8805816,
+     "same_schools": 22716,
+     "combined_base": 8805741,
      "same_schools_pct": 1.63
     },
     "5": {
@@ -11508,21 +11508,21 @@
     }
    },
    "boarders": 69180,
-   "n_schools": 23034,
-   "n_with_roll": 23060,
+   "n_schools": 23030,
+   "n_with_roll": 23059,
    "roll_by_age": [
     1083,
-    10002,
-    74925,
-    252219,
-    618436,
-    642658,
-    660456,
-    678539,
-    678201,
-    679990,
-    693476,
-    704229,
+    9998,
+    74920,
+    252209,
+    618432,
+    642648,
+    660452,
+    678533,
+    678192,
+    679982,
+    693466,
+    704228,
     700702,
     688258,
     676445,
@@ -11550,8 +11550,8 @@
    },
    "roll_by_phase": {
     "post16": 531064,
-    "primary": 4033320,
-    "secondary": 3448696
+    "primary": 4033273,
+    "secondary": 3448695
    },
    "subject_areas": {
     "ks4": [
@@ -11728,7 +11728,7 @@
      "average_school": 33.72
     }
    },
-   "n_schools": 2861,
+   "n_schools": 2862,
    "n_with_roll": 2803,
    "value_added": {
     "ks5_va_alevel": {
@@ -11810,24 +11810,24 @@
   "period": 2023,
   "phase": "primary",
   "figures": {
-   "roll": 4032485,
+   "roll": 4032438,
    "change": {
     "1": {
-     "growing": 7796,
-     "shrinking": 9489,
+     "growing": 7794,
+     "shrinking": 9488,
      "from_period": 2022,
      "combined_pct": -0.59,
-     "same_schools": 18453,
-     "combined_base": 4056269,
+     "same_schools": 18449,
+     "combined_base": 4056216,
      "same_schools_pct": -0.58
     },
     "3": {
-     "growing": 8347,
-     "shrinking": 9276,
+     "growing": 8346,
+     "shrinking": 9273,
      "from_period": 2020,
      "combined_pct": -0.46,
-     "same_schools": 18331,
-     "combined_base": 4051166,
+     "same_schools": 18327,
+     "combined_base": 4051113,
      "same_schools_pct": -0.58
     },
     "5": {
@@ -11849,8 +11849,8 @@
      "average_school": 60.33
     }
    },
-   "n_schools": 18535,
-   "n_with_roll": 18588,
+   "n_schools": 18531,
+   "n_with_roll": 18587,
    "value_added": {}
   }
  },
@@ -11998,33 +11998,33 @@
   "period": 2024,
   "phase": "all",
   "figures": {
-   "roll": 8907054,
+   "roll": 8907014,
    "change": {
     "1": {
-     "growing": 8927,
-     "shrinking": 13013,
+     "growing": 8926,
+     "shrinking": 13011,
      "from_period": 2023,
      "combined_pct": -0.72,
-     "same_schools": 22910,
-     "combined_base": 8971271,
+     "same_schools": 22906,
+     "combined_base": 8971200,
      "same_schools_pct": -0.76
     },
     "3": {
-     "growing": 9868,
-     "shrinking": 12319,
+     "growing": 9866,
+     "shrinking": 12318,
      "from_period": 2021,
      "combined_pct": 0.2,
-     "same_schools": 22762,
-     "combined_base": 8889445,
+     "same_schools": 22758,
+     "combined_base": 8889374,
      "same_schools_pct": 0.01
     },
     "5": {
-     "growing": 9478,
-     "shrinking": 12646,
+     "growing": 9477,
+     "shrinking": 12643,
      "from_period": 2019,
      "combined_pct": 1.36,
-     "same_schools": 22549,
-     "combined_base": 8787310,
+     "same_schools": 22545,
+     "combined_base": 8787228,
      "same_schools_pct": 0.77
     }
    },
@@ -12073,20 +12073,20 @@
     }
    },
    "boarders": 66370,
-   "n_schools": 23030,
-   "n_with_roll": 23041,
+   "n_schools": 23026,
+   "n_with_roll": 23040,
    "roll_by_age": [
     1225,
     11112,
     78726,
     248703,
-    600538,
-    627208,
-    646447,
-    663640,
-    681740,
-    681398,
-    683308,
+    600537,
+    627204,
+    646438,
+    663635,
+    681734,
+    681390,
+    683301,
     688489,
     702365,
     698477,
@@ -12115,7 +12115,7 @@
    },
    "roll_by_phase": {
     "post16": 534908,
-    "primary": 3983741,
+    "primary": 3983702,
     "secondary": 3446859
    },
    "subject_areas": {
@@ -12157,13 +12157,6 @@
      },
      {
       "shown": true,
-      "entries": 173012,
-      "family_id": "business_law",
-      "n_schools": 2721,
-      "points_per_entry": 4.71
-     },
-     {
-      "shown": true,
       "entries": 279494,
       "family_id": "enterprise_applied",
       "n_schools": 3668,
@@ -12175,6 +12168,13 @@
       "family_id": "health_care",
       "n_schools": 2055,
       "points_per_entry": null
+     },
+     {
+      "shown": true,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
      }
     ],
     "ks5": [
@@ -12375,33 +12375,33 @@
   "period": 2024,
   "phase": "primary",
   "figures": {
-   "roll": 3982974,
+   "roll": 3982935,
    "change": {
     "1": {
-     "growing": 6866,
-     "shrinking": 10501,
+     "growing": 6865,
+     "shrinking": 10499,
      "from_period": 2023,
      "combined_pct": -1.23,
-     "same_schools": 18463,
-     "combined_base": 4032485,
+     "same_schools": 18459,
+     "combined_base": 4032438,
      "same_schools_pct": -1.24
     },
     "3": {
-     "growing": 7354,
-     "shrinking": 10257,
+     "growing": 7352,
+     "shrinking": 10255,
      "from_period": 2021,
      "combined_pct": -1.75,
-     "same_schools": 18351,
-     "combined_base": 4053910,
+     "same_schools": 18347,
+     "combined_base": 4053866,
      "same_schools_pct": -1.82
     },
     "5": {
-     "growing": 6860,
-     "shrinking": 10781,
+     "growing": 6859,
+     "shrinking": 10778,
      "from_period": 2019,
      "combined_pct": -2.42,
-     "same_schools": 18229,
-     "combined_base": 4081763,
+     "same_schools": 18225,
+     "combined_base": 4081706,
      "same_schools_pct": -2.74
     }
    },
@@ -12414,8 +12414,8 @@
      "average_school": 61.7
     }
    },
-   "n_schools": 18544,
-   "n_with_roll": 18585,
+   "n_schools": 18540,
+   "n_with_roll": 18584,
    "value_added": {}
   }
  },
@@ -12531,13 +12531,6 @@
      },
      {
       "shown": true,
-      "entries": 173012,
-      "family_id": "business_law",
-      "n_schools": 2721,
-      "points_per_entry": 4.71
-     },
-     {
-      "shown": true,
       "entries": 279494,
       "family_id": "enterprise_applied",
       "n_schools": 3668,
@@ -12549,6 +12542,13 @@
       "family_id": "health_care",
       "n_schools": 2055,
       "points_per_entry": null
+     },
+     {
+      "shown": true,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
      }
     ]
    }
@@ -12563,33 +12563,33 @@
   "period": 2025,
   "phase": "all",
   "figures": {
-   "roll": 8791017,
+   "roll": 8791004,
    "change": {
     "1": {
-     "growing": 8192,
-     "shrinking": 13774,
+     "growing": 8191,
+     "shrinking": 13771,
      "from_period": 2024,
      "combined_pct": -1.3,
-     "same_schools": 22898,
-     "combined_base": 8907054,
+     "same_schools": 22894,
+     "combined_base": 8907014,
      "same_schools_pct": -1.3
     },
     "3": {
-     "growing": 8441,
-     "shrinking": 13782,
+     "growing": 8440,
+     "shrinking": 13779,
      "from_period": 2022,
      "combined_pct": -1.86,
-     "same_schools": 22744,
-     "combined_base": 8957875,
+     "same_schools": 22740,
+     "combined_base": 8957787,
      "same_schools_pct": -1.99
     },
     "5": {
-     "growing": 9228,
-     "shrinking": 12900,
+     "growing": 9227,
+     "shrinking": 12897,
      "from_period": 2020,
      "combined_pct": -0.17,
-     "same_schools": 22577,
-     "combined_base": 8805816,
+     "same_schools": 22573,
+     "combined_base": 8805741,
      "same_schools_pct": -0.67
     }
    },
@@ -12638,8 +12638,8 @@
     }
    },
    "boarders": 60795,
-   "n_schools": 22990,
-   "n_with_roll": 23004,
+   "n_schools": 22986,
+   "n_with_roll": 23003,
    "roll_by_age": [
     1390,
     11492,
@@ -12647,9 +12647,9 @@
     248936,
     587848,
     605056,
-    626286,
-    644827,
-    662592,
+    626283,
+    644825,
+    662584,
     680390,
     680658,
     674495,
@@ -12680,7 +12680,7 @@
    },
    "roll_by_phase": {
     "post16": 535529,
-    "primary": 3899809,
+    "primary": 3899796,
     "secondary": 3427878
    },
    "subject_areas": {
@@ -12722,17 +12722,17 @@
      },
      {
       "shown": true,
-      "entries": 179183,
-      "family_id": "business_law",
-      "n_schools": 2723,
-      "points_per_entry": 4.68
-     },
-     {
-      "shown": true,
       "entries": 284556,
       "family_id": "enterprise_applied",
       "n_schools": 3683,
       "points_per_entry": 4.93
+     },
+     {
+      "shown": true,
+      "entries": 179183,
+      "family_id": "business_law",
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": false,
@@ -12826,33 +12826,33 @@
   "period": 2025,
   "phase": "primary",
   "figures": {
-   "roll": 3898943,
+   "roll": 3898930,
    "change": {
     "1": {
-     "growing": 5895,
-     "shrinking": 11557,
+     "growing": 5894,
+     "shrinking": 11555,
      "from_period": 2024,
      "combined_pct": -2.11,
-     "same_schools": 18439,
-     "combined_base": 3982974,
+     "same_schools": 18436,
+     "combined_base": 3982935,
      "same_schools_pct": -2.06
     },
     "3": {
-     "growing": 5832,
-     "shrinking": 11860,
+     "growing": 5831,
+     "shrinking": 11858,
      "from_period": 2022,
      "combined_pct": -3.88,
-     "same_schools": 18325,
-     "combined_base": 4056269,
+     "same_schools": 18322,
+     "combined_base": 4056216,
      "same_schools_pct": -3.84
     },
     "5": {
-     "growing": 6491,
-     "shrinking": 11178,
+     "growing": 6490,
+     "shrinking": 11176,
      "from_period": 2020,
      "combined_pct": -3.76,
-     "same_schools": 18204,
-     "combined_base": 4051166,
+     "same_schools": 18201,
+     "combined_base": 4051113,
      "same_schools_pct": -3.93
     }
    },
@@ -12865,8 +12865,8 @@
      "average_school": null
     }
    },
-   "n_schools": 18518,
-   "n_with_roll": 18530,
+   "n_schools": 18515,
+   "n_with_roll": 18529,
    "value_added": {}
   }
  },
@@ -12982,17 +12982,17 @@
      },
      {
       "shown": true,
-      "entries": 179183,
-      "family_id": "business_law",
-      "n_schools": 2723,
-      "points_per_entry": 4.68
-     },
-     {
-      "shown": true,
       "entries": 284556,
       "family_id": "enterprise_applied",
       "n_schools": 3683,
       "points_per_entry": 4.93
+     },
+     {
+      "shown": true,
+      "entries": 179183,
+      "family_id": "business_law",
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": false,
@@ -28864,17 +28864,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 121,
-      "family_id": "technology_eng_construction",
-      "n_schools": 6,
-      "points_per_entry": 6.05
-     },
-     {
-      "shown": true,
       "entries": 543,
       "family_id": "arts_media_design",
       "n_schools": 14,
       "points_per_entry": 6.24
+     },
+     {
+      "shown": true,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
@@ -28899,17 +28899,17 @@
      },
      {
       "shown": true,
-      "entries": 1030,
-      "family_id": "languages_literature",
-      "n_schools": 13,
-      "points_per_entry": 6.21
-     },
-     {
-      "shown": true,
       "entries": 207,
       "family_id": "business_law",
       "n_schools": 9,
       "points_per_entry": 5.99
+     },
+     {
+      "shown": true,
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      }
     ],
     "ks5": []
@@ -29117,17 +29117,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 121,
-      "family_id": "technology_eng_construction",
-      "n_schools": 6,
-      "points_per_entry": 6.05
-     },
-     {
-      "shown": true,
       "entries": 543,
       "family_id": "arts_media_design",
       "n_schools": 14,
       "points_per_entry": 6.24
+     },
+     {
+      "shown": true,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
@@ -29152,17 +29152,17 @@
      },
      {
       "shown": true,
-      "entries": 1030,
-      "family_id": "languages_literature",
-      "n_schools": 13,
-      "points_per_entry": 6.21
-     },
-     {
-      "shown": true,
       "entries": 207,
       "family_id": "business_law",
       "n_schools": 9,
       "points_per_entry": 5.99
+     },
+     {
+      "shown": true,
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      }
     ]
    }
@@ -32007,17 +32007,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 121,
-      "family_id": "technology_eng_construction",
-      "n_schools": 6,
-      "points_per_entry": 6.05
-     },
-     {
-      "shown": true,
       "entries": 543,
       "family_id": "arts_media_design",
       "n_schools": 14,
       "points_per_entry": 6.24
+     },
+     {
+      "shown": true,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
@@ -32042,17 +32042,17 @@
      },
      {
       "shown": true,
-      "entries": 1030,
-      "family_id": "languages_literature",
-      "n_schools": 13,
-      "points_per_entry": 6.21
-     },
-     {
-      "shown": true,
       "entries": 207,
       "family_id": "business_law",
       "n_schools": 9,
       "points_per_entry": 5.99
+     },
+     {
+      "shown": true,
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      }
     ],
     "ks5": []
@@ -32260,17 +32260,17 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 121,
-      "family_id": "technology_eng_construction",
-      "n_schools": 6,
-      "points_per_entry": 6.05
-     },
-     {
-      "shown": true,
       "entries": 543,
       "family_id": "arts_media_design",
       "n_schools": 14,
       "points_per_entry": 6.24
+     },
+     {
+      "shown": true,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
@@ -32295,17 +32295,17 @@
      },
      {
       "shown": true,
-      "entries": 1030,
-      "family_id": "languages_literature",
-      "n_schools": 13,
-      "points_per_entry": 6.21
-     },
-     {
-      "shown": true,
       "entries": 207,
       "family_id": "business_law",
       "n_schools": 9,
       "points_per_entry": 5.99
+     },
+     {
+      "shown": true,
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      }
     ]
    }

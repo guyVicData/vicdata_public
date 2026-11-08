@@ -1,18 +1,20 @@
 {
  "note": "Dry-run results in the exact shape the production lookups return (PostgREST: jsonb as is; table functions as json_agg of the rows). For the app's tests, parity harnesses and screenshots until the promote; the same tests then run against production unchanged.",
- "ingest_commit": "bf1671c",
- "inputs_fetched_at": "2026-10-16 09:44:18",
+ "ingest_commit": "a60334f",
+ "inputs_fetched_at": "2026-11-08 17:03:50",
  "migrations": [
   "20261017090000_group_aggregates.sql",
-  "20261017100000_group_comparison_lookup_order.sql"
+  "20261017100000_group_comparison_lookup_order.sql",
+  "20261108130000_group_sets.sql"
  ],
  "calls": {
+  "group_index_lookup()": "group_index_lookup.json",
   "group_aggregate_lookup('3320', 'at_time' | 'listed_now')": "harris_group_aggregate_lookup_<reading>.json",
-  "group_comparison_lookup('3320', [\"peer_band\",\"non_group\",\"areas\",\"england\",\"mix_matched\"])": "harris_group_comparison_lookup.json",
+  "group_comparison_lookup('3320', [\"peer_band\",\"non_group\",\"sat\",\"areas\",\"england\",\"mix_matched\"])": "harris_group_comparison_lookup.json",
   "group_comparison_lookup('3320', [\"peer_named:2157\",\"peer_named:5143\"])": "harris_group_comparison_lookup_named.json",
   "group_schools_year_lookup('3320')": "harris_group_schools_year_lookup.json",
   "group_aggregate_lookup('club_iss:dukes-education', 'at_time' | 'listed_now')": "dukes_group_aggregate_lookup_<reading>.json",
-  "group_comparison_lookup('club_iss:dukes-education', [\"peer_band\",\"non_group\",\"areas\",\"england\",\"mix_matched\"])": "dukes_group_comparison_lookup.json",
+  "group_comparison_lookup('club_iss:dukes-education', [\"peer_band\",\"non_group\",\"sat\",\"areas\",\"england\",\"mix_matched\"])": "dukes_group_comparison_lookup.json",
   "group_comparison_lookup('club_iss:dukes-education', [\"peer_named:ch:01550681\"])": "dukes_group_comparison_lookup_named.json",
   "group_schools_year_lookup('club_iss:dukes-education')": "dukes_group_schools_year_lookup.json"
  },
@@ -26,6 +28,7 @@
   "dukes_group_comparison_lookup.json",
   "dukes_group_schools_year_lookup.json",
   "harris_group_comparison_lookup_named.json",
-  "dukes_group_comparison_lookup_named.json"
+  "dukes_group_comparison_lookup_named.json",
+  "group_index_lookup.json"
  ]
 }

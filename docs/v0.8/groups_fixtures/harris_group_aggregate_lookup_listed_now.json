@@ -112,7 +112,7 @@
        "pct": 3.66,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50846,
+       "la_pupils": 50764,
        "group_pupils": 1859
       },
       {
@@ -164,10 +164,10 @@
        "pct": 2.35,
        "region_code": "E12000007",
        "group_pupils": 33862,
-       "region_pupils": 1441809
+       "region_pupils": 1441727
       }
      ],
-     "area_pupils": 2435608,
+     "area_pupils": 2435526,
      "group_pupils": 44317
     },
     "regions": {
@@ -576,10 +576,10 @@
        "group_pupils": 813
       },
       {
-       "pct": 2.69,
+       "pct": 2.7,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 23696,
+       "la_pupils": 23639,
        "group_pupils": 638
       },
       {
@@ -631,10 +631,10 @@
        "pct": 1.04,
        "region_code": "E12000007",
        "group_pupils": 6809,
-       "region_pupils": 657751
+       "region_pupils": 657694
       }
      ],
-     "area_pupils": 1116989,
+     "area_pupils": 1116932,
      "group_pupils": 7902
     },
     "results": {
@@ -993,10 +993,10 @@
        "group_pupils": 1942
       },
       {
-       "pct": 3.84,
+       "pct": 3.85,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50292,
+       "la_pupils": 50217,
        "group_pupils": 1932
       },
       {
@@ -1048,10 +1048,10 @@
        "pct": 2.45,
        "region_code": "E12000007",
        "group_pupils": 35182,
-       "region_pupils": 1437491
+       "region_pupils": 1437416
       }
      ],
-     "area_pupils": 2437238,
+     "area_pupils": 2437163,
      "group_pupils": 46146
     },
     "change": {
@@ -1518,7 +1518,7 @@
        "pct": 2.75,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 23060,
+       "la_pupils": 23007,
        "group_pupils": 633
       },
       {
@@ -1570,10 +1570,10 @@
        "pct": 1.07,
        "region_code": "E12000007",
        "group_pupils": 6895,
-       "region_pupils": 647163
+       "region_pupils": 647110
       }
      ],
-     "area_pupils": 1104328,
+     "area_pupils": 1104275,
      "group_pupils": 8137
     },
     "change": {
@@ -2014,7 +2014,7 @@
        "pct": 3.81,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50359,
+       "la_pupils": 50288,
        "group_pupils": 1917
       },
       {
@@ -2066,10 +2066,10 @@
        "pct": 2.49,
        "region_code": "E12000007",
        "group_pupils": 35915,
-       "region_pupils": 1441686
+       "region_pupils": 1441615
       }
      ],
-     "area_pupils": 2452963,
+     "area_pupils": 2452892,
      "group_pupils": 47265
     },
     "change": {
@@ -2961,7 +2961,7 @@
      "places": {
       "roll_change_1": {
        "of": 16,
-       "rank": 7,
+       "rank": 8,
        "tied": false
       }
      },
@@ -3000,10 +3000,10 @@
        "group_pupils": 870
       },
       {
-       "pct": 2.81,
+       "pct": 2.82,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22776,
+       "la_pupils": 22732,
        "group_pupils": 641
       },
       {
@@ -3055,10 +3055,10 @@
        "pct": 1.07,
        "region_code": "E12000007",
        "group_pupils": 6834,
-       "region_pupils": 639774
+       "region_pupils": 639730
       }
      ],
-     "area_pupils": 1098306,
+     "area_pupils": 1098262,
      "group_pupils": 8142
     },
     "change": {
@@ -3722,7 +3722,7 @@
        "pct": 3.95,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50607,
+       "la_pupils": 50519,
        "group_pupils": 1997
       },
       {
@@ -3781,10 +3781,10 @@
        "pct": 2.55,
        "region_code": "E12000007",
        "group_pupils": 36782,
-       "region_pupils": 1444437
+       "region_pupils": 1444349
       }
      ],
-     "area_pupils": 2466954,
+     "area_pupils": 2466866,
      "group_pupils": 48382
     },
     "change": {
@@ -4587,10 +4587,10 @@
        "group_pupils": 902
       },
       {
-       "pct": 3.14,
+       "pct": 3.15,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22930,
+       "la_pupils": 22877,
        "group_pupils": 721
       },
       {
@@ -4642,10 +4642,10 @@
        "pct": 1.09,
        "region_code": "E12000007",
        "group_pupils": 6915,
-       "region_pupils": 636720
+       "region_pupils": 636667
       }
      ],
-     "area_pupils": 1097409,
+     "area_pupils": 1097356,
      "group_pupils": 8285
     },
     "change": {
@@ -4835,7 +4835,7 @@
        "pct": 5.08,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17646,
+       "la_pupils": 17645,
        "group_pupils": 897
       },
       {
@@ -4873,10 +4873,10 @@
        "pct": 4.51,
        "region_code": "E12000007",
        "group_pupils": 23234,
-       "region_pupils": 515298
+       "region_pupils": 515297
       }
      ],
-     "area_pupils": 904867,
+     "area_pupils": 904866,
      "group_pupils": 31696
     },
     "change": {
@@ -5253,10 +5253,10 @@
        "group_pupils": 2194
       },
       {
-       "pct": 3.92,
+       "pct": 3.93,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50703,
+       "la_pupils": 50632,
        "group_pupils": 1989
       },
       {
@@ -5315,10 +5315,10 @@
        "pct": 2.59,
        "region_code": "E12000007",
        "group_pupils": 37198,
-       "region_pupils": 1437100
+       "region_pupils": 1437029
       }
      ],
-     "area_pupils": 2465346,
+     "area_pupils": 2465275,
      "group_pupils": 48777
     },
     "change": {
@@ -6166,10 +6166,10 @@
        "group_pupils": 913
       },
       {
-       "pct": 3.21,
+       "pct": 3.22,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22843,
+       "la_pupils": 22796,
        "group_pupils": 734
       },
       {
@@ -6221,10 +6221,10 @@
        "pct": 1.13,
        "region_code": "E12000007",
        "group_pupils": 7128,
-       "region_pupils": 629663
+       "region_pupils": 629616
       }
      ],
-     "area_pupils": 1089760,
+     "area_pupils": 1089713,
      "group_pupils": 8494
     },
     "change": {
@@ -6414,7 +6414,7 @@
        "pct": 5.08,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 17808,
+       "la_pupils": 17807,
        "group_pupils": 905
       },
       {
@@ -6452,10 +6452,10 @@
        "pct": 4.47,
        "region_code": "E12000007",
        "group_pupils": 23148,
-       "region_pupils": 518420
+       "region_pupils": 518419
       }
      ],
-     "area_pupils": 914693,
+     "area_pupils": 914692,
      "group_pupils": 31616
     },
     "change": {
@@ -6718,8 +6718,8 @@
       },
       "ks5_va_alevel": {
        "of": 14,
-       "rank": 6,
-       "tied": true
+       "rank": 7,
+       "tied": false
       },
       "roll_change_1": {
        "of": 16,
@@ -6812,7 +6812,7 @@
        "pct": 3.64,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 50476,
+       "la_pupils": 50436,
        "group_pupils": 1838
       },
       {
@@ -6864,10 +6864,10 @@
        "pct": 2.63,
        "region_code": "E12000007",
        "group_pupils": 37358,
-       "region_pupils": 1418623
+       "region_pupils": 1418583
       }
      ],
-     "area_pupils": 2442184,
+     "area_pupils": 2442144,
      "group_pupils": 48897
     },
     "change": {
@@ -7081,13 +7081,6 @@
      "ks4": [
       {
        "shown": true,
-       "entries": 8097,
-       "family_id": "humanities_social",
-       "n_schools": 34,
-       "points_per_entry": 4.83
-      },
-      {
-       "shown": true,
        "entries": 3217,
        "family_id": "arts_media_design",
        "n_schools": 34,
@@ -7120,6 +7113,13 @@
        "family_id": "enterprise_applied",
        "n_schools": 34,
        "points_per_entry": 4.69
+      },
+      {
+       "shown": true,
+       "entries": 8097,
+       "family_id": "humanities_social",
+       "n_schools": 34,
+       "points_per_entry": 4.83
       },
       {
        "shown": true,
@@ -7217,8 +7217,8 @@
       },
       "ks5_va_alevel": {
        "of": 14,
-       "rank": 6,
-       "tied": true
+       "rank": 7,
+       "tied": false
       },
       "roll_change_1": {
        "of": 14,
@@ -7599,7 +7599,7 @@
        "pct": 2.88,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22486,
+       "la_pupils": 22447,
        "group_pupils": 647
       },
       {
@@ -7651,10 +7651,10 @@
        "pct": 1.14,
        "region_code": "E12000007",
        "group_pupils": 7068,
-       "region_pupils": 617431
+       "region_pupils": 617392
       }
      ],
-     "area_pupils": 1073322,
+     "area_pupils": 1073283,
      "group_pupils": 8474
     },
     "change": {
@@ -7965,13 +7965,6 @@
      "ks4": [
       {
        "shown": true,
-       "entries": 8097,
-       "family_id": "humanities_social",
-       "n_schools": 34,
-       "points_per_entry": 4.83
-      },
-      {
-       "shown": true,
        "entries": 3217,
        "family_id": "arts_media_design",
        "n_schools": 34,
@@ -8004,6 +7997,13 @@
        "family_id": "enterprise_applied",
        "n_schools": 34,
        "points_per_entry": 4.69
+      },
+      {
+       "shown": true,
+       "entries": 8097,
+       "family_id": "humanities_social",
+       "n_schools": 34,
+       "points_per_entry": 4.83
       },
       {
        "shown": true,
@@ -8150,7 +8150,7 @@
        "pct": 3.53,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 49849,
+       "la_pupils": 49836,
        "group_pupils": 1759
       },
       {
@@ -8199,13 +8199,13 @@
        "region_pupils": 1013632
       },
       {
-       "pct": 2.67,
+       "pct": 2.68,
        "region_code": "E12000007",
        "group_pupils": 37188,
-       "region_pupils": 1390206
+       "region_pupils": 1390193
       }
      ],
-     "area_pupils": 2403838,
+     "area_pupils": 2403825,
      "group_pupils": 48960
     },
     "change": {
@@ -8672,10 +8672,10 @@
        "group_pupils": 911
       },
       {
-       "pct": 2.55,
+       "pct": 2.56,
        "la_code": "304",
        "la_name": "Brent",
-       "la_pupils": 22114,
+       "la_pupils": 22101,
        "group_pupils": 565
       },
       {
@@ -8727,10 +8727,10 @@
        "pct": 1.16,
        "region_code": "E12000007",
        "group_pupils": 6955,
-       "region_pupils": 600857
+       "region_pupils": 600844
       }
      ],
-     "area_pupils": 1048657,
+     "area_pupils": 1048644,
      "group_pupils": 8388
     },
     "change": {
@@ -9074,6 +9074,7 @@
  "build": {
   "meta": {
    "bands": [
+    "peer:foundation_trust:all",
     "peer:independent_company:21-40",
     "peer:mat:41+"
    ],
@@ -9081,7 +9082,7 @@
     "3320",
     "club_iss:dukes-education"
    ],
-   "commit": "bf1671c",
+   "commit": "a60334f",
    "periods": [
     2019,
     2020,
@@ -9101,6 +9102,7 @@
     "outside_england": "outside England",
     "no_results_published": "no results published"
    },
+   "sat_set": "sat:all",
    "measures": {
     "ks4_a8": "GCSE Attainment 8",
     "ks4_p8": "Progress 8",
@@ -9173,6 +9175,8 @@
    "peer_types": {
     "mat": "MATs",
     "federation": "federations",
+    "foundation_trust": "foundation trusts",
+    "independent_other": "other independent groups",
     "independent_charity": "independent charities",
     "independent_company": "independent companies"
    },
@@ -9201,6 +9205,16 @@
     "entries": 10,
     "schools": 2
    },
+   "listed_types": [
+    "federation",
+    "foundation_trust",
+    "independent_charity",
+    "independent_company",
+    "independent_other",
+    "mat"
+   ],
+   "whole_type_band": "all",
+   "foundation_trust": "1337",
    "phase_min_pupils": 10,
    "subject_families": [
     {
@@ -9244,11 +9258,11 @@
      "family_id": "enterprise_applied"
     }
    ],
-   "inputs_fetched_at": "2026-10-16 09:44:18",
+   "inputs_fetched_at": "2026-11-08 17:03:50",
    "min_group_schools": 2
   },
   "build_id": 1,
-  "computed_at": "2026-10-16T09:50:15.801+00:00"
+  "computed_at": "2026-11-08T17:06:05.168+00:00"
  },
  "group": {
   "name": "HARRIS FEDERATION",
@@ -9258,7 +9272,7 @@
  },
  "reading": "listed_now",
  "membership": {
-  "as_of": "2026-10-13",
+  "as_of": "2026-10-16",
   "likely": 0,
   "sources": [
    "gias_groups"

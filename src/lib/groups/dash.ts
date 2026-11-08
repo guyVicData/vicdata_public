@@ -37,7 +37,19 @@ export const GROUP_TYPE_LABEL: Record<string, string> = {
   foundation_trust: "foundation trust",
   umbrella_trust: "umbrella trust",
 };
-export const PEER_PLURAL: Record<string, string> = { mat: "MATs", federation: "federations", independent_company: "independent groups", independent_charity: "independent charities" };
+export const PEER_PLURAL: Record<string, string> = { mat: "MATs", federation: "federations", independent_company: "independent groups", independent_charity: "independent charities", foundation_trust: "foundation trusts", independent_other: "other independent groups" };
+
+/** 0.8 group sets (D4): a peer set of every group of the type (band "all": foundation trusts, other
+ * independent groups, or a group alone in its band) reads "foundation trusts" in a place sentence
+ * ("12th of 74 foundation trusts") and "All foundation trusts" as a set; a band reads "MATs with 41+ schools". */
+export function peerWords(peer: { type: string; band: string; n_groups?: number }): { place: string; set: string; info: (name: string) => string } {
+  const plural = PEER_PLURAL[peer.type] ?? "groups";
+  if (peer.band === "all") {
+    return { place: plural, set: `All ${plural}`, info: (name) => `All ${peer.n_groups ?? ""} ${plural}, ${name} included; their schools pupil-weighted, each counted once.`.replace("All  ", "All ") };
+  }
+  const band = peer.band.replace("-", "–");
+  return { place: `${plural} with ${band} schools`, set: `Peer ${plural}`, info: (name) => `${peer.n_groups ?? ""} ${plural} of the same type with ${band} schools, ${name} included; their schools pupil-weighted, each counted once.`.trimStart() };
+}
 
 export const MEASURE_LABEL: Record<string, string> = {
   ks2_rwm: "KS2 reading, writing and maths",
@@ -91,6 +103,10 @@ export function displayName(name: string): string {
 
 export type CompareKey = ComparisonKind | `peer_named:${string}`;
 export const DEFAULT_COMPARE: CompareKey = "peer_band";
+
+/** The non-group source note (0.8 group sets, D1): production's non-group state schools exclude the
+ * single-academy trusts (their own pooled benchmark) and every school in a listed group. */
+export const NON_GROUP_STATE_NOTE = "State schools in England in no listed group (MAT, federation or foundation trust of 2 or more schools) and not a single-academy trust: mostly LA-maintained schools. Single-academy trusts are a benchmark of their own.";
 
 /** "peer_named:3317,4072" (up to three) or a kind; anything else is the default. */
 export function parseCompare(raw: string | null | undefined): CompareKey {
@@ -287,7 +303,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
   // Against others: every set, plus the named groups picked.
   const rows = againstRows(sets, focus, measures, latest, census);
   const peer = agg.peer;
-  const peerLabel = peer ? `${PEER_PLURAL[peer.type] ?? "groups"} with ${peer.band.replace("-", "–")} schools` : null;
+  const peerLabel = peer ? peerWords(peer).place : null;
   const headline = focus === "all" ? (all.schools_by_phase?.secondary ? "ks4_a8" : all.schools_by_phase?.post16 ? "ks5_aps_alevel" : "ks2_rwm") : HEADLINE[focus];
   const hy = latest[headline];
   const places = (hy !== null ? figOf(agg, hy, MEASURE_PHASE[headline])?.peer?.places : undefined) ?? {};
@@ -307,8 +323,8 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
   const opt = (key: CompareKey, setKey: string, label: string, info: string) => ({ key, label, n: nOf(setKey), info });
   const sector = agg.group.type.startsWith("independent") ? "independent" : "state";
   const options = [
-    ...(peer ? [opt("peer_band", "peer_band:band", `Peer ${PEER_PLURAL[peer.type] ?? "groups"}`, `${peer.n_groups} ${PEER_PLURAL[peer.type] ?? "groups"} of the same type with ${peer.band.replace("-", "–")} schools, ${name} included; their schools pupil-weighted, each counted once.`)] : []),
-    opt("non_group", "non_group:england", "Non-group schools", sector === "independent" ? "Standalone independent schools in England (in no independent group)." : "LA-maintained schools and single-academy trusts in England (in no MAT or federation)."),
+    ...(peer ? [opt("peer_band", "peer_band:band", peerWords(peer).set, peerWords(peer).info(name))] : []),
+    opt("non_group", "non_group:england", "Non-group schools", sector === "independent" ? "Standalone independent schools in England (in no independent group of 2 or more schools)." : NON_GROUP_STATE_NOTE),
     opt("areas", "areas:la", `All schools in ${name}’s areas`, `Every school in the LAs where ${name}’s schools sit, weighted to ${name}’s pupils in each.`),
     opt("england", "england:england", "England", "Every school in England with the figure."),
     opt("mix_matched", "mix_matched:non_group", mixMatchedLabel(name), `Non-group schools in ${name}’s regions, reweighted to its mix of phases and regions, so the gap isn’t geography.`),
