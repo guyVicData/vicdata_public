@@ -584,7 +584,6 @@ export function TrendBand({ a, fullscreen, room }: { a: Academic; fullscreen: bo
         {t.schoolLabel && <Key swatch={<span className="w-[14px] border-t-[2.5px] border-[var(--accent)]" />}>{t.schoolLabel.replace(/ School$/, "")}</Key>}
         <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px] bg-[var(--adm-grey-bar)]" />}>Comparison set, middle half</Key>
       </div>
-      {!t.schoolLabel && <Tl>{a.col1.note ?? ""}</Tl>}
     </>
   );
 }
