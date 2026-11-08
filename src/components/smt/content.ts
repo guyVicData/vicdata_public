@@ -62,24 +62,31 @@ export function smtHasContent(dv: string, c: Ctx): boolean {
     }
     return true;
   }
-  // Academic: a level the view isn't for says why (academicWhyNot), and keeps its icon.
+  // 0.8 SMT Academic: a view with nothing in this mode has no icon (the subject areas at GCSE value added,
+  // the grade profile outside Results, the entries mix at GCSE or in Value added, Entries' moves and
+  // "against the set" outside Entries). A qualification with no figure -- T-level value added, a set with
+  // no state schools -- keeps its chart, table and map, which say why in the middle (never hidden).
   if (c.academic.status !== "ready") return true;
   const a = c.academic.data;
-  if (c.level.phase === "primary") return true;
+  const m = a.state.mode;
   switch (dv) {
     case "DV-SMT-A-AREAS":
-      return !a.parts.length || a.parts.some((p) => p.areas.length > 0);
-    case "DV-SMT-A-SUBJECTS":
-      return c.level.phase === "whole" || !!a.parts[0]?.subjects.length;
+      return !(a.state.phase === "gcse" && m === "va");
     case "DV-SMT-A-GRADES":
-      return a.parts.some((p) => p.grades.entries > 0);
-    case "DV-SMT-A-TREND-LINE":
-      return (c.level.phase === "gcse" && !!c.school.phases.igcse && !c.level.area) || a.parts.some((p) => drawsLine(p.trend.school));
-    case "DV-SMT-A-TREND-TABLE":
-      return (c.level.phase === "gcse" && !!c.school.phases.igcse && !c.level.area) || a.parts.some((p) => hasPoint(p.trend.school));
+      return m === "results" && a.grades.length > 0;
     case "DV-SMT-A-MIX":
     case "DV-SMT-A-MIX-TABLE":
-      return a.parts.some((p) => p.mix.years.length > 0) || (a.igcse && c.level.phase === "gcse");
+      return a.state.phase === "post16" && m !== "va" && a.trends.mix.years.length > 0;
+    case "DV-SMT-A-AGAINST":
+      return m === "entries" && a.trends.against.length > 0;
+    case "DV-SMT-A-MOVES":
+      return m === "entries" && a.trends.movesKind === "subjects" && a.trends.moves.length > 0;
+    case "DV-SMT-A-SETMOVES":
+      return m !== "entries" && a.trends.movesKind === "schools" && a.trends.moves.length > 0;
+    case "DV-SMT-A-TREND-LINE":
+      return drawsLine(a.trends.school) || a.trends.band.filter((x) => x.p25 !== null).length >= 2 || !!a.board.empty;
+    case "DV-SMT-A-TREND-TABLE":
+      return hasPoint(a.trends.school) || a.trends.band.some((x) => x.p25 !== null);
   }
   return true;
 }

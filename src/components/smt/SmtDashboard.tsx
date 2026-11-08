@@ -60,14 +60,10 @@ import { Scorecard } from "./views/Scorecard";
 import { SetMap } from "./views/SetMap";
 import { SchoolFlags } from "./views/Flags";
 import { Direction, IndexedLines, MarketLine, PlainLine, PoolLine, ResultsBand, RollDirectionWord, RollIndexed } from "./views/Lines";
-import { BandTable, MarketTable, MixTable, RollTable } from "./views/Tables";
-import { AcademicNow } from "./views/AcademicNow";
-import { SubjectAreas } from "./views/Areas";
-import { Subjects } from "./views/Subjects";
-import { ValueAdded } from "./views/ValueAdded";
-import { GradeProfile } from "./views/Grades";
-import { EntriesMix } from "./views/Mix";
-import { ReservedPanel } from "./views/Reserved";
+import { BandTable, MarketTable, RollTable } from "./views/Tables";
+import { AcademicMap, AcademicNow, Against, AppliedSwitch, AreasView, EveryLine, GradesView, MixBars, MixTableView, Moves, RankChart, RankTable, TrendBand, TrendTable, acVars } from "./views/Academic";
+import { useAcademicAsk, type AcademicAsk } from "./useAcademicState";
+import { ACADEMIC_PHASE_LABEL, GROUP_LABEL, MODES, MODE_LABEL, groupChips, type AcademicMode, type AppliedType, type QualGroup } from "@/lib/smt/qual-groups";
 import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "./views/Pupils";
 import { AgeBars, AreaMap, BirthsAndProjections, BirthsIndexed, BirthsTable, ContextNow, NearbyOverTime, PopulationProjected, shadeOptions, type ShadeBy } from "./views/Context";
 
@@ -110,7 +106,7 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
           <SmtEditor slug={DASH_ID[dash]} school={{ urn: state.member.schoolUrn, name: state.member.schoolName }} />
         </Suspense>
       )}
-      <main id={editing ? undefined : "teacher-root"} hidden={editing} data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={smtVars(theme)}>
+      <main id={editing ? undefined : "teacher-root"} hidden={editing} data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={dash === "academic" ? { ...smtVars(theme), ...acVars(theme) } : smtVars(theme)}>
         {state.status === "ready" && state.member.access !== "none" ? (
           <Dashboard member={state.member} dash={dash} theme={theme} onTheme={setTheme} reloadTick={inPlace.reloadTick} />
         ) : (
@@ -210,6 +206,9 @@ export type Ctx = {
   onArea: (stage: "ks4" | "ks5", id: string) => void;
   focusBar: ReactNode;
   phone: boolean;
+  // 0.8 SMT Academic by qualification: what the page asks for, and a change to it.
+  ask: AcademicAsk;
+  onAsk: (patch: Partial<AcademicAsk>) => void;
 };
 
 function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMember; dash: SmtDash; theme: Theme; onTheme: (t: Theme) => void; reloadTick: number }) {
@@ -251,7 +250,11 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const set = sets.set;
   const body = set ? { urn: member.schoolUrn, set } : null;
   const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body ? { ...body, filters: f } : null);
-  const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
+  const [ask, setAsk] = useAcademicAsk(member.schoolUrn);
+  const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: ask.level ?? level.phase, mode: ask.mode, group: ask.group, applied: ask.applied, area: ask.area } : null);
+  // The last answer, so the chips stay while the next state loads.
+  const [lastAcademic, setLastAcademic] = useState<Academic | null>(null);
+  if (academic.status === "ready" && academic.data !== lastAcademic) setLastAcademic(academic.data);
   const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: f } : null);
   // Context: the area pill (around the school, or the LA), held in the address (?area=la).
   const [area, setArea] = useState<ContextArea>(() => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("near") === "la" ? "la" : "around"));
@@ -270,7 +273,8 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const [shade, setShade] = useState<ShadeBy>("children");
 
   // B7: a page view, once per school, dashboard, level and set kind.
-  const usage: UsageScope | null = useMemo(() => (s ? { product: "smt", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: level.area ? `${level.phase}/${level.area}` : level.phase, setKind: set?.kind ?? null, resolved: !!set } : null), [s, member.schoolUrn, dash, level.phase, level.area, set]);
+  const acUsage = dash === "academic" && academic.status === "ready" ? `${academic.data.state.phase}/${academic.data.state.mode}/${academic.data.state.phase === "post16" ? academic.data.state.group : (academic.data.state.area ?? "all")}` : null;
+  const usage: UsageScope | null = useMemo(() => (s ? { product: "smt", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: acUsage ?? (level.area ? `${level.phase}/${level.area}` : level.phase), setKind: set?.kind ?? null, resolved: !!set } : null), [s, member.schoolUrn, dash, level.phase, level.area, set, acUsage]);
   // Never logged: a platform admin in View as, or head office reading a member school (groups r1).
   const quiet = !!member.viewAs || member.access === "headOffice";
   useUsagePageView(quiet ? null : usage);
@@ -289,20 +293,44 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
       </ShellPage>
     );
 
+  // 0.8 SMT Academic: GCSE and Post-16 only (no Whole school); the other dashboards keep their chips.
+  const ac = academic.status === "ready" ? academic.data : lastAcademic;
   const chips: FocusSubject[] = s
-    ? levelChips(s.phases).map((p) => ({ key: p, label: LEVEL_LABEL[p], ...(p === "gcse" && s.phases.igcse ? { marked: { reason: SMT_NOTES.igcseChip } } : {}) }))
+    ? levelChips(s.phases)
+        .filter((p) => dash !== "academic" || p === "gcse" || p === "post16")
+        .map((p) => ({ key: p, label: LEVEL_LABEL[p], ...(p === "gcse" && s.phases.igcse ? { marked: { reason: SMT_NOTES.igcseChip } } : {}) }))
     : [];
+  const levelNow: string = dash === "academic" ? (ac?.state.phase ?? (ask.level === "gcse" || ask.level === "post16" ? ask.level : level.phase)) : level.phase;
   // 0.8 IGCSE subjects: an IGCSE school's GCSE areas are offered too (an incomplete one under its short label).
   const areas = s && (level.phase === "gcse" || level.phase === "post16") ? s.areas[level.phase] : [];
+  void areas;
+  const modeNow: AcademicMode = ac?.state.mode ?? ask.mode;
+  const modeSwitch = (
+    <span role="group" aria-label="Results, entries or value added" className="inline-flex gap-[2px] rounded-[8px] border border-[var(--panel-border2)] bg-[var(--bg)] p-[2px]" data-ac-modes="">
+      {MODES.map((m) => (
+        <button key={m} type="button" aria-pressed={m === modeNow} onClick={() => setAsk({ mode: m })} className={`rounded-full border px-2.5 py-[3px] text-xs font-semibold ${m === modeNow ? "border-[var(--accent)] bg-[rgba(var(--accent-rgb),0.12)] text-[var(--fg)]" : "border-transparent text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
+          {MODE_LABEL[m]}
+        </button>
+      ))}
+    </span>
+  );
+  const gcseAreas = s ? s.areas.gcse : [];
   const subRow =
-    dash === "academic" && areas.length
-      ? { label: "Subject area", chips: [{ key: "", label: ALL_AREAS_LABEL }, ...areas.map((a) => ({ key: a.id, label: a.label }))], focusKey: level.area ?? "", onFocus: (k: string) => setLevel({ phase: level.phase, area: k || null }) }
-      : undefined;
-  const onLevel = (k: string) => setLevel({ phase: k as SmtPhase, area: null });
+    dash !== "academic"
+      ? undefined
+      : levelNow === "post16"
+        ? { label: "Qualification", chipsLabel: "Qualification", lead: modeSwitch, chips: (ac ? groupChips(ac.offer.groups) : []).map((g) => ({ key: g, label: GROUP_LABEL[g] })), focusKey: ac?.state.group ?? ask.group ?? "", onFocus: (k: string) => setAsk({ group: k as QualGroup }) }
+        : modeNow === "va"
+          ? { label: "Subject area", lead: modeSwitch, chips: [], focusKey: "", onFocus: () => undefined, note: SMT_NOTES.acNoGcseVaSubjects }
+          : { label: "Subject area", lead: modeSwitch, chips: gcseAreas.length ? [{ key: "", label: ALL_AREAS_LABEL }, ...gcseAreas.map((a) => ({ key: a.id, label: a.label }))] : [], focusKey: ac?.state.area ?? ask.area ?? "", onFocus: (k: string) => setAsk({ area: k || null }) };
+  const onLevel = (k: string) => {
+    if (dash === "academic") setAsk({ level: k, area: null });
+    setLevel({ phase: k as SmtPhase, area: null });
+  };
   const focusBar = chips.length > 1 ? (
     <span role="group" aria-label="Level" className="flex flex-wrap items-center gap-2">
       {chips.map((c) => (
-        <EntryChip key={c.key} label={c.label} active={c.key === level.phase} onClick={() => onLevel(c.key)} />
+        <EntryChip key={c.key} label={c.label} active={c.key === levelNow} onClick={() => onLevel(c.key)} />
       ))}
     </span>
   ) : undefined;
@@ -322,7 +350,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     <SetSelector
       label="Compared against"
       kind="compared_against"
-      current={set ? { name: set.label, count: set.urns.length } : null}
+      current={dash === "academic" && ac && (sets.choice.kind === "nearest" || ac.set.chosen) ? { name: ac.set.label, count: ac.set.size } : set ? { name: set.label, count: set.urns.length } : null}
       loading={!set}
       rows={menu.rows}
       mine={menu.mine}
@@ -419,7 +447,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   );
 
   const config = configs[dash];
-  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, pupils, context, contextMap, shade, onShade: setShade, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
+  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, pupils, context, contextMap, shade, onShade: setShade, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone, ask, onAsk: setAsk } : null;
   const switcher = <GroupSwitcher dashboards={DASHES.map((d) => configs[d])} activeId={config.id} onSwitch={(d) => go(DASHES.find((x) => configs[x].id === d.id) ?? "overview")} />;
 
   // 0.8 notes and feedback: each view's private note and feedback icon, with what the page is showing.
@@ -429,7 +457,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     urn: member.schoolUrn,
     name: member.schoolName,
     role: member.headOffice ? "head_office" : "smt",
-    state: { level: level.phase, area: level.area ?? null, set: set?.label ?? null, setKind: set?.kind ?? null, ...flatState(f as unknown as Record<string, unknown>, "filters"), ...(dash === "context" ? { near: area, km: viewKm ?? null } : {}) },
+    state: { level: dash === "academic" ? levelNow : level.phase, area: dash === "academic" ? (ac?.state.area ?? null) : (level.area ?? null), ...(dash === "academic" ? { mode: modeNow, group: ac?.state.phase === "post16" ? ac.state.group : null, applied: ac?.state.group === "applied" ? ac.state.applied : null } : {}), set: set?.label ?? null, setKind: set?.kind ?? null, ...flatState(f as unknown as Record<string, unknown>, "filters"), ...(dash === "context" ? { near: area, km: viewKm ?? null } : {}) },
   });
 
   return (
@@ -446,9 +474,23 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
             <div className="self-start">{switcher}</div>
             <div className="flex flex-wrap gap-[6px]">
               {chips.map((c) => (
-                <EntryChip key={c.key} label={c.label} active={c.key === level.phase} onClick={() => onLevel(c.key)} />
+                <EntryChip key={c.key} label={c.label} active={c.key === levelNow} onClick={() => onLevel(c.key)} />
               ))}
             </div>
+            {dash === "academic" && subRow && (
+              <div className="flex flex-col gap-[6px]">
+                <div>{subRow.lead}</div>
+                {subRow.chips.length > 0 ? (
+                  <div className="flex flex-wrap gap-[6px]">
+                    {subRow.chips.map((c) => (
+                      <EntryChip key={c.key} label={c.label} active={c.key === subRow.focusKey} onClick={() => subRow.onFocus(c.key)} />
+                    ))}
+                  </div>
+                ) : subRow.note ? (
+                  <span className="text-[11.5px] text-[var(--muted2)]">{subRow.note}</span>
+                ) : null}
+              </div>
+            )}
             {/* 0.8 SMT r4 (R1): the radius on the phone too, on Context only (the other pills stay desktop). */}
             {dash === "context" && <div className="flex flex-wrap gap-[6px]">{areaPill}</div>}
             {ctx ? <PhoneBody config={config} c={ctx} /> : <Skeleton />}
@@ -465,7 +507,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
               switcher={switcher}
               subjectsLabel="Level"
               subjects={chips}
-              focusKey={level.phase}
+              focusKey={levelNow}
               onFocus={onLevel}
               onEditSubjects={() => undefined}
               noEdit
@@ -522,11 +564,13 @@ function rowContext(row: string, c: Ctx): string {
     if (row === "now") return `ONS mid-year estimates and births${to !== null ? `, projected to ${to}` : ""}`;
     return "indexed to 100, against England";
   }
-  const area = c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null;
-  const stage = c.level.phase === "gcse" ? "ks4" : c.level.phase === "post16" ? "ks5" : c.level.phase === "primary" ? "ks2" : null;
-  const latest = stage ? c.school.latest[stage]?.period : (ks4 ?? ks5);
-  if (row === "now") return [levelLabel(c.level, area), latest !== undefined ? yearOf(latest, stage ?? "ks4") : null].filter(Boolean).join(" · ");
-  return `${levelLabel(c.level, area)}, ${periodLabel(HISTORIC_GRADE_FROM)} to ${latest !== undefined ? periodLabel(latest) : ""}`;
+  // 0.8 SMT Academic: "Post-16 · A level · 2024/25", "A level, 2023/24 to 2024/25".
+  if (c.academic.status !== "ready") return "";
+  const a = c.academic.data;
+  const what = academicWhat(a);
+  if (row === "now") return [ACADEMIC_PHASE_LABEL[a.state.phase], what, a.state.mode === "entries" ? "entries" : null, a.period !== null ? yearOf(a.period, a.state.phase === "gcse" ? "ks4" : "ks5") : null].filter(Boolean).join(" · ");
+  const pts = a.trends.school.length ? a.trends.school : a.trends.band.map((b) => ({ year: b.year, value: null }));
+  return `${a.state.mode === "entries" ? `${what ? `${what}, ` : ""}entries` : (what ?? ACADEMIC_PHASE_LABEL[a.state.phase])}, ${pts.length ? `${periodLabel(pts[0].year)} to ${periodLabel(pts.at(-1)!.year)}` : ""}`;
 }
 
 function DesktopGrid({ config, c }: { config: DashboardConfig; c: Ctx }) {
@@ -560,9 +604,18 @@ const railOf = (panel: PanelConfig, c: Ctx): RailItem[] => visibleRail(allRailOf
 // The large view opens on Subjects when an area is chosen (the wireframe's Academic board), else on
 // the panel's default.
 function defaultOf(panel: PanelConfig, c: Ctx): string {
-  if (c.dash === "academic" && c.level.area && panel.span && panel.span.cols >= 2) {
-    const subj = panel.dataviews.find((v) => v.kind === "view" && v.dataview === "DV-SMT-A-SUBJECTS");
-    if (subj) return subj.id;
+  // 0.8 SMT Academic: "All" (and a GCSE area) opens the subject-areas view; Entries opens row 2 on the
+  // biggest moves; Value added row 2's third panel on the set's schools.
+  if (c.dash === "academic") {
+    const a = c.academic.status === "ready" ? c.academic.data : null;
+    const find = (dv: string) => panel.dataviews.find((v) => v.kind === "view" && v.dataview === dv)?.id;
+    const want = a
+      ? panel.span && panel.span.cols >= 2
+        ? (a.state.phase === "post16" && a.state.group === "all") || (a.state.phase === "gcse" && a.state.area) ? "DV-SMT-A-AREAS" : null
+        : a.state.mode === "entries" ? (panel.column === "c2" ? "DV-SMT-A-MOVES" : null) : a.state.mode === "va" && panel.column === "c3" ? "DV-SMT-A-SETMOVES" : null
+      : null;
+    const hit = want ? find(want) : undefined;
+    if (hit) return hit;
   }
   return panel.defaultView ?? panel.dataviews[0]?.id ?? "";
 }
@@ -614,7 +667,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
             instance,
             context: contextFromPanel(config, panel.id, { school: c.member.schoolName }),
             title: `${title} · ${levelLabel(c.level)}`,
-            pinned: { schoolUrn: c.member.schoolUrn, schoolName: c.member.schoolName, params: { level: c.level.phase, area: c.level.area, set: { kind: c.set.kind, label: c.set.label, urns: c.set.urns }, ...(c.context.status === "ready" ? { near: c.context.data.area, ...(dv === "DV-SMT-C-MAP" ? { shade: c.shade } : {}) } : {}) }, keepLive: true },
+            pinned: { schoolUrn: c.member.schoolUrn, schoolName: c.member.schoolName, params: { level: c.dash === "academic" && c.academic.status === "ready" ? c.academic.data.state.phase : c.level.phase, area: c.dash === "academic" && c.academic.status === "ready" ? c.academic.data.state.area : c.level.area, ...(c.dash === "academic" && c.academic.status === "ready" ? { mode: c.academic.data.state.mode, group: c.academic.data.state.group, applied: c.academic.data.state.applied } : {}), set: { kind: c.set.kind, label: c.set.label, urns: c.set.urns }, ...(c.context.status === "ready" ? { near: c.context.data.area, ...(dv === "DV-SMT-C-MAP" ? { shade: c.shade } : {}) } : {}) }, keepLive: true },
           }}
         />
       )}
@@ -658,23 +711,28 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
       // F-9: the rivals are the selected set; the tag names it.
       return { tag: "From Admissions", context: `read-only · against ${c.set.label}` };
     case "DV-SMT-A-NOW":
-      return { tag: "Current", context: levelLabel(c.level, areaLabelOf(c)) };
+      return { tag: "Current", context: c.academic.status === "ready" ? `${ACADEMIC_PHASE_LABEL[c.academic.data.state.phase]}${c.academic.data.state.mode === "entries" ? " · entries" : ""}` : "" };
+    case "DV-SMT-A-CHART":
+    case "DV-SMT-A-TABLE":
+    case "DV-SMT-A-MAP":
+      return { tag: c.academic.status === "ready" ? MODE_LABEL[c.academic.data.state.mode] : "Results", context: c.academic.status === "ready" ? c.academic.data.board.title : "" };
     case "DV-SMT-A-AREAS":
-      return { tag: "Subject areas", context: `against ${set}` };
-    case "DV-SMT-A-SUBJECTS":
-      return { tag: "Subjects", context: `${areaLabelOf(c) ? `in ${areaLabelOf(c)}, ` : ""}against ${set} and England` };
-    case "DV-SMT-A-VA":
-      return { tag: "Value added", context: "DfE, where published" };
+      return { tag: "Subject areas", context: c.academic.status === "ready" ? `${c.academic.data.state.phase === "post16" ? "by qualification" : (c.academic.data.areaLabel ?? "all areas")}, against ${set}` : `against ${set}` };
     case "DV-SMT-A-GRADES":
-      return { tag: "Grade profile", context: levelLabel(c.level, areaLabelOf(c)) };
+      return { tag: "Grade profile", context: c.academic.status === "ready" ? (academicWhat(c.academic.data) ?? ACADEMIC_PHASE_LABEL[c.academic.data.state.phase]) : "" };
     case "DV-SMT-A-TREND-LINE":
     case "DV-SMT-A-TREND-TABLE":
-      return { tag: "Trends", context: c.level.area ? "average grade" : "headline" };
-    case "DV-SMT-A-BANDS":
-      return { tag: "Trends", context: "results by band" };
+      return { tag: "Trends", context: c.academic.status === "ready" ? c.academic.data.trends.label : "" };
+    case "DV-SMT-A-LINES":
+      return { tag: "Trends", context: "every line" };
+    case "DV-SMT-A-MOVES":
+    case "DV-SMT-A-SETMOVES":
+      return { tag: "Trends", context: dv === "DV-SMT-A-MOVES" ? "moves" : "the set's schools" };
     case "DV-SMT-A-MIX":
     case "DV-SMT-A-MIX-TABLE":
       return { tag: "Trends", context: "entries mix" };
+    case "DV-SMT-A-AGAINST":
+      return { tag: "Trends", context: "against the set" };
     // 0.8 SMT round 2: Pupils
     case "DV-SMT-P-NOW":
       return { tag: "Current", context: c.school.census.at(-1) ? `Data ${periodLabel(c.school.census.at(-1)!.period)}` : "" };
@@ -716,7 +774,6 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
   return { tag: panel.name ?? "", context: null };
 }
 
-const areaLabelOf = (c: Ctx) => (c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null);
 
 // 0.8 SMT r4 (stage I): what the methods' {placeholders} read on SMT (src/catalogue/methods-smt.ts).
 function methodVars(c: Ctx): Record<string, string | number | null> {
@@ -736,6 +793,10 @@ function methodVars(c: Ctx): Record<string, string | number | null> {
     fsmYear: x?.sources.fsmYear !== null && x?.sources.fsmYear !== undefined ? periodLabel(x.sources.fsmYear) : null,
     // 0.8 Sets r1 (F24): a day school's (i) drops its boarding sentences (method-conditions.ts).
     boarding: c.school.boarding ? 1 : 0,
+    // 0.8 SMT Academic: the mode's own steps only.
+    ...(c.dash === "academic" && c.academic.status === "ready"
+      ? { post16: c.academic.data.state.phase === "post16" ? 1 : 0, results: c.academic.data.state.mode === "results" ? 1 : 0, entries: c.academic.data.state.mode === "entries" ? 1 : 0, va: c.academic.data.state.mode === "va" ? 1 : 0, indep: c.academic.data.state.phase === "gcse" && (c.school.independent || !!c.school.phases.igcse) ? 1 : 0 }
+      : {}),
   };
 }
 
@@ -811,25 +872,25 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       return c.overview.status === "ready" ? c.overview.data.notes.rollIndexed : null;
     case "DV-SMT-O-RESULTS-LINE":
     case "DV-SMT-O-RESULTS-TABLE":
-    case "DV-SMT-A-TREND-LINE":
-    case "DV-SMT-A-TREND-TABLE":
       return withArea(`${smtNote("middleHalf", { setLabel: set })} ${TREND_BASE_NOTE}${igcse}`);
     case "DV-SMT-O-MARKET-LINE":
     case "DV-SMT-O-MARKET-TABLE":
       return smtNote("marketSet", { set });
     case "DV-SMT-A-NOW":
+    case "DV-SMT-A-CHART":
+    case "DV-SMT-A-TABLE":
+    case "DV-SMT-A-MAP":
     case "DV-SMT-A-AREAS":
-      return withArea(`${SMT_NOTES.ranks}${igcse}`);
-    case "DV-SMT-A-SUBJECTS":
-      return withArea(`${SMT_NOTES.ranks} ${smtNote("smallEntries", { min: 5 })}`);
-    case "DV-SMT-A-VA":
-      return SMT_NOTES.alevelVa;
+    case "DV-SMT-A-GRADES":
+    case "DV-SMT-A-TREND-LINE":
+    case "DV-SMT-A-TREND-TABLE":
+    case "DV-SMT-A-LINES":
+    case "DV-SMT-A-MOVES":
+    case "DV-SMT-A-SETMOVES":
     case "DV-SMT-A-MIX":
     case "DV-SMT-A-MIX-TABLE":
-      return SMT_NOTES.entriesMix;
-    case "DV-SMT-A-BANDS":
-      // The view's own body says it, and so does its method.
-      return null;
+    case "DV-SMT-A-AGAINST":
+      return c.academic.status === "ready" ? academicCaption(dv, c.academic.data) : null;
     case "DV-SMT-P-NOW":
     case "DV-SMT-P-SHAPE":
       return `${SMT_NOTES.size} ${SMT_NOTES.shapesAround} ${SMT_NOTES.levelAges}`;
@@ -904,7 +965,10 @@ function flagOf(dv: string, c: Ctx): ReactNode {
       return <span className={`text-[12px] font-bold ${dirClass(pct, 2, 0)}`}>{arrowOf(pct, 2, 0)} {pct > 2 ? "Rising" : pct < -2 ? "Falling" : "Steady"}</span>;
     }
   }
-  if (dv === "DV-SMT-A-TREND-LINE" && c.academic.status === "ready" && c.academic.data.parts[0]) return <Direction pts={c.academic.data.parts[0].trend.school} flat={c.level.area ? 0.05 : 0.5} />;
+  if (dv === "DV-SMT-A-CHART" && c.academic.status === "ready" && c.academic.data.state.mode === "va") {
+    const me = c.academic.data.board.rows.find((r) => r.you);
+    return me?.band ? <span className="text-[12px] font-bold text-[var(--muted2)]">{me.band.replace(/ average$/, "")}</span> : null;
+  }
   return null;
 }
 
@@ -1024,87 +1088,94 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
       return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
     });
   }
-  const whyNot = academicWhyNot(dv, c);
-  if (whyNot) return <Empty>{whyNot}</Empty>;
   return ready(c.academic, (a) => {
-    const filtered = c.filters.sex !== "all" || c.filters.boarding !== "all";
-    const note = filtered ? <div className="text-[11px] text-[var(--muted2)]">Results aren&rsquo;t published for girls and boys or for day and boarding pupils: these are the whole cohort&rsquo;s.</div> : null;
+    const applied = <AppliedSwitch a={a} onApplied={(t: AppliedType) => c.onAsk({ applied: t })} />;
     switch (dv) {
       case "DV-SMT-A-NOW":
+        return <AcademicNow a={a} />;
+      case "DV-SMT-A-CHART":
         return (
           <>
-            <AcademicNow a={a} school={c.school} />
-            {note}
+            {applied}
+            <RankChart a={a} fullscreen={fullscreen} room={room} />
+          </>
+        );
+      case "DV-SMT-A-TABLE":
+        return (
+          <>
+            {applied}
+            <RankTable a={a} />
+          </>
+        );
+      case "DV-SMT-A-MAP":
+        return (
+          <>
+            {applied}
+            <AcademicMap a={a} fullscreen={fullscreen} room={room} />
           </>
         );
       case "DV-SMT-A-AREAS":
-        return <SubjectAreas parts={a.parts} setLabel={a.set.label} area={a.level.area} onArea={c.onArea} />;
-      case "DV-SMT-A-SUBJECTS":
-        return <Subjects parts={a.parts} setUrns={c.set.urns} setLabel={a.set.label} phase={a.level.phase} />;
-      case "DV-SMT-A-VA":
-        return <ValueAdded a={a} school={c.school} />;
+        return <AreasView a={a} />;
       case "DV-SMT-A-GRADES":
-        return <GradeProfile parts={a.parts} />;
+        return <GradesView a={a} />;
       case "DV-SMT-A-TREND-LINE":
-      case "DV-SMT-A-TREND-TABLE": {
-        // A phase with nothing to draw (an IGCSE school's GCSE) isn't offered here; it says why in column 1.
-        const parts = a.parts.filter((x) => x.trend.school.some((pt) => pt.value !== null));
-        const p = parts[Math.min(stage, parts.length - 1)];
-        if (!p || !p.trend.school.length) return <Empty>No published results to draw at this level.</Empty>;
-        const unit = a.level.area && p.stage === "ks4" ? "grade" : "points";
-        const label = `${a.areaLabel ?? (p.stage === "ks4" ? "GCSE" : "Post-16")} results against ${a.set.label}`;
-        return (
-          <>
-            {parts.length > 1 && (
-              <div className="flex gap-2">
-                {parts.map((x, i) => (
-                  <EntryChip key={x.stage} label={x.stage === "ks4" ? "GCSE" : "Post-16"} active={i === Math.min(stage, parts.length - 1)} onClick={() => setStage(i)} />
-                ))}
-              </div>
-            )}
-            {dv.endsWith("TABLE") ? <BandTable title={label} school={p.trend.school} band={p.trend.band} unit={unit} setLabel={a.set.label} valueKey={!a.level.area && p.stage === "ks5" ? "A level::aps_per_entry" : undefined} /> : <ResultsBand schoolName={c.school.name.replace(/ School$/, "")} trend={p.trend} setLabel={a.set.label} fullscreen={fullscreen} room={room} title={label} />}
-            {note}
-          </>
-        );
-      }
-      case "DV-SMT-A-BANDS":
-        return <ReservedPanel title="Top 25%, middle 50%, bottom 25%" />;
+        return <TrendBand a={a} fullscreen={fullscreen} room={room} />;
+      case "DV-SMT-A-TREND-TABLE":
+        return <TrendTable a={a} />;
+      case "DV-SMT-A-LINES":
+        return <EveryLine a={a} />;
+      case "DV-SMT-A-MOVES":
+      case "DV-SMT-A-SETMOVES":
+        return <Moves a={a} />;
       case "DV-SMT-A-MIX":
-      case "DV-SMT-A-MIX-TABLE": {
-        const parts = a.parts.filter((x) => x.mix.years.length > 0);
-        const p = parts[Math.min(stage, parts.length - 1)];
-        if (!p) return <Empty>{a.igcse && a.level.phase === "gcse" ? smtNote("igcseView", { school: c.school.name }) : "No entries at this level."}</Empty>;
-        return (
-          <>
-            {parts.length > 1 && (
-              <div className="flex gap-2">
-                {parts.map((x, i) => (
-                  <EntryChip key={x.stage} label={x.stage === "ks4" ? "GCSE" : "Post-16"} active={i === Math.min(stage, parts.length - 1)} onClick={() => setStage(i)} />
-                ))}
-              </div>
-            )}
-            {dv.endsWith("TABLE") ? <MixTable part={p} /> : <EntriesMix part={p} height={fullscreen && room ? Math.max(200, room - 120) : 170} />}
-          </>
-        );
-      }
+        return <MixBars a={a} fullscreen={fullscreen} room={room} />;
+      case "DV-SMT-A-MIX-TABLE":
+        return <MixTableView a={a} />;
+      case "DV-SMT-A-AGAINST":
+        return <Against a={a} />;
     }
     return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
   });
 }
 
-/** A view that can't show the level in focus says so in its own space (B2), never disappears. */
-function academicWhyNot(dv: string, c: Ctx): string | null {
-  const p = c.level.phase;
-  if (p === "primary") {
-    if (dv === "DV-SMT-A-VA") return SMT_NOTES.vaNotKs2;
-    if (dv === "DV-SMT-A-AREAS" || dv === "DV-SMT-A-SUBJECTS" || dv === "DV-SMT-A-GRADES" || dv.startsWith("DV-SMT-A-MIX")) return "KS2 results have no subject areas or subjects: these views are for GCSE and Post-16.";
-    if (dv.startsWith("DV-SMT-A-TREND")) return "KS2's results trend arrives with SMT round 2.";
+/** What the Academic view is about: "A level", "Applied general", "All qualifications", a GCSE area. */
+function academicWhat(a: Academic): string | null {
+  if (a.state.phase === "gcse") return a.state.mode === "va" ? "Progress 8" : a.areaLabel;
+  if (a.state.group === "all") return "all qualifications";
+  if (a.state.group === "applied" && a.state.mode !== "entries") return a.board.title.split(",")[0];
+  return GROUP_LABEL[a.state.group];
+}
+
+/** Each Academic view's caption: SMT_NOTES only (R-SMT-NOTES), the mode's own. */
+function academicCaption(dv: string, a: Academic): string {
+  const n = a.notes;
+  const va = a.state.mode === "va";
+  const post16 = a.state.phase === "post16";
+  switch (dv) {
+    case "DV-SMT-A-NOW":
+      return [va ? (post16 ? n.vaPost16 : n.bandsP8) : a.state.mode === "entries" ? n.entries : n.points, va && post16 ? n.bandsDfe : null, post16 && a.offer.groups.includes("applied") ? n.applied : null, post16 ? n.eachLine : null, va && post16 ? n.vaGap : null, va && !post16 ? n.p8Gap : null].filter(Boolean).join(" ");
+    case "DV-SMT-A-CHART":
+    case "DV-SMT-A-TABLE":
+    case "DV-SMT-A-MAP":
+      return [va ? (post16 ? n.vaPost16 : n.bandsP8) : n.quarters, va && post16 ? n.bandsDfe : null, a.set.chosen ? n.setHolds : null, va && !post16 ? n.p8Gap : null].filter(Boolean).join(" ");
+    case "DV-SMT-A-AREAS":
+      return [n.subjectsByQual, a.state.mode === "entries" ? `${n.share} ${n.size}` : null, va ? `${n.bandsDfe} ${n.vicdataMatch}` : null, post16 ? n.outsideAreas : null, a.state.mode === "results" ? n.smallEntries : null].filter(Boolean).join(" ");
+    case "DV-SMT-A-TREND-LINE":
+    case "DV-SMT-A-TREND-TABLE":
+      return `${n.middleHalf} ${a.trends.note}`.trim();
+    case "DV-SMT-A-LINES":
+      return n.lines;
+    case "DV-SMT-A-MOVES":
+      return n.moves;
+    case "DV-SMT-A-SETMOVES":
+      return n.setMoves;
+    case "DV-SMT-A-MIX":
+    case "DV-SMT-A-MIX-TABLE":
+      return n.mix;
+    case "DV-SMT-A-AGAINST":
+      return n.against;
   }
-  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): only the whole-school views stay out for an IGCSE school at GCSE --
-  // value added (Progress 8) and the results trend on the whole-school headline (no area chosen). Its
-  // subject areas, subjects, grade profile and entries mix are its own GCSE subjects, ranked as usual.
-  if (p === "gcse" && c.school.phases.igcse && (dv === "DV-SMT-A-VA" || (dv.startsWith("DV-SMT-A-TREND") && !c.level.area))) return smtNote("igcseView", { school: c.school.name });
-  return null;
+  return "";
 }
 
 // ------------------------------------------------------------------------------- phone
@@ -1115,16 +1186,16 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
   const now = config.panels.find((p) => p.row === "now" && p.column === "c1");
   const large = config.panels.find((p) => p.row === "now" && (p.span?.cols ?? 1) >= 2);
   const trends = config.panels.filter((p) => p.row === "trends");
-  const [largeTab, setLargeTab] = useState(large?.defaultView ?? "");
+  const [largeTab, setLargeTab] = useState("");
   const [trendTab, setTrendTab] = useState(trends[0]?.id ?? "");
-  const largeActive = large ? activeWithContent(allRailOf(large), largeTab || large.defaultView || "", hasOf(large, c)) : "";
+  const largeActive = large ? activeWithContent(allRailOf(large), largeTab || defaultOf(large, c), hasOf(large, c)) : "";
   const largeDv = large ? dvOf(large, largeActive) || dvOf(large, large.defaultView ?? "") : "";
   const trendPanel = trends.find((t) => t.id === trendTab) ?? trends[0];
   const trendDv = trendPanel ? dvOf(trendPanel, trendPanel.defaultView ?? "") : "";
   const nowDv = now ? dvOf(now, now.defaultView ?? "") : "";
-  const TABS: Record<SmtDash, Record<string, string>> = { overview: { c1: "Roll", c2: "Results", c3: "Market share" }, academic: { c1: "Results", c2: "By band", c3: "Entries" }, pupils: { c1: "Roll", c2: "Pool", c3: "Area" }, context: { c1: "Births", c2: "Projection", c3: "By age" } };
+  const TABS: Record<SmtDash, Record<string, string>> = { overview: { c1: "Roll", c2: "Results", c3: "Market share" }, academic: { c1: "Trend", c2: "Every line", c3: "Entries" }, pupils: { c1: "Roll", c2: "Pool", c3: "Area" }, context: { c1: "Births", c2: "Projection", c3: "By age" } };
   const tabLabel = (t: PanelConfig) => TABS[c.dash][t.column] ?? t.name ?? t.column;
-  const title = c.dash === "overview" || c.dash === "pupils" ? `${c.school.name.replace(/ School$/, "")} now · ${yearOf(c.school.census.at(-1)?.period ?? null)}` : c.dash === "context" ? "The area now" : levelLabel(c.level, areaLabelOf(c));
+  const title = c.dash === "overview" || c.dash === "pupils" ? `${c.school.name.replace(/ School$/, "")} now · ${yearOf(c.school.census.at(-1)?.period ?? null)}` : c.dash === "context" ? "The area now" : c.academic.status === "ready" ? c.academic.data.col1.title : "";
   return (
     <>
       {now && (
@@ -1169,7 +1240,8 @@ export function SmtViewPreview({ dataview, urn, schoolName, params, height }: { 
   const dash: SmtDash = dataview.startsWith("DV-SMT-O-") ? "overview" : dataview.startsWith("DV-SMT-P-") ? "pupils" : dataview.startsWith("DV-SMT-C-") ? "context" : "academic";
   const body = set ? { urn, set } : null;
   const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body ? { ...body, filters: { sex: "all", boarding: "all" } } : null);
-  const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
+  const ask: AcademicAsk = { level: (params?.level as string) ?? null, mode: (["results", "entries", "va"] as const).find((m) => m === params?.mode) ?? "results", group: (params?.group as QualGroup) ?? null, applied: params?.applied === "tl" ? "tl" : params?.applied === "ag" ? "ag" : null, area: (params?.area as string) ?? null };
+  const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, ...ask } : null);
   const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: { sex: "all", boarding: "all" } } : null);
   const near = params?.near === "la" ? "la" : "around";
   const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${urn}&area=${near}&level=${level.phase}` : null, null);
@@ -1178,7 +1250,7 @@ export function SmtViewPreview({ dataview, urn, schoolName, params, height }: { 
   const member = { userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, access: "member", readOnly: true, viewAs: null } as SmtMember;
   return (
     <div data-smt-preview={dataview} className="flex min-h-0 flex-col gap-2 overflow-hidden text-[var(--fg)]" style={{ ...smtVars(theme), height }}>
-      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash, level, set, filters: { sex: "all", boarding: "all" }, overview, academic, pupils, context, contextMap, shade, onShade: () => undefined, onArea: () => undefined, focusBar: null, phone: false }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
+      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash, level, set, filters: { sex: "all", boarding: "all" }, overview, academic, pupils, context, contextMap, shade, onShade: () => undefined, onArea: () => undefined, focusBar: null, phone: false, ask, onAsk: () => undefined }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
     </div>
   );
 }

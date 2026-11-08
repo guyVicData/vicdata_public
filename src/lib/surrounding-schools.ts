@@ -110,6 +110,9 @@ export async function findSurroundingSchools(
     // Post-16 default set). Off by default: every existing caller, the Data View's included,
     // runs exactly as before.
     filterBeforeFacts?: boolean;
+    // 0.8 SMT Academic (R-SMT-VA-INDEPENDENT): state schools only, whatever the target's sector -- an
+    // independent school's Progress 8 set (independents have none). Off by default.
+    stateOnly?: boolean;
   } = {},
 ): Promise<MatchedSchool[]> {
   const genderMode = options.genderMode ?? "exact";
@@ -176,7 +179,7 @@ export async function findSurroundingSchools(
   // > 1 too), unchanged and already sector-agnostic -- relaxing the RPC's own sector
   // gate doesn't loosen that.
   const relaxSectorForThroughSchool =
-    targetPhase.length > 1 && target?.establishment_type_group !== "Independent schools";
+    options.stateOnly || (targetPhase.length > 1 && target?.establishment_type_group !== "Independent schools");
 
   type Candidate = {
     urn: string;
@@ -260,7 +263,9 @@ export async function findSurroundingSchools(
   // call already enforces the correct sector rule in SQL via its own p_relax_sector
   // argument, so re-filtering it locally here would be redundant, not incorrect.
   async function matchAgainst(rawCandidates: Candidate[], applyLocalSectorFilter: boolean): Promise<MatchedSchool[]> {
-    const candidateList = applyLocalSectorFilter
+    const candidateList = options.stateOnly
+      ? rawCandidates.filter((a) => !isIndependent(a.establishment_type_group))
+      : applyLocalSectorFilter
       ? rawCandidates.filter(
           (a) => targetIsSpecial || relaxSectorForThroughSchool || isIndependent(a.establishment_type_group) === isIndependent(target?.establishment_type_group ?? null),
         )
