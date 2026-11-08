@@ -2865,3 +2865,15 @@ The 12 closed CTCs all closed by 2008 and carry no figures in VicData's years.
 **Not yet elsewhere:** Teacher's `sectorTag` (src/lib/typology.ts) and SMT/Admissions still read GIAS's
 type group. Using the same list there belongs to the 0.85 review's "England aligned across pages" item
 (E3), so this round changes nothing outside the Group pages.
+
+---
+
+## 2026-11-08 — Group sets M2: a set's groups in their own table (Guy, accepted)
+
+The brief's outline (`vicdata_0_8_group_sets_brief_v2.md` §7) put a set's groups in `set_members`, with
+a `member_group_id` column beside `urn`, `urn` made nullable and the primary key replaced. Built instead:
+**`set_group_members (set_id, group_id, position)`**, its own table, so `set_members` (school URNs, live for
+Leighton Park) keeps its key `(set_id, urn)`, its `on conflict` and its save path unchanged. `save_set`
+takes `{ "group_id": ... }` elements for a set of groups and writes them there; triggers keep groups out of
+school sets (and schools out of a set of groups) and cap a set at 8 groups. Less risk to the school sets
+already in use; the same RLS (`can_read_set` / `can_write_set`). Accepted by Guy, 8 Nov.
