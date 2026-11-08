@@ -189,6 +189,12 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
           </button>
         );
       })}
+      {/* 0.8 group sets (M3): the groups library, for head office (a member school's SMT doesn't see it, D2). */}
+      {d.viewer.as !== "school" && (
+        <Link href={`/teacher/group/groups${window.location.search}`} className="rounded-full px-4 py-1.5 text-[13px] font-bold text-[var(--group-accent-text)] hover:text-[var(--fg)]" data-library-link="">
+          Groups library
+        </Link>
+      )}
     </div>
   );
 

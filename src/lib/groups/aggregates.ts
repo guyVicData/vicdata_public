@@ -9,6 +9,7 @@ import { cachedReference } from "../server-cache";
 import { groupFixturesDir } from "./fixture-switch";
 import { groupIndex } from "./production";
 import { displayName } from "./dash";
+import type { GroupIndex } from "./library";
 
 export type Reading = "at_time" | "listed_now";
 export type Phase = "all" | "primary" | "secondary" | "post16";
@@ -181,6 +182,13 @@ export function groupComparisons(groupId: string, kinds: string[]): Promise<Comp
   }
   const key = [...kinds].sort().join(",");
   return cachedReference(`groups:comparison:${groupId}:${key}`, () => rpc<ComparisonRow[]>("group_comparison_lookup", { p_group_id: groupId, p_kinds: kinds }), TTL_MS);
+}
+
+/** 0.8 group sets (M3): the groups library's cards, every listed group (group_index_lookup, one call). */
+export function groupLibraryIndex(): Promise<GroupIndex> {
+  const dir = groupFixturesDir(process.env);
+  if (dir) return Promise.resolve(fixture<GroupIndex>(dir, "group_index_lookup.json") ?? { build: null, groups: [] });
+  return cachedReference("groups:index", () => rpc<GroupIndex>("group_index_lookup", {}), TTL_MS);
 }
 
 /** Every member school (and each predecessor it carries), its years nested. */
