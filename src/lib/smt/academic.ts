@@ -130,7 +130,8 @@ export type Academic = {
   period: number | null;
   provisional: boolean;
   // The set this view compares against, as the pill names it, and the schools in it that offer the group.
-  set: { kind: string; label: string; size: number; offering: number; chosen: boolean; reachKm: number | null; urns: string[] };
+  // `pill`: the set pill's words for this view ("10 nearest offering IB", "10 nearest offering each qualification").
+  set: { kind: string; label: string; pill: string; size: number; offering: number; chosen: boolean; reachKm: number | null; urns: string[] };
   areaLabel: string | null;
   lines: Line[];
   col1: { title: string; sub: string; note: string | null; summary: { label: string; value: string }[] };
@@ -486,10 +487,10 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
       const g = groupOfQualification(r.qualification);
       if (st.group !== "all" && g !== mainGroup) continue;
       const m = vaMatch(r.qualification, r.subject, famOf);
-      items.push({ subject: m.subject, qualification: r.qualification, familyId: m.familyId, vicdata: m.vicdata, outside: m.outside || g === "epq", entries: r.entries ?? 0, vaRow: r, row: null });
+      items.push({ subject: g === "epq" ? "Extended Project" : m.subject, qualification: r.qualification, familyId: m.familyId, vicdata: m.vicdata, outside: m.outside || g === "epq", entries: r.entries ?? 0, vaRow: r, row: null });
     }
   } else {
-    for (const r of subjectsNow) items.push({ subject: r.subject, qualification: r.qualification, familyId: r.familyId ?? famOf(r.subject), vicdata: false, outside: groupOfQualification(r.qualification) === "epq", entries: r.entries, vaRow: null, row: r });
+    for (const r of subjectsNow) items.push({ subject: groupOfQualification(r.qualification) === "epq" ? "Extended Project" : r.subject, qualification: r.qualification, familyId: r.familyId ?? famOf(r.subject), vicdata: false, outside: groupOfQualification(r.qualification) === "epq", entries: r.entries, vaRow: null, row: r });
   }
   const setForQual = async (q: string) => {
     const g = groupOfQualification(q);
@@ -667,7 +668,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     independent: school.independent,
     period: L,
     provisional: school.latest.ks5?.provisional ?? false,
-    set: { kind: gset.kind, label: gset.label, size: gset.urns.length, offering: boardUrns.length - 1, chosen: gset.chosen, reachKm: gset.reachKm, urns: gset.urns },
+    set: { kind: gset.kind, label: gset.label, pill: st.group === "all" && !gset.chosen ? "10 nearest offering each qualification" : gset.label, size: gset.urns.length, offering: boardUrns.length - 1, chosen: gset.chosen, reachKm: gset.reachKm, urns: gset.urns },
     areaLabel: null,
     lines,
     col1: { title: mode === "va" ? "Value added now" : mode === "entries" ? "Entries now" : "Results now", sub: `Post-16 · ${periodLabel(L)}${mode === "results" ? " · points per entry" : mode === "entries" ? ` · ${levelEntries(urn, L).toLocaleString("en-GB")} entries` : ""}`, note: null, summary: [] },
@@ -703,7 +704,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
   let L = mode === "va" ? PROGRESS8_LAST_PERIOD : L4;
   const empty = (why: string): Academic => ({
     urn, state: st, offer, igcse: !!school.phases.igcse, independent: school.independent, period: L, provisional: false,
-    set: { kind: gset.kind, label: gset.label, size: gset.urns.length, offering: 0, chosen: gset.chosen, reachKm: gset.reachKm, urns: gset.urns }, areaLabel,
+    set: { kind: gset.kind, label: gset.label, pill: gset.label, size: gset.urns.length, offering: 0, chosen: gset.chosen, reachKm: gset.reachKm, urns: gset.urns }, areaLabel,
     lines: [], col1: { title: "GCSE", sub: "", note: why, summary: [] },
     board: { title: "", subtitle: "", measure: "", unit: "points", period: L, rows: [], median: null, england: null, place: { set: null, region: null, england: null }, counts: null, setNote: null, empty: why },
     areas: { blocks: [], outside: [], none: why, period: null }, grades: [],
@@ -924,7 +925,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
     independent: school.independent,
     period: L,
     provisional: mode === "va" ? false : (school.latest.ks4?.provisional ?? false),
-    set: { kind: gset.kind, label: gset.label, size: gset.urns.length, offering: stateSchools.length, chosen: gset.chosen, reachKm: gset.reachKm, urns: gset.urns },
+    set: { kind: gset.kind, label: gset.label, pill: gset.label, size: gset.urns.length, offering: stateSchools.length, chosen: gset.chosen, reachKm: gset.reachKm, urns: gset.urns },
     areaLabel,
     lines,
     col1: { title: mode === "va" ? "Value added now" : mode === "entries" ? "Entries now" : "Results now", sub: mode === "va" ? "GCSE · Progress 8" : `GCSE · ${periodLabel(L)}${mode === "entries" ? ` · ${levelEntries(urn, L).toLocaleString("en-GB")} entries` : ""}`, note: col1Note, summary },

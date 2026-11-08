@@ -350,7 +350,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     <SetSelector
       label="Compared against"
       kind="compared_against"
-      current={dash === "academic" && ac && (sets.choice.kind === "nearest" || ac.set.chosen) ? { name: ac.set.label, count: ac.set.size } : set ? { name: set.label, count: set.urns.length } : null}
+      current={dash === "academic" && ac && sets.choice.kind === "nearest" ? { name: ac.set.pill, count: ac.set.size } : set ? { name: set.label, count: set.urns.length } : null}
       loading={!set}
       rows={menu.rows}
       mine={menu.mine}
@@ -573,7 +573,7 @@ function rowContext(row: string, c: Ctx): string {
   return `${a.state.mode === "entries" ? `${what ? `${what}, ` : ""}entries` : (what ?? ACADEMIC_PHASE_LABEL[a.state.phase])}, ${pts.length ? `${periodLabel(pts[0].year)} to ${periodLabel(pts.at(-1)!.year)}` : ""}`;
 }
 
-function DesktopGrid({ config, c }: { config: DashboardConfig; c: Ctx }) {
+export function DesktopGrid({ config, c }: { config: DashboardConfig; c: Ctx }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ now: true, trends: true });
   return (
     <>
@@ -717,7 +717,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-A-MAP":
       return { tag: c.academic.status === "ready" ? MODE_LABEL[c.academic.data.state.mode] : "Results", context: c.academic.status === "ready" ? c.academic.data.board.title : "" };
     case "DV-SMT-A-AREAS":
-      return { tag: "Subject areas", context: c.academic.status === "ready" ? `${c.academic.data.state.phase === "post16" ? "by qualification" : (c.academic.data.areaLabel ?? "all areas")}, against ${set}` : `against ${set}` };
+      return { tag: "Subject areas", context: c.academic.status === "ready" ? `${c.academic.data.state.phase === "post16" ? "by qualification" : (c.academic.data.areaLabel ?? "all areas")}, against ${c.academic.data.set.chosen ? set : c.academic.data.set.pill.replace(/^\d+ /, "the ")}` : `against ${set}` };
     case "DV-SMT-A-GRADES":
       return { tag: "Grade profile", context: c.academic.status === "ready" ? (academicWhat(c.academic.data) ?? ACADEMIC_PHASE_LABEL[c.academic.data.state.phase]) : "" };
     case "DV-SMT-A-TREND-LINE":
@@ -1182,7 +1182,7 @@ function academicCaption(dv: string, a: Academic): string {
 
 // Phone (Phone.dc.html): column 1, then the large view with its views as tabs, then row 2's panels
 // as tabs of one panel -- each the same RailPanel as on the desktop, sized to its content.
-function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
+export function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
   const now = config.panels.find((p) => p.row === "now" && p.column === "c1");
   const large = config.panels.find((p) => p.row === "now" && (p.span?.cols ?? 1) >= 2);
   const trends = config.panels.filter((p) => p.row === "trends");

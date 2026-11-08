@@ -7,7 +7,8 @@
 import { smtSchool } from "../../../../src/lib/smt/school";
 import { buildOverview, type SmtSet } from "../../../../src/lib/smt/overview";
 import { buildPupils } from "../../../../src/lib/smt/pupils";
-import { buildAcademic } from "../../../../src/lib/smt/academic";
+import { academicOffer, buildAcademic } from "../../../../src/lib/smt/academic";
+import { parseAcademic } from "../../../../src/lib/smt/qual-groups";
 import { buildContext } from "../../../../src/lib/smt/context";
 import { resolveDefaultNearest } from "../../../../src/lib/chooser-sets";
 import { setPhaseOf } from "../../../../src/lib/smt/levels";
@@ -34,7 +35,8 @@ export async function railHidden(urn: string): Promise<{ name: string; hidden: H
   const [overview, pupils, academic, context] = await Promise.all([
     buildOverview(school, set, filters, null),
     buildPupils(school, set, filters, level, null),
-    buildAcademic(school, level, set),
+    // 0.8 SMT Academic: the school's main level, Results (Academic has no Whole school).
+    academicOffer(school).then((o) => buildAcademic(school, parseAcademic(new URLSearchParams(), o), set)),
     buildContext(school, "around", "whole", { km: FIVE_MILES_KM, savedKm: null, defaultKm: FIVE_MILES_KM, capKm: 30, from: "view", capped: false }),
   ]);
   const ready = <T,>(data: T) => ({ status: "ready" as const, data });

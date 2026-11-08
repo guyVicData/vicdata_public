@@ -69,7 +69,7 @@ export function fmtAc(v: number | null | undefined, unit: Unit): string {
       return v.toFixed(2);
   }
 }
-const fmtChangeAc = (v: number | null | undefined, unit: Unit) => (v === null || v === undefined ? "—" : signedDelta(v, (x) => (unit === "entries" ? Math.round(x).toLocaleString("en-GB") : unit === "share" || unit === "pct" ? `${x.toFixed(1)} pp` : x.toFixed(unit === "points" ? 1 : 2)), { zero: "±" }));
+const fmtChangeAc = (v: number | null | undefined, unit: Unit) => (v === null || v === undefined ? "—" : signedDelta(v, (x) => { const a = Math.abs(x); return unit === "entries" ? Math.round(a).toLocaleString("en-GB") : unit === "share" || unit === "pct" ? `${a.toFixed(1)} pp` : a.toFixed(unit === "points" ? 1 : 2); }, { zero: "±" }));
 const fmtShort = (v: number | null | undefined, unit: Unit) => (unit === "points" && v !== null && v !== undefined ? v.toFixed(1) : fmtAc(v, unit));
 
 function BandPill({ band, unit }: { band: BoardRow["band"]; unit?: Unit }) {
@@ -173,10 +173,12 @@ export function RankChart({ a, fullscreen, room }: { a: Academic; fullscreen: bo
   const rowH = 27;
   const top = 22;
   const H = top + rows.length * rowH + 6;
-  const W = Math.max(w, 300);
-  const nameW = Math.min(240, W * 0.3);
-  const kmX = nameW + 22;
-  const valX = kmX + 50;
+  // Narrow (a phone, a column): no km column, names take what's left.
+  const W = Math.max(w, 10);
+  const narrow = W < 520;
+  const nameW = narrow ? W * 0.38 : Math.min(240, W * 0.3);
+  const kmX = narrow ? nameW : nameW + 22;
+  const valX = narrow ? nameW + 44 : kmX + 50;
   const plot: [number, number] = [valX + 18, W - 12];
   // The axis fits the data (no clamp): every value and range end, with 0 in view for value added.
   const vals = rows.flatMap((r) => [r.value, va ? r.lo : null, va ? r.hi : null]).filter((v): v is number => v !== null);
@@ -188,7 +190,7 @@ export function RankChart({ a, fullscreen, room }: { a: Academic; fullscreen: bo
   lo -= pad;
   hi += pad;
   const sx = scale([lo, hi], plot);
-  const ticks = niceTicks(lo, hi, 5);
+  const ticks = niceTicks(lo, hi, narrow ? 3 : 5);
   const height = fullscreen && room ? Math.max(H, fillHeight(room, 120, H)) : H;
   return (
     <div ref={ref} className="flex w-full flex-col gap-2" data-ac-chart="">
@@ -199,7 +201,7 @@ export function RankChart({ a, fullscreen, room }: { a: Academic; fullscreen: bo
             <g key={t}>
               <line x1={sx(t)} x2={sx(t)} y1={top} y2={H - 6} style={{ stroke: va && t === 0 ? "var(--ac-zero)" : "var(--adm-grid)" }} strokeWidth={va && t === 0 ? 1.4 : 1} />
               <text x={sx(t)} y={14} fontSize={10} textAnchor="middle" style={{ fill: "var(--muted)" }}>
-                {va && t === 0 ? "0 = England average" : fmtTick(t, b.unit)}
+                {va && t === 0 ? (narrow ? "0" : "0 = England average") : fmtTick(t, b.unit)}
               </text>
             </g>
           ))}
@@ -212,7 +214,7 @@ export function RankChart({ a, fullscreen, room }: { a: Academic; fullscreen: bo
             </g>
           )}
           <text x={0} y={14} fontSize={10} fontWeight={700} style={{ fill: "var(--muted)" }}>SCHOOL</text>
-          <text x={kmX} y={14} fontSize={10} fontWeight={700} textAnchor="end" style={{ fill: "var(--muted)" }}>KM</text>
+          {!narrow && <text x={kmX} y={14} fontSize={10} fontWeight={700} textAnchor="end" style={{ fill: "var(--muted)" }}>KM</text>}
           <text x={valX} y={14} fontSize={10} fontWeight={700} textAnchor="end" style={{ fill: "var(--muted)" }}>{va ? "VA" : b.unit === "share" ? "SHARE" : b.unit === "entries" ? "ENTRIES" : "PTS"}</text>
           {rows.map((r, i) => {
             const y = top + i * rowH + 19;
@@ -226,7 +228,7 @@ export function RankChart({ a, fullscreen, room }: { a: Academic; fullscreen: bo
                   <title>{r.name}</title>
                   {clip(r.name, nameW)}
                 </text>
-                <text x={kmX} y={y} fontSize={11} textAnchor="end" style={{ fill: "var(--muted)" }}>{r.km === null ? "—" : r.km < 10 ? r.km.toFixed(1) : Math.round(r.km)}</text>
+                {!narrow && <text x={kmX} y={y} fontSize={11} textAnchor="end" style={{ fill: "var(--muted)" }}>{r.km === null ? "—" : r.km < 10 ? r.km.toFixed(1) : Math.round(r.km)}</text>}
                 <text x={valX} y={y} fontSize={12} fontWeight={700} textAnchor="end" style={{ fill: "var(--fg)" }}>{fmtShort(r.value, b.unit)}</text>
                 {r.value === null ? (
                   <text x={plot[0]} y={y} fontSize={11} style={{ fill: "var(--muted2)" }}>
@@ -282,11 +284,11 @@ function EnglandStrip({ b, a }: { b: Board; a: Academic }) {
   const pct = e.of > 1 ? (1 - (e.rank - 1) / (e.of - 1)) * 100 : 50;
   const what = a.state.phase === "gcse" ? "schools with Progress 8" : `schools and colleges with ${b.title.split(",")[0]} value added`;
   return (
-    <div className="flex items-center gap-[10px] text-[11px] text-[var(--chip-fg)]" data-ac-england="">
+    <div className="flex flex-wrap items-center gap-x-[10px] gap-y-1 text-[11px] text-[var(--chip-fg)]" data-ac-england="">
       <span className="whitespace-nowrap">
         England: <b className="text-[var(--fg)]">{ord(e.rank)} of {e.of.toLocaleString("en-GB")}</b> {what}
       </span>
-      <span className="relative h-2 flex-1 rounded-[4px]" style={{ background: "linear-gradient(90deg, var(--ac-below2), var(--adm-grid) 50%, var(--ac-above2))", opacity: 0.55 }}>
+      <span className="relative h-2 min-w-[120px] flex-1 rounded-[4px]" style={{ background: "linear-gradient(90deg, var(--ac-below2), var(--adm-grid) 50%, var(--ac-above2))", opacity: 0.55 }}>
         <span className="absolute top-[-3px] h-[14px] w-[10px] rounded-[3px]" style={{ left: `calc(${pct}% - 5px)`, background: "var(--accent)" }} />
       </span>
       <Tl>lowest &rarr; highest</Tl>
@@ -493,7 +495,7 @@ function QualRows({ q, mode, unit, vals, cols }: { q: { qualification: string; s
           {mode === "entries" && <Td>{s.size ? <SizeBadge size={s.size} /> : <span className="text-[var(--muted2)]">—</span>}</Td>}
           <Td className="text-right font-bold text-[var(--fg)]" title={s.why ?? undefined}>{s.value === null ? <span className="font-normal text-[var(--muted2)]">{s.why ? "not ranked" : "—"}</span> : fmtAc(s.value, unit)}</Td>
           <Td>{s.value !== null && <Dots s={s} unit={unit} vals={vals} mode={mode} />}</Td>
-          {mode === "entries" && <Td className="text-right">{s.value !== null && s.typical !== null ? signedDelta(s.value - s.typical, (x) => x.toFixed(1), { zero: "±" }) : "none"}</Td>}
+          {mode === "entries" && <Td className="text-right">{s.value !== null && s.typical !== null ? signedDelta(s.value - s.typical, (x) => Math.abs(x).toFixed(1), { zero: "±" }) : "none"}</Td>}
           <Td className="whitespace-nowrap text-right">{mode === "entries" ? (s.offering ? `${s.offering.n} of ${s.offering.of}` : "—") : s.only ? "only school" : s.place ? `${ord(s.place.rank)} of ${s.place.of}` : "—"}</Td>
         </tr>
       ))}
@@ -567,7 +569,7 @@ export function TrendBand({ a, fullscreen, room }: { a: Academic; fullscreen: bo
   const t = a.trends;
   const real = t.school.filter((p) => p.value !== null).length;
   const bandReal = t.band.filter((b) => b.p25 !== null).length;
-  if (real < 1 && bandReal < 2) return <Centre>{a.board.empty ?? "Not enough published years to draw a trend."}</Centre>;
+  if (real < 1 && bandReal < 1) return <Centre>{a.board.empty ?? "Not enough published years to draw a trend."}</Centre>;
   const set = a.set.chosen ? a.set.label : `the ${a.set.label}`;
   const unit = t.unit === "va" ? "va" : t.unit === "share" ? "share" : t.unit === "grade" ? "grade" : t.unit === "entries" ? "pupils" : "points";
   return (
@@ -575,7 +577,8 @@ export function TrendBand({ a, fullscreen, room }: { a: Academic; fullscreen: bo
       <Vt>
         {t.label} against {set}
       </Vt>
-      <BandChart school={t.school} band={t.band} height={fullscreen ? fillHeight(room, 150, 300) : 150} unit={unit} label={t.label} setLabel={set} />
+      {/* No line for the school (an independent's Progress 8): the band alone, over the band's years. */}
+      <BandChart school={t.school.length ? t.school : t.band.map((x) => ({ year: x.year, value: null }))} band={t.band} height={fullscreen ? fillHeight(room, 150, 300) : 150} unit={unit} label={t.label} setLabel={set} />
       <div className="flex flex-wrap gap-3">
         {t.schoolLabel && <Key swatch={<span className="w-[14px] border-t-[2.5px] border-[var(--accent)]" />}>{t.schoolLabel.replace(/ School$/, "")}</Key>}
         <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px] bg-[var(--adm-grey-bar)]" />}>Comparison set, middle half</Key>
@@ -593,7 +596,7 @@ export function TrendTable({ a }: { a: Academic }) {
 
 export function EveryLine({ a }: { a: Academic }) {
   const lines = a.trends.lines.filter((l) => l.from !== null || l.to !== null);
-  if (!lines.length) return <Centre>No line has two years to compare.</Centre>;
+  if (!lines.length) return <Centre>{a.col1.note ?? "No line has two years to compare."}</Centre>;
   const va = a.state.mode === "va";
   const span = Math.max(0.1, ...lines.flatMap((l) => [Math.abs((l.to ?? 0) - (va ? 0 : (l.from ?? 0))), va ? Math.abs(l.from ?? 0) : 0, va ? Math.abs(l.to ?? 0) : 0]));
   const W = 260;
@@ -741,7 +744,7 @@ export function Against({ a }: { a: Academic }) {
           <span className="text-[var(--muted2)]">
             {r.mine.toFixed(1)}% vs {r.typical.toFixed(1)}%
           </span>
-          <span className="text-right font-bold" style={{ color: r.gap > 0 ? "var(--ac-above2)" : "var(--ac-below2)" }}>{signedDelta(r.gap, (v) => v.toFixed(1), { zero: "±" })}</span>
+          <span className="text-right font-bold" style={{ color: r.gap > 0 ? "var(--ac-above2)" : "var(--ac-below2)" }}>{signedDelta(r.gap, (v) => Math.abs(v).toFixed(1), { zero: "±" })}</span>
         </div>
       ))}
       <Tl>Share of Post-16 entries, against the set&rsquo;s typical school offering it</Tl>
