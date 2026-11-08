@@ -32,7 +32,6 @@ import { igcseExcluded, setNames, type BandPt, type Pt, type Rank, type SmtSet }
 import { englandQualVa, qualRows, subjectVa, vaMatcher, type QualRow, type VaFact } from "./academic-data";
 import { gcseDefaultSet, groupDefaultSet, offering, stateP8Set, type GroupSet } from "./academic-sets";
 import { APPLIED_KEY, APPLIED_LABEL, GROUP_LABEL, GROUP_ORDER, dfeBandOf, groupChips, groupOfQualification, p8Band, rangeBand, shortQualification, type AcademicMode, type AcademicOffer, type AcademicPhase, type AcademicState, type AppliedType, type DfeBand, type QualGroup, type RangeBand, type RealGroup } from "./qual-groups";
-import { VA_SUBJECT_MATCHES_STATUS } from "./va-subject-matches";
 import { entrySizeBadge, entrySizeFifths, entrySizeKey, type EntrySizeKey } from "../subject-entry-size";
 
 export const MIN_SUBJECT_ENTRIES = MIN_SUBJECT_ENTRIES_UI; // R-SMT-SMALL-ENTRIES: a subject needs this many to be ranked
@@ -262,7 +261,7 @@ const noticeNotes = (): Record<string, string> => ({
   tlevelNoVa: smtNote("acTlevelNoVa"),
   quarters: smtNote("acQuarters"),
   subjectsByQual: smtNote("acSubjectsByQual"),
-  vicdataMatch: smtNote("acVicdataMatch", { status: VA_SUBJECT_MATCHES_STATUS === "draft" ? "VicData's draft list, being checked" : "VicData's list, approved by Guy" }),
+  vicdataMatch: smtNote("acVicdataMatch", { status: "VicData's list, approved by Guy, in the shared subject crosswalk" }),
   outsideAreas: smtNote("acOutsideAreas"),
   size: smtNote("acSize"),
   sizePending: smtNote("acSizePending"),

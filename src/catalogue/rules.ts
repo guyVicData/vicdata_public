@@ -2623,11 +2623,11 @@ export const RULES: Rule[] = [
   {
     id: "R-VA-SUBJECT-MATCH",
     statement:
-      "Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); until that lands, from src/lib/smt/va-subject-matches.ts, which goes once it has. While both exist they agree. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's.",
+      "Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (84 subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); the app's own copy is gone. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's.",
     why: "F-44: a quarter of A-level subject value-added rows had no area, and an area chosen at Post-16 silently dropped them.",
     appliesTo: "DV-SMT-A-AREAS (Value added)",
-    enforcedIn: ["src/lib/smt/va-subject-matches.ts:VA_SUBJECT_MATCHES", "src/lib/smt/academic-data.ts:vaMatch", "docs/v0.8/smt_academic_scripts/va_subject_matches.py"],
-    testCase: { urn: "100053", school: "every value-added (qualification, subject) name live", phase: "ks5", expect: "Approved; every name has a match with an area or is marked outside; once the database carries the value-added names, the database and the file agree name by name.", check: "vaSubjectMatch" },
+    enforcedIn: ["src/lib/smt/academic-data.ts:vaMatcher", "vicdata supabase/migrations/20261108120000_va_subject_label_map.sql", "docs/v0.8/smt_academic_scripts/va_subject_matches.py"],
+    testCase: { urn: "100053", school: "every value-added (qualification, subject) name live", phase: "ks5", expect: "The crosswalk carries the 84 value-added rows; all 368 approved names resolve as approved (results name, area, outside mark); every value-added name at the four schools has an area or is marked outside.", check: "vaSubjectMatch" },
     origin: "0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md)",
     status: "active",
   },
