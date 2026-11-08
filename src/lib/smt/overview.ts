@@ -34,8 +34,6 @@ import { entryTiles, type EntryTile } from "./entry-net";
 import { entryShrinking, resultsAgainstSet, rollFalling, type SmtFlag } from "./flags";
 
 export type SmtSet = { kind: string; label: string; urns: string[] };
-export type SmtFilters = { sex: "all" | "female" | "male"; boarding: "all" | "day" | "boarding" };
-export const DEFAULT_SMT_FILTERS: SmtFilters = { sex: "all", boarding: "all" };
 
 export type Rank = { rank: number; of: number };
 export type Stage = "ks2" | "ks4" | "ks5";
@@ -103,7 +101,6 @@ export type Overview = {
   // F-2: the map's dots and labels -- each school's whole-school roll (latest census) and its roll
   // direction (the shared 3-year rule, rollDirection: ROLL_DIRECTION_SPAN and the flat band).
   rolls: Record<string, { roll: number | null; year: number | null; trend: { dir: "up" | "down" | "flat"; word: string; pct: number; from: number; to: number } | null }>;
-  filters: SmtFilters;
   now: {
     census: number | null;
     roll: number | null;
@@ -200,13 +197,14 @@ export function p8Of(school: Pick<SmtSchool, "independent" | "phases" | "latest"
   return { status: "no_baseline", text: smtNote("p8NoBaseline", { years }) };
 }
 
-export const rollAt = (census: RollSnapshot[], year: number, f: SmtFilters): number | null => {
+/** A census year's roll: the whole school, or (where the census counts boarders) its day pupils or its
+ * boarders. 0.8 SMT Academic (R-SMT-NO-PILLS): the girls/boys and day/boarding pills are gone, so
+ * nothing here is filtered by sex; boarding is split only for the day and boarding lines. */
+export const rollAt = (census: RollSnapshot[], year: number, part: "all" | "day" | "boarding" = "all"): number | null => {
   const c = census.find((s) => s.period === year);
   if (!c) return null;
-  if (f.boarding === "boarding" && c.boarding) return c.boarding.boarders;
-  if (f.boarding === "day" && c.boarding) return c.boarding.day;
-  if (f.sex === "female" && c.gender.sumMatchesTotal) return c.gender.female;
-  if (f.sex === "male" && c.gender.sumMatchesTotal) return c.gender.male;
+  if (part === "boarding" && c.boarding) return c.boarding.boarders;
+  if (part === "day" && c.boarding) return c.boarding.day;
   return c.totalRoll > 0 ? c.totalRoll : null;
 };
 
@@ -233,12 +231,10 @@ export async function igcseExcluded(): Promise<Set<string>> {
 
 const STAGE_LABEL: Record<Stage, string> = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" };
 
-export async function buildOverview(school: SmtSchool, set: SmtSet, filters: SmtFilters, caller: SmtAdmissionsReader | null): Promise<Overview> {
+export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtAdmissionsReader | null): Promise<Overview> {
   const urn = school.urn;
   const setUrns = Array.from(new Set(set.urns.filter((u) => u !== urn)));
   const all = [urn, ...setUrns];
-  const f = school.boarding ? filters : { ...filters, boarding: "all" as const };
-  const ff: SmtFilters = school.mixed ? f : { ...f, sex: "all" };
   const noKs2: Population = new Map();
   const [ks2, ks4, ks5, igcse, rolls, england] = await Promise.all([school.phases.primary && school.results.ks2 ? population("ks2") : Promise.resolve(noKs2), population("ks4"), population("ks5"), igcseExcluded(), setRolls(all), englandSchools()]);
   const schoolIgcse = !!school.phases.igcse;
@@ -248,8 +244,8 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
   const P = now?.period ?? null;
 
   // ------------------------------------------------------------ column 1, the school now
-  const roll = P === null ? null : rollAt(census, P, ff);
-  const baseRoll = rollAt(census, CENSUS_FIRST_PERIOD, ff);
+  const roll = P === null ? null : rollAt(census, P);
+  const baseRoll = rollAt(census, CENSUS_FIRST_PERIOD);
   const dist = await lookupAgeBandDistributions(school.laName, P ?? CURRENT_CENSUS_PERIOD);
   const counts = new Map<number, { male: number; female: number }>();
   const own = (await cachedCensus([urn])).get(urn);
@@ -291,7 +287,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
     const nat = wholeRoll === null ? null : rankIn(pool.map(([, s]) => s.roll!), wholeRoll);
     const reg = wholeRoll === null || !region ? null : { ...rankIn(pool.filter(([, s]) => s.regionCode === region.regionCode).map(([, s]) => s.roll!), wholeRoll), name: region.regionName };
     const sr = wholeRoll === null ? null : setPlace(new Map([...rolls].map(([u, v]) => [u, u === urn ? wholeRoll : v])), urn);
-    rows.push({ key: "roll", label: ff.sex !== "all" || ff.boarding !== "all" ? `Roll (${ff.boarding !== "all" ? ff.boarding : ff.sex === "female" ? "girls" : "boys"})` : "Roll", stage: null, unit: "pupils", value: roll, period: P, set: sr ? { ...sr, label: setLabel } : null, region: ff.sex === "all" && ff.boarding === "all" ? reg : null, england: ff.sex === "all" && ff.boarding === "all" ? nat : null, since: baseRoll !== null && roll !== null && P !== null && pctChange(baseRoll, roll) !== null ? trendOf(CENSUS_FIRST_PERIOD, P, pctChange(baseRoll, roll)!, "pct") : null, note: null });
+    rows.push({ key: "roll", label: "Roll", stage: null, unit: "pupils", value: roll, period: P, set: sr ? { ...sr, label: setLabel } : null, region: reg, england: nat, since: baseRoll !== null && roll !== null && P !== null && pctChange(baseRoll, roll) !== null ? trendOf(CENSUS_FIRST_PERIOD, P, pctChange(baseRoll, roll)!, "pct") : null, note: null });
   }
   // F-3: the boarders row, for a boarding school only, ranked among boarding schools in the set, the
   // region and England.
@@ -375,27 +371,27 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
   // ------------------------------------------------------------ row 2: trends
   const years = census.map((c) => c.period).filter((y) => y >= CENSUS_FIRST_PERIOD);
   const lines: { key: string; label: string; pts: Pt[] }[] = [];
-  if (school.boarding && ff.boarding === "all" && census.some((c) => c.boarding)) {
-    lines.push({ key: "day", label: "Day", pts: years.map((y) => ({ year: y, value: rollAt(census, y, { ...ff, boarding: "day" }) })) });
-    lines.push({ key: "boarding", label: "Boarding", pts: years.map((y) => ({ year: y, value: rollAt(census, y, { ...ff, boarding: "boarding" }) })) });
+  if (school.boarding && census.some((c) => c.boarding)) {
+    lines.push({ key: "day", label: "Day", pts: years.map((y) => ({ year: y, value: rollAt(census, y, "day") })) });
+    lines.push({ key: "boarding", label: "Boarding", pts: years.map((y) => ({ year: y, value: rollAt(census, y, "boarding") })) });
   } else {
-    lines.push({ key: "school", label: school.name, pts: years.map((y) => ({ year: y, value: rollAt(census, y, ff) })) });
+    lines.push({ key: "school", label: school.name, pts: years.map((y) => ({ year: y, value: rollAt(census, y) })) });
   }
   // F-11 (R-ROLL-INDEXED-SET): against the selected set, not the LA and England -- the set's average day
-  // roll, and its average boarding roll (grey, dotted) where the set has boarders; the same filters.
+  // roll, and its average boarding roll (grey, dotted) where the set has boarders.
   const setCensuses = await Promise.all(setUrns.map((u) => schoolCensus(u).catch(() => [] as RollSnapshot[])));
   const at = (cs: RollSnapshot[], y: number) => cs.find((c) => c.period === y) ?? null;
   const daySeries = setCensuses.map((cs) => years.map((y) => {
     const c = at(cs, y);
     if (!c) return null;
-    return c.boarding ? rollAt(cs, y, { ...ff, boarding: "day" }) : rollAt(cs, y, { ...ff, boarding: "all" });
+    return c.boarding ? rollAt(cs, y, "day") : rollAt(cs, y);
   }));
   const boardSeries = setCensuses.map((cs) => years.map((y) => {
     const b = at(cs, y)?.boarding?.boarders ?? null;
     return b !== null && b > 0 ? b : null;
   }));
-  const setDay = ff.boarding === "boarding" ? null : setAverage(daySeries, years);
-  const setBoard = ff.boarding === "day" ? null : setAverage(boardSeries, years);
+  const setDay = setAverage(daySeries, years);
+  const setBoard = setAverage(boardSeries, years);
   const anyBoarders = school.boarding || !!setBoard;
   const short = setShortName(setLabel);
   const setLines = [
@@ -431,7 +427,6 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
     igcse: schoolIgcse,
     schools: await setNames(all),
     rolls: await mapRolls(all),
-    filters: ff,
     now: {
       census: P,
       roll,

@@ -32,6 +32,10 @@ export function smtHasContent(dv: string, c: Ctx): boolean {
     return true;
   }
   if (dv.startsWith("DV-SMT-P-")) {
+    // 0.8 SMT Academic (R-SMT-NO-PILLS): known from the school before the data loads, so a single-sex school
+    // never sees Girls and boys, nor a day school Day and boarding, even for a moment.
+    if (dv === "DV-SMT-P-GIRLS-BOYS" && !c.school.mixed) return false;
+    if (dv === "DV-SMT-P-DAY-BOARDING" && !c.school.boarding) return false;
     if (c.pupils.status !== "ready") return true;
     const p = c.pupils.data;
     switch (dv) {
@@ -39,6 +43,11 @@ export function smtHasContent(dv: string, c: Ctx): boolean {
         return p.shape.yearGroups.length > 0;
       case "DV-SMT-P-LEAVING":
         return p.leaving.length > 0;
+      // And once loaded: a mixed school with no census, or a boarding school with no boarders counted.
+      case "DV-SMT-P-GIRLS-BOYS":
+        return !!p.girlsBoys && p.girlsBoys.years.length > 0;
+      case "DV-SMT-P-DAY-BOARDING":
+        return !!p.dayBoarding;
       case "DV-SMT-P-MARKET":
         return p.market.status === "ready" || p.market.reason !== SMT_NOTES.marketNoEntry;
       case "DV-SMT-P-PHASES":

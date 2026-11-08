@@ -106,7 +106,7 @@ async function smtCase(urn: string) {
       const school = (await smtSchool(urn))!;
       const near = await resolveDefaultNearest(urn, setPhaseOf(school.phases));
       const set = { kind: "nearest", label: "10 nearest schools", urns: near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn) };
-      return { school, set, overview: await buildOverview(school, set, { sex: "all", boarding: "all" }, null) };
+      return { school, set, overview: await buildOverview(school, set, null) };
     })().catch((e) => {
       smtMemo.delete(urn); // a failed read isn't kept: the next runner tries again
       throw e;
@@ -145,7 +145,6 @@ async function smtRender(urn: string, dv: string, academic?: import("../src/lib/
     dash: dv.startsWith("DV-SMT-O-") ? "overview" : dv.startsWith("DV-SMT-P-") ? "pupils" : dv.startsWith("DV-SMT-C-") ? "context" : "academic",
     level: academic ? { phase: academic.state.phase, area: academic.state.area } : more.context ? { phase: more.context.level, area: null } : { phase: "whole", area: null },
     set: c.set,
-    filters: { sex: "all", boarding: "all" },
     overview: { status: "ready", data: c.overview },
     academic: academic ? { status: "ready", data: academic } : { status: "loading" },
     pupils: more.pupils ? { status: "ready", data: more.pupils } : { status: "loading" },
@@ -167,7 +166,7 @@ async function smtPupilsCase(urn: string, phase: "whole" | "gcse" | "post16" | "
     smtMemo.set(key, (async () => {
       const c = await smtCase(urn);
       const { buildPupils } = await import("../src/lib/smt/pupils");
-      return buildPupils(c.school, c.set, { sex: "all", boarding: "all" }, { phase, area: null }, null);
+      return buildPupils(c.school, c.set, { phase, area: null }, null);
     })().catch((e) => {
       smtMemo.delete(key);
       throw e;
@@ -2806,13 +2805,77 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ todayA8: a8.period, latestKs4: c.school.latest.ks4!.period, yearLiterals: literal.join(" ") || "none", rehearsal: r ? `A8 ${r.a8}, Post-16 ${r.aps}, provisional=${r.provisional}` : rehearsal, lsoaRehearsal: l ? `today mid-${ctx.now.children.year}; with a new year: children ${l.children}, by age ${l.byAge}, sources ${l.sources}, nearby to ${l.nearbyLast}` : lsoa }) };
   },
   async smtBoardingOnly() {
-    const { pillsFor } = await import("../src/lib/smt/levels");
-    const { buildOverview } = await import("../src/lib/smt/overview");
+    // 0.8 SMT Academic: rewritten for no pills (R-SMT-NO-PILLS) -- boarding shows only at a boarding school.
+    const { smtHasContent } = await import("../src/components/smt/content");
     const chase = await smtCase("137625");
     const lp = await smtCase("110110");
-    const ignored = await buildOverview(chase.school, chase.set, { sex: "all", boarding: "boarding" }, null);
-    const pass = pillsFor(chase.school).join() === "gender" && pillsFor(lp.school).join() === "gender,boarding" && ignored.filters.boarding === "all" && !ignored.rows.some((r) => r.key === "boarders") && ignored.now.roll === chase.overview.now.roll && lp.overview.rows.some((r) => r.key === "boarders") && lp.overview.trends.roll.lines.some((l) => l.key === "boarding");
-    return { pass, detail: fmt({ chasePills: pillsFor(chase.school).join("+"), leightonPills: pillsFor(lp.school).join("+"), chaseBoardingFilterIgnored: ignored.filters.boarding === "all" && ignored.now.roll === chase.overview.now.roll, leightonBoardersRow: lp.overview.rows.some((r) => r.key === "boarders"), leightonLines: lp.overview.trends.roll.lines.map((l) => l.key).join("/") }) };
+    const [chaseP, lpP] = await Promise.all([smtPupilsCase("137625"), smtPupilsCase("110110")]);
+    const has = (c: { school: import("../src/lib/smt/school").SmtSchool }, p: import("../src/lib/smt/pupils").Pupils, dv: string) => smtHasContent(dv, { school: c.school, dash: "pupils", level: { phase: "whole", area: null }, pupils: { status: "ready", data: p } } as never);
+    const chaseOk = !chase.school.boarding && !chase.overview.rows.some((r) => r.key === "boarders") && chase.overview.trends.roll.lines.every((l) => l.key !== "boarding" && l.key !== "day") && chaseP.dayBoarding === null && chaseP.now.boarding === null && !has(chase, chaseP, "DV-SMT-P-DAY-BOARDING");
+    const lpOk = lp.school.boarding && lp.overview.rows.some((r) => r.key === "boarders") && lp.overview.trends.roll.lines.some((l) => l.key === "boarding") && !!lpP.dayBoarding && lpP.dayBoarding.now.boarders > 0 && has(lp, lpP, "DV-SMT-P-DAY-BOARDING");
+    return { pass: chaseOk && lpOk, detail: fmt({ chaseBoardersRow: chase.overview.rows.some((r) => r.key === "boarders"), chaseLines: chase.overview.trends.roll.lines.map((l) => l.key).join("/"), chaseDayBoardingView: has(chase, chaseP, "DV-SMT-P-DAY-BOARDING"), leightonBoardersRow: lp.overview.rows.some((r) => r.key === "boarders"), leightonLines: lp.overview.trends.roll.lines.map((l) => l.key).join("/"), leightonBoarders: lpP.dayBoarding ? `${lpP.dayBoarding.now.boarders} (${round(lpP.dayBoarding.now.share, 1)}%)` : null }) };
+  },
+  async smtNoPills() {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { smtHasContent } = await import("../src/components/smt/content");
+    const { buildOverview } = await import("../src/lib/smt/overview");
+    const { buildPupils, girlsShare, countsAsMixed } = await import("../src/lib/smt/pupils");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { percentile } = await import("../src/lib/admissions/stats");
+    // 1. No SMT source draws a sex or boarding pill or threads the filters (comments aside).
+    const files = ["src/components/smt", "src/components/smt/views", "src/lib/smt", "src/app/api/smt/overview", "src/app/api/smt/pupils"].flatMap((d) => readdirSync(path.join(ROOT, d)).filter((f) => /\.tsx?$/.test(f)).map((f) => path.join(ROOT, d, f)));
+    const pill: string[] = [];
+    for (const f of files)
+      readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+        const code = line.replace(/\/\/.*$/, "").replace(/^\s*(\/\*\*?|\*).*$/, "");
+        if (/SmtFilters|pillsFor|DEFAULT_SMT_FILTERS|label="Pupils"|label="Day and boarding"|"All pupils"|"Boarding only"|"Day only"|sex: "all"|boarding: "all"|\bc\.filters\b/.test(code)) pill.push(`${path.relative(ROOT, f)}:${i + 1}`);
+      });
+    const arity = buildOverview.length === 3 && buildPupils.length === 4;
+    // 2. Leighton Park (boarding, mixed): both views, with figures and rail icons.
+    const lp = await smtCase("110110");
+    const lpP = await smtPupilsCase("110110");
+    const ctx = (c: { school: import("../src/lib/smt/school").SmtSchool }, p: import("../src/lib/smt/pupils").Pupils | null) => ({ school: c.school, dash: "pupils", level: { phase: "whole", area: null }, pupils: p ? { status: "ready", data: p } : { status: "loading" } }) as never;
+    const g = lpP.girlsBoys;
+    const d = lpP.dayBoarding;
+    const lpOk = !!g && g.years.length > 0 && g.years.every((y) => y.share !== null) && g.whole.change !== null && g.whole.set.change.schools > 0 && g.shifts.some((x) => x.key === "year7") && g.shifts.some((x) => x.key === "sixth") && !!d && d.years.length > 1 && d.set.boardingSchools > 0 && smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(lp, lpP)) && smtHasContent("DV-SMT-P-DAY-BOARDING", ctx(lp, lpP));
+    const lpHtml = textOf(await smtRender("110110", "DV-SMT-P-GIRLS-BOYS", undefined, { pupils: lpP })) + textOf(await smtRender("110110", "DV-SMT-P-DAY-BOARDING", undefined, { pupils: lpP }));
+    const drawn = /Girls['\u2019] share in each year group/.test(lpHtml) && /Where it shifts/.test(lpHtml) && /Boarders['\u2019] share of the roll/.test(lpHtml);
+    // 3. Acland Burghley: the set's girls' share recomputed from the raw census and GIAS -- single-sex schools
+    // left out, never counted as 0 (the third pill bug).
+    const ab = await smtCase("100053");
+    const abP = await smtPupilsCase("100053");
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const { data: gias } = await createServerAnonSupabaseClient().from("schools").select("urn, gender").in("urn", ab.set.urns);
+    const genderOf = new Map(((gias ?? []) as { urn: string; gender: string | null }[]).map((r) => [r.urn, r.gender]));
+    const census = await cachedCensus(ab.set.urns);
+    const P = abP.girlsBoys?.year ?? -1;
+    const mixed = ab.set.urns.filter((u) => countsAsMixed(genderOf.get(u), census.get(u)?.ageGenderByPeriod.get(P)));
+    const singleSex = ab.set.urns.filter((u) => genderOf.get(u) === "Girls" || genderOf.get(u) === "Boys");
+    const want = percentile(mixed.map((u) => girlsShare(census.get(u)!.ageGenderByPeriod.get(P))!), 50);
+    const asZero = percentile(ab.set.urns.map((u) => (mixed.includes(u) ? girlsShare(census.get(u)!.ageGenderByPeriod.get(P))! : 0)), 50);
+    const got = abP.girlsBoys?.whole.set.share;
+    const abOk = !!got && got.median !== null && want !== null && Math.abs(got.median - want) < 1e-9 && got.schools === mixed.length && singleSex.length > 0 && singleSex.every((u) => !mixed.includes(u)) && abP.girlsBoys!.leftOut === ab.set.urns.length - mixed.length;
+    // 4. A single-sex school (Parliament Hill, girls): no Girls and boys view, before or after the data loads.
+    const ph = await smtCase("100050");
+    const phP = await smtPupilsCase("100050");
+    const phOk = !ph.school.mixed && phP.girlsBoys === null && !smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(ph, null)) && !smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(ph, phP));
+    // 5. The Scorecard's Roll row: the whole roll, ranked on it (the first pill bug).
+    const roll = lp.overview.rows.find((r) => r.key === "roll");
+    const rollOk = !!roll && roll.label === "Roll" && roll.value === lp.school.census.at(-1)?.totalRoll;
+    const pass = pill.length === 0 && arity && lpOk && drawn && abOk && phOk && rollOk;
+    return {
+      pass,
+      detail: fmt({
+        pillLines: pill.join(" ") || "none",
+        builderArity: `${buildOverview.length}/${buildPupils.length}`,
+        leightonGirls: g ? `${round(g.whole.share, 1)}% (${g.whole.baseYear}: ${round(g.whole.base, 1)}%, ${round(g.whole.change, 1)} pp; set ${round(g.whole.set.change.median, 1)} pp over ${g.whole.set.change.schools}); Y7 shift ${round(g.shifts.find((x) => x.key === "year7")?.shift, 1)} pp, sixth ${round(g.shifts.find((x) => x.key === "sixth")?.shift, 1)} pp; left out ${g.leftOut}` : null,
+        leightonBoarding: d ? `${d.now.boarders} of ${d.now.boarders + d.now.day} (${round(d.now.share, 1)}%), ${round(d.change, 1)} pp since ${d.baseYear}; set ${round(d.set.share.median, 1)}% over ${d.set.boardingSchools} of ${d.set.of}` : null,
+        drawn,
+        aclandSetGirls: got ? `${round(got.median, 1)}% over ${got.schools} mixed (want ${round(want, 1)}%; as-zero would be ${round(asZero, 1)}%); single-sex ${singleSex.length}, left out ${abP.girlsBoys?.leftOut}` : null,
+        parliamentHillView: smtHasContent("DV-SMT-P-GIRLS-BOYS", ctx(ph, phP)),
+        rollRow: roll ? `${roll.label} ${roll.value}` : null,
+      }),
+    };
   },
   async smtFlags(L0) {
     const { expectedFor } = await import("./rule-year-fixtures");

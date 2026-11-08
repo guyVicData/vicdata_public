@@ -232,6 +232,23 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     steps: ["Bars show the school's pupils at each age from Reception (age 4) to Year 13 (age 17) in the latest census; the level's ages are highlighted: GCSE Years 7 to 11 (ages 11 to 15), Post-16 Years 12 and 13 (16 and 17), Primary Reception to Year 6 (4 to 10).", "The shape is the shared classifier's label for the school's pupils by age; 'since' is the year after the last census when it was different.", "For the LA we take nearby schools in the same LA with exactly the same age range and show the most common shape and how many had it.", "For the set we count how many schools have each shape, never ranking them.", "The set's Year 12 against Year 11 is the middle (median) of that figure across set schools whose top age is 17 or more."],
     rounding: ["Year 12 against Year 11 to a whole per cent"],
   },
+  // 0.8 SMT Academic (R-SMT-NO-PILLS): the pills' figures as views.
+  "DV-SMT-P-GIRLS-BOYS": {
+    sources: ["DfE school census (January): pupils by single year of age and sex, the school's and the comparison set's schools'", "GIAS (Get Information about Schools): gender of entry"],
+    geography: "The school; the comparison set's mixed schools",
+    years: "The latest census; change from the first census year held (the census's first year, or the school's first after it)",
+    leftOut: ["Single-sex schools in the set (GIAS), and any with no girls or no boys in the census: left out, never counted as 0", "Ages under 4 and over 17 from the bars", "A set school with no pupils in a year group, from that year group's middle", "From the set's line, schools without a census in every year shown"],
+    steps: ["For each year group (Reception, age 4, to Year 13, age 17) we divide the school's girls by its girls and boys in the latest census.", "The set's mark is the middle (median) of the same share across the set's mixed schools with pupils in that year group.", "The change is the school's girls' share across every age now minus the same share in the first census year; the set's is the middle of each mixed school's own change over the same years.", "Where it shifts: Year 7's share (age 11) minus Years 8 to 11's (ages 12 to 15), and the sixth form's (ages 16 and 17) minus Years 7 to 11's (ages 11 to 15); the set's is the middle of each mixed school's same shift.", "The line is the school's girls' share each year, and the middle of the set's mixed schools with a census in every year shown."],
+    rounding: ["Shares to a whole per cent", "Changes and shifts to 1 dp percentage points"],
+  },
+  "DV-SMT-P-DAY-BOARDING": {
+    sources: ["DfE school census (January): boarders and the whole roll, the school's and the comparison set's schools'", "GIAS (Get Information about Schools): boarding status (which schools get the view)"],
+    geography: "The school; the comparison set's boarding schools",
+    years: "Every census year from the first held to the latest",
+    leftOut: ["Day schools: the view isn't offered", "Boarders by year group or phase: the census doesn't count them", "Set schools with no boarders in the census", "From the set's line, schools without boarders in every year shown"],
+    steps: ["For each census year we take the school's boarders and its whole roll; day pupils are the roll minus the boarders.", "Boarders' share is the boarders divided by the whole roll.", "The change is the share now minus the share in the first census year held.", "The set's figure is the middle (median) of its boarding schools' shares (and of their own changes); its line uses only those with boarders in every year shown."],
+    rounding: ["Pupils to whole numbers", "Shares to a whole per cent", "Changes to 1 dp percentage points"],
+  },
   "DV-SMT-P-ENTRIES": {
     sources: ["Admissions' saved entry points and feeder lists", "Admissions' pipeline (census counts, then ONS births by LA)"],
     geography: "The school and the feeder schools or areas Admissions holds for each entry point",

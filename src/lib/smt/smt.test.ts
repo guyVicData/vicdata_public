@@ -5,7 +5,7 @@
 // Run: npx -y tsx --test src/lib/smt/smt.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { levelChips, levelQuery, parseLevel, pillsFor, setPhaseOf } from "./levels";
+import { levelChips, levelQuery, parseLevel, setPhaseOf } from "./levels";
 import { areaSetPlace, setPlace, type Population } from "./population";
 import { resultsAgainstSet } from "./flags";
 import { flagsRuleText, SMT_FLAG_RULES } from "./flags-rules";
@@ -39,12 +39,6 @@ test("the set's phase: GCSE where ranked; an IGCSE school's is Post-16", () => {
   assert.equal(setPhaseOf({ primary: false, gcse: true, post16: true }), "ks4");
   assert.equal(setPhaseOf({ primary: false, gcse: true, post16: true, igcse: true }), "ks5");
   assert.equal(setPhaseOf({ primary: true, gcse: false, post16: false }), "ks2");
-});
-
-test("pills only where they apply: Gender for a mixed school, Day + boarding for a boarding school", () => {
-  assert.deepEqual(pillsFor({ mixed: true, boarding: false }), ["gender"]);
-  assert.deepEqual(pillsFor({ mixed: true, boarding: true }), ["gender", "boarding"]);
-  assert.deepEqual(pillsFor({ mixed: false, boarding: false }), []);
 });
 
 test("set ranks count only the set's schools with the figure, the school too, ties sharing a place", () => {

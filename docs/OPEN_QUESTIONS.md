@@ -2834,3 +2834,11 @@ Calls made while building `docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_
 - **A9 — GCSE subjects come from the subject rollup** (`academic_subject_headline`), not the subject-by-qualification rollup, which is Post-16 only; GCSE subject areas' qualification sub-head is "GCSE".
 - **A10 — The XS-XL sizes against England need their table** (a new app-database table and a sync, written and tested in PGlite; Guy applies them). Until then the Size column shows a dash and the (i) says the sizes arrive once loaded.
 - **A11 — The entries mix keeps VicData's groups** (`bucket:*::entries`: A level with AS, BTEC/OCR/VRQ, IB, T level, Other), as the prompt says, so its "A level" includes AS and differs a little from column 1's A-level line (A level only, from the subject rollup).
+## 2026-11-08 — SMT pills off: Girls and boys, Day and boarding (R-SMT-NO-PILLS)
+
+From `docs/v0.8/smt_value_added_plan_v1.md` §1. Decided in the build, for Guy to confirm:
+
+- **Boarders by phase isn't in the census.** The plan asks for "boarders' share by phase and over time". The school census holds `boarders_total`, `boarders_male` and `boarders_female` for the whole school only (checked on Leighton Park 110110, every year), no boarders by age. Default: the Day and boarding view shows boarders' share of the whole roll over time against the set's boarding schools, and its (i) says there is no split by phase. A phase split would need another source (ISC census?).
+- **"The set" is the middle (median) of the set's schools**, as Pupils' other set figures (Year 12 against Year 11): for girls' share, the set's mixed schools (GIAS "Mixed" with girls and boys in that census); for boarders' share, its schools with boarders in the census. Single-sex schools are left out and counted in the (i), never counted as 0. The set's lines keep only schools with a figure in every year shown (F-11's rule), so a school joining doesn't move them.
+- **"Where it shifts"** is read as Year 7 (the newest intake) against Years 8 to 11, and the sixth form (Years 12 and 13) against Years 7 to 11, in percentage points, with the set's middle of the same shift.
+- **Live step:** the published SMT Pupils config in the store wins over the code copy, so the two new rail views appear only once SMT Pupils is republished (as any new view).

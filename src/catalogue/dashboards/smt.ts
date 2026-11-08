@@ -42,7 +42,7 @@ const ACADEMIC: Cell[] = [
 
 const PUPILS: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-P-NOW"], defaultView: "DV-SMT-P-NOW" },
-  { column: "c2", row: "now", span: 2, name: "Shape and size", views: ["DV-SMT-P-SHAPE", "DV-SMT-P-ENTRIES", "DV-SMT-P-LEAVING", "DV-SMT-P-MARKET"], defaultView: "DV-SMT-P-SHAPE" },
+  { column: "c2", row: "now", span: 2, name: "Shape and size", views: ["DV-SMT-P-SHAPE", "DV-SMT-P-GIRLS-BOYS", "DV-SMT-P-DAY-BOARDING", "DV-SMT-P-ENTRIES", "DV-SMT-P-LEAVING", "DV-SMT-P-MARKET"], defaultView: "DV-SMT-P-SHAPE" },
   { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-P-PHASES", "DV-SMT-P-PHASES-TABLE"], defaultView: "DV-SMT-P-PHASES" },
   { column: "c2", row: "trends", name: "From Admissions", views: ["DV-SMT-P-POOL"], defaultView: "DV-SMT-P-POOL" },
   { column: "c3", row: "trends", name: "Area", views: ["DV-SMT-P-AREA"], defaultView: "DV-SMT-P-AREA" },

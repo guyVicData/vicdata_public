@@ -30,11 +30,10 @@ export async function railHidden(urn: string): Promise<{ name: string; hidden: H
   const school = (await smtSchool(urn))!;
   const near = await resolveDefaultNearest(urn, setPhaseOf(school.phases));
   const set: SmtSet = { kind: "nearest", label: "10 nearest schools", urns: near.rows.map((r: { urn: string }) => r.urn).filter((u: string) => u !== urn) };
-  const filters = { sex: "all", boarding: "all" } as const;
   const level = { phase: "whole", area: null } as const;
   const [overview, pupils, academic, context] = await Promise.all([
-    buildOverview(school, set, filters, null),
-    buildPupils(school, set, filters, level, null),
+    buildOverview(school, set, null),
+    buildPupils(school, set, level, null),
     // 0.8 SMT Academic: the school's main level, Results (Academic has no Whole school).
     academicOffer(school).then((o) => buildAcademic(school, parseAcademic(new URLSearchParams(), o), set)),
     buildContext(school, "around", "whole", { km: FIVE_MILES_KM, savedKm: null, defaultKm: FIVE_MILES_KM, capKm: 30, from: "view", capped: false }),
