@@ -7,10 +7,10 @@ import { useEffect, useState } from "react";
 import { cachedFetchJson } from "@/lib/fetch-cache";
 import { freshToken } from "@/components/admissions/member";
 import type { Academic } from "@/lib/smt/academic";
-import type { Overview, SmtFilters } from "@/lib/smt/overview";
+import type { Overview } from "@/lib/smt/overview";
 import type { SmtSchool } from "@/lib/smt/school";
 
-export type { Academic, Overview, SmtFilters, SmtSchool };
+export type { Academic, Overview, SmtSchool };
 export type Load<T> = { status: "loading" } | { status: "error"; code: number; message: string } | { status: "ready"; data: T };
 export type SmtSetChoice = { kind: string; label: string; urns: string[] };
 

@@ -202,6 +202,12 @@ export const SMT_NOTES = {
   rollByPhase: "Each phase's roll, and England's pupils aged 5 to 15 in every mainstream school (the census aggregates), indexed to 100 in {base}.",
   pool: "The pool for the main entry point, from Admissions: counted in the schools it draws from, then from births. A pool, not an intake.",
   levelAges: "The level picks the ages: GCSE Years 7 to 11, Post-16 Years 12 and 13, Primary Reception to Year 6.",
+  // ---- 0.8 SMT Academic (R-SMT-NO-PILLS): girls and boys, and day and boarding, as views (the pills are gone).
+  girlsBoys: "Girls' share is the girls among all pupils in the January census, by single year of age. The set's figure is the middle (median) of its mixed schools: single-sex schools, and any with no girls or no boys in the census, are left out, never counted as 0.",
+  girlsBoysLeftOut: "{n} of the {of} schools in {set} are left out (single-sex, or no girls or no boys in the census).",
+  girlsBoysShifts: "Where it shifts: Year 7, the newest intake, against Years 8 to 11; the sixth form (Years 12 and 13) against Years 7 to 11. In percentage points.",
+  dayBoarding: "Boarders' share is the census's boarders among the whole roll. The census counts boarders for the whole school (and by sex), not by year group, so there is no split by phase.",
+  dayBoardingSet: "The set's figure is the middle (median) of its boarding schools, those with boarders in the census ({n} of {of}); its line keeps only those with boarders in every year shown.",
   // 0.8 SMT r3 (K5): the area's school-age population is ONS residents now, not census pupils.
   areaResidents: "{la}'s residents aged {ages} (ONS mid-year estimates, by local authority): the children living in the area, not pupils.",
   areaResidentsCaption: "ONS mid-year estimates, residents",

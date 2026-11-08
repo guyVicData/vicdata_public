@@ -39,8 +39,9 @@ export const SMT_MEASURES: Measure[] = [
     years: { from: String(CENSUS_FIRST_PERIOD), to: String(CURRENT_CENSUS_PERIOD), latest: "census", note: `Change since ${periodLabel(CENSUS_FIRST_PERIOD)}; the LA and England lines are pupils aged 5-15.` },
     keying: "urn",
     geographies: geo(true, true, true, true),
-    numberTypes: ["totals", "pct_change", "index100", "rank"],
-    rules: ["R-SMT-SET-RANKS", "R-SMT-BOARDING-ONLY", "R-SMT-NOTES"],
+    // 0.8 SMT Academic (R-SMT-NO-PILLS): girls' and boarders' shares (rate) and their changes (change_pp).
+    numberTypes: ["totals", "pct_change", "index100", "rank", "rate", "change_pp"],
+    rules: ["R-SMT-SET-RANKS", "R-SMT-BOARDING-ONLY", "R-SMT-NOTES", "R-SMT-NO-PILLS"],
     fetchedBy: ["src/lib/smt/school.ts:smtSchool", "src/lib/smt/overview.ts:buildOverview", "src/app/api/smt/overview/route.ts"],
     knownGaps: ["The LA and England roll lines count pupils aged 5-15 only (the per-year area aggregates).", "No boarders by age; boarders aren't ranked."],
     citation: "DfE school census (January)",
@@ -140,6 +141,9 @@ export const SMT_RENDERERS: Renderer[] = [
   // 0.8 SMT round 2
   r("RD-SMT-SHAPE", "ShapeAndSize", "views/Pupils.tsx", "Pupils in each year group, the shape and since when, and the shapes around: the LA's schools of the same type, the set's shapes, Year 12 against Year 11 in the set. Described, never ranked.", "No census: says so."),
   r("RD-SMT-ENTRIES", "EntryPointsAtAGlance", "views/Pupils.tsx", "Each Admissions entry point: its cohort now and its next pool, read-only, with Open in Admissions.", "No entry points set: the reason, and Open in Admissions."),
+  // 0.8 SMT Academic (R-SMT-NO-PILLS): girls and boys, and day and boarding, as content (the pills are gone).
+  r("RD-SMT-GIRLS-BOYS", "GirlsAndBoys", "views/Pupils.tsx", "Girls' share in each year group against the middle of the set's mixed schools, its change since the census's first year against the set's, and where it shifts (Year 7, the sixth form); the share year by year. Single-sex set schools left out.", "A single-sex school: no view (no rail icon)."),
+  r("RD-SMT-DAY-BOARDING", "DayAndBoarding", "views/Pupils.tsx", "Boarders and day pupils census by census, and boarders' share of the roll against the middle of the set's boarding schools, now and over time.", "A day school: no view (no rail icon)."),
   r("RD-SMT-LEAVING", "LeavingAt16", "views/Pupils.tsx", "Year 11 to Year 12 at the school, year by year: Year 12 against Year 11 and the net leavers.", "No sixth form, or no Year 11: says so."),
   r("RD-SMT-AREA-MAP", "AreaMap", "views/Context.tsx", "Neighbourhoods (LSOAs) within 5 miles and a ring, shaded by children per hectare, IMD or IDACI decile (one sequential scale, decile 1 darkest), or schools coloured by FSM; the 5-mile circle; the school in the accent. Before the boundaries are loaded, and for the LA, round 2's LA shading.", "No located schools: says so."),
   r("RD-SMT-AGES", "AgeBars", "views/Context.tsx", "Residents by single year of age 0-18, within 5 miles or in the LA, the level's ages highlighted.", "No ages held: says so."),
@@ -176,7 +180,7 @@ const dv = (d: Def): Dataview => ({
   railIcon: d.railIcon,
   measures: d.measures,
   supports: { data: [d.data], phases: [], focus: ["level"], compare: d.compare, numberType: d.numberType, dateMode: d.dateMode, viewType: d.viewType },
-  params: ["level", "set", "filters"],
+  params: ["level", "set"],
   titleTemplate: d.title,
   renderer: d.renderer as Dataview["renderer"],
   host: { id: d.host, panel: d.panel, rail: d.label, file: `${C}/${d.file}` },
@@ -228,6 +232,8 @@ export const SMT_DATAVIEWS: Dataview[] = [
   // ------------------------------------------------------ 0.8 SMT round 2: Pupils
   dv({ id: "DV-SMT-P-NOW", label: "Your pupils now", railIcon: "TilesIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "numerical", dateMode: "single", numberType: ["totals", "pct_change"], compare: ["averages"], measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-NOW", title: "Your pupils now", rules: ["R-SMT-VIEW-PUPILS-NOW", "R-SMT-BOARDING-ONLY", "R-SMT-PUPILS-LEVEL", "R-SMT-Y12-AGAINST-Y11"], audience: ROLLS }),
   dv({ id: "DV-SMT-P-SHAPE", label: "Shape and size", railIcon: "AdmShapeIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: SET, measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-SHAPE", title: "Pupils in each year group", rules: ["R-SMT-VIEW-SHAPE", "R-ADM-SHAPE-NOT-RANKED", "R-SMT-PUPILS-LEVEL", "R-SMT-Y12-AGAINST-Y11"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-GIRLS-BOYS", label: "Girls and boys", railIcon: "VerticalBarsIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "graph", dateMode: "single", numberType: ["rate", "change_pp"], compare: SET, measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-GIRLS-BOYS", title: "Girls and boys in each year group", rules: ["R-SMT-NO-PILLS", "R-SMT-PUPILS-LEVEL", "R-RAIL-HIDES-EMPTY"], audience: ROLLS, note: "0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md §1): mixed schools only." }),
+  dv({ id: "DV-SMT-P-DAY-BOARDING", label: "Day and boarding", railIcon: "TrendLineIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals", "rate", "change_pp"], compare: SET, measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-DAY-BOARDING", title: "Day and boarding pupils", rules: ["R-SMT-NO-PILLS", "R-SMT-BOARDING-ONLY", "R-RAIL-HIDES-EMPTY"], audience: ROLLS, note: "0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md §1): boarding schools only." }),
   dv({ id: "DV-SMT-P-ENTRIES", label: "Entry points", railIcon: "AdmFunnelIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "table", dateMode: "single", numberType: ["totals"], compare: [], measures: ["M-SMT-SCHOOL", "M-ADM-POOL"], renderer: "RD-SMT-ENTRIES", title: "Entry points at a glance", rules: ["R-SMT-ADMISSIONS-READ-ONLY", "R-ADM-POOL-NOT-INTAKE"], audience: ROLLS }),
   dv({ id: "DV-SMT-P-LEAVING", label: "Leaving at 16", railIcon: "ChangeArrowIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "pct_change"], compare: [], measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-LEAVING", title: "Leaving at 16", rules: ["R-SMT-VIEW-LEAVING", "R-ADM-JOINERS-ESTIMATE", "R-SMT-Y12-AGAINST-Y11"], audience: ROLLS }),
   dv({ id: "DV-SMT-P-MARKET", label: "Market share", railIcon: "DonutIcon", data: "smt.school", host: P2, panel: "current", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["market_share"], compare: SET, measures: ["M-SMT-SCHOOL", "M-ADM-MARKET"], renderer: "RD-SMT-LINE", title: "Market share at 11+, against your rivals", rules: ["R-SMT-ADMISSIONS-READ-ONLY", "R-ADM-GROUP-SHARE"], audience: ["market", "whole-school"] }),
@@ -283,6 +289,8 @@ export const SMT_BODIES: Record<string, Body> = {
   // 0.8 SMT round 2
   "DV-SMT-P-NOW": b("smt.school", "school", "actual", LATEST, { kind: "numbers", look: {} }),
   "DV-SMT-P-SHAPE": b("smt.school", "school", "actual", LATEST, { kind: "shapes", look: { columns: 1 } }),
+  "DV-SMT-P-GIRLS-BOYS": b("smt.school", "year", "actual", LATEST, { kind: "bar", look: { orientation: "vertical" } }),
+  "DV-SMT-P-DAY-BOARDING": b("smt.school", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
   "DV-SMT-P-ENTRIES": b("smt.school", "school", "actual", LATEST, { kind: "table", look: { yearColumns: "latest" } }),
   "DV-SMT-P-LEAVING": b("smt.school", "year", "actual", SINCE_2019, { kind: "table", look: { yearColumns: "every", years: "down" } }),
   "DV-SMT-P-MARKET": b("smt.school", "year", "actual", SINCE_2019, { kind: "line", look: {} }),

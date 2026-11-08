@@ -2073,12 +2073,23 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-BOARDING-ONLY",
     statement:
-      "SMT's filters are pills, only where they apply: Gender for a mixed school, Day + boarding for a boarding school (isBoardingSchool). A day school's request for boarding figures is ignored on the server; results aren't split by either, and the views say so.",
-    why: "0.7 r3 F2's rule, carried to SMT (spec §2.2).",
-    appliesTo: "The SMT control bar; DV-SMT-O-NOW, DV-SMT-O-SCORECARD, DV-SMT-O-ROLL-*",
-    enforcedIn: ["src/lib/smt/levels.ts:pillsFor", "src/lib/smt/overview.ts:buildOverview"],
-    testCase: { urn: "137625", school: "The Chase (day); Leighton Park 110110 (boarding)", phase: "ks4", expect: "The Chase: Gender only; a boarding filter is ignored (no boarders row, filters all). Leighton Park: both pills, a boarders row, day and boarding roll lines.", check: "smtBoardingOnly" },
+      "SMT shows boarding only at a boarding school (isBoardingSchool): its Day · Boarding tile, the Scorecard's boarders row, the day and boarding roll lines and Pupils' Day and boarding view. A day school gets none of them -- no tile, no row, no line, no rail icon. Since 0.8 SMT Academic there is no Day and boarding pill (R-SMT-NO-PILLS); results aren't split by boarding anywhere.",
+    why: "0.7 r3 F2's rule, carried to SMT (spec §2.2); rewritten when the pills came off (docs/v0.8/smt_value_added_plan_v1.md §1).",
+    appliesTo: "DV-SMT-O-NOW, DV-SMT-O-SCORECARD, DV-SMT-O-ROLL-*, DV-SMT-P-NOW, DV-SMT-P-DAY-BOARDING",
+    enforcedIn: ["src/lib/smt/overview.ts:buildOverview", "src/lib/smt/pupils.ts:buildPupils, dayAndBoarding", "src/components/smt/content.ts:smtHasContent"],
+    testCase: { urn: "137625", school: "The Chase (day); Leighton Park 110110 (boarding)", phase: "ks4", expect: "The Chase: no boarders row, one roll line, no Day and boarding view (no rail icon). Leighton Park: a boarders row, day and boarding roll lines, and a Day and boarding view with figures.", check: "smtBoardingOnly" },
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-NO-PILLS",
+    statement:
+      "No SMT dashboard has a girls/boys or a day/boarding pill: the control bar is the level chips and \"Compared against\" (Context: the area and England). The Overview and Pupils builders and their routes take no filters. Gender and boarding are content instead: Pupils' Girls and boys view (mixed schools only) -- girls' share by year group against the middle of the set's mixed schools, its change since CENSUS_FIRST_PERIOD against the set's, and where it shifts (Year 7 against Years 8 to 11, the sixth form against Years 7 to 11) -- and its Day and boarding view (boarding schools only) -- boarders' share over time against the middle of the set's boarding schools (the census has no boarders by phase, and the (i) says so). A view with nothing to show has no rail icon (R-RAIL-HIDES-EMPTY): a single-sex school never sees Girls and boys, a day school never sees Day and boarding. Single-sex set schools are left out of the set's girls' share, never counted as 0; the Scorecard's Roll row is the whole school's roll, ranked on the whole school's roll. \"The school now\" keeps its Girls · Boys and Day · Boarding tiles. Admissions keeps its own sex filter (ADM_SEX_FILTER).",
+    why: "The Girls/Boys pill filtered only the roll figures (about a third of Overview and Pupils), showed on Academic where nothing can be split, and had three bugs: the Scorecard's Roll row showed girls' roll but ranked whole-school roll; Girls with Boarding only silently dropped the sex filter; single-sex set schools counted as 0 in the set's girls or boys average (Guy, 8 Nov 2026; docs/v0.8/smt_value_added_plan_v1.md §1).",
+    appliesTo: "Every SMT dashboard's control bar; DV-SMT-O-SCORECARD; DV-SMT-P-GIRLS-BOYS; DV-SMT-P-DAY-BOARDING",
+    enforcedIn: ["src/components/smt/SmtDashboard.tsx:Dashboard", "src/lib/smt/overview.ts:buildOverview, rollAt", "src/lib/smt/pupils.ts:buildPupils, girlsAndBoys, countsAsMixed, dayAndBoarding", "src/app/api/smt/overview/route.ts", "src/app/api/smt/pupils/route.ts", "src/components/smt/content.ts:smtHasContent", "src/components/smt/views/Pupils.tsx:GirlsAndBoys, DayAndBoarding"],
+    testCase: { urn: "110110", school: "Leighton Park 110110 (boarding, mixed); Acland Burghley 100053 (mixed, set with single-sex schools); Parliament Hill 100050 (girls)", phase: "ks4", expect: "No SMT source draws a Pupils or Day and boarding pill or threads SmtFilters; buildOverview takes (school, set, caller) and buildPupils (school, set, level, caller). Leighton Park: both views have rail icons and figures (girls' share by year group, shifts, boarders' share over time against the set's boarding schools). Acland Burghley: the set's girls' share is the middle of its mixed schools only, its single-sex schools left out and counted. Parliament Hill: no Girls and boys view (no rail icon). The Scorecard's Roll row is the whole roll.", check: "smtNoPills" },
+    origin: "0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md)",
     status: "active",
   },
   {

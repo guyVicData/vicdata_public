@@ -2,7 +2,8 @@
 
 // VicData 0.8 SMT round 1 (B1-B5): the SMT dashboards -- Overview and Academic -- drawn entirely from
 // the shared shell (src/components/shell): Teacher's nav, ControlBar (the "S" badge, the switch, the
-// level chips in the subject chips' slot, the pills), the rows, RailPanel (CardBox: the icon row,
+// level chips in the subject chips' slot, the set selector -- no girls/boys or day/boarding pills since
+// 0.8 SMT Academic, R-SMT-NO-PILLS), the rows, RailPanel (CardBox: the icon row,
 // the notes, full screen as a focus mode), the phone's tabs, the footer's Edit (View as from the account menu, 0.8) and Copy
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
@@ -36,12 +37,12 @@ import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, periodLabel, setLatestYears }
 import type { DashboardConfig, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
-import { flatState, schoolSurface } from "@/components/feedback/surface";
+import { schoolSurface } from "@/components/feedback/surface";
 import { editorWritesSettled, useEditSwitch, isPlatformAdminCached, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
-import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parseLevel, pillsFor, setPhaseOf, type SmtLevel, type SmtPhase } from "@/lib/smt/levels";
+import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parseLevel, setPhaseOf, type SmtLevel, type SmtPhase } from "@/lib/smt/levels";
 import { SMT_ONLY_MESSAGE } from "@/lib/smt/auth-rules";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
-import { useSmt, type Academic, type Load, type Overview, type SmtFilters, type SmtSchool, type SmtSetChoice } from "./api";
+import { useSmt, type Academic, type Load, type Overview, type SmtSchool, type SmtSetChoice } from "./api";
 import type { Pupils } from "@/lib/smt/pupils";
 import type { Context, ContextArea } from "@/lib/smt/context";
 import type { ContextMap } from "@/lib/smt/context-map";
@@ -68,7 +69,7 @@ import { ValueAdded } from "./views/ValueAdded";
 import { GradeProfile } from "./views/Grades";
 import { EntriesMix } from "./views/Mix";
 import { ReservedPanel } from "./views/Reserved";
-import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "./views/Pupils";
+import { DayAndBoarding, EntryPoints, GirlsAndBoys, LeavingAt16, PupilsNow, ShapeAndSize } from "./views/Pupils";
 import { AgeBars, AreaMap, BirthsAndProjections, BirthsIndexed, BirthsTable, ContextNow, NearbyOverTime, PopulationProjected, shadeOptions, type ShadeBy } from "./views/Context";
 
 const ComparatorSetChooser = lazy(() => import("@/components/teacher/ComparatorSetChooser").then((m) => ({ default: m.ComparatorSetChooser })));
@@ -198,7 +199,6 @@ export type Ctx = {
   dash: SmtDash;
   level: SmtLevel;
   set: SmtSetChoice;
-  filters: SmtFilters;
   overview: Load<Overview>;
   academic: Load<Academic>;
   pupils: Load<Pupils>;
@@ -231,8 +231,6 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     void sets.reloadSaved().then(() => sets.choose({ kind: "saved", id }));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [chooser, setChooser] = useState<{ editing: NonNullable<typeof sets.savedSets>["sets"][number] | null } | null>(null);
-  const [filters, setFilters] = useState<SmtFilters>({ sex: "all", boarding: "all" });
-  const f: SmtFilters = { sex: s?.mixed ? filters.sex : "all", boarding: s?.boarding ? filters.boarding : "all" };
 
   // The published configs (the store's, else the code copy), re-read after editing.
   const previewDraft = useEditSwitch(useMemo(() => createBrowserSupabaseClient(), [])).previewDraft;
@@ -250,9 +248,9 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
 
   const set = sets.set;
   const body = set ? { urn: member.schoolUrn, set } : null;
-  const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body ? { ...body, filters: f } : null);
+  const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body);
   const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
-  const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: f } : null);
+  const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase } : null);
   // Context: the area pill (around the school, or the LA), held in the address (?area=la).
   const [area, setArea] = useState<ContextArea>(() => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("near") === "la" ? "la" : "around"));
   // 0.8 SMT r4 (R): this view's own radius (?km=), else the school's usual catchment, else the default
@@ -391,35 +389,11 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     <>
       <Divider />
       {setPill}
-      {s && pillsFor(s).includes("gender") && (
-        <MenuChip
-          label="Pupils"
-          value={f.sex}
-          onPick={(sex) => setFilters({ ...filters, sex })}
-          options={[
-            { id: "all", label: "All pupils" },
-            { id: "female", label: "Girls" },
-            { id: "male", label: "Boys" },
-          ]}
-        />
-      )}
-      {s && pillsFor(s).includes("boarding") && (
-        <MenuChip
-          label="Day and boarding"
-          value={f.boarding}
-          onPick={(boarding) => setFilters({ ...filters, boarding })}
-          options={[
-            { id: "all", label: "Day + boarding" },
-            { id: "day", label: "Day only" },
-            { id: "boarding", label: "Boarding only" },
-          ]}
-        />
-      )}
     </>
   );
 
   const config = configs[dash];
-  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, pupils, context, contextMap, shade, onShade: setShade, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
+  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, overview, academic, pupils, context, contextMap, shade, onShade: setShade, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
   const switcher = <GroupSwitcher dashboards={DASHES.map((d) => configs[d])} activeId={config.id} onSwitch={(d) => go(DASHES.find((x) => configs[x].id === d.id) ?? "overview")} />;
 
   // 0.8 notes and feedback: each view's private note and feedback icon, with what the page is showing.
@@ -429,7 +403,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     urn: member.schoolUrn,
     name: member.schoolName,
     role: member.headOffice ? "head_office" : "smt",
-    state: { level: level.phase, area: level.area ?? null, set: set?.label ?? null, setKind: set?.kind ?? null, ...flatState(f as unknown as Record<string, unknown>, "filters"), ...(dash === "context" ? { near: area, km: viewKm ?? null } : {}) },
+    state: { level: level.phase, area: level.area ?? null, set: set?.label ?? null, setKind: set?.kind ?? null, ...(dash === "context" ? { near: area, km: viewKm ?? null } : {}) },
   });
 
   return (
@@ -680,6 +654,10 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
       return { tag: "Current", context: c.school.census.at(-1) ? `Data ${periodLabel(c.school.census.at(-1)!.period)}` : "" };
     case "DV-SMT-P-SHAPE":
       return { tag: "Shape and size", context: `pupils by age, against the local shape and ${set}` };
+    case "DV-SMT-P-GIRLS-BOYS":
+      return { tag: "Girls and boys", context: `girls' share by year group, against ${set}` };
+    case "DV-SMT-P-DAY-BOARDING":
+      return { tag: "Day and boarding", context: `boarders' share, against ${set}'s boarding schools` };
     case "DV-SMT-P-ENTRIES":
       return { tag: "Entry points", context: "from Admissions, read-only" };
     case "DV-SMT-P-LEAVING":
@@ -833,6 +811,16 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-P-NOW":
     case "DV-SMT-P-SHAPE":
       return `${SMT_NOTES.size} ${SMT_NOTES.shapesAround} ${SMT_NOTES.levelAges}`;
+    case "DV-SMT-P-GIRLS-BOYS": {
+      // 0.8 SMT Academic (R-SMT-NO-PILLS): who the set's figure is over, and the left-out single-sex schools.
+      const g = c.pupils.status === "ready" ? c.pupils.data.girlsBoys : null;
+      const out = g && g.leftOut > 0 ? ` ${smtNote("girlsBoysLeftOut", { n: g.leftOut, of: c.pupils.status === "ready" ? c.pupils.data.set.size : 0, set })}` : "";
+      return `${SMT_NOTES.girlsBoys}${out} ${SMT_NOTES.girlsBoysShifts} ${SMT_NOTES.levelAges}`;
+    }
+    case "DV-SMT-P-DAY-BOARDING": {
+      const d = c.pupils.status === "ready" ? c.pupils.data.dayBoarding : null;
+      return `${SMT_NOTES.dayBoarding}${d ? ` ${smtNote("dayBoardingSet", { n: d.set.boardingSchools, of: d.set.of })}` : ""}`;
+    }
     case "DV-SMT-P-ENTRIES":
     case "DV-SMT-P-POOL":
       return SMT_NOTES.pool;
@@ -970,6 +958,10 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
           return <PupilsNow p={p} school={c.school} compact={c.phone && !fullscreen} />;
         case "DV-SMT-P-SHAPE":
           return <ShapeAndSize p={p} height={fullscreen && room ? Math.max(220, room - 160) : 190} />;
+        case "DV-SMT-P-GIRLS-BOYS":
+          return <GirlsAndBoys p={p} school={c.school} height={fullscreen && room ? Math.max(180, room - 320) : 150} fullscreen={fullscreen} />;
+        case "DV-SMT-P-DAY-BOARDING":
+          return <DayAndBoarding p={p} school={c.school} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-P-ENTRIES":
           return <EntryPoints p={p} />;
         case "DV-SMT-P-LEAVING":
@@ -1027,14 +1019,11 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
   const whyNot = academicWhyNot(dv, c);
   if (whyNot) return <Empty>{whyNot}</Empty>;
   return ready(c.academic, (a) => {
-    const filtered = c.filters.sex !== "all" || c.filters.boarding !== "all";
-    const note = filtered ? <div className="text-[11px] text-[var(--muted2)]">Results aren&rsquo;t published for girls and boys or for day and boarding pupils: these are the whole cohort&rsquo;s.</div> : null;
     switch (dv) {
       case "DV-SMT-A-NOW":
         return (
           <>
             <AcademicNow a={a} school={c.school} />
-            {note}
           </>
         );
       case "DV-SMT-A-AREAS":
@@ -1063,7 +1052,6 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
               </div>
             )}
             {dv.endsWith("TABLE") ? <BandTable title={label} school={p.trend.school} band={p.trend.band} unit={unit} setLabel={a.set.label} valueKey={!a.level.area && p.stage === "ks5" ? "A level::aps_per_entry" : undefined} /> : <ResultsBand schoolName={c.school.name.replace(/ School$/, "")} trend={p.trend} setLabel={a.set.label} fullscreen={fullscreen} room={room} title={label} />}
-            {note}
           </>
         );
       }
@@ -1168,9 +1156,9 @@ export function SmtViewPreview({ dataview, urn, schoolName, params, height }: { 
   const level: SmtLevel = s ? parseLevel(new URLSearchParams(levelQuery({ phase: (params?.level as SmtPhase) ?? "whole", area: (params?.area as string) ?? null })), s.phases, { gcse: s.areas.gcse.map((a) => a.id), post16: s.areas.post16.map((a) => a.id) }) : { phase: "whole", area: null };
   const dash: SmtDash = dataview.startsWith("DV-SMT-O-") ? "overview" : dataview.startsWith("DV-SMT-P-") ? "pupils" : dataview.startsWith("DV-SMT-C-") ? "context" : "academic";
   const body = set ? { urn, set } : null;
-  const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body ? { ...body, filters: { sex: "all", boarding: "all" } } : null);
+  const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body);
   const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
-  const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: { sex: "all", boarding: "all" } } : null);
+  const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase } : null);
   const near = params?.near === "la" ? "la" : "around";
   const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${urn}&area=${near}&level=${level.phase}` : null, null);
   const contextMap = useSmt<ContextMap>(s && dash === "context" && near === "around" && dataview === "DV-SMT-C-MAP" ? `/api/smt/context/map?urn=${urn}&level=${level.phase}` : null, null);
@@ -1178,7 +1166,7 @@ export function SmtViewPreview({ dataview, urn, schoolName, params, height }: { 
   const member = { userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, access: "member", readOnly: true, viewAs: null } as SmtMember;
   return (
     <div data-smt-preview={dataview} className="flex min-h-0 flex-col gap-2 overflow-hidden text-[var(--fg)]" style={{ ...smtVars(theme), height }}>
-      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash, level, set, filters: { sex: "all", boarding: "all" }, overview, academic, pupils, context, contextMap, shade, onShade: () => undefined, onArea: () => undefined, focusBar: null, phone: false }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
+      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash, level, set, overview, academic, pupils, context, contextMap, shade, onShade: () => undefined, onArea: () => undefined, focusBar: null, phone: false }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
     </div>
   );
 }
