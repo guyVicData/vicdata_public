@@ -20,8 +20,9 @@ import { ENTRIES_MEASURE, headlineMeasure, measuresFor, type PanelId } from "./t
 const [POINTS, THRESHOLD, BANDS, COUNTS] = measuresFor("ks4");
 const FOUR = [2021, 2022, 2023, 2024];
 const NOTE = /Trends are measured from 2022\/23\. 2021\/22 is still shown, but its grades were awarded more generously \(Ofqual&#x27;s transition year after the pandemic\), so measuring from it would make most schools look as if results had fallen\./;
-// The fullscreen modal's source line (CardBox): the same paragraph "Print this graph" prints.
-const MODAL_SOURCE = /<p class="text-\[11px\] leading-relaxed text-\[var\(--source\)\]">(.*?)<\/p>/;
+// The fullscreen modal's source line (CardBox): the same paragraph "Print this graph" prints --
+// hidden on screen (the footer's (i) opens it), so it is matched with its hidden/print classes.
+const MODAL_SOURCE = /<p class="hidden text-\[11px\] leading-relaxed text-\[var\(--source\)\] print:block">(.*?)<\/p>/;
 
 // Every CardBox opened in fullscreen (a server render can't click), as Print opens it.
 const open = (el: ReactElement) => renderToStaticMarkup(createElement(OpenInFullscreen.Provider, { value: true }, el));

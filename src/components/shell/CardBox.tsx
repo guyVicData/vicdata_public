@@ -461,9 +461,10 @@ export function CardBox({
                 <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
               </div>
               {focus ? <div className="hidden print:block">{captionLine}</div> : captionLine}
-              {/* The source is plain text here, on screen AND in print -- the same line
-                  in both, rather than a print-only copy of what the card hides behind "i". */}
-              {source && <p className={`text-[11px] leading-relaxed text-[var(--source)]${focus ? " hidden print:block" : ""}`}>{source}</p>}
+              {/* The source is print-only here, in every mode: since 0.8 SMT r4 it carries the
+                  "How it is calculated" methods text, which as on-screen text swamped the modal.
+                  On screen it sits behind the footer's (i); a printout still carries it in full. */}
+              {source && <p className="hidden text-[11px] leading-relaxed text-[var(--source)] print:block">{source}</p>}
             </div>
             {(legend || flag || viewNote) && (
               <aside className="flex min-h-0 flex-col gap-4 border-t border-[var(--panel-border)] pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
@@ -500,11 +501,11 @@ export function CardBox({
               </aside>
             )}
           </div>
-          {/* What is left for the footer: the (i) in focus mode (elsewhere the source and "What
-              this shows" are above as text), feedback, Trend's line toggle, and the menu at the
-              right. The flag and note are in the rail. */}
+          {/* What is left for the footer: the (i), always -- the source and methods are print-only
+              above, so this is where they open on screen -- feedback, Trend's line toggle, and the
+              menu at the right. The flag and note are in the rail. */}
           <div data-panel-footer="modal" className="flex items-center gap-1.5 print:hidden">
-            {focus && <SourceNote what={caption}>{source}</SourceNote>}
+            <SourceNote what={caption}>{source}</SourceNote>
             {feedback(true)}
             {footerLead}
             {footerActions?.({ print: printPanel, fullscreen: true })}
