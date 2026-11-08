@@ -1,0 +1,24 @@
+applied 20261122090000_v08_subject_entry_size_fifths.sql
+-- table and index
+PASS columns  (id,ks_stage,qualification,subject,period,schools,p20,p40,p60,p80,computed_at)
+PASS unique index on (ks_stage, qualification, subject, period)
+PASS index on (ks_stage, period)
+PASS RLS enabled
+PASS ks_stage check refuses ks2
+PASS schools > 0 check
+-- upsert (the sync's onConflict key) is idempotent
+PASS a second identical upsert keeps 3 rows, the same ids and figures  (3 -> 3 rows)
+PASS the second run's computed_at wins
+PASS a plain duplicate insert is refused by the key
+PASS the stale-row sweep removes only rows the run didn't write
+-- who reads (RLS)
+PASS anon reads every row  ([{"subject":"All subjects","schools":2620,"p20":82.8},{"subject":"Psychology","schools":2317,"p20":10}])
+PASS anon can't insert
+PASS anon can't update
+PASS anon can't delete
+PASS authenticated reads every row  ([{"subject":"All subjects","schools":2620,"p20":82.8},{"subject":"Psychology","schools":2317,"p20":10}])
+PASS authenticated can't insert
+PASS authenticated can't update
+PASS authenticated can't delete
+
+all passed
