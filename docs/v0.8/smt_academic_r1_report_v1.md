@@ -161,21 +161,23 @@ The check is a server render of the same views by `main` (0f512e5) and this bran
 - A10, the sizes need their table;
 - A11, the entries mix's "A level" includes AS.
 
-## What Guy runs (in this order; nothing here has been run)
-1. **Check the subject list.** Approved means: `src/lib/smt/va-subject-matches.ts` regenerated with any corrections and `VA_SUBJECT_MATCHES_STATUS = "approved"`.
-2. **Merge** `feat/smt-academic-modes` into `main` (after review).
-3. **The size table** (migration `20261122090000`), then the sync. This needs `SUPABASE_SERVICE_ROLE_KEY` in the environment:
-   ```sh
-   cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && supabase db query --linked -f supabase/migrations/20261122090000_v08_subject_entry_size_fifths.sql && supabase db query --linked "insert into supabase_migrations.schema_migrations (version, name) values ('20261122090000', 'v08_subject_entry_size_fifths') on conflict (version) do nothing"
-   npx tsx --env-file=.env --env-file=.env.local scripts/sync-subject-entry-size-fifths.ts --dry-run
-   npx tsx --env-file=.env --env-file=.env.local scripts/sync-subject-entry-size-fifths.ts
-   npx -y tsx --env-file=.env.local --env-file=.env scripts/catalogue-rule-tests.ts R-SMT-ENTRIES-SIZE
-   ```
-   When Post-16 2025/26 lands, rerun the sync with `--stage ks5`.
-4. **Re-seed the SMT dashboards.** Academic's and Pupils' configs changed; Overview's and Context's didn't, so only those two get new versions:
-   ```sh
-   cd ~/dev/vicdata_public && git pull && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && npx -y tsx scripts/dashboards-seed-sql.ts > /tmp/vicdata_seed.sql && supabase db query --linked -f /tmp/vicdata_seed.sql
-   ```
+## Guy's commands
+
+**Superseded by round 2** (`docs/v0.8/smt_academic_r2_report_v1.md`, "Guy's commands"). Round 2's branch carries this round, so its seven steps cover both; the steps here say where each went.
+
+**1. Migrations**: round 2's step 1(b), the XS–XL size table (20261122090000) and its sync. Round 2's 1(a) adds the value-added names to the ingest.
+
+**2. Merge and push**: merge `feat/smt-academic-r2` (it contains `feat/smt-academic-modes`), round 2's step 2.
+
+**3. Render deploys main on its own**: round 2's step 3.
+
+**4. Wait until /api/version shows the merge**: round 2's step 4.
+
+**5. Republish** the SMT dashboards (Academic and Pupils): round 2's step 5.
+
+**6. Set fixed**: F-44 and F-45, round 2's step 6.
+
+**7. Live check**: round 2's step 7, and the list below.
 
 ## Live checks for Guy (signed in, peek or View as)
 - **Leighton Park:** `/teacher/smt/academic?lookAs=110110&as=smt&peek=1`

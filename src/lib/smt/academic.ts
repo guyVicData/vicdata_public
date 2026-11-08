@@ -262,7 +262,7 @@ const noticeNotes = (): Record<string, string> => ({
   tlevelNoVa: smtNote("acTlevelNoVa"),
   quarters: smtNote("acQuarters"),
   subjectsByQual: smtNote("acSubjectsByQual"),
-  vicdataMatch: smtNote("acVicdataMatch", { status: VA_SUBJECT_MATCHES_STATUS === "draft" ? "VicData's draft list, being checked" : "VicData's list, approved 8 Nov 2026" }),
+  vicdataMatch: smtNote("acVicdataMatch", { status: VA_SUBJECT_MATCHES_STATUS === "draft" ? "VicData's draft list, being checked" : "VicData's list, approved by Guy" }),
   outsideAreas: smtNote("acOutsideAreas"),
   size: smtNote("acSize"),
   sizePending: smtNote("acSizePending"),
