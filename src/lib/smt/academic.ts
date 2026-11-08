@@ -614,7 +614,8 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     const subj = new Map<string, { from: number; to: number; label: string }>();
     for (const r of rows.filter((x) => x.urn === urn && (x.period === L || x.period === L - 2))) {
       const k = `${r.qualification}::${r.subject}`;
-      const lbl = groupOfQualification(r.qualification) === "alevel" ? r.subject : `${r.subject} (${shortQualification(r.qualification)})`;
+      const g = groupOfQualification(r.qualification);
+      const lbl = g === "epq" ? "Extended Project (EPQ)" : g === "alevel" ? r.subject : `${r.subject} (${shortQualification(r.qualification)})`;
       const cur = subj.get(k) ?? { from: 0, to: 0, label: lbl };
       if (r.period === L) cur.to = r.entries;
       else cur.from = r.entries;
@@ -629,7 +630,10 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     movesKind = "schools";
   }
 
-  // The entries mix by VicData's groups (bucket:*::entries), every year with entries.
+  // The entries mix by qualification group, every year with entries. R-SMT-ENTRIES-ONE-TOTAL: from the same
+  // subject-by-qualification rows as column 1 and every share on the page (their sum per year is DfE's own
+  // "All subjects" total entries), so the page has one total. (Round 1 read bucket:*::entries, VicData's
+  // headline groups, which undercount: Plumstead 2024/25 381 against DfE's 419.)
   const MIX: { key: string; label: string }[] = [
     { key: "alevel", label: "A level (and AS)" },
     { key: "btec_ocr", label: "BTEC, OCR & VRQ" },
@@ -637,13 +641,14 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     { key: "tlevel", label: "T level" },
     { key: "other", label: "Other (EPQ, Core Maths, …)" },
   ];
+  const mixKeyOf = (q: string) => {
+    const g = groupOfQualification(q);
+    return g === "alevel" || g === "as" ? "alevel" : g === "applied" ? "btec_ocr" : g === "ib" ? "ib" : g === "tlevel" ? "tlevel" : "other";
+  };
   const mixYears = years(HISTORIC_GRADE_FROM, L)
     .map((y) => {
       const counts: Record<string, number> = {};
-      for (const m of MIX) {
-        const v = figure(pop, urn, y, `bucket:${m.key}::entries`);
-        if (v) counts[m.key] = v;
-      }
+      for (const r of rowsOf(urn, y)) counts[mixKeyOf(r.qualification)] = (counts[mixKeyOf(r.qualification)] ?? 0) + r.entries;
       const total = sum(Object.values(counts));
       const shares: Record<string, number> = {};
       for (const k of Object.keys(counts)) shares[k] = total ? (counts[k] / total) * 100 : 0;
@@ -665,7 +670,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
   // Where the mix differs most from the set's typical school (Entries).
   let against: Academic["trends"]["against"] = [];
   if (mode === "entries") {
-    const all = built.filter(({ s }) => s.value !== null && s.typical !== null).map(({ it, s }) => ({ label: groupOfQualification(it.qualification) === "alevel" ? it.subject : `${it.subject} (${shortQualification(it.qualification)})`, mine: s.value!, typical: s.typical!, gap: s.value! - s.typical! }));
+    const all = built.filter(({ s }) => s.value !== null && s.typical !== null).map(({ it, s }) => ({ label: groupOfQualification(it.qualification) === "alevel" || groupOfQualification(it.qualification) === "epq" ? it.subject : `${it.subject} (${shortQualification(it.qualification)})`, mine: s.value!, typical: s.typical!, gap: s.value! - s.typical! }));
     against = all.sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap)).slice(0, 9);
   }
 
@@ -755,7 +760,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
     if (mode === "entries") {
       const t = levelEntries(u, y);
       if (!st.area) return { value: t || null, lo: null, hi: null, band: null, entries: t || null };
-      const e = Number(areaRow(u, y)?.entries_total ?? 0);
+      const e = sum(rows.filter((x) => x.urn === u && x.period === y && x.familyId === st.area).map((x) => x.entries));
       return { value: t && e ? (e / t) * 100 : null, lo: null, hi: null, band: null, entries: e || null };
     }
     if (st.area) {
@@ -858,18 +863,19 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
   } else {
     const t = levelEntries(urn, L);
     const areaIds = school.areas.gcse.map((a) => a.id);
-    const famRows = await cachedReference(`smt:family:ks4:${everyone.slice().sort().join(",")}`, () => lookupAcademicSubjectFamily({ entityIds: everyone, ksStage: "ks4", periodMin: from }));
+    // R-SMT-ENTRIES-ONE-TOTAL: each area's entries from the same subject rows as the page's total.
+    const areaEntries = (u: string, id: string) => sum(rows.filter((x) => x.urn === u && x.period === L && x.familyId === id).map((x) => x.entries));
     const shareOf = (u: string, id: string) => {
       const tt = levelEntries(u, L);
-      const e = Number(famRows.find((x) => x.entity_id === u && Number(x.period) === L && x.family_id === id && (x.bucket ?? "all") === "all")?.entries_total ?? 0);
+      const e = areaEntries(u, id);
       return tt && e ? (e / tt) * 100 : null;
     };
     for (const id of areaIds) {
       const mineShare = shareOf(urn, id);
       if (mineShare === null) continue;
       const peers = gset.urns.map((u) => shareOf(u, id)).filter((v): v is number => v !== null);
-      const e = Number(famRows.find((x) => x.entity_id === urn && Number(x.period) === L && x.family_id === id && (x.bucket ?? "all") === "all")?.entries_total ?? 0);
-      lines.push({ key: id, label: school.areas.gcse.find((a) => a.id === id)?.label ?? id, sub: `${e.toLocaleString("en-GB")} entries`, unit: "share", value: mineShare, lo: null, hi: null, band: null, grade: null, last: null, lastPeriod: null, share: mineShare, typical: median(peers), series: [], place: null, placeLabel: setLabel, why: null });
+      const e = areaEntries(urn, id);
+      lines.push({ key: id, label: school.areas.gcse.find((a) => a.id === id)?.label ?? id, sub: entriesWord(e), unit: "share", value: mineShare, lo: null, hi: null, band: null, grade: null, last: null, lastPeriod: null, share: mineShare, typical: median(peers), series: [], place: null, placeLabel: setLabel, why: null });
     }
     lines.sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
     void t;

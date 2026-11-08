@@ -2216,11 +2216,12 @@ const RUNNERS: Record<string, Runner> = {
     const L = await lib();
     const m = a.trends.mix;
     const sums = m.years.every((y) => Math.abs(Object.values(y.shares).reduce((s, v) => s + v, 0) - 100) < 1e-6);
-    const raw = await L.ref.lookupAcademicHeadline({ entityIds: ["110110"], ksStage: "ks5" });
-    const ibAt = (y: number) => Number(raw.find((r) => r.period === y)?.measures["bucket:ib::entries"] ?? 0);
+    // R-SMT-ENTRIES-ONE-TOTAL: the mix's counts are the subject-by-qualification rows' (IB = the IBO components).
+    const raw = await L.ref.lookupAcademicSubjectQualificationHeadline({ entityIds: ["110110"], ksStage: "ks5" });
+    const ibAt = (y: number) => raw.filter((r) => Number(r.period) === y && /^(International Baccalaureate|IBO )/.test(r.qualification_type)).reduce((t, r) => t + Number(r.entries_total ?? 0), 0);
     const ibOk = m.years.every((y) => (y.counts.ib ?? 0) === ibAt(y.year));
     const pass = m.years.length >= 3 && m.years.at(-1)?.year === a.period && sums && ibOk && !!m.sentence && /IB/.test(m.sentence);
-    return { pass, detail: fmt({ years: m.years.map((y) => `${y.year}:${y.total}`).join(" "), addsTo100: sums, ibMatchesHeadline: ibOk, sentence: m.sentence }) };
+    return { pass, detail: fmt({ years: m.years.map((y) => `${y.year}:${y.total}`).join(" "), addsTo100: sums, ibMatchesRollup: ibOk, sentence: m.sentence }) };
   },
 
   async smtPupilsLevel() {
@@ -3074,6 +3075,22 @@ const RUNNERS: Record<string, Runner> = {
     const none = await smtAcademicCase("110110", "level=gcse&mode=va", { kind: "saved", label: "Independents", urns: indep });
     const pass = a.set.size === 10 && state && !!me && me.value === null && me.why === SMT_NOTES.acIndependentP8 && a.trends.schoolLabel === null && none.board.empty === SMT_NOTES.acNoStateSchools;
     return { pass, detail: fmt({ set: a.set.label, allStateWithP8: state, ownRow: me?.why, noStateMessage: none.board.empty }) };
+  },
+  async smtEntriesOneTotal() {
+    // R-SMT-ENTRIES-ONE-TOTAL: one total per page, and it is DfE's own All-subjects total.
+    const a = await smtAcademicCase("100183", "level=post16&mode=entries&group=all");
+    const L = await lib();
+    const y = a.period!;
+    const facts = await L.ref.lookupReferenceData({ sourceId: "dfe_ks5_subject_results", entityIds: ["100183"], periodMin: y, periodMax: y });
+    const dfe = facts.filter((f) => /::All subjects::[^:]+::Total exam entries$/.test(f.breakdown)).reduce((t, f) => t + Number(f.value_numeric ?? 0), 0);
+    const total = Number(a.col1.sub.match(/([\d,]+) entries/)?.[1].replace(/,/g, "") ?? NaN);
+    const mixTotal = a.trends.mix.years.find((m) => m.year === y)?.total ?? null;
+    const lines = a.lines.reduce((t, l) => t + (l.series.at(-1)?.value ?? 0), 0);
+    const g = await smtAcademicCase("100053", "level=gcse&mode=entries");
+    const gTotal = Number(g.col1.sub.match(/([\d,]+) entries/)?.[1].replace(/,/g, "") ?? NaN);
+    const gAreas = g.lines.reduce((t, l) => t + Number(l.sub.replace(/[^\d]/g, "") || 0), 0);
+    const pass = total === dfe && mixTotal === total && lines <= total && gAreas === gTotal;
+    return { pass, detail: fmt({ column1: total, dfeAllSubjects: dfe, mix: mixTotal, groupLines: lines, gcseTotal: gTotal, gcseAreas: gAreas }) };
   },
   async vaSubjectMatch() {
     const { VA_SUBJECT_MATCHES, VA_SUBJECT_MATCHES_STATUS } = await import("../src/lib/smt/va-subject-matches");

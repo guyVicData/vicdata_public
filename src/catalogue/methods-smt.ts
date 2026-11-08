@@ -185,11 +185,11 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     rounding: ["Entries whole numbers"],
   },
   "DV-SMT-A-MIX": {
-    sources: ["VicData's qualification groups (DfE subject tables): entries by group"],
+    sources: ["The subject-by-qualification rollup (DfE subject tables): the same entries as column 1, whose yearly sum is DfE's own All-subjects total"],
     geography: "The school",
     years: `Every year with entries from ${HISTORIC}`,
     leftOut: ["GCSE (one qualification)"],
-    steps: ["Each year's Post-16 entries split by VicData's groups: A level (and AS), BTEC, OCR and VRQ, IB, T level, and Other (EPQ, Core Maths and the rest), as shares of the year. Entries, not students.", "Where a group starts or stops within the years shown, a line says so."],
+    steps: ["Each year's Post-16 entries split by qualification group: A level (and AS), BTEC, OCR and VRQ, IB, T level, and Other (EPQ, Core Maths and the rest), as shares of the year. The year's total is the page's one total (column 1's). Entries, not students.", "Where a group starts or stops within the years shown, a line says so."],
     rounding: ["Shares to whole per cent", "Entries whole numbers"],
   },
   "DV-SMT-A-MIX-TABLE": {

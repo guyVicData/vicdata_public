@@ -23,7 +23,6 @@ import { signedDelta } from "@/lib/signed-delta";
 import type { Theme } from "@/components/shell/TeacherChrome";
 import { APPLIED_LABEL, bandShort, toneOf, type AppliedType, type BandTone } from "@/lib/smt/qual-groups";
 import type { Academic, AreaSubject, Board, BoardRow, Line, Unit } from "@/lib/smt/academic";
-import { BandChart } from "./Lines";
 import { BandTable } from "./Tables";
 import { ord, rankText, Td, Th } from "../ui";
 
@@ -428,6 +427,9 @@ export function AreasView({ a }: { a: Academic }) {
   const blocks = a.areas.blocks;
   const level = a.state.phase === "gcse" ? "GCSE" : "Post-16";
   const allVals = blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects.flatMap((s) => [s.value, ...s.setValues]))).filter((v): v is number => v !== null);
+  // Entries: one scale for every share bar in the view (to the largest share or typical share shown).
+  const shown = [...blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects)), ...a.areas.outside];
+  const maxShare = Math.max(0.1, ...shown.flatMap((s) => [s.value ?? 0, s.typical ?? 0]));
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-ac-areas="">
       <Vt>
@@ -453,9 +455,9 @@ export function AreasView({ a }: { a: Academic }) {
           </thead>
           <tbody>
             {blocks.map((b) => (
-              <AreaRows key={b.id} label={b.label} quals={b.quals} mode={mode} unit={unit} vals={allVals} />
+              <AreaRows key={b.id} label={b.label} quals={b.quals} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} />
             ))}
-            {a.areas.outside.length > 0 && <AreaRows label="Outside the subject areas" quals={[{ qualification: "EPQ", short: "EPQ", subjects: a.areas.outside }]} mode={mode} unit={unit} vals={allVals} />}
+            {a.areas.outside.length > 0 && <AreaRows label="Outside the subject areas" quals={[{ qualification: "EPQ", short: "EPQ", subjects: a.areas.outside }]} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} />}
           </tbody>
         </table>
       </div>
@@ -463,7 +465,7 @@ export function AreasView({ a }: { a: Academic }) {
   );
 }
 
-function AreaRows({ label, quals, mode, unit, vals }: { label: string; quals: { qualification: string; short: string; subjects: AreaSubject[] }[]; mode: Academic["state"]["mode"]; unit: Unit; vals: number[] }) {
+function AreaRows({ label, quals, mode, unit, vals, maxShare }: { label: string; quals: { qualification: string; short: string; subjects: AreaSubject[] }[]; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; maxShare: number }) {
   const cols = mode === "entries" ? 8 : 5;
   return (
     <>
@@ -471,13 +473,13 @@ function AreaRows({ label, quals, mode, unit, vals }: { label: string; quals: { 
         <td colSpan={cols} className="px-2 pb-1 pt-3 text-[12px] font-extrabold text-[var(--fg)]">{label}</td>
       </tr>
       {quals.map((q) => (
-        <QualRows key={q.qualification} q={q} mode={mode} unit={unit} vals={vals} cols={cols} />
+        <QualRows key={q.qualification} q={q} mode={mode} unit={unit} vals={vals} cols={cols} maxShare={maxShare} />
       ))}
     </>
   );
 }
 
-function QualRows({ q, mode, unit, vals, cols }: { q: { qualification: string; short: string; subjects: AreaSubject[] }; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; cols: number }) {
+function QualRows({ q, mode, unit, vals, cols, maxShare }: { q: { qualification: string; short: string; subjects: AreaSubject[] }; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; cols: number; maxShare: number }) {
   return (
     <>
       <tr>
@@ -493,7 +495,7 @@ function QualRows({ q, mode, unit, vals, cols }: { q: { qualification: string; s
           {mode === "entries" && <Td className="whitespace-nowrap">{s.counts.map((c) => (c === null ? "—" : c)).join(" → ")}</Td>}
           {mode === "entries" && <Td>{s.size ? <SizeBadge size={s.size} /> : <span className="text-[var(--muted2)]">—</span>}</Td>}
           <Td className="text-right font-bold text-[var(--fg)]" title={s.why ?? undefined}>{s.value === null ? <span className="font-normal text-[var(--muted2)]">{s.why ? "not ranked" : "—"}</span> : fmtAc(s.value, unit)}</Td>
-          <Td>{s.value !== null && <Dots s={s} unit={unit} vals={vals} mode={mode} />}</Td>
+          <Td>{s.value !== null && <Dots s={s} unit={unit} vals={vals} mode={mode} maxShare={maxShare} />}</Td>
           {mode === "entries" && <Td className="text-right">{s.value !== null && s.typical !== null ? signedDelta(s.value - s.typical, (x) => Math.abs(x).toFixed(1), { zero: "±" }) : "none"}</Td>}
           <Td className="whitespace-nowrap text-right">{mode === "entries" ? (s.offering ? `${s.offering.n} of ${s.offering.of}` : "—") : s.only ? "only school" : s.place ? `${ord(s.place.rank)} of ${s.place.of}` : "—"}</Td>
         </tr>
@@ -506,13 +508,14 @@ function SizeBadge({ size }: { size: NonNullable<AreaSubject["size"]> }) {
   return <span className="inline-flex min-w-[24px] justify-center rounded-[4px] bg-[var(--adm-grey-bar)] px-1 text-[10.5px] font-bold text-[var(--fg)]">{size}</span>;
 }
 
-function Dots({ s, unit, vals, mode }: { s: AreaSubject; unit: Unit; vals: number[]; mode: Academic["state"]["mode"] }) {
+function Dots({ s, unit, vals, mode, maxShare }: { s: AreaSubject; unit: Unit; vals: number[]; mode: Academic["state"]["mode"]; maxShare: number }) {
   const W = 150;
   const lo = Math.min(...vals, unit === "va" ? 0 : Infinity);
   const hi = Math.max(...vals, unit === "va" ? 0 : -Infinity);
   const sx = scale([lo, hi], [6, W - 6]);
   if (mode === "entries") {
-    const max = Math.max(s.value ?? 0, s.typical ?? 0, 1);
+    // One scale for the whole view (fix 2, round 2): the bar and the typical marker against the view's largest share.
+    const max = maxShare;
     return (
       <svg width={W} height={14} aria-hidden="true">
         <rect x={0} y={4} width={((s.value ?? 0) / max) * (W - 10)} height={6} rx={2} style={{ fill: "var(--accent)" }} />
@@ -570,20 +573,92 @@ export function TrendBand({ a, fullscreen, room }: { a: Academic; fullscreen: bo
   const bandReal = t.band.filter((b) => b.p25 !== null).length;
   if (real < 1 && bandReal < 1) return <Centre>{a.board.empty ?? "Not enough published years to draw a trend."}</Centre>;
   const set = a.set.chosen ? a.set.label : `the ${a.set.label}`;
-  const unit = t.unit === "va" ? "va" : t.unit === "share" ? "share" : t.unit === "grade" ? "grade" : t.unit === "entries" ? "pupils" : "points";
   return (
     <>
       <Vt>
         {t.label} against {set}
       </Vt>
       {/* No line for the school (an independent's Progress 8): the band alone, over the band's years. */}
-      <BandChart school={t.school.length ? t.school : t.band.map((x) => ({ year: x.year, value: null }))} band={t.band} height={fullscreen ? fillHeight(room, 150, 300) : 150} unit={unit} label={t.label} setLabel={set} />
+      <AcTrendChart school={t.school.length ? t.school : t.band.map((x) => ({ year: x.year, value: null }))} band={t.band} height={fullscreen ? fillHeight(room, 170, 320) : 170} unit={t.unit} label={`${t.label} against ${set}`} />
       <div className="flex flex-wrap gap-3">
         {t.schoolLabel && <Key swatch={<span className="w-[14px] border-t-[2.5px] border-[var(--accent)]" />}>{t.schoolLabel.replace(/ School$/, "")}</Key>}
         <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px] bg-[var(--adm-grey-bar)]" />}>Comparison set, middle half</Key>
       </div>
       {!t.schoolLabel && <Tl>{a.col1.note ?? ""}</Tl>}
     </>
+  );
+}
+
+
+// Round 2 (fix 3): Academic's trend chart -- a labelled y-axis on nice steps, a line at 0 for value added
+// (England's average), the set's middle half (25th to 75th percentile) as a band year by year, the school's
+// line with its figure on each point. The axis fits the data and the band, with 0 in view for value added.
+export function AcTrendChart({ school, band, height, unit, label }: { school: { year: number; value: number | null }[]; band: { year: number; p25: number | null; p75: number | null; n: number }[]; height: number; unit: Unit; label: string }) {
+  const [ref, w] = useWidth<HTMLDivElement>();
+  const xs = Array.from(new Set([...school.map((p) => p.year), ...band.map((b) => b.year)])).sort((a, b) => a - b);
+  const vals = [...school.map((p) => p.value), ...band.flatMap((b) => [b.p25, b.p75])].filter((v): v is number => v !== null);
+  if (unit === "va") vals.push(0);
+  if (!xs.length || !vals.length) return null;
+  let lo = Math.min(...vals);
+  let hi = Math.max(...vals);
+  const pad = (hi - lo || Math.abs(hi) || 1) * 0.12;
+  lo -= pad;
+  hi += pad;
+  const ticks = niceTicks(lo, hi, 4);
+  lo = Math.min(lo, ticks[0]);
+  hi = Math.max(hi, ticks.at(-1)!);
+  const W = Math.max(w, 10);
+  const padL = 44;
+  const padR = 16;
+  const top = 14;
+  const bottom = 20;
+  const sx = xs.length > 1 ? scale([xs[0], xs.at(-1)!], [padL + 18, W - padR - 18]) : () => (padL + W - padR) / 2;
+  const sy = scale([lo, hi], [height - bottom, top]);
+  const pts = band.filter((b) => b.p25 !== null && b.p75 !== null);
+  const area = pts.length >= 2 ? `M${pts.map((b) => `${sx(b.year).toFixed(1)},${sy(b.p75!).toFixed(1)}`).join("L")}L${[...pts].reverse().map((b) => `${sx(b.year).toFixed(1)},${sy(b.p25!).toFixed(1)}`).join("L")}Z` : "";
+  const line = school.filter((p) => p.value !== null);
+  const d = line.map((p, i) => `${i ? "L" : "M"}${sx(p.year).toFixed(1)},${sy(p.value!).toFixed(1)}`).join("");
+  const tick = (t: number) => (unit === "va" ? fmtTick(t, "va") : unit === "share" ? `${t}%` : unit === "entries" ? Math.round(t).toLocaleString("en-GB") : `${t}`);
+  return (
+    <div ref={ref} className="w-full" data-ac-trend="">
+      {w > 0 && (
+        <svg width={W} height={height} role="img" aria-label={label}>
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={padL} x2={W - padR} y1={sy(t)} y2={sy(t)} strokeWidth={unit === "va" && t === 0 ? 1.4 : 1} style={{ stroke: unit === "va" && t === 0 ? "var(--ac-zero)" : "var(--adm-grid)" }} />
+              <text x={padL - 6} y={sy(t) + 3} fontSize={10} textAnchor="end" style={{ fill: "var(--muted)" }}>
+                {tick(t)}
+              </text>
+            </g>
+          ))}
+          {area && (
+            <path d={area} opacity={0.75} style={{ fill: "var(--adm-grey-bar)" }} data-band="">
+              <title>The set, middle half</title>
+            </path>
+          )}
+          {pts.length === 1 && <rect x={sx(pts[0].year) - 6} y={sy(pts[0].p75!)} width={12} height={Math.max(2, sy(pts[0].p25!) - sy(pts[0].p75!))} opacity={0.75} style={{ fill: "var(--adm-grey-bar)" }} data-band="" />}
+          {d && <path d={d} fill="none" strokeWidth={2.6} strokeLinejoin="round" strokeLinecap="round" style={{ stroke: "var(--accent)" }} />}
+          {line.map((p) => {
+            const b = band.find((x) => x.year === p.year);
+            return (
+              <g key={p.year}>
+                <circle cx={sx(p.year)} cy={sy(p.value!)} r={4} style={{ fill: "var(--accent)" }}>
+                  <title>{`${periodLabel(p.year)}: ${fmtAc(p.value, unit)}${b && b.p25 !== null ? `; the set's middle half ${fmtAc(b.p25, unit)} to ${fmtAc(b.p75, unit)} (${b.n} schools)` : ""}`}</title>
+                </circle>
+                <text x={sx(p.year)} y={sy(p.value!) - 8} fontSize={10.5} fontWeight={700} textAnchor="middle" style={{ fill: "var(--fg)" }}>
+                  {fmtShort(p.value, unit)}
+                </text>
+              </g>
+            );
+          })}
+          {xs.map((x) => (
+            <text key={x} x={sx(x)} y={height - 4} fontSize={10.5} textAnchor="middle" style={{ fill: "var(--muted)" }}>
+              {periodLabel(x)}
+            </text>
+          ))}
+        </svg>
+      )}
+    </div>
   );
 }
 

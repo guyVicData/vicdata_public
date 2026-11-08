@@ -2218,7 +2218,7 @@ export const RULES: Rule[] = [
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE",
     enforcedIn: ["src/lib/smt/academic.ts:buildAcademic", "src/components/smt/views/Academic.tsx:MixBars"],
-    testCase: { urn: "110110", school: "Leighton Park, Post-16 Results", phase: "ks5", expect: "Each year's shares add to 100%; the IB is there in 2022/23 and 2023/24 and the sentence says none in 2024/25.", check: "smtMix" },
+    testCase: { urn: "110110", school: "Leighton Park, Post-16 Results", phase: "ks5", expect: "Each year's shares add to 100%; the IB's counts are the rollup's IBO components, there in 2021/22 to 2023/24, and the sentence says none in 2024/25.", check: "smtMix" },
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
@@ -2640,6 +2640,17 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/subject-entry-size.ts:entrySizeFifths", "src/lib/subject-entry-size.ts:entrySizeBadge", "src/lib/subject-entry-size.ts:fifthsOf", "scripts/sync-subject-entry-size-fifths.ts", "supabase/migrations/20261122090000_v08_subject_entry_size_fifths.sql", "supabase/tests/v08_subject_entry_size_pglite.mjs"],
     testCase: { urn: "110110", school: "Leighton Park's A-level Psychology, latest Post-16 year (the fifths on a fixture, the unit tests and PGlite offline; the live table once applied)", phase: "ks5", expect: "On the fixture the zeros are left out and each badge holds a fifth of the schools; a cut point is the band above; under 10 schools, no badge. The migration's table, key, RLS read and idempotent upsert pass in PGlite. Live (once applied and synced): A-level Psychology has ordered cut points over 1,000+ schools (2024/25: 2,317 schools, 10/17/26/40) and Leighton Park's 17 entries read M. Until the table is applied the live half is MANUAL.", check: "smtEntriesSize" },
     origin: "0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-ENTRIES-ONE-TOTAL",
+    statement:
+      "One entry total per page: column 1's total, every group line and share, the entries mix, the subject areas' shares and the board's shares all come from the same subject-by-qualification rows (Post-16: academic_subject_qualification_headline, whose sum per year is DfE's own \"All subjects\" total exam entries; GCSE: the subject rollup), so every total on the page agrees.",
+    why: "Guy, 8 Nov: Plumstead's column 1 read 419 entries while the mix (bucket:*::entries) read 381 for the same year.",
+    appliesTo: "DV-SMT-A-NOW, DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE, DV-SMT-A-AREAS, DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-TREND-LINE (Entries mode, both levels)",
+    enforcedIn: ["src/lib/smt/academic.ts:buildAcademic", "src/lib/smt/academic-data.ts:qualRows"],
+    testCase: { urn: "100183", school: "Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries", phase: "ks5", expect: "Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total.", check: "smtEntriesOneTotal" },
+    origin: "0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1)",
     status: "active",
   },
 ];
