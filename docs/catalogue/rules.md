@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 197 rules: 189 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 198 rules: 190 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -203,8 +203,9 @@ What a number is allowed to be. 197 rules: 189 active, 8 superseded; 22 must lif
 | R-SMT-COL1-LEVEL | active | Column 1 follows the level: never a Progress 8 line on a Post-16 view, never a Post-16 line at GCSE. | no | auto: smtCol1Level | — |
 | R-SMT-VA-BANDS | active | Value-added bands: DfE's own progress band where DfE publishes one (its Post-16 headline types); Progress 8's five bands derived exactly from DfE's definition (above or below when the 95% range is clear of 0, well above or below beyond ±0.5 as well); everything else (EPQ, Core Maths, AS, IB, every by-area subject) three labels from the 95% range alone: Clearly above (the whole range above 0), In line (it crosses or touches 0), Clearly below (the whole range below 0), deliberately unlike DfE's five. The chart's axis fits the data (no ±1.2 clamp). | no | auto: smtVaBands | — |
 | R-SMT-VA-INDEPENDENT | active | An independent or IGCSE school at GCSE in Value added: the default set is the 10 nearest state schools with Progress 8 (Teacher's rule, state schools only); the school's own row and column 1 say why it has none (no Key Stage 2 tests, so no starting point); the trend has no line for the school. If a chosen set has no state schools, a clear message sits in the middle of the chart, table and map. | no | auto: smtVaIndependent | — |
-| R-VA-SUBJECT-MATCH | active | Every value-added subject name is matched to the results file's name in the same qualification (src/lib/smt/va-subject-matches.ts, generated with docs/v0.8/va_subject_matches_draft.md), so its area follows from subject_family_map; only names with no results equivalent get an area directly; the EPQ and the IB's whole-diploma and core rows sit outside the areas. Once Guy approves the list, no value-added subject is left without an area or an outside mark; until then the draft's status is reported. The (i) on the by-area view says which matches are VicData's. | no | auto: vaSubjectMatch | — |
+| R-VA-SUBJECT-MATCH | active | Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); until that lands, from src/lib/smt/va-subject-matches.ts, which goes once it has. While both exist they agree. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's. | no | auto: vaSubjectMatch | — |
 | R-SMT-ENTRIES-SIZE | active | In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject "All subjects"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says "too few schools to size". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync. | no | auto: smtEntriesSize | — |
+| R-SMT-ENTRIES-ONE-TOTAL | active | One entry total per page: column 1's total, every group line and share, the entries mix, the subject areas' shares and the board's shares all come from the same subject-by-qualification rows (Post-16: academic_subject_qualification_headline, whose sum per year is DfE's own "All subjects" total exam entries; GCSE: the subject rollup), so every total on the page agrees. | no | auto: smtEntriesOneTotal | — |
 
 ## Cards
 
@@ -2745,7 +2746,7 @@ What a number is allowed to be. 197 rules: 189 active, 8 superseded; 22 must lif
 | Applies to | DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE |
 | Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/views/Academic.tsx:MixBars |
 | Tagged at | - src/components/smt/views/Tables.tsx |
-| Test case | Leighton Park, Post-16 Results (110110), ks5: Each year's shares add to 100%; the IB is there in 2022/23 and 2023/24 and the sentence says none in 2024/25. [runner: smtMix] |
+| Test case | Leighton Park, Post-16 Results (110110), ks5: Each year's shares add to 100%; the IB's counts are the rollup's IBO components, there in 2021/22 to 2023/24, and the sentence says none in 2024/25. [runner: smtMix] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -3332,12 +3333,12 @@ What a number is allowed to be. 197 rules: 189 active, 8 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | Every value-added subject name is matched to the results file's name in the same qualification (src/lib/smt/va-subject-matches.ts, generated with docs/v0.8/va_subject_matches_draft.md), so its area follows from subject_family_map; only names with no results equivalent get an area directly; the EPQ and the IB's whole-diploma and core rows sit outside the areas. Once Guy approves the list, no value-added subject is left without an area or an outside mark; until then the draft's status is reported. The (i) on the by-area view says which matches are VicData's. |
+| Statement | Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); until that lands, from src/lib/smt/va-subject-matches.ts, which goes once it has. While both exist they agree. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's. |
 | Why | F-44: a quarter of A-level subject value-added rows had no area, and an area chosen at Post-16 silently dropped them. |
 | Applies to | DV-SMT-A-AREAS (Value added) |
 | Enforced in | - src/lib/smt/va-subject-matches.ts:VA_SUBJECT_MATCHES<br>- src/lib/smt/academic-data.ts:vaMatch<br>- docs/v0.8/smt_academic_scripts/va_subject_matches.py |
-| Tagged at | — |
-| Test case | every value-added (qualification, subject) name live (100053), ks5: Every name has a match with an area or is marked outside; the status is draft until approved (reported, not failed). [runner: vaSubjectMatch] |
+| Tagged at | - src/lib/smt/academic-data.ts |
+| Test case | every value-added (qualification, subject) name live (100053), ks5: Approved; every name has a match with an area or is marked outside; once the database carries the value-added names, the database and the file agree name by name. [runner: vaSubjectMatch] |
 | Origin | 0.8 SMT Academic by qualification (docs/v0.8/smt_academic_claude_code_prompt_v1.md; plan docs/v0.8/smt_value_added_plan_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -3355,6 +3356,22 @@ What a number is allowed to be. 197 rules: 189 active, 8 superseded; 22 must lif
 | Tagged at | - src/lib/smt/academic.ts<br>- src/lib/subject-entry-size.test.ts<br>- src/lib/subject-entry-size.ts |
 | Test case | Leighton Park's A-level Psychology, latest Post-16 year (the fifths on a fixture, the unit tests and PGlite offline; the live table once applied) (110110), ks5: On the fixture the zeros are left out and each badge holds a fifth of the schools; a cut point is the band above; under 10 schools, no badge. The migration's table, key, RLS read and idempotent upsert pass in PGlite. Live (once applied and synced): A-level Psychology has ordered cut points over 1,000+ schools (2024/25: 2,317 schools, 10/17/26/40) and Leighton Park's 17 entries read M. Until the table is applied the live half is MANUAL. [runner: smtEntriesSize] |
 | Origin | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-ENTRIES-ONE-TOTAL
+
+| Field | Content |
+| --- | --- |
+| Statement | One entry total per page: column 1's total, every group line and share, the entries mix, the subject areas' shares and the board's shares all come from the same subject-by-qualification rows (Post-16: academic_subject_qualification_headline, whose sum per year is DfE's own "All subjects" total exam entries; GCSE: the subject rollup), so every total on the page agrees. |
+| Why | Guy, 8 Nov: Plumstead's column 1 read 419 entries while the mix (bucket:*::entries) read 381 for the same year. |
+| Applies to | DV-SMT-A-NOW, DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE, DV-SMT-A-AREAS, DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-TREND-LINE (Entries mode, both levels) |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/lib/smt/academic-data.ts:qualRows |
+| Tagged at | - src/lib/smt/academic.ts |
+| Test case | Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries (100183), ks5: Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total. [runner: smtEntriesOneTotal] |
+| Origin | 0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
