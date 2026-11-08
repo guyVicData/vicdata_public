@@ -2544,6 +2544,17 @@ export const RULES: Rule[] = [
     origin: "0.8 sets: way back (Guy, 8 Nov)",
     status: "active",
   },
+  {
+    id: "R-SMT-ENTRIES-SIZE",
+    statement:
+      "In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject \"All subjects\"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says \"too few schools to size\". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync.",
+    why: "Plan §3 (Guy, 8 Nov): staffing works from counts, and a count means more against England's spread for that subject; fifths are stable and work for rare subjects.",
+    appliesTo: "SMT Academic, Entries mode (GCSE and Post-16): the subject areas' size badge, and each qualification's",
+    enforcedIn: ["src/lib/subject-entry-size.ts:entrySizeFifths", "src/lib/subject-entry-size.ts:entrySizeBadge", "src/lib/subject-entry-size.ts:fifthsOf", "scripts/sync-subject-entry-size-fifths.ts", "supabase/migrations/20261122090000_v08_subject_entry_size_fifths.sql", "supabase/tests/v08_subject_entry_size_pglite.mjs"],
+    testCase: { urn: "110110", school: "Leighton Park's A-level Psychology, latest Post-16 year (the fifths on a fixture, the unit tests and PGlite offline; the live table once applied)", phase: "ks5", expect: "On the fixture the zeros are left out and each badge holds a fifth of the schools; a cut point is the band above; under 10 schools, no badge. The migration's table, key, RLS read and idempotent upsert pass in PGlite. Live (once applied and synced): A-level Psychology has ordered cut points over 1,000+ schools (2024/25: 2,317 schools, 10/17/26/40) and Leighton Park's 17 entries read M. Until the table is applied the live half is MANUAL.", check: "smtEntriesSize" },
+    origin: "0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

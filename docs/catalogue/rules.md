@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 189 rules: 183 active, 6 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -196,6 +196,7 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | R-FEEDER-TIERS | active | A feeder set's tiers drive the feeder views (src/lib/sets/tiers.ts): Main feeders go to the top of the feeder health table (marked Main) and are drawn larger on the feeder map (MAIN_DOT_SCALE); an alert shows above the table when a Main feeder's roll is falling, by the existing trend rule (the feeder flag "Falling faster than the area"). Untiered counts as Regular; Occasional is kept in view and never alerts. The pipeline's answer carries the set's tiers. | no | auto: feederTiers | — |
 | R-SETS-MOBILE | active | Every new sets screen has a designed phone layout (G26-G31) from the same components, no phone-only copies of logic: at 390 px the selector (label above a full-width button, its menu a bottom sheet with a handle and the actions pinned at the bottom), the editor (one column, 72 px artwork, Save and Save as in a sticky bottom bar, the tick on the left, other figures behind a row's chevron, Add schools as a bottom sheet), the library (tabs, sideways pinned tiles, cards with a ··· sheet) and the set view (stacked, Edit first, How close and Where used folded) render without horizontal scroll; every control has at least a 44 px hit area; the sheets open and close by Esc, the handle and a tap outside; a panel header naming its set wraps rather than truncating. | no | auto: setsMobile | — |
 | R-SETS-WAY-BACK | active | The sets library (/sets) and a set view (/sets/<id>) always offer a way back to a dashboard, top left ("‹ Back to <page>", a 44 px tap target on a phone). A set menu's Manage sets (Admissions, SMT, Teacher) passes returnTo, the page as it stands (its set choice, filters and school), checked like the editor's (a path on this site, and here a dashboard only, never /sets itself); the label names the page (Back to Pipelines, Back to Market share, Back to GCSE results, Back to Post-16 results, Back to SMT…). The library's set links and the set view's Sets breadcrumb keep returnTo, and the editor opened from either returns to it, so the way back survives a trip through the editor. With no returnTo, or one not allowed, Back goes to the school's dashboard for the person's role (Admissions, else SMT, else Teacher), "Back to dashboard". A stored set chosen or saved there goes back with the person when it is the kind the page uses (and its entry point or phase where the page's address names one), as the editor's Save does. | no | auto: setsWayBack | — |
+| R-SMT-ENTRIES-SIZE | active | In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject "All subjects"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says "too few schools to size". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync. | no | auto: smtEntriesSize | — |
 
 ## Cards
 
@@ -3202,6 +3203,22 @@ What a number is allowed to be. 188 rules: 182 active, 6 superseded; 22 must lif
 | Tagged at | — |
 | Test case | Leighton Park's library and a set view, rendered on the server, with and without returnTo; the set menu's Manage sets with a page address (110110), ks4: Manage sets carries returnTo (the page, its set choice and school) on all three products; the library and set view draw Back first, named for the page, 44 px on a phone; set links and the breadcrumb keep returnTo; a missing, foreign or /sets returnTo falls back to the role's dashboard, "Back to dashboard"; a feeder set goes back to Pipelines but not to Market share; the unit tests pass. [runner: setsWayBack] |
 | Origin | 0.8 sets: way back (Guy, 8 Nov) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-ENTRIES-SIZE
+
+| Field | Content |
+| --- | --- |
+| Statement | In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject "All subjects"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says "too few schools to size". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync. |
+| Why | Plan §3 (Guy, 8 Nov): staffing works from counts, and a count means more against England's spread for that subject; fifths are stable and work for rare subjects. |
+| Applies to | SMT Academic, Entries mode (GCSE and Post-16): the subject areas' size badge, and each qualification's |
+| Enforced in | - src/lib/subject-entry-size.ts:entrySizeFifths<br>- src/lib/subject-entry-size.ts:entrySizeBadge<br>- src/lib/subject-entry-size.ts:fifthsOf<br>- scripts/sync-subject-entry-size-fifths.ts<br>- supabase/migrations/20261122090000_v08_subject_entry_size_fifths.sql<br>- supabase/tests/v08_subject_entry_size_pglite.mjs |
+| Tagged at | - src/lib/subject-entry-size.test.ts<br>- src/lib/subject-entry-size.ts |
+| Test case | Leighton Park's A-level Psychology, latest Post-16 year (the fifths on a fixture, the unit tests and PGlite offline; the live table once applied) (110110), ks5: On the fixture the zeros are left out and each badge holds a fifth of the schools; a cut point is the band above; under 10 schools, no badge. The migration's table, key, RLS read and idempotent upsert pass in PGlite. Live (once applied and synced): A-level Psychology has ordered cut points over 1,000+ schools (2024/25: 2,317 schools, 10/17/26/40) and Leighton Park's 17 entries read M. Until the table is applied the live half is MANUAL. [runner: smtEntriesSize] |
+| Origin | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

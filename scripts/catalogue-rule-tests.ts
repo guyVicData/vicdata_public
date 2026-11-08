@@ -52,7 +52,8 @@ async function admissionsThresholds() {
 }
 
 
-type Outcome = { pass: boolean; detail: string };
+// manual: the check can't run yet (e.g. a migration not applied live): counted MANUAL, not FAIL.
+type Outcome = { pass: boolean; detail: string; manual?: boolean };
 type Runner = (L: Lib, rule: Rule) => Promise<Outcome>;
 
 const round = (v: number | null | undefined, dp = 1) => (v === null || v === undefined ? null : Math.round(v * 10 ** dp) / 10 ** dp);
@@ -3608,6 +3609,51 @@ const RUNNERS: Record<string, Runner> = {
     const pass = unit && manage && products && backFirst(libPhone) && backFirst(libDesk) && phone44 && linksKeep && crumb && fallback && noneShown && goes;
     return { pass, detail: fmt({ unitTests: unit ? "pass" : "FAIL", manageSetsReturnTo: manageRt ?? "none", allThreeProducts: products, libraryBackFirst: backFirst(libPhone) && backFirst(libDesk), phone44, setLinksKeepReturnTo: linksKeep, viewBreadcrumbAndEditor: crumb, fallbackToRoleDashboard: fallback && noneShown, setGoesBackWhenItsKind: goes }) };
   },
+  // R-SMT-ENTRIES-SIZE: the fifths and the badge on a fixture and in the unit tests, the migration in
+  // PGlite, then the live table if it's applied (MANUAL until then: the migration is Guy's to apply).
+  async smtEntriesSize(L) {
+    const { execFileSync } = await import("node:child_process");
+    const es = await import("../src/lib/subject-entry-size");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, a: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, a, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/subject-entry-size.test.ts"]);
+    const unitPassed = Number(/^(?:ℹ|#) pass (\d+)/m.exec(unit.out)?.[1] ?? "0");
+    // Fixture: 50 schools entering (1..50) and 30 that don't (0): the zeros are left out, each badge
+    // holds ten schools, a cut point is the band above, and nine schools are too few to size.
+    const counts = [...Array.from({ length: 50 }, (_, i) => i + 1), ...Array(30).fill(0)];
+    const f = es.fifthsOf(counts)!;
+    const per: Record<string, number> = {};
+    for (const n of counts) {
+      const b = es.entrySizeBadge(n, f);
+      if (b) per[b] = (per[b] ?? 0) + 1;
+    }
+    const fixture =
+      f.schools === 50 && ["XS", "S", "M", "L", "XL"].every((b) => per[b] === 10) && es.entrySizeBadge(f.p20, f) === "S" && es.entrySizeBadge(0, f) === null && es.entrySizeBadge(5, es.fifthsOf([1, 2, 3, 4, 5, 6, 7, 8, 9])) === null && es.MIN_SCHOOLS_TO_SIZE === 10;
+    const pg = run("node", ["supabase/tests/v08_subject_entry_size_pglite.mjs"]);
+    const pgPass = (pg.out.match(/^PASS /gm) ?? []).length;
+    const offline = unit.ok && unitPassed >= 5 && fixture && pg.ok && /all passed/.test(pg.out);
+    const offlineDetail = { unitTests: unit.ok ? unitPassed : "FAIL", fixture: fixture ? `pass (${JSON.stringify(f)})` : "FAIL", pglite: pg.ok ? `${pgPass} pass` : "FAIL" };
+    // Live: the latest Post-16 year in the table (from the data), A-level Psychology, Leighton Park's badge.
+    const sb = L.sb.createServerAnonSupabaseClient();
+    const latest = await sb.from("subject_entry_size_fifths").select("period").eq("ks_stage", "ks5").order("period", { ascending: false }).limit(1);
+    if (latest.error) return { pass: offline, manual: offline, detail: fmt({ ...offlineDetail, live: `table not applied yet (${latest.error.code ?? latest.error.message}): apply 20261122090000 and run the sync` }) };
+    const period = (latest.data?.[0] as { period: number } | undefined)?.period;
+    if (period === undefined) return { pass: offline, manual: offline, detail: fmt({ ...offlineDetail, live: "table applied but empty: run scripts/sync-subject-entry-size-fifths.ts" }) };
+    const key = { qualification: "GCE A level", subject: "Psychology", period };
+    const fifths = (await es.entrySizeFifths("ks5", [key, { ...key, subject: es.ALL_SUBJECTS }])).get(es.entrySizeKey(key));
+    const lp = (await L.ref.lookupAcademicSubjectQualificationHeadline({ entityIds: ["110110"], ksStage: "ks5", qualificationType: "GCE A level", periodMin: period, periodMax: period })).find((r) => r.subject === "Psychology" && r.period === period);
+    const entries = lp ? Number(lp.entries_total) : null;
+    const badge = es.entrySizeBadge(entries, fifths);
+    const ordered = !!fifths && fifths.p20 <= fifths.p40 && fifths.p40 <= fifths.p60 && fifths.p60 <= fifths.p80 && fifths.schools >= 1000;
+    const live = ordered && (entries === null ? badge === null : badge !== null);
+    return { pass: offline && live, detail: fmt({ ...offlineDetail, period, psychology: fifths ? `${fifths.schools} schools, ${fifths.p20}/${fifths.p40}/${fifths.p60}/${fifths.p80}` : "none", leightonPark: `${entries ?? "no"} entries -> ${badge ?? "no badge"}` }) };
+  },
   // R-SETS-RLS: the read, write, curate, cap and stamp checks in v08_sets_r1_pglite.mjs.
   async setsRls() {
     const { execFileSync } = await import("node:child_process");
@@ -3664,6 +3710,11 @@ async function main() {
     const t0 = Date.now();
     try {
       const out = await runner(L, rule);
+      if (out.manual) {
+        counts.MANUAL++;
+        console.log(`MANUAL ${rule.id} [${tc.check}] ${tc.school} (${tc.urn}): ${out.detail} (${Date.now() - t0}ms)`);
+        continue;
+      }
       counts[out.pass ? "PASS" : "FAIL"]++;
       console.log(`${out.pass ? "PASS  " : "FAIL  "} ${rule.id} [${tc.check}] ${tc.school} (${tc.urn}): ${out.detail} (${Date.now() - t0}ms)`);
     } catch (e) {
