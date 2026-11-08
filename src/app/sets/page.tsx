@@ -7,7 +7,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SetsLibrary } from "@/components/sets/SetsLibrary";
-import { SetsShell, useSetsMember } from "@/components/sets/SetsShell";
+import { SetsShell, SetsWayBack, useSetsMember, wayBack } from "@/components/sets/SetsShell";
 import { entryOfPhase } from "@/lib/sets/model";
 import type { LibraryData } from "@/lib/sets/library";
 import type { LibraryFilter } from "@/lib/sets/library-view";
@@ -26,18 +26,19 @@ function Library() {
   const kind = sp.get("kind") === "feeders" ? "feeders" : sp.get("kind") === "compared_against" ? "compared_against" : "all";
   const sectionParam = sp.get("section") ?? "";
   const section = (["default", "school", "mine", "archived"].includes(sectionParam) || /^folder:.{1,80}$/.test(sectionParam) ? sectionParam : null) as LibraryFilter["section"] | null;
+  // The way back (a set menu's Manage sets passes returnTo; else the school's dashboard for the role).
+  const back = wayBack(sp.get("returnTo"), m.status === "ready" ? m.member : null);
   const entry = sp.get("entry") ?? entryOfPhase(sp.get("phase") === "ks5" ? "ks5" : sp.get("phase") === "ks4" ? "ks4" : null);
   return (
     <SetsShell>
       {(phone) =>
-        m.status === "error" ? (
-          <p className="p-6 text-[13px] text-[var(--muted2)]">{m.message}</p>
-        ) : !data || m.status !== "ready" ? (
-          <p className="p-6 text-[13px] text-[var(--muted2)]">Loading your sets…</p>
-        ) : data === "error" ? (
-          <p className="p-6 text-[13px] text-[var(--muted2)]">Could not read the sets.</p>
+        m.status === "error" || !data || m.status !== "ready" || data === "error" ? (
+          <div className={`flex flex-col ${phone ? "px-4 pt-2" : ""}`}>
+            <SetsWayBack back={back} phone={phone} />
+            <p className={`${phone ? "py-4" : "py-6"} text-[13px] text-[var(--muted2)]`}>{m.status === "error" ? m.message : data === "error" ? "Could not read the sets." : "Loading your sets…"}</p>
+          </div>
         ) : (
-          <SetsLibrary key={data.school.urn} data={data} phone={phone} initial={{ kind, entry: entry && data.entries.includes(entry) ? entry : null, query: sp.get("q") ?? "", ...(section ? { section } : {}) }} />
+          <SetsLibrary key={data.school.urn} data={data} phone={phone} back={back} initial={{ kind, entry: entry && data.entries.includes(entry) ? entry : null, query: sp.get("q") ?? "", ...(section ? { section } : {}) }} />
         )
       }
     </SetsShell>

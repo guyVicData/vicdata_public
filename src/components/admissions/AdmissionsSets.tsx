@@ -75,6 +75,7 @@ export function AdmissionsSetSelector({ member, entry, kind, choice, inUse, onPi
       onEdit={member.viewAs ? null : { label: "Edit this set…", onClick: () => (window.location.href = editorHref(member, entry, kind, current, false)) }}
       onNew={member.viewAs ? null : { label: "New set…", onClick: () => (window.location.href = editorHref(member, entry, kind, current, true)) }}
       manageHref={`/sets?kind=${kind}&entry=${encodeURIComponent(entry)}`}
+      manageUrn={member.schoolUrn}
       phone={phone}
     />
   );

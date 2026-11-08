@@ -339,6 +339,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
       onNew={newHref ? { label: "New set…", onClick: () => (window.location.href = newHref) } : { label: "New set…", onClick: () => setChooser({ editing: null }) }}
       extraDefault={[{ label: "Schools in the LA, regional and national rankings…", onClick: () => setChooser({ editing: null }) }]}
       manageHref="/sets?kind=compared_against"
+      manageUrn={member.schoolUrn}
       phone={phone}
     />
   );

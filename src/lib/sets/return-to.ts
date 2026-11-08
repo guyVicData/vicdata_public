@@ -201,3 +201,81 @@ export function takeHandover(store: StorageLike, here: string, now = Date.now())
   }
   return h.id;
 }
+
+// ------------------------------------------------------------------------------------------------
+// The library's and the set view's way back (Guy, 8 Nov: "on /sets there is no way back except the
+// browser's Back"). A set menu's Manage sets passes `returnTo` (the dashboard as it stands); /sets and
+// /sets/<id> show "‹ Back to <page>" and keep `returnTo` on their own links (the set view's breadcrumb,
+// the library's set links, the editor's way back is the page itself so carries it too). Only a dashboard
+// is a way back from here (never /sets itself, a loop); without one, the school's dashboard for the
+// person's role, "Back to dashboard".
+
+/** A dashboard to go back to from the library or a set view: safeReturnTo, and under /teacher/. */
+export function safeDashboardReturn(raw: string | null | undefined): string | null {
+  const ok = safeReturnTo(raw);
+  return ok && underPrefix(new URL(ok, BASE).pathname, "/teacher") ? ok : null;
+}
+
+const SMT_PAGE: Record<string, string> = { "/teacher/smt": "SMT", "/teacher/smt/academic": "SMT Academic", "/teacher/smt/pupils": "SMT Pupils", "/teacher/smt/context": "SMT Context" };
+
+/** "Back to Pipelines", "Back to Market share", "Back to GCSE results", "Back to SMT Academic"… named
+ * from the (checked) address, never from anything else in the URL. */
+export function dashboardLabel(returnTo: string): string {
+  const url = new URL(returnTo, BASE);
+  const p = url.pathname;
+  if (underPrefix(p, "/teacher/admissions")) return url.searchParams.get("view") === "market-share" ? "Back to Market share" : "Back to Pipelines";
+  if (underPrefix(p, "/teacher/ks4")) return "Back to GCSE results";
+  if (underPrefix(p, "/teacher/ks5")) return "Back to Post-16 results";
+  if (underPrefix(p, "/teacher/smt")) return `Back to ${SMT_PAGE[p.replace(/\/$/, "")] ?? "SMT"}`;
+  return "Back to dashboard";
+}
+
+export type SetsRole = "admissions" | "smt" | "teacher";
+
+/** The person's role at the school, for the fallback: Admissions (the lead or the role), else SMT, else Teacher. */
+export function setsRole(m: { roles: string[] | null; lead?: boolean | null }): SetsRole {
+  const roles = m.roles ?? [];
+  if (m.lead || roles.includes("admissions")) return "admissions";
+  if (roles.includes("smt")) return "smt";
+  return "teacher";
+}
+
+/** No usable `returnTo` (someone typed /sets): the school's dashboard for the person's role. */
+export function roleDashboard(role: SetsRole, urn: string | null): { href: string; label: string } {
+  const path = role === "admissions" ? "/teacher/admissions" : role === "smt" ? "/teacher/smt" : "/teacher";
+  return { href: urn ? `${path}?${new URLSearchParams({ school: urn })}` : path, label: "Back to dashboard" };
+}
+
+/** The kind of set a dashboard uses, from its address: Pipelines feeders, Market share / GCSE / Post-16 /
+ * SMT compared against; and its entry point or phase where the address says it (else any). */
+export function pageSetKind(returnTo: string): { kind: "compared_against" | "feeders"; entry: string | null; phase: "ks4" | "ks5" | null } | null {
+  const url = new URL(returnTo, BASE);
+  const p = url.pathname;
+  if (underPrefix(p, "/teacher/admissions")) return { kind: url.searchParams.get("view") === "market-share" ? "compared_against" : "feeders", entry: url.searchParams.get("entry"), phase: null };
+  if (underPrefix(p, "/teacher/ks4")) return { kind: "compared_against", entry: null, phase: "ks4" };
+  if (underPrefix(p, "/teacher/ks5")) return { kind: "compared_against", entry: null, phase: "ks5" };
+  if (underPrefix(p, "/teacher/smt")) return { kind: "compared_against", entry: null, phase: null };
+  return null;
+}
+
+/** The set chosen or saved here goes back with the person only if it is a stored set of the kind the
+ * page uses (and its entry point or phase, where the page's address names one). Otherwise null: the page
+ * keeps the set it had. */
+export function setForPage(returnTo: string, s: { id: string | null; kind: string; entry: string | null; phase: string | null } | null): string | null {
+  if (!s?.id || !UUID.test(s.id)) return null;
+  const page = pageSetKind(returnTo);
+  if (!page || page.kind !== s.kind) return null;
+  if (page.phase && s.phase !== page.phase) return null;
+  if (page.entry && s.entry && s.entry !== page.entry) return null;
+  return s.id;
+}
+
+/** The address the Back control shows (a middle-click or a new tab): the page, with `useSet` when a set
+ * goes back with it. The click itself leaves through leaveEditor (one step back when the page before is
+ * the dashboard, else replacing this entry; the set handed over the same way the editor's Save does). */
+export function wayBackHref(returnTo: string, setId: string | null): string {
+  if (!setId) return returnTo;
+  const url = new URL(returnTo, BASE);
+  url.searchParams.set("useSet", setId);
+  return `${url.pathname}${url.search}${url.hash}`;
+}

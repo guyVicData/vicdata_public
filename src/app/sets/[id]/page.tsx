@@ -11,7 +11,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { readSet } from "@/lib/sets/store";
 import { canCurate, type SetKind } from "@/lib/sets/model";
 import { SetView, type ViewedSet } from "@/components/sets/SetView";
-import { SetsShell, useSetsMember } from "@/components/sets/SetsShell";
+import { SetsShell, SetsWayBack, useSetsMember, wayBack } from "@/components/sets/SetsShell";
 
 function View({ id }: { id: string }) {
   const sp = useSearchParams();
@@ -49,12 +49,22 @@ function View({ id }: { id: string }) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+  // The way back: the dashboard the library (or a set menu) was opened from, with this set when it's the
+  // kind that page uses; else the school's dashboard for the person's role. Never a page without one.
+  const back = wayBack(sp.get("returnTo"), m.status === "ready" ? m.member : null);
+  const keepBack = back.fallback ? "" : `&${new URLSearchParams({ returnTo: back.returnTo })}`;
   return (
     <SetsShell>
       {(phone) => {
-        if (viewed === "error") return <p className="p-6 text-[13px] text-[var(--muted2)]">That set has gone, or isn&rsquo;t one you can see.</p>;
-        if (m.status === "error") return <p className="p-6 text-[13px] text-[var(--muted2)]">{m.message}</p>;
-        if (!viewed || m.status !== "ready") return <p className="p-6 text-[13px] text-[var(--muted2)]">Loading…</p>;
+        const holding = (words: string) => (
+          <div className={`flex flex-col ${phone ? "px-4 pt-2" : ""}`}>
+            <SetsWayBack back={back} phone={phone} />
+            <p className={`${phone ? "py-4" : "py-6"} text-[13px] text-[var(--muted2)]`}>{words}</p>
+          </div>
+        );
+        if (viewed === "error") return holding("That set has gone, or isn’t one you can see.");
+        if (m.status === "error") return holding(m.message);
+        if (!viewed || m.status !== "ready") return holding("Loading…");
         const urn = m.member.urn;
         // The editor's way back: this view, as it stands.
         const base = new URLSearchParams({ urn, kind: viewed.kind, returnTo: returnToHere(urn, `/sets/${id === "default" ? `default?${sp.toString()}` : `${id}?urn=${urn}`}`) });
@@ -71,12 +81,18 @@ function View({ id }: { id: string }) {
         dup.set("from", viewed.key);
         dup.set("name", `${viewed.name} (copy)`);
         dup.set("urns", viewed.members.map((x) => x.urn).join(","));
+        const wayBackLink = <SetsWayBack back={back} phone={phone} set={{ id: viewed.id, kind: viewed.kind, entry: viewed.phase ? null : viewed.entry, phase: viewed.phase }} />;
         return (
           <>
-            {!phone && (
-              <nav className="mb-3 text-[12px] text-[var(--muted2)]" aria-label="Breadcrumb">
-                <a href={`/sets?urn=${urn}`} className="hover:underline">Sets</a> › {viewed.name}
-              </nav>
+            {phone ? (
+              <div className="px-4 pt-2">{wayBackLink}</div>
+            ) : (
+              <div className="mb-3 flex flex-col gap-1">
+                {wayBackLink}
+                <nav className="text-[12px] text-[var(--muted2)]" aria-label="Breadcrumb">
+                  <a href={`/sets?urn=${urn}${keepBack}`} className="hover:underline">Sets</a> › {viewed.name}
+                </nav>
+              </div>
             )}
             <SetView urn={urn} schoolName={m.member.schoolName} set={viewed} editHref={`/sets/edit?${edit}`} duplicateHref={`/sets/edit?${dup}`} phone={phone} />
           </>

@@ -3548,6 +3548,66 @@ const RUNNERS: Record<string, Runner> = {
     const pass = wide.length === 0 && small.length === 0 && sheet && sticky && tabs && folded;
     return { pass, detail: fmt({ fixedWidthsOver358: wide.join(" | ") || 0, controlsUnder44: small.slice(0, 6).join(" | ") || 0, controlsUnder44Count: small.length, menuSheet: sheet, editorStickyBar: sticky, libraryTabsAndCards: tabs, viewFolded: folded }) };
   },
+  // R-SETS-WAY-BACK: the library and the set view, rendered on the server with and without returnTo; the
+  // set menu's Manage sets rendered with a page address; the pure rules (return-to.test.ts, editor-return.test.ts).
+  async setsWayBack() {
+    const fs = await import("node:fs");
+    const { execFileSync } = await import("node:child_process");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const { SetSelector } = await import("../src/components/sets/SetSelector");
+    const { SetsLibrary } = await import("../src/components/sets/SetsLibrary");
+    const { SetsWayBack, wayBack } = await import("../src/components/sets/SetsShell");
+    const root = new URL("..", import.meta.url).pathname;
+    let unit = true;
+    try {
+      execFileSync("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/sets/return-to.test.ts", "src/lib/sets/editor-return.test.ts"], { cwd: root, stdio: "ignore" });
+    } catch {
+      unit = false;
+    }
+    const SET = "8a3c1d9e-0000-4000-8000-0000000000aa";
+    const member = { urn: "110110", role: "teacher" as const };
+    // 1. Manage sets: the page as it stands (a fake window: the menu draws its link when it opens).
+    const g = globalThis as unknown as { window?: unknown };
+    const had = g.window;
+    g.window = { location: { pathname: "/teacher/admissions", search: "?view=pipelines&entry=11%2B&fset=set%3Aabc", hash: "", origin: "https://vicdata.co.uk" } };
+    let menuHtml = "";
+    try {
+      menuHtml = renderToStaticMarkup(createElement(SetSelector, { label: "Feeder schools", kind: "feeders", current: { name: "Day", count: 18 }, rows: { default: [], school: [], mine: [] }, mine: null, selectedKey: null, onPick: () => undefined, manageHref: "/sets?kind=feeders&entry=11%2B", manageUrn: "110110", defaultOpen: true }));
+    } finally {
+      g.window = had;
+    }
+    const manageHref = (/<a href="([^"]*)"[^>]*>Manage sets</.exec(menuHtml)?.[1] ?? "").replace(/&amp;/g, "&");
+    const manageRt = new URL(manageHref || "/", "https://x.invalid").searchParams.get("returnTo");
+    const manage = manageRt === "/teacher/admissions?view=pipelines&entry=11%2B&fset=set%3Aabc&school=110110";
+    const src = (f: string) => fs.readFileSync(path.join(root, f), "utf8");
+    const products = /manageUrn=\{member\.schoolUrn\}/.test(src("src/components/admissions/AdmissionsSets.tsx")) && /manageUrn=\{member\.schoolUrn\}/.test(src("src/components/smt/SmtDashboard.tsx")) && /manageUrn: schoolUrn/.test(src("src/components/dashboard-config/TeacherDashboard.tsx"));
+    // 2. The library with returnTo: Back first, named for the page, 44 px on a phone; set links keep it.
+    const set = { id: SET, name: "Day feeders", description: null, kind: "feeders" as const, entryPoint: "11+", phase: null, focusUrn: "110110", ownerScope: "school" as const, schoolAccountId: "a", ownerProfileId: null, creatorKind: "admissions" as const, audience: "day", rungAge: null, isDefault: true, pinned: true, folder: null, tags: [], archived: false, rule: null, sourceRecipe: null, laBlend: null, config: {}, members: [{ urn: "110137", position: 0, tier: null }], createdBy: null, createdAt: "", updatedBy: null, updatedAt: "" };
+    const lib = { school: { urn: "110110", name: "Leighton Park", boarding: true }, entries: ["11+", "16+"], defaults: [], stored: [set], lastUsed: {}, folders: {}, names: {}, curates: { compared_against: true, feeders: true }, creators: { compared_against: "admissions" as const, feeders: "admissions" as const }, profileId: "p", personalActive: 0, cap: 8 };
+    const rt = "/teacher/admissions?view=pipelines&entry=11%2B&school=110110";
+    const back = wayBack(rt, member);
+    const libPhone = renderToStaticMarkup(createElement(SetsLibrary, { data: lib as never, phone: true, back }));
+    const libDesk = renderToStaticMarkup(createElement(SetsLibrary, { data: lib as never, back }));
+    const firstLink = (h: string) => /<a [^>]*>/.exec(h)?.[0] ?? "";
+    const backFirst = (h: string) => /data-sets-way-back="returnTo"/.test(firstLink(h)) && /Back to Pipelines</.test(h);
+    const phone44 = /min-h-\[44px\]/.test(firstLink(libPhone));
+    const enc = encodeURIComponent(rt).replace(/%20/g, "+");
+    const linksKeep = libDesk.includes(`/sets/${SET}?urn=110110&amp;returnTo=${enc}`);
+    // The set view's breadcrumb keeps returnTo; the editor's way back is the page itself (returnToHere).
+    const viewSrc = src("src/app/sets/[id]/page.tsx");
+    const crumb = /href=\{`\/sets\?urn=\$\{urn\}\$\{keepBack\}`\}/.test(viewSrc) && /<SetsWayBack back=\{back\}/.test(viewSrc) && /returnTo: returnToHere\(urn/.test(viewSrc) && /returnTo: returnToHere\(urn/.test(src("src/components/sets/SetsLibrary.tsx"));
+    // 3. No returnTo, or one not allowed: the role's dashboard, "Back to dashboard".
+    const fb = [null, "/sets?urn=110110", "https://evil.example/teacher/ks4", "javascript:alert(1)"].map((r) => wayBack(r, { urn: "110110", role: "admissions" }));
+    const fallback = fb.every((b) => b.fallback && b.returnTo === "/teacher/admissions?school=110110" && b.label === "Back to dashboard") && wayBack(null, { urn: "110110", role: "smt" }).returnTo === "/teacher/smt?school=110110" && wayBack(null, member).returnTo === "/teacher?school=110110" && wayBack(null, null).returnTo === "/teacher";
+    const libNone = renderToStaticMarkup(createElement(SetsLibrary, { data: lib as never, phone: true, back: wayBack(null, member) }));
+    const noneShown = /data-sets-way-back="fallback"[^>]*href="\/teacher\?school=110110"|href="\/teacher\?school=110110"[^>]*data-sets-way-back="fallback"/.test(libNone) && /Back to dashboard</.test(libNone) && libNone.includes(`href="/sets/${SET}?urn=110110"`);
+    // 4. The set goes back with the person when it's the kind the page uses.
+    const link = (to: string, kind: "feeders" | "compared_against") => renderToStaticMarkup(createElement(SetsWayBack, { back: wayBack(to, member), set: { id: SET, kind, entry: "11+", phase: null } }));
+    const goes = link(rt, "feeders").includes(`useSet=${SET}`) && !link("/teacher/admissions?view=market-share&entry=11%2B", "feeders").includes("useSet=") && link("/teacher/admissions?view=market-share&entry=11%2B", "compared_against").includes(`useSet=${SET}`);
+    const pass = unit && manage && products && backFirst(libPhone) && backFirst(libDesk) && phone44 && linksKeep && crumb && fallback && noneShown && goes;
+    return { pass, detail: fmt({ unitTests: unit ? "pass" : "FAIL", manageSetsReturnTo: manageRt ?? "none", allThreeProducts: products, libraryBackFirst: backFirst(libPhone) && backFirst(libDesk), phone44, setLinksKeepReturnTo: linksKeep, viewBreadcrumbAndEditor: crumb, fallbackToRoleDashboard: fallback && noneShown, setGoesBackWhenItsKind: goes }) };
+  },
   // R-SETS-RLS: the read, write, curate, cap and stamp checks in v08_sets_r1_pglite.mjs.
   async setsRls() {
     const { execFileSync } = await import("node:child_process");

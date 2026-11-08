@@ -76,3 +76,13 @@ export function returnToHere(urn: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
   return withSchool(`${window.location.pathname}${window.location.search}${window.location.hash}`, urn);
 }
+
+/** A set menu's Manage sets: the library for this school, with this page as it stands (its set choice
+ * and filters included) as the way back. On the server (no page yet) the plain address. */
+export function manageHrefHere(base: string, urn: string | null | undefined): string {
+  if (typeof window === "undefined") return base;
+  const url = new URL(base, window.location.origin);
+  if (urn && !url.searchParams.has("urn")) url.searchParams.set("urn", urn);
+  url.searchParams.set("returnTo", urn ? returnToHere(urn, here()) : here());
+  return `${url.pathname}${url.search}`;
+}

@@ -19,6 +19,7 @@ import type { LibraryData } from "@/lib/sets/library";
 import { filterLibrary, foldersOf, sectionCounts, sortLibrary, usedWords, type LibraryFilter, type LibraryItem, type LibrarySection, type LibrarySort } from "@/lib/sets/library-view";
 import type { SetKind } from "@/lib/sets/model";
 import { CreatorPill, KindIcon, creatorColours } from "./SetSelector";
+import { SetsWayBack } from "./SetsShell";
 
 const KIND_WORD: Record<SetKind, string> = { compared_against: "Compared against", feeders: "Feeder schools" };
 
@@ -64,11 +65,14 @@ export function libraryItems(d: LibraryData): LibraryItem[] {
   return [...defaults, ...stored];
 }
 
-/** Where a set opens: a stored set's read-only view; a default set's view from its schools. */
-export function viewHref(urn: string, x: LibraryItem): string {
-  if (x.id) return `/sets/${x.id}?urn=${urn}`;
+/** Where a set opens: a stored set's read-only view; a default set's view from its schools. `returnTo`
+ * (the dashboard the library was opened from) goes with it, so the set view offers the same way back;
+ * a shared link leaves it out. */
+export function viewHref(urn: string, x: LibraryItem, returnTo?: string | null): string {
+  const back = returnTo ? `&${new URLSearchParams({ returnTo })}` : "";
+  if (x.id) return `/sets/${x.id}?urn=${urn}${back}`;
   const q = new URLSearchParams({ urn, kind: x.kind, entry: x.entry ?? "11+", from: x.key.replace(/^default:/, "default:").split("@")[0], name: x.name, urns: x.urns.join(",") });
-  return `/sets/default?${q.toString()}`;
+  return `/sets/default?${q.toString()}${back}`;
 }
 
 /** The editor for a set (itself, or a copy of a default) or a duplicate of any. Its way back is this
@@ -95,7 +99,9 @@ function Artwork({ x, size }: { x: LibraryItem; size: number }) {
   );
 }
 
-export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone?: boolean; initial?: Partial<LibraryFilter> }) {
+export type LibraryBack = { returnTo: string; fallback: boolean; label: string };
+
+export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData; phone?: boolean; initial?: Partial<LibraryFilter>; back?: LibraryBack }) {
   const [filter, setFilter] = useState<LibraryFilter>({ section: "all", query: "", kind: "all", entry: null, ...initial });
   const [sort, setSort] = useState<LibrarySort>("recent");
   const [items, setItems] = useState<LibraryItem[]>(() => libraryItems(data));
@@ -135,6 +141,10 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
   useEffect(() => {
     if (saved) document.querySelector(`[data-library-saved]`)?.scrollIntoView({ block: "nearest" });
   }, [saved]);
+  // The way back: the dashboard (returnTo) with the set saved here, when it's the kind that page uses.
+  const savedItem = saved ? (items.find((i) => i.id === saved) ?? null) : null;
+  const wayBack = back ? <SetsWayBack back={back} phone={phone} set={savedItem ? { id: savedItem.id, kind: savedItem.kind, entry: savedItem.entry, phase: savedItem.phase } : null} /> : null;
+  const open = (x: LibraryItem) => viewHref(urn, x, back && !back.fallback ? back.returnTo : null);
   const savedRing = (x: LibraryItem) => (saved && x.id === saved ? { "data-library-saved": "", style: { boxShadow: "inset 0 0 0 2px var(--accent, var(--fg))" } } : {});
 
   const update = (key: string, patch: Partial<LibraryItem>) => setItems((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x)));
@@ -260,7 +270,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
         {pinned.map((x) => {
           const c = creatorColours(x.creator);
           return (
-            <a key={x.key} href={viewHref(urn, x)} data-library-tile={x.key} className={`flex min-h-[44px] shrink-0 flex-col gap-2 overflow-hidden rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] ${phone ? "w-[200px]" : ""}`}>
+            <a key={x.key} href={open(x)} data-library-tile={x.key} className={`flex min-h-[44px] shrink-0 flex-col gap-2 overflow-hidden rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] ${phone ? "w-[200px]" : ""}`}>
               <span className="h-[4px] w-full" style={{ background: c.fg }} />
               <div className="flex items-center gap-3 px-3 pb-3">
                 <Artwork x={x} size={56} />
@@ -286,7 +296,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
             return (
               <div key={x.key} data-library-card={x.key} {...savedRing(x)} className="flex items-center gap-3 rounded-[10px] border border-[var(--panel-border)] p-2">
                 <span style={{ color: c.fg }}><KindIcon kind={x.kind} size={20} /></span>
-                <a href={viewHref(urn, x)} className="min-h-[44px] min-w-0 flex-1">
+                <a href={open(x)} className="min-h-[44px] min-w-0 flex-1">
                   <div className="truncate text-[13px] font-semibold">{x.name}</div>
                   <div className="flex flex-wrap items-center gap-1 text-[11.5px] text-[var(--muted2)]">
                     <CreatorPill creator={x.creator} /> {x.count} schools · used {usedWords(x.lastUsedAt)}
@@ -337,7 +347,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
                   <td className="pl-3 text-[var(--muted2)]">{usedWords(x.lastUsedAt)}</td>
                   <td className="text-right">
                     <span className="inline-flex items-center gap-1">
-                      <a href={viewHref(urn, x)} className={`inline-flex items-center rounded-[8px] border border-[var(--panel-border2)] px-3 ${hit}`}>Open</a>
+                      <a href={open(x)} className={`inline-flex items-center rounded-[8px] border border-[var(--panel-border2)] px-3 ${hit}`}>Open</a>
                       {more(x)}
                     </span>
                   </td>
@@ -370,6 +380,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
   if (phone)
     return (
       <div data-sets-library="phone" className="flex flex-col gap-3 px-4 py-4">
+        {wayBack && <div className="-mb-2 -mt-2">{wayBack}</div>}
         {head}
         <div role="tablist" aria-label="Library" className="-mx-4 flex gap-1 overflow-x-auto px-4">
           {sections.map((s) => (
@@ -406,7 +417,9 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
       </div>
     );
   return (
-    <div data-sets-library="desktop" className="flex gap-5">
+    <div data-sets-library="desktop" className="flex flex-col gap-2">
+      {wayBack}
+    <div className="flex gap-5">
       <nav aria-label="Library" className="flex w-[200px] shrink-0 flex-col gap-1">
         <div className="px-2 pb-1 text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">Library</div>
         {sections.map((s) => (
@@ -438,6 +451,7 @@ export function SetsLibrary({ data, phone, initial }: { data: LibraryData; phone
         {table}
         <p className="text-[11.5px] text-[var(--muted2)]">Click a set to see it; ··· holds Edit · Duplicate · Pin to menu · Move to folder · Share · Propose as school set · Archive.</p>
       </div>
+    </div>
     </div>
   );
 }

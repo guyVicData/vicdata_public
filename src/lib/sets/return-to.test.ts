@@ -199,3 +199,66 @@ test("handover: stale, from the future, unreadable or not an id -- ignored and c
   assert.doesNotThrow(() => writeHandover(blocked, page, ID, 0));
   assert.equal(takeHandover(blocked, page, 0), null, "storage blocked: nothing, no error");
 });
+
+// ------------------------------------------------------------------------------------------------
+// The library's and the set view's way back (Guy, 8 Nov): a dashboard only, named from its address; the
+// role's dashboard without one; the set goes back only when it's the kind the page uses.
+import { dashboardLabel, pageSetKind, roleDashboard, safeDashboardReturn, setForPage, setsRole, wayBackHref } from "./return-to";
+
+const SET = "8a3c1d9e-0000-4000-8000-0000000000aa";
+
+test("way back: only a dashboard, through safeReturnTo", () => {
+  assert.equal(safeDashboardReturn("/teacher/admissions?view=pipelines&entry=11%2B&school=110110"), "/teacher/admissions?view=pipelines&entry=11%2B&school=110110");
+  assert.equal(safeDashboardReturn("/teacher/smt/academic?school=110110"), "/teacher/smt/academic?school=110110");
+  for (const bad of [null, "", "/sets", "/sets?urn=1", "/sets/abc", "/sets/edit?x=1", "https://evil.example/teacher/ks4", "//evil.example/teacher/ks4", "javascript:alert(1)", "/teacher/../api/whoami", "/\\evil.example", "/teacher/people", "/teacher"])
+    assert.equal(safeDashboardReturn(bad), null, String(bad));
+});
+
+test("way back: the label names the page", () => {
+  assert.equal(dashboardLabel("/teacher/admissions?view=pipelines&entry=11%2B"), "Back to Pipelines");
+  assert.equal(dashboardLabel("/teacher/admissions?entry=16%2B"), "Back to Pipelines", "Pipelines is Admissions' first view");
+  assert.equal(dashboardLabel("/teacher/admissions?view=market-share&entry=11%2B"), "Back to Market share");
+  assert.equal(dashboardLabel("/teacher/ks4?school=110110"), "Back to GCSE results");
+  assert.equal(dashboardLabel("/teacher/ks5"), "Back to Post-16 results");
+  assert.equal(dashboardLabel("/teacher/smt?school=110110"), "Back to SMT");
+  assert.equal(dashboardLabel("/teacher/smt/academic"), "Back to SMT Academic");
+  assert.equal(dashboardLabel("/teacher/smt/context"), "Back to SMT Context");
+});
+
+test("way back: no returnTo, the school's dashboard for the role", () => {
+  assert.equal(setsRole({ roles: ["teacher", "admissions"] }), "admissions");
+  assert.equal(setsRole({ roles: ["teacher"], lead: true }), "admissions");
+  assert.equal(setsRole({ roles: ["teacher", "smt"] }), "smt");
+  assert.equal(setsRole({ roles: ["teacher"] }), "teacher");
+  assert.equal(setsRole({ roles: null }), "teacher");
+  assert.deepEqual(roleDashboard("admissions", "110110"), { href: "/teacher/admissions?school=110110", label: "Back to dashboard" });
+  assert.deepEqual(roleDashboard("smt", "110110"), { href: "/teacher/smt?school=110110", label: "Back to dashboard" });
+  assert.deepEqual(roleDashboard("teacher", "110110"), { href: "/teacher?school=110110", label: "Back to dashboard" });
+  assert.deepEqual(roleDashboard("teacher", null), { href: "/teacher", label: "Back to dashboard" });
+});
+
+test("way back: the set goes with it only when it's the kind (and entry or phase) the page uses", () => {
+  const pipe = "/teacher/admissions?view=pipelines&entry=11%2B&school=110110";
+  const share = "/teacher/admissions?view=market-share&entry=11%2B";
+  assert.deepEqual(pageSetKind(pipe), { kind: "feeders", entry: "11+", phase: null });
+  assert.deepEqual(pageSetKind("/teacher/ks5"), { kind: "compared_against", entry: null, phase: "ks5" });
+  const feeders = { id: SET, kind: "feeders", entry: "11+", phase: null };
+  const rivals = { id: SET, kind: "compared_against", entry: "11+", phase: null };
+  assert.equal(setForPage(pipe, feeders), SET);
+  assert.equal(setForPage(share, feeders), null, "a feeder set on Market share");
+  assert.equal(setForPage(share, rivals), SET);
+  assert.equal(setForPage(pipe, { ...feeders, entry: "16+" }), null, "another entry point");
+  assert.equal(setForPage("/teacher/ks4", { id: SET, kind: "compared_against", entry: null, phase: "ks4" }), SET);
+  assert.equal(setForPage("/teacher/ks4", { id: SET, kind: "compared_against", entry: null, phase: "ks5" }), null);
+  assert.equal(setForPage("/teacher/ks4", rivals), null, "an Admissions set isn't a GCSE one");
+  assert.equal(setForPage("/teacher/smt", rivals), SET);
+  assert.equal(setForPage("/teacher/smt", feeders), null);
+  assert.equal(setForPage(share, { ...rivals, id: null }), null, "a default set has no id to hand over");
+  assert.equal(setForPage(share, { ...rivals, id: "javascript:alert(1)" }), null);
+  assert.equal(setForPage(share, null), null);
+});
+
+test("way back: the link's address carries useSet only when a set goes back", () => {
+  assert.equal(wayBackHref("/teacher/admissions?view=market-share&entry=11%2B", null), "/teacher/admissions?view=market-share&entry=11%2B");
+  assert.equal(wayBackHref("/teacher/admissions?view=market-share&entry=11%2B", SET), `/teacher/admissions?view=market-share&entry=11%2B&useSet=${SET}`);
+});

@@ -2533,6 +2533,17 @@ export const RULES: Rule[] = [
     origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, G26-G31)",
     status: "active",
   },
+  {
+    id: "R-SETS-WAY-BACK",
+    statement:
+      "The sets library (/sets) and a set view (/sets/<id>) always offer a way back to a dashboard, top left (\"‹ Back to <page>\", a 44 px tap target on a phone). A set menu's Manage sets (Admissions, SMT, Teacher) passes returnTo, the page as it stands (its set choice, filters and school), checked like the editor's (a path on this site, and here a dashboard only, never /sets itself); the label names the page (Back to Pipelines, Back to Market share, Back to GCSE results, Back to Post-16 results, Back to SMT…). The library's set links and the set view's Sets breadcrumb keep returnTo, and the editor opened from either returns to it, so the way back survives a trip through the editor. With no returnTo, or one not allowed, Back goes to the school's dashboard for the person's role (Admissions, else SMT, else Teacher), \"Back to dashboard\". A stored set chosen or saved there goes back with the person when it is the kind the page uses (and its entry point or phase where the page's address names one), as the editor's Save does.",
+    why: "Guy, 8 Nov: on /sets there was no way back except the browser's Back.",
+    appliesTo: "the sets library and the set view; the set menu's Manage sets on Admissions, SMT and Teacher",
+    enforcedIn: ["src/lib/sets/return-to.ts:safeDashboardReturn", "src/lib/sets/return-to.ts:dashboardLabel", "src/lib/sets/return-to.ts:roleDashboard", "src/lib/sets/return-to.ts:setForPage", "src/lib/sets/editor-return.ts:manageHrefHere", "src/components/sets/SetsShell.tsx:SetsWayBack", "src/components/sets/SetsLibrary.tsx", "src/app/sets/page.tsx", "src/app/sets/[id]/page.tsx", "src/components/sets/SetSelector.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park's library and a set view, rendered on the server, with and without returnTo; the set menu's Manage sets with a page address", phase: "ks4", expect: "Manage sets carries returnTo (the page, its set choice and school) on all three products; the library and set view draw Back first, named for the page, 44 px on a phone; set links and the breadcrumb keep returnTo; a missing, foreign or /sets returnTo falls back to the role's dashboard, \"Back to dashboard\"; a feeder set goes back to Pipelines but not to Market share; the unit tests pass.", check: "setsWayBack" },
+    origin: "0.8 sets: way back (Guy, 8 Nov)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

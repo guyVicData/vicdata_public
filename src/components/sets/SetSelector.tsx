@@ -5,13 +5,15 @@
 // on Pipelines); the button holds only the set -- an accent border, the name in bold, its number of
 // schools beside it -- so it never looks like a filter pill. Its menu is always three blocks in this
 // order: Default (no heading), School sets (each row tagged with its creator), My sets ("n of 8");
-// the current set ticked and every row's count shown; then Edit this set…, New set…, Manage sets.
+// the current set ticked and every row's count shown; then Edit this set…, New set…, Manage sets
+// (to the library, with this page as it stands as its way back: returnTo).
 // Up to LIMIT pinned school sets and LIMIT recently used personal sets show, then "All … (n)…".
 // On a phone the label sits above a full-width button (the count always visible) and the menu is a
 // bottom sheet: a drag handle, the same blocks, the actions pinned at the bottom; Esc, the handle or
 // a tap outside closes it. Each product supplies the rows; this draws them, nothing else.
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CreatorKind, SetKind } from "@/lib/sets/model";
+import { manageHrefHere } from "@/lib/sets/editor-return";
 
 export type SetMenuRow = {
   key: string;
@@ -40,6 +42,8 @@ export type SetSelectorProps = {
   onEdit?: SetMenuAction | null;
   onNew?: SetMenuAction | null;
   manageHref?: string | null;
+  /** The school, so Manage sets opens the library on it with this page as the way back (returnTo). */
+  manageUrn?: string | null;
   /** More default rows that open something rather than pick (Teacher's rankings, "Schools in…"). */
   extraDefault?: SetMenuAction[];
   /** A fixed button width (Teacher's Comparisons column): long names truncate, the full name on hover. */
@@ -217,7 +221,7 @@ export function SetSelector(p: SetSelectorProps) {
       {actionBtn(p.onEdit)}
       {actionBtn(p.onNew)}
       {p.manageHref ? (
-        <a href={p.manageHref} role="menuitem" className={`flex w-full items-center rounded-[8px] px-3 py-[6px] text-left text-[12.5px] hover:bg-[var(--box-bg)] ${rowH}`}>
+        <a href={manageHrefHere(p.manageHref, p.manageUrn)} role="menuitem" className={`flex w-full items-center rounded-[8px] px-3 py-[6px] text-left text-[12.5px] hover:bg-[var(--box-bg)] ${rowH}`}>
           Manage sets
         </a>
       ) : null}

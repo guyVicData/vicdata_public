@@ -2534,6 +2534,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     })(),
     extraDefault: [{ label: "Schools in the LA, regional and national rankings…", onClick: () => setChooser({ editing: null }) }],
     manageHref: `/sets?kind=compared_against&phase=${phase}`,
+    manageUrn: schoolUrn,
   };
   const comparisonsHost = (
       <ComparisonsPanels

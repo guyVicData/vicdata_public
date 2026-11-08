@@ -44,3 +44,16 @@ test("a malformed useSet is ignored", () => {
   go("/teacher/ks5", "?useSet=javascript:alert(1)");
   assert.equal(savedSetFromEditor(), null);
 });
+
+test("Manage sets: the library for this school, with this page as it stands as the way back", async () => {
+  const { manageHrefHere } = await import("./editor-return");
+  const { safeDashboardReturn } = await import("./return-to");
+  (g.window as unknown as { location: Record<string, string> }).location = { pathname: "/teacher/admissions", search: "?view=market-share&entry=11%2B&rset=set%3Aabc", hash: "", origin: "https://vicdata.co.uk" };
+  const href = manageHrefHere("/sets?kind=compared_against&entry=11%2B", "110110");
+  const u = new URL(href, "https://x.invalid");
+  assert.equal(u.pathname, "/sets");
+  assert.equal(u.searchParams.get("kind"), "compared_against");
+  assert.equal(u.searchParams.get("urn"), "110110");
+  assert.equal(u.searchParams.get("returnTo"), "/teacher/admissions?view=market-share&entry=11%2B&rset=set%3Aabc&school=110110", "the set choice and the school kept");
+  assert.equal(safeDashboardReturn(u.searchParams.get("returnTo")), u.searchParams.get("returnTo"));
+});
