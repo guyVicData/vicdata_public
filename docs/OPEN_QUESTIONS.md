@@ -3085,6 +3085,23 @@ From `docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_promp
 - **Still orange on the Group pages in Light:** `groups/ui.ts` and `groupDashVars` write #c2410c as the Group pages' Light accent text and chip tints while the accent is bronze. One-line changes each; left alone (not among Guy's fixes, and they'd move every Group-page picture again). Say if you want them.
 - **Step 1's commands use CLI 3 as installed:** `supabase db query --remote --yes -f …` for the writes, `--remote --read-only` for the checks; the optional "existing users skip the welcome" insert is gone (Guy, 13 Nov: existing users see the welcome once).
 
+## 2026-11-13: Non-mainstream groups, Guy's decisions (NM1–NM12)
+
+From the scoping report (`docs/v0.8/non_mainstream_groups_scope_v1.md`). Guy: "yes to all" (the recommendations). The build prompt is `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md`; it runs after the front door design cross-check, before Part 3 (Guy, 13 Nov).
+
+1. The line stays "more than half" of current schools special, AP, PRU or nursery.
+2. Mainstream schools inside a non-mainstream group (20 groups, 63 schools): a separate mainstream line, against the mainstream pools.
+3. Two families with their own pools and peer sets: special and AP trusts; nursery federations.
+4. Peer sets: special/AP trusts in bands of 2–5, 6–10, 11+ schools; nursery federations as one set.
+5. First version: roll, same-schools change and FSM only; nursery FSM compared only with nurseries.
+6. Pools: England and region for each kind, plus LA pools for special schools only.
+7. No results in the first version; later, Attainment 8 per school within need type, once primary need is in.
+8. New ingests later, as a separate production round: SEN (EHCP share, primary need), then destinations, then Ofsted.
+9. Ofsted comparability: decided when that ingest is scoped.
+10. Library: a separate section with a filter; non-mainstream groups can only share a group set with each other.
+11. Mainstream groups' own special/AP/nursery schools, in the first version: each against its region's pool of its kind in the Schools table, plus a pooled line where a group has 5 or more of one kind.
+12. Out of scope: independent special schools, special post-16 institutions, non-maintained special schools.
+
 ## 2026-11-13: front door, part 2
 
 Built unattended from `docs/v0.8/vicdata_0_8_front_door_part2_sets_admin_phone_claude_code_prompt_v1.md` on `v0.8-front-door-2` (from `main` 32c737e, which holds Part 1 and group sets: checked before starting). Every call below is mine; say if you want any changed.
