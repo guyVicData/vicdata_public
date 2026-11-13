@@ -1,6 +1,6 @@
 # VicData 0.8 front door, part 1: theme, homes and walks — report
 
-Built straight through, unattended, from `docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_prompt_v1.md`, on branch **`v0.8-front-door-1`** (from `main` 31fa917; local, not pushed or merged). **Nothing was written to any database.** The one migration is written and tested in PGlite and **not applied**: Guy's step 1 applies it. Every call made along the way is in `docs/OPEN_QUESTIONS.md` under "2026-11-13: front door, part 1" (M2 to M5).
+Built straight through, unattended, from `docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_prompt_v1.md`, on branch **`v0.8-front-door-1`** (from `main` 31fa917; local, not pushed or merged). **Follow-up, 13 Nov:** the branch has taken `main` at 896ce47 (group sets M2 to M6, merged), and Guy's fixes from the screenshots are in (see "Follow-up, 13 Nov" below); the tests and every parity harness were re-run against 896ce47. **Nothing was written to any database.** The one migration is written and tested in PGlite and **not applied**: Guy's step 1 applies it. Every call made along the way is in `docs/OPEN_QUESTIONS.md` under "2026-11-13: front door, part 1" (M2 to M5).
 
 ## How far it got
 
@@ -11,15 +11,53 @@ Built straight through, unattended, from `docs/v0.8/vicdata_0_8_front_door_part1
 | 3. Homes (B8–B10) | one home of question tiles for Teacher (by phase), SMT, a primary school's SMT, Admissions and head office; roles stacked; "Show fewer questions" | `59d56fd` |
 | 4. First visit (A5–A7) | the welcome (once per person), the one-screen setup, "New since your last visit" and the changelog page | `75cefe7` |
 | 5. Walks (B11–B17) | the walk player; the GCSE and Post-16 walks (3 each); SMT's, Admissions' and head office's walks; answer templates; the dumbbell; peer lines; HTML labels | `1f4688e` |
-| 6. The report | this file, the screenshots, the final checks | (this commit) |
+| 6. The report | this file, the screenshots, the final checks | `ac266f4` |
+| Follow-up: take `main` | `main` 896ce47 (group sets) merged in; six conflicts resolved | `7f7dd9b` |
+| Follow-up: Guy's fixes | the walk header's own tokens; round ticks; head office's walks draw every screen; screenshots redrawn from the real components | `1419245` |
+| Follow-up: the report | this file: the merge, the fixes, the re-run | (this commit) |
 
 All six milestones are done. **What is left, or thinner than the prompt drew it** (each is in OPEN_QUESTIONS):
 
-- **Head office's walks** answer their first screen from the group home's figures and **open each later view on the group dashboard** rather than drawing it in the walk: the group views and their data live in group code, off limits while group sets is built. After group sets merges, they can embed the group views the way the SMT walk embeds SMT's.
+- ~~Head office's walks open each later view on the group dashboard~~: **done in the follow-up** (every screen draws the group dashboard's own view).
 - **SMT's and Admissions' walks embed the dashboards' own view components**, fed by their own routes. They render only when signed in, so they **weren't seen in a browser here** (the local app is behind the gate): they are on Guy's live check list (step 7). Teacher's walks were rendered and screenshotted with real data.
 - **One SMT walk screen opens the dashboard instead of drawing** (Context's map of where children live, which needs the boundary map's own load).
-- **No figure on two tiles:** SMT's Context ("children nearby, next 5 years" needs the Context route, a heavier read) and head office's Academic (the group home's summary carries no results). Both show their question without a figure, as B9 allows.
-- **Parity was run once, at the end**, on every harness, not after each milestone (see Parity).
+- **No figure on two tiles (unchanged in the follow-up):** SMT's Context ("children nearby, next 5 years" needs the Context route, an area read per home load) and head office's Academic (the group home's route carries no results; the figure is in the group dashboard route's academic build). Group sets didn't add either to a route the homes read; adding one is a second, heavier read on every home load for one figure, so both still show their question without a figure, as B9 allows (logged for Guy).
+- **Parity was run once, at the end**, on every harness, not after each milestone; and again in the follow-up, against `main` 896ce47 (see Parity).
+
+## Follow-up, 13 Nov: `main` merged, Guy's fixes
+
+### Taking `main` (896ce47, group sets M2 to M6)
+
+Merged (not rebased) as `7f7dd9b`. Six files conflicted:
+
+| File | How it was resolved |
+|---|---|
+| `src/components/groups/GroupHome.tsx` | This branch's question-tile home kept. Group sets' change to the dashboard chips kept (`GroupDashChips`' `library` prop, still used by `SchoolGroupTile`). `GROUPS_LIBRARY_HREF` now points at group sets' library page, `/teacher/group/groups?account=…`: the **"Groups library"** item in the head office home's "Also here" (the home draws question tiles, not the chips, so the link lives there). |
+| `src/catalogue/rules.ts`, `scripts/catalogue-rule-tests.ts` | Both sides' rules and runner helpers kept (group sets' nine R-GROUP rules and `groupTests`/`pglite`; this branch's front-door rules and `frontDoorSources`/`frontDoorModels`). |
+| `docs/OPEN_QUESTIONS.md` | Both sections kept: group sets' (8 to 13 Nov) first, this round's after. |
+| `docs/catalogue/README.md`, `docs/catalogue/rules.md` | Regenerated (`scripts/catalogue-export.ts`). |
+
+Nothing else conflicted. Group sets changed no theme token, so SMT's violet and the group's orange didn't come back; its Group pages reach the ladder through the shell, as before.
+
+### Guy's fixes
+
+**1. The walk header passes AA in every theme.** Guy's picture (`followup_13nov/walk_header_as_guy_saw_it_mid.png`) came from the screenshot harness, whose stand-in header inherited the Light page's text colour (CSS inherits a computed colour, not the variable). The app's own header had readable text but other failures: the step dots were #2a2a2e on black (1.3:1), and in Light the chip and the lit dot were the pale phase green on white (1.9:1). The band now draws only its own tokens (`--wh-*`, set on the band in `globals.css`: dark in Dark and Mid, light in Light, one accent per part), and the 26 pairs are in R-THEME-CONTRAST's table (below). A test keeps `WalkHeader` reading nothing but `--wh-*`. Before and after, all three themes: `followup_13nov/walk_header_three_themes.png`.
+
+![The walk header before and after, Mid, Dark and Light](front_door_1_screenshots/followup_13nov/walk_header_three_themes.png)
+
+**2. Round ticks on every walk chart.** `niceAxis` (`src/lib/front-door/axis.ts`): steps of 1, 2, 2.5 or 5 × 10^n, about four to six ticks; from zero when the lowest value is at most half the highest (counts, entries), otherwise from the step just below the lowest value (indexed lines, points); places run from 1 on whole numbers. The Chase's Humanities entries read **0, 50, 100, 150** (were 7, 46, 85, 123, 162). The walk's line chart is its only chart with a value axis (bars, the dumbbell and the grades carry direct labels); the SMT, Admissions and group views a walk embeds keep their dashboards' own axes. Before / after: `walk_chart_axis_before_mid.png`, `walk_chart_axis_after_mid.png`.
+
+![The walk chart's axis, after](front_door_1_screenshots/followup_13nov/walk_chart_axis_after_mid.png)
+
+**3. The theme name in the home header.** "Leighton Park School · mid" was the same harness's stand-in line, never the app: the homes draw `TeacherNav`, whose **Dark · Mid · Light** switch is the control (top right, as the design has it). Every report picture of a home or a walk is now drawn from the real components (the walk's `WalkFrame`, the homes' `TeacherNav`), so the stand-in is gone. Before / after: `home_header_before_mid.png`, `home_header_after_mid.png`.
+
+**4. Head office's walks draw every screen** (group code allowed now). Each screen draws the group dashboard's own view, enlarged in the walk's panel with its own rail (names written out, the dashboard's order; any other view opens the dashboard), the answer sentence and the mini-map, as the other walks do: `groupWalkView` (exported from `GroupDashboard.tsx`) gives the walk the dashboard's own `ViewBody`, header words, caption and flag, from the group dashboard route's own answer; `src/lib/front-door/group-answers.ts` writes each sentence from the same figures. **Screens that compare** (Against others, the combined roll and results trends, Results now, Schools ranked) open on the set picker's Default **"Nearest in size, same type"**: side by side with the set's median, the trends with its median and middle half. The picker sits on the screen, read-only (Default and the group's sets), and changes the walk in place. Checked on the real fixtures, Harris (3320) and Dukes: all 21 screens of the 4 walks draw, at 1440 and at 390 (no sideways scroll on any). **No screen was left out**: every view exists. Before / after (Harris, "How does it compare with other groups?"): `group_overview_2_before.png`, `group_overview_2_after.png`; also `group_academic_4_after_dark.png` (the results trend with the set's median), `group_pupils_2_dukes_light.png`, `group_overview_2_mid_390.png`.
+
+![Head office walk, screen 2, after](front_door_1_screenshots/followup_13nov/group_overview_2_after.png)
+
+![Head office walk, Academic screen 4, Dark](front_door_1_screenshots/followup_13nov/group_academic_4_after_dark.png)
+
+**5. The two tiles without a figure** stay without one (see "What is left"). **Also:** SMT's, Admissions' and head office's walks now take the role's accent for the panel bar and the lit rail view (head office's was drawn in the page's text colour).
 
 ## The new tables and RLS
 
@@ -33,7 +71,7 @@ One migration, `supabase/migrations/20261123090000_v08_front_door_r1.sql` (named
 
 Anon reads nothing. PGlite (`supabase/tests/v08_front_door_r1_pglite.mjs`, **16 / 16**) proves: a person reads and writes only their own state row, never another's; a row goes with its profile; only platform admins write the changelog; members can't read the table; the function lists published entries only (a future-dated one waits), newest first, with the credit for its person only; a link must be a path; RLS is on; the migration runs twice.
 
-**Entries are Guy's, from a seed file** (`supabase/seeds/changelog_entries.sql`, two first entries dated 1 Dec 2026, re-runnable). Before the migration is applied the homes can't read the table, so nobody is sent to the welcome and no strip shows: the site works exactly as before. **After it's applied, everyone sees the welcome once on their next visit, existing users included.** If existing users should skip it, one insert marks them all seen (in step 1 below, optional).
+**Entries are Guy's, from a seed file** (`supabase/seeds/changelog_entries.sql`, two first entries dated 1 Dec 2026, re-runnable). Before the migration is applied the homes can't read the table, so nobody is sent to the welcome and no strip shows: the site works exactly as before. **After it's applied, everyone sees the welcome once on their next visit, existing users included** (Guy, 13 Nov: that's wanted, so there's no "mark everyone seen" step).
 
 ## Theme: final tokens and the contrast table
 
@@ -86,8 +124,16 @@ Changes from the prompt's starting tokens: Dark's shut bar one step lighter (#24
 | Ladder Light: muted in the column / on the page | #63636a on #f6f6f8 / #e9e9ed | small | 5.5 / 4.92 |
 | Ladder Dark: muted in the column / on the page | #8a8a90 on #141417 / #08080a | small | 5.36 / 5.83 |
 | Ladder Light: muted2 on the page | #55555c on #e9e9ed | small | 6.11 |
+| Walk header, dark band (Dark, Mid): the question / close and "Step n of N" | #f2f2f3 / #a1a1a8 on #0a0a0b | small | 17.69 / 7.71 |
+| Walk header, dark band: a step dot | #6b6b73 on #0a0a0b | mark | 3.75 |
+| Walk header, dark band: the chip and lit step, GCSE / Post-16 / top level / head office / Admissions | #34d399 / #a78bfa / #fb923c / #c99a66 / #22d3ee on #0a0a0b | small | 10.29 / 7.27 / 8.74 / 7.82 / 10.95 |
+| Walk header, dark band: the icon on its badge, same order | the accent on #112a22 / #231f31 / #312013 / #29211a / #0e2a2f | mark | 7.93 / 5.88 / 6.89 / 6.25 / 8.35 |
+| Walk header, light band (Light): the question / close and "Step n of N" | #17171b / #55555c on #ffffff | small | 17.88 / 7.39 |
+| Walk header, light band: a step dot | #8a8a92 on #ffffff | mark | 3.43 |
+| Walk header, light band: the chip and lit step, GCSE / Post-16 / top level / head office / Admissions | #12713a / #5b3dd1 / #b13c0b / #7e4f24 / #0b6fa6 on #ffffff | small | 6.09 / 6.92 / 5.96 / 6.93 / 5.47 |
+| Walk header, light band: the icon on its badge, same order | the accent on #d9e8df / #e5e0f8 / #f3e0d8 / #eae3dc / #d8e8f1 | mark | 4.80 / 5.39 / 4.68 / 5.45 / 4.36 |
 
-All 39 pairs pass.
+All 65 pairs pass (39, plus the walk header's 26 from the follow-up).
 
 ## Homes, first visit and walks: what was built
 
@@ -100,7 +146,7 @@ All 39 pairs pass.
 
 ## Screenshots
 
-`docs/v0.8/front_door_1_screenshots/` (49 PNGs; 1440 wide, phone at 390 × 844 drawn at 2×). Drawn by preview harnesses from the app's own components and the built CSS, with **real data** read through the app's own loaders (The Chase 137625, Leighton Park 110110, a primary academy 142990, Harris Federation 3320). Every page measured: no horizontal scroll at 390.
+`docs/v0.8/front_door_1_screenshots/` (1440 wide, phone at 390 × 844). Drawn by preview harnesses from the app's own components and the built CSS, with **real data** read through the app's own loaders (The Chase 137625, Leighton Park 110110, a primary academy 142990, Harris Federation 3320). Every page measured: no horizontal scroll at 390. **Redrawn in the follow-up:** every home (with the real `TeacherNav` and its Dark · Mid · Light switch) and every walk screen (with the real `WalkFrame` and its header), so no picture carries the harness's old stand-in header. The follow-up's before/after pictures are in `followup_13nov/` (listed under "Follow-up, 13 Nov").
 
 | Screen | Files |
 |---|---|
@@ -133,30 +179,64 @@ All 39 pairs pass.
 
 **Rewritten (1):** R-TABLE-FEATURED-ROW's statement: "SMT violet, groups orange" became "SMT orange and the groups (head office) bronze". Its test is unchanged (it reads the tokens, still one per product, light and dark).
 
+**Extended in the follow-up (3):** R-THEME-CONTRAST (the walk header's band: its own tokens, its 26 pairs in the table, `WalkHeader` reads only `--wh-*`); R-WALK-RHYTHM (head office's walks draw the group dashboard's own views; comparing screens open side by side with the set's median; its runner also runs `group-walks.test.tsx` on the Harris and Dukes fixtures); R-WALK-KEYS (round ticks: its runner checks every walk line chart's axis on both schools, and that `charts.tsx` uses `niceAxis`). New tests: `src/lib/front-door/axis.test.ts`, `src/lib/front-door/group-walks.test.tsx`. Group sets' nine R-GROUP rules came in with `main`.
+
 **Retired:** none. No rule named the old onboarding Step 4 (checked: rules, runners and unit tests).
 
 `docs/catalogue/*.md` regenerated. The dumbbell is in the dataview catalogue (draft, rail null) with its renderer (RD-DUMBBELL), viewspec preset and method note. `docs/v0.6/views_preset_table.md` regenerated, which also fixed a failure that was already on `main` (its hand-written SMT rows were stale).
 
 ## Tests
 
-On the branch at the report's commit:
+**Follow-up, 13 Nov** (the branch at `1419245`, `main` 896ce47 merged in; every suite run as its header says):
 
 | Check | Result |
 |---|---|
 | tsc | clean |
 | eslint | 0 errors; 3 warnings, all older than this round |
-| build | passes |
-| Unit (every `src/**/*.test.ts(x)`, each with `--env-file=.env --test-force-exit`) | **632 pass, 5 fail**; all 5 fail on `main` too (below) |
+| build (`next build`) | passes |
+| Unit (every `src/**/*.test.ts(x)`, one process each, `--env-file=.env --test-force-exit`; group fixture files with `VICDATA_GROUP_FIXTURES`) | **87 files, 673 pass, 4 fail**: the 4 are `editor-guarantees.test.ts`, failing identically on `main` 896ce47 (below). `main` itself: 80 files, 644 pass, 5 fail (also `viewspec.test.ts`, fixed on this branch) |
+| Group tests (group sets' 10 files, on the fixtures) | **79 / 79** |
+| Front-door tests (7 files, 2 new: `axis.test.ts`, `group-walks.test.tsx`) | **28 / 28** |
 | Catalogue unit | **77 / 77** |
-| Rule tests (production reads; PGlite installed) | **167 pass, 0 fail**; 15 manual, 19 with no test, 8 superseded. The last full run (at M5) gave 165 and 2 fails, R-MINUS-SIGN and R-NO-NEGATIVE-ZERO, which caught a hand-rolled sign in the head office walk; fixed (the shared `signedValue`), and both pass, re-run alone with the theme, ladder, home-tile and report rules after the last changes |
-| PGlite, RLS and usage log (all 27 suites, run as their headers say) | **26 pass**; `v08_view_as_editing_pglite.mjs` 42 / 44 on both the branch and `main` (below) |
+| Rule tests, the full suite (production reads; PGlite installed) | **176 pass, 0 fail, 0 error**; 15 manual, 19 with no test, 8 superseded |
+| PGlite, RLS and usage log (all 28 suites, group sets' included) | **27 pass**; `v08_view_as_editing_pglite.mjs` 42 / 44, the same 2 failing on `main` 896ce47 |
+| Shared sets SSR parity (group sets' `parity_sets_ssr`: SetSelector in 24 states, the creator pills, the header line, every way-back rule) | **byte-identical** between `main` 896ce47 and the branch |
 
 **Failing on `main` already (not this round's; unchanged by it):**
 - `editor-guarantees.test.ts` (4) and `v08_view_as_editing_pglite.mjs` (2): the editor's dashboard fixture names three SMT Academic dataviews that SMT Academic round 2 removed (`DV-SMT-A-SUBJECTS`, `-VA`, `-BANDS`).
-- `groups/rules.test.ts` (1): R-GROUP-HARRIS-ROLL expects the ingest's 42,940; the live lookups give 42,938.
 - On `main` the unit run also fails `viewspec.test.ts` (1): fixed on this branch (the regenerated preset doc).
+- (R-GROUP-HARRIS-ROLL, failing before, passes now: group sets' tests run on the fixtures.)
+
+<details><summary>The first run (M6, before the merge)</summary>
+
+tsc clean; eslint 0 errors; build passes; unit 632 pass, 5 fail (all on `main` too); catalogue unit 77 / 77; rule tests 167 pass, 0 fail; PGlite 26 pass, `v08_view_as_editing_pglite.mjs` 42 / 44 on both trees.
+
+</details>
 
 ## Parity
+
+### Follow-up, 13 Nov: against `main` 896ce47
+
+Base: `main` 896ce47 (group sets merged), branch: `1419245` (this branch with `main` merged and Guy's fixes), each in its own detached worktree. Each harness captured its fixtures from each tree's own code: **byte-identical between the trees in every harness** (Teacher 10 / 10, Admissions 4 / 4 schools, SMT 2 / 2, Groups Harris and Dukes). As before, a pair is **allowed** when its words (every figure, label and title) are identical to the base, the theme switch's "Dark Mid Light" set aside; **unexpected** only if the words differ. No pixel pair is identical (the ladder is on every dashboard).
+
+| Harness | Pairs | Words identical (allowed: ladder, switch, colours) | Words differ | Not compared |
+|---|---|---|---|---|
+| Teacher walker, all 7 case sets, one run | 2,651 | **2,651** | **0** | views of 9 walker flakes ("Promise was collected"): 4 cases on main, 5 on the branch (109 / 115 views captured on one side only) |
+| Teacher public-page SSR (137625, 117037) | 2 | 2 (byte-identical) | 0 | — |
+| Admissions, 4 schools × 2 entry points × both themes × 1440 and 390, every rail step | 468 | **468** (7 from one cold-start case re-run: 28 / 28) | 0 | — |
+| SMT, 2 schools × 4 dashboards × both themes × 1440 and 390, every rail step | 142 | **142** | 0 | — |
+| SMT home | 8 | — | 8 | allowed: the new home (in the harness the branch sends a first visit to the welcome) |
+| **Group pages**, Harris and Dukes × Overview, Schools, Academic, Pupils × both themes × 1440 and 390, every rail step, plus group sets' states (a set side by side on Overview and Academic, Nearest in size on Pupils, a subset Showing on Schools) | 168 | **168** | 0 | — |
+| Head office home | 8 | — | 8 | allowed: the question-tile home (with "Groups library" in Also here) |
+| Shared sets code, SSR (group sets' `parity_sets_ssr`) | 1 output | byte-identical | 0 | — |
+| Data View | — | — | — | not re-walked: its import graph reaches 4 changed files (`dataviews.ts`: the dumbbell, a draft it never lists; `viewspec.ts`: its preset; `accent.ts` and `teacher-view-theme.ts`: SMT's and the group's accent hexes, which it doesn't draw); the public page and both APIs reach none |
+
+**The Group-page parity again:** every Group dashboard picture changes in pixels and none in words: the ladder (page tone, panel well and border, the shut bar), the bronze accent and the theme switch, now on group sets' pages too (the set picker, side by side with the median, the trend panel, Showing). The head office home's 8 pictures differ in words, as the home is rebuilt. The walker's pixel check (`run_parity.sh` exits 3) and the group harness count these as pixel changes; in words, every dashboard page is identical to `main`.
+
+Harness copies and outputs (session scratchpad): `tpar/out/run_20261113_205333` (Teacher), `apar/out/run1` and `apar/out/rerun` (Admissions), `spar/out/run1` (SMT), `gpar/out` (Groups, `gpar.mjs`), `sets_ssr_*.json`, and `domcmp.py` / `wordscmp2.py` for the words.
+
+### The first run (M6, before the merge)
+
 
 Base: `b22fced` (`main` 31fa917 plus the design move; no app change) in its own detached worktree. Branch: the working tree at M5. Each harness drew the same fixtures, captured from each tree's own code: **byte-identical between the trees in every harness** (Teacher 10 / 10, Admissions 4 / 4 schools, SMT, Groups).
 
@@ -190,39 +270,39 @@ Every pair was compared three ways: the PNG, the DOM, and the **words** (every f
 
 - **Part 2 (guided sets, School-Admin, phone):** the Admissions and SMT homes' "Sets of schools" card (D21: the school's saved and ready-made sets, counted by the sets library route) opens the round-1 library (`/sets`); Part 2 points it at the guided editor (`SetsCard` in `sections.tsx`, one `href`). The phone layouts are the responsive defaults (no designed phone layout). School-Admin's own home isn't built: a School-Admin without SMT gets the Admissions section, as before.
 - **Part 3 (sign-in, gate, security):** the welcome names the private beta in words only. `front_door_state` is where a "beta terms accepted" stamp could go.
-- **Group sets (merging first):** `GROUPS_LIBRARY_HREF` in `GroupHome.tsx` (null) becomes its "Groups library" card; `groups/ui.ts` and `groupDashVars` still write orange as the group pages' light accent text and chip tints (one-line changes to bronze after the merge); the head office walks can then embed the group views.
+- **Group sets (merged, 13 Nov):** done: `GROUPS_LIBRARY_HREF` points at the library, and the head office walks draw the group views. **Still open:** `groups/ui.ts` and `groupDashVars` write orange (#c2410c) as the Group pages' Light accent text and chip tints, where the accent itself is bronze: one-line changes each, left alone in the follow-up (not among Guy's fixes, and they'd move every Group-page picture again); say if you want them.
 - **The dashboard:** the dumbbell is ready for Context › Trends (needs a ViewSpec "dumbbell" kind); a walk's rail opens the dashboard but not yet at the chosen panel and view (no deep link exists); Mid on the dashboards is the next step Guy named.
 
 ## Merging with group sets
 
-`main` was fetched at the end (13 Nov): **group sets has not merged** (`main` is still 31fa917). Guy merges group sets first; then this branch takes `main` and re-runs its checks. Expected conflicts: `src/components/groups/GroupHome.tsx` (group sets edits the old Body and adds GroupDashChips' `library` prop; take this branch's Body, keep their `GroupDashChips` change, and set `GROUPS_LIBRARY_HREF`), and possibly `src/app/globals.css` (both add tokens), `scripts/catalogue-rule-tests.ts` and `src/catalogue/rules.ts` (both append rules: keep both).
+**Done in the follow-up:** group sets merged to `main` (896ce47) and this branch took it (`7f7dd9b`; conflicts and resolutions under "Follow-up, 13 Nov"). The branch now contains `main`, so merging it into `main` is a fast merge with nothing to resolve, unless `main` moves again.
 
 ## Guy's commands
 
-The branch `v0.8-front-door-1` is local, not pushed: the worktree at `~/.t3/worktrees/vicdata_public/t3-f46beabf` shares the repository with `~/dev/vicdata_public`, so it is there already. The live site is **`https://vicdata.co.uk`**. Group sets merges first.
+The branch `v0.8-front-door-1` is local, not pushed: the worktree at `~/.t3/worktrees/vicdata_public/t3-f46beabf` shares the repository with `~/dev/vicdata_public`, so it is there already. The live site is **`https://vicdata.co.uk`**. Group sets' own steps (its migration `20261121100000_v08_group_sets.sql` first) come before these, as its report says.
 
-**1. Migrations** — apply the front door's migration and record it (it writes; the project-ref check first), then load the changelog's first entries:
-
-```
-cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && git show v0.8-front-door-1:supabase/migrations/20261123090000_v08_front_door_r1.sql > /tmp/front_door_r1.sql && supabase db query --linked -f /tmp/front_door_r1.sql && supabase db query --linked "insert into supabase_migrations.schema_migrations (version, name) values ('20261123090000', 'v08_front_door_r1') on conflict (version) do nothing" && supabase db query --linked "select version, name from supabase_migrations.schema_migrations where version = '20261123090000'"
-```
-
-Expect one row: `20261123090000 | v08_front_door_r1`. Then the changelog's entries (edit the file first if you want different words or dates):
+**1. Migrations** — apply the front door's migration and record it (writes: the project-ref check first), then load the changelog's first entries. Existing users see the welcome once on their next visit (Guy, 13 Nov), so there is no "mark everyone seen" step.
 
 ```
-cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && git show v0.8-front-door-1:supabase/seeds/changelog_entries.sql > /tmp/changelog_entries.sql && supabase db query --linked -f /tmp/changelog_entries.sql && supabase db query --linked "select title, published_at from changelog_entries order by published_at"
+cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && git show v0.8-front-door-1:supabase/migrations/20261123090000_v08_front_door_r1.sql > /tmp/front_door_r1.sql && supabase db query --remote --yes -f /tmp/front_door_r1.sql && supabase db query --remote --yes "insert into supabase_migrations.schema_migrations (version, name) values ('20261123090000', 'v08_front_door_r1') on conflict (version) do nothing" && supabase db query --remote --read-only "select version, name from supabase_migrations.schema_migrations where version = '20261123090000'"
 ```
 
-Optional, only if existing users should skip the welcome (everyone who has a profile today):
+Expect one row: `20261123090000 | v08_front_door_r1`. Check the tables and RLS:
 
 ```
-cd ~/dev/vicdata_public && supabase db query --linked "insert into front_door_state (profile_id, welcome_seen_at, whats_new_seen_at, last_visit_at) select id, now(), now(), now() from profiles on conflict (profile_id) do nothing"
+cd ~/dev/vicdata_public && supabase db query --remote --read-only "select relname, relrowsecurity from pg_class where relname in ('front_door_state', 'changelog_entries') order by relname"
 ```
 
-**2. Merge and push** — after group sets is on `main`: from `~/dev/vicdata_public` on a clean `main`, merge (resolve as "Merging with group sets" says), re-run the checks, build, push:
+Expect two rows, both `true`. Then the changelog's entries (edit the file first if you want different words or dates):
 
 ```
-cd ~/dev/vicdata_public && git checkout main && git pull https://github.com/guyVicData/vicdata_public.git main && git merge --no-ff v0.8-front-door-1 -m "0.8 front door part 1: Dark · Mid · Light, the panel ladder, SMT orange and head office bronze; one home of question tiles for every role; the welcome, one-screen setup and what's new; the walks" && npm run build && git push https://github.com/guyVicData/vicdata_public.git main
+cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && git show v0.8-front-door-1:supabase/seeds/changelog_entries.sql > /tmp/changelog_entries.sql && supabase db query --remote --yes -f /tmp/changelog_entries.sql && supabase db query --remote --read-only "select title, published_at from changelog_entries order by published_at"
+```
+
+**2. Merge and push** — from `~/dev/vicdata_public` on a clean `main`, merge, build, push (the branch already holds `main` 896ce47, so nothing to resolve unless `main` has moved since):
+
+```
+cd ~/dev/vicdata_public && git checkout main && git pull https://github.com/guyVicData/vicdata_public.git main && git merge --no-ff v0.8-front-door-1 -m "0.8 front door part 1: Dark · Mid · Light, the panel ladder, SMT orange and head office bronze; one home of question tiles for every role; the welcome, one-screen setup and what's new; the walks, head office's drawing the group views" && npm run build && git push https://github.com/guyVicData/vicdata_public.git main
 ```
 
 **3. Render deploys main on its own** (auto-deploy, On Commit). If no deploy starts within 5 minutes, deploy by hand.
@@ -237,11 +317,11 @@ cd ~/dev/vicdata_public && M=$(git rev-parse --short=12 HEAD) && until curl -s h
 
 **6. Set fixed:** none this round (no feedback items).
 
-**7. Live check** — on vicdata.co.uk, in each theme (the switch is in the nav):
+**7. Live check** — on vicdata.co.uk, in each theme (the Dark · Mid · Light switch, top right):
 
-- **A teacher at a two-phase school** (Leighton Park 110110: View as… → Teacher, or a teacher account): first login opens the welcome → "Let's start" → setup lists GCSE and Post-16 subjects on one screen; tick two, watch each phase's count move → "Take me to my home" → two sections (GCSE green, Post-16 violet in Mid), three tiles each with real figures and an icon row → the GCSE "How many pupils take …?" arrow → six screens; check each answer against the full dashboard (Show me), "As a table", Next previewing the next question, "Here's what you found". Reload a home: no welcome. (In View as the welcome never shows: use a real teacher account for first login, or `delete from front_door_state where profile_id = …` for your own.)
-- **An SMT member** (`/teacher/smt?lookAs=110110&as=smt&peek=1` for the dashboards; View as for the home): the orange home with Overview, Academic, Pupils, Context; the Overview walk draws the dashboard's own views (School now, Scorecard, Roll indexed, Results trend, Market share, Flags).
-- **A head-office user** (View as… → Harris Federation head office): the orange field with bronze buttons, four group dashboard cards, Our schools (each opens that school's SMT, read-only), Also here; the Schools walk's first screen, then Show me.
-- **An Admissions lead** (View as… → Admissions at Leighton Park): the sky home, the Entry point picker (11+ / 16+), the pool and share figures; the Pipelines walk (Entry point now, Pipeline, Map of feeders, Pool trends, Your cohort).
-- **Every dashboard:** shut panels read as raised bars (Teacher's accordion; a closed Admissions or SMT row); SMT is orange, Post-16 violet; the Group pages bronze. A dashboard in Mid draws Dark.
+- **A teacher at a two-phase school** (Leighton Park 110110, a teacher account for first login): the welcome → "Let's start" → setup lists GCSE and Post-16 subjects on one screen; tick two, watch each phase's count move → "Take me to my home" → two sections (GCSE green, Post-16 violet in Mid), three tiles each with real figures and an icon row → the GCSE "How many pupils take …?" arrow → six screens. The header reads clearly in all three themes (the step dots, the subject chip, "Step n of N"); the line charts' axes are round (0, 50, 100 …); check each answer against the full dashboard (Show me), "As a table", Next previewing the next question, "Here's what you found". Reload: no welcome.
+- **An SMT member** (View as… → SMT at Leighton Park for the home; `/teacher/smt?lookAs=110110&as=smt&peek=1` for the dashboards): the orange home with Overview, Academic, Pupils, Context and the sets card; the Overview walk draws the dashboard's own views.
+- **A head-office user** (View as… → Harris Federation head office): the orange field with bronze buttons, four group dashboard cards, Our schools (each opens that school's SMT, read-only), Also here with **Groups library** (opens `/teacher/group/groups`). The Overview walk: every screen draws its view; screen 2 is side by side with "Nearest in size, same type" and the set's median, the Compared against picker changes it in place; the combined roll and results screens show the set's median and middle half; "Show me" and the rail open the group dashboard.
+- **An Admissions lead** (View as… → Admissions at Leighton Park): the sky home, the Entry point picker (11+ / 16+), the pool and share figures; the Pipelines walk.
+- **Every dashboard:** shut panels read as raised bars; SMT is orange, Post-16 violet; the Group pages bronze, with group sets' picker, side by side and Showing as group sets drew them. A dashboard in Mid draws Dark.
 - **The strip:** after step 1's entries pass their date (1 Dec), a later visit shows "New since your last visit" once.
