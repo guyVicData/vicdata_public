@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dumbbell: every subject's change, largest first</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0a0a0b}
+</style>
+</helmet>
+<div style="width: 1280px; min-height: 1380px; box-sizing: border-box; padding: 48px 70px 60px; background: #0a0a0b; color: #f2f2f3; font-family: Inter, system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 28px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 13px; color: #8a8a90; text-transform: uppercase; letter-spacing: 0.1em">Proposed view · walk size</span>
+    <h1 style="margin: 0; font-size: 36px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em">Has Geography grown faster than other subjects?</h1>
+    <p style="margin: 0; font-size: 20px; line-height: 1.45; color: #d4d4d8; max-width: 980px">Yes. Geography grew by 22 pupils since 2018/19, more than any other subject. Most others stayed level; French fell by 16.</p>
+  </div>
+
+  <section aria-label="Context panel" style="background: #131315; border: 1px solid #1e1e22; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+    <div style="height: 3px; background: #34d399"></div>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 18px; border-bottom: 1px solid #1e1e22">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 30px; height: 30px; border-radius: 8px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="context" size="{{ 17 }}" color="#34d399" hint-size="17px,17px"></dc-import></span>
+        <span style="font-size: 15px; font-weight: 600">Context</span>
+        <span style="font-size: 14px; color: #9a9aa0">— How does Geography sit alongside the rest of the school?</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span style="font-size: 12px; color: #fbbf24; border: 1px dashed rgba(251,191,36,0.6); border-radius: 999px; padding: 4px 10px">Proposed view</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border: 1px solid #2a2a2f; border-radius: 999px; padding: 4px 12px"><span style="color: #8a8a90">Compared against</span><span>Whole school</span></span>
+        <span style="font-size: 12px; color: #9a9aa0; background: #1a1a1d; border-radius: 6px; padding: 4px 8px">Trends · Data 2024/25</span>
+      </div>
+    </div>
+
+    <div style="display: flex">
+      <div style="width: 198px; flex: none; border-right: 1px solid #1e1e22; padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; box-sizing: border-box">
+        <span style="font-size: 11px; color: #6a6a70; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 8px 6px">Views</span>
+        <sc-for list="{{rail}}" as="ri" hint-placeholder-count="6">
+          <span style="display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; font-size: 12.5px; {{ri.style}}">
+            <span style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex: none; {{ri.iconStyle}}"><dc-import glyph="{{ri.icon}}" name="Icon" size="{{ 15 }}" color="currentColor" hint-size="15px,15px"></dc-import></span>
+            <span>{{ri.label}}</span>
+          </span>
+        </sc-for>
+      </div>
+
+      <div style="flex: 1; min-width: 0; padding: 16px 24px 18px; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-size: 14px; font-weight: 500; color: #e4e4e7">Entries by subject in the whole school, 2018/19 and 2024/25, largest first</span>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 12.5px; color: #b4b4ba; align-items: center">
+          <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 9px; height: 9px; border-radius: 50%; border: 2px solid #b4b4ba; box-sizing: border-box"></span>2018/19</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 11px; height: 11px; border-radius: 50%; background: #b4b4ba"></span>2024/25</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #34d399"></span>Geography</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #fcd34d"></span>Other Humanities subjects</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #7a7a80"></span>Other subjects</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 20px; border-top: 2px dashed #a1a1aa"></span>School average</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 120px; column-gap: 16px; font-size: 12px; color: #8a8a90">
+          <span></span>
+          <div style="position: relative; height: 16px">
+            <sc-for list="{{ticks}}" as="t" hint-placeholder-count="5"><span style="position: absolute; left: {{t.left}}; transform: translateX(-50%)">{{t.label}}</span></sc-for>
+          </div>
+          <span>Change since 2018/19</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="14">
+            <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 120px; column-gap: 16px; align-items: center; height: 30px; border-radius: 6px; {{r.rowStyle}}">
+              <span style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-size: 13.5px; white-space: nowrap; {{r.labStyle}}">{{r.name}}<span style="width: 8px; height: 8px; border-radius: 2px; flex: none; background: {{r.c}}"></span></span>
+              <div style="position: relative; height: 100%">
+                <sc-for list="{{gridlines}}" as="gl" hint-placeholder-count="5"><span style="position: absolute; top: 0; bottom: 0; left: {{gl.left}}; border-left: 1px solid #222226"></span></sc-for>
+                <span style="position: absolute; top: 50%; height: 0; left: {{r.barLeft}}; width: {{r.barWidth}}; border-top: {{r.barBorder}}; transform: translateY(-50%)"></span>
+                <span style="position: absolute; top: 50%; left: {{r.from}}; width: {{r.ringPx}}; height: {{r.ringPx}}; border-radius: 50%; border: 2px solid {{r.c}}; background: #131315; box-sizing: border-box; transform: translate(-50%, -50%)"></span>
+                <span style="position: absolute; top: 50%; left: {{r.to}}; width: {{r.dotPx}}; height: {{r.dotPx}}; border-radius: 50%; background: {{r.c}}; transform: translate(-50%, -50%)"></span>
+                <span style="position: absolute; top: 50%; left: calc({{r.to}} + {{r.numOffset}}); transform: translate({{r.numShift}}, -50%); font-size: 12px; font-variant-numeric: tabular-nums; {{r.labStyle}}">{{r.v1}}</span>
+              </div>
+              <span style="font-size: 13px; font-variant-numeric: tabular-nums; {{r.labStyle}}">{{r.change}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 120px; column-gap: 16px">
+          <span></span>
+          <span style="font-size: 12px; color: #8a8a90">Entries (pupils)</span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 8px; padding: 9px 18px; border-top: 1px solid #1e1e22; font-size: 12.5px; color: #9a9aa0; line-height: 1.5">
+      <dc-import name="Icon" glyph="info" size="{{ 15 }}" color="#9a9aa0" hint-size="15px,15px"></dc-import>
+      <span>Ordered by this year’s entries. Ring: 2018/19; dot: 2024/25; the bar joins them. Change is in pupils; ▲ / ▼ show direction, so colour is free to mean the subject area. The school average is the plain average of the 14 subjects. Illustrative figures.</span>
+    </div>
+  </section>
+
+  <div style="display: grid; grid-template-columns: 420px minmax(0, 1fr); gap: 40px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 13px; color: #8a8a90; text-transform: uppercase; letter-spacing: 0.1em">The same view on the dashboard</span>
+      <div style="border-radius: 14px; background: #131315; border: 1px solid #1e1e22; display: flex; height: 300px; overflow: hidden">
+        <div style="width: 40px; border-right: 1px solid #1e1e22; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 12px 0">
+          <sc-for list="{{rail}}" as="ri" hint-placeholder-count="6"><span style="width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; {{ri.iconStyle}}"><dc-import glyph="{{ri.icon}}" name="Icon" size="{{ 14 }}" color="currentColor" hint-size="14px,14px"></dc-import></span></sc-for>
+        </div>
+        <div style="flex: 1; min-width: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px">
+          <div style="height: 3px; width: 40px; border-radius: 2px; background: #34d399"></div>
+          <span style="font-size: 12px; font-weight: 500; color: #d4d4d8">Entries by subject, 2018/19 → 2024/25</span>
+          <div style="display: flex; flex-direction: column">
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="14">
+              <div style="display: grid; grid-template-columns: 76px minmax(0, 1fr) 30px; column-gap: 6px; align-items: center; height: 15px; {{r.rowStyle}}">
+                <span style="font-size: 10.5px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; {{r.labStyle}}">{{r.short}}</span>
+                <div style="position: relative; height: 100%">
+                  <span style="position: absolute; top: 50%; height: 0; left: {{r.barLeft}}; width: {{r.barWidth}}; border-top: {{r.barBorderSm}}; transform: translateY(-50%)"></span>
+                  <span style="position: absolute; top: 50%; left: {{r.from}}; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid {{r.c}}; background: #131315; box-sizing: border-box; transform: translate(-50%, -50%)"></span>
+                  <span style="position: absolute; top: 50%; left: {{r.to}}; width: 7px; height: 7px; border-radius: 50%; background: {{r.c}}; transform: translate(-50%, -50%)"></span>
+                </div>
+                <span style="font-size: 10.5px; font-variant-numeric: tabular-nums; {{r.labStyle}}">{{r.changeSm}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 30px">
+      <span style="font-size: 18px; font-weight: 600">What carries over from the walk</span>
+      <sc-for list="{{notes}}" as="n" hint-placeholder-count="5"><span style="display: flex; gap: 10px; font-size: 15px; line-height: 1.5; color: #c4c4ca"><span style="color: #34d399">✓</span>{{n}}</span></sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1380}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ACC = '#34d399', HUM = '#fcd34d', OTH = '#7a7a80';
+    const S = [
+      ['English Language', 'Eng Lang', 'x', 178, 180], ['Maths', 'Maths', 'x', 176, 180], ['English Literature', 'Eng Lit', 'x', 170, 176],
+      ['Combined Science', 'Comb Sci', 'x', 160, 150], ['History', 'History', 'h', 95, 92], ['Geography', 'Geography', 'g', 62, 84],
+      ['French', 'French', 'x', 80, 64], ['Religious Studies', 'RS', 'h', 50, 61], ['Spanish', 'Spanish', 'x', 28, 40],
+      ['Art and Design', 'Art', 'x', 42, 38], ['Computer Science', 'Comp Sci', 'x', 22, 36], ['Biology', 'Biology', 'x', 26, 30],
+      ['Business', 'Business', 'x', 35, 28], ['Classics', 'Classics', 'h', 12, 18]
+    ].sort((a, b) => b[4] - a[4]);
+    const avg0 = Math.round(S.reduce((a, r) => a + r[3], 0) / S.length);
+    const avg1 = Math.round(S.reduce((a, r) => a + r[4], 0) / S.length);
+    const MAX = 200;
+    const pc = (v) => (v / MAX * 100).toFixed(2) + '%';
+    const chg = (d) => (d > 0 ? '▲ +' + d : d < 0 ? '▼ ' + d : '= 0');
+    const make = (name, short, t, v0, v1, isAvg) => {
+      const c = t === 'g' ? ACC : t === 'h' ? HUM : (isAvg ? '#a1a1aa' : OTH);
+      const lo = Math.min(v0, v1), hi = Math.max(v0, v1);
+      const up = v1 >= v0;
+      return {
+        name: name, short: short, c: c, v1: String(v1),
+        from: pc(v0), to: pc(v1), barLeft: pc(lo), barWidth: ((hi - lo) / MAX * 100).toFixed(2) + '%',
+        barBorder: (t === 'g' ? '4px' : '2.5px') + (isAvg ? ' dashed ' : ' solid ') + c,
+        barBorderSm: (t === 'g' ? '2.5px' : '1.5px') + (isAvg ? ' dashed ' : ' solid ') + c,
+        ringPx: t === 'g' ? '13px' : '11px', dotPx: t === 'g' ? '15px' : '12px',
+        numOffset: up ? '12px' : '-12px', numShift: up ? '0' : '-100%',
+        change: chg(v1 - v0), changeSm: (v1 - v0 > 0 ? '+' : '') + (v1 - v0),
+        labStyle: t === 'g' ? 'color: #34d399; font-weight: 600' : (isAvg ? 'color: #d4d4d8; font-style: italic' : 'color: #b4b4ba'),
+        rowStyle: t === 'g' ? 'background: rgba(52,211,153,0.07)' : (isAvg ? 'border-top: 1px solid #2a2a2f; margin-top: 4px' : '')
+      };
+    };
+    const rows = S.map((r) => make(r[0], r[1], r[2], r[3], r[4], false));
+    rows.push(make('School average', 'School avg', 'x', avg0, avg1, true));
+    const rail = [['Indexed', 'indexed', 0], ['Actual', 'line', 0], ['Change (dumbbell)', 'dumbbell', 1], ['Trend table', 'table', 0], ['Change list', 'ranklist', 0], ['Change table', 'table', 0]].map((x) => ({
+      label: x[0], icon: x[1],
+      style: x[2] ? 'background: rgba(52,211,153,0.12); color: #f2f2f3; font-weight: 600' : 'color: #8a8a90',
+      iconStyle: x[2] ? 'background: #34d399; color: #062b1f' : 'background: #1a1a1d; color: #8a8a90'
+    }));
+    return {
+      rows: rows, rail: rail,
+      ticks: [0, 50, 100, 150].map((t) => ({ left: pc(t), label: String(t) })),
+      gridlines: [0, 50, 100, 150, 200].map((t) => ({ left: pc(t) })),
+      notes: [
+        'Same order (largest first), same colours, same ring-and-dot marks.',
+        'The rail icon is the same; the walk adds its name, “Change (dumbbell)”.',
+        'The walk spells out the key and the axis; the small panel keeps only the change figure.',
+        'Geography’s row is tinted in both, so the eye finds it first.',
+        'Fits all 14 subjects in a 300px panel at 15px a row; schools with 25+ subjects scroll, with your subject pinned in view.'
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One vocabulary: the walk teaches the dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0a0a0b}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 2520px; box-sizing: border-box; padding: 64px; background: #0a0a0b; color: #f2f2f3; font-family: Inter, system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 44px">
+
+  <div style="display: flex; flex-direction: column; gap: 14px; max-width: 1040px">
+    <span style="font-size: 13px; color: #8a8a90; text-transform: uppercase; letter-spacing: 0.1em">Consistency</span>
+    <h1 style="margin: 0; font-size: 44px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em">One vocabulary: the walk teaches the dashboard</h1>
+    <p style="margin: 0; font-size: 19px; line-height: 1.55; color: #b4b4ba">Each walk screen is a dashboard panel, enlarged and explained. Whatever a teacher sees in a walk, they meet again on the dashboard in the same place, with the same icon, colour and words. The walk says in full what the dashboard says in shorthand: a label beside each rail icon, a question beside each column name, a key on every chart.</p>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 26px; font-weight: 600">1. Columns: one icon, one name, one question</h2>
+    <p style="margin: 0; font-size: 15px; color: #9a9aa0; max-width: 1040px">The same three things everywhere: the home button, the walk's top bar, the walk's panel header, the dashboard's column header and the mini-map. Icons are the dashboard's own (COLUMN_ICON_PATHS), tinted in the phase colour.</p>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+      <sc-for list="{{cols}}" as="c" hint-placeholder-count="4">
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 16px; border: 1px solid #1e1e22; background: #131315">
+          <span style="display: flex; align-items: center; gap: 12px"><span style="width: 44px; height: 44px; border-radius: 12px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center"><dc-import glyph="{{c.icon}}" name="Icon" size="{{ 22 }}" color="#34d399" hint-size="22px,22px"></dc-import></span><span style="font-size: 18px; font-weight: 600">{{c.name}}</span></span>
+          <span style="font-size: 16px; line-height: 1.4; color: #e4e4e7">{{c.q}}</span>
+          <span style="font-size: 13px; color: #8a8a90; line-height: 1.5">{{c.where}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 26px; font-weight: 600">2. Rows and pills</h2>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 16px; border: 1px solid #1e1e22; background: #131315">
+        <span style="display: flex; gap: 10px; flex-wrap: wrap"><span style="font-size: 13px; color: #9a9aa0; background: #1a1a1d; border-radius: 6px; padding: 4px 8px">Current · Data 2024/25</span><span style="font-size: 13px; color: #9a9aa0; background: #1a1a1d; border-radius: 6px; padding: 4px 8px">Trends · Data 2024/25</span></span>
+        <span style="font-size: 14px; color: #b4b4ba; line-height: 1.5">The row tag sits in every walk panel's header, exactly as the row label and data tag sit on the dashboard. The walk's “this year” beats are Current; “over time” beats are Trends.</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 16px; border: 1px solid #1e1e22; background: #131315">
+        <sc-for list="{{pills}}" as="p" hint-placeholder-count="3">
+          <span style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border: 1px solid #2a2a2f; border-radius: 999px; padding: 4px 12px"><span style="color: #8a8a90">{{p.label}}</span><span>{{p.value}}</span></span><span style="font-size: 13px; color: #8a8a90">{{p.options}}</span></span>
+        </sc-for>
+        <span style="font-size: 14px; color: #b4b4ba; line-height: 1.5">When a walk screen depends on a setting, it shows the dashboard's pill with that setting, so the teacher learns where to change it. The pill is read-only in the walk.</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 26px; font-weight: 600">3. Rail views: same icon, same name, same order</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; padding: 20px; border-radius: 16px; border: 1px solid #1e1e22; background: #131315">
+        <sc-for list="{{views}}" as="v" hint-placeholder-count="14">
+          <span style="display: flex; align-items: center; gap: 10px; font-size: 14px"><span style="width: 26px; height: 26px; border-radius: 7px; background: #1a1a1d; display: flex; align-items: center; justify-content: center; flex: none"><dc-import glyph="{{v.icon}}" name="Icon" size="{{ 15 }}" color="#d4d4d8" hint-size="15px,15px"></dc-import></span><span style="display: flex; flex-direction: column"><span>{{v.label}}</span><span style="font-size: 12px; color: #6a6a70">{{v.used}}</span></span></span>
+        </sc-for>
+      </div>
+      <span style="font-size: 14px; color: #b4b4ba; line-height: 1.5">The walk's left column is the panel's own rail, in the same order, with each name written out. The view the walk is showing is lit; a table view switches in place; any other view opens the dashboard at that panel with that icon picked. On the dashboard the same icons appear alone, with the name on hover.</span>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 26px; font-weight: 600">4. Colour means the same thing on every chart</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+      <sc-for list="{{colours}}" as="c" hint-placeholder-count="8">
+        <div style="display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 14px; border: 1px solid #1e1e22; background: #131315">
+          <span style="{{c.mark}}; flex: none; margin-top: 3px"></span>
+          <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 600">{{c.label}}</span><span style="font-size: 13px; color: #9a9aa0; line-height: 1.45">{{c.d}}</span><span style="font-size: 12px; color: #6a6a70; font-family: ui-monospace, monospace">{{c.hex}}</span></span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 26px; font-weight: 600">5. Every chart is labelled</h2>
+      <ol style="margin: 0; padding: 20px 20px 20px 40px; border-radius: 16px; border: 1px solid #1e1e22; background: #131315; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.5; color: #d4d4d8">
+        <sc-for list="{{rules}}" as="r" hint-placeholder-count="7"><li><span style="font-weight: 600; color: #f2f2f3; margin-right: 5px">{{r.t}}</span>{{r.d}}</li></sc-for>
+      </ol>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 26px; font-weight: 600">6. Proposed changes to the dashboard</h2>
+      <p style="margin: 0; font-size: 15px; color: #9a9aa0">So the big interface and the condensed one stay one thing. Each is small; none changes a figure.</p>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{proposals}}" as="p" hint-placeholder-count="6">
+          <div style="display: flex; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px dashed rgba(251,191,36,0.45)">
+            <span style="font-size: 13px; font-weight: 700; color: #fbbf24; flex: none; width: 18px">{{p.n}}</span>
+            <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 600">{{p.t}}</span><span style="font-size: 13.5px; color: #9a9aa0; line-height: 1.5">{{p.d}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const sw = (c) => 'width: 22px; height: 22px; border-radius: 5px; background: ' + c;
+    const ln = (c, d) => 'width: 24px; height: 0; margin-top: 12px; border-top: 3px ' + (d ? 'dashed ' : 'solid ') + c;
+    return {
+      cols: [
+        { icon: 'candidates', name: 'Candidates', q: 'How many pupils take Geography?', where: 'Home button · walk 1 · Candidates panels · dashboard column 1 (Candidates dashboard)' },
+        { icon: 'results', name: 'Results', q: 'How well do pupils do in Geography?', where: 'Home button · walk 2 · Results panels · dashboard column 1 (Results dashboard)' },
+        { icon: 'context', name: 'Context', q: 'How does Geography sit alongside the rest of the school?', where: 'No home button of its own: its panels are the “in context” beats of walks 1 and 2 · dashboard column 2' },
+        { icon: 'comparisons', name: 'Comparisons', q: 'How does Geography compare with other schools?', where: 'Home button · walk 3 · Comparisons panels · dashboard column 3' }
+      ],
+      pills: [
+        { label: 'Results', value: 'Average points', options: 'also Grade 4+ rate · Grade bands · Grade counts' },
+        { label: 'Compared against', value: 'Subject category', options: 'also Whole school · Selected subjects (Context)' },
+        { label: 'Compared against', value: '10 nearest schools', options: 'also local rivals · a set of your own (Comparisons)' }
+      ],
+      views: [
+        { icon: 'tiles', label: 'Number tiles', used: 'Candidates, Results · Current' },
+        { icon: 'donut', label: 'Share (donut)', used: 'Context · Current' },
+        { icon: 'vbars', label: 'Bar chart (upright)', used: 'Context · Current' },
+        { icon: 'hbars', label: 'Bar chart (on its side)', used: 'Results, Comparisons · Current' },
+        { icon: 'ranklist', label: 'Ranked list / Ranking', used: 'Context, Comparisons · Current' },
+        { icon: 'grades', label: 'Grade distribution', used: 'Results · Current' },
+        { icon: 'dumbbell', label: 'Change (dumbbell) · proposed', used: 'Context · Trends' },
+        { icon: 'indexed', label: 'Indexed', used: 'Candidates, Context · Trends' },
+        { icon: 'line', label: 'Actual / Chart / Area chart', used: 'every Trends panel' },
+        { icon: 'map', label: 'Map / Trend map', used: 'Comparisons, Results' },
+        { icon: 'table', label: 'Trend table / Change table / Sortable table', used: 'every panel' },
+        { icon: 'podium', label: 'Tile: rank in the subject category', used: 'inside Number tiles' },
+        { icon: 'school', label: 'Tile: rank in the school', used: 'inside Number tiles' },
+        { icon: 'change', label: 'Tile: change over time', used: 'inside Number tiles' },
+        { icon: 'flag', label: 'Tile: against England', used: 'inside Number tiles' }
+      ],
+      colours: [
+        { mark: sw('#34d399'), label: 'Your subject / this school', d: 'The phase accent. Always the thing the question is about. Post-16 uses its own accent.', hex: '#34d399 · Post-16 #a78bfa' },
+        { mark: sw('#fcd34d'), label: 'Same subject category', d: 'The category’s site-wide colour (here Humanities), so “its area” looks the same everywhere.', hex: 'SUBJECT_FAMILY_COLOURS · Humanities #fcd34d' },
+        { mark: sw('#4b4b52'), label: 'Everything else', d: 'Other subjects, other schools: neutral grey.', hex: '#4b4b52' },
+        { mark: 'width: 22px; height: 22px; border-radius: 5px; background: linear-gradient(90deg, #fde68a 33%, #fbbf24 33% 66%, #b45309 66%)', label: 'Peer lines (up to about five)', d: 'Other subjects in the category: shades of the category colour, light to dark, each with its own marker shape (square, triangle, diamond). Shapes, not dashes: dashes mean averages.', hex: 'Humanities #fde68a · #fbbf24 · #b45309' },
+        { mark: ln('#a1a1aa', true), label: 'An average', d: 'Always a dashed grey line, always named with its value in the key.', hex: '#a1a1aa dashed' },
+        { mark: ln('#3987e5'), label: 'LA', d: 'First colour of the dashboard’s categorical palette, as on the Area chart today.', hex: '#3987e5' },
+        { mark: ln('#c98500'), label: 'England', d: 'As on the Area chart today. On Grade distribution, England is an amber tick.', hex: '#c98500' },
+        { mark: ln('#d95926'), label: 'Region', d: 'In tables only: on charts its line sits on top of England’s (the dashboard’s own rule).', hex: '#d95926' },
+        { mark: ln('#d55181'), label: '10 nearest schools', d: 'New series (proposal 2): the next colour in the same palette.', hex: '#d55181' }
+      ],
+      rules: [
+        { t: 'Title.', d: 'The view’s own dashboard title, filled in (“Entries by subject in Humanities”), so the walk and the panel are named alike.' },
+        { t: 'Key.', d: 'Whenever there is more than one colour or mark: bars, lines, dashed averages, England ticks, map dots, distance rings. Averages carry their value.' },
+        { t: 'Axis caption with the unit.', d: '“Entries (pupils)”, “Average points”, “Entries, indexed (2018/19 = 100)”, “% of pupils”, “Rank among 11 schools”.' },
+        { t: 'Direct labels.', d: 'Lines end in their name and latest value; your subject’s points are labelled; bars carry their value.' },
+        { t: 'Lines told apart without colour too.', d: 'Peer lines carry marker shapes; reference lines (LA, region, England) keep their fixed colours; dashes are kept for averages and dotted lines for unpublished years.' },
+        { t: 'Your subject stands out', d: 'in the accent and bold in every label and table row.' },
+        { t: 'Gaps are drawn, not hidden.', d: 'Unpublished years are dotted and labelled (“not published 2019/20–2020/21”).' },
+        { t: 'The note line (i).', d: 'What it shows, how to read it, and any caution (small numbers, generous grading), as in the dashboard’s footer.' }
+      ],
+      proposals: [
+        { n: '1', t: 'Column questions use the walk’s wording', d: 'Today: “How many pupils at Sample School are entered for Geography GCSE?”. Proposed: “How many pupils take Geography?”, the same words as the home button.' },
+        { n: '2', t: 'Area chart adds the 10 nearest', d: 'Walk screens 1.5 and 2.6 compare with the 10 nearest, the LA and England. Today the Area chart has LA and England only.' },
+        { n: '3', t: 'Context bars coloured by subject category', d: 'Your subject in the accent, its category in the category colour, the rest grey, with a key. Today bars take the qualification colour.' },
+        { n: '4', t: 'Full screen shows rail names', d: 'In full screen (⤢) the rail shows each icon with its name, as in the walk, so the bigger view keeps teaching the small one.' },
+        { n: '5', t: '“Walk me through this” on each column header', d: 'From the dashboard back into the walk for that column: the bridge works in both directions.' },
+        { n: '6', t: 'Grade distribution keyed', d: 'Add the key the walk uses (“This school: % of pupils”, amber tick “England: % of pupils”) and a % axis.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
