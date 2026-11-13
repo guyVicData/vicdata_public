@@ -27,6 +27,7 @@ import { loadAdminSchool } from "@/components/admin/AdminChrome";
 import { openViewAs, ViewAsPill } from "@/components/view-as/ViewAs";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
 import { NavRoleSwitch, showSchool, useMemberSchools } from "./RoleSwitch";
+import { useFewerQuestions } from "@/lib/front-door/fewer";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
@@ -203,6 +204,7 @@ export function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
+  const [fewerQuestions, setFewerQuestions] = useFewerQuestions();
   // TeacherNav replaces the site NavBar on the teacher routes, and that bar was a signed-out
   // visitor's only Log in link -- so the menu offers Log in when there is no session. A
   // local session read (no network), and null until known so neither set of rows flashes.
@@ -263,6 +265,10 @@ export function AccountMenu() {
           ) : (
             <>
               <Link href="/account" className={rowClass} onClick={() => setOpen(false)}>Your Account</Link>
+              {/* 0.8 front door (B10): the home's "Show fewer questions", the same switch. */}
+              <button type="button" className={rowClass} data-fewer-questions="" aria-pressed={fewerQuestions} onClick={() => { setOpen(false); setFewerQuestions(!fewerQuestions); }}>
+                {fewerQuestions ? "Show the walkthroughs" : "Hide walkthroughs"}
+              </button>
               {canManage && (
                 <>
                   <Link href="/teacher/people" className={rowClass} onClick={() => setOpen(false)}>People</Link>

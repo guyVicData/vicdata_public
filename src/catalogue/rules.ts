@@ -2698,6 +2698,17 @@ export const RULES: Rule[] = [
     origin: "0.8 front door part 1, C20",
     status: "active",
   },
+  {
+    id: "R-HOME-TILES",
+    statement:
+      "Every role lands on a home of plain question tiles (/teacher for Teacher, SMT and Admissions, stacked for a person with more than one role; /teacher/group for head office). Every tile has its question; a big figure from real data -- the dashboard's own rows and routes (Teacher: the focus subject's entries this year, its average points, its place among the school and its 10 nearest; SMT: the roll, the headline points, the change on last year; Admissions: the pool and the share; head office: schools, schools growing, the combined roll's change) -- or none, never a placeholder; a row of round icons, one per screen of its walk, each the view's own rail icon and name (hover title and aria-label); and one solid arrow, the one key action. A tile whose walk needs views that don't exist yet says so in its own space.",
+    why: "B8-B9: a teacher shown the dashboards found the interface hard; simple questions that made sense worked, and he expected each to be a button.",
+    appliesTo: "every home: Teacher (GCSE, Post-16), SMT, a primary school's SMT, Admissions, head office",
+    enforcedIn: ["src/components/front-door/home.tsx:QuestionTile", "src/components/front-door/sections.tsx", "src/components/groups/GroupHome.tsx", "src/lib/front-door/walks.ts:WALKS, screenMeta", "src/lib/front-door/teacher-model.ts:teacherTileFigures", "src/lib/front-door/home-tiles.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, GCSE (real data) and every walk's tile (rendered)", phase: "ks4", expect: "Every walk's screens resolve to catalogue views (or the group dashboard's own); The Chase's tiles read its focus subject's entries and points from the dashboard's rows and its place among the 10 nearest; a model with no points gives no figure.", check: "homeTiles" },
+    origin: "0.8 front door part 1, B8-B10",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

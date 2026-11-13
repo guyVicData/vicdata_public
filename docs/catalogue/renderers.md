@@ -2,7 +2,7 @@
 
 # Renderers
 
-Shape requirements only, no rules. 49 renderers.
+Shape requirements only, no rules. 50 renderers.
 
 ### RD-NUMBER-TILES — NumberTiles
 
@@ -78,6 +78,21 @@ Shape requirements only, no rules. 49 renderers.
 | Fullscreen | Same list, more room. |
 | Phone | Diverging bars from a centre zero; every value printed beside its bar. |
 | Used by | DV-C1-CAND-TR-CHANGELIST, DV-C2-TR-CHANGELIST, DV-C3-TR-CHANGELIST |
+
+### RD-DUMBBELL — Dumbbell
+
+| Field | Content |
+| --- | --- |
+| File | src/components/front-door/charts.tsx |
+| Accepts | One row per subject: the first year's and the latest year's figure, ordered by the latest; the focus row, the same-category rows and a school-average row last. |
+| Empty | No subject with figures in two years. |
+| Suppressed | A subject with no figure in either year is left out; the count of those left out is in the note. |
+| Partial | — |
+| Loading | — |
+| Min height | One row per subject, 22px each. |
+| Fullscreen | Same rows, wider bars. |
+| Phone | Same rows; subject names wrap, never truncate. |
+| Used by | DV-C2-TR-DUMBBELL |
 
 ### RD-SHARE-DONUT — ShareDonut
 

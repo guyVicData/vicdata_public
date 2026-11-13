@@ -6,14 +6,14 @@
 // schools (each opening that school's SMT read-only, or its public page), Access, My dashboards and
 // Meetings. A platform admin sees it through View as, read-only and never logged.
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
-import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
-import { HomeCard, MeetingsGlyph, type TileColour } from "@/components/teacher/HomeCard";
+import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
+import { MeetingsGlyph, type TileColour } from "@/components/teacher/HomeCard";
+import { HomeFrame, HomeHeading, HomeSection, QuestionTile, walkHref, type AlsoItem, type TileFigure } from "@/components/front-door/home";
+import { walksFor } from "@/lib/front-door/walks";
 import { FEATURE_ACCENT, GROUP_ACCENT } from "@/lib/teacher-view-theme";
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
-import { periodLabel, ROLL_DIRECTION_SPAN } from "@/catalogue/years";
 import { listMeetings } from "@/lib/meeting-store";
 import { shortDate } from "@/lib/meeting-ops";
 import type { HeadOffice } from "@/lib/groups/access-rules";
@@ -25,7 +25,6 @@ import { membersOf } from "@/lib/groups/access-rules";
 import { useGroupOffices, type OfficesState } from "./useGroupOffices";
 import { arrowed } from "@/lib/signed-delta";
 
-const SCHOOLS_TILE: TileColour = { hex: "#a78bfa", rgb: "167,139,250" };
 const ACCESS_TILE: TileColour = { hex: "#fbbf24", rgb: "251,191,36" };
 const DASHBOARDS_TILE: TileColour = { hex: "#c4b5fd", rgb: "167,139,250" };
 export const GROUP_DASHBOARD_NAMES = ["Overview", "Schools", "Academic", "Pupils"] as const;
@@ -85,43 +84,6 @@ const DashboardsGlyph = () => (
   </svg>
 );
 
-/** A card drawn as HomeCard draws one: a link, a button (Our schools opens its list), or plain (plain
- * head office's Access count). Spans inside, so it is valid in all three. */
-function Card({ colour, icon, title, description, edge, children, href, onClick, expanded }: { colour: TileColour; icon: ReactNode; title: string; description: ReactNode; edge?: boolean; children?: ReactNode; href?: string; onClick?: () => void; expanded?: boolean }) {
-  const style = { "--tile": colour.hex, "--tile-rgb": colour.rgb, ...(edge ? { borderColor: "var(--group-card-edge)" } : {}) } as CSSProperties;
-  const body = (
-    <>
-      <span className="flex items-center gap-3">
-        <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-[rgba(var(--tile-rgb),0.14)] text-[var(--tile)]">{icon}</span>
-        <span className="block min-w-0 flex-grow">
-          <span className="block text-[15px] font-bold">{title}</span>
-          <span className="mt-0.5 block text-[13px] text-[var(--muted2)]">{description}</span>
-        </span>
-      </span>
-      {children}
-    </>
-  );
-  const cls = "block w-full rounded-[14px] border-[1.5px] border-[var(--panel-border)] bg-[var(--panel-bg)] p-[15px] text-left";
-  const live = `${cls} transition-colors duration-100 hover:border-[var(--tile)] hover:bg-[rgba(var(--tile-rgb),0.10)]`;
-  if (href)
-    return (
-      <Link href={href} style={style} className={live}>
-        {body}
-      </Link>
-    );
-  if (onClick)
-    return (
-      <button type="button" onClick={onClick} aria-expanded={expanded} style={style} className={live}>
-        {body}
-      </button>
-    );
-  return (
-    <div style={style} className={cls}>
-      {body}
-    </div>
-  );
-}
-
 export function summaryLine(d: Pick<GroupHomeData, "summary">): string {
   const s = d.summary;
   const parts = [`${s.schools} schools`];
@@ -130,24 +92,34 @@ export function summaryLine(d: Pick<GroupHomeData, "summary">): string {
   return parts.join(" · ");
 }
 
+// 0.8 front door (B8, built last in milestone 3): head office's home, of plain question tiles like every
+// home -- the top level's orange field with head office's deep bronze accent (C18), one card per group
+// dashboard, each a question with its walk (B12), then "Our schools" (each opens that school's SMT home
+// read-only, as before) and "Also here": My dashboards, Access, Meetings.
+//
+// Seam for group sets (merging to main first): its "Groups library" link (on GroupDashChips' `library`
+// prop there) belongs in "Also here" here -- GROUPS_LIBRARY_HREF, null until that route is on main.
+const GROUPS_LIBRARY_HREF: ((accountId: string) => string) | null = null;
+
 export function GroupHome() {
-  const [theme, setTheme] = useTeacherTheme();
-  const [labelsOn, setLabelsOn] = useNavLabels(null, []);
+  const [pref] = useThemePref();
   const offices = useGroupOffices();
-  return (
-    <main id="teacher-root" data-theme={theme} className="mx-auto min-h-screen max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6" style={groupVars(theme)}>
-      <GroupViewAsBanner />
-      <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
-      <Body offices={offices} />
-    </main>
-  );
+  return <Body offices={offices} theme={effectiveTheme(pref)} />;
 }
 
-function Body({ offices }: { offices: OfficesState }) {
+function groupFigures(d: GroupHomeData | null): Record<string, TileFigure> {
+  if (!d) return {};
+  const s = d.summary;
+  return {
+    "group-overview": { figure: String(s.schools), unit: s.schools === 1 ? "school" : "schools in the group" },
+    ...(s.compared > 0 ? { "group-schools": { figure: `${s.growing} of ${s.compared}`, unit: "schools growing" } } : {}),
+    ...(s.changePct !== null ? { "group-pupils": { figure: `${s.changePct > 0 ? "+" : s.changePct < 0 ? "−" : ""}${Math.abs(s.changePct).toFixed(1)}%`, unit: "combined roll over 3 years" } } : {}),
+  };
+}
+
+function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "light" }) {
   const [data, setData] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: GroupHomeData }>({ status: "loading" });
-  const [name, setName] = useState<string | null>(null);
   const [nextMeeting, setNextMeeting] = useState<{ name: string; date: string | null } | null>(null);
-  const [open, setOpen] = useState(false);
   const office = offices.status === "ready" ? offices.office : null;
   useEffect(() => {
     if (!office || offices.status !== "ready") return;
@@ -155,11 +127,6 @@ function Body({ offices }: { offices: OfficesState }) {
     (async () => {
       const supabase = createBrowserSupabaseClient();
       const { data: s } = await supabase.auth.getSession();
-      const user = s.session?.user;
-      if (user && !offices.viewAs) {
-        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", user.id).maybeSingle<{ email: string | null; full_name: string | null }>();
-        if (live) setName(p?.full_name || p?.email || user.email || null);
-      }
       const res = await fetch(`/api/group/home?account=${office.id}`, { headers: { Authorization: `Bearer ${s.session?.access_token ?? ""}` } }).catch(() => null);
       if (!live) return;
       if (!res || !res.ok) setData({ status: "error", message: res?.status === 404 ? "Not found." : "Could not load the group. Try again." });
@@ -177,89 +144,104 @@ function Body({ offices }: { offices: OfficesState }) {
     };
   }, [office, offices]);
 
-  if (offices.status === "loading") return <p className="mt-6 text-sm text-[var(--muted)]">Loading…</p>;
+  const frame = (sections: ReactNode[], also: AlsoItem[] = []) => (
+    <HomeFrame heading={null} sections={sections} also={also} banner={<GroupViewAsBanner />} rootStyle={groupVars(theme)} />
+  );
+  const plain = (text: ReactNode) => [<p key="plain" className="mx-auto w-full max-w-[1160px] px-4 pt-6 text-[13px] text-[var(--muted2)] sm:px-10">{text}</p>];
+  if (offices.status === "loading") return frame(plain("Loading…"));
   if (offices.status === "signed-out")
-    return (
-      <p className="mt-6 text-[13px] text-[var(--muted2)]">
-        <Link href="/login?next=/teacher/group" className="font-bold text-[var(--group-accent-text)]">Sign in</Link> to see your group.
-      </p>
+    return frame(
+      plain(
+        <>
+          <Link href="/login?next=/teacher/group" className="font-bold text-[var(--group-accent-text)]">Sign in</Link> to see your group.
+        </>,
+      ),
     );
-  if (offices.status === "none") return <p className="mt-6 text-[13px] text-[var(--muted2)]">The group view comes with a group membership, bought by the group&rsquo;s head office. You aren&rsquo;t a member of one.</p>;
+  if (offices.status === "none") return frame(plain("The group view comes with a group membership, bought by the group’s head office. You aren’t a member of one."));
   const o = offices.office;
   const d = data.status === "ready" ? data.data : null;
+  const walks = walksFor("group");
+  const figures = groupFigures(d);
+  const params = { account: o.id };
+  const heading = <HomeHeading sub="How the group is doing, and how its schools compare. Each question walks you through a few screens." onField />;
+  const also: AlsoItem[] = [
+    ...(!offices.viewAs ? [{ href: "/dashboards", title: "My dashboards", line: "Yours, and those shared with head office", icon: <DashboardsGlyph />, colour: DASHBOARDS_TILE }] : []),
+    ...(GROUPS_LIBRARY_HREF ? [{ href: GROUPS_LIBRARY_HREF(o.id), title: "Groups library", line: "Groups to compare against", icon: <GroupGlyph />, colour: GROUP_ACCENT }] : []),
+    ...(!o.noAccount ? [{ href: d && (d.canManage || d.viewAs) ? `/teacher/group/access${offices.all.length > 1 ? `?account=${o.id}` : ""}` : null, title: "Access", line: d ? groupNote("accessCard", { n: d.access.seeing, m: d.access.of }) : "…", icon: <LockGlyph />, colour: ACCESS_TILE }] : []),
+    ...(!offices.viewAs ? [{ href: "/teacher/meetings", title: "Meetings", line: nextMeeting ? `Next: ${nextMeeting.name}, ${shortDate(nextMeeting.date)}` : "What do you need to show, and to whom?", icon: <MeetingsGlyph />, colour: FEATURE_ACCENT.meetings }] : []),
+  ];
   return (
     <>
       {/* 0.8 SMT feedback round 2 (section 6): feedback on the group home as a whole. */}
       <PageSurface surface={groupSurface({ product: "home", dashboard: { id: "home:head_office", name: "Group home" }, groupId: membersOf(o), ref: o.id, name: o.name, state: {} })} />
-      <div className="mt-6">
-        {!offices.viewAs && name && <h1 className="text-[22px] font-bold leading-tight">{name}</h1>}
-        {offices.viewAs && <h1 className="text-[22px] font-bold leading-tight">Head office</h1>}
-        <p className="mt-0.5 text-[13px] text-[var(--muted)]">{groupNote("headOffice", { group: o.name })}</p>
-      </div>
-      {offices.all.length > 1 && (
-        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Group">
-          {offices.all.map((x) => (
-            <Link key={x.id} href={`/teacher/group?account=${x.id}`} aria-current={x.id === o.id ? "true" : undefined} className={`rounded-full border px-3 py-1 text-[12px] font-bold ${x.id === o.id ? "border-[var(--group-card-edge)] bg-[var(--group-chip-bg)] text-[var(--group-chip-fg)]" : "border-[var(--panel-border)] text-[var(--muted2)]"}`}>
-              {x.name}
-            </Link>
-          ))}
-        </div>
+      {frame(
+        [
+          <HomeSection
+            key="group"
+            field="group"
+            accent={GROUP_ACCENT}
+            chip="Head office"
+            heading={heading}
+            controls={
+              offices.all.length > 1 ? (
+                <span className="flex flex-wrap gap-1.5" role="group" aria-label="Group">
+                  {offices.all.map((x) => (
+                    <Link key={x.id} href={`/teacher/group?account=${x.id}`} aria-current={x.id === o.id ? "true" : undefined} className={`rounded-full border border-[var(--field-chip-border)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)] ${x.id === o.id ? "bg-[var(--field-chip-bg)] font-semibold" : ""}`}>
+                      {x.name}
+                    </Link>
+                  ))}
+                </span>
+              ) : (
+                <span className="rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] font-semibold text-[var(--field-chip-fg)]">{o.name}</span>
+              )
+            }
+            dashboard={{ label: "Open the full group dashboards", href: `/teacher/group/overview?account=${o.id}` }}
+            cols={2}
+            links={walks.map((w) => ({ label: w.question, href: walkHref(w, params) }))}
+            tiles={walks.map((w) => (
+              <QuestionTile key={w.id} walk={w} figure={figures[w.id] ?? null} ctx={{}} href={walkHref(w, params)} loading={data.status === "loading"} />
+            ))}
+            note={
+              <>
+                {o.status === "suspended" && <span className="block">This group account is suspended. VicData can tell you why.</span>}
+                {o.noAccount && (
+                  <span className="block" data-group-no-account="">
+                    <strong>No group account yet.</strong> These are the group&rsquo;s dashboards from the published data, read-only. Access and everything else a group account holds come with one (Platform makes it).
+                  </span>
+                )}
+                {data.status === "error" && <span className="block">{data.message}</span>}
+              </>
+            }
+          >
+            {d && d.schools.length > 0 && (
+              <div className="flex flex-col gap-3" data-our-schools="">
+                <h2 className="flex flex-wrap items-baseline gap-x-3 text-[22px] font-semibold text-[var(--field-ink)]">
+                  Our schools <span className="text-[14px] font-normal">{GROUP_NOTES.ourSchools}</span>
+                </h2>
+                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" aria-label="Our schools">
+                  {d.schools.map((s) => (
+                    <li key={s.urn}>
+                      <Link href={s.vicdata ? `/teacher/smt?headOffice=${s.urn}` : `/schools/${s.urn}`} className="fd-tile flex items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
+                          <SchoolsGlyph />
+                        </span>
+                        <span className="min-w-0 flex-grow">
+                          <span className="block truncate text-[15px] font-medium">{s.name}</span>
+                          <span className="block text-[12.5px] text-[var(--muted2)]">{s.vicdata ? "SMT home, read-only" : "Public page"}</span>
+                        </span>
+                        {s.likely && <span title={GROUP_NOTES.likelyWhy} className="rounded-[6px] bg-[var(--group-likely-bg)] px-[7px] py-px text-[10.5px] font-bold text-[var(--group-likely-fg)]">{GROUP_NOTES.likely}</span>}
+                        <span aria-hidden="true" className="text-[var(--muted2)]">&rarr;</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                {d.source && <p className="text-[12px] text-[var(--field-ink)]">{groupNote("membershipAsOf", { date: d.lastSeen ? shortDate(d.lastSeen) : "—", source: GROUP_SOURCE_LABELS[d.source] ?? d.source })}</p>}
+              </div>
+            )}
+          </HomeSection>,
+        ],
+        also,
       )}
-      {o.status === "suspended" && <p className="mt-4 text-[13px] text-[var(--muted2)]">This group account is suspended. VicData can tell you why.</p>}
-      {/* 0.8 View as fixes (item 3): head office of a group with no group account -- its dashboards from the
-          group lookups, read-only; no Access, nothing an account holds. */}
-      {o.noAccount && (
-        <p className="mt-4 text-[13px] text-[var(--muted2)]" data-group-no-account="">
-          <span className="font-bold text-[var(--fg)]">No group account yet.</span> These are the group&rsquo;s dashboards from the published data, read-only. Access and everything else a group account holds come with one (Platform makes it).
-        </p>
-      )}
-
-      <p className="mt-[22px] text-base font-semibold text-[var(--muted2)]">What would you like to look at?</p>
-      {data.status === "error" && <p className="mt-4 text-[13px] text-[var(--muted2)]">{data.message}</p>}
-
-      <div className="mt-[18px] flex flex-col gap-[10px]">
-        <Card colour={GROUP_ACCENT} icon={<GroupGlyph />} title="The group" description={GROUP_NOTES.theGroup} edge>
-          <span className="mt-3 flex flex-wrap gap-1.5">
-            <GroupDashChips accountId={o.id} />
-          </span>
-          <span className="mt-2.5 block text-[12px] text-[var(--muted)]" title={d?.summary.period ? groupNote("summary", { now: periodLabel(d.summary.period), before: periodLabel(d.summary.period - ROLL_DIRECTION_SPAN), n: d.summary.compared }) : undefined}>
-            {d ? summaryLine(d) : "…"}
-          </span>
-        </Card>
-
-        <div>
-          <Card colour={SCHOOLS_TILE} icon={<SchoolsGlyph />} title="Our schools" description={GROUP_NOTES.ourSchools} onClick={() => setOpen((x) => !x)} expanded={open} />
-          {open && d && (
-            <ul className="mt-1.5 overflow-hidden rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)]" aria-label="Our schools">
-              {d.schools.map((s) => (
-                <li key={s.urn} className="border-b border-[var(--border)] last:border-0">
-                  <Link href={s.vicdata ? `/teacher/smt?headOffice=${s.urn}` : `/schools/${s.urn}`} className="flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-[var(--box-bg)]">
-                    <span className="min-w-0 flex-grow truncate font-semibold">{s.name}</span>
-                    {s.likely && <span title={GROUP_NOTES.likelyWhy} className="rounded-[6px] bg-[var(--group-likely-bg)] px-[7px] py-px text-[10.5px] font-bold text-[var(--group-likely-fg)]">{GROUP_NOTES.likely}</span>}
-                    <span className="shrink-0 text-[12px] text-[var(--muted2)]">{s.vicdata ? "SMT, read-only" : "Public page"} &rarr;</span>
-                  </Link>
-                </li>
-              ))}
-              {d.source && <li className="px-3 py-2 text-[11.5px] text-[var(--muted2)]">{groupNote("membershipAsOf", { date: d.lastSeen ? shortDate(d.lastSeen) : "—", source: GROUP_SOURCE_LABELS[d.source] ?? d.source })}</li>}
-            </ul>
-          )}
-        </div>
-
-        {!o.noAccount && <Card
-          colour={ACCESS_TILE}
-          icon={<LockGlyph />}
-          title="Access"
-          description={d ? groupNote("accessCard", { n: d.access.seeing, m: d.access.of }) : "…"}
-          href={d && (d.canManage || d.viewAs) ? `/teacher/group/access${offices.all.length > 1 ? `?account=${o.id}` : ""}` : undefined}
-        />}
-
-        {!offices.viewAs && (
-          <>
-            <HomeCard href="/dashboards" colour={DASHBOARDS_TILE} icon={<DashboardsGlyph />} title="My dashboards" description="The ones you’ve made, and those shared with head office" />
-            <HomeCard href="/teacher/meetings" colour={FEATURE_ACCENT.meetings} icon={<MeetingsGlyph />} title="Meetings" description={nextMeeting ? `Next: ${nextMeeting.name}, ${shortDate(nextMeeting.date)}` : "What do you need to show, and to whom?"} />
-          </>
-        )}
-      </div>
     </>
   );
 }

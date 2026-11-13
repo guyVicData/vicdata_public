@@ -159,6 +159,9 @@ test("every line / table / bar preset is covered below (or left to its host)", (
     "DV-C2-CUR-BARS", "DV-C2-CUR-TABLE", "DV-C2-TR-INDEXED", "DV-C2-TR-ACTUAL", "DV-C2-TR-CHART", "DV-C2-TR-TABLE", "DV-C2-TR-CHANGELIST", "DV-C2-TR-CHANGETABLE",
     "DV-C1-CAND-TR-INDEXED", "DV-C1-CAND-TR-ACTUAL", "DV-C1-CAND-TR-TABLE", "DV-C1-CAND-TR-CHANGELIST", "DV-C1-CAND-TR-CHANGETABLE",
     "DV-C3-CUR-BAR", "DV-C3-TR-CHART", "DV-C3-TR-TABLE", "DV-C3-TR-CHANGELIST", "DV-C3-TR-CHANGETABLE",
+    // 0.8 front door (B17): the dumbbell's preset is Ranked change's bars (no dumbbell kind in ViewSpec yet);
+    // the walk draws it with RD-DUMBBELL.
+    "DV-C2-TR-DUMBBELL",
   ]);
   // The geography views draw from the host's fetch in the frame (S3c, below): without it
   // (these fixtures carry none) the host draws. Grade counts' table draws from a grades frame

@@ -3,4 +3,8 @@
 // that needs Mid is added here, on purpose.
 export const MID_PAGES: string[] = [
   "src/components/shell/TeacherChrome.tsx",
+  // The homes (B8): the frame, the role sections, head office's home.
+  "src/components/front-door/home.tsx",
+  "src/components/front-door/sections.tsx",
+  "src/components/groups/GroupHome.tsx",
 ];

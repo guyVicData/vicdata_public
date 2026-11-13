@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 202 rules: 194 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 203 rules: 195 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -210,6 +210,7 @@ What a number is allowed to be. 202 rules: 194 active, 8 superseded; 22 must lif
 | R-THEME-CONTRAST | active | Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. | no | auto: themeContrast | — |
 | R-PANEL-LADDER | active | On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. | no | auto: panelLadder | — |
 | R-ROLE-COLOURS | active | SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan. | no | auto: roleColours | — |
+| R-HOME-TILES | active | Every role lands on a home of plain question tiles (/teacher for Teacher, SMT and Admissions, stacked for a person with more than one role; /teacher/group for head office). Every tile has its question; a big figure from real data -- the dashboard's own rows and routes (Teacher: the focus subject's entries this year, its average points, its place among the school and its 10 nearest; SMT: the roll, the headline points, the change on last year; Admissions: the pool and the share; head office: schools, schools growing, the combined roll's change) -- or none, never a placeholder; a row of round icons, one per screen of its walk, each the view's own rail icon and name (hover title and aria-label); and one solid arrow, the one key action. A tile whose walk needs views that don't exist yet says so in its own space. | no | auto: homeTiles | — |
 
 ## Cards
 
@@ -461,7 +462,7 @@ What a number is allowed to be. 202 rules: 194 active, 8 superseded; 22 must lif
 | Why | No area threshold figure is wired up; drawing one from another measure would compare unlike things. |
 | Applies to | M-KS4-THRESHOLD, M-KS5-THRESHOLD; Column 1 Results markers and geography views |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1136 (no benchmark on rates)<br>- src/app/teacher/[phase]/page.tsx:1153 (no England category line)<br>- src/app/teacher/[phase]/page.tsx:1727-1734 (applies)<br>- src/app/teacher/[phase]/page.tsx:1786 (benchmarkLabel undefined) |
-| Tagged at | - src/components/dashboard-config/embed.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/geography.ts |
+| Tagged at | - src/components/dashboard-config/embed.ts<br>- src/lib/front-door/teacher-model.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/geography.ts |
 | Test case | Acland Burghley School (100053), ks4: Results -> Grade 4+ -> Area chart shows 'LA, regional and national figures are published for average point score only…'. [manual] |
 | Origin | Comparisons / Grade 4 wiring round |
 | Status | active |
@@ -893,7 +894,7 @@ What a number is allowed to be. 202 rules: 194 active, 8 superseded; 22 must lif
 | Why | Guy, 16 Oct 2026: the audit fixes left IGCSE schools out of every GCSE ranking, which was too broad. The problem is only with measures missing the subjects a school takes as IGCSE: Leighton Park's GCSE Biology is a GCSE Biology figure like any other. |
 | Applies to | Every single-subject GCSE ranking and comparison in Teacher, SMT and Admissions; Teacher's sets for subject views (subjectRows); the comparator maps on a subject |
 | Enforced in | - src/lib/igcse-words.ts:igcseTakenAsIgcse, igcseFamilyIncomplete, FAMILY_REQUIRED_SUBJECTS<br>- src/lib/subject-ranking.ts:rankedWithIgcse<br>- src/lib/teacher-view-comparator-series.ts:rankFixedSets (subjectRanked)<br>- src/lib/chooser-sets.ts:resolveFixedSet, resolveDefaultNearest (subjectRows)<br>- src/app/api/teacher/saved-comparator-sets/route.ts (subjectRows)<br>- src/components/dashboard-config/TeacherDashboard.tsx:subjectComparatorSets, subjectSets<br>- src/lib/academic-data-view.ts:igcseOutFor<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/smt/academic.ts:stagePart<br>- src/components/smt/SmtDashboard.tsx:academicWhyNot |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/academic-data-view.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/igcse-words.ts<br>- src/lib/igcse.ts<br>- src/lib/smt/school.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-saved-sets.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/academic-data-view.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/front-door/teacher-data.ts<br>- src/lib/igcse-words.ts<br>- src/lib/igcse.ts<br>- src/lib/smt/school.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-saved-sets.ts |
 | Test case | Leighton Park; The King's School Worcester 117037; The Chase 137625 (110110), ks4: Leighton Park is ranked in GCSE Biology, Chemistry, Physics, Art and Design and Combined Science, and not in Attainment 8, English and maths, Sciences & Maths or English (Languages & Literature); its Sciences & Maths (i) says 'sciences only: maths taken as IGCSE'. King's Worcester is ranked in Art and Design, History and Geography and in its Humanities family, not in Sciences & Maths or Languages & Literature; it has no GCSE Biology, so no Biology rank, and Biology isn't inferred as IGCSE. Leighton Park's 10 nearest for a subject includes IGCSE schools; its whole-school ten doesn't. [runner: igcseSubject] |
 | Origin | 0.8 IGCSE subjects (docs/v0.8/vicdata_0_8_igcse_subject_rankings_claude_code_prompt_v1.md) |
 | Status | active |
@@ -3440,6 +3441,22 @@ What a number is allowed to be. 202 rules: 194 active, 8 superseded; 22 must lif
 | Tagged at | - src/lib/front-door/contrast.test.ts<br>- src/lib/front-door/contrast.ts |
 | Test case | the theme module and the stylesheet (no database) (110110), ks4: SMT orange (Dark and Light values, Light 4.5:1 on white), bronze 4.5:1 on the dark panel and 3:1 on white, Post-16 violet unchanged, the SMT and group tokens orange and bronze and readable. [runner: roleColours] |
 | Origin | 0.8 front door part 1, C20 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-HOME-TILES
+
+| Field | Content |
+| --- | --- |
+| Statement | Every role lands on a home of plain question tiles (/teacher for Teacher, SMT and Admissions, stacked for a person with more than one role; /teacher/group for head office). Every tile has its question; a big figure from real data -- the dashboard's own rows and routes (Teacher: the focus subject's entries this year, its average points, its place among the school and its 10 nearest; SMT: the roll, the headline points, the change on last year; Admissions: the pool and the share; head office: schools, schools growing, the combined roll's change) -- or none, never a placeholder; a row of round icons, one per screen of its walk, each the view's own rail icon and name (hover title and aria-label); and one solid arrow, the one key action. A tile whose walk needs views that don't exist yet says so in its own space. |
+| Why | B8-B9: a teacher shown the dashboards found the interface hard; simple questions that made sense worked, and he expected each to be a button. |
+| Applies to | every home: Teacher (GCSE, Post-16), SMT, a primary school's SMT, Admissions, head office |
+| Enforced in | - src/components/front-door/home.tsx:QuestionTile<br>- src/components/front-door/sections.tsx<br>- src/components/groups/GroupHome.tsx<br>- src/lib/front-door/walks.ts:WALKS, screenMeta<br>- src/lib/front-door/teacher-model.ts:teacherTileFigures<br>- src/lib/front-door/home-tiles.test.tsx |
+| Tagged at | - src/lib/front-door/home-tiles.test.tsx<br>- src/lib/front-door/walks.ts |
+| Test case | The Chase, GCSE (real data) and every walk's tile (rendered) (137625), ks4: Every walk's screens resolve to catalogue views (or the group dashboard's own); The Chase's tiles read its focus subject's entries and points from the dashboard's rows and its place among the 10 nearest; a model with no points gives no figure. [runner: homeTiles] |
+| Origin | 0.8 front door part 1, B8-B10 |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

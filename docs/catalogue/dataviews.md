@@ -2,7 +2,7 @@
 
 # Dataviews
 
-The registered recipes the chooser offers and dashboards place, in host then rail order. 120 dataviews: 118 live, 2 draft.
+The registered recipes the chooser offers and dashboards place, in host then rail order. 121 dataviews: 118 live, 3 draft.
 
 ## Summary
 
@@ -37,6 +37,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-C2-TR-ACTUAL | live | teacher.c2.context · trend · Actual | academic.candidates | subject | subjects | totals | trend | graph | RD-MULTI-TREND |
 | DV-C2-TR-TABLE | live | teacher.c2.context · trend · Trend table | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | totals, points, rate | trend | table | RD-YEAR-TABLE |
 | DV-C2-TR-CHANGELIST | live | teacher.c2.context · trend · Ranked change | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | pct_change, change_points, change_pp | trend | ranking | RD-CHANGE-LIST |
+| DV-C2-TR-DUMBBELL | draft | teacher.c2.context · trend · (no rail) | academic.candidates | subject | subjects | totals, change_points | trend | graph | RD-DUMBBELL |
 | DV-C2-TR-CHANGETABLE | live | teacher.c2.context · trend · Change table | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | totals, points, rate, pct_change, change_points, change_pp | trend | table | RD-YEAR-TABLE |
 | DV-C3-CUR-TILES | live | teacher.c3.comparisons · current · Number tiles | academic.candidates, academic.results (points, threshold, bands, counts) | school | schools | points, rank | single | numerical | RD-NUMBER-TILES |
 | DV-C3-CUR-MAP | live | teacher.c3.comparisons · current · Map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, totals | single | map | RD-RANKINGS-MAP |
@@ -971,6 +972,35 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Used on | GCSE Candidates › Context › Trends, GCSE Results › Context › Trends, Post-16 Candidates › Context › Trends, Post-16 Results › Context › Trends |
 | Note | S3b: % change on entries; change in points on average point score; change in percentage points on rates (R-NUMBER-TYPE-HONESTY). |
 | Method | 1. We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.<br>3. Each subject's change is from its first to its latest figure in the span: a percentage on entries; the difference in points or percentage points on results, from 2022/23.<br>4. Subjects are ranked by that change, biggest rise first, with your subject highlighted.<br>5. A dashed line marks the change in the group average (the plain average of the member subjects each year), worked out the same way.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Percentage change as a whole number; points to 1 decimal place; whole percentage points. |
+
+### DV-C2-TR-DUMBBELL — Change (dumbbell)
+
+| Field | Content |
+| --- | --- |
+| Measures | M-KS4-ENTRIES (GCSE candidates), M-KS5-ENTRIES (Post-16 candidates) |
+| Data | academic.candidates |
+| Results sub-measures | — |
+| Phases | ks4, ks5 |
+| Focus | subject |
+| Compare | subjects |
+| Number types | totals, change_points |
+| Date mode | trend |
+| View type | graph |
+| Renderer | RD-DUMBBELL |
+| Title template | Entries by subject in [comparison-group], [first-year] and [year], largest first |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | against:context |
+| Rail icon | DumbbellIcon |
+| Host | teacher.c2.context, trend, rail "(none)" (src/components/teacher/SubjectPanels.tsx) |
+| Audience | subject-level, academic |
+| Status | draft |
+| Verified at | not yet |
+| Origin | 0.8 front door part 1, B17 (docs/v0.8/front_door_design/png/dumbbell.png) |
+| Rules | R-KS5-ASAEA-EXCL |
+| Used on | not placed |
+| Note | One row per subject ordered by this year's entries; ring = first year, dot = latest; focus row tinted in the accent; same-category subjects in the category colour, others grey; a dashed school-average row last; change in pupils with up/down triangles (no green/red). |
+| Method | 1. We take each subject's entries in the first year and the latest year.<br>2. One row per subject, ordered by this year's entries, largest first: a ring for the first year, a dot for the latest, a bar between.<br>3. Your subject's row is tinted in your colour; subjects in its category take the category colour, the rest grey.<br>4. The last row is the school average: the plain average of the subjects' entries in each of the two years, dashed.<br>5. The change is in pupils, with ▲ or ▼ for its direction (no green or red).<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16)<br>Rounding: Entries and changes as whole numbers. |
 
 ### DV-C2-TR-CHANGETABLE — Change table
 

@@ -3492,6 +3492,18 @@ const RUNNERS: Record<string, Runner> = {
     const bad = checks.filter(([, ok]) => !ok).map(([n]) => n);
     return { pass: !bad.length, detail: fmt({ checks: checks.length, failing: bad.join(", ") || "none" }) };
   },
+  async homeTiles() {
+    const { WALKS, screenMeta } = await import("../src/lib/front-door/walks");
+    const { loadTeacherModel } = await import("../src/lib/front-door/teacher-data");
+    const { teacherTileFigures, lastOf } = await import("../src/lib/front-door/teacher-model");
+    const unresolved = WALKS.flatMap((w) => w.screens.filter((s) => !screenMeta(s.view)).map((s) => `${w.id}:${s.view}`));
+    const sb = (await import("@supabase/supabase-js")).createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+    const m = await loadTeacherModel(sb, "137625", "ks4", { focusKey: null, ticked: [], full: false });
+    const f = teacherTileFigures(m);
+    const focus = m.whole.rows.find((r) => r.focus);
+    const agree = !!focus && f.many?.figure === String(lastOf(focus.entries)) && (f.well === null || f.well.figure === lastOf(focus.points)?.toFixed(1));
+    return { pass: !unresolved.length && agree && !!f.many, detail: fmt({ walks: WALKS.length, unresolved: unresolved.join(", ") || "none", focus: m.focus?.label ?? "none", many: f.many?.figure ?? "none", well: f.well?.figure ?? "none", nearby: f.nearby ? `${f.nearby.figure} ${f.nearby.unit}` : "none" }) };
+  },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");
     const { featuredRowFindings, NO_FOCUS_ROWS } = await import("../src/lib/featured-row-scan");
