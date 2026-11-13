@@ -3087,7 +3087,7 @@ From `docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_promp
 
 ## 2026-11-13: Non-mainstream groups, Guy's decisions (NM1–NM12)
 
-From the scoping report (`docs/v0.8/non_mainstream_groups_scope_v1.md`). Guy: "yes to all" (the recommendations). The build prompt is `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md`; it runs after front door Part 3.
+From the scoping report (`docs/v0.8/non_mainstream_groups_scope_v1.md`). Guy: "yes to all" (the recommendations). The build prompt is `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md`; it runs after the front door design cross-check, before Part 3 (Guy, 13 Nov).
 
 1. The line stays "more than half" of current schools special, AP, PRU or nursery.
 2. Mainstream schools inside a non-mainstream group (20 groups, 63 schools): a separate mainstream line, against the mainstream pools.

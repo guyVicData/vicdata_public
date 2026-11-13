@@ -1,6 +1,6 @@
 # VicData 0.8: Non-mainstream groups, first version. Special and AP trusts and nursery federations, compared like for like
 
-A Claude Code prompt for the production data repo (`~/dev/vicdata`, production database `hrqrbvrrhlidpoybezhs`) and the app repo (`~/dev/vicdata_public`, app database `lnhulykjlxmoneappnsp`). Written 13 Nov 2026 from Guy's answers that day (NM1–NM12: "yes to all", the recommendations in `docs/v0.8/non_mainstream_groups_scope_v1.md`). **Runs after front door Part 3.** The scoping report is the evidence; this prompt is what to build.
+A Claude Code prompt for the production data repo (`~/dev/vicdata`, production database `hrqrbvrrhlidpoybezhs`) and the app repo (`~/dev/vicdata_public`, app database `lnhulykjlxmoneappnsp`). Written 13 Nov 2026 from Guy's answers that day (NM1–NM12: "yes to all", the recommendations in `docs/v0.8/non_mainstream_groups_scope_v1.md`). **Runs after the front door design cross-check, before front door Part 3** (Guy, 13 Nov). The scoping report is the evidence; this prompt is what to build.
 
 **This runs as one straight-through build, unattended.** Work through the milestones in order. Each ends in a commit, with tests and parity clean. If a milestone can't be finished cleanly, stop there, log why in the report, and leave the branches at the last clean milestone. Don't ask Guy anything: take the most reasonable reading, log the call in OPEN_QUESTIONS, and carry on.
 
