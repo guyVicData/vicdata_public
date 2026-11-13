@@ -6,7 +6,7 @@
 //
 // The fixture supabase/tests/fixtures/teacher-edit-pin.json was written by THIS script with the
 // editor-ops.ts as it stood BEFORE the round's changes (PIN_WRITE=1), on the four Teacher
-// dashboards as published live on 17 Oct (supabase/tests/fixtures). The test replays the same
+// dashboards as published live on 13 Nov (supabase/tests/fixtures). The test replays the same
 // script of edits on the current code and asserts every step's output config, change summary
 // and error message is byte-identical.
 //
@@ -23,7 +23,7 @@ import { upgradeConfig } from "@/catalogue/viewspec";
 import * as ops from "./editor-ops";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const FIXTURE = join(here, "..", "..", "supabase", "tests", "fixtures", "vicdata_published_configs_2026-10-17.json");
+const FIXTURE = join(here, "..", "..", "supabase", "tests", "fixtures", "vicdata_published_configs_2026-11-13.json");
 const PIN = join(here, "..", "..", "supabase", "tests", "fixtures", "teacher-edit-pin.json");
 const TEACHER = ["vicdata.ks4.candidates", "vicdata.ks4.results", "vicdata.ks5.candidates", "vicdata.ks5.results"];
 

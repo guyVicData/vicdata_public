@@ -4,7 +4,7 @@
 //
 // Local only (WASM Postgres): applies the S1 + S2 migrations over a stub of the live schema
 // they depend on (as v06_rls_pglite.mjs does), seeds the ten VicData dashboards with the REAL
-// published configs (supabase/tests/fixtures/vicdata_published_configs_2026-10-17.json, read
+// published configs (supabase/tests/fixtures/vicdata_published_configs_2026-11-13.json, read
 // from lnhulykjlxmoneappnsp with one read-only select), and then runs the editor's own store
 // calls -- src/lib/dashboards-store.ts loadDashboard / saveDraft / publish / listVersions and
 // src/lib/published-vicdata.ts loadPublishedVicData -- through a small PostgREST-shaped client
@@ -19,7 +19,7 @@ import { changeSummary, publishBlockers, renamePanel } from "../../src/lib/edito
 import { DASHBOARDS } from "../../src/catalogue/dashboards/index.ts";
 
 const repo = new URL("../migrations/", import.meta.url).pathname;
-const fixture = JSON.parse(readFileSync(new URL("./fixtures/vicdata_published_configs_2026-10-17.json", import.meta.url), "utf8"));
+const fixture = JSON.parse(readFileSync(new URL("./fixtures/vicdata_published_configs_2026-11-13.json", import.meta.url), "utf8"));
 const db = new PGlite();
 const q = (sql, p) => db.query(sql, p);
 const ex = (sql) => db.exec(sql);
@@ -170,7 +170,7 @@ for (const r of fixture.rows) {
   const d = (await asUser(GUY, () => q(`insert into dashboards (slug, owner_scope, name) values ($1, 'vicdata', $2) returning id`, [r.slug, r.name]))).rows[0].id;
   ids[r.slug] = d;
   // The seed: the published config, as live, as version 1 (published by Guy).
-  await asUser(GUY, () => q(`select publish_dashboard($1, $2::jsonb, 'seed', 'Seeded from live, 17 Oct')`, [d, JSON.stringify(r.config)]));
+  await asUser(GUY, () => q(`select publish_dashboard($1, $2::jsonb, 'seed', 'Seeded from live, 13 Nov')`, [d, JSON.stringify(r.config)]));
   await asUser(GUY, () => q(`insert into dashboard_assignments (dashboard_id, target_kind, role, is_key) values ($1, 'role', $2, true)`, [d, ROLE(r.slug)]));
 }
 check("10 VicData dashboards seeded (Teacher 4, SMT 4, Admissions 2)", Object.keys(ids).length === 10 && fixture.rows.filter((r) => ROLE(r.slug) === "teacher").length === 4 && fixture.rows.filter((r) => ROLE(r.slug) === "smt").length === 4 && fixture.rows.filter((r) => ROLE(r.slug) === "admissions").length === 2);
