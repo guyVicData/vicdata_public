@@ -130,7 +130,7 @@ function smtFigures(o: Overview | null, primary: boolean): Record<string, TileFi
     out[`${p}-overview`] = { figure: o.now.roll.toLocaleString("en-GB"), unit: `pupils${dir}` };
   }
   const head = o.rows.find((r) => r.stage === "ks4" && r.unit === "points" && r.value !== null) ?? o.rows.find((r) => r.stage === "ks5" && r.unit === "points" && r.value !== null);
-  if (!primary && head?.value != null) out[`${p}-academic`] = { figure: head.value.toFixed(1), unit: head.label.toLowerCase() };
+  if (!primary && head?.value != null) out[`${p}-academic`] = { figure: head.value.toFixed(1), unit: head.label };
   const whole = o.trends.roll.lines[0];
   const act = (whole?.actual ?? []).filter((x) => x.value !== null);
   if (act.length >= 2) {
@@ -194,7 +194,7 @@ export function SmtSection({ heading }: { heading?: React.ReactNode }) {
 // ------------------------------------------------------------------------------------------------ Admissions
 
 type ListsAnswer = { entryPoints: { entry_point: string }[] };
-type MarketLite = { share: number | null; latest: number | null };
+type MarketLite = { summary?: { share: number | null; latest: number | null } };
 type PipelineLite = { ladder?: { past: { entryYear: number; pool: number | null }[] }; now?: { cohort: number | null } };
 
 function defaultEntries(low: number | null, high: number | null): string[] {
@@ -240,7 +240,7 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
         setFig({
           entry: current,
           pool: pool !== null ? { figure: Math.round(pool).toLocaleString("en-GB"), unit: `children in the ${label} pool` } : null,
-          share: m?.share != null ? { figure: `${m.share.toFixed(1)}%`, unit: "of the pool joined us" } : null,
+          share: m?.summary?.share != null ? { figure: `${m.summary.share.toFixed(1)}%`, unit: "of the intake: you and your rivals" } : null,
         });
     })();
     return () => {

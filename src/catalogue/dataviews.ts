@@ -856,7 +856,7 @@ export const DATAVIEWS: Dataview[] = [
     status: "draft",
     verifiedAt: [],
     origin: "0.8 front door part 1, B17 (docs/v0.8/front_door_design/png/dumbbell.png)",
-    rules: ["R-KS5-ASAEA-EXCL"],
+    rules: ["R-DUMBBELL", "R-KS5-ASAEA-EXCL"],
     note: "One row per subject ordered by this year's entries; ring = first year, dot = latest; focus row tinted in the accent; same-category subjects in the category colour, others grey; a dashed school-average row last; change in pupils with up/down triangles (no green/red).",
   },
   {

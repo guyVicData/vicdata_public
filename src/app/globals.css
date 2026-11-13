@@ -78,6 +78,15 @@
   --row-featured-ks2: #2a2a2e;
 }
 
+/* 0.8 front door (C18): a dark band inside a light page -- the walk's header in Mid, where the page is Light
+   (its plates are white) and the header stays dark. Dark's tokens on the band (the dark variant already
+   answers to a [data-theme="dark"] ancestor). */
+#teacher-root [data-theme="dark"] {
+  --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
+  --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
+  --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
+}
+
 /* 0.8 front door (C19): the panel layer ladder, on every dashboard, Dark and Light.
      page -> column -> open panel = a sunk well (the chart's plate) / shut panel = a raised bar
    A shut panel is a clear step lighter than its column, with a border, a soft shadow, a solid chevron

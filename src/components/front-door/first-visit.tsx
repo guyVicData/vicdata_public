@@ -23,7 +23,7 @@ import { setupPhases, setupTotals } from "@/lib/front-door/setup";
 import type { MidField } from "@/lib/front-door/contrast";
 
 /** A first-visit page: the dark root (Mid's header), then one field. */
-function FirstVisitFrame({ field, children }: { field: MidField; children: ReactNode }) {
+export function FirstVisitFrame({ field, children }: { field: MidField; children: ReactNode }) {
   const [pref] = useThemePref();
   const theme = effectiveTheme(pref);
   return (
@@ -77,6 +77,14 @@ export function WelcomePage() {
   };
   return (
     <FirstVisitFrame field="top">
+      <WelcomeContent busy={busy} onGo={go} />
+    </FirstVisitFrame>
+  );
+}
+
+export function WelcomeContent({ busy, onGo }: { busy: boolean; onGo: () => void }) {
+  return (
+    <>
       <div className="flex flex-col gap-3">
         <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--field-ink)]">Welcome</p>
         <h1 className="text-[34px] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--field-ink)] sm:text-[48px]">VicData helps you see how your school is doing</h1>
@@ -111,10 +119,10 @@ export function WelcomePage() {
           </span>
         </li>
       </ul>
-      <button type="button" onClick={go} disabled={busy} data-welcome-continue="" className="w-fit rounded-[12px] bg-[var(--tile-accent)] px-6 py-3.5 text-[16px] font-semibold text-[var(--tile-on-accent)] disabled:opacity-60">
+      <button type="button" onClick={onGo} disabled={busy} data-welcome-continue="" className="w-fit rounded-[12px] bg-[var(--tile-accent)] px-6 py-3.5 text-[16px] font-semibold text-[var(--tile-on-accent)] disabled:opacity-60">
         {busy ? "One moment…" : "Let's start"}
       </button>
-    </FirstVisitFrame>
+    </>
   );
 }
 
@@ -190,7 +198,7 @@ export function SetupPage() {
   );
 }
 
-function PhasePicker({ list, onToggle }: { list: PhaseList; onToggle: (key: string) => void }) {
+export function PhasePicker({ list, onToggle }: { list: PhaseList; onToggle: (key: string) => void }) {
   const accent = PHASE_ACCENT[list.phase]!;
   const totals = setupTotals(list.subjects, list.ticked);
   const families = QUALIFICATION_FAMILIES[list.phase].filter((f) => list.subjects.some((s) => s.family === f.id));

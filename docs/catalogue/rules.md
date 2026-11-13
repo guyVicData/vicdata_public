@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 206 rules: 198 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 209 rules: 201 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -214,6 +214,9 @@ What a number is allowed to be. 206 rules: 198 active, 8 superseded; 22 must lif
 | R-WELCOME-ONCE | active | A person's first login opens on one friendly full-screen welcome (/teacher/welcome): what VicData is for, that this is a private beta whose feedback shapes it, and where the feedback buttons live. It is shown once per person (front_door_state.welcome_seen_at, their own row under RLS), marked as they leave it, never in View as or a peek, and never while the table can't be read (before the migration: no loop). Seeing it counts as seeing what's new. | no | auto: frontDoorFirstVisit | — |
 | R-SETUP-ONE-SCREEN | active | Setup is one screen, "Which subjects do you teach?" (/teacher/setup): every GCSE and Post-16 subject the school ran in its latest year, qualifications as headings within the list (not a step), the live entry count per phase kept; a school with both phases lists both on the one screen and setting up marks both phases done. The results preview and the question screen are gone (the walks and the home do their jobs). Roles without subjects -- SMT, Admissions, head office, School-Admin -- skip it: welcome, then home. A phase opened before it is set up goes to setup and back. | no | auto: frontDoorFirstVisit | — |
 | R-WHATS-NEW | active | On later visits a slim "New since your last visit" strip opens the home: one line naming the newest changelog entry ("and n more"), linking to /teacher/whats-new. It shows only for entries published after the person last saw the strip (or, before that, the welcome), and goes once seen: the visit is recorded after the strip is worked out. An entry can credit feedback ("Your feedback on X led to this"), shown only to the people it credits (changelog_for_me). Never in View as. Entries are Guy's, through a seed file (platform admins write the table). | no | auto: frontDoorFirstVisit | — |
+| R-WALK-RHYTHM | active | Every question on a home starts a full-screen walk (/teacher/walk/<id>), a short story in one rhythm -- this year, in context, over time, wider -- built as configuration (src/lib/front-door/walks.ts: an ordered list of existing dataview IDs, each with its question and answer template). Every screen opens a real view (a catalogue dataview, or the group dashboard's own view) and answers its question in one sentence from the data, honest about small numbers and missing years. The Results walks use Average points throughout (the only Results measure with LA and England figures). On a walk's nearby-and-nationally chart the lines are the school, its nearest schools, the LA and England; region is in the table only, never a line, as on the dashboard. A role walk whose views don't exist yet leaves those screens out (logged). | no | auto: walkRhythm | — |
+| R-WALK-KEYS | active | Every walk chart is keyed: a key entry for every colour and mark (the focus, each peer shade, the averages, the LA, England and the nearest schools, the ring and the dot, the dotted unpublished years). Line charts draw only their lines in SVG (vector-effect: non-scaling-stroke); every label -- end labels, ticks, year labels, gap labels -- is HTML over the plot, so it always renders. Peers on a walk chart take shades of their subject category's colour, light to dark, each with its own marker shape; dashes stay for averages, dotted for unpublished years; reference lines keep fixed colours (LA #3987e5, England #c98500, the nearest schools #d55181). | no | auto: walkKeys | — |
+| R-DUMBBELL | active | "Change (dumbbell)" (DV-C2-TR-DUMBBELL, walk 1 step 5): one row per comparable subject, ordered by this year's entries, largest first; a ring for the first year, a dot for the latest, a bar between; the focus row tinted in the accent; same-category subjects in the category colour, the rest grey; a dashed school-average row last (the plain average of the subjects in each year); the change in pupils with ▲/▼ (no green or red), equal to the data's latest less first. Not on the dashboard's Context › Trends rail this round (draft): ready to add. | no | auto: dumbbell | — |
 
 ## Cards
 
@@ -3508,6 +3511,54 @@ What a number is allowed to be. 206 rules: 198 active, 8 superseded; 22 must lif
 | Tagged at | - src/components/front-door/first-visit.tsx<br>- src/lib/front-door/first-visit.test.ts<br>- src/lib/front-door/visit.ts |
 | Test case | the decisions (unit) and the changelog's RLS (PGlite) (110110), ks4: An entry newer than the last visit shows; after the visit it doesn't; scheduled entries wait; the credit reaches only its person; only platform admins write. [runner: frontDoorFirstVisit] |
 | Origin | 0.8 front door part 1, A7 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WALK-RHYTHM
+
+| Field | Content |
+| --- | --- |
+| Statement | Every question on a home starts a full-screen walk (/teacher/walk/<id>), a short story in one rhythm -- this year, in context, over time, wider -- built as configuration (src/lib/front-door/walks.ts: an ordered list of existing dataview IDs, each with its question and answer template). Every screen opens a real view (a catalogue dataview, or the group dashboard's own view) and answers its question in one sentence from the data, honest about small numbers and missing years. The Results walks use Average points throughout (the only Results measure with LA and England figures). On a walk's nearby-and-nationally chart the lines are the school, its nearest schools, the LA and England; region is in the table only, never a line, as on the dashboard. A role walk whose views don't exist yet leaves those screens out (logged). |
+| Why | B11-B12: a walk teaches the dashboard by telling one story across its views. |
+| Applies to | the GCSE and Post-16 walks (3 each), SMT's 4 (a primary school's 4), Admissions' 2, head office's 4 |
+| Enforced in | - src/lib/front-door/walks.ts<br>- src/lib/front-door/teacher-screens.ts<br>- src/components/front-door/WalkPage.tsx<br>- src/components/front-door/role-walks.tsx<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx |
+| Tagged at | - src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx |
+| Test case | The Chase, GCSE Geography; Leighton Park 110110, Post-16 (real data); every walk's configuration (137625), ks4: Every screen a real view in rhythm order; every screen of both schools' six walks answers in a sentence with no unfilled template; the Results walk on Average points; no region line. [runner: walkRhythm] |
+| Origin | 0.8 front door part 1, B11-B13 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WALK-KEYS
+
+| Field | Content |
+| --- | --- |
+| Statement | Every walk chart is keyed: a key entry for every colour and mark (the focus, each peer shade, the averages, the LA, England and the nearest schools, the ring and the dot, the dotted unpublished years). Line charts draw only their lines in SVG (vector-effect: non-scaling-stroke); every label -- end labels, ticks, year labels, gap labels -- is HTML over the plot, so it always renders. Peers on a walk chart take shades of their subject category's colour, light to dark, each with its own marker shape; dashes stay for averages, dotted for unpublished years; reference lines keep fixed colours (LA #3987e5, England #c98500, the nearest schools #d55181). |
+| Why | B14-B16: one vocabulary with the dashboard; Guy saw SVG labels vanish in the mockup. |
+| Applies to | every walk chart (src/components/front-door/charts.tsx) |
+| Enforced in | - src/components/front-door/charts.tsx<br>- src/lib/front-door/teacher-screens.ts (keys)<br>- src/lib/front-door/walks-check.ts:keyProblems<br>- src/lib/front-door/walks.test.tsx |
+| Tagged at | - src/components/front-door/charts.tsx<br>- src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx |
+| Test case | The Chase GCSE and Leighton Park Post-16, every walk chart (real data); the renderer (fixture) (137625), ks4: No chart has a colour or mark without its key entry; charts.tsx draws no SVG <text>; rendered line charts carry HTML end, tick and year labels. [runner: walkKeys] |
+| Origin | 0.8 front door part 1, B14-B16 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-DUMBBELL
+
+| Field | Content |
+| --- | --- |
+| Statement | "Change (dumbbell)" (DV-C2-TR-DUMBBELL, walk 1 step 5): one row per comparable subject, ordered by this year's entries, largest first; a ring for the first year, a dot for the latest, a bar between; the focus row tinted in the accent; same-category subjects in the category colour, the rest grey; a dashed school-average row last (the plain average of the subjects in each year); the change in pupils with ▲/▼ (no green or red), equal to the data's latest less first. Not on the dashboard's Context › Trends rail this round (draft): ready to add. |
+| Why | B17: with many peers, lines become spaghetti; a dumbbell shows who grew, largest first. |
+| Applies to | the walks (DV-C2-TR-DUMBBELL) |
+| Enforced in | - src/lib/front-door/teacher-screens.ts:dumbbellRows<br>- src/components/front-door/charts.tsx:DumbbellChart<br>- src/catalogue/dataviews.ts (DV-C2-TR-DUMBBELL, draft)<br>- src/lib/front-door/walks-check.ts:dumbbellProblems<br>- src/lib/front-door/walks.test.tsx |
+| Tagged at | - src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx |
+| Test case | The Chase, GCSE Geography (real data), and a fixture (137625), ks4: Rows by latest entries, the focus row Geography with the data's change, the school average last and the plain average. [runner: dumbbell] |
+| Origin | 0.8 front door part 1, B17 |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

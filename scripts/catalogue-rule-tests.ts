@@ -213,6 +213,20 @@ async function frontDoorSources() {
   return frontDoorCache;
 }
 
+
+// 0.8 front door: two real schools' walk models, read once (The Chase GCSE Geography; Leighton Park Post-16).
+let frontDoorModelCache: Awaited<ReturnType<typeof import("../src/lib/front-door/teacher-data").loadTeacherModel>>[] | null = null;
+async function frontDoorModels() {
+  if (frontDoorModelCache) return frontDoorModelCache;
+  const { loadTeacherModel } = await import("../src/lib/front-door/teacher-data");
+  const sb = (await import("@supabase/supabase-js")).createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  frontDoorModelCache = [
+    await loadTeacherModel(sb, "137625", "ks4", { focusKey: "Geography::GCSE (9-1) Full Course", ticked: [], full: true }),
+    await loadTeacherModel(sb, "110110", "ks5", { focusKey: null, ticked: [], full: true }),
+  ];
+  return frontDoorModelCache;
+}
+
 const RUNNERS: Record<string, Runner> = {
   // R-KS5-ENGLAND-EXACT: 100369 Chemistry 2024/25, own IB HL 58.29; England exact HL 43.13, SL 37.84.
   async englandExact({ adv, ref, agg }) {
@@ -3522,6 +3536,41 @@ const RUNNERS: Record<string, Runner> = {
     const pgCount = (pg.out.match(/^PASS /gm) ?? []).length;
     const pass = unit.ok && mine.length > 0 && mine.every((l) => l.startsWith("ok")) && pg.ok;
     return { pass, detail: fmt({ unit: mine.map((l) => l.replace(/^(ok|not ok) \d+ - /, (m) => (m.startsWith("ok") ? "ok: " : "FAIL: "))).join("; ") || "no test named this rule", pglite: rule.id === "R-SETUP-ONE-SCREEN" ? "n/a" : pg.ok ? `${pgCount} pass` : "FAIL" }) };
+  },
+  // 0.8 front door (B11-B17): the walks on real schools -- The Chase GCSE (Geography) and Leighton Park
+  // Post-16 (its largest subject) -- built by the walks' own code from the dashboard's rows.
+  async walkRhythm() {
+    const { walkConfigProblems, walkScreenProblems } = await import("../src/lib/front-door/walks-check");
+    const ms = await frontDoorModels();
+    const problems = [...walkConfigProblems(), ...ms.flatMap((m) => walkScreenProblems(m))];
+    return { pass: !problems.length, detail: fmt({ models: ms.map((m) => `${m.school.name} ${m.phase} ${m.focus?.label}`).join("; "), problems: problems.join("; ") || "none" }) };
+  },
+  async walkKeys() {
+    const { keyProblems } = await import("../src/lib/front-door/walks-check");
+    const { teacherScreens } = await import("../src/lib/front-door/teacher-screens");
+    const { WALKS } = await import("../src/lib/front-door/walks");
+    const ms = await frontDoorModels();
+    let charts = 0;
+    const problems: string[] = [];
+    for (const m of ms)
+      for (const w of WALKS.filter((x) => x.product === (m.phase === "ks4" ? "gcse" : "post16")))
+        teacherScreens(m, w).forEach((sc, i) => {
+          charts++;
+          problems.push(...keyProblems(sc.chart).map((p) => `${w.id} ${i + 1}: ${p}`));
+        });
+    const charts_src = (await import("node:fs")).readFileSync(path.join(ROOT, "src/components/front-door/charts.tsx"), "utf8");
+    const svgText = /<text[\s>]/.test(charts_src);
+    return { pass: !problems.length && !svgText, detail: fmt({ charts, problems: problems.join("; ") || "none", svgTextInCharts: svgText }) };
+  },
+  async dumbbell() {
+    const { dumbbellProblems } = await import("../src/lib/front-door/walks-check");
+    const { dumbbellRows } = await import("../src/lib/front-door/teacher-screens");
+    const ms = await frontDoorModels();
+    const problems = ms.flatMap((m) => dumbbellProblems(m).map((p) => `${m.school.name} ${m.phase}: ${p}`));
+    const chase = ms[0];
+    const d = dumbbellRows(chase);
+    const focus = d?.rows.find((r) => r.role === "focus");
+    return { pass: !problems.length && !!focus, detail: fmt({ rows: d?.rows.length ?? 0, first: d?.rows[0]?.label ?? "none", focus: focus ? `${focus.label} ${focus.first}→${focus.latest}` : "none", last: d?.rows[d.rows.length - 1]?.label ?? "none", problems: problems.join("; ") || "none" }) };
   },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");

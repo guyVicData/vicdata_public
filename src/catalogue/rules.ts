@@ -2742,6 +2742,39 @@ export const RULES: Rule[] = [
     origin: "0.8 front door part 1, A7",
     status: "active",
   },
+  {
+    id: "R-WALK-RHYTHM",
+    statement:
+      "Every question on a home starts a full-screen walk (/teacher/walk/<id>), a short story in one rhythm -- this year, in context, over time, wider -- built as configuration (src/lib/front-door/walks.ts: an ordered list of existing dataview IDs, each with its question and answer template). Every screen opens a real view (a catalogue dataview, or the group dashboard's own view) and answers its question in one sentence from the data, honest about small numbers and missing years. The Results walks use Average points throughout (the only Results measure with LA and England figures). On a walk's nearby-and-nationally chart the lines are the school, its nearest schools, the LA and England; region is in the table only, never a line, as on the dashboard. A role walk whose views don't exist yet leaves those screens out (logged).",
+    why: "B11-B12: a walk teaches the dashboard by telling one story across its views.",
+    appliesTo: "the GCSE and Post-16 walks (3 each), SMT's 4 (a primary school's 4), Admissions' 2, head office's 4",
+    enforcedIn: ["src/lib/front-door/walks.ts", "src/lib/front-door/teacher-screens.ts", "src/components/front-door/WalkPage.tsx", "src/components/front-door/role-walks.tsx", "src/lib/front-door/walks-check.ts", "src/lib/front-door/walks.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, GCSE Geography; Leighton Park 110110, Post-16 (real data); every walk's configuration", phase: "ks4", expect: "Every screen a real view in rhythm order; every screen of both schools' six walks answers in a sentence with no unfilled template; the Results walk on Average points; no region line.", check: "walkRhythm" },
+    origin: "0.8 front door part 1, B11-B13",
+    status: "active",
+  },
+  {
+    id: "R-WALK-KEYS",
+    statement:
+      "Every walk chart is keyed: a key entry for every colour and mark (the focus, each peer shade, the averages, the LA, England and the nearest schools, the ring and the dot, the dotted unpublished years). Line charts draw only their lines in SVG (vector-effect: non-scaling-stroke); every label -- end labels, ticks, year labels, gap labels -- is HTML over the plot, so it always renders. Peers on a walk chart take shades of their subject category's colour, light to dark, each with its own marker shape; dashes stay for averages, dotted for unpublished years; reference lines keep fixed colours (LA #3987e5, England #c98500, the nearest schools #d55181).",
+    why: "B14-B16: one vocabulary with the dashboard; Guy saw SVG labels vanish in the mockup.",
+    appliesTo: "every walk chart (src/components/front-door/charts.tsx)",
+    enforcedIn: ["src/components/front-door/charts.tsx", "src/lib/front-door/teacher-screens.ts (keys)", "src/lib/front-door/walks-check.ts:keyProblems", "src/lib/front-door/walks.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase GCSE and Leighton Park Post-16, every walk chart (real data); the renderer (fixture)", phase: "ks4", expect: "No chart has a colour or mark without its key entry; charts.tsx draws no SVG <text>; rendered line charts carry HTML end, tick and year labels.", check: "walkKeys" },
+    origin: "0.8 front door part 1, B14-B16",
+    status: "active",
+  },
+  {
+    id: "R-DUMBBELL",
+    statement:
+      "\"Change (dumbbell)\" (DV-C2-TR-DUMBBELL, walk 1 step 5): one row per comparable subject, ordered by this year's entries, largest first; a ring for the first year, a dot for the latest, a bar between; the focus row tinted in the accent; same-category subjects in the category colour, the rest grey; a dashed school-average row last (the plain average of the subjects in each year); the change in pupils with ▲/▼ (no green or red), equal to the data's latest less first. Not on the dashboard's Context › Trends rail this round (draft): ready to add.",
+    why: "B17: with many peers, lines become spaghetti; a dumbbell shows who grew, largest first.",
+    appliesTo: "the walks (DV-C2-TR-DUMBBELL)",
+    enforcedIn: ["src/lib/front-door/teacher-screens.ts:dumbbellRows", "src/components/front-door/charts.tsx:DumbbellChart", "src/catalogue/dataviews.ts (DV-C2-TR-DUMBBELL, draft)", "src/lib/front-door/walks-check.ts:dumbbellProblems", "src/lib/front-door/walks.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, GCSE Geography (real data), and a fixture", phase: "ks4", expect: "Rows by latest entries, the focus row Geography with the data's change, the school average last and the plain average.", check: "dumbbell" },
+    origin: "0.8 front door part 1, B17",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

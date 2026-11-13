@@ -997,7 +997,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Status | draft |
 | Verified at | not yet |
 | Origin | 0.8 front door part 1, B17 (docs/v0.8/front_door_design/png/dumbbell.png) |
-| Rules | R-KS5-ASAEA-EXCL |
+| Rules | R-DUMBBELL, R-KS5-ASAEA-EXCL |
 | Used on | not placed |
 | Note | One row per subject ordered by this year's entries; ring = first year, dot = latest; focus row tinted in the accent; same-category subjects in the category colour, others grey; a dashed school-average row last; change in pupils with up/down triangles (no green/red). |
 | Method | 1. We take each subject's entries in the first year and the latest year.<br>2. One row per subject, ordered by this year's entries, largest first: a ring for the first year, a dot for the latest, a bar between.<br>3. Your subject's row is tinted in your colour; subjects in its category take the category colour, the rest grey.<br>4. The last row is the school average: the plain average of the subjects' entries in each of the two years, dashed.<br>5. The change is in pupils, with ▲ or ▼ for its direction (no green or red).<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16)<br>Rounding: Entries and changes as whole numbers. |
