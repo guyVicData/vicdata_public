@@ -86,11 +86,14 @@ export function contrastTable(css: string): Pair[] {
   const ll = tokensOf(css, SEL.ladderLight);
   const ld = tokensOf(css, SEL.ladderDark);
   pairs.push({ name: "Ladder Light: text in the well", fg: light["--fg"], bg: ll["--box-bg"], kind: "small" });
-  pairs.push({ name: "Ladder Light: muted text in the well", fg: light["--muted"], bg: ll["--box-bg"], kind: "small" });
+  pairs.push({ name: "Ladder Light: muted text in the well", fg: ll["--muted"] ?? light["--muted"], bg: ll["--box-bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: text in the well", fg: dark["--fg"], bg: ld["--box-bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: muted text in the well", fg: dark["--muted"], bg: ld["--box-bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: muted text in the column", fg: dark["--muted"], bg: ld["--panel-bg"], kind: "small" });
-  pairs.push({ name: "Ladder Light: muted text in the column", fg: light["--muted"], bg: ll["--panel-bg"], kind: "small" });
+  pairs.push({ name: "Ladder Light: muted text in the column", fg: ll["--muted"] ?? light["--muted"], bg: ll["--panel-bg"], kind: "small" });
+  pairs.push({ name: "Ladder Light: muted text on the page", fg: ll["--muted"] ?? light["--muted"], bg: ll["--bg"], kind: "small" });
+  pairs.push({ name: "Ladder Dark: muted text on the page", fg: ld["--muted"] ?? dark["--muted"], bg: ld["--bg"], kind: "small" });
+  pairs.push({ name: "Ladder Light: muted2 text on the page", fg: light["--muted2"], bg: ll["--bg"], kind: "small" });
   return pairs;
 }
 

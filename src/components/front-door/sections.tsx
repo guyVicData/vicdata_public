@@ -3,6 +3,7 @@
 // VicData 0.8 front door (B8, B9): each role's section of the home -- Teacher (one per phase), SMT (and a
 // primary school's SMT), Admissions. Every figure is real (the dashboards' own rows and routes) or absent;
 // never a placeholder number. Head office's home is GroupHome.tsx.
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchPreferences } from "@/lib/teacher-view-data";
@@ -118,6 +119,42 @@ export function TeacherKs2Section() {
   );
 }
 
+// ------------------------------------------------------------------------------------------------ sets
+
+type LibraryLite = { stored: { kind: string; owner_scope?: string }[]; defaults: unknown[] };
+
+/**
+ * D21: the sets card on the SMT and Admissions homes -- the school's sets with their real counts (the sets
+ * library route's own answer), opening the round-1 library (/sets). Part 2 points it at the guided editor.
+ */
+export function SetsCard({ urn }: { urn: string }) {
+  const [lib, setLib] = useState<LibraryLite | null | "none">(null);
+  useEffect(() => {
+    let live = true;
+    void getJson<LibraryLite>(`/api/sets/library?urn=${urn}`).then((d) => live && setLib(d ?? "none"));
+    return () => {
+      live = false;
+    };
+  }, [urn]);
+  if (lib === "none") return null;
+  const saved = lib ? lib.stored.length : null;
+  const ready = lib ? lib.defaults.length : null;
+  return (
+    <Link href="/sets" data-sets-card="" className="fd-tile flex items-center gap-4 rounded-[14px] px-5 py-4 text-[var(--fg)]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="7" cy="7" r="3" /><circle cx="17" cy="7" r="3" /><circle cx="7" cy="17" r="3" /><circle cx="17" cy="17" r="3" /></svg>
+      </span>
+      <span className="min-w-0 flex-grow">
+        <span className="block text-[15.5px] font-semibold">Sets of schools</span>
+        <span className="block text-[13px] text-[var(--muted2)]">
+          {saved === null ? "The schools you compare against, and your feeders" : `${saved} saved ${saved === 1 ? "set" : "sets"} · ${ready} ready-made`}
+        </span>
+      </span>
+      <span aria-hidden="true" className="text-[var(--muted2)]">&rarr;</span>
+    </Link>
+  );
+}
+
 // ------------------------------------------------------------------------------------------------ SMT
 
 function smtFigures(o: Overview | null, primary: boolean): Record<string, TileFigure> {
@@ -175,7 +212,8 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       )}
       note={primary ? "KS2 tests did not run in 2019/20 or 2020/21, so those years show as gaps." : null}
     >
-      {/* 0.8 groups r1: the school's group, where its head office holds a group account (kept from the old home). */}
+      {/* D21: the school's sets, then (0.8 groups r1) the school's group where its head office holds a group account. */}
+      <SetsCard urn={member.schoolUrn} />
       <SchoolGroupTile urn={member.schoolUrn} />
     </HomeSection>
   );
@@ -277,7 +315,9 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
       tiles={walks.map((w, i) => (
         <QuestionTile key={w.id} walk={w} figure={(i === 0 ? f?.pool : f?.share) ?? null} ctx={{ entry: label }} href={walkHref(w, params)} loading={!f} />
       ))}
-    />
+    >
+      <SetsCard urn={urn} />
+    </HomeSection>
   );
 }
 
