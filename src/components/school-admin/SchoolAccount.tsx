@@ -260,9 +260,9 @@ export function MembershipBody({ data, phone }: { data: AccountAnswer; phone: bo
         <Card title="Who uses it">
           <div className="flex flex-wrap gap-x-8 gap-y-2">
             {[
-              [data.who.people, "people"],
+              [data.who.people, data.who.people === 1 ? "person" : "people"],
               [data.who.activeThisMonth ?? "—", "active this month"],
-              [data.who.roles, "roles"],
+              [data.who.roles, data.who.roles === 1 ? "role" : "roles"],
             ].map(([n, w]) => (
               <div key={String(w)}>
                 <div className="text-[24px] font-bold tabular-nums">{n}</div>
