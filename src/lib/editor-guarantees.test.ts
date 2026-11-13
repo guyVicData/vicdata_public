@@ -1,6 +1,6 @@
 // VicData 0.8 View as, the editing half: "Editing must never damage a dashboard" (prompt
 // docs/v0.8/vicdata_0_8_view_as_claude_code_prompt_v1.md), guarantees 2-6 as pure tests on the
-// ten VicData dashboards as published live on 17 Oct (supabase/tests/fixtures, a read-only
+// ten VicData dashboards as published live on 13 Nov (supabase/tests/fixtures, a read-only
 // select). Guarantees 1, 7 and R-EDIT-PUBLISH-ALL run in PGlite:
 // supabase/tests/v08_view_as_editing_pglite.mjs.
 //
@@ -22,7 +22,7 @@ import { publish } from "./dashboards-store";
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..");
 type Row = { slug: string; version: number; config: DashboardConfig };
-const ROWS = (JSON.parse(readFileSync(join(repo, "supabase/tests/fixtures/vicdata_published_configs_2026-10-17.json"), "utf8")).rows as Row[]).map((r) => ({ ...r, config: upgradeConfig(r.config) }));
+const ROWS = (JSON.parse(readFileSync(join(repo, "supabase/tests/fixtures/vicdata_published_configs_2026-11-13.json"), "utf8")).rows as Row[]).map((r) => ({ ...r, config: upgradeConfig(r.config) }));
 const live = (slug: string) => structuredClone(ROWS.find((r) => r.slug === slug)!.config);
 const SMT = ROWS.filter((r) => r.slug.startsWith("vicdata.smt.")).map((r) => r.slug);
 const ADM = ROWS.filter((r) => r.slug.startsWith("vicdata.admissions.")).map((r) => r.slug);

@@ -260,7 +260,6 @@ Read the columns as:
 | `DV-C2-TR-ACTUAL` | As Indexed, at real values. |
 | `DV-C2-TR-TABLE` | The rows are the group. |
 | `DV-C2-TR-CHANGELIST` | The group's average (reference, mean): its change as a dashed line through the ranked rows. |
-| `DV-C2-TR-DUMBBELL` | 0.8 front door (draft, the walk's): every comparable subject's first-year and latest entries, largest first; the school average a dashed row last. Its preset draws Ranked change's bars until ViewSpec has a dumbbell kind. |
 | `DV-C2-TR-CHANGETABLE` | The rows are the group. |
 | `DV-C3-CUR-TILES` | **Ranking only:** the school's rank in the ranking's **whole population**, and that population's average (same year), on the ranking's own measure (the phase headline). |
 | `DV-C3-CUR-MAP` | The set's schools, coloured by value (the accent scale); the rank is the map's own. |
@@ -329,20 +328,20 @@ Read the columns as:
 | `DV-SMT-O-RESULTS-TABLE` | As the line, year by year, with the schools behind each band. |
 | `DV-SMT-O-MARKET-LINE` | Market share at 11+ against the largest rival, from Admissions (read-only; empty with the reason without rivals). |
 | `DV-SMT-O-MARKET-TABLE` | As the line, year by year. |
-| `DV-SMT-A-NOW` | The level's headlines (both phases at Whole school), value added with its reason, the grade profile. |
-| `DV-SMT-A-AREAS` | Each subject area against the set: rank, gap to the set's average, its move since 2022/23, flags. |
-| `DV-SMT-A-CHART` | The group's figure for every school in the set, ranked, your school marked (SMT Academic round 1). |
-| `DV-SMT-A-TABLE` | The set ranked as a table: rank, figure, change (SMT Academic round 1). |
-| `DV-SMT-A-MAP` | The set on the map, coloured by the group's figure (SMT Academic round 1). |
-| `DV-SMT-A-GRADES` | The grade profile in bands, latest year. |
-| `DV-SMT-A-TREND-LINE` | The level's headline (or the area's average) against the set's middle half. |
+| `DV-SMT-A-NOW` | The level's headlines for the mode (Results, Entries or Value added) and the qualification group, value added with its band or reason; GCSE and Post-16 only. |
+| `DV-SMT-A-CHART` | The group's figure for the school and the set (Results: each school by its quarter in the set, the median marked; Value added: a dot and its 95% range, a line at 0, England's place on a strip). |
+| `DV-SMT-A-TABLE` | The set ranked on the group's figure: place in the set, the region and England, the change; Value added's "n clearly above / below". |
+| `DV-SMT-A-MAP` | The school and the set's schools, located, coloured by the group's figure (Value added: by band). |
+| `DV-SMT-A-AREAS` | Each subject area, its subjects by qualification: Results ranked against the same subject in the same qualification; Entries' three years, XS-XL and share against the set; Value added's set as dots. |
+| `DV-SMT-A-GRADES` | The grade profile, each qualification on its own scale, with its top-grade share. |
+| `DV-SMT-A-TREND-LINE` | The group's figure against the set's middle half. |
 | `DV-SMT-A-TREND-TABLE` | As the line, year by year. |
-| `DV-SMT-A-LINES` | Last year to this, every line of the level (SMT Academic round 1). |
-| `DV-SMT-A-MOVES` | The biggest moves in entries (SMT Academic round 1). |
-| `DV-SMT-A-AGAINST` | Where the school's mix differs most from the set's (SMT Academic round 1). |
-| `DV-SMT-A-SETMOVES` | The set's schools, rising and falling (SMT Academic round 1). |
-| `DV-SMT-A-MIX` | Each area's (or subject's) share of the entries, year by year. |
+| `DV-SMT-A-LINES` | Last year to this, every line of the level. |
+| `DV-SMT-A-MOVES` | Entries: the biggest moves in entries. |
+| `DV-SMT-A-MIX` | Entries by qualification group, year by year. |
 | `DV-SMT-A-MIX-TABLE` | As the columns, year by year. |
+| `DV-SMT-A-AGAINST` | Entries: where the school's mix differs most from the set's. |
+| `DV-SMT-A-SETMOVES` | Value added: the set's schools, rising and falling. |
 
 0.8 SMT round 2: Pupils and Context follow the level too (Pupils highlights the level's ages); Context follows its Area pill (around the school, or the LA).
 
@@ -350,8 +349,8 @@ Read the columns as:
 |---|---|
 | `DV-SMT-P-NOW` | Your pupils now: roll and change since 2019/20, girls and boys (mixed), day and boarding (boarding), staying on at 16, XS-XL by phase, the LA context line. |
 | `DV-SMT-P-SHAPE` | Pupils in each year group, the shape and since when, the shapes around (the LA's same-range schools, the set, staying on in the set's sixth forms); never ranked. |
-| `DV-SMT-P-GIRLS-BOYS` | Girls and boys in each year group, against the set (mixed schools only). |
-| `DV-SMT-P-DAY-BOARDING` | Day and boarding pupils over time, against the set's boarding schools (boarding schools only). |
+| `DV-SMT-P-GIRLS-BOYS` | Mixed schools only: girls' share by year group against the middle of the set's mixed schools, its change since 2019/20, and where it shifts (Year 7 against Years 8-11, the sixth form against Years 7-11). |
+| `DV-SMT-P-DAY-BOARDING` | Boarding schools only: boarders' share of the whole roll each census year, against the middle of the set's boarding schools. |
 | `DV-SMT-P-ENTRIES` | Each Admissions entry point: its cohort now and its next pool; read-only. |
 | `DV-SMT-P-LEAVING` | Year 11 to Year 12, year by year: staying on and net leavers. |
 | `DV-SMT-P-MARKET` | Market share at 11+, from Admissions; read-only. |
