@@ -200,6 +200,33 @@ async function latestYearOf(L: Awaited<ReturnType<typeof lib>>, stage: "ks4" | "
   return Y.latestPeriodOf(stage);
 }
 
+
+// 0.8 front door: the stylesheet and the src tree, read once for the offline front-door runners.
+let frontDoorCache: { css: string; files: { file: string; text: string }[] } | null = null;
+async function frontDoorSources() {
+  if (frontDoorCache) return frontDoorCache;
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const src = path.join(ROOT, "src");
+  const files = (readdirSync(src, { recursive: true }) as string[])
+    .filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(".test.") && !f.includes("__"))
+    .map((f) => ({ file: `src/${f}`, text: readFileSync(path.join(src, f), "utf8") }));
+  frontDoorCache = { css: readFileSync(path.join(src, "app/globals.css"), "utf8"), files };
+  return frontDoorCache;
+}
+
+
+// 0.8 front door: two real schools' walk models, read once (The Chase GCSE Geography; Leighton Park Post-16).
+let frontDoorModelCache: Awaited<ReturnType<typeof import("../src/lib/front-door/teacher-data").loadTeacherModel>>[] | null = null;
+async function frontDoorModels() {
+  if (frontDoorModelCache) return frontDoorModelCache;
+  const { loadTeacherModel } = await import("../src/lib/front-door/teacher-data");
+  const sb = (await import("@supabase/supabase-js")).createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  frontDoorModelCache = [
+    await loadTeacherModel(sb, "137625", "ks4", { focusKey: "Geography::GCSE (9-1) Full Course", ticked: [], full: true }),
+    await loadTeacherModel(sb, "110110", "ks5", { focusKey: null, ticked: [], full: true }),
+  ];
+  return frontDoorModelCache;
+}
 // 0.8 group sets: run group unit tests on the fixtures (the switch on; production's own rows), optionally
 // only the tests whose names match, and a PGlite suite, from the repo root.
 function groupTests(files: string[], pattern: string | null): { pass: boolean; detail: string } {
@@ -3452,6 +3479,135 @@ const RUNNERS: Record<string, Runner> = {
   },
   // R-FEATURED-ROW-EVERYWHERE (F-22): every table or rank view of schools marks and tints the focus row;
   // a row of schools without the mark must be listed with why (src/lib/featured-row-scan.ts).
+  // 0.8 front door part 1 (C18-C20): offline checks on the stylesheet, the theme module and the shell.
+  async themeMidScope() {
+    const fd = await frontDoorSources();
+    const { midScopeFindings } = await import("../src/lib/front-door/theme-scope");
+    const { effectiveTheme } = await import("../src/components/shell/TeacherChrome");
+    const f = midScopeFindings(fd.files);
+    const pass = effectiveTheme("mid") === "dark" && !f.unlisted.length && !f.stale.length;
+    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none" }) };
+  },
+  async themeContrast() {
+    const fd = await frontDoorSources();
+    const { AA, contrast, contrastTable } = await import("../src/lib/front-door/contrast");
+    const rows = contrastTable(fd.css);
+    const bad = rows.filter((r) => !r.fg || !r.bg || contrast(r.fg, r.bg) < AA[r.kind]);
+    const min = Math.min(...rows.map((r) => contrast(r.fg, r.bg)));
+    return { pass: !bad.length, detail: fmt({ pairs: rows.length, failing: bad.map((r) => r.name).join("; ") || "none", lowest: min.toFixed(2) }) };
+  },
+  async panelLadder() {
+    const fd = await frontDoorSources();
+    const { LADDER_STEP, ladderSteps } = await import("../src/lib/front-door/contrast");
+    const { ladderShellFindings } = await import("../src/lib/front-door/theme-scope");
+    const s = ladderSteps(fd.css);
+    const shell = ladderShellFindings(fd.files);
+    const pass = s.darkFill >= LADDER_STEP.darkFill && s.darkBorder >= LADDER_STEP.darkBorder && s.lightBorder >= LADDER_STEP.lightBorder && !shell.length;
+    return { pass, detail: fmt({ darkFill: s.darkFill.toFixed(2), darkBorder: s.darkBorder.toFixed(2), lightFill: s.lightFill.toFixed(2), lightBorder: s.lightBorder.toFixed(2), shell: shell.join("; ") || "ok" }) };
+  },
+  async roleColours() {
+    const fd = await frontDoorSources();
+    const { contrast, tokensOf } = await import("../src/lib/front-door/contrast");
+    const t = await import("../src/lib/teacher-view-theme");
+    const light = tokensOf(fd.css, ":root");
+    const dark = tokensOf(fd.css, ':root[data-theme="dark"], #teacher-root[data-theme="dark"]');
+    const checks: [string, boolean][] = [
+      ["SMT orange", t.ROLE_ACCENT.smt.hex === "#fb923c"],
+      ["SMT light 4.5:1", contrast(t.ROLE_ACCENT_LIGHT.smt.hex, "#ffffff") >= 4.5],
+      ["bronze on dark 4.5:1", contrast(t.GROUP_ACCENT.hex, "#131315") >= 4.5],
+      ["bronze on white 3:1", contrast(t.GROUP_ACCENT.hex, "#ffffff") >= 3],
+      ["Post-16 violet", t.PHASE_ACCENT.ks5?.hex === "#a78bfa"],
+      ["set-smt orange", light["--set-smt-bg"] === "#feebdc" && dark["--set-smt-bg"] === "#412c1d"],
+      ["set-group bronze", light["--set-group-bg"] === "#f3e6d8"],
+      ["SMT smtVars light accent", /ROLE_ACCENT_LIGHT\.smt/.test(fd.files.find((f) => f.file === "src/components/smt/ui.tsx")?.text ?? "")],
+    ];
+    const bad = checks.filter(([, ok]) => !ok).map(([n]) => n);
+    return { pass: !bad.length, detail: fmt({ checks: checks.length, failing: bad.join(", ") || "none" }) };
+  },
+  async homeTiles() {
+    const { WALKS, screenMeta } = await import("../src/lib/front-door/walks");
+    const { loadTeacherModel } = await import("../src/lib/front-door/teacher-data");
+    const { teacherTileFigures, lastOf } = await import("../src/lib/front-door/teacher-model");
+    const unresolved = WALKS.flatMap((w) => w.screens.filter((s) => !screenMeta(s.view)).map((s) => `${w.id}:${s.view}`));
+    const sb = (await import("@supabase/supabase-js")).createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+    const m = await loadTeacherModel(sb, "137625", "ks4", { focusKey: null, ticked: [], full: false });
+    const f = teacherTileFigures(m);
+    const focus = m.whole.rows.find((r) => r.focus);
+    const agree = !!focus && f.many?.figure === String(lastOf(focus.entries)) && (f.well === null || f.well.figure === lastOf(focus.points)?.toFixed(1));
+    return { pass: !unresolved.length && agree && !!f.many, detail: fmt({ walks: WALKS.length, unresolved: unresolved.join(", ") || "none", focus: m.focus?.label ?? "none", many: f.many?.figure ?? "none", well: f.well?.figure ?? "none", nearby: f.nearby ? `${f.nearby.figure} ${f.nearby.unit}` : "none" }) };
+  },
+  // 0.8 front door (A5-A7): the first visit -- the decisions' unit tests (one test per rule) and the tables'
+  // RLS in PGlite. Offline.
+  async frontDoorFirstVisit(_L, rule) {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, args: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/front-door/first-visit.test.ts"]);
+    const mine = unit.out.split("\n").filter((l) => /^(ok|not ok) \d+ - /.test(l) && l.includes(rule.id));
+    const pg = rule.id === "R-SETUP-ONE-SCREEN" ? { ok: true, out: "not needed" } : run("node", ["supabase/tests/v08_front_door_r1_pglite.mjs"]);
+    const pgCount = (pg.out.match(/^PASS /gm) ?? []).length;
+    const pass = unit.ok && mine.length > 0 && mine.every((l) => l.startsWith("ok")) && pg.ok;
+    return { pass, detail: fmt({ unit: mine.map((l) => l.replace(/^(ok|not ok) \d+ - /, (m) => (m.startsWith("ok") ? "ok: " : "FAIL: "))).join("; ") || "no test named this rule", pglite: rule.id === "R-SETUP-ONE-SCREEN" ? "n/a" : pg.ok ? `${pgCount} pass` : "FAIL" }) };
+  },
+  // 0.8 front door (B11-B17): the walks on real schools -- The Chase GCSE (Geography) and Leighton Park
+  // Post-16 (its largest subject) -- built by the walks' own code from the dashboard's rows.
+  async walkRhythm() {
+    const { walkConfigProblems, walkScreenProblems } = await import("../src/lib/front-door/walks-check");
+    const ms = await frontDoorModels();
+    const problems = [...walkConfigProblems(), ...ms.flatMap((m) => walkScreenProblems(m))];
+    // Head office's walks (Guy, 13 Nov): the group dashboard's own views on the Harris and Dukes fixtures.
+    const g = spawnSync("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/front-door/group-walks.test.tsx"], { cwd: ROOT, encoding: "utf8" });
+    const gOut = `${g.stdout ?? ""}${g.stderr ?? ""}`;
+    const gPass = Number(/# pass (\d+)/.exec(gOut)?.[1] ?? 0);
+    const gFail = Number(/# fail (\d+)/.exec(gOut)?.[1] ?? 1);
+    const groupOk = g.status === 0 && gFail === 0 && gPass > 0;
+    return { pass: !problems.length && groupOk, detail: fmt({ models: ms.map((m) => `${m.school.name} ${m.phase} ${m.focus?.label}`).join("; "), problems: problems.join("; ") || "none", groupWalks: `${gPass} pass, ${gFail} fail (Harris, Dukes)` }) };
+  },
+  async walkKeys() {
+    const { keyProblems } = await import("../src/lib/front-door/walks-check");
+    const { niceAxis } = await import("../src/lib/front-door/axis");
+    let ticks = 0;
+    const { teacherScreens } = await import("../src/lib/front-door/teacher-screens");
+    const { WALKS } = await import("../src/lib/front-door/walks");
+    const ms = await frontDoorModels();
+    let charts = 0;
+    const problems: string[] = [];
+    for (const m of ms)
+      for (const w of WALKS.filter((x) => x.product === (m.phase === "ks4" ? "gcse" : "post16")))
+        teacherScreens(m, w).forEach((sc, i) => {
+          charts++;
+          problems.push(...keyProblems(sc.chart).map((p) => `${w.id} ${i + 1}: ${p}`));
+          // Guy, 13 Nov: round ticks (1, 2, 2.5, 5 x 10^n) from zero or a floor, never the range in quarters.
+          if (sc.chart.kind === "lines") {
+            const vals = sc.chart.series.flatMap((x) => x.values).filter((v): v is number => v !== null);
+            const ax = niceAxis(vals, { place: sc.chart.yCaption.startsWith("Place") });
+            const step = ax.ticks.length > 1 ? Number((ax.ticks[ax.ticks.length - 1] - ax.ticks[ax.ticks.length - 2]).toPrecision(9)) : 1;
+            const mant = Number((step / 10 ** Math.floor(Math.log10(step))).toPrecision(6));
+            if (![1, 2, 2.5, 5].includes(mant) || ax.lo > Math.min(...vals) || ax.hi < Math.max(...vals)) problems.push(`${w.id} ${i + 1}: ticks ${ax.ticks.join(", ")}`);
+            ticks++;
+          }
+        });
+    const charts_src = (await import("node:fs")).readFileSync(path.join(ROOT, "src/components/front-door/charts.tsx"), "utf8");
+    const svgText = /<text[\s>]/.test(charts_src);
+    const usesNice = /niceAxis\(/.test(charts_src);
+    return { pass: !problems.length && !svgText && usesNice, detail: fmt({ charts, lineAxes: ticks, problems: problems.join("; ") || "none", svgTextInCharts: svgText, roundTicks: usesNice }) };
+  },
+  async dumbbell() {
+    const { dumbbellProblems } = await import("../src/lib/front-door/walks-check");
+    const { dumbbellRows } = await import("../src/lib/front-door/teacher-screens");
+    const ms = await frontDoorModels();
+    const problems = ms.flatMap((m) => dumbbellProblems(m).map((p) => `${m.school.name} ${m.phase}: ${p}`));
+    const chase = ms[0];
+    const d = dumbbellRows(chase);
+    const focus = d?.rows.find((r) => r.role === "focus");
+    return { pass: !problems.length && !!focus, detail: fmt({ rows: d?.rows.length ?? 0, first: d?.rows[0]?.label ?? "none", focus: focus ? `${focus.label} ${focus.first}→${focus.latest}` : "none", last: d?.rows[d.rows.length - 1]?.label ?? "none", problems: problems.join("; ") || "none" }) };
+  },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");
     const { featuredRowFindings, NO_FOCUS_ROWS } = await import("../src/lib/featured-row-scan");

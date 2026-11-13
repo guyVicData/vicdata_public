@@ -170,6 +170,19 @@ export const SlopeIcon = (
   </Glyph>
 );
 
+// 0.8 front door (B17): the dumbbell view's glyph -- a ring (the first year) joined to a dot (the latest),
+// two rows (Icon.dc.html's new glyph).
+export const DumbbellIcon = (
+  <Glyph>
+    <circle cx="4" cy="6" r="2" />
+    <line x1="6" y1="6" x2="13" y2="6" />
+    <circle cx="15" cy="6" r="2.2" fill="currentColor" />
+    <circle cx="8" cy="14" r="2" />
+    <line x1="10" y1="14" x2="15" y2="14" />
+    <circle cx="17" cy="14" r="2.2" fill="currentColor" />
+  </Glyph>
+);
+
 export const MapPinIcon = (
   <Glyph>
     <path d="M10 18s6-5.5 6-10a6 6 0 1 0-12 0c0 4.5 6 10 6 10z" />

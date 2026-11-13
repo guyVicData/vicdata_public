@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 207 rules: 199 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 218 rules: 210 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -178,7 +178,7 @@ What a number is allowed to be. 207 rules: 199 active, 8 superseded; 22 must lif
 | R-ROLL-INDEXED-SET | active | SMT Overview's Roll, indexed (and its table) draws the school's line (day and boarding at a boarding school), the selected set's average day roll, and -- where the set has boarders -- its average boarding roll as a grey dotted line (F-11). No England or LA line. The averages are over the set's schools with a figure in every year shown, indexed from the same base year as the school's lines, under the same filters. | no | auto: rollIndexedSet | — |
 | R-MARKET-FOLLOWS-SET | active | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). | no | auto: marketFollowsSet | — |
 | R-FEEDBACK-PAGE | active | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. | no | auto: feedbackPage | — |
-| R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
+| R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT orange and the groups (head office) bronze (0.8 front door C20; SMT violet and groups orange before). One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
 | R-FEEDBACK-STATUSES | active | A feedback item's statuses are new, triaged, planned, fixed (merged to main, with resolved_commit), deployed (the live build holds resolved_commit -- set by the server only, stamped deployed_at and deployed_build) and done (checked on the live site), or won't do. Fixed and deployed are still open: the author's icon stays yellow until done. Nobody sets deployed by hand; fixed needs its commit. | no | auto: feedbackDeployGate | — |
 | R-FEEDBACK-PROMOTE | active | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time. | no | auto: feedbackDeployGate | — |
 | R-FEEDBACK-DEPLOY-GAPS | active | feedback_deploy_gaps lists the items that claim more than the live build (the newest app_builds row) has: deployed or done at a commit the live build doesn't hold, and fixed items older than 48 hours not yet deployed. The inbox shows the count as a banner. | no | auto: feedbackDeployGate | — |
@@ -206,6 +206,17 @@ What a number is allowed to be. 207 rules: 199 active, 8 superseded; 22 must lif
 | R-VA-SUBJECT-MATCH | active | Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); until that lands, from src/lib/smt/va-subject-matches.ts, which goes once it has. While both exist they agree. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's. | no | auto: vaSubjectMatch | — |
 | R-SMT-ENTRIES-SIZE | active | In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject "All subjects"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says "too few schools to size". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync. | no | auto: smtEntriesSize | — |
 | R-SMT-ENTRIES-ONE-TOTAL | active | One entry total per page: column 1's total, every group line and share, the entries mix, the subject areas' shares and the board's shares all come from the same subject-by-qualification rows (Post-16: academic_subject_qualification_headline, whose sum per year is DfE's own "All subjects" total exam entries; GCSE: the subject rollup), so every total on the page agrees. | no | auto: smtEntriesOneTotal | — |
+| R-THEME-MID-SCOPE | active | The theme switch is Dark · Mid · Light, remembered per person (one localStorage key, as before). Mid applies to the homes and the walks only: every other page -- every dashboard, the sets pages, admin pages -- reads useTeacherTheme(), which answers Dark under Mid, and only the files listed in MID_PAGES (src/lib/front-door/scope.ts) read the person's Mid choice (useThemePref). In Mid the page, its header and the "Also here" band stay dark; only the area being worked in (a [data-field]) takes its part's colour. | no | auto: themeMidScope | — |
+| R-THEME-CONTRAST | active | Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. The walk's header band (close, the question, the step dots, the subject chip, "Step n of N") draws only its own tokens (--wh-*, set on the band), dark in Dark and Mid and light in Light, and each of its pairs, for every part's accent, is in the table. | no | auto: themeContrast | — |
+| R-PANEL-LADDER | active | On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. | no | auto: panelLadder | — |
+| R-ROLE-COLOURS | active | SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan. | no | auto: roleColours | — |
+| R-HOME-TILES | active | Every role lands on a home of plain question tiles (/teacher for Teacher, SMT and Admissions, stacked for a person with more than one role; /teacher/group for head office). Every tile has its question; a big figure from real data -- the dashboard's own rows and routes (Teacher: the focus subject's entries this year, its average points, its place among the school and its 10 nearest; SMT: the roll, the headline points, the change on last year; Admissions: the pool and the share; head office: schools, schools growing, the combined roll's change) -- or none, never a placeholder; a row of round icons, one per screen of its walk, each the view's own rail icon and name (hover title and aria-label); and one solid arrow, the one key action. A tile whose walk needs views that don't exist yet says so in its own space. | no | auto: homeTiles | — |
+| R-WELCOME-ONCE | active | A person's first login opens on one friendly full-screen welcome (/teacher/welcome): what VicData is for, that this is a private beta whose feedback shapes it, and where the feedback buttons live. It is shown once per person (front_door_state.welcome_seen_at, their own row under RLS), marked as they leave it, never in View as or a peek, and never while the table can't be read (before the migration: no loop). Seeing it counts as seeing what's new. | no | auto: frontDoorFirstVisit | — |
+| R-SETUP-ONE-SCREEN | active | Setup is one screen, "Which subjects do you teach?" (/teacher/setup): every GCSE and Post-16 subject the school ran in its latest year, qualifications as headings within the list (not a step), the live entry count per phase kept; a school with both phases lists both on the one screen and setting up marks both phases done. The results preview and the question screen are gone (the walks and the home do their jobs). Roles without subjects -- SMT, Admissions, head office, School-Admin -- skip it: welcome, then home. A phase opened before it is set up goes to setup and back. | no | auto: frontDoorFirstVisit | — |
+| R-WHATS-NEW | active | On later visits a slim "New since your last visit" strip opens the home: one line naming the newest changelog entry ("and n more"), linking to /teacher/whats-new. It shows only for entries published after the person last saw the strip (or, before that, the welcome), and goes once seen: the visit is recorded after the strip is worked out. An entry can credit feedback ("Your feedback on X led to this"), shown only to the people it credits (changelog_for_me). Never in View as. Entries are Guy's, through a seed file (platform admins write the table). | no | auto: frontDoorFirstVisit | — |
+| R-WALK-RHYTHM | active | Every question on a home starts a full-screen walk (/teacher/walk/<id>), a short story in one rhythm -- this year, in context, over time, wider -- built as configuration (src/lib/front-door/walks.ts: an ordered list of existing dataview IDs, each with its question and answer template). Every screen opens a real view (a catalogue dataview, or the group dashboard's own view) and answers its question in one sentence from the data, honest about small numbers and missing years. The Results walks use Average points throughout (the only Results measure with LA and England figures). On a walk's nearby-and-nationally chart the lines are the school, its nearest schools, the LA and England; region is in the table only, never a line, as on the dashboard. A role walk whose views don't exist yet leaves those screens out (logged). Head office's walks draw each screen as the other walks do: the group dashboard's own view (the same ViewBody, header words, caption and rail, groupWalkView) enlarged in the walk's panel, from the group dashboard route's own answer, with an answer sentence from the same figures (group-answers.ts); a screen that compares opens on the set picker's Default "Nearest in size, same type", side by side with the set's median (trends with its median and middle half), and carries the picker to change it. | no | auto: walkRhythm | — |
+| R-WALK-KEYS | active | Every walk chart is keyed: a key entry for every colour and mark (the focus, each peer shade, the averages, the LA, England and the nearest schools, the ring and the dot, the dotted unpublished years). Line charts draw only their lines in SVG (vector-effect: non-scaling-stroke); every label -- end labels, ticks, year labels, gap labels -- is HTML over the plot, so it always renders. The value axis is on round numbers (steps of 1, 2, 2.5 or 5 x 10^n, src/lib/front-door/axis.ts), from zero when the lowest value is no more than half the highest, otherwise from the step below it; places run from 1 on whole numbers. Peers on a walk chart take shades of their subject category's colour, light to dark, each with its own marker shape; dashes stay for averages, dotted for unpublished years; reference lines keep fixed colours (LA #3987e5, England #c98500, the nearest schools #d55181). | no | auto: walkKeys | — |
+| R-DUMBBELL | active | "Change (dumbbell)" (DV-C2-TR-DUMBBELL, walk 1 step 5): one row per comparable subject, ordered by this year's entries, largest first; a ring for the first year, a dot for the latest, a bar between; the focus row tinted in the accent; same-category subjects in the category colour, the rest grey; a dashed school-average row last (the plain average of the subjects in each year); the change in pupils with ▲/▼ (no green or red), equal to the data's latest less first. Not on the dashboard's Context › Trends rail this round (draft): ready to add. | no | auto: dumbbell | — |
 | R-GROUP-LIBRARY | active | The groups library (/teacher/group/groups, head office only: a member school's SMT reads "not found", D2) lists every MAT, federation, foundation trust and independent group with 2 or more current schools, each body once (sponsor records, single-academy trusts, self-declared groups and our own group are never cards; groups mostly of special, AP, PRU or nursery schools are held out until their own comparison, LF3 and N2). A card has the regions tile map as its artwork (shaded by where its schools are), its type and size ("MAT · 41 schools", "+2 likely"), its regions main first ("London · also South East, East"; a tie counts in each, D5), its phases, its roll and 3-year change, and one results headline for the phase in view against its sector's England (on All phases its main phase, labelled; "Results not published" for an independent group without them, D7). Groups like us is the default (same type, our own peer set first, then nearest in size); the filters (type, size band, region by most schools in or has a school in, phases, search) and the sort live in the address; a phone shows one column with the filters in a bottom sheet. Add to set… (M4) lists the sets of groups this person may change, ticks the ones already holding the group, and adds or takes it out through the editor's own save path (save_set), refusing a ninth group; New set with this group… opens the editor with it in. View as and a peek see it disabled. | no | auto: groupLibrary | — |
 | R-GROUP-SET-PICKER | active | The Group pages' Overview, Academic and Pupils compare through the one SetSelector (R-SET-PILL): "Compared against", the button holding the set's name and "n groups" (or a pool's count), three blocks -- Default (computed, never stored: our size band, non-group schools, single-academy trusts for a state group, our areas, England by sector, nearest in size), Group sets (made by the head office, tagged "Head office" in the group's colour) and My sets ("n of 8", the person's personal sets of any kind) -- then Edit this set…, New set…, Make default (admins), Duplicate to My sets (a group set), Manage sets (/sets?account=). It replaces the Compared-against pill, the named-group chips and the Mix-matched toggle (mix-matched non-group stays a row of Against others). A member school's SMT, View as and a peek get Default and the group's sets, read-only: no actions, no My sets (D2). Old ?compare= links keep working (peer_band, non_group, areas, england, mix_matched map onto today's keys; peer_named:a,b opens as an unsaved set of those groups, up to 8). The editor and Manage sets work in group mode (/sets/edit?account=&kind=group_peers, /sets?account=): rows are groups (type, size, regions, headline), Add groups opens the library as a sheet filtered to groups like us, 8 is the most a set holds (GROUP_SET_CAP, one setting), and Back, Cancel and Save leave the way they came (R-SETS-WAY-BACK). Schools has no comparison: its selector is Showing (R-GROUP-SUBSET-FILTER). | no | auto: groupSetPicker | — |
 | R-GROUP-SET-SIDE-BY-SIDE | active | A set of groups is shown side by side, never pooled: our group first and highlighted, then each group in the set (up to 8), then the set's median -- of the groups' own figures, one vote per group with a figure, never ours, labelled "n of m groups" (and "mixed types" when the set mixes types). Every row shows its type and size and its rank within its own type (R-GROUP-RANK-SAME-TYPE); a measure a type never publishes (an independent group's Progress 8 or KS2) reads "not published" and the row stays; a group no longer listed keeps its row with "no figures". The Weighting switch applies to every row and the median follows it; the Reading switch applies to every row. Overview's Against others is the side-by-side table (England beneath as a reference); Academic's Results now sets our group against the median and England with the set's headline side by side; Pupils' Now shows roll and change side by side. Each group's figures are production's own (group_comparison_lookup, peer_named:<id>), with the same counted-schools rule (LF4) as the pages; the map is unaffected. | no | auto: groupSetSideBySide | — |
@@ -466,7 +477,7 @@ What a number is allowed to be. 207 rules: 199 active, 8 superseded; 22 must lif
 | Why | No area threshold figure is wired up; drawing one from another measure would compare unlike things. |
 | Applies to | M-KS4-THRESHOLD, M-KS5-THRESHOLD; Column 1 Results markers and geography views |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1136 (no benchmark on rates)<br>- src/app/teacher/[phase]/page.tsx:1153 (no England category line)<br>- src/app/teacher/[phase]/page.tsx:1727-1734 (applies)<br>- src/app/teacher/[phase]/page.tsx:1786 (benchmarkLabel undefined) |
-| Tagged at | - src/components/dashboard-config/embed.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/geography.ts |
+| Tagged at | - src/components/dashboard-config/embed.ts<br>- src/lib/front-door/teacher-model.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/geography.ts |
 | Test case | Acland Burghley School (100053), ks4: Results -> Grade 4+ -> Area chart shows 'LA, regional and national figures are published for average point score only…'. [manual] |
 | Origin | Comparisons / Grade 4 wiring round |
 | Status | active |
@@ -898,7 +909,7 @@ What a number is allowed to be. 207 rules: 199 active, 8 superseded; 22 must lif
 | Why | Guy, 16 Oct 2026: the audit fixes left IGCSE schools out of every GCSE ranking, which was too broad. The problem is only with measures missing the subjects a school takes as IGCSE: Leighton Park's GCSE Biology is a GCSE Biology figure like any other. |
 | Applies to | Every single-subject GCSE ranking and comparison in Teacher, SMT and Admissions; Teacher's sets for subject views (subjectRows); the comparator maps on a subject |
 | Enforced in | - src/lib/igcse-words.ts:igcseTakenAsIgcse, igcseFamilyIncomplete, FAMILY_REQUIRED_SUBJECTS<br>- src/lib/subject-ranking.ts:rankedWithIgcse<br>- src/lib/teacher-view-comparator-series.ts:rankFixedSets (subjectRanked)<br>- src/lib/chooser-sets.ts:resolveFixedSet, resolveDefaultNearest (subjectRows)<br>- src/app/api/teacher/saved-comparator-sets/route.ts (subjectRows)<br>- src/components/dashboard-config/TeacherDashboard.tsx:subjectComparatorSets, subjectSets<br>- src/lib/academic-data-view.ts:igcseOutFor<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/smt/academic.ts:stagePart<br>- src/components/smt/SmtDashboard.tsx:academicWhyNot |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/academic-data-view.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/igcse-words.ts<br>- src/lib/igcse.ts<br>- src/lib/smt/school.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-saved-sets.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/academic-data-view.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/front-door/teacher-data.ts<br>- src/lib/igcse-words.ts<br>- src/lib/igcse.ts<br>- src/lib/smt/school.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-saved-sets.ts |
 | Test case | Leighton Park; The King's School Worcester 117037; The Chase 137625 (110110), ks4: Leighton Park is ranked in GCSE Biology, Chemistry, Physics, Art and Design and Combined Science, and not in Attainment 8, English and maths, Sciences & Maths or English (Languages & Literature); its Sciences & Maths (i) says 'sciences only: maths taken as IGCSE'. King's Worcester is ranked in Art and Design, History and Geography and in its Humanities family, not in Sciences & Maths or Languages & Literature; it has no GCSE Biology, so no Biology rank, and Biology isn't inferred as IGCSE. Leighton Park's 10 nearest for a subject includes IGCSE schools; its whole-school ten doesn't. [runner: igcseSubject] |
 | Origin | 0.8 IGCSE subjects (docs/v0.8/vicdata_0_8_igcse_subject_rankings_claude_code_prompt_v1.md) |
 | Status | active |
@@ -2942,7 +2953,7 @@ What a number is allowed to be. 207 rules: 199 active, 8 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. |
+| Statement | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT orange and the groups (head office) bronze (0.8 front door C20; SMT violet and groups orange before). One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. |
 | Why | Guy (F-17): in a table the featured school's row has to be found at a glance, and the tint says whose dashboard it is. |
 | Applies to | every table view: Admissions, Teacher (GCSE, Post-16), SMT, groups |
 | Enforced in | - src/app/globals.css<br>- src/components/shell/accent.ts:FEATURED_ROW_BG<br>- src/components/admissions/views/Tables.tsx:RivalsTable<br>- src/components/teacher/SchoolRankingTable.tsx<br>- src/components/teacher/SortTable.tsx<br>- src/components/teacher/SeriesViews.tsx:YearTable<br>- src/components/groups/dash/views.tsx<br>- src/lib/featured-row.test.ts |
@@ -3381,6 +3392,182 @@ What a number is allowed to be. 207 rules: 199 active, 8 superseded; 22 must lif
 | Tagged at | - src/lib/smt/academic.ts |
 | Test case | Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries (100183), ks5: Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total. [runner: smtEntriesOneTotal] |
 | Origin | 0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-THEME-MID-SCOPE
+
+| Field | Content |
+| --- | --- |
+| Statement | The theme switch is Dark · Mid · Light, remembered per person (one localStorage key, as before). Mid applies to the homes and the walks only: every other page -- every dashboard, the sets pages, admin pages -- reads useTeacherTheme(), which answers Dark under Mid, and only the files listed in MID_PAGES (src/lib/front-door/scope.ts) read the person's Mid choice (useThemePref). In Mid the page, its header and the "Also here" band stay dark; only the area being worked in (a [data-field]) takes its part's colour. |
+| Why | Guy (C18, 9-13 Nov): a friendlier mid-tone for the homes and walks; he leans to Mid there only and wants to see it on dashboards later. |
+| Applies to | every page with #teacher-root |
+| Enforced in | - src/components/shell/TeacherChrome.tsx:useTeacherTheme, useThemePref, effectiveTheme, ThemeToggle<br>- src/lib/front-door/scope.ts:MID_PAGES<br>- src/app/globals.css ([data-pref="mid"] [data-field])<br>- src/lib/front-door/theme-scope.test.ts |
+| Tagged at | - src/components/shell/TeacherChrome.tsx<br>- src/lib/front-door/scope.ts<br>- src/lib/front-door/theme-scope.test.ts<br>- src/lib/front-door/theme-scope.ts |
+| Test case | the source tree (no database) (110110), ks4: effectiveTheme maps Mid to Dark; useThemePref is read only by MID_PAGES; every dashboard, sets and admin root draws data-theme from useTeacherTheme. [runner: themeMidScope] |
+| Origin | 0.8 front door part 1, C18 (docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-THEME-CONTRAST
+
+| Field | Content |
+| --- | --- |
+| Statement | Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. The walk's header band (close, the question, the step dots, the subject chip, "Step n of N") draws only its own tokens (--wh-*, set on the band), dark in Dark and Mid and light in Light, and each of its pairs, for every part's accent, is in the table. |
+| Why | C18: white text fails on these fields; Guy asked for every pair checked and the table logged. Guy, 13 Nov: the walk header read dark grey on black in Mid (it inherited the Light page's text colour). |
+| Applies to | the Mid fields and tiles (GCSE, Post-16, top level, head office, Admissions); the ladder's shut bar, well and column in Dark and Light; the walk's header band in every theme |
+| Enforced in | - src/app/globals.css<br>- src/lib/front-door/contrast.ts:contrastTable<br>- src/lib/front-door/contrast.ts:walkHeadPairs<br>- src/components/front-door/WalkPage.tsx:WalkHeader<br>- src/lib/front-door/contrast.test.ts |
+| Tagged at | - src/components/front-door/WalkPage.tsx<br>- src/lib/front-door/contrast.test.ts<br>- src/lib/front-door/contrast.ts |
+| Test case | the stylesheet (no database) (110110), ks4: Every row of the contrast table reads its colours from globals.css and passes AA for its kind. [runner: themeContrast] |
+| Origin | 0.8 front door part 1, C18 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-PANEL-LADDER
+
+| Field | Content |
+| --- | --- |
+| Statement | On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. |
+| Why | C19: open and shut panels shared one tone (--box-bg), about 6% from the column, so shut panels didn't stand out. |
+| Applies to | every dashboard: CardBox (open and shut), DashboardColumn, ShellPage, ShellRow's head |
+| Enforced in | - src/app/globals.css (:has([data-dash-ladder]), --shut-*, --well-border)<br>- src/components/shell/CardBox.tsx<br>- src/components/shell/DashboardGrid.tsx<br>- src/components/shell/Rows.tsx<br>- src/lib/front-door/contrast.ts:ladderSteps |
+| Tagged at | - src/lib/front-door/contrast.test.ts<br>- src/lib/front-door/contrast.ts<br>- src/lib/front-door/theme-scope.test.ts<br>- src/lib/front-door/theme-scope.ts |
+| Test case | the stylesheet and the shell (no database) (110110), ks4: Shut bar against column at or above the logged steps in Dark and Light; well white in Light and darker than its column in Dark; column lighter than page; the shell marks DashboardGrid and ShellPage and draws the shut bar with the shut tokens. [runner: panelLadder] |
+| Origin | 0.8 front door part 1, C19 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ROLE-COLOURS
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan. |
+| Why | C20: SMT was #a78bfa, the same violet as Post-16; head office needs to read as top level but distinct from SMT. |
+| Applies to | the shell, the homes, the set creator colours, the group pages (through GROUP_ACCENT and the tokens) |
+| Enforced in | - src/lib/teacher-view-theme.ts:ROLE_ACCENT, ROLE_ACCENT_LIGHT, GROUP_ACCENT<br>- src/components/smt/ui.tsx:smtVars<br>- src/app/globals.css (--set-smt-*, --set-group-*, --row-featured-smt, --row-featured-groups) |
+| Tagged at | - src/lib/front-door/contrast.test.ts<br>- src/lib/front-door/contrast.ts |
+| Test case | the theme module and the stylesheet (no database) (110110), ks4: SMT orange (Dark and Light values, Light 4.5:1 on white), bronze 4.5:1 on the dark panel and 3:1 on white, Post-16 violet unchanged, the SMT and group tokens orange and bronze and readable. [runner: roleColours] |
+| Origin | 0.8 front door part 1, C20 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-HOME-TILES
+
+| Field | Content |
+| --- | --- |
+| Statement | Every role lands on a home of plain question tiles (/teacher for Teacher, SMT and Admissions, stacked for a person with more than one role; /teacher/group for head office). Every tile has its question; a big figure from real data -- the dashboard's own rows and routes (Teacher: the focus subject's entries this year, its average points, its place among the school and its 10 nearest; SMT: the roll, the headline points, the change on last year; Admissions: the pool and the share; head office: schools, schools growing, the combined roll's change) -- or none, never a placeholder; a row of round icons, one per screen of its walk, each the view's own rail icon and name (hover title and aria-label); and one solid arrow, the one key action. A tile whose walk needs views that don't exist yet says so in its own space. |
+| Why | B8-B9: a teacher shown the dashboards found the interface hard; simple questions that made sense worked, and he expected each to be a button. |
+| Applies to | every home: Teacher (GCSE, Post-16), SMT, a primary school's SMT, Admissions, head office |
+| Enforced in | - src/components/front-door/home.tsx:QuestionTile<br>- src/components/front-door/sections.tsx<br>- src/components/groups/GroupHome.tsx<br>- src/lib/front-door/walks.ts:WALKS, screenMeta<br>- src/lib/front-door/teacher-model.ts:teacherTileFigures<br>- src/lib/front-door/home-tiles.test.tsx |
+| Tagged at | - src/lib/front-door/home-tiles.test.tsx<br>- src/lib/front-door/walks.ts |
+| Test case | The Chase, GCSE (real data) and every walk's tile (rendered) (137625), ks4: Every walk's screens resolve to catalogue views (or the group dashboard's own); The Chase's tiles read its focus subject's entries and points from the dashboard's rows and its place among the 10 nearest; a model with no points gives no figure. [runner: homeTiles] |
+| Origin | 0.8 front door part 1, B8-B10 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WELCOME-ONCE
+
+| Field | Content |
+| --- | --- |
+| Statement | A person's first login opens on one friendly full-screen welcome (/teacher/welcome): what VicData is for, that this is a private beta whose feedback shapes it, and where the feedback buttons live. It is shown once per person (front_door_state.welcome_seen_at, their own row under RLS), marked as they leave it, never in View as or a peek, and never while the table can't be read (before the migration: no loop). Seeing it counts as seeing what's new. |
+| Why | A5: a first visit should say what VicData is and that this is a beta, before any dashboard. |
+| Applies to | /teacher (every role at a school) and /teacher/group (head office) |
+| Enforced in | - src/lib/front-door/visit.ts:shouldShowWelcome, markWelcomeSeen<br>- src/components/front-door/first-visit.tsx:WelcomePage, useFirstVisit<br>- supabase/migrations/20261123090000_v08_front_door_r1.sql<br>- supabase/tests/v08_front_door_r1_pglite.mjs<br>- src/lib/front-door/first-visit.test.ts |
+| Tagged at | - src/components/front-door/first-visit.tsx<br>- src/lib/front-door/first-visit.test.ts<br>- src/lib/front-door/visit.ts |
+| Test case | the decisions (unit) and the table's RLS (PGlite) (110110), ks4: No row or no welcome_seen_at: the welcome; seen: never again; View as and an unreadable table: never; each person reads and writes their own row only. [runner: frontDoorFirstVisit] |
+| Origin | 0.8 front door part 1, A5 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SETUP-ONE-SCREEN
+
+| Field | Content |
+| --- | --- |
+| Statement | Setup is one screen, "Which subjects do you teach?" (/teacher/setup): every GCSE and Post-16 subject the school ran in its latest year, qualifications as headings within the list (not a step), the live entry count per phase kept; a school with both phases lists both on the one screen and setting up marks both phases done. The results preview and the question screen are gone (the walks and the home do their jobs). Roles without subjects -- SMT, Admissions, head office, School-Admin -- skip it: welcome, then home. A phase opened before it is set up goes to setup and back. |
+| Why | A6: the four steps (qualifications, subjects, a preview, a question screen) lost people before they reached anything. |
+| Applies to | Teacher, GCSE and Post-16 |
+| Enforced in | - src/lib/front-door/setup.ts<br>- src/components/front-door/first-visit.tsx:SetupPage, PhasePicker, needsSetup<br>- src/components/dashboard-config/TeacherDashboard.tsx:GoToSetup<br>- src/lib/front-door/first-visit.test.ts |
+| Tagged at | - src/lib/front-door/first-visit.test.ts<br>- src/lib/front-door/setup.ts |
+| Test case | the decisions and the screens' source (unit) (110110), ks4: Both phases at a two-phase school; the count moves with each tick; a non-teacher goes straight home; the dashboard's four steps are gone. [runner: frontDoorFirstVisit] |
+| Origin | 0.8 front door part 1, A6 (two phases on one screen: the working assumption, logged) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WHATS-NEW
+
+| Field | Content |
+| --- | --- |
+| Statement | On later visits a slim "New since your last visit" strip opens the home: one line naming the newest changelog entry ("and n more"), linking to /teacher/whats-new. It shows only for entries published after the person last saw the strip (or, before that, the welcome), and goes once seen: the visit is recorded after the strip is worked out. An entry can credit feedback ("Your feedback on X led to this"), shown only to the people it credits (changelog_for_me). Never in View as. Entries are Guy's, through a seed file (platform admins write the table). |
+| Why | A7: people should see what changed, and that their feedback did something. |
+| Applies to | every home |
+| Enforced in | - src/lib/front-door/visit.ts:whatsNew, recordVisit, changelogForMe<br>- src/components/front-door/first-visit.tsx:WhatsNewStrip, WhatsNewPage, useFirstVisit<br>- supabase/migrations/20261123090000_v08_front_door_r1.sql (changelog_entries, changelog_for_me)<br>- supabase/tests/v08_front_door_r1_pglite.mjs<br>- src/lib/front-door/first-visit.test.ts |
+| Tagged at | - src/components/front-door/first-visit.tsx<br>- src/lib/front-door/first-visit.test.ts<br>- src/lib/front-door/visit.ts |
+| Test case | the decisions (unit) and the changelog's RLS (PGlite) (110110), ks4: An entry newer than the last visit shows; after the visit it doesn't; scheduled entries wait; the credit reaches only its person; only platform admins write. [runner: frontDoorFirstVisit] |
+| Origin | 0.8 front door part 1, A7 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WALK-RHYTHM
+
+| Field | Content |
+| --- | --- |
+| Statement | Every question on a home starts a full-screen walk (/teacher/walk/<id>), a short story in one rhythm -- this year, in context, over time, wider -- built as configuration (src/lib/front-door/walks.ts: an ordered list of existing dataview IDs, each with its question and answer template). Every screen opens a real view (a catalogue dataview, or the group dashboard's own view) and answers its question in one sentence from the data, honest about small numbers and missing years. The Results walks use Average points throughout (the only Results measure with LA and England figures). On a walk's nearby-and-nationally chart the lines are the school, its nearest schools, the LA and England; region is in the table only, never a line, as on the dashboard. A role walk whose views don't exist yet leaves those screens out (logged). Head office's walks draw each screen as the other walks do: the group dashboard's own view (the same ViewBody, header words, caption and rail, groupWalkView) enlarged in the walk's panel, from the group dashboard route's own answer, with an answer sentence from the same figures (group-answers.ts); a screen that compares opens on the set picker's Default "Nearest in size, same type", side by side with the set's median (trends with its median and middle half), and carries the picker to change it. |
+| Why | B11-B12: a walk teaches the dashboard by telling one story across its views. Guy, 13 Nov: head office's walks opened the group dashboard after screen 1 instead of drawing the view. |
+| Applies to | the GCSE and Post-16 walks (3 each), SMT's 4 (a primary school's 4), Admissions' 2, head office's 4 |
+| Enforced in | - src/lib/front-door/walks.ts<br>- src/lib/front-door/teacher-screens.ts<br>- src/components/front-door/WalkPage.tsx<br>- src/components/front-door/role-walks.tsx:GroupWalk<br>- src/components/groups/dash/GroupDashboard.tsx:groupWalkView<br>- src/lib/front-door/group-answers.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx<br>- src/lib/front-door/group-walks.test.tsx |
+| Tagged at | - src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx |
+| Test case | The Chase, GCSE Geography; Leighton Park 110110, Post-16 (real data); every walk's configuration; head office's 4 walks on Harris 3320 and Dukes (the group fixtures) (137625), ks4: Every screen a real view in rhythm order; every screen of both schools' six walks answers in a sentence with no unfilled template; the Results walk on Average points; no region line; every head office screen draws its group view, lists it on its own rail and answers with real figures; Against others opens side by side with the set's median. [runner: walkRhythm] |
+| Origin | 0.8 front door part 1, B11-B13 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WALK-KEYS
+
+| Field | Content |
+| --- | --- |
+| Statement | Every walk chart is keyed: a key entry for every colour and mark (the focus, each peer shade, the averages, the LA, England and the nearest schools, the ring and the dot, the dotted unpublished years). Line charts draw only their lines in SVG (vector-effect: non-scaling-stroke); every label -- end labels, ticks, year labels, gap labels -- is HTML over the plot, so it always renders. The value axis is on round numbers (steps of 1, 2, 2.5 or 5 x 10^n, src/lib/front-door/axis.ts), from zero when the lowest value is no more than half the highest, otherwise from the step below it; places run from 1 on whole numbers. Peers on a walk chart take shades of their subject category's colour, light to dark, each with its own marker shape; dashes stay for averages, dotted for unpublished years; reference lines keep fixed colours (LA #3987e5, England #c98500, the nearest schools #d55181). |
+| Why | B14-B16: one vocabulary with the dashboard; Guy saw SVG labels vanish in the mockup. Guy, 13 Nov: the y-axes read 7, 46, 85, 123, 162. |
+| Applies to | every walk chart (src/components/front-door/charts.tsx) |
+| Enforced in | - src/components/front-door/charts.tsx<br>- src/lib/front-door/axis.ts:niceAxis<br>- src/lib/front-door/teacher-screens.ts (keys)<br>- src/lib/front-door/walks-check.ts:keyProblems<br>- src/lib/front-door/walks.test.tsx<br>- src/lib/front-door/axis.test.ts |
+| Tagged at | - src/components/front-door/charts.tsx<br>- src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx |
+| Test case | The Chase GCSE and Leighton Park Post-16, every walk chart (real data); the renderer (fixture) (137625), ks4: No chart has a colour or mark without its key entry; charts.tsx draws no SVG <text>; rendered line charts carry HTML end, tick and year labels. [runner: walkKeys] |
+| Origin | 0.8 front door part 1, B14-B16 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-DUMBBELL
+
+| Field | Content |
+| --- | --- |
+| Statement | "Change (dumbbell)" (DV-C2-TR-DUMBBELL, walk 1 step 5): one row per comparable subject, ordered by this year's entries, largest first; a ring for the first year, a dot for the latest, a bar between; the focus row tinted in the accent; same-category subjects in the category colour, the rest grey; a dashed school-average row last (the plain average of the subjects in each year); the change in pupils with ▲/▼ (no green or red), equal to the data's latest less first. Not on the dashboard's Context › Trends rail this round (draft): ready to add. |
+| Why | B17: with many peers, lines become spaghetti; a dumbbell shows who grew, largest first. |
+| Applies to | the walks (DV-C2-TR-DUMBBELL) |
+| Enforced in | - src/lib/front-door/teacher-screens.ts:dumbbellRows<br>- src/components/front-door/charts.tsx:DumbbellChart<br>- src/catalogue/dataviews.ts (DV-C2-TR-DUMBBELL, draft)<br>- src/lib/front-door/walks-check.ts:dumbbellProblems<br>- src/lib/front-door/walks.test.tsx |
+| Tagged at | - src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/front-door/walks.test.tsx |
+| Test case | The Chase, GCSE Geography (real data), and a fixture (137625), ks4: Rows by latest entries, the focus row Geography with the data's change, the school average last and the plain average. [runner: dumbbell] |
+| Origin | 0.8 front door part 1, B17 |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

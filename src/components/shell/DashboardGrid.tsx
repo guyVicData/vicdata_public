@@ -34,6 +34,8 @@ export function DashboardGrid({ children, tracks }: { children: ReactNode; track
   return (
     <FullscreenReport.Provider value={report}>
       <div
+        // 0.8 front door (C19): marks a dashboard, so the page takes the panel layer ladder (globals.css).
+        data-dash-ladder=""
         className={
           tracks
             ? "mt-6 grid items-start gap-[18px] md:grid-cols-2 xl:grid-cols-[var(--dash-cols)]"

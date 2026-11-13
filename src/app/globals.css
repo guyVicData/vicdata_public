@@ -53,7 +53,7 @@
      20% over the dark one (#131315). Text on it: 15:1 and more light, 11:1 and more dark. A product
      root names its own as --row-featured; the default is the accent at 14%, as before. */
   --row-featured-admissions: #d7f7fc; --row-featured-gcse: #daf7ed; --row-featured-post16: #efeafe;
-  --row-featured-smt: #efeafe; --row-featured-groups: #feebdc;
+  --row-featured-smt: #feebdc; --row-featured-groups: #f7eee4;
   /* F-22 (feedback deploy gate): Teacher KS2 has no accent, so its token is neutral. */
   --row-featured-ks2: #eeeef0;
 }
@@ -64,7 +64,7 @@
     --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
     --note-on: #7aa7ff; --fb-open: #f5c542; --fb-good: #4ade80;
     --row-featured-admissions: #163940; --row-featured-gcse: #1a392f; --row-featured-post16: #312b43;
-    --row-featured-smt: #312b43; --row-featured-groups: #412c1d;
+    --row-featured-smt: #412c1d; --row-featured-groups: #3a2c1f;
     --row-featured-ks2: #2a2a2e;
   }
 }
@@ -74,43 +74,178 @@
   --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
   --note-on: #7aa7ff; --fb-open: #f5c542; --fb-good: #4ade80;
   --row-featured-admissions: #163940; --row-featured-gcse: #1a392f; --row-featured-post16: #312b43;
-  --row-featured-smt: #312b43; --row-featured-groups: #412c1d;
+  --row-featured-smt: #412c1d; --row-featured-groups: #3a2c1f;
   --row-featured-ks2: #2a2a2e;
 }
 
-/* 0.8 sets round 1 (B21): who made a set, by colour -- Default grey, Admissions cyan, SMT violet, the
-   school's group orange, Victoria Consultancy rose; Me is an outline in --fg. -fg is the text and icon,
+/* 0.8 front door (C18): a dark band inside a light page -- the walk's header in Mid, where the page is Light
+   (its plates are white) and the header stays dark. Dark's tokens on the band (the dark variant already
+   answers to a [data-theme="dark"] ancestor). */
+#teacher-root [data-theme="dark"] {
+  --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
+  --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
+  --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
+}
+
+/* 0.8 front door (C19): the panel layer ladder, on every dashboard, Dark and Light.
+     page -> column -> open panel = a sunk well (the chart's plate) / shut panel = a raised bar
+   A shut panel is a clear step lighter than its column, with a border, a soft shadow, a solid chevron
+   and its lead figure in the accent, so it reads as a button (CardBox's collapsed bar). The shell marks
+   every dashboard with [data-dash-ladder] (DashboardGrid, ShellPage), so the page, column and well
+   steps reach each product -- Teacher, Admissions, SMT, the group dashboards -- through these tokens
+   alone; pages that aren't dashboards (homes, sets, admin) keep the tokens above. Final values and
+   contrast: docs/v0.8/front_door_1_report_v1.md. Starting tokens from the prompt; Dark's shut bar went
+   one step lighter (#24242a -> #27272e) so its step from the column is 1.24:1, not 1.19:1. */
+#teacher-root {
+  --well-border: #e2e2e7;
+  --shut-bg: #ffffff; --shut-border: #cfcfd6;
+  --shut-shadow: 0 1px 2px rgba(20,20,30,.10), 0 3px 8px rgba(20,20,30,.08);
+}
+#teacher-root:has([data-dash-ladder]) {
+  /* --muted one step darker than the page's default: on the ladder's grey page it is 4.9:1 (4.3:1 before). */
+  --bg: #e9e9ed; --panel-bg: #f6f6f8; --panel-border: #dedee3; --box-bg: #ffffff; --muted: #63636a;
+}
+@media (prefers-color-scheme: dark) {
+  #teacher-root:not([data-theme="light"]) {
+    --well-border: #1f1f23;
+    --shut-bg: #27272e; --shut-border: #34343b;
+    --shut-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 2px 6px rgba(0,0,0,.45);
+  }
+  #teacher-root:not([data-theme="light"]):has([data-dash-ladder]) {
+    --bg: #08080a; --panel-bg: #141417; --panel-border: #222226; --box-bg: #0b0b0d;
+  }
+}
+#teacher-root[data-theme="dark"] {
+  --well-border: #1f1f23;
+  --shut-bg: #27272e; --shut-border: #34343b;
+  --shut-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 2px 6px rgba(0,0,0,.45);
+}
+#teacher-root[data-theme="dark"]:has([data-dash-ladder]) {
+  --bg: #08080a; --panel-bg: #141417; --panel-border: #222226; --box-bg: #0b0b0d;
+}
+body:has(#teacher-root [data-dash-ladder]) { background: #e9e9ed; }
+@media (prefers-color-scheme: dark) {
+  body:has(#teacher-root:not([data-theme="light"]) [data-dash-ladder]) { background: #08080a; }
+}
+body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #08080a; }
+
+/* 0.8 front door (C18): Mid, for the homes and the walks only. The page, its header and the "Also here"
+   band stay dark (the root draws data-theme="dark"); only the area you're working in -- a [data-field] --
+   takes its part's colour: a two-stop gradient with a soft glow top-left and a faint darkening
+   bottom-right (MidSMT.dc.html vivid()). Text on the colour is charcoal (--field-ink, a deep tint of the
+   hue): white fails on these fields. Inside a field the dashboard tokens turn to Light's, so the tiles,
+   plates, keys and charts are drawn exactly as Light draws them, on near-white.
+   In Dark and Light a field is a faint tint of its accent and every token is the theme's own. */
+#teacher-root [data-field] {
+  --field-ink: var(--fg); --field-ink-soft: var(--muted2);
+  --tile-bg: var(--panel-bg); --tile-border: var(--panel-border2);
+  --tile-shadow: 0 1px 2px rgba(0,0,0,.10), 0 4px 12px -4px rgba(0,0,0,.18);
+  --tile-shadow-hover: 0 2px 4px rgba(0,0,0,.12), 0 14px 26px -8px rgba(0,0,0,.28);
+  --tile-accent: var(--accent); --tile-on-accent: #0a0a0b;
+  --tile-tint: rgba(var(--accent-rgb, 138,138,144), .14);
+  --tile-accent-text: color-mix(in srgb, var(--accent) var(--accent-text-mix, 65%), var(--fg));
+  --field-chip-bg: var(--panel-bg); --field-chip-fg: var(--fg); --field-chip-border: var(--panel-border2);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb, 138,138,144), .07), rgba(var(--accent-rgb, 138,138,144), .02));
+}
+#teacher-root[data-pref="mid"] [data-field] {
+  --bg: #ffffff; --fg: #17171b; --muted: #5f5f67; --muted2: #4f4f56; --muted3: #77777f;
+  --border: #e6e6ea; --panel-bg: #ffffff; --panel-border: #e2e2e7; --panel-border2: #d8d8dd;
+  --box-bg: #ffffff; --source: #6e6e76; --accent-text-mix: 50%;
+  --chip-fg: color-mix(in srgb, var(--fg) 82%, var(--bg));
+  --edge-strong: color-mix(in srgb, var(--panel-border2) 92%, var(--fg));
+  --tile-bg: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.88));
+  --tile-border: transparent;
+  --tile-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.7), 0 1px 2px rgba(0,0,0,.06), 0 8px 18px -6px rgba(0,0,0,.16), 0 28px 52px -18px rgba(0,0,0,.26);
+  --tile-shadow-hover: inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.7), 0 2px 4px rgba(0,0,0,.08), 0 14px 26px -8px rgba(0,0,0,.22), 0 40px 70px -20px rgba(0,0,0,.34);
+  --tile-on-accent: #ffffff;
+  --field-chip-bg: rgba(255,255,255,.92); --field-chip-fg: var(--field-ink); --field-chip-border: rgba(255,255,255,.6);
+  color: var(--field-ink);
+}
+#teacher-root[data-pref="mid"] [data-field="gcse"] {
+  background: radial-gradient(90% 80% at 12% 0%, #4CD98Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #86E3AE, #1E9E5E);
+  --field-ink: #07200f; --field-ink-soft: #07200f; --tile-accent: #15803d; --tile-tint: #dcf5e7; --tile-accent-text: #12713a;
+}
+#teacher-root[data-pref="mid"] [data-field="post16"] {
+  background: radial-gradient(90% 80% at 12% 0%, #A48CFFcc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #C1B0FF, #7A5BEF);
+  --field-ink: #1a1240; --field-ink-soft: #1a1240; --tile-accent: #6a4be0; --tile-tint: #ece6ff; --tile-accent-text: #5b3dd1;
+}
+#teacher-root[data-pref="mid"] [data-field="top"] {
+  background: radial-gradient(90% 80% at 12% 0%, #FF9F0Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #FFB74D, #F57C00);
+  --field-ink: #3a1c02; --field-ink-soft: #3a1c02; --tile-accent: #c2410c; --tile-tint: #ffeddc; --tile-accent-text: #b13c0b;
+}
+/* Head office: the top level's orange field with a deep bronze accent, so it reads as top level but is
+   distinct from SMT (buttons, icon badges, tints). */
+#teacher-root[data-pref="mid"] [data-field="group"] {
+  background: radial-gradient(90% 80% at 12% 0%, #FF9F0Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #FFB74D, #F57C00);
+  --field-ink: #3a1c02; --field-ink-soft: #3a1c02; --tile-accent: #8A5A2B; --tile-tint: #F3E6D8; --tile-accent-text: #7E4F24;
+}
+#teacher-root[data-pref="mid"] [data-field="admissions"] {
+  background: radial-gradient(90% 80% at 12% 0%, #5AC8FAcc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #8BD8FB, #1596DB);
+  --field-ink: #062436; --field-ink-soft: #062436; --tile-accent: #0b6fa6; --tile-tint: #dcf1fc; --tile-accent-text: #0b6fa6;
+}
+
+/* 0.8 front door (Guy, 13 Nov): the walk's header band, its own tokens on the band itself (WalkHeader), so
+   nothing inherits the page's text colour: in Mid the band is dark over a Light page and read dark grey
+   on black before. "dark" in Dark and Mid, "light" in Light. --wh-accent is the part's colour as text
+   and marks (the icon, the chip, the lit step), --wh-tint the icon's badge (the accent at 16% over the
+   band). Every pair is in the contrast table (R-THEME-CONTRAST, contrast.ts walkHeadPairs). */
+#teacher-root [data-walk-head="dark"] {
+  --wh-bg: #0a0a0b; --wh-border: #26262b; --wh-fg: #f2f2f3; --wh-muted: #a1a1a8; --wh-dot: #6b6b73;
+}
+#teacher-root [data-walk-head="dark"][data-part="gcse"] { --wh-accent: #34d399; --wh-tint: #112a22; }
+#teacher-root [data-walk-head="dark"][data-part="post16"] { --wh-accent: #a78bfa; --wh-tint: #231f31; }
+#teacher-root [data-walk-head="dark"][data-part="top"] { --wh-accent: #fb923c; --wh-tint: #312013; }
+#teacher-root [data-walk-head="dark"][data-part="group"] { --wh-accent: #c99a66; --wh-tint: #29211a; }
+#teacher-root [data-walk-head="dark"][data-part="admissions"] { --wh-accent: #22d3ee; --wh-tint: #0e2a2f; }
+#teacher-root [data-walk-head="light"] {
+  --wh-bg: #ffffff; --wh-border: #e2e2e7; --wh-fg: #17171b; --wh-muted: #55555c; --wh-dot: #8a8a92;
+}
+#teacher-root [data-walk-head="light"][data-part="gcse"] { --wh-accent: #12713a; --wh-tint: #d9e8df; }
+#teacher-root [data-walk-head="light"][data-part="post16"] { --wh-accent: #5b3dd1; --wh-tint: #e5e0f8; }
+#teacher-root [data-walk-head="light"][data-part="top"] { --wh-accent: #b13c0b; --wh-tint: #f3e0d8; }
+#teacher-root [data-walk-head="light"][data-part="group"] { --wh-accent: #7e4f24; --wh-tint: #eae3dc; }
+#teacher-root [data-walk-head="light"][data-part="admissions"] { --wh-accent: #0b6fa6; --wh-tint: #d8e8f1; }
+
+/* 0.8 front door (B9): a home tile -- near-white in Mid with layered shading (a bright top edge, a hairline
+   inner border, three stacked soft shadows: MidTeacher.dc.html SHADE), the panel tone in Dark and Light --
+   lifting on hover (translateY -3px, a longer softer shadow). */
+.fd-tile { background: var(--tile-bg, var(--panel-bg)); box-shadow: var(--tile-shadow, none); transition: transform .18s ease, box-shadow .18s ease; }
+.fd-tile:hover { transform: translateY(-3px); box-shadow: var(--tile-shadow-hover, none); }
+@media (prefers-reduced-motion: reduce) { .fd-tile, .fd-tile:hover { transition: none; transform: none; } }
+
+/* 0.8 sets round 1 (B21): who made a set, by colour -- Default grey, Admissions cyan, SMT orange (0.8 front
+   door C20; violet before), the school's group (head office) deep bronze (orange before), Victoria Consultancy rose; Me is an outline in --fg. -fg is the text and icon,
    -bg the pill's fill (the product's featured-row tint where there is one). Text on its fill: 5.8:1 and
    more light, 7.2:1 and more dark; on the panel, 6.7:1 and more light, 9.5:1 and more dark. On :root so
    the library and the set pages (outside #teacher-root) have them too. */
 :root {
   --set-default-fg: #55555c; --set-default-bg: #eeeef0;
   --set-admissions-fg: #0b6574; --set-admissions-bg: #d7f7fc;
-  --set-smt-fg: #5a3db0; --set-smt-bg: #efeafe;
-  --set-group-fg: #94460d; --set-group-bg: #feebdc;
+  --set-smt-fg: #9a3c0a; --set-smt-bg: #feebdc;
+  --set-group-fg: #7e4f24; --set-group-bg: #f3e6d8;
   --set-vc-fg: #9e2257; --set-vc-bg: #fde8ef;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]), #teacher-root:not([data-theme="light"]) {
     --set-default-fg: #c4c4cc; --set-default-bg: #2a2a2e;
     --set-admissions-fg: #7fe3f2; --set-admissions-bg: #163940;
-    --set-smt-fg: #c8b6ff; --set-smt-bg: #312b43;
-    --set-group-fg: #ffb985; --set-group-bg: #412c1d;
+    --set-smt-fg: #ffb985; --set-smt-bg: #412c1d;
+    --set-group-fg: #e3bf98; --set-group-bg: #3a2c1f;
     --set-vc-fg: #ff9cc2; --set-vc-bg: #45202f;
   }
 }
 :root[data-theme="dark"], #teacher-root[data-theme="dark"] {
   --set-default-fg: #c4c4cc; --set-default-bg: #2a2a2e;
   --set-admissions-fg: #7fe3f2; --set-admissions-bg: #163940;
-  --set-smt-fg: #c8b6ff; --set-smt-bg: #312b43;
-  --set-group-fg: #ffb985; --set-group-bg: #412c1d;
+  --set-smt-fg: #ffb985; --set-smt-bg: #412c1d;
+  --set-group-fg: #e3bf98; --set-group-bg: #3a2c1f;
   --set-vc-fg: #ff9cc2; --set-vc-bg: #45202f;
 }
 #teacher-root[data-theme="light"] {
   --set-default-fg: #55555c; --set-default-bg: #eeeef0;
   --set-admissions-fg: #0b6574; --set-admissions-bg: #d7f7fc;
-  --set-smt-fg: #5a3db0; --set-smt-bg: #efeafe;
-  --set-group-fg: #94460d; --set-group-bg: #feebdc;
+  --set-smt-fg: #9a3c0a; --set-smt-bg: #feebdc;
+  --set-group-fg: #7e4f24; --set-group-bg: #f3e6d8;
   --set-vc-fg: #9e2257; --set-vc-bg: #fde8ef;
 }
 

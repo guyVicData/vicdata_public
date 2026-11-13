@@ -74,6 +74,19 @@ export const RENDERERS: Renderer[] = [
     phone: "Diverging bars from a centre zero; every value printed beside its bar.",
   },
   {
+    id: "RD-DUMBBELL",
+    component: "Dumbbell",
+    file: "src/components/front-door/charts.tsx",
+    accepts: "One row per subject: the first year's and the latest year's figure, ordered by the latest; the focus row, the same-category rows and a school-average row last.",
+    states: {
+      empty: "No subject with figures in two years.",
+      suppressed: "A subject with no figure in either year is left out; the count of those left out is in the note.",
+    },
+    minHeight: "One row per subject, 22px each.",
+    fullscreen: "Same rows, wider bars.",
+    phone: "Same rows; subject names wrap, never truncate.",
+  },
+  {
     id: "RD-SHARE-DONUT",
     component: "ShareDonut",
     file: `${T}/ShareDonut.tsx`,

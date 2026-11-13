@@ -316,6 +316,10 @@ const BODIES: Record<string, Body> = {
   "DV-C2-TR-TABLE": C2("follows-page", "year", "actual", TRENDS, table(YEAR_TABLE)),
   "DV-C2-TR-CHANGELIST": C2("follows-page", "subject", "change", TRENDS, bar(CHANGE_BARS)),
   "DV-C2-TR-CHANGETABLE": C2("follows-page", "year", "actual", TRENDS, table(CHANGE_TABLE)),
+  // 0.8 front door (B17): the dumbbell (draft, walk 1 step 5). ViewSpec has no dumbbell kind, so its preset
+  // is the nearest it has -- the subjects' change from the first year, as change bars; the walk draws it
+  // with its own renderer (RD-DUMBBELL). Logged: a "dumbbell" view kind comes with its rail place.
+  "DV-C2-TR-DUMBBELL": C2("follows-page", "subject", "change", TRENDS, bar(CHANGE_BARS)),
 
   // --------------------------------------------------------- Column 3, Comparisons
   "DV-C3-CUR-TILES": {

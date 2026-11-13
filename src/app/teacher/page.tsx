@@ -27,28 +27,20 @@ import { pickMembership, viewAsMembership } from "@/lib/view-as";
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
-import { PHASE_LABELS, PHASE_HOME_CARD_DESCRIPTION, phaseTileState, type TeacherPhase } from "@/lib/teacher-view-phases";
-import { PHASE_ACCENT, FEATURE_ACCENT } from "@/lib/teacher-view-theme";
-import { HomeCard, PhaseGlyph, RecruitmentGlyph, MeetingsGlyph, NEUTRAL_TILE } from "@/components/teacher/HomeCard";
-import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
-import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
+import { type TeacherPhase } from "@/lib/teacher-view-phases";
+import { FEATURE_ACCENT, ROLE_ACCENT } from "@/lib/teacher-view-theme";
+import { RecruitmentGlyph, MeetingsGlyph } from "@/components/teacher/HomeCard";
 import { configRendererRequested } from "@/components/dashboard-config/plan";
 import { ADMISSIONS_DASHBOARDS, TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
-import { AdmissionsTile } from "@/components/admissions/AdmissionsTile";
-import { SchoolTile } from "@/components/smt/SchoolTile";
-import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
+import { HomeFrame, HomeHeading, type AlsoItem } from "@/components/front-door/home";
+import { useFirstVisit, WhatsNewStrip } from "@/components/front-door/first-visit";
+import { AdmissionsSection, SmtSection, TeacherKs2Section, TeacherPhaseSection } from "@/components/front-door/sections";
+import { colourOf, iconOf, LIBRARY_ACCENT, resolveIcon } from "@/lib/dashboard-icons";
+import { IconGlyph, LibraryGlyph } from "@/components/library/DashboardIcon";
 import { SMT_DASHBOARDS } from "@/catalogue/dashboards/smt";
 import type { DashboardConfig } from "@/catalogue/types";
 import { loadKeyDashboards } from "@/components/library/data";
-import {
-  initialLens,
-  KeyDashboardsEmpty,
-  KeyDashboardTile,
-  lensesOf,
-  LibraryTile,
-  readStoredLens,
-  type Lens,
-} from "@/components/library/RoleHome";
+import { initialLens, lensesOf, readStoredLens, type Lens } from "@/components/library/RoleHome";
 import { listMeetings } from "@/lib/meeting-store";
 import { LENS_EVENT } from "@/components/shell/RoleSwitch";
 import { shortDate } from "@/lib/meeting-ops";
@@ -78,18 +70,14 @@ export default function TeacherHomePage() {
   const supabase = createBrowserSupabaseClient();
   const [loading, setLoading] = useState(true);
   const [schoolName, setSchoolName] = useState<string | null>(null);
-  // Home.dc.html greets the teacher by name. From their own profiles row (the
-  // profiles_select_own policy), falling back to email exactly as the account page does
-  // for its member list -- so the greeting line is never blank.
-  const [displayName, setDisplayName] = useState<string | null>(null);
   const [phases, setPhases] = useState<TeacherPhase[]>([]);
   const [onboarded, setOnboarded] = useState<TeacherPhase[]>([]);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Same hook and storage key as every dashboard; since the top-nav completion round the
-  // toggle itself is in TeacherNav here too.
-  const [theme, setTheme] = useTeacherTheme();
-  const [labelsOn, setLabelsOn] = useNavLabels(schoolUrn, onboarded);
+  // 0.8 front door: the theme (Mid included) and the nav labels are HomeFrame's.
+  // 0.8 front door (A5, A7): the welcome once, then "New since your last visit". Not in View as or a peek.
+  const [visitReady, setVisitReady] = useState<{ viewingAs: boolean } | null>(null);
+  const whatsNewEntries = useFirstVisit(visitReady !== null, visitReady?.viewingAs ?? true);
   // 0.6 role home (flag on only).
   const [v06, setV06] = useState(false);
   const [lenses, setLenses] = useState<Lens[]>(["teacher"]);
@@ -115,19 +103,13 @@ export default function TeacherHomePage() {
         setLoading(false);
         return;
       }
+      // 0.8 front door: the home opens on its question, not a greeting (the boards).
       const user = sessionData.session?.user;
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("email, full_name")
-          .eq("id", user.id)
-          .maybeSingle<{ email: string | null; full_name: string | null }>();
-        setDisplayName(profile?.full_name || profile?.email || user.email || null);
-      }
       // VicData 0.6: a confirmed trial (the look-as pair, or this tab's active trial) is
       // that school as that one role, and the phase tiles carry it on.
       const search = new URLSearchParams(window.location.search);
       const trial = await resolveViewAs(supabase);
+      setVisitReady({ viewingAs: !!trial || search.get("peek") === "1" });
       // A trial always uses the config renderer: role homes exist only there.
       const on = configRendererRequested(search) || !!trial;
       setV06(on);
@@ -219,129 +201,86 @@ export default function TeacherHomePage() {
 
   if (loading) return <main className="mx-auto max-w-3xl p-6"><ViewAsBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
 
+  // 0.8 front door (B8): one home for everyone, of plain question tiles. A person with more than one role
+  // sees each role's section, stacked (a thin dark gap between them). The heading sits on the field when
+  // there is one section, above them when there are more.
+  const shown: Lens[] = v06 ? lenses : ["teacher"];
+  const teacherPhases = (!error && shown.includes("teacher") ? phases : []) as TeacherPhase[];
+  const sectionsWanted = [
+    ...(shown.includes("smt") ? ["smt"] : []),
+    ...teacherPhases,
+    ...(shown.includes("admissions") || (v06 && schoolAdmin && !shown.includes("smt")) ? ["admissions"] : []),
+  ];
+  const single = sectionsWanted.length === 1;
+  const sub = shown.length > 1 ? "Your roles, one after another. Each question walks you through a few screens, one thing at a time." : SUBLINE[shown[0]];
+  const onField = single ? <HomeHeading sub={sub} onField /> : undefined;
+  const sections = sectionsWanted.map((k) =>
+    k === "smt" ? (
+      <SmtSection key="smt" heading={onField} />
+    ) : k === "admissions" ? (
+      schoolUrn ? <AdmissionsSection key="admissions" urn={schoolUrn} heading={onField} /> : null
+    ) : k === "ks2" ? (
+      <TeacherKs2Section key="ks2" />
+    ) : schoolUrn ? (
+      <TeacherPhaseSection key={k} urn={schoolUrn} phase={k as "ks4" | "ks5"} heading={onField} />
+    ) : null,
+  );
+  const extraDashboards = shown.flatMap((l) => keyDashboards[l] ?? []);
+  const also: AlsoItem[] = [
+    { href: "/dashboards", title: "Dashboards", line: "Every dashboard, in full", icon: <span className="flex h-4 w-4 [&>svg]:h-4 [&>svg]:w-4">{LibraryGlyph}</span>, colour: LIBRARY_ACCENT },
+    ...extraDashboards.map((k) => ({ href: k.href, title: k.config.name, line: "A key VicData dashboard", icon: <IconGlyph drawing={resolveIcon(iconOf(k.config))} size={16} />, colour: colourOf(k.config.colour) })),
+    ...(shown.includes("admissions") ? [{ href: "/teacher/admissions/team", title: "Team", line: "Who else works on admissions", icon: <PeopleGlyph />, colour: ROLE_ACCENT.admissions }] : []),
+    ...(shown.includes("smt") || shown.includes("teacher") ? [{ href: "/teacher/recruitment", title: "Recruitment", line: "Who joins, and from where", icon: <RecruitmentGlyph />, colour: FEATURE_ACCENT.recruitment }] : []),
+    { href: "/teacher/meetings", title: "Meetings", line: nextMeeting ? `Next: ${nextMeeting.name}, ${shortDate(nextMeeting.date)}` : "What do you need to show, and to whom?", icon: <MeetingsGlyph />, colour: FEATURE_ACCENT.meetings },
+  ];
+
   return (
-    <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
-      <ViewAsBanner />
+    <>
+      <HomeFrame
+        strip={<WhatsNewStrip entries={whatsNewEntries} />}
+        heading={single ? null : <HomeHeading sub={sub} onField={false} />}
+        sections={[
+          ...(error ? [<p key="error" className="mx-auto w-full max-w-[1160px] px-4 text-sm text-[var(--muted)] sm:px-10">{error}</p>] : []),
+          ...sections,
+          // Q10 in the open-questions log: Teacher view is subject-exam-data only, and an independent
+          // junior/prep has no public exams at that stage -- so Teacher view simply does not apply.
+          ...(!error && phases.length === 0 && shown.includes("teacher") && !shown.includes("smt")
+            ? [
+                <div key="empty" className="mx-auto w-full max-w-[1160px] px-4 sm:px-10">
+                  <div className="rounded-lg border border-[var(--panel-border)] p-5">
+                    <h2 className="text-base font-semibold">Why is Teacher view empty for this school?</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+                      Teacher view is built entirely on subject exam results, and {schoolName ?? "this school"} doesn&rsquo;t sit any &mdash; so there is nothing for it to show.
+                    </p>
+                    <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+                      That isn&rsquo;t true of the platform as a whole. Roll, feeder-school and catchment data are held for your school, and the SMT, Finance and Admissions views are built on those rather than on exam results. If that&rsquo;s the view you need, your school&rsquo;s admin can grant it.
+                    </p>
+                  </div>
+                </div>,
+              ]
+            : []),
+        ]}
+        also={also}
+        labelsUrn={schoolUrn}
+        labelsPhases={onboarded}
+      />
       {/* 0.8 SMT feedback round 2 (section 6): feedback on this home as a whole. */}
       {schoolUrn && <PageSurface surface={schoolSurface({ product: "home", dashboard: { id: `home:${lens}`, name: HOME_NAME[lens] }, urn: schoolUrn, name: schoolName ?? schoolUrn, role: lens, state: { lens } })} />}
-      {/* No phase switcher here (phases={[]}): the tile list below already is the phase
-          picker, and a richer one than the nav's. */}
-      <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
-      {/* Home.dc.html's order: the teacher's name as the page's headline, their school
-          directly under it, then the question as its own line -- a prompt, not a heading. */}
-      <div className="mt-6">
-        {displayName && <h1 className="text-[22px] font-bold leading-tight">{displayName}</h1>}
-        {schoolName && <p className="mt-0.5 text-[13px] text-[var(--muted)]">{schoolName}</p>}
-      </div>
-      {/* 0.8 View as (B): the role switch moved from here into the nav (NavRoleSwitch), which switches
-          this home in place (LENS_EVENT). */}
+    </>
+  );
+}
 
-      <p className="mt-[22px] text-base font-semibold text-[var(--muted2)]">What would you like to look at?</p>
+// Each role's line under the heading (the boards' wording).
+const SUBLINE: Record<Lens, string> = {
+  teacher: "Pick a question. Each one walks you through a few screens, one thing at a time.",
+  smt: "The whole school first, then down to subjects. Each question walks you through a few screens, one thing at a time.",
+  admissions: "The pool of children who could join you, and the share you win. Each question walks you through a few screens.",
+};
 
-      {error && <p className="mt-6 text-sm text-amber-700 dark:text-amber-400">{error}</p>}
-
-      {/* 0.6: SMT and Admissions homes -- their key dashboards (an empty tile until they're
-          built), then the same Dashboards, Recruitment and Meetings tiles. */}
-      {v06 && !error && lens !== "teacher" && (
-        <div className="mt-6 flex flex-col gap-3">
-          {/* 0.8 SMT r1 (B6): the SMT home opens on The school (its dashboards and a summary line),
-              in KeyDashboardsEmpty's place; Admissions follows, read-only for SMT. */}
-          {lens === "smt" && <SchoolTile />}
-          {/* 0.8 groups r1: the school's group, where its head office holds a group account. */}
-          {lens === "smt" && <SchoolGroupTile urn={schoolUrn} />}
-          {(lens === "admissions" || lens === "smt") && <AdmissionsTile />}
-          {(keyDashboards[lens] ?? []).length > 0 ? (
-            keyDashboards[lens]!.map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens={lens} />)
-          ) : lens === "admissions" || lens === "smt" ? null : (
-            // 0.7 admissions r2: the Admissions lens has its own tile above, not a placeholder.
-            <KeyDashboardsEmpty lens={lens} />
-          )}
-          <LibraryTile lens={lens} />
-          <HomeCard
-            href="/teacher/recruitment"
-            colour={FEATURE_ACCENT.recruitment}
-            icon={<RecruitmentGlyph />}
-            title="Recruitment"
-            description="Who are we hiring, and how do their current schools compare with ours?"
-          />
-          <HomeCard
-            href="/teacher/meetings"
-            colour={FEATURE_ACCENT.meetings}
-            icon={<MeetingsGlyph />}
-            title="Meetings"
-            description={nextMeeting ? `Next: ${nextMeeting.name}, ${shortDate(nextMeeting.date)}` : "What do you need to show, and to whom?"}
-          />
-        </div>
-      )}
-
-      {/* Phases and features in one stacked list, as Home.dc.html has it. */}
-      {!error && phases.length > 0 && (!v06 || lens === "teacher") && (
-        <div className="mt-6 flex flex-col gap-3">
-          {phases.map((phase) => {
-            const state = phaseTileState(phase, onboarded);
-            return (
-              <HomeCard
-                key={phase}
-                href={`/teacher/${phase}`}
-                colour={PHASE_ACCENT[phase] ?? NEUTRAL_TILE}
-                icon={<PhaseGlyph phase={phase} />}
-                title={PHASE_LABELS[phase]}
-                description={PHASE_HOME_CARD_DESCRIPTION[phase]}
-                footer={state === "open-dashboard" ? "Open dashboard" : "Take the 4-step tour to unlock"}
-              />
-            );
-          })}
-
-          {/* §10 and §11: Recruitment and Meetings are standalone features, not phases.
-              They follow the phase cards in the same list, as in the mockup, each in its
-              own colour and with no tour line. Shown only where Teacher view itself
-              applies -- a school with no exam data has nothing to build a candidate
-              comparison or a slide deck from. Titled by name with the question as the
-              description, so §14's question still leads the card's reading. */}
-          {/* 0.6: any other key dashboard for Teacher, then the library. */}
-          {v06 && (keyDashboards.teacher ?? []).map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens="teacher" />)}
-          {v06 && <LibraryTile lens="teacher" />}
-          {v06 && schoolAdmin && <AdmissionsTile />}
-          {v06 && schoolAdmin && !lenses.includes("smt") && <SchoolGroupTile urn={schoolUrn} />}
-          <HomeCard
-            href="/teacher/recruitment"
-            colour={FEATURE_ACCENT.recruitment}
-            icon={<RecruitmentGlyph />}
-            title="Recruitment"
-            description="Who are we hiring, and how do their current schools compare with ours?"
-          />
-          <HomeCard
-            href="/teacher/meetings"
-            colour={FEATURE_ACCENT.meetings}
-            icon={<MeetingsGlyph />}
-            title="Meetings"
-            description={v06 && nextMeeting ? `Next: ${nextMeeting.name}, ${shortDate(nextMeeting.date)}` : "What do you need to show, and to whom?"}
-          />
-        </div>
-      )}
-
-      {/* Q10 in the open-questions log, as corrected mid-build. This is NOT a data gap
-          to design around: Teacher view is subject-exam-data only, and an independent
-          junior/prep has no public exams at that stage and confirmed zero KS2 data (DfE
-          publishes none for independent schools at all). So Teacher view simply does not
-          apply to this school type, ever -- "no data yet" or "coming soon" would both be
-          untrue. Kept deliberately minimal, and careful not to imply the platform has
-          nothing for this school: SMT, Finance and Admissions views are built on rolls,
-          feeder schools and catchment context, which this school does have. */}
-      {!error && phases.length === 0 && (!v06 || lens === "teacher") && (
-        <div className="mt-6 rounded-lg border border-neutral-200 p-5 dark:border-neutral-800">
-          <h2 className="text-base font-semibold">Why is Teacher view empty for this school?</h2>
-          <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-            Teacher view is built entirely on subject exam results, and{" "}
-            {schoolName ?? "this school"} doesn&rsquo;t sit any &mdash; so there is nothing for it to show.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-            That isn&rsquo;t true of the platform as a whole. Roll, feeder-school and catchment data are
-            held for your school, and the SMT, Finance and Admissions views are built on those rather
-            than on exam results. If that&rsquo;s the view you need, your school&rsquo;s admin can grant it.
-          </p>
-        </div>
-      )}
-    </main>
+function PeopleGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
   );
 }

@@ -26,18 +26,29 @@ export const FEATURE_ACCENT = {
   meetings: { hex: "#fb7185", rgb: "251,113,133" },
 } as const;
 
-// 0.6 S1: the role colours, literal from People.dc.html (SMT violet, Teacher green,
+// 0.6 S1: the role colours, literal from People.dc.html (SMT violet -- orange from 0.8 front door C20 --, Teacher green,
 // Admissions cyan, School-Admin amber). Same shape as PHASE_ACCENT. HOD and Finance are
 // hidden in the 0.6 UI but keyed for completeness (blue and rose from the existing palette).
 // Teacher and SMT share their hexes with the KS4 and KS5 phase accents; that is the board's
 // choice, logged rather than changed.
-// 0.8 groups r1: the group view's accent, orange as the group wireframes draw it (to confirm with Guy:
-// logged). A product accent, not a role's: head office isn't a role at a school.
-export const GROUP_ACCENT = { hex: "#fb923c", rgb: "251,146,60" } as const;
+// 0.8 groups r1: the group view's accent. A product accent, not a role's: head office isn't a role at a
+// school. 0.8 front door (C20): deep bronze (orange before), set apart from SMT, which took the
+// top-level orange. One value has to serve both themes here (the group pages read the hex directly), so
+// it is the bronze that passes on both: 4.6:1 as text on the dark panel (#131315), 4.0:1 as a mark on
+// white. The Mid homes draw head office's own deeper bronze (#8A5A2B, tint #F3E6D8) through the field
+// tokens in globals.css.
+export const GROUP_ACCENT = { hex: "#a8743f", rgb: "168,116,63" } as const;
+
+// 0.8 front door (C20): SMT is the top level's orange (the group orange family; violet before, the
+// same as Post-16). #fb923c is its Dark value; on Light a mark in it is 2.3:1 on white, so SMT's pages
+// draw ROLE_ACCENT_LIGHT.smt there (5.2:1), through smtVars.
+export const ROLE_ACCENT_LIGHT = {
+  smt: { hex: "#c2410c", rgb: "194,65,12" },
+} as const;
 
 export const ROLE_ACCENT = {
   teacher: { hex: "#34d399", rgb: "52,211,153" },
-  smt: { hex: "#a78bfa", rgb: "167,139,250" },
+  smt: { hex: "#fb923c", rgb: "251,146,60" },
   admissions: { hex: "#22d3ee", rgb: "34,211,238" },
   school_admin: { hex: "#fbbf24", rgb: "251,191,36" },
   hod: { hex: "#60a5fa", rgb: "96,165,250" },

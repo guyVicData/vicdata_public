@@ -2348,7 +2348,7 @@ export const RULES: Rule[] = [
   {
     id: "R-TABLE-FEATURED-ROW",
     statement:
-      "In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes.",
+      "In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT orange and the groups (head office) bronze (0.8 front door C20; SMT violet and groups orange before). One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes.",
     why: "Guy (F-17): in a table the featured school's row has to be found at a glance, and the tint says whose dashboard it is.",
     appliesTo: "every table view: Admissions, Teacher (GCSE, Post-16), SMT, groups",
     enforcedIn: ["src/app/globals.css", "src/components/shell/accent.ts:FEATURED_ROW_BG", "src/components/admissions/views/Tables.tsx:RivalsTable", "src/components/teacher/SchoolRankingTable.tsx", "src/components/teacher/SortTable.tsx", "src/components/teacher/SeriesViews.tsx:YearTable", "src/components/groups/dash/views.tsx", "src/lib/featured-row.test.ts"],
@@ -2652,6 +2652,128 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/smt/academic.ts:buildAcademic", "src/lib/smt/academic-data.ts:qualRows"],
     testCase: { urn: "100183", school: "Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries", phase: "ks5", expect: "Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total.", check: "smtEntriesOneTotal" },
     origin: "0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1)",
+    status: "active",
+  },
+  // ------------------------------------------------------------------ 0.8 front door, part 1
+  {
+    id: "R-THEME-MID-SCOPE",
+    statement:
+      "The theme switch is Dark · Mid · Light, remembered per person (one localStorage key, as before). Mid applies to the homes and the walks only: every other page -- every dashboard, the sets pages, admin pages -- reads useTeacherTheme(), which answers Dark under Mid, and only the files listed in MID_PAGES (src/lib/front-door/scope.ts) read the person's Mid choice (useThemePref). In Mid the page, its header and the \"Also here\" band stay dark; only the area being worked in (a [data-field]) takes its part's colour.",
+    why: "Guy (C18, 9-13 Nov): a friendlier mid-tone for the homes and walks; he leans to Mid there only and wants to see it on dashboards later.",
+    appliesTo: "every page with #teacher-root",
+    enforcedIn: ["src/components/shell/TeacherChrome.tsx:useTeacherTheme, useThemePref, effectiveTheme, ThemeToggle", "src/lib/front-door/scope.ts:MID_PAGES", "src/app/globals.css ([data-pref=\"mid\"] [data-field])", "src/lib/front-door/theme-scope.test.ts"],
+    testCase: { urn: "110110", school: "the source tree (no database)", phase: "ks4", expect: "effectiveTheme maps Mid to Dark; useThemePref is read only by MID_PAGES; every dashboard, sets and admin root draws data-theme from useTeacherTheme.", check: "themeMidScope" },
+    origin: "0.8 front door part 1, C18 (docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-THEME-CONTRAST",
+    statement:
+      "Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. The walk's header band (close, the question, the step dots, the subject chip, \"Step n of N\") draws only its own tokens (--wh-*, set on the band), dark in Dark and Mid and light in Light, and each of its pairs, for every part's accent, is in the table.",
+    why: "C18: white text fails on these fields; Guy asked for every pair checked and the table logged. Guy, 13 Nov: the walk header read dark grey on black in Mid (it inherited the Light page's text colour).",
+    appliesTo: "the Mid fields and tiles (GCSE, Post-16, top level, head office, Admissions); the ladder's shut bar, well and column in Dark and Light; the walk's header band in every theme",
+    enforcedIn: ["src/app/globals.css", "src/lib/front-door/contrast.ts:contrastTable", "src/lib/front-door/contrast.ts:walkHeadPairs", "src/components/front-door/WalkPage.tsx:WalkHeader", "src/lib/front-door/contrast.test.ts"],
+    testCase: { urn: "110110", school: "the stylesheet (no database)", phase: "ks4", expect: "Every row of the contrast table reads its colours from globals.css and passes AA for its kind.", check: "themeContrast" },
+    origin: "0.8 front door part 1, C18",
+    status: "active",
+  },
+  {
+    id: "R-PANEL-LADDER",
+    statement:
+      "On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens.",
+    why: "C19: open and shut panels shared one tone (--box-bg), about 6% from the column, so shut panels didn't stand out.",
+    appliesTo: "every dashboard: CardBox (open and shut), DashboardColumn, ShellPage, ShellRow's head",
+    enforcedIn: ["src/app/globals.css (:has([data-dash-ladder]), --shut-*, --well-border)", "src/components/shell/CardBox.tsx", "src/components/shell/DashboardGrid.tsx", "src/components/shell/Rows.tsx", "src/lib/front-door/contrast.ts:ladderSteps"],
+    testCase: { urn: "110110", school: "the stylesheet and the shell (no database)", phase: "ks4", expect: "Shut bar against column at or above the logged steps in Dark and Light; well white in Light and darker than its column in Dark; column lighter than page; the shell marks DashboardGrid and ShellPage and draws the shut bar with the shut tokens.", check: "panelLadder" },
+    origin: "0.8 front door part 1, C19",
+    status: "active",
+  },
+  {
+    id: "R-ROLE-COLOURS",
+    statement:
+      "SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan.",
+    why: "C20: SMT was #a78bfa, the same violet as Post-16; head office needs to read as top level but distinct from SMT.",
+    appliesTo: "the shell, the homes, the set creator colours, the group pages (through GROUP_ACCENT and the tokens)",
+    enforcedIn: ["src/lib/teacher-view-theme.ts:ROLE_ACCENT, ROLE_ACCENT_LIGHT, GROUP_ACCENT", "src/components/smt/ui.tsx:smtVars", "src/app/globals.css (--set-smt-*, --set-group-*, --row-featured-smt, --row-featured-groups)"],
+    testCase: { urn: "110110", school: "the theme module and the stylesheet (no database)", phase: "ks4", expect: "SMT orange (Dark and Light values, Light 4.5:1 on white), bronze 4.5:1 on the dark panel and 3:1 on white, Post-16 violet unchanged, the SMT and group tokens orange and bronze and readable.", check: "roleColours" },
+    origin: "0.8 front door part 1, C20",
+    status: "active",
+  },
+  {
+    id: "R-HOME-TILES",
+    statement:
+      "Every role lands on a home of plain question tiles (/teacher for Teacher, SMT and Admissions, stacked for a person with more than one role; /teacher/group for head office). Every tile has its question; a big figure from real data -- the dashboard's own rows and routes (Teacher: the focus subject's entries this year, its average points, its place among the school and its 10 nearest; SMT: the roll, the headline points, the change on last year; Admissions: the pool and the share; head office: schools, schools growing, the combined roll's change) -- or none, never a placeholder; a row of round icons, one per screen of its walk, each the view's own rail icon and name (hover title and aria-label); and one solid arrow, the one key action. A tile whose walk needs views that don't exist yet says so in its own space.",
+    why: "B8-B9: a teacher shown the dashboards found the interface hard; simple questions that made sense worked, and he expected each to be a button.",
+    appliesTo: "every home: Teacher (GCSE, Post-16), SMT, a primary school's SMT, Admissions, head office",
+    enforcedIn: ["src/components/front-door/home.tsx:QuestionTile", "src/components/front-door/sections.tsx", "src/components/groups/GroupHome.tsx", "src/lib/front-door/walks.ts:WALKS, screenMeta", "src/lib/front-door/teacher-model.ts:teacherTileFigures", "src/lib/front-door/home-tiles.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, GCSE (real data) and every walk's tile (rendered)", phase: "ks4", expect: "Every walk's screens resolve to catalogue views (or the group dashboard's own); The Chase's tiles read its focus subject's entries and points from the dashboard's rows and its place among the 10 nearest; a model with no points gives no figure.", check: "homeTiles" },
+    origin: "0.8 front door part 1, B8-B10",
+    status: "active",
+  },
+  {
+    id: "R-WELCOME-ONCE",
+    statement:
+      "A person's first login opens on one friendly full-screen welcome (/teacher/welcome): what VicData is for, that this is a private beta whose feedback shapes it, and where the feedback buttons live. It is shown once per person (front_door_state.welcome_seen_at, their own row under RLS), marked as they leave it, never in View as or a peek, and never while the table can't be read (before the migration: no loop). Seeing it counts as seeing what's new.",
+    why: "A5: a first visit should say what VicData is and that this is a beta, before any dashboard.",
+    appliesTo: "/teacher (every role at a school) and /teacher/group (head office)",
+    enforcedIn: ["src/lib/front-door/visit.ts:shouldShowWelcome, markWelcomeSeen", "src/components/front-door/first-visit.tsx:WelcomePage, useFirstVisit", "supabase/migrations/20261123090000_v08_front_door_r1.sql", "supabase/tests/v08_front_door_r1_pglite.mjs", "src/lib/front-door/first-visit.test.ts"],
+    testCase: { urn: "110110", school: "the decisions (unit) and the table's RLS (PGlite)", phase: "ks4", expect: "No row or no welcome_seen_at: the welcome; seen: never again; View as and an unreadable table: never; each person reads and writes their own row only.", check: "frontDoorFirstVisit" },
+    origin: "0.8 front door part 1, A5",
+    status: "active",
+  },
+  {
+    id: "R-SETUP-ONE-SCREEN",
+    statement:
+      "Setup is one screen, \"Which subjects do you teach?\" (/teacher/setup): every GCSE and Post-16 subject the school ran in its latest year, qualifications as headings within the list (not a step), the live entry count per phase kept; a school with both phases lists both on the one screen and setting up marks both phases done. The results preview and the question screen are gone (the walks and the home do their jobs). Roles without subjects -- SMT, Admissions, head office, School-Admin -- skip it: welcome, then home. A phase opened before it is set up goes to setup and back.",
+    why: "A6: the four steps (qualifications, subjects, a preview, a question screen) lost people before they reached anything.",
+    appliesTo: "Teacher, GCSE and Post-16",
+    enforcedIn: ["src/lib/front-door/setup.ts", "src/components/front-door/first-visit.tsx:SetupPage, PhasePicker, needsSetup", "src/components/dashboard-config/TeacherDashboard.tsx:GoToSetup", "src/lib/front-door/first-visit.test.ts"],
+    testCase: { urn: "110110", school: "the decisions and the screens' source (unit)", phase: "ks4", expect: "Both phases at a two-phase school; the count moves with each tick; a non-teacher goes straight home; the dashboard's four steps are gone.", check: "frontDoorFirstVisit" },
+    origin: "0.8 front door part 1, A6 (two phases on one screen: the working assumption, logged)",
+    status: "active",
+  },
+  {
+    id: "R-WHATS-NEW",
+    statement:
+      "On later visits a slim \"New since your last visit\" strip opens the home: one line naming the newest changelog entry (\"and n more\"), linking to /teacher/whats-new. It shows only for entries published after the person last saw the strip (or, before that, the welcome), and goes once seen: the visit is recorded after the strip is worked out. An entry can credit feedback (\"Your feedback on X led to this\"), shown only to the people it credits (changelog_for_me). Never in View as. Entries are Guy's, through a seed file (platform admins write the table).",
+    why: "A7: people should see what changed, and that their feedback did something.",
+    appliesTo: "every home",
+    enforcedIn: ["src/lib/front-door/visit.ts:whatsNew, recordVisit, changelogForMe", "src/components/front-door/first-visit.tsx:WhatsNewStrip, WhatsNewPage, useFirstVisit", "supabase/migrations/20261123090000_v08_front_door_r1.sql (changelog_entries, changelog_for_me)", "supabase/tests/v08_front_door_r1_pglite.mjs", "src/lib/front-door/first-visit.test.ts"],
+    testCase: { urn: "110110", school: "the decisions (unit) and the changelog's RLS (PGlite)", phase: "ks4", expect: "An entry newer than the last visit shows; after the visit it doesn't; scheduled entries wait; the credit reaches only its person; only platform admins write.", check: "frontDoorFirstVisit" },
+    origin: "0.8 front door part 1, A7",
+    status: "active",
+  },
+  {
+    id: "R-WALK-RHYTHM",
+    statement:
+      "Every question on a home starts a full-screen walk (/teacher/walk/<id>), a short story in one rhythm -- this year, in context, over time, wider -- built as configuration (src/lib/front-door/walks.ts: an ordered list of existing dataview IDs, each with its question and answer template). Every screen opens a real view (a catalogue dataview, or the group dashboard's own view) and answers its question in one sentence from the data, honest about small numbers and missing years. The Results walks use Average points throughout (the only Results measure with LA and England figures). On a walk's nearby-and-nationally chart the lines are the school, its nearest schools, the LA and England; region is in the table only, never a line, as on the dashboard. A role walk whose views don't exist yet leaves those screens out (logged). Head office's walks draw each screen as the other walks do: the group dashboard's own view (the same ViewBody, header words, caption and rail, groupWalkView) enlarged in the walk's panel, from the group dashboard route's own answer, with an answer sentence from the same figures (group-answers.ts); a screen that compares opens on the set picker's Default \"Nearest in size, same type\", side by side with the set's median (trends with its median and middle half), and carries the picker to change it.",
+    why: "B11-B12: a walk teaches the dashboard by telling one story across its views. Guy, 13 Nov: head office's walks opened the group dashboard after screen 1 instead of drawing the view.",
+    appliesTo: "the GCSE and Post-16 walks (3 each), SMT's 4 (a primary school's 4), Admissions' 2, head office's 4",
+    enforcedIn: ["src/lib/front-door/walks.ts", "src/lib/front-door/teacher-screens.ts", "src/components/front-door/WalkPage.tsx", "src/components/front-door/role-walks.tsx:GroupWalk", "src/components/groups/dash/GroupDashboard.tsx:groupWalkView", "src/lib/front-door/group-answers.ts", "src/lib/front-door/walks-check.ts", "src/lib/front-door/walks.test.tsx", "src/lib/front-door/group-walks.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, GCSE Geography; Leighton Park 110110, Post-16 (real data); every walk's configuration; head office's 4 walks on Harris 3320 and Dukes (the group fixtures)", phase: "ks4", expect: "Every screen a real view in rhythm order; every screen of both schools' six walks answers in a sentence with no unfilled template; the Results walk on Average points; no region line; every head office screen draws its group view, lists it on its own rail and answers with real figures; Against others opens side by side with the set's median.", check: "walkRhythm" },
+    origin: "0.8 front door part 1, B11-B13",
+    status: "active",
+  },
+  {
+    id: "R-WALK-KEYS",
+    statement:
+      "Every walk chart is keyed: a key entry for every colour and mark (the focus, each peer shade, the averages, the LA, England and the nearest schools, the ring and the dot, the dotted unpublished years). Line charts draw only their lines in SVG (vector-effect: non-scaling-stroke); every label -- end labels, ticks, year labels, gap labels -- is HTML over the plot, so it always renders. The value axis is on round numbers (steps of 1, 2, 2.5 or 5 x 10^n, src/lib/front-door/axis.ts), from zero when the lowest value is no more than half the highest, otherwise from the step below it; places run from 1 on whole numbers. Peers on a walk chart take shades of their subject category's colour, light to dark, each with its own marker shape; dashes stay for averages, dotted for unpublished years; reference lines keep fixed colours (LA #3987e5, England #c98500, the nearest schools #d55181).",
+    why: "B14-B16: one vocabulary with the dashboard; Guy saw SVG labels vanish in the mockup. Guy, 13 Nov: the y-axes read 7, 46, 85, 123, 162.",
+    appliesTo: "every walk chart (src/components/front-door/charts.tsx)",
+    enforcedIn: ["src/components/front-door/charts.tsx", "src/lib/front-door/axis.ts:niceAxis", "src/lib/front-door/teacher-screens.ts (keys)", "src/lib/front-door/walks-check.ts:keyProblems", "src/lib/front-door/walks.test.tsx", "src/lib/front-door/axis.test.ts"],
+    testCase: { urn: "137625", school: "The Chase GCSE and Leighton Park Post-16, every walk chart (real data); the renderer (fixture)", phase: "ks4", expect: "No chart has a colour or mark without its key entry; charts.tsx draws no SVG <text>; rendered line charts carry HTML end, tick and year labels.", check: "walkKeys" },
+    origin: "0.8 front door part 1, B14-B16",
+    status: "active",
+  },
+  {
+    id: "R-DUMBBELL",
+    statement:
+      "\"Change (dumbbell)\" (DV-C2-TR-DUMBBELL, walk 1 step 5): one row per comparable subject, ordered by this year's entries, largest first; a ring for the first year, a dot for the latest, a bar between; the focus row tinted in the accent; same-category subjects in the category colour, the rest grey; a dashed school-average row last (the plain average of the subjects in each year); the change in pupils with ▲/▼ (no green or red), equal to the data's latest less first. Not on the dashboard's Context › Trends rail this round (draft): ready to add.",
+    why: "B17: with many peers, lines become spaghetti; a dumbbell shows who grew, largest first.",
+    appliesTo: "the walks (DV-C2-TR-DUMBBELL)",
+    enforcedIn: ["src/lib/front-door/teacher-screens.ts:dumbbellRows", "src/components/front-door/charts.tsx:DumbbellChart", "src/catalogue/dataviews.ts (DV-C2-TR-DUMBBELL, draft)", "src/lib/front-door/walks-check.ts:dumbbellProblems", "src/lib/front-door/walks.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, GCSE Geography (real data), and a fixture", phase: "ks4", expect: "Rows by latest entries, the focus row Geography with the data's change, the school average last and the plain average.", check: "dumbbell" },
+    origin: "0.8 front door part 1, B17",
     status: "active",
   },
   // ------------------------------------------------------------------------------------------------

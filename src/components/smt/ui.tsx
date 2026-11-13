@@ -6,6 +6,7 @@
 // Admissions'. Nothing here computes a figure: every value arrives from /api/smt/*.
 import type { CSSProperties, ReactNode } from "react";
 import { accentVars, productAccent } from "@/components/shell/accent";
+import { ROLE_ACCENT_LIGHT } from "@/lib/teacher-view-theme";
 import { admissionsVars, cx } from "@/components/admissions/ui";
 import type { Theme } from "@/components/shell/TeacherChrome";
 import { periodLabel, withProvisional, type YearFamily } from "@/catalogue/years";
@@ -14,15 +15,18 @@ import { ARROW, arrowed, type Direction, flatBand, signedDelta, signedValue } fr
 const S = productAccent("smt")!;
 
 /** The page root's variables: Admissions' semantic colours, SMT's accent. */
+// 0.8 front door (C20): SMT is orange (violet before): #fb923c on Dark, the darker ROLE_ACCENT_LIGHT.smt
+// on Light, where #fb923c is too faint on white.
 export function smtVars(theme: Theme): CSSProperties {
   const dark = theme === "dark";
+  const a = dark ? S : ROLE_ACCENT_LIGHT.smt;
   return {
     ...admissionsVars(theme),
-    ...accentVars(S, "smt"),
-    "--adm-tint": `rgba(${S.rgb},${dark ? 0.12 : 0.14})`,
-    "--adm-accent-text": dark ? S.hex : "#6d28d9",
-    "--adm-on-accent": "#160f2a",
-    "--adm-range-edge": dark ? "#3b3252" : "#d8ccfa",
+    ...accentVars(a, "smt"),
+    "--adm-tint": `rgba(${a.rgb},${dark ? 0.12 : 0.12})`,
+    "--adm-accent-text": dark ? S.hex : "#b13c0b",
+    "--adm-on-accent": dark ? "#1f0f04" : "#ffffff",
+    "--adm-range-edge": dark ? "#4a2c14" : "#fdba74",
   } as CSSProperties;
 }
 
