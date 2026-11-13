@@ -22,6 +22,12 @@ Guy wants VicData friendlier for staff who aren't stats-minded, and ready for **
 
 **Before you start:** check that `main` holds Part 1 (the Mid theme, the homes, the walk shell, `docs/v0.8/front_door_design/`). If it doesn't, stop and say so in the report: this part builds on it.
 
+**Where things stand (13 Nov, all live at `c1a2a2a`):**
+- **Group sets is merged** (`docs/v0.8/group_sets_report_v1.md`): the one `SetSelector` serves school sets and sets of groups; group mode has its own editor (`GroupSetEditor.tsx`), the groups library, Make default and subsets ("Showing"). The guided editor is for **school** sets (Admissions feeders and rivals, SMT comparison sets). Build it on the same round-1 server library and store; leave group mode's editor, picker and pages working exactly as they are (their parity must not change, apart from the colour fix below).
+- **Part 1 is merged** (`docs/v0.8/front_door_1_report_v1.md`, "What is left" and the seams). Its seams for this part: the Admissions and SMT homes' "Sets of schools" card (`SetsCard` in `sections.tsx`, one `href`) opens `/sets`, so point it at the guided editor; the phone layouts are the responsive defaults, not designed ones; a School-Admin without SMT gets the Admissions section (School-Admin's own account page is this part's F26).
+- **Group pages' leftover orange (Guy, 13 Nov, FD5):** in Light, the Group pages still use orange (`#c2410c`) for some text and chip tints although their accent is bronze since Part 1. Change them to the head office bronze tokens (contrast-checked; add the pairs to R-THEME-CONTRAST's table), and say in the report which Group-page parity pictures move.
+- **Fonts are self-hosted** (`src/app/fonts.css`); `next/font/google` broke the Render build. Don't add any `next/font/google` import.
+
 ## The decisions (Guy, 9–13 Nov)
 
 ### D. Guided sets
@@ -93,11 +99,11 @@ At phone width (the shell's 358 px card, viewports 360–430), every new surface
 
 ## Ground rules
 
-- **Branch `v0.8-front-door-2` from current `main`** (after Part 1 is merged), fetched over HTTPS. Use worktrees for parallel parts if they help.
+- **Branch `v0.8-front-door-2` from current `main`** (`c1a2a2a` or later: group sets and Part 1 are merged), fetched over HTTPS. Use worktrees for parallel parts if they help.
 - **These must be clean at every milestone:** tsc, eslint and build; the unit, rule, RLS and usage-log tests; every PGlite suite (run as their headers say; `view-as-pages.test.ts` with `--test-force-exit`); every parity harness.
 - **Allowed differences in parity:** the new routes and pages (guided editor, admin account, membership); the sets library's colours; phone layouts of the new screens. **Figures never change.**
 - **No database writes.** Migrations are written and tested in PGlite, and Guy applies them. Give each migration's step with the `schema_migrations` insert, per the template in `docs/FEEDBACK.md`.
-- **Name new migrations after the latest one on `main` and in the live history** (today `20261122090000`; the unmerged group-sets branch holds `20261121100000`). Check both before naming.
+- **Name new migrations after the latest one on `main` and in the live history** (today `20261123090000`, front door Part 1's; live and on `main`). Check both before naming.
 - **Never put a server key in client code.** Stage files by name. Don't push or merge.
 - **Log every call** under "2026-11-13: front door, part 2" in `docs/OPEN_QUESTIONS.md`.
 - **Stay inside this part.** Where this part's work meets another part's decision, leave a clean seam (a constant, a prop, a hidden row) and log it; don't build the other part's piece.
