@@ -1,5 +1,7 @@
 # VicData 0.8 front door, part 3 of 3: sign-in, the beta gate and account security
 
+> **PARKED (Guy, 13 Nov):** a separate build, run on its own once everything else in 0.8 is finished.
+>
 > **NOT READY TO RUN.** Guy reviews Parts 1 and 2 first, then settles the open questions below. Then this note and "Open before this runs" are replaced by his answers, and the prompt is committed as v2. Until then, no agent builds from this file.
 
 A Claude Code prompt for the app repo (`~/dev/vicdata_public`) and the app database (`lnhulykjlxmoneappnsp`). Written 13 Nov 2026 from Guy's decisions, 9–13 Nov, made on the design canvas "VicData walkthroughs — GCSE mockup". The decision records are in the project: `claude/vicdata_walkthroughs_decisions_v1.md` and `claude/vicdata_beta_access_and_security_decisions_v1.md`. Where this prompt and those records differ, this prompt wins.
