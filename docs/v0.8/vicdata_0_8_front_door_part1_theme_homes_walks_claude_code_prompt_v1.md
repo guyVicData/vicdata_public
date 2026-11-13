@@ -119,6 +119,16 @@ Guy wants VicData friendlier for staff who aren't stats-minded, and ready for **
 - **R-ROLE-COLOURS:** SMT reads orange everywhere SMT's accent is used; head office reads bronze; Post-16 stays violet.
 - **The existing rules still pass.** Update any rule that names the old Step 4 or SMT's violet. Log every rule retired or rewritten, with why.
 
+## Running beside group sets (Guy, 13 Nov)
+
+Group sets M4–M6 (`feat/group-sets-academic`, worktree `~/dev/vicdata_public_group`) is being built at the same time and **merges to `main` first**. To keep the two apart:
+- **Don't edit the sets or group code:** `src/components/sets/` (`SetSelector`, `SetEditor`, `SetView`, `SetsLibrary`), `src/components/groups/GroupDashboard.tsx` and its views, `src/lib/groups/`, `src/lib/sets/`, `src/app/sets/`, `src/app/teacher/group/` routes other than the home. Where Part 1 needs a change there, leave a seam and log it.
+- **Colours change through the tokens only** (`--set-*` in `globals.css`, `src/lib/teacher-view-theme.ts`): SMT orange and head office bronze reach the set picker and the Group pages through the tokens they already read, never by editing those components.
+- **The head office home (`GroupHome.tsx`) is built last** within milestone 3 (Homes), and keeps the "Groups library" link group sets added (if `main` has it by then; otherwise leave room for it and log it).
+- **The panel ladder** reaches the Group dashboards through the shell's CSS only. Say in the report which Group-page parity pictures it changes, so whoever merges second re-runs them.
+- **Before you finish:** fetch `main`. If group sets has merged, merge `main` into your branch, resolve, and re-run every check and parity harness; report the conflicts and how you resolved them. If it hasn't merged, say so: Guy merges group sets first, then this branch takes `main` and re-runs its checks.
+- Don't touch `~/dev/vicdata_public_group` or its branch.
+
 ## Ground rules
 
 - **Branch `v0.8-front-door-1` from current `main`** (it already holds this prompt and the design files), fetched over HTTPS. Commit the design folder's move first. Use worktrees for parallel parts if they help.
