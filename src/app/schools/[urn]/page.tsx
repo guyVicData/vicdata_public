@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Newsreader, IBM_Plex_Sans } from "next/font/google";
 import { createServerAnonSupabaseClient } from "@/lib/supabase";
 import { lookupAcademicLatestYears, lookupReferenceData } from "@/lib/vicdata-reference";
 import {
@@ -88,12 +87,9 @@ import { cachedReference } from "@/lib/server-cache";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
-// Scoped to this page only, not the global layout (Geist stays the site-wide default
-// everywhere else -- nav, search, other pages) -- design-reference typography for the
-// card-grid rebuild specifically (2026-08-28). next/font/google self-hosts and
-// subsets these at build time, same mechanism the root layout already uses for Geist.
-const newsreader = Newsreader({ subsets: ["latin"], variable: "--font-newsreader", weight: ["400", "500", "600"] });
-const plexSans = IBM_Plex_Sans({ subsets: ["latin"], variable: "--font-plex-sans", weight: ["400", "500", "600"] });
+// Newsreader and IBM Plex Sans: design-reference typography for the card-grid rebuild (2026-08-28).
+// Self-hosted in src/app/fonts.css since 13 Nov 2026 (next/font/google broke the Render build); the
+// variables --font-newsreader and --font-plex-sans are defined there.
 
 type School = {
   urn: string;
@@ -745,7 +741,7 @@ export default async function SchoolPage({
           layout (Geist stays the site default everywhere else). max-w-6xl, not the
           old max-w-3xl -- a 12-column card grid genuinely needs the room a single
           reading column didn't. */}
-      <main className={`${newsreader.variable} ${plexSans.variable} mx-auto max-w-6xl px-6 py-16`} style={{ fontFamily: "var(--font-plex-sans)" }}>
+      <main className="mx-auto max-w-6xl px-6 py-16" style={{ fontFamily: "var(--font-plex-sans)" }}>
         <header className="mb-8">
           <h1 className="font-[family-name:var(--font-newsreader)] text-[32px] font-semibold text-stone-900 dark:text-stone-100">
             {school.current_name}
