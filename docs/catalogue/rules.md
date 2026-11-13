@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 203 rules: 195 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 206 rules: 198 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -211,6 +211,9 @@ What a number is allowed to be. 203 rules: 195 active, 8 superseded; 22 must lif
 | R-PANEL-LADDER | active | On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. | no | auto: panelLadder | — |
 | R-ROLE-COLOURS | active | SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan. | no | auto: roleColours | — |
 | R-HOME-TILES | active | Every role lands on a home of plain question tiles (/teacher for Teacher, SMT and Admissions, stacked for a person with more than one role; /teacher/group for head office). Every tile has its question; a big figure from real data -- the dashboard's own rows and routes (Teacher: the focus subject's entries this year, its average points, its place among the school and its 10 nearest; SMT: the roll, the headline points, the change on last year; Admissions: the pool and the share; head office: schools, schools growing, the combined roll's change) -- or none, never a placeholder; a row of round icons, one per screen of its walk, each the view's own rail icon and name (hover title and aria-label); and one solid arrow, the one key action. A tile whose walk needs views that don't exist yet says so in its own space. | no | auto: homeTiles | — |
+| R-WELCOME-ONCE | active | A person's first login opens on one friendly full-screen welcome (/teacher/welcome): what VicData is for, that this is a private beta whose feedback shapes it, and where the feedback buttons live. It is shown once per person (front_door_state.welcome_seen_at, their own row under RLS), marked as they leave it, never in View as or a peek, and never while the table can't be read (before the migration: no loop). Seeing it counts as seeing what's new. | no | auto: frontDoorFirstVisit | — |
+| R-SETUP-ONE-SCREEN | active | Setup is one screen, "Which subjects do you teach?" (/teacher/setup): every GCSE and Post-16 subject the school ran in its latest year, qualifications as headings within the list (not a step), the live entry count per phase kept; a school with both phases lists both on the one screen and setting up marks both phases done. The results preview and the question screen are gone (the walks and the home do their jobs). Roles without subjects -- SMT, Admissions, head office, School-Admin -- skip it: welcome, then home. A phase opened before it is set up goes to setup and back. | no | auto: frontDoorFirstVisit | — |
+| R-WHATS-NEW | active | On later visits a slim "New since your last visit" strip opens the home: one line naming the newest changelog entry ("and n more"), linking to /teacher/whats-new. It shows only for entries published after the person last saw the strip (or, before that, the welcome), and goes once seen: the visit is recorded after the strip is worked out. An entry can credit feedback ("Your feedback on X led to this"), shown only to the people it credits (changelog_for_me). Never in View as. Entries are Guy's, through a seed file (platform admins write the table). | no | auto: frontDoorFirstVisit | — |
 
 ## Cards
 
@@ -3457,6 +3460,54 @@ What a number is allowed to be. 203 rules: 195 active, 8 superseded; 22 must lif
 | Tagged at | - src/lib/front-door/home-tiles.test.tsx<br>- src/lib/front-door/walks.ts |
 | Test case | The Chase, GCSE (real data) and every walk's tile (rendered) (137625), ks4: Every walk's screens resolve to catalogue views (or the group dashboard's own); The Chase's tiles read its focus subject's entries and points from the dashboard's rows and its place among the 10 nearest; a model with no points gives no figure. [runner: homeTiles] |
 | Origin | 0.8 front door part 1, B8-B10 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WELCOME-ONCE
+
+| Field | Content |
+| --- | --- |
+| Statement | A person's first login opens on one friendly full-screen welcome (/teacher/welcome): what VicData is for, that this is a private beta whose feedback shapes it, and where the feedback buttons live. It is shown once per person (front_door_state.welcome_seen_at, their own row under RLS), marked as they leave it, never in View as or a peek, and never while the table can't be read (before the migration: no loop). Seeing it counts as seeing what's new. |
+| Why | A5: a first visit should say what VicData is and that this is a beta, before any dashboard. |
+| Applies to | /teacher (every role at a school) and /teacher/group (head office) |
+| Enforced in | - src/lib/front-door/visit.ts:shouldShowWelcome, markWelcomeSeen<br>- src/components/front-door/first-visit.tsx:WelcomePage, useFirstVisit<br>- supabase/migrations/20261123090000_v08_front_door_r1.sql<br>- supabase/tests/v08_front_door_r1_pglite.mjs<br>- src/lib/front-door/first-visit.test.ts |
+| Tagged at | - src/components/front-door/first-visit.tsx<br>- src/lib/front-door/first-visit.test.ts<br>- src/lib/front-door/visit.ts |
+| Test case | the decisions (unit) and the table's RLS (PGlite) (110110), ks4: No row or no welcome_seen_at: the welcome; seen: never again; View as and an unreadable table: never; each person reads and writes their own row only. [runner: frontDoorFirstVisit] |
+| Origin | 0.8 front door part 1, A5 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SETUP-ONE-SCREEN
+
+| Field | Content |
+| --- | --- |
+| Statement | Setup is one screen, "Which subjects do you teach?" (/teacher/setup): every GCSE and Post-16 subject the school ran in its latest year, qualifications as headings within the list (not a step), the live entry count per phase kept; a school with both phases lists both on the one screen and setting up marks both phases done. The results preview and the question screen are gone (the walks and the home do their jobs). Roles without subjects -- SMT, Admissions, head office, School-Admin -- skip it: welcome, then home. A phase opened before it is set up goes to setup and back. |
+| Why | A6: the four steps (qualifications, subjects, a preview, a question screen) lost people before they reached anything. |
+| Applies to | Teacher, GCSE and Post-16 |
+| Enforced in | - src/lib/front-door/setup.ts<br>- src/components/front-door/first-visit.tsx:SetupPage, PhasePicker, needsSetup<br>- src/components/dashboard-config/TeacherDashboard.tsx:GoToSetup<br>- src/lib/front-door/first-visit.test.ts |
+| Tagged at | - src/lib/front-door/first-visit.test.ts<br>- src/lib/front-door/setup.ts |
+| Test case | the decisions and the screens' source (unit) (110110), ks4: Both phases at a two-phase school; the count moves with each tick; a non-teacher goes straight home; the dashboard's four steps are gone. [runner: frontDoorFirstVisit] |
+| Origin | 0.8 front door part 1, A6 (two phases on one screen: the working assumption, logged) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WHATS-NEW
+
+| Field | Content |
+| --- | --- |
+| Statement | On later visits a slim "New since your last visit" strip opens the home: one line naming the newest changelog entry ("and n more"), linking to /teacher/whats-new. It shows only for entries published after the person last saw the strip (or, before that, the welcome), and goes once seen: the visit is recorded after the strip is worked out. An entry can credit feedback ("Your feedback on X led to this"), shown only to the people it credits (changelog_for_me). Never in View as. Entries are Guy's, through a seed file (platform admins write the table). |
+| Why | A7: people should see what changed, and that their feedback did something. |
+| Applies to | every home |
+| Enforced in | - src/lib/front-door/visit.ts:whatsNew, recordVisit, changelogForMe<br>- src/components/front-door/first-visit.tsx:WhatsNewStrip, WhatsNewPage, useFirstVisit<br>- supabase/migrations/20261123090000_v08_front_door_r1.sql (changelog_entries, changelog_for_me)<br>- supabase/tests/v08_front_door_r1_pglite.mjs<br>- src/lib/front-door/first-visit.test.ts |
+| Tagged at | - src/components/front-door/first-visit.tsx<br>- src/lib/front-door/first-visit.test.ts<br>- src/lib/front-door/visit.ts |
+| Test case | the decisions (unit) and the changelog's RLS (PGlite) (110110), ks4: An entry newer than the last visit shows; after the visit it doesn't; scheduled entries wait; the credit reaches only its person; only platform admins write. [runner: frontDoorFirstVisit] |
+| Origin | 0.8 front door part 1, A7 |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

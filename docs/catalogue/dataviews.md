@@ -37,7 +37,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-C2-TR-ACTUAL | live | teacher.c2.context · trend · Actual | academic.candidates | subject | subjects | totals | trend | graph | RD-MULTI-TREND |
 | DV-C2-TR-TABLE | live | teacher.c2.context · trend · Trend table | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | totals, points, rate | trend | table | RD-YEAR-TABLE |
 | DV-C2-TR-CHANGELIST | live | teacher.c2.context · trend · Ranked change | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | pct_change, change_points, change_pp | trend | ranking | RD-CHANGE-LIST |
-| DV-C2-TR-DUMBBELL | draft | teacher.c2.context · trend · (no rail) | academic.candidates | subject | subjects | totals, change_points | trend | graph | RD-DUMBBELL |
+| DV-C2-TR-DUMBBELL | draft | teacher.c2.context · trend · (no rail) | academic.candidates | subject | subjects | totals | trend | graph | RD-DUMBBELL |
 | DV-C2-TR-CHANGETABLE | live | teacher.c2.context · trend · Change table | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | totals, points, rate, pct_change, change_points, change_pp | trend | table | RD-YEAR-TABLE |
 | DV-C3-CUR-TILES | live | teacher.c3.comparisons · current · Number tiles | academic.candidates, academic.results (points, threshold, bands, counts) | school | schools | points, rank | single | numerical | RD-NUMBER-TILES |
 | DV-C3-CUR-MAP | live | teacher.c3.comparisons · current · Map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, totals | single | map | RD-RANKINGS-MAP |
@@ -983,7 +983,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | ks4, ks5 |
 | Focus | subject |
 | Compare | subjects |
-| Number types | totals, change_points |
+| Number types | totals |
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-DUMBBELL |

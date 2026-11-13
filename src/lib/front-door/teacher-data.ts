@@ -7,7 +7,7 @@ import { fetchSubjectHeadlineForSchools, fetchSubjectLevelDataForSchools, fetchS
 import { resolveDefaultNearest } from "@/lib/chooser-sets";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
 import { cachedReference } from "@/lib/server-cache";
-import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
+import { lookupAcademicSubjectGeography, lookupAcademicSubjectGradeGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import type { EnglandAverages } from "@/lib/teacher-view-measures";
 import { buildTeacherModel, type AreaRows, type TeacherModel, type TeacherModelInput, type TeacherPhaseId } from "./teacher-model";
 
@@ -46,7 +46,7 @@ async function areaRows(supabase: SupabaseClient, urn: string, phase: TeacherPha
 }
 
 /** The school's own rows (cheap): enough for the subject list and the home's first two tiles. */
-export async function loadTeacherInput(supabase: SupabaseClient, urn: string, phase: TeacherPhaseId, opts: { focusKey: string | null; ticked: string[]; full: boolean }): Promise<TeacherModelInput> {
+export async function loadTeacherInput(supabase: SupabaseClient, urn: string, phase: TeacherPhaseId, opts: { focusKey: string | null; ticked: string[]; full: boolean; lite?: boolean }): Promise<TeacherModelInput> {
   const [{ byUrn }, headlineByUrn, qhByUrn, england, nameRow] = await Promise.all([
     fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" }),
     fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined),
@@ -67,6 +67,8 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
     nearest: [],
     nearestNote: null,
   };
+  // Setup needs the subject list only.
+  if (opts.lite) return input;
   // The nearest schools and the area: the third tile and the walks' wider screens.
   const focus = buildTeacherModel(input, opts.focusKey, opts.ticked).focus;
   const [near, area] = await Promise.all([
@@ -85,9 +87,26 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
     input.nearestNote = near.subjectNote ?? near.note ?? null;
   }
   input.area = area;
+  if (opts.full) {
+    // The nearby walk's map: every school's grid position (public school rows).
+    const urns = [urn, ...input.nearest.map((n) => n.urn)];
+    const { data: rows } = await supabase.from("schools").select("urn, easting, northing").in("urn", urns);
+    input.coords = Object.fromEntries(((rows ?? []) as { urn: string; easting: number | null; northing: number | null }[]).map((r) => [r.urn, { easting: r.easting, northing: r.northing }]));
+    // The grades screen's England ticks: England's share at each grade, the same subject and qualification
+    // and the same year as the school's grades (the grade-geography rows the dashboard's Grades view reads).
+    const model = buildTeacherModel(input, opts.focusKey, opts.ticked);
+    if (model.focus && model.grades) {
+      const p = model.grades.period;
+      const geo = await cachedReference(`geo:grades:${phase}:${model.focus.subject}:${model.focus.qualificationType}:${p}`, () =>
+        lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], subject: model.focus!.subject, qualificationType: model.focus!.qualificationType, periodMin: p, periodMax: p }),
+      ).catch(() => []);
+      const total = geo.reduce((t, r) => t + Number(r.entries_total), 0);
+      if (total > 0) input.englandGradeShare = Object.fromEntries(geo.map((r) => [r.grade, Number(r.entries_total) / total]));
+    }
+  }
   return input;
 }
 
-export async function loadTeacherModel(supabase: SupabaseClient, urn: string, phase: TeacherPhaseId, opts: { focusKey: string | null; ticked: string[]; full: boolean }): Promise<TeacherModel> {
+export async function loadTeacherModel(supabase: SupabaseClient, urn: string, phase: TeacherPhaseId, opts: { focusKey: string | null; ticked: string[]; full: boolean; lite?: boolean }): Promise<TeacherModel> {
   return buildTeacherModel(await loadTeacherInput(supabase, urn, phase, opts), opts.focusKey, opts.ticked);
 }

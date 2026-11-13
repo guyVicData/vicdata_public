@@ -3504,6 +3504,25 @@ const RUNNERS: Record<string, Runner> = {
     const agree = !!focus && f.many?.figure === String(lastOf(focus.entries)) && (f.well === null || f.well.figure === lastOf(focus.points)?.toFixed(1));
     return { pass: !unresolved.length && agree && !!f.many, detail: fmt({ walks: WALKS.length, unresolved: unresolved.join(", ") || "none", focus: m.focus?.label ?? "none", many: f.many?.figure ?? "none", well: f.well?.figure ?? "none", nearby: f.nearby ? `${f.nearby.figure} ${f.nearby.unit}` : "none" }) };
   },
+  // 0.8 front door (A5-A7): the first visit -- the decisions' unit tests (one test per rule) and the tables'
+  // RLS in PGlite. Offline.
+  async frontDoorFirstVisit(_L, rule) {
+    const { execFileSync } = await import("node:child_process");
+    const root = new URL("..", import.meta.url).pathname;
+    const run = (cmd: string, args: string[]) => {
+      try {
+        return { ok: true, out: execFileSync(cmd, args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1e8 }) };
+      } catch (e) {
+        return { ok: false, out: String((e as { stdout?: string }).stdout ?? "") };
+      }
+    };
+    const unit = run("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/front-door/first-visit.test.ts"]);
+    const mine = unit.out.split("\n").filter((l) => /^(ok|not ok) \d+ - /.test(l) && l.includes(rule.id));
+    const pg = rule.id === "R-SETUP-ONE-SCREEN" ? { ok: true, out: "not needed" } : run("node", ["supabase/tests/v08_front_door_r1_pglite.mjs"]);
+    const pgCount = (pg.out.match(/^PASS /gm) ?? []).length;
+    const pass = unit.ok && mine.length > 0 && mine.every((l) => l.startsWith("ok")) && pg.ok;
+    return { pass, detail: fmt({ unit: mine.map((l) => l.replace(/^(ok|not ok) \d+ - /, (m) => (m.startsWith("ok") ? "ok: " : "FAIL: "))).join("; ") || "no test named this rule", pglite: rule.id === "R-SETUP-ONE-SCREEN" ? "n/a" : pg.ok ? `${pgCount} pass` : "FAIL" }) };
+  },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");
     const { featuredRowFindings, NO_FOCUS_ROWS } = await import("../src/lib/featured-row-scan");

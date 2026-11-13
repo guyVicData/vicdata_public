@@ -2709,6 +2709,39 @@ export const RULES: Rule[] = [
     origin: "0.8 front door part 1, B8-B10",
     status: "active",
   },
+  {
+    id: "R-WELCOME-ONCE",
+    statement:
+      "A person's first login opens on one friendly full-screen welcome (/teacher/welcome): what VicData is for, that this is a private beta whose feedback shapes it, and where the feedback buttons live. It is shown once per person (front_door_state.welcome_seen_at, their own row under RLS), marked as they leave it, never in View as or a peek, and never while the table can't be read (before the migration: no loop). Seeing it counts as seeing what's new.",
+    why: "A5: a first visit should say what VicData is and that this is a beta, before any dashboard.",
+    appliesTo: "/teacher (every role at a school) and /teacher/group (head office)",
+    enforcedIn: ["src/lib/front-door/visit.ts:shouldShowWelcome, markWelcomeSeen", "src/components/front-door/first-visit.tsx:WelcomePage, useFirstVisit", "supabase/migrations/20261123090000_v08_front_door_r1.sql", "supabase/tests/v08_front_door_r1_pglite.mjs", "src/lib/front-door/first-visit.test.ts"],
+    testCase: { urn: "110110", school: "the decisions (unit) and the table's RLS (PGlite)", phase: "ks4", expect: "No row or no welcome_seen_at: the welcome; seen: never again; View as and an unreadable table: never; each person reads and writes their own row only.", check: "frontDoorFirstVisit" },
+    origin: "0.8 front door part 1, A5",
+    status: "active",
+  },
+  {
+    id: "R-SETUP-ONE-SCREEN",
+    statement:
+      "Setup is one screen, \"Which subjects do you teach?\" (/teacher/setup): every GCSE and Post-16 subject the school ran in its latest year, qualifications as headings within the list (not a step), the live entry count per phase kept; a school with both phases lists both on the one screen and setting up marks both phases done. The results preview and the question screen are gone (the walks and the home do their jobs). Roles without subjects -- SMT, Admissions, head office, School-Admin -- skip it: welcome, then home. A phase opened before it is set up goes to setup and back.",
+    why: "A6: the four steps (qualifications, subjects, a preview, a question screen) lost people before they reached anything.",
+    appliesTo: "Teacher, GCSE and Post-16",
+    enforcedIn: ["src/lib/front-door/setup.ts", "src/components/front-door/first-visit.tsx:SetupPage, PhasePicker, needsSetup", "src/components/dashboard-config/TeacherDashboard.tsx:GoToSetup", "src/lib/front-door/first-visit.test.ts"],
+    testCase: { urn: "110110", school: "the decisions and the screens' source (unit)", phase: "ks4", expect: "Both phases at a two-phase school; the count moves with each tick; a non-teacher goes straight home; the dashboard's four steps are gone.", check: "frontDoorFirstVisit" },
+    origin: "0.8 front door part 1, A6 (two phases on one screen: the working assumption, logged)",
+    status: "active",
+  },
+  {
+    id: "R-WHATS-NEW",
+    statement:
+      "On later visits a slim \"New since your last visit\" strip opens the home: one line naming the newest changelog entry (\"and n more\"), linking to /teacher/whats-new. It shows only for entries published after the person last saw the strip (or, before that, the welcome), and goes once seen: the visit is recorded after the strip is worked out. An entry can credit feedback (\"Your feedback on X led to this\"), shown only to the people it credits (changelog_for_me). Never in View as. Entries are Guy's, through a seed file (platform admins write the table).",
+    why: "A7: people should see what changed, and that their feedback did something.",
+    appliesTo: "every home",
+    enforcedIn: ["src/lib/front-door/visit.ts:whatsNew, recordVisit, changelogForMe", "src/components/front-door/first-visit.tsx:WhatsNewStrip, WhatsNewPage, useFirstVisit", "supabase/migrations/20261123090000_v08_front_door_r1.sql (changelog_entries, changelog_for_me)", "supabase/tests/v08_front_door_r1_pglite.mjs", "src/lib/front-door/first-visit.test.ts"],
+    testCase: { urn: "110110", school: "the decisions (unit) and the changelog's RLS (PGlite)", phase: "ks4", expect: "An entry newer than the last visit shows; after the visit it doesn't; scheduled entries wait; the credit reaches only its person; only platform admins write.", check: "frontDoorFirstVisit" },
+    origin: "0.8 front door part 1, A7",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

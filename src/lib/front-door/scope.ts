@@ -7,4 +7,6 @@ export const MID_PAGES: string[] = [
   "src/components/front-door/home.tsx",
   "src/components/front-door/sections.tsx",
   "src/components/groups/GroupHome.tsx",
+  // The first visit (A5-A7): welcome, setup, the changelog page.
+  "src/components/front-door/first-visit.tsx",
 ];

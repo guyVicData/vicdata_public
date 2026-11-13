@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   if (caller instanceof NextResponse) return caller;
   const ticked = (q.get("ticked") ?? "").split("|").filter(Boolean);
   try {
-    const model = await loadTeacherModel(supabase, urn, phase, { focusKey: q.get("focus"), ticked, full: q.get("full") === "1" });
+    const model = await loadTeacherModel(supabase, urn, phase, { focusKey: q.get("focus"), ticked, full: q.get("full") === "1", lite: q.get("lite") === "1" });
     return NextResponse.json(model);
   } catch {
     return NextResponse.json({ error: "Could not load this school's figures." }, { status: 502 });

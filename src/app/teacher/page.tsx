@@ -33,6 +33,7 @@ import { RecruitmentGlyph, MeetingsGlyph } from "@/components/teacher/HomeCard";
 import { configRendererRequested } from "@/components/dashboard-config/plan";
 import { ADMISSIONS_DASHBOARDS, TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
 import { HomeFrame, HomeHeading, type AlsoItem } from "@/components/front-door/home";
+import { useFirstVisit, WhatsNewStrip } from "@/components/front-door/first-visit";
 import { AdmissionsSection, SmtSection, TeacherKs2Section, TeacherPhaseSection } from "@/components/front-door/sections";
 import { colourOf, iconOf, LIBRARY_ACCENT, resolveIcon } from "@/lib/dashboard-icons";
 import { IconGlyph, LibraryGlyph } from "@/components/library/DashboardIcon";
@@ -74,6 +75,9 @@ export default function TeacherHomePage() {
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // 0.8 front door: the theme (Mid included) and the nav labels are HomeFrame's.
+  // 0.8 front door (A5, A7): the welcome once, then "New since your last visit". Not in View as or a peek.
+  const [visitReady, setVisitReady] = useState<{ viewingAs: boolean } | null>(null);
+  const whatsNewEntries = useFirstVisit(visitReady !== null, visitReady?.viewingAs ?? true);
   // 0.6 role home (flag on only).
   const [v06, setV06] = useState(false);
   const [lenses, setLenses] = useState<Lens[]>(["teacher"]);
@@ -105,6 +109,7 @@ export default function TeacherHomePage() {
       // that school as that one role, and the phase tiles carry it on.
       const search = new URLSearchParams(window.location.search);
       const trial = await resolveViewAs(supabase);
+      setVisitReady({ viewingAs: !!trial || search.get("peek") === "1" });
       // A trial always uses the config renderer: role homes exist only there.
       const on = configRendererRequested(search) || !!trial;
       setV06(on);
@@ -232,6 +237,7 @@ export default function TeacherHomePage() {
   return (
     <>
       <HomeFrame
+        strip={<WhatsNewStrip entries={whatsNewEntries} />}
         heading={single ? null : <HomeHeading sub={sub} onField={false} />}
         sections={[
           ...(error ? [<p key="error" className="mx-auto w-full max-w-[1160px] px-4 text-sm text-[var(--muted)] sm:px-10">{error}</p>] : []),

@@ -8,25 +8,25 @@ import type { SubjectGradeCount } from "@/lib/grade-rows";
 import { familyFor } from "@/lib/teacher-view-catalogue";
 import { englandIndexOf, englandValueAt, ownHeadlineRows, subjectEntriesAt, subjectPointsAt, type EnglandAverages } from "@/lib/teacher-view-measures";
 import { candidateItemsOf, categoryItemsOf, focusQualificationFamily, schoolSubjectsOf, subjectItemsOf, type SubjectItem } from "@/lib/teacher-view-populations";
-import { qualificationShortLabel } from "@/lib/teacher-view-theme";
+import { qualificationFamilyOf, qualificationShortLabel } from "@/lib/teacher-view-theme";
 
 export type TeacherPhaseId = "ks4" | "ks5";
 type Series = (number | null)[];
 
 export type SubjectRow = { key: string; label: string; subject: string; qualificationType: string; focus: boolean; entries: Series; points: Series };
-export type SchoolRow = { urn: string; name: string; distanceKm: number | null; isTarget: boolean; entries: Series; points: Series };
+export type SchoolRow = { urn: string; name: string; distanceKm: number | null; isTarget: boolean; entries: Series; points: Series; easting: number | null; northing: number | null };
 export type AreaLine = { name: string; entries: Series; points: Series } | null;
 
 export type TeacherModel = {
   phase: TeacherPhaseId;
   school: { urn: string; name: string };
   /** Every subject the school runs (the switcher), by entries. */
-  subjects: { key: string; label: string; qualLabel: string }[];
+  subjects: { key: string; label: string; subject: string; qualLabel: string; entries: number; family: string }[];
   focus: { key: string; subject: string; qualificationType: string; label: string; qualLabel: string } | null;
   periods: number[];
   latest: number | null;
   /** The focus's subject category (the taxonomy family the dashboard's Context uses) and its subjects, focus first. */
-  category: { label: string | null; rows: SubjectRow[] };
+  category: { id: string | null; label: string | null; rows: SubjectRow[] };
   /** Every comparable subject in the school, focus first. */
   whole: { rows: SubjectRow[] };
   /** England's figure for the focus, per period (points only: R-NO-GRADE-RATE-GEO). */
@@ -52,6 +52,8 @@ export type TeacherModelInput = {
   nearest: { urn: string; name: string; distanceKm: number | null; headline: AcademicSubjectHeadlineEntry[]; qualificationHeadline: AcademicSubjectHeadlineEntry[] }[];
   nearestNote: string | null;
   englandGradeShare?: Record<string, number> | null;
+  /** Map positions (British National Grid), by URN: the nearby walk's map. */
+  coords?: Record<string, { easting: number | null; northing: number | null }>;
 };
 export type AreaRows = { name: string; rows: { period: number; entries: number | null; avgPointScore: number | null }[] };
 
@@ -89,8 +91,8 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
 
   const nearest: SchoolRow[] = focusItem
     ? [
-        { urn: input.school.urn, name: input.school.name, distanceKm: 0, isTarget: true, ...seriesFor(focusItem, input.headline, input.qualificationHeadline) },
-        ...input.nearest.map((n) => ({ urn: n.urn, name: n.name, distanceKm: n.distanceKm, isTarget: false, ...seriesFor(focusItem, n.headline, n.qualificationHeadline) })),
+        { urn: input.school.urn, name: input.school.name, distanceKm: 0, isTarget: true, ...seriesFor(focusItem, input.headline, input.qualificationHeadline), ...coordOf(input, input.school.urn) },
+        ...input.nearest.map((n) => ({ urn: n.urn, name: n.name, distanceKm: n.distanceKm, isTarget: false, ...seriesFor(focusItem, n.headline, n.qualificationHeadline), ...coordOf(input, n.urn) })),
       ]
     : [];
 
@@ -108,11 +110,11 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
   return {
     phase,
     school: input.school,
-    subjects: items.map((i) => ({ key: i.key, label: i.label, qualLabel: qualificationShortLabel(phase, i.qualificationType) })),
+    subjects: items.map((i) => ({ key: i.key, label: i.label, subject: i.subject, qualLabel: qualificationShortLabel(phase, i.qualificationType), entries: i.entries, family: qualificationFamilyOf(phase, i.qualificationType) })),
     focus: focusItem ? { key: focusItem.key, subject: focusItem.subject, qualificationType: focusItem.qualificationType, label: focusItem.label, qualLabel: qualificationShortLabel(phase, focusItem.qualificationType) } : null,
     periods,
     latest,
-    category: { label: focusItem ? familyFor(input.headline, focusItem.subject)?.label ?? null : null, rows: categoryItems.map(rowOf) },
+    category: { id: focusItem ? familyFor(input.headline, focusItem.subject)?.id ?? null : null, label: focusItem ? familyFor(input.headline, focusItem.subject)?.label ?? null : null, rows: categoryItems.map(rowOf) },
     whole: { rows: wholeItems.map(rowOf) },
     england: { points: focusItem ? periods.map((p) => englandValueAt(input.england, englandIndex, phase, focusItem, p)) : [] },
     area: { la: areaLine(input.area.la), region: areaLine(input.area.region), england: areaLine(input.area.england) },
@@ -121,6 +123,8 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
     grades,
   };
 }
+
+const coordOf = (input: TeacherModelInput, urn: string) => ({ easting: input.coords?.[urn]?.easting ?? null, northing: input.coords?.[urn]?.northing ?? null });
 
 // Best grade first: 9..1 at GCSE, A*..E at A level, then the rest (U, X) last.
 const GRADE_RANK = ["9", "8", "7", "6", "5", "4", "3", "2", "1", "A*", "A", "B", "C", "D", "E", "D*", "D", "M", "P", "U"];

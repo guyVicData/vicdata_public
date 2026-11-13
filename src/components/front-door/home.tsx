@@ -275,7 +275,7 @@ export function FewerToggle() {
  * The page. The root draws Dark in Mid (the header and "Also here" stay dark); `data-pref` lets the
  * fields take their colour. `heading` is drawn above the sections when there is more than one.
  */
-export function HomeFrame({ heading, sections, also, banner, labelsUrn, labelsPhases = [], rootStyle }: { heading: ReactNode | null; sections: ReactNode[]; also: AlsoItem[]; banner?: ReactNode; labelsUrn?: string | null; labelsPhases?: TeacherPhase[]; rootStyle?: CSSProperties }) {
+export function HomeFrame({ heading, sections, also, banner, labelsUrn, labelsPhases = [], rootStyle, strip }: { heading: ReactNode | null; sections: ReactNode[]; also: AlsoItem[]; banner?: ReactNode; labelsUrn?: string | null; labelsPhases?: TeacherPhase[]; rootStyle?: CSSProperties; strip?: ReactNode }) {
   const [pref] = useThemePref();
   const theme = effectiveTheme(pref);
   const [labelsOn, setLabelsOn] = useNavLabels(labelsUrn ?? null, labelsPhases);
@@ -285,6 +285,7 @@ export function HomeFrame({ heading, sections, also, banner, labelsUrn, labelsPh
         {banner ?? <ViewAsBanner />}
         <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={() => {}} />
       </div>
+      {strip}
       {heading && <div className="px-4 pb-8 pt-10 sm:px-10"><div className="mx-auto max-w-[1160px]">{heading}</div></div>}
       <div className="flex flex-col gap-[10px]" data-home-sections={sections.length}>
         {sections}

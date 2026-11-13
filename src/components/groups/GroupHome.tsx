@@ -12,6 +12,7 @@ import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { MeetingsGlyph, type TileColour } from "@/components/teacher/HomeCard";
 import { HomeFrame, HomeHeading, HomeSection, QuestionTile, walkHref, type AlsoItem, type TileFigure } from "@/components/front-door/home";
 import { walksFor } from "@/lib/front-door/walks";
+import { useFirstVisit, WhatsNewStrip } from "@/components/front-door/first-visit";
 import { FEATURE_ACCENT, GROUP_ACCENT } from "@/lib/teacher-view-theme";
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
 import { listMeetings } from "@/lib/meeting-store";
@@ -144,8 +145,10 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
     };
   }, [office, offices]);
 
+  // 0.8 front door (A5, A7): the welcome once, then "New since your last visit" (never in View as).
+  const whatsNewEntries = useFirstVisit(offices.status === "ready", offices.status === "ready" && typeof window !== "undefined" ? offices.viewAs || new URLSearchParams(window.location.search).get("peek") === "1" : true);
   const frame = (sections: ReactNode[], also: AlsoItem[] = []) => (
-    <HomeFrame heading={null} sections={sections} also={also} banner={<GroupViewAsBanner />} rootStyle={groupVars(theme)} />
+    <HomeFrame heading={null} sections={sections} also={also} banner={<GroupViewAsBanner />} rootStyle={groupVars(theme)} strip={<WhatsNewStrip entries={whatsNewEntries} />} />
   );
   const plain = (text: ReactNode) => [<p key="plain" className="mx-auto w-full max-w-[1160px] px-4 pt-6 text-[13px] text-[var(--muted2)] sm:px-10">{text}</p>];
   if (offices.status === "loading") return frame(plain("Loading…"));

@@ -87,14 +87,13 @@ import { fetchComparatorQualifications, seriesFromQualificationRows, type Compar
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
 import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicker";
-import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
 import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 // VicData 0.6 S2: the rules that decide each figure and each comparison population live in
 // these libs (every enforcement point tagged with its rule ID); this page only calls them.
-import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, gradeRowsAt, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, onFocusPointsScale, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
+import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, gradeRowsAt, hasEnglandPointsBenchmark, hasGradesAt, onFocusPointsScale, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
 import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf, subjectItemsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { MINIMUM_SUBJECT_N, deserializeAcademicProfile, subjectYearsFor, type WireAcademicSchoolProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
@@ -167,11 +166,6 @@ function parseChooserChoice(raw: string | undefined): ChooserChoice | null {
   } catch {
     return null;
   }
-}
-
-// The onboarding steps only ever run for GCSE and Post-16, which always have an accent.
-function accentFor(phase: "ks4" | "ks5"): { hex: string; rgb: string } {
-  return productAccent("teacher", phase) as { hex: string; rgb: string };
 }
 
 // The props contract (0.6 E).
@@ -285,10 +279,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Every phase this school has onboarded -- the nav's switcher offers only these.
   const [onboardedPhases, setOnboardedPhases] = useState<TeacherPhase[]>([]);
   const [step, setStep] = useState(0);
-  // Onboarding step 1's ticked qualification families. null = not touched yet, which means
-  // "every family the school has entries under" -- the mockup's pre-ticked default, so a
-  // teacher with only GCSE and BTEC entries never has to discover and tick GCSE by hand.
-  const [qualSelection, setQualSelection] = useState<string[] | null>(null);
   // The dashboard's quick-edit families (the "Which subjects do you teach?" section).
   // null = derive from what is actually ticked, the returning user's real selection;
   // frozen to an explicit list on the first edit, so unticking a family's last subject
@@ -642,8 +632,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // R-IB-NONSUBJECT (S3b): subjectItemsOf leaves the IB Diploma total and IB Core rows out.
   const items = useMemo(() => subjectItemsOf(entries), [entries]);
   const tickedItems = useMemo(() => items.filter((i) => ticked.includes(i.key)), [items, ticked]);
-  // The live count §6 and §14 both single out: ticking a subject moves this immediately.
-  const liveCount = useMemo(() => tickedItems.reduce((sum, i) => sum + i.entries, 0), [tickedItems]);
 
   const persist = useCallback(
     async (next: string[]) => {
@@ -783,11 +771,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     [headline, qualificationHeadline, phase],
   );
 
-  const resultsFor = useCallback(
-    (item: SubjectItem): { value: number; period: number } | null => latestOwnPoints(phase, item, ownRowsFor(item)),
-    [ownRowsFor, phase],
-  );
-
   // The England figures keyed for lookup, "{key}@{period}": key is the subject at GCSE and
   // "{subject}::{qualificationType}" at Post-16.
   const englandIndex = useMemo(() => englandIndexOf(englandAvg), [englandAvg]);
@@ -800,15 +783,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const englandValue = useCallback(
     (item: SubjectItem, period: number): number | null => englandValueAt(englandAvg, englandIndex, phase, item, period),
     [englandAvg, englandIndex, phase],
-  );
-
-  // §6/§14: never a bare number. The anchor is the England average (it used to be this
-  // school's own average across its subjects, which compares a subject with its
-  // neighbours down the corridor, not with the country). Same year as the score or no
-  // anchor at all: a delta against a different year is a difference nobody measured.
-  const englandFor = useCallback(
-    (item: SubjectItem, score: { period: number }): number | null => englandValue(item, score.period),
-    [englandValue],
   );
 
   // 0.6 snag 2 (B): the Edit switch. The page registers the VicData dashboard it draws
@@ -1046,206 +1020,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     );
   }
 
-  // GCSE and Post-16 onboarding: the mockups' four steps (GCSE/Post16-Step1..4.dc.html).
-  //   1. which qualification families -- tiles, from real data;
-  //   2. which subjects -- tabbed by those families, grouped by real subject category;
-  //   3. how they do -- a live preview built from the dashboard's own Results
-  //      computation (resultsFor/englandFor above), so the two can never disagree;
-  //   4. what you get -- the four views, with the dashboard's own column icons.
-  if (!onboarded) {
-    const ph = phase as "ks4" | "ks5";
-    const accentHex = accentFor(ph).hex;
-    const familyOf = (i: SubjectItem) => qualificationFamilyOf(ph, i.qualificationType);
-    const present = QUALIFICATION_FAMILIES[ph].filter((f) => items.some((i) => familyOf(i) === f.id));
-    const selectedFamilies = qualSelection ?? present.map((f) => f.id);
-    const subjectCounts = Object.fromEntries(present.map((f) => [f.id, items.filter((i) => familyOf(i) === f.id).length]));
-    const familyById = new Map(QUALIFICATION_FAMILIES[ph].map((f) => [f.id, f]));
-
-    // Unticking a family also unticks its subjects: otherwise they would stay saved,
-    // hidden from step 2, and quietly reappear on the dashboard.
-    const toggleFamily = (id: string) => {
-      if (selectedFamilies.includes(id)) {
-        setQualSelection(selectedFamilies.filter((f) => f !== id));
-        const drop = new Set(items.filter((i) => familyOf(i) === id).map((i) => i.key));
-        if (ticked.some((k) => drop.has(k))) persist(ticked.filter((k) => !drop.has(k)));
-      } else {
-        setQualSelection([...selectedFamilies, id]);
-      }
-    };
-
-    const steps = [
-      { heading: "Which qualifications do you teach?", intro: "Tick the ones you teach. The next step will only show subjects that exist under these — everything else follows from this.", next: "Next — choose your subjects" },
-      { heading: "Which subjects do you teach?", intro: "Grouped by category. Choose a qualification type, then tick what you teach — across as many categories as you like.", next: "Next — see your results" },
-      {
-        heading: "How well do they do?",
-        intro: ph === "ks4"
-          ? "Average points per entry for what you ticked, against the England GCSE average for each subject. Each qualification is shown on its own — never blended into one."
-          : "Average points per entry for what you ticked, against the England average for the same qualification. Each qualification is shown on its own — never blended into one.",
-        next: "Next — the views you'll get",
-      },
-      { heading: "Here's what you can look at", intro: "For every subject you ticked, four ways to see it.", next: `Done — take me to ${PHASE_LABELS[phase]}` },
-    ];
-    const current = steps[step];
-    // DfE points scales: GCSE grades 9-1; post-16 points per entry top out at 60 (A*).
-    const scaleMax = ph === "ks4" ? 9 : 60;
-
-    return (
-      <main
-        id="teacher-root"
-        data-theme={theme}
-        style={accentVars({ hex: accentHex, rgb: accentFor(ph).rgb }, featuredRowKey("teacher", ph))}
-        // w-full: the root layout's <body> is a flex column, where a mx-auto child sizes to
-        // its content; this pins onboarding to the screen width instead.
-        className="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
-      >
-        <ViewAsBanner className="" />
-        {step === 0 ? (
-          <Link href="/teacher" className="w-fit text-[12.5px] text-[var(--muted)]">&larr; Back</Link>
-        ) : (
-          <button type="button" onClick={() => setStep(step - 1)} className="w-fit text-[12.5px] text-[var(--muted)]">&larr; Back</button>
-        )}
-        <div>
-          <p className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-[var(--accent)]">
-            {PHASE_LABELS[phase]} &middot; Step {step + 1} of 4
-          </p>
-          <h1 className="mt-1.5 text-xl font-bold leading-tight">{current.heading}</h1>
-          <p className="mt-2 text-[13px] leading-relaxed text-[var(--muted2)]">{current.intro}</p>
-        </div>
-
-        {step === 0 && (
-          present.length === 0 ? (
-            <p className="text-sm text-[var(--muted)]">No subject entries recorded for this school.</p>
-          ) : (
-            <QualificationFamilyTiles phase={ph} families={present} selected={selectedFamilies} onToggle={toggleFamily} subjectCounts={subjectCounts} />
-          )
-        )}
-
-        {step === 1 && (
-          <>
-            {/* §6/§14's live count: ticking a subject moves a real number immediately. */}
-            <p className="text-[13px] text-[var(--muted2)]">
-              <span className="text-2xl font-bold tabular-nums text-[var(--fg)]">{liveCount.toLocaleString()}</span>{" "}
-              {liveCount === 1 ? "entry" : "entries"} across {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"} ticked
-            </p>
-            <CategorySubjectPicker
-              families={present.filter((f) => selectedFamilies.includes(f.id))}
-              items={toPickerItems(ph, items.filter((i) => selectedFamilies.includes(familyOf(i))))}
-              ticked={ticked}
-              onToggle={toggle}
-              onSetTicked={persist}
-              theme={theme}
-            />
-          </>
-        )}
-
-        {step === 2 && (
-          tickedItems.length === 0 ? (
-            <p className="text-sm text-[var(--muted)]">Nothing ticked yet — go back a step to choose your subjects.</p>
-          ) : (
-            <>
-              {/* Legend: a swatch per ticked family, and the England-average tick mark. */}
-              <div className="flex flex-wrap items-center gap-3.5 text-[11.5px] text-[var(--muted2)]">
-                {Array.from(new Set(tickedItems.map(familyOf))).map((fid) => (
-                  <span key={fid} className="flex items-center gap-1.5">
-                    <span className="inline-block h-1.5 w-3 rounded-[3px]" style={{ background: familyById.get(fid)?.hex }} />
-                    {familyById.get(fid)?.label}
-                  </span>
-                ))}
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block h-3 w-0.5 bg-[var(--fg)]" />
-                  England average
-                </span>
-              </div>
-              <div className="flex flex-col gap-2.5">
-                {tickedItems.map((i) => {
-                  const fam = familyById.get(familyOf(i));
-                  const score = resultsFor(i);
-                  const england = score ? englandFor(i, score) : null;
-                  const delta = score && england !== null ? score.value - england : null;
-                  const pos = (v: number) => `${Math.min(100, Math.max(0, (v / scaleMax) * 100))}%`;
-                  return (
-                    <div key={i.key} className="flex items-start gap-3 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3.5">
-                      <span
-                        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px]"
-                        style={{ background: `rgba(${fam?.rgb},0.14)`, color: fam?.hex }}
-                      >
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          {COLUMN_ICON_PATHS.results}
-                        </svg>
-                      </span>
-                      <div className="min-w-0 flex-grow">
-                        <div className="flex items-baseline justify-between gap-2.5">
-                          <div className="min-w-0">
-                            <p className="truncate text-[14.5px] font-bold">{i.subject}</p>
-                            <p className="mt-px text-[11px] text-[var(--muted3)]">{qualificationShortLabel(ph, i.qualificationType)}</p>
-                          </div>
-                          <p className="shrink-0 text-xl font-extrabold tabular-nums" style={{ color: score ? fam?.hex : "var(--muted3)" }}>
-                            {score ? score.value.toFixed(1) : "—"}
-                          </p>
-                        </div>
-                        {score && (
-                          <div className="relative mt-2.5 h-1.5 rounded-[3px] bg-[var(--panel-border)]">
-                            <div className="absolute inset-y-0 left-0 rounded-[3px]" style={{ width: pos(score.value), background: fam?.hex }} />
-                            {england !== null && <div className="absolute -top-[3px] h-3 w-0.5 bg-[var(--fg)]" style={{ left: pos(england) }} />}
-                          </div>
-                        )}
-                        <p className="mt-2 text-xs text-[var(--muted2)]">
-                          {!score
-                            ? "No published points score for this qualification."
-                            : delta === null
-                              ? "No England average published for the same year."
-                              : `${Math.abs(delta).toFixed(1)} points ${delta >= 0 ? "above" : "below"} the England ${ph === "ks4" ? "GCSE average for this subject" : "average for this qualification"}.`}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )
-        )}
-
-        {step === 3 && (
-          <div className="flex flex-col gap-2.5">
-            {([
-              ["candidates", "Candidates", q.howMany],
-              ["results", "Results", q.howWell],
-              ["context", "School Context", q.nearMe],
-              // §6.2: UI copy only. The ColumnId, the note key and the module all stay
-              // "rankings"; only what a person reads changes.
-              ["rankings", "Comparisons", q.wider],
-            ] as const).map(([id, title, question]) => (
-              <div key={id} className="flex items-center gap-3 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-[rgba(var(--accent-rgb),0.14)] text-[var(--accent)]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    {COLUMN_ICON_PATHS[id]}
-                  </svg>
-                </span>
-                <div className="min-w-0 flex-grow">
-                  <p className="text-[15px] font-bold">{title}</p>
-                  <p className="mt-0.5 text-[13px] text-[var(--muted2)]">{question}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <button
-          type="button"
-          disabled={step === 0 && selectedFamilies.length === 0}
-          onClick={async () => {
-            if (step < 3) { setStep(step + 1); window.scrollTo(0, 0); return; }
-            if (schoolUrn && await completeOnboarding(supabase, schoolUrn, phase)) setOnboarded(true);
-          }}
-          // Mockup: full-width, accent fill, dark text in the accent's own deep tone.
-          className="mt-2 rounded-[10px] bg-[var(--accent)] p-[13px] text-center text-[14.5px] font-bold disabled:opacity-40"
-          style={{ color: ph === "ks4" ? "#052e1c" : "#1a1030" }}
-        >
-          {current.next}
-        </button>
-      </main>
-    );
-  }
+  // 0.8 front door (A6): GCSE and Post-16 setup is one screen for every phase the school has
+  // (/teacher/setup, "Which subjects do you teach?", the live entry count kept). The old four steps
+  // (qualifications, subjects, a results preview, the question screen) are gone: the walks and the home's
+  // figures do the preview's job, and the question screen is the home. A phase not yet set up goes there.
+  if (!onboarded) return <GoToSetup phase={phase} />;
 
   const formatHeadline = (v: number) => (phase === "ks2" ? `${Math.round(v)}%` : v.toFixed(1));
 
@@ -3067,4 +2846,12 @@ function prefetchOtherPhases(urn: string, phase: string, onboarded: string[], to
   // chooser set, then the schools' profiles), then when the browser is idle.
   const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
   window.setTimeout(() => (idle ? idle(run, { timeout: 4000 }) : run()), PREFETCH_DELAY_MS);
+}
+
+// 0.8 front door (A6): a phase not set up yet opens the one-screen setup, then comes back here.
+function GoToSetup({ phase }: { phase: string }) {
+  useEffect(() => {
+    window.location.replace(`/teacher/setup?next=${encodeURIComponent(`/teacher/${phase}`)}`);
+  }, [phase]);
+  return <main className="mx-auto max-w-4xl p-6"><p className="text-sm text-neutral-500">Opening setup…</p></main>;
 }
