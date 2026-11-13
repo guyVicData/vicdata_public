@@ -51,7 +51,7 @@ function SubjectSwitch({ subjects, value, onChange }: { subjects: { key: string;
   return (
     <label className="inline-flex items-center gap-1.5 rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]">
       Subject
-      <select data-subject-switch="" value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="max-w-[16rem] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none">
+      <select data-subject-switch="" value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="min-h-[44px] max-w-[16rem] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none sm:min-h-0">
         {subjects.map((s) => (
           <option key={s.key} value={s.key}>
             {s.label}
@@ -337,7 +337,7 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
         entries && entries.length > 0 ? (
           <label className="inline-flex items-center gap-1.5 rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]">
             Entry point
-            <select data-entry-switch="" value={current ?? ""} onChange={(e) => setEntry(e.target.value)} className="bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none">
+            <select data-entry-switch="" value={current ?? ""} onChange={(e) => setEntry(e.target.value)} className="min-h-[44px] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none sm:min-h-0">
               {entries.map((e) => (
                 <option key={e} value={e}>
                   {entryPoint(e)?.label ?? e}

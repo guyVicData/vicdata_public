@@ -28,6 +28,8 @@ export const SUGGEST_KM = { min: 2, max: 30, start: 15 } as const;
 export const SIMILAR_SIZE_BAND = { low: 2 / 3, high: 1.5 } as const;
 /** "In your set" and the suggestions show this many before "n more…". */
 export const LIST_SHOWN = 5;
+/** The map draws the nearest this many suggestions (the list holds them all), so a dense area stays readable. */
+export const MAP_SUGGESTIONS = 30;
 
 /** The fields the guided editor reads from a row of the editor route (editor-data.ts EditorRow). */
 export type GuidedRow = {

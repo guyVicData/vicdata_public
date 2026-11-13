@@ -3543,6 +3543,10 @@ const RUNNERS: Record<string, Runner> = {
     const live = rows[0].id === "join" && (s.joinRequests > 0) === !!rows[0].badge && waitingCount(rows) === rows.filter((r) => r.badge).reduce((n, r) => n + (r.id === "join" ? s.joinRequests : 1), 0) && !rows.some((r) => /sign-?ins/i.test(r.title));
     return { pass: unit.pass && live, detail: fmt({ unit: unit.detail, rows: rows.map((r) => `${r.title}: ${r.summary}${r.badge ? ` [${r.badge}]` : ""}`).join("; "), waiting: waitingCount(rows), live }) };
   },
+  async frontDoorMobile(_L, rule) {
+    const unit = unitByRule("src/lib/front-door/mobile.test.tsx", rule.id);
+    return { pass: unit.pass, detail: unit.detail };
+  },
   async setsMakerColours(_L, rule) {
     const unit = unitByRule("src/lib/sets/library.test.ts", rule.id);
     return { pass: unit.pass, detail: unit.detail };

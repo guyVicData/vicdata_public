@@ -2821,6 +2821,17 @@ export const RULES: Rule[] = [
     origin: "0.8 front door part 2, F26",
     status: "active",
   },
+  {
+    id: "R-FRONT-DOOR-MOBILE",
+    statement:
+      "At phone width (the shell's 358 px card, viewports 360-430) every front-door surface of Parts 1 and 2 has a designed phone layout from the same components (breakpoint classes or the page's phone flag, never a phone-only copy of logic): welcome and setup in one column, the subject list as full-width 44 px rows; the homes one tile per row, the walk's icon row wrapping under the question and the arrow on the right; a walk's question and answer, then the chart full width, its rail a horizontal scroll of named chips above it, the mini-map under it and Back/Next in a sticky bottom bar; the guided editor's map a 220 px strip with \"Expand map\", \"In your set\" and \"Add schools\" as two tabs, \"This set now\" and Save in a sticky bottom bar; the School-Admin's account and membership pages one column of cards. At 390 px each renders without horizontal scroll and every control has a 44 px hit area (the shared shell's nav, unchanged here, aside). The landing page and sign-in screens get theirs in Part 3.",
+    why: "G (Guy, 9-13 Nov): pilots will open VicData on a phone; Part 1's phone layouts were the responsive defaults.",
+    appliesTo: "welcome, setup, what's new; the Teacher, SMT, Admissions and head office homes; the walks; the guided editor; the School-Admin's account, membership and head office sharing pages",
+    enforcedIn: ["src/lib/front-door/mobile-scan.ts:FRONT_DOOR_SURFACES, scanControls, wideFindings, MOBILE_EXCEPTIONS", "src/components/front-door/WalkPage.tsx:WalkScreen, RAIL_LIST, RAIL_ROW, WalkFooter", "src/components/front-door/first-visit.tsx", "src/components/front-door/home.tsx", "src/components/sets/GuidedSetEditor.tsx", "src/components/school-admin/SchoolAccount.tsx", "src/lib/front-door/mobile.test.tsx", "docs/v0.8/front_door_2_report_v1.md (the 390 x 844 measurements)"],
+    testCase: { urn: "110110", school: "the surfaces' source and their phone markup rendered on the server (and measured at 390 x 844 in headless Chromium: the report)", phase: "ks4", expect: "No control without a 44 px base height (or a listed exception with why); no phone width over 358 px; a walk stacks question, chart, mini-map with chip rail and sticky Back/Next; setup's subjects are full-width rows; the guided editor's strip, tabs and sticky bar; the School-Admin's cards in one column.", check: "frontDoorMobile" },
+    origin: "0.8 front door part 2, G",
+    status: "active",
+  },
   // ------------------------------------------------------------------------------------------------
   // 0.8 group sets (M3-M6): comparison sets of groups and subsets of a group's own schools.
   {

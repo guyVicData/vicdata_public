@@ -107,7 +107,7 @@ export function QuestionTile({ walk, figure, ctx, href, loading }: { walk: Walk;
         </ul>
         <span className="grow" />
         {href ? (
-          <Link href={href} data-tile-action="" aria-label={`Start: ${question}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--tile-accent)] text-[var(--tile-on-accent)] hover:opacity-90">
+          <Link href={href} data-tile-action="" aria-label={`Start: ${question}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--tile-accent)] text-[var(--tile-on-accent)] hover:opacity-90 sm:h-10 sm:w-10">
             {ARROW}
           </Link>
         ) : (
@@ -179,7 +179,7 @@ export function HomeSection({
           {controls}
           <span className="grow" />
           {dashboard && !fewer && (
-            <Link href={dashboard.href} className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--field-chip-border)] bg-[var(--field-chip-bg)] px-3.5 py-2 text-[14px] font-semibold text-[var(--field-chip-fg)] hover:opacity-90">
+            <Link href={dashboard.href} className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-[var(--field-chip-border)] bg-[var(--field-chip-bg)] px-3.5 py-2 text-[14px] font-semibold text-[var(--field-chip-fg)] hover:opacity-90 sm:min-h-0">
               {GRID} {dashboard.label}
             </Link>
           )}
@@ -194,7 +194,7 @@ export function HomeSection({
             <p className="flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
               {links.map((l, i) =>
                 l.href ? (
-                  <Link key={i} href={l.href} className="font-medium text-[var(--field-ink)] underline decoration-from-font underline-offset-2">
+                  <Link key={i} href={l.href} className="inline-flex min-h-[44px] items-center font-medium text-[var(--field-ink)] underline decoration-from-font underline-offset-2 sm:min-h-0">
                     {l.label}
                   </Link>
                 ) : (
@@ -244,7 +244,7 @@ export function AlsoHere({ items }: { items: AlsoItem[] }) {
                 </span>
               </>
             );
-            const cls = "flex items-center gap-3 rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3";
+            const cls = "flex min-h-[44px] items-center gap-3 rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3";
             return it.href ? (
               <Link key={it.title} href={it.href} className={`${cls} hover:border-[var(--panel-border2)]`}>
                 {body}
@@ -265,7 +265,7 @@ export function AlsoHere({ items }: { items: AlsoItem[] }) {
 export function FewerToggle() {
   const [fewer, setFewer] = useFewerQuestions();
   return (
-    <button type="button" data-fewer-toggle="" aria-pressed={fewer} onClick={() => setFewer(!fewer)} className="text-[13px] font-medium text-[var(--muted)] underline decoration-from-font underline-offset-2 hover:text-[var(--fg)]">
+    <button type="button" data-fewer-toggle="" aria-pressed={fewer} onClick={() => setFewer(!fewer)} className="inline-flex min-h-[44px] items-center text-[13px] font-medium text-[var(--muted)] underline decoration-from-font underline-offset-2 hover:text-[var(--fg)] sm:min-h-0">
       {fewer ? "Show the questions again" : "Show fewer questions"}
     </button>
   );

@@ -68,7 +68,7 @@ export function SchoolGroupTile({ urn }: { urn: string | null }) {
             </div>
           )}
           {data.schoolAdmin && (
-            <label className="mt-3 flex items-start gap-2.5 text-[12.5px]">
+            <label className="mt-3 flex min-h-[44px] items-start gap-2.5 text-[12.5px] sm:min-h-0">
               <button
                 type="button"
                 role="switch"

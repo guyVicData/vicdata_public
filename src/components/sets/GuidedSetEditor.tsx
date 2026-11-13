@@ -35,6 +35,7 @@ import {
   describe,
   guidedWords,
   LIST_SHOWN,
+  MAP_SUGGESTIONS,
   resultsWords,
   setNow,
   SUGGEST_KM,
@@ -263,14 +264,17 @@ export function GuidedSetEditor({ page, start, phone, initialData }: { page: Gui
         focusName={page.schoolName}
         members={tickedRows}
         main={main}
-        suggestions={suggestions}
+        suggestions={suggestions.slice(0, MAP_SUGGESTIONS)}
         maxKm={maxKm}
         accentHex={page.accentHex}
         onAdd={addUrn}
         heightClass={phone ? (mapOpen ? "h-[420px] w-full" : "h-[220px] w-full") : "h-full min-h-[560px] w-full flex-1"}
       />
       <div className={`flex items-center justify-between gap-2 px-3 ${phone ? "py-1" : "absolute bottom-3 left-3 z-[500] rounded-[10px] bg-[var(--panel-bg)]/90 py-2"}`}>
-        <GuidedMapKey mainLegend={words.mainLegend} />
+        <span className="flex flex-col gap-0.5">
+          <GuidedMapKey mainLegend={words.mainLegend} />
+          {suggestions.length > MAP_SUGGESTIONS && <span className="text-[11px] text-[var(--muted2)]">The map shows the nearest {MAP_SUGGESTIONS} of {suggestions.length} suggestions.</span>}
+        </span>
         {phone && (
           <button type="button" data-guided-expand="" aria-expanded={mapOpen} onClick={() => setMapOpen((o) => !o)} className="min-h-[44px] shrink-0 rounded-[10px] border border-[var(--panel-border2)] px-3 text-[12.5px] font-semibold">
             {mapOpen ? "Shrink map" : "Expand map"}
