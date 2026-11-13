@@ -98,7 +98,7 @@ export function contrastTable(css: string): Pair[] {
   pairs.push({ name: "Ladder Light: muted text on the page", fg: ll["--muted"] ?? light["--muted"], bg: ll["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: muted text on the page", fg: ld["--muted"] ?? dark["--muted"], bg: ld["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Light: muted2 text on the page", fg: light["--muted2"], bg: ll["--bg"], kind: "small" });
-  return [...pairs, ...walkHeadPairs(css), ...makerPairs(css), ...groupPairs()];
+  return [...pairs, ...walkHeadPairs(css), ...makerPairs(css), ...groupPairs(), ...adminPairs(css)];
 }
 
 /**
@@ -191,4 +191,21 @@ export function ladderSteps(css: string) {
     lightBorder: contrast(sl["--shut-border"], ll["--panel-bg"]),
     tokens: { ll, ld, sl, sd },
   };
+}
+
+/**
+ * 0.8 front door part 2 (F26, F28): the School-Admin's plain pages -- the role label and links (--admin-text)
+ * on the panel and on the icon's tint, Dark and Light, and the badge's ink on its amber.
+ */
+export function adminPairs(css: string): Pair[] {
+  const t = tokensOf(css, "#teacher-root");
+  const d = { ...t, ...tokensOf(css, SEL.dark) };
+  return [
+    { name: "School admin Light: role text and links on the panel", fg: t["--admin-text"], bg: "#ffffff", kind: "small" },
+    { name: "School admin Light: the row icon on its tint", fg: t["--admin-text"], bg: t["--admin-tint"], kind: "mark" },
+    { name: "School admin Dark: role text and links on the panel", fg: d["--admin-text"], bg: "#141417", kind: "small" },
+    { name: "School admin Dark: role text on the page", fg: d["--admin-text"], bg: "#08080a", kind: "small" },
+    { name: "School admin Dark: the row icon on its tint", fg: d["--admin-text"], bg: d["--admin-tint"], kind: "mark" },
+    { name: "School admin: the badge's text on its amber (both themes)", fg: t["--admin-badge-fg"], bg: t["--admin-badge-bg"], kind: "small" },
+  ];
 }

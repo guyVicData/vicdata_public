@@ -265,6 +265,12 @@ body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #080
 }
 #teacher-root[data-theme="dark"] { --maker-mine: #34d399; --maker-mine-post16: #a78bfa; }
 
+/* 0.8 front door part 2 (F26, F28): the School-Admin's colour on its plain pages (ROLE_ACCENT.school_admin,
+   amber) -- the role label, the row icons' glyph and links (--admin-text), their tint, and the badge (dark
+   ink on the amber). R-THEME-CONTRAST's admin rows. */
+#teacher-root { --admin-text: #8a5d00; --admin-tint: #fdf3dc; --admin-badge-bg: #fbbf24; --admin-badge-fg: #1f1300; }
+#teacher-root[data-theme="dark"] { --admin-text: #fbbf24; --admin-tint: #2a2412; }
+
 /* 0.8 front door part 2 (D22): the guided editor's map -- the distance rings' "5 km" labels and the
    permanent labels beside main feeders, close rivals and the school (Leaflet tooltips, restyled). */
 .vd-ring-label { background: none; border: 0; }
