@@ -46,6 +46,7 @@ export const NO_FOCUS_ROWS: { file: string; has?: string; why: string }[] = [
   { file: "src/components/groups/GroupAccess.tsx", why: "group access: managing members, no focus" },
   { file: "src/components/groups/GroupHome.tsx", why: "the group home lists each group's schools; none is picked" },
   { file: "src/components/groups/library/GroupLibraryPage.tsx", why: "group sets M3: a group's page in the library lists ANOTHER group's schools (its tracklist); none is the focus" },
+  { file: "src/components/sets/GuidedSetEditor.tsx", why: "front door part 2: the guided editor lists the set's schools and the suggestions; the school the set is about is never one of them (it is the map's centre)" },
   { file: "src/components/sets/GroupSetEditor.tsx", why: "group sets M5: the editor lists a subset's schools and the group's schools to add; a tick list, no focus row" },
 ];
 

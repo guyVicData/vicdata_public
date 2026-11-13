@@ -200,7 +200,7 @@ export function SetTrend({ lines, title, format, fullscreen, room, reference, fo
   const forward = new Set([...pinned, ...(hover ? [hover] : [])]);
   const groupSeries = groups.map((g) => {
     const on = forward.has(g.key);
-    return { id: g.key, label: g.label, colour: on ? "var(--group-strong,#c2410c)" : MUTED, width: on ? 2.2 : 1.1, opacity: on ? 1 : 0.45, points: g.pts.map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `${g.label} ${yr(pt.x)}: ${pt.y === null ? "—" : format(pt.y)}` };
+    return { id: g.key, label: g.label, colour: on ? "var(--group-strong,#6b431e)" : MUTED, width: on ? 2.2 : 1.1, opacity: on ? 1 : 0.45, points: g.pts.map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `${g.label} ${yr(pt.x)}: ${pt.y === null ? "—" : format(pt.y)}` };
   });
   // Lines brought forward are drawn last, so they sit above the muted ones (ours always on top).
   const ordered = [...groupSeries.filter((s) => !forward.has(s.id)), ...groupSeries.filter((s) => forward.has(s.id))];

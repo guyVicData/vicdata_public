@@ -68,3 +68,19 @@ export function usedWords(at: string | null, now = new Date()): string {
   const days = Math.floor((now.getTime() - new Date(at).getTime()) / 86_400_000);
   return days <= 0 ? "today" : days === 1 ? "yesterday" : days < 30 ? `${days} days ago` : new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
+
+// 0.8 front door part 2 (D23): who made a set, as the library colours it. A curated compared-against
+// set is the school's (orange) whoever curated it (SMT, the Admissions lead, the School-Admin); a curated
+// feeder set is Admissions' (sky); head office bronze; Victoria Consultancy rose; Default graphite; Mine an
+// outline in the person's phase colour. Round 1 coloured SMT violet and head office orange.
+export type Maker = "default" | "school" | "head_office" | "admissions" | "vc" | "mine";
+export const MAKERS: readonly Maker[] = ["school", "head_office", "admissions", "vc", "mine", "default"];
+export const MAKER_WORD: Record<Maker, string> = { default: "Default", school: "School", head_office: "Head office", admissions: "Admissions", vc: "Victoria Consultancy", mine: "Mine" };
+
+export function makerOf(x: Pick<LibraryItem, "creator" | "kind">): Maker {
+  if (x.creator === "default") return "default";
+  if (x.creator === "me") return "mine";
+  if (x.creator === "group") return "head_office";
+  if (x.creator === "victoria_consultancy") return "vc";
+  return x.kind === "feeders" ? "admissions" : "school";
+}

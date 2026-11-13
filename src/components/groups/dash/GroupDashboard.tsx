@@ -7,6 +7,7 @@
 //
 // Wireframes: docs/wireframes/groups (Main, Schools, Phone). Who sees it is the server's decision
 // (/api/group/dash, src/lib/groups/dash-access.ts); the page draws what it is given.
+import { GROUP_BRONZE } from "@/lib/teacher-view-theme";
 import { activeWithContent, visibleRail } from "@/lib/rail-content";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
@@ -63,16 +64,17 @@ export const GROUP_BADGE = <span className="text-[19px] font-extrabold leading-n
 type Viewer = { as: "head_office" | "view_as" | "school"; accountId: string; groupId: string; name: string; urn: string | null };
 export type DashResponse = { viewer: Viewer; source: "production" | "fixtures"; membership: MembershipRow[]; overview?: GroupOverview; map?: MapSchool[]; schools?: GroupSchools; now?: GroupOverview; academic?: GroupAcademic; pupils?: GroupPupils; sets?: GroupSetsInfo; nearest?: { id: string; label: string; type: string; schools: number }[] };
 
-/** The page root's variables: Admissions' semantic colours, the group accent (orange). */
+/** The page root's variables: Admissions' semantic colours, the group accent (head office bronze). */
 export function groupDashVars(theme: Theme): CSSProperties {
   const dark = theme === "dark";
   return {
     ...admissionsVars(theme),
     ...groupVars(theme),
-    "--adm-tint": `rgba(251,146,60,${dark ? 0.12 : 0.14})`,
-    "--adm-accent-text": dark ? "#fb923c" : "#c2410c",
+    // 0.8 front door part 2 (FD5): head office bronze (orange before).
+    "--adm-tint": `rgba(${GROUP_BRONZE[dark ? "dark" : "light"].tintRgb},${dark ? 0.12 : 0.14})`,
+    "--adm-accent-text": GROUP_BRONZE[dark ? "dark" : "light"].accentText,
     "--adm-on-accent": "#1f0f04",
-    "--adm-range-edge": dark ? "#4a2c14" : "#fdba74",
+    "--adm-range-edge": GROUP_BRONZE[dark ? "dark" : "light"].rangeEdge,
   } as CSSProperties;
 }
 

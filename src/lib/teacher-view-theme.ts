@@ -39,6 +39,15 @@ export const FEATURE_ACCENT = {
 // tokens in globals.css.
 export const GROUP_ACCENT = { hex: "#a8743f", rgb: "168,116,63" } as const;
 
+// 0.8 front door part 2 (FD5, Guy 13 Nov): the Group pages' own text and chip colours in head office
+// bronze, where orange (#c2410c, #9a3412, #fdba74, #fff7ed, #fb923c) was left from before Part 1. One place,
+// read by groupVars / groupDashVars / HeadOfficeBanner and by R-THEME-CONTRAST's table (contrast.ts
+// groupPairs). Panels: Light #ffffff, Dark #0b0b0d (the ladder's well) and #141417 (its column).
+export const GROUP_BRONZE = {
+  light: { accentText: "#7e4f24", chipBorder: "#d9bfa3", chipBg: "#f7eee4", chipFg: "#6b431e", cardEdge: "#d9bfa3", strong: "#6b431e", tintRgb: "168,116,63", rangeEdge: "#d9bfa3" },
+  dark: { accentText: "#c99a66", chipBorder: "#4a3420", chipBg: "#21170e", chipFg: "#e3bf98", cardEdge: "#4a3420", strong: "#e3bf98", tintRgb: "168,116,63", rangeEdge: "#4a3420" },
+} as const;
+
 // 0.8 front door (C20): SMT is the top level's orange (the group orange family; violet before, the
 // same as Post-16). #fb923c is its Dark value; on Light a mark in it is 2.3:1 on white, so SMT's pages
 // draw ROLE_ACCENT_LIGHT.smt there (5.2:1), through smtVars.

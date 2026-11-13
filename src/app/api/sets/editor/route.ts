@@ -7,6 +7,7 @@ import { entryOfPhase } from "@/lib/sets/model";
 // VicData 0.8 sets round 1 (C12-C16): the set editor's rows, suggestions and closeness figures.
 //   GET ?urn&kind=compared_against|feeders&entry=11+ (or &phase=ks4|ks5)&urns=1,2,3
 //       [&sector=state|independent][&boarding=1][&n=10]
+//       [&wide=1]   the guided editor (0.8 front door part 2, D22): a wider feeder pool, up to 120 shown
 // Public reference data about schools (GIAS, the census, published results), for any approved member
 // of the focus school (or a platform admin's View as of it): every member uses sets. The set itself is
 // read and saved with the member's own session (RLS), never here.
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   const sector = sp.get("sector") === "state" || sp.get("sector") === "independent" ? (sp.get("sector") as "state" | "independent") : "all";
   const n = Number(sp.get("n") ?? SUGGESTIONS_SHOWN);
   try {
-    return NextResponse.json(await editorData(c.urn, ep, kind, urns, { sector, boardingOnly: sp.get("boarding") === "1", n: Number.isFinite(n) ? n : SUGGESTIONS_SHOWN }));
+    return NextResponse.json(await editorData(c.urn, ep, kind, urns, { sector, boardingOnly: sp.get("boarding") === "1", n: Number.isFinite(n) ? n : SUGGESTIONS_SHOWN, wide: sp.get("wide") === "1" }));
   } catch (err) {
     console.error("[sets/editor] failed:", err);
     return NextResponse.json({ error: "Could not read the schools." }, { status: 502 });
