@@ -1,0 +1,25 @@
+#!/bin/zsh
+# The round's screenshots: ./shots.sh <outdir>   (the harness served on 127.0.0.1:3191)
+S=${0:A:h}/..; OUT=$1; PW=$S/pw
+H="account=a0000000-0000-4000-8000-000000003320"; D="account=a0000000-0000-4000-8000-0000000d0e55&g=dukes"
+RT="returnTo=%2Fteacher%2Fgroup%2Foverview%3Faccount%3Da0000000-0000-4000-8000-000000003320"
+CMP='[...document.querySelectorAll("[data-set-selector]")].find((e)=>e.textContent.includes("Compared against")).querySelector("[data-set-button]").click()'
+SHOW='[...document.querySelectorAll("[data-set-selector]")].find((e)=>e.textContent.includes("Showing")).querySelector("[data-set-button]").click()'
+shot() { # name query width theme [click] [nofull]
+  local name=$1 q=$2 w=$3 t=$4
+  CLICK="$5" NOFULL="$6" node $PW/pshot.mjs $OUT/$name-$w-$t.png "http://127.0.0.1:3191/index.html?$q&theme=$t" $w ${7:-1000} 5000 | sed "s#^#  #"
+}
+for t in dark light; do for w in 1440 390; do
+  h=$([ $w = 390 ] && echo 844 || echo 1000)
+  shot 01-picker-open-harris "page=overview&$H" $w $t "$CMP" 1 $h
+  shot 02-side-by-side-harris "page=overview&$H&compare=set:a1111111-1111-4111-8111-111111111111" $w $t
+  shot 03-side-by-side-mixed-not-published-dukes "page=overview&$D&compare=set:d4444444-4444-4444-8444-444444444444&focus=secondary" $w $t
+  shot 04-trends-panel-academic-harris "page=academic&$H&compare=set:a1111111-1111-4111-8111-111111111111" $w $t
+  shot 05-trends-large-view-harris "page=academic&$H&compare=set:a1111111-1111-4111-8111-111111111111" $w $t 'document.querySelector("[aria-label=\"Full screen: Results trend\"]").click();;document.querySelectorAll("[data-set-trend-item]")[1].click()' 1 $h
+  shot 06-editor-group-mode-harris "page=edit&$H&kind=group_peers&set=a1111111-1111-4111-8111-111111111111&$RT" $w $t
+  shot 07-editor-add-groups-sheet-harris "page=edit&$H&kind=group_peers&set=b2222222-2222-4222-8222-222222222222&$RT" $w $t 'document.querySelector("[data-add-groups]").click()' 1 $h
+  shot 08-manage-sets-harris "page=sets&$H&$RT" $w $t
+  shot 09-showing-subset-schools-harris "page=schools&$H&showing=set:e5555555-5555-4555-8555-555555555555" $w $t
+  shot 10-showing-menu-harris "page=overview&$H&showing=set:e5555555-5555-4555-8555-555555555555" $w $t "$SHOW" 1 $h
+  shot 11-share-with-the-group-editor-harris "page=edit&$H&kind=group_peers&set=c3333333-3333-4333-8333-333333333333&$RT" $w $t 'document.querySelector("[aria-label=More]").click()' 1 $h
+done; done

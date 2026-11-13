@@ -33,7 +33,7 @@ export const GROUP_DASHBOARD_NAMES = ["Overview", "Schools", "Academic", "Pupils
 export const GROUP_DASHBOARD_LIVE: Record<(typeof GROUP_DASHBOARD_NAMES)[number], string | null> = { Overview: "/teacher/group/overview", Schools: "/teacher/group/schools", Academic: "/teacher/group/academic", Pupils: "/teacher/group/pupils" };
 
 /** The group card's dashboard chips: a live one opens that dashboard for this account; a coming one is dashed. */
-export function GroupDashChips({ accountId, size = "md" }: { accountId: string; size?: "md" | "sm" }) {
+export function GroupDashChips({ accountId, size = "md", library = false }: { accountId: string; size?: "md" | "sm"; library?: boolean }) {
   const pad = size === "sm" ? "py-[5px]" : "py-[6px]";
   return (
     <>
@@ -49,6 +49,12 @@ export function GroupDashChips({ accountId, size = "md" }: { accountId: string; 
           </span>
         );
       })}
+      {/* 0.8 group sets (M3): head office's groups library (never on a member school's tile, D2). */}
+      {library && (
+        <Link href={`/teacher/group/groups?account=${accountId}`} data-group-dash="Library" className={`rounded-full border border-[var(--group-card-edge)] px-[11px] ${pad} text-[12px] font-bold text-[var(--group-accent-text)]`}>
+          Groups library
+        </Link>
+      )}
     </>
   );
 }
@@ -220,7 +226,7 @@ function Body({ offices }: { offices: OfficesState }) {
       <div className="mt-[18px] flex flex-col gap-[10px]">
         <Card colour={GROUP_ACCENT} icon={<GroupGlyph />} title="The group" description={GROUP_NOTES.theGroup} edge>
           <span className="mt-3 flex flex-wrap gap-1.5">
-            <GroupDashChips accountId={o.id} />
+            <GroupDashChips accountId={o.id} library />
           </span>
           <span className="mt-2.5 block text-[12px] text-[var(--muted)]" title={d?.summary.period ? groupNote("summary", { now: periodLabel(d.summary.period), before: periodLabel(d.summary.period - ROLL_DIRECTION_SPAN), n: d.summary.compared }) : undefined}>
             {d ? summaryLine(d) : "…"}

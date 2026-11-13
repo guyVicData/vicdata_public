@@ -19,6 +19,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 851,
      "igcse": false,
      "trend": {
@@ -30,6 +31,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -70,6 +72,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 897,
      "igcse": false,
      "trend": {
@@ -81,6 +84,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -121,6 +125,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 896,
      "igcse": false,
      "trend": {
@@ -132,6 +137,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.1,
       "ks4_em4": 72,
@@ -206,6 +212,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 880,
      "igcse": false,
      "trend": {
@@ -217,6 +224,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.8,
       "ks4_em4": 68.1,
@@ -291,6 +299,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 868,
      "igcse": false,
      "trend": {
@@ -302,6 +311,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.3,
       "ks4_em4": 65.9,
@@ -377,6 +387,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 835,
      "igcse": false,
      "trend": {
@@ -388,6 +399,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.6,
       "ks4_em4": 71.6,
@@ -462,6 +474,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 781,
      "igcse": false,
      "trend": {
@@ -473,6 +486,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.2,
       "ks4_em4": 70.8,
@@ -551,6 +565,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1286,
      "igcse": false,
      "trend": {
@@ -562,6 +577,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -602,6 +618,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1354,
      "igcse": false,
      "trend": {
@@ -613,6 +630,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -653,6 +671,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1388,
      "igcse": false,
      "trend": {
@@ -664,6 +683,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.9,
       "ks4_em4": 72,
@@ -738,6 +758,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1368,
      "igcse": false,
      "trend": {
@@ -749,6 +770,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.9,
       "ks4_em4": 66.1,
@@ -823,6 +845,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1358,
      "igcse": false,
      "trend": {
@@ -834,6 +857,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.7,
       "ks4_em4": 72.6,
@@ -909,6 +933,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1341,
      "igcse": false,
      "trend": {
@@ -920,6 +945,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 53.7,
       "ks4_em4": 73,
@@ -994,6 +1020,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1371,
      "igcse": false,
      "trend": {
@@ -1005,6 +1032,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.4,
       "ks4_em4": 74.4,
@@ -1083,6 +1111,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 861,
      "igcse": false,
      "trend": {
@@ -1094,6 +1123,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -1134,6 +1164,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 875,
      "igcse": false,
      "trend": {
@@ -1145,6 +1176,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -1185,6 +1217,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 860,
      "igcse": false,
      "trend": {
@@ -1196,6 +1229,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 56,
       "ks4_em4": 78,
@@ -1270,6 +1304,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 863,
      "igcse": false,
      "trend": {
@@ -1281,6 +1316,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 53.5,
       "ks4_em4": 74.4,
@@ -1355,6 +1391,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 871,
      "igcse": false,
      "trend": {
@@ -1366,6 +1403,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 53.7,
       "ks4_em4": 77,
@@ -1441,6 +1479,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 837,
      "igcse": false,
      "trend": {
@@ -1452,6 +1491,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.3,
       "ks4_em4": 76.3,
@@ -1526,6 +1566,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 809,
      "igcse": false,
      "trend": {
@@ -1537,6 +1578,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.3,
       "ks4_em4": 73.5,
@@ -1615,6 +1657,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 567,
      "igcse": false,
      "trend": {
@@ -1625,6 +1668,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -1665,6 +1709,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 568,
      "igcse": false,
      "trend": {
@@ -1675,6 +1720,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -1715,6 +1761,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 573,
      "igcse": false,
      "trend": {
@@ -1725,6 +1772,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.7,
       "ks4_em4": 70,
@@ -1787,6 +1835,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 589,
      "igcse": false,
      "trend": {
@@ -1797,6 +1846,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 41.4,
       "ks4_em4": 56.6,
@@ -1859,6 +1909,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 605,
      "igcse": false,
      "trend": {
@@ -1869,6 +1920,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 41.5,
       "ks4_em4": 48.6,
@@ -1931,6 +1983,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 537,
      "igcse": false,
      "trend": {
@@ -1941,6 +1994,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 39.3,
       "ks4_em4": 54.4,
@@ -2001,6 +2055,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 458,
      "igcse": false,
      "trend": {
@@ -2011,6 +2066,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 40,
       "ks4_em4": 53.5,
@@ -2089,6 +2145,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1135,
      "igcse": false,
      "trend": {
@@ -2100,6 +2157,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -2140,6 +2198,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1169,
      "igcse": false,
      "trend": {
@@ -2151,6 +2210,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -2191,6 +2251,7 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1167,
      "igcse": false,
      "trend": {
@@ -2202,6 +2263,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.3,
       "ks4_em4": 69,
@@ -2276,6 +2338,7 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1156,
      "igcse": false,
      "trend": {
@@ -2287,6 +2350,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 41.1,
       "ks4_em4": 49.7,
@@ -2361,6 +2425,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1121,
      "igcse": false,
      "trend": {
@@ -2372,6 +2437,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.9,
       "ks4_em4": 62.5,
@@ -2447,6 +2513,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1120,
      "igcse": false,
      "trend": {
@@ -2458,6 +2525,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 41.6,
       "ks4_em4": 57.2,
@@ -2532,6 +2600,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1149,
      "igcse": false,
      "trend": {
@@ -2543,6 +2612,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 43.3,
       "ks4_em4": 56.9,
@@ -2621,6 +2691,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2200,
      "igcse": false,
      "trend": {
@@ -2632,6 +2703,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -2672,6 +2744,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2129,
      "igcse": false,
      "trend": {
@@ -2683,6 +2756,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -2723,6 +2797,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2116,
      "igcse": false,
      "trend": {
@@ -2734,6 +2809,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.1,
       "ks4_em4": 66,
@@ -2808,6 +2884,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2155,
      "igcse": false,
      "trend": {
@@ -2819,6 +2896,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 44.4,
       "ks4_em4": 55.4,
@@ -2893,6 +2971,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1269,
      "igcse": false,
      "trend": {
@@ -2904,6 +2983,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.1,
       "ks4_em4": 62.4,
@@ -2979,6 +3059,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1018,
      "igcse": false,
      "trend": {
@@ -2990,6 +3071,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.2,
       "ks4_em4": 60.2,
@@ -3064,6 +3146,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1008,
      "igcse": false,
      "trend": {
@@ -3075,6 +3158,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 45.4,
       "ks4_em4": 60.1,
@@ -3153,6 +3237,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1261,
      "igcse": false,
      "trend": {
@@ -3164,6 +3249,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -3204,6 +3290,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1291,
      "igcse": false,
      "trend": {
@@ -3215,6 +3302,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -3255,6 +3343,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1294,
      "igcse": false,
      "trend": {
@@ -3266,6 +3355,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.4,
       "ks4_em4": 82,
@@ -3340,6 +3430,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1271,
      "igcse": false,
      "trend": {
@@ -3351,6 +3442,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.3,
       "ks4_em4": 70.6,
@@ -3425,6 +3517,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1258,
      "igcse": false,
      "trend": {
@@ -3436,6 +3529,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.4,
       "ks4_em4": 71.8,
@@ -3511,6 +3605,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1162,
      "igcse": false,
      "trend": {
@@ -3522,6 +3617,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.3,
       "ks4_em4": 74.8,
@@ -3596,6 +3692,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1191,
      "igcse": false,
      "trend": {
@@ -3607,6 +3704,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.9,
       "ks4_em4": 79.8,
@@ -3685,6 +3783,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1194,
      "igcse": false,
      "trend": {
@@ -3696,6 +3795,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -3736,6 +3836,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1192,
      "igcse": false,
      "trend": {
@@ -3747,6 +3848,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -3787,6 +3889,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1218,
      "igcse": false,
      "trend": {
@@ -3798,6 +3901,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.4,
       "ks4_em4": 78,
@@ -3872,6 +3976,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1290,
      "igcse": false,
      "trend": {
@@ -3883,6 +3988,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.7,
       "ks4_em4": 64.6,
@@ -3957,6 +4063,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1301,
      "igcse": false,
      "trend": {
@@ -3968,6 +4075,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 45.8,
       "ks4_em4": 63.6,
@@ -4043,6 +4151,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1284,
      "igcse": false,
      "trend": {
@@ -4054,6 +4163,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.3,
       "ks4_em4": 73.5,
@@ -4128,6 +4238,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1295,
      "igcse": false,
      "trend": {
@@ -4139,6 +4250,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.7,
       "ks4_em4": 68,
@@ -4217,6 +4329,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 829,
      "igcse": false,
      "trend": {
@@ -4228,6 +4341,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -4268,6 +4382,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 846,
      "igcse": false,
      "trend": {
@@ -4279,6 +4394,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -4319,6 +4435,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 861,
      "igcse": false,
      "trend": {
@@ -4330,6 +4447,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 57.2,
       "ks4_em4": 78,
@@ -4404,6 +4522,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 878,
      "igcse": false,
      "trend": {
@@ -4415,6 +4534,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 53.6,
       "ks4_em4": 76.2,
@@ -4489,6 +4609,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 877,
      "igcse": false,
      "trend": {
@@ -4500,6 +4621,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.4,
       "ks4_em4": 77.8,
@@ -4575,6 +4697,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 907,
      "igcse": false,
      "trend": {
@@ -4586,6 +4709,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.5,
       "ks4_em4": 74.4,
@@ -4660,6 +4784,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 912,
      "igcse": false,
      "trend": {
@@ -4671,6 +4796,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54,
       "ks4_em4": 78.1,
@@ -4749,6 +4875,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1209,
      "igcse": false,
      "trend": {
@@ -4760,6 +4887,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -4800,6 +4928,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1303,
      "igcse": false,
      "trend": {
@@ -4811,6 +4940,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -4851,6 +4981,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1225,
      "igcse": false,
      "trend": {
@@ -4862,6 +4993,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 45.6,
       "ks4_em4": 67,
@@ -4936,6 +5068,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1097,
      "igcse": false,
      "trend": {
@@ -4947,6 +5080,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 43.9,
       "ks4_em4": 67.7,
@@ -5021,6 +5155,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1033,
      "igcse": false,
      "trend": {
@@ -5032,6 +5167,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47,
       "ks4_em4": 70.1,
@@ -5107,6 +5243,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1022,
      "igcse": false,
      "trend": {
@@ -5118,6 +5255,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.8,
       "ks4_em4": 65.8,
@@ -5192,6 +5330,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1013,
      "igcse": false,
      "trend": {
@@ -5203,6 +5342,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.2,
       "ks4_em4": 72.9,
@@ -5263,7 +5403,7 @@
  },
  {
   "urn": "136579",
-  "name": "The Appleton School",
+  "name": "Harris Academy Benfleet",
   "role": "member",
   "member_urn": "136579",
   "basis": "dated",
@@ -5281,6 +5421,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1606,
      "igcse": false,
      "trend": {
@@ -5292,6 +5433,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -5332,6 +5474,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1597,
      "igcse": false,
      "trend": {
@@ -5343,6 +5486,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -5383,6 +5527,7 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1598,
      "igcse": false,
      "trend": {
@@ -5394,6 +5539,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 43.7,
       "ks4_em4": 67,
@@ -5468,6 +5614,7 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1607,
      "igcse": false,
      "trend": {
@@ -5479,6 +5626,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47,
       "ks4_em4": 71.2,
@@ -5553,6 +5701,7 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1602,
      "igcse": false,
      "trend": {
@@ -5564,6 +5713,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 41.9,
       "ks4_em4": 65.7,
@@ -5639,6 +5789,7 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1561,
      "igcse": false,
      "trend": {
@@ -5650,6 +5801,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 39.6,
       "ks4_em4": 57.7,
@@ -5724,6 +5876,7 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1597,
      "igcse": false,
      "trend": {
@@ -5735,6 +5888,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 39,
       "ks4_em4": 57.5,
@@ -5795,7 +5949,7 @@
  },
  {
   "urn": "136861",
-  "name": "The Billericay School",
+  "name": "Harris Academy Billericay",
   "role": "member",
   "member_urn": "136861",
   "basis": "dated",
@@ -5813,6 +5967,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1652,
      "igcse": false,
      "trend": {
@@ -5824,6 +5979,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -5864,6 +6020,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1681,
      "igcse": false,
      "trend": {
@@ -5875,6 +6032,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -5915,6 +6073,7 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1713,
      "igcse": false,
      "trend": {
@@ -5926,6 +6085,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.2,
       "ks4_em4": 78,
@@ -6000,6 +6160,7 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1693,
      "igcse": false,
      "trend": {
@@ -6011,6 +6172,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47,
       "ks4_em4": 72,
@@ -6085,6 +6247,7 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1697,
      "igcse": false,
      "trend": {
@@ -6096,6 +6259,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.2,
       "ks4_em4": 72.2,
@@ -6171,6 +6335,7 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1702,
      "igcse": false,
      "trend": {
@@ -6182,6 +6347,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 50,
       "ks4_em4": 73.4,
@@ -6256,6 +6422,7 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1729,
      "igcse": false,
      "trend": {
@@ -6267,6 +6434,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.3,
       "ks4_em4": 68.2,
@@ -6345,6 +6513,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1174,
      "igcse": false,
      "trend": {
@@ -6356,6 +6525,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -6396,6 +6566,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1146,
      "igcse": false,
      "trend": {
@@ -6407,6 +6578,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -6447,6 +6619,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1135,
      "igcse": false,
      "trend": {
@@ -6458,6 +6631,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 57.3,
       "ks4_em4": 83,
@@ -6532,6 +6706,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1163,
      "igcse": false,
      "trend": {
@@ -6543,6 +6718,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.5,
       "ks4_em4": 74.7,
@@ -6617,6 +6793,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1228,
      "igcse": false,
      "trend": {
@@ -6628,6 +6805,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.1,
       "ks4_em4": 75.5,
@@ -6703,6 +6881,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1264,
      "igcse": false,
      "trend": {
@@ -6714,6 +6893,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.6,
       "ks4_em4": 79.2,
@@ -6788,6 +6968,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1302,
      "igcse": false,
      "trend": {
@@ -6799,6 +6980,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.5,
       "ks4_em4": 79.5,
@@ -6877,6 +7059,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 978,
      "igcse": false,
      "trend": {
@@ -6888,6 +7071,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -6928,6 +7112,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1020,
      "igcse": false,
      "trend": {
@@ -6939,6 +7124,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -6979,6 +7165,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1027,
      "igcse": false,
      "trend": {
@@ -6990,6 +7177,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 56.2,
       "ks4_em4": 83,
@@ -7064,6 +7252,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1068,
      "igcse": false,
      "trend": {
@@ -7075,6 +7264,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 57.7,
       "ks4_em4": 82,
@@ -7149,6 +7339,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1082,
      "igcse": false,
      "trend": {
@@ -7160,6 +7351,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 58.6,
       "ks4_em4": 82.4,
@@ -7235,6 +7427,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1096,
      "igcse": false,
      "trend": {
@@ -7246,6 +7439,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 58.3,
       "ks4_em4": 81.5,
@@ -7320,6 +7514,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1117,
      "igcse": false,
      "trend": {
@@ -7331,6 +7526,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 61.7,
       "ks4_em4": 83.1,
@@ -7409,6 +7605,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 338,
      "igcse": false,
      "trend": {
@@ -7419,6 +7616,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -7459,6 +7657,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 303,
      "igcse": false,
      "trend": {
@@ -7469,6 +7668,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -7509,6 +7709,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 269,
      "igcse": false,
      "trend": {
@@ -7519,6 +7720,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -7559,6 +7761,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 247,
      "igcse": false,
      "trend": {
@@ -7569,6 +7772,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 74
      },
@@ -7617,6 +7821,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 361,
      "igcse": false,
      "trend": {
@@ -7627,6 +7832,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 62
      },
@@ -7675,6 +7881,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 274,
      "igcse": false,
      "trend": {
@@ -7685,6 +7892,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 76
      },
@@ -7733,6 +7941,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 242,
      "igcse": false,
      "trend": {
@@ -7743,6 +7952,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -7801,6 +8011,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1354,
      "igcse": false,
      "trend": {
@@ -7812,6 +8023,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -7852,6 +8064,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1420,
      "igcse": false,
      "trend": {
@@ -7863,6 +8076,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -7903,6 +8117,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1454,
      "igcse": false,
      "trend": {
@@ -7914,6 +8129,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 62.2,
       "ks4_em4": 85,
@@ -7988,6 +8204,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1491,
      "igcse": false,
      "trend": {
@@ -7999,6 +8216,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 56.6,
       "ks4_em4": 83.5,
@@ -8073,6 +8291,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1466,
      "igcse": false,
      "trend": {
@@ -8084,6 +8303,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 61.1,
       "ks4_em4": 89,
@@ -8159,6 +8379,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1379,
      "igcse": false,
      "trend": {
@@ -8170,6 +8391,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.5,
       "ks4_em4": 83.5,
@@ -8244,6 +8466,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1435,
      "igcse": false,
      "trend": {
@@ -8255,6 +8478,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 56.5,
       "ks4_em4": 83.8,
@@ -8333,6 +8557,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 670,
      "igcse": false,
      "trend": {
@@ -8343,6 +8568,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -8383,6 +8609,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 671,
      "igcse": false,
      "trend": {
@@ -8393,6 +8620,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -8433,6 +8661,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 664,
      "igcse": false,
      "trend": {
@@ -8443,6 +8672,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -8483,6 +8713,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 670,
      "igcse": false,
      "trend": {
@@ -8493,6 +8724,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 81
      },
@@ -8541,6 +8773,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 666,
      "igcse": false,
      "trend": {
@@ -8551,6 +8784,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 75
      },
@@ -8599,6 +8833,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 665,
      "igcse": false,
      "trend": {
@@ -8609,6 +8844,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 76
      },
@@ -8657,6 +8893,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 679,
      "igcse": false,
      "trend": {
@@ -8667,6 +8904,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -8725,6 +8963,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 440,
      "igcse": false,
      "trend": {
@@ -8735,6 +8974,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -8775,6 +9015,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 446,
      "igcse": false,
      "trend": {
@@ -8785,6 +9026,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -8825,6 +9067,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 446,
      "igcse": false,
      "trend": {
@@ -8835,6 +9078,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -8875,6 +9119,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 444,
      "igcse": false,
      "trend": {
@@ -8885,6 +9130,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -8933,6 +9179,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 452,
      "igcse": false,
      "trend": {
@@ -8943,6 +9190,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 75
      },
@@ -8991,6 +9239,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 435,
      "igcse": false,
      "trend": {
@@ -9001,6 +9250,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 74
      },
@@ -9049,6 +9299,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 418,
      "igcse": false,
      "trend": {
@@ -9059,6 +9310,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -9117,6 +9369,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 448,
      "igcse": false,
      "trend": {
@@ -9127,6 +9380,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -9167,6 +9421,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 436,
      "igcse": false,
      "trend": {
@@ -9177,6 +9432,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -9217,6 +9473,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 438,
      "igcse": false,
      "trend": {
@@ -9227,6 +9484,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -9267,6 +9525,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 439,
      "igcse": false,
      "trend": {
@@ -9277,6 +9536,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 69
      },
@@ -9325,6 +9585,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 432,
      "igcse": false,
      "trend": {
@@ -9335,6 +9596,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 80
      },
@@ -9383,6 +9645,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 428,
      "igcse": false,
      "trend": {
@@ -9393,6 +9656,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 83
      },
@@ -9441,6 +9705,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 448,
      "igcse": false,
      "trend": {
@@ -9451,6 +9716,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -9509,6 +9775,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1146,
      "igcse": false,
      "trend": {
@@ -9520,6 +9787,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -9560,6 +9828,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1185,
      "igcse": false,
      "trend": {
@@ -9571,6 +9840,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -9611,6 +9881,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1165,
      "igcse": false,
      "trend": {
@@ -9622,6 +9893,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 57.1,
       "ks4_em4": 79,
@@ -9696,6 +9968,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1163,
      "igcse": false,
      "trend": {
@@ -9707,6 +9980,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.1,
       "ks4_em4": 71.8,
@@ -9781,6 +10055,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1167,
      "igcse": false,
      "trend": {
@@ -9792,6 +10067,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.8,
       "ks4_em4": 71.3,
@@ -9867,6 +10143,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1172,
      "igcse": false,
      "trend": {
@@ -9878,6 +10155,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.9,
       "ks4_em4": 73.4,
@@ -9952,6 +10230,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1138,
      "igcse": false,
      "trend": {
@@ -9963,6 +10242,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.8,
       "ks4_em4": 69.7,
@@ -10041,6 +10321,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 860,
      "igcse": false,
      "trend": {
@@ -10052,6 +10333,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -10092,6 +10374,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 857,
      "igcse": false,
      "trend": {
@@ -10102,6 +10385,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -10142,6 +10426,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 857,
      "igcse": false,
      "trend": {
@@ -10152,6 +10437,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.5,
       "ks4_em4": 64,
@@ -10214,6 +10500,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 868,
      "igcse": false,
      "trend": {
@@ -10224,6 +10511,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.5,
       "ks4_em4": 69.6,
@@ -10286,6 +10574,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 860,
      "igcse": false,
      "trend": {
@@ -10296,6 +10585,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.9,
       "ks4_em4": 69.5,
@@ -10358,6 +10648,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 879,
      "igcse": false,
      "trend": {
@@ -10368,6 +10659,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.6,
       "ks4_em4": 63.3,
@@ -10428,6 +10720,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 873,
      "igcse": false,
      "trend": {
@@ -10438,6 +10731,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 50.9,
       "ks4_em4": 69.6,
@@ -10498,7 +10792,7 @@
  },
  {
   "urn": "139181",
-  "name": "The Bromfords School",
+  "name": "Harris Academy Wickford",
   "role": "member",
   "member_urn": "139181",
   "basis": "dated",
@@ -10516,6 +10810,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1102,
      "igcse": false,
      "trend": {
@@ -10527,6 +10822,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -10567,6 +10863,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1111,
      "igcse": false,
      "trend": {
@@ -10578,6 +10875,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -10618,6 +10916,7 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1149,
      "igcse": false,
      "trend": {
@@ -10629,6 +10928,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 35.4,
       "ks4_em4": 46,
@@ -10703,6 +11003,7 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1160,
      "igcse": false,
      "trend": {
@@ -10714,6 +11015,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 38.1,
       "ks4_em4": 48.7,
@@ -10788,6 +11090,7 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1118,
      "igcse": false,
      "trend": {
@@ -10799,6 +11102,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 38.2,
       "ks4_em4": 51.2,
@@ -10874,6 +11178,7 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1135,
      "igcse": false,
      "trend": {
@@ -10885,6 +11190,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 35.9,
       "ks4_em4": 51.5,
@@ -10959,6 +11265,7 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1181,
      "igcse": false,
      "trend": {
@@ -10970,6 +11277,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 38.2,
       "ks4_em4": 48.4,
@@ -11048,6 +11356,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 426,
      "igcse": false,
      "trend": {
@@ -11058,6 +11367,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -11098,6 +11408,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 438,
      "igcse": false,
      "trend": {
@@ -11108,6 +11419,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -11148,6 +11460,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 430,
      "igcse": false,
      "trend": {
@@ -11158,6 +11471,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -11198,6 +11512,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 434,
      "igcse": false,
      "trend": {
@@ -11208,6 +11523,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 73
      },
@@ -11256,6 +11572,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 430,
      "igcse": false,
      "trend": {
@@ -11266,6 +11583,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 73
      },
@@ -11314,6 +11632,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 430,
      "igcse": false,
      "trend": {
@@ -11324,6 +11643,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 72
      },
@@ -11372,6 +11692,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 433,
      "igcse": false,
      "trend": {
@@ -11382,6 +11703,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -11440,6 +11762,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 422,
      "igcse": false,
      "trend": {
@@ -11450,6 +11773,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -11490,6 +11814,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 395,
      "igcse": false,
      "trend": {
@@ -11500,6 +11825,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -11540,6 +11866,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 388,
      "igcse": false,
      "trend": {
@@ -11550,6 +11877,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -11590,6 +11918,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 396,
      "igcse": false,
      "trend": {
@@ -11600,6 +11929,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 71
      },
@@ -11648,6 +11978,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 415,
      "igcse": false,
      "trend": {
@@ -11658,6 +11989,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 65
      },
@@ -11706,6 +12038,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 410,
      "igcse": false,
      "trend": {
@@ -11716,6 +12049,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 72
      },
@@ -11764,6 +12098,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 394,
      "igcse": false,
      "trend": {
@@ -11774,6 +12109,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -11832,6 +12168,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1894,
      "igcse": false,
      "trend": {
@@ -11844,6 +12181,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -11884,6 +12222,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1965,
      "igcse": false,
      "trend": {
@@ -11896,6 +12235,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -11936,6 +12276,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2042,
      "igcse": false,
      "trend": {
@@ -11948,6 +12289,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54,
       "ks4_em4": 79,
@@ -12022,6 +12364,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2041,
      "igcse": false,
      "trend": {
@@ -12034,6 +12377,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 53.5,
       "ks2_rwm": 71,
@@ -12114,6 +12458,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2056,
      "igcse": false,
      "trend": {
@@ -12126,6 +12471,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 50.6,
       "ks2_rwm": 89,
@@ -12207,6 +12553,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2044,
      "igcse": false,
      "trend": {
@@ -12219,6 +12566,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.5,
       "ks2_rwm": 85,
@@ -12299,6 +12647,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 2047,
      "igcse": false,
      "trend": {
@@ -12311,6 +12660,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 53.8,
       "ks4_em4": 71,
@@ -12425,6 +12775,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "ap",
      "roll": 2,
      "igcse": false,
      "trend": {
@@ -12433,6 +12784,7 @@
       "5": null
      },
      "phases": [],
+     "counted": false,
      "results": {},
      "boarders": 0,
      "size_band": "S",
@@ -12491,6 +12843,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 292,
      "igcse": false,
      "trend": {
@@ -12501,6 +12854,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -12541,6 +12895,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 264,
      "igcse": false,
      "trend": {
@@ -12551,6 +12906,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -12591,6 +12947,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 224,
      "igcse": false,
      "trend": {
@@ -12601,6 +12958,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -12641,6 +12999,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 199,
      "igcse": false,
      "trend": {
@@ -12651,6 +13010,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 71
      },
@@ -12699,6 +13059,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 199,
      "igcse": false,
      "trend": {
@@ -12709,6 +13070,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -12757,6 +13119,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 238,
      "igcse": false,
      "trend": {
@@ -12767,6 +13130,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 74
      },
@@ -12815,6 +13179,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 238,
      "igcse": false,
      "trend": {
@@ -12825,6 +13190,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -12883,6 +13249,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 381,
      "igcse": false,
      "trend": {
@@ -12893,6 +13260,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -12933,6 +13301,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 381,
      "igcse": false,
      "trend": {
@@ -12943,6 +13312,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -12983,6 +13353,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 388,
      "igcse": false,
      "trend": {
@@ -12993,6 +13364,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -13033,6 +13405,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 357,
      "igcse": false,
      "trend": {
@@ -13043,6 +13416,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 69
      },
@@ -13091,6 +13465,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 360,
      "igcse": false,
      "trend": {
@@ -13101,6 +13476,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 76
      },
@@ -13149,6 +13525,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 354,
      "igcse": false,
      "trend": {
@@ -13159,6 +13536,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 69
      },
@@ -13207,6 +13585,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 358,
      "igcse": false,
      "trend": {
@@ -13217,6 +13596,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -13275,6 +13655,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 428,
      "igcse": false,
      "trend": {
@@ -13285,6 +13666,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -13325,6 +13707,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 414,
      "igcse": false,
      "trend": {
@@ -13335,6 +13718,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -13375,6 +13759,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 409,
      "igcse": false,
      "trend": {
@@ -13385,6 +13770,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -13425,6 +13811,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 379,
      "igcse": false,
      "trend": {
@@ -13435,6 +13822,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 69
      },
@@ -13483,6 +13871,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 382,
      "igcse": false,
      "trend": {
@@ -13493,6 +13882,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 64
      },
@@ -13541,6 +13931,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 378,
      "igcse": false,
      "trend": {
@@ -13551,6 +13942,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 74
      },
@@ -13599,6 +13991,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 369,
      "igcse": false,
      "trend": {
@@ -13609,6 +14002,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -13667,6 +14061,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 323,
      "igcse": false,
      "trend": {
@@ -13677,6 +14072,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -13717,6 +14113,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 356,
      "igcse": false,
      "trend": {
@@ -13727,6 +14124,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -13767,6 +14165,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 353,
      "igcse": false,
      "trend": {
@@ -13777,6 +14176,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -13817,6 +14217,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 365,
      "igcse": false,
      "trend": {
@@ -13827,6 +14228,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 85
      },
@@ -13875,6 +14277,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 376,
      "igcse": false,
      "trend": {
@@ -13885,6 +14288,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -13933,6 +14337,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 423,
      "igcse": false,
      "trend": {
@@ -13943,6 +14348,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -13991,6 +14397,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 414,
      "igcse": false,
      "trend": {
@@ -14001,6 +14408,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -14059,6 +14467,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 158,
      "igcse": false,
      "trend": {
@@ -14069,6 +14478,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "S",
@@ -14109,6 +14519,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 256,
      "igcse": false,
      "trend": {
@@ -14119,6 +14530,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "S",
@@ -14159,6 +14571,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 349,
      "igcse": false,
      "trend": {
@@ -14169,6 +14582,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -14209,6 +14623,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 438,
      "igcse": false,
      "trend": {
@@ -14219,6 +14634,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 81
      },
@@ -14267,6 +14683,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 487,
      "igcse": false,
      "trend": {
@@ -14277,6 +14694,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 81
      },
@@ -14325,6 +14743,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 547,
      "igcse": false,
      "trend": {
@@ -14335,6 +14754,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -14383,6 +14803,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 577,
      "igcse": false,
      "trend": {
@@ -14393,6 +14814,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -14451,6 +14873,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 279,
      "igcse": false,
      "trend": {
@@ -14461,6 +14884,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -14501,6 +14925,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 340,
      "igcse": false,
      "trend": {
@@ -14511,6 +14936,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -14551,6 +14977,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 404,
      "igcse": false,
      "trend": {
@@ -14561,6 +14988,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -14601,6 +15029,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 406,
      "igcse": false,
      "trend": {
@@ -14611,6 +15040,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -14659,6 +15089,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 413,
      "igcse": false,
      "trend": {
@@ -14669,6 +15100,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 76
      },
@@ -14717,6 +15149,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 417,
      "igcse": false,
      "trend": {
@@ -14727,6 +15160,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 83
      },
@@ -14775,6 +15209,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 434,
      "igcse": false,
      "trend": {
@@ -14785,6 +15220,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -14843,6 +15279,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1016,
      "igcse": false,
      "trend": {
@@ -14855,6 +15292,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -14895,6 +15333,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1200,
      "igcse": false,
      "trend": {
@@ -14907,6 +15346,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -14947,6 +15387,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1275,
      "igcse": false,
      "trend": {
@@ -14959,6 +15400,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.3,
       "ks4_em4": 69,
@@ -15033,6 +15475,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1309,
      "igcse": false,
      "trend": {
@@ -15045,6 +15488,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.5,
       "ks2_rwm": 68,
@@ -15125,6 +15569,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1310,
      "igcse": false,
      "trend": {
@@ -15137,6 +15582,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.1,
       "ks2_rwm": 86,
@@ -15218,6 +15664,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1320,
      "igcse": false,
      "trend": {
@@ -15230,6 +15677,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.8,
       "ks2_rwm": 89,
@@ -15310,6 +15758,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1307,
      "igcse": false,
      "trend": {
@@ -15322,6 +15771,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49,
       "ks4_em4": 62.7,
@@ -15400,6 +15850,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 339,
      "igcse": false,
      "trend": {
@@ -15410,6 +15861,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -15450,6 +15902,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 384,
      "igcse": false,
      "trend": {
@@ -15460,6 +15913,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -15500,6 +15954,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 363,
      "igcse": false,
      "trend": {
@@ -15510,6 +15965,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -15550,6 +16006,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 350,
      "igcse": false,
      "trend": {
@@ -15560,6 +16017,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 84
      },
@@ -15608,6 +16066,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 356,
      "igcse": false,
      "trend": {
@@ -15618,6 +16077,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 82
      },
@@ -15666,6 +16126,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 391,
      "igcse": false,
      "trend": {
@@ -15676,6 +16137,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 78
      },
@@ -15724,6 +16186,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 383,
      "igcse": false,
      "trend": {
@@ -15734,6 +16197,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -15792,6 +16256,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 337,
      "igcse": false,
      "trend": {
@@ -15802,6 +16267,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -15842,6 +16308,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 394,
      "igcse": false,
      "trend": {
@@ -15852,6 +16319,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -15892,6 +16360,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 381,
      "igcse": false,
      "trend": {
@@ -15902,6 +16371,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -15942,6 +16412,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 384,
      "igcse": false,
      "trend": {
@@ -15952,6 +16423,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -16000,6 +16472,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 371,
      "igcse": false,
      "trend": {
@@ -16010,6 +16483,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 73
      },
@@ -16058,6 +16532,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 357,
      "igcse": false,
      "trend": {
@@ -16068,6 +16543,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 89
      },
@@ -16116,6 +16592,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 346,
      "igcse": false,
      "trend": {
@@ -16126,6 +16603,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -16184,6 +16662,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 746,
      "igcse": false,
      "trend": {
@@ -16194,6 +16673,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -16234,6 +16714,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 900,
      "igcse": false,
      "trend": {
@@ -16244,6 +16725,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -16284,6 +16766,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 969,
      "igcse": false,
      "trend": {
@@ -16294,6 +16777,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -16334,6 +16818,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1028,
      "igcse": false,
      "trend": {
@@ -16344,6 +16829,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 74
      },
@@ -16392,6 +16878,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1023,
      "igcse": false,
      "trend": {
@@ -16402,6 +16889,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 71
      },
@@ -16450,6 +16938,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1068,
      "igcse": false,
      "trend": {
@@ -16460,6 +16949,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 85
      },
@@ -16508,6 +16998,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1087,
      "igcse": false,
      "trend": {
@@ -16518,6 +17009,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -16576,6 +17068,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 583,
      "igcse": false,
      "trend": {
@@ -16586,6 +17079,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -16626,6 +17120,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 612,
      "igcse": false,
      "trend": {
@@ -16636,6 +17131,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -16676,6 +17172,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 603,
      "igcse": false,
      "trend": {
@@ -16686,6 +17183,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 43.69,
       "ks5_aps_alevel": 43.82
@@ -16740,6 +17238,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 589,
      "igcse": false,
      "trend": {
@@ -16750,6 +17249,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 39.93,
       "ks5_aps_alevel": 40.09
@@ -16804,6 +17304,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 600,
      "igcse": false,
      "trend": {
@@ -16814,6 +17315,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 43.87,
       "ks5_aps_alevel": 43.98
@@ -16870,6 +17372,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 619,
      "igcse": false,
      "trend": {
@@ -16880,6 +17383,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 44.3,
       "ks5_aps_alevel": 44.54
@@ -16936,6 +17440,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 610,
      "igcse": false,
      "trend": {
@@ -16946,6 +17451,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -17004,6 +17510,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 892,
      "igcse": false,
      "trend": {
@@ -17015,6 +17522,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -17055,6 +17563,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 905,
      "igcse": false,
      "trend": {
@@ -17066,6 +17575,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -17106,6 +17616,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 916,
      "igcse": false,
      "trend": {
@@ -17117,6 +17628,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.5,
       "ks4_em4": 74,
@@ -17179,6 +17691,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 992,
      "igcse": false,
      "trend": {
@@ -17190,6 +17703,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 45.3,
       "ks4_em4": 67.6,
@@ -17264,6 +17778,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1013,
      "igcse": false,
      "trend": {
@@ -17275,6 +17790,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 42.4,
       "ks4_em4": 59.4,
@@ -17350,6 +17866,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 980,
      "igcse": false,
      "trend": {
@@ -17361,6 +17878,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 45,
       "ks4_em4": 61.9,
@@ -17435,6 +17953,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 963,
      "igcse": false,
      "trend": {
@@ -17446,6 +17965,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.1,
       "ks4_em4": 60.6,
@@ -17524,6 +18044,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1003,
      "igcse": false,
      "trend": {
@@ -17535,6 +18056,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -17575,6 +18097,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1071,
      "igcse": false,
      "trend": {
@@ -17586,6 +18109,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -17626,6 +18150,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1117,
      "igcse": false,
      "trend": {
@@ -17637,6 +18162,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.1,
       "ks4_em4": 74,
@@ -17711,6 +18237,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1031,
      "igcse": false,
      "trend": {
@@ -17722,6 +18249,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.6,
       "ks4_em4": 68.8,
@@ -17796,6 +18324,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 924,
      "igcse": false,
      "trend": {
@@ -17807,6 +18336,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51.4,
       "ks4_em4": 69.1,
@@ -17882,6 +18412,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 895,
      "igcse": false,
      "trend": {
@@ -17893,6 +18424,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.8,
       "ks4_em4": 71.5,
@@ -17967,6 +18499,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 890,
      "igcse": false,
      "trend": {
@@ -17978,6 +18511,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 45.3,
       "ks4_em4": 64.3,
@@ -18056,6 +18590,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 523,
      "igcse": false,
      "trend": {
@@ -18066,6 +18601,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -18106,6 +18642,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 502,
      "igcse": false,
      "trend": {
@@ -18116,6 +18653,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -18156,6 +18694,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 502,
      "igcse": false,
      "trend": {
@@ -18166,6 +18705,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -18206,6 +18746,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 507,
      "igcse": false,
      "trend": {
@@ -18216,6 +18757,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 58
      },
@@ -18264,6 +18806,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 490,
      "igcse": false,
      "trend": {
@@ -18274,6 +18817,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 69
      },
@@ -18322,6 +18866,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 491,
      "igcse": false,
      "trend": {
@@ -18332,6 +18877,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 78
      },
@@ -18380,6 +18926,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 486,
      "igcse": false,
      "trend": {
@@ -18390,6 +18937,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -18430,7 +18978,7 @@
  },
  {
   "urn": "141214",
-  "name": "Woodlands School",
+  "name": "Harris Academy Kingswood",
   "role": "member",
   "member_urn": "141214",
   "basis": "dated",
@@ -18448,6 +18996,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1552,
      "igcse": false,
      "trend": {
@@ -18458,6 +19007,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -18498,6 +19048,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1556,
      "igcse": false,
      "trend": {
@@ -18508,6 +19059,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -18548,6 +19100,7 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1523,
      "igcse": false,
      "trend": {
@@ -18558,6 +19111,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.2,
       "ks4_em4": 70,
@@ -18620,6 +19174,7 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1497,
      "igcse": false,
      "trend": {
@@ -18630,6 +19185,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 41,
       "ks4_em4": 58.4,
@@ -18692,6 +19248,7 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1494,
      "igcse": false,
      "trend": {
@@ -18702,6 +19259,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 43.6,
       "ks4_em4": 60.2,
@@ -18764,6 +19322,7 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1492,
      "igcse": false,
      "trend": {
@@ -18774,6 +19333,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 42.1,
       "ks4_em4": 54.8,
@@ -18834,6 +19394,7 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 1513,
      "igcse": false,
      "trend": {
@@ -18844,6 +19405,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 44.4,
       "ks4_em4": 61.6,
@@ -18922,6 +19484,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 367,
      "igcse": false,
      "trend": {
@@ -18932,6 +19495,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -18972,6 +19536,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 345,
      "igcse": false,
      "trend": {
@@ -18982,6 +19547,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -19022,6 +19588,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 326,
      "igcse": false,
      "trend": {
@@ -19032,6 +19599,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -19072,6 +19640,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 315,
      "igcse": false,
      "trend": {
@@ -19082,6 +19651,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 68
      },
@@ -19130,6 +19700,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 299,
      "igcse": false,
      "trend": {
@@ -19140,6 +19711,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 69
      },
@@ -19188,6 +19760,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 276,
      "igcse": false,
      "trend": {
@@ -19198,6 +19771,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 63
      },
@@ -19246,6 +19820,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 269,
      "igcse": false,
      "trend": {
@@ -19256,6 +19831,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -19314,6 +19890,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 800,
      "igcse": false,
      "trend": {
@@ -19325,6 +19902,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -19365,6 +19943,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 691,
      "igcse": false,
      "trend": {
@@ -19376,6 +19955,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -19416,6 +19996,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 619,
      "igcse": false,
      "trend": {
@@ -19427,6 +20008,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 43.9,
       "ks4_em4": 63,
@@ -19495,6 +20077,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 609,
      "igcse": false,
      "trend": {
@@ -19506,6 +20089,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 38.2,
       "ks4_em4": 48.2,
@@ -19580,6 +20164,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 556,
      "igcse": false,
      "trend": {
@@ -19591,6 +20176,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 43,
       "ks4_em4": 57.9,
@@ -19666,6 +20252,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 501,
      "igcse": false,
      "trend": {
@@ -19677,6 +20264,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 42.7,
       "ks4_em4": 53.1,
@@ -19751,6 +20339,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 499,
      "igcse": false,
      "trend": {
@@ -19762,6 +20351,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 43.9,
       "ks4_em4": 61.4,
@@ -19840,6 +20430,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 937,
      "igcse": false,
      "trend": {
@@ -19850,6 +20441,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -19890,6 +20482,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 917,
      "igcse": false,
      "trend": {
@@ -19900,6 +20493,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -19940,6 +20534,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 906,
      "igcse": false,
      "trend": {
@@ -19950,6 +20545,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54,
       "ks4_em4": 75,
@@ -20012,6 +20608,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 896,
      "igcse": false,
      "trend": {
@@ -20022,6 +20619,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.3,
       "ks4_em4": 61.7,
@@ -20084,6 +20682,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 896,
      "igcse": false,
      "trend": {
@@ -20094,6 +20693,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.7,
       "ks4_em4": 73,
@@ -20156,6 +20756,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 901,
      "igcse": false,
      "trend": {
@@ -20166,6 +20767,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 50.4,
       "ks4_em4": 67.6,
@@ -20226,6 +20828,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 913,
      "igcse": false,
      "trend": {
@@ -20236,6 +20839,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.2,
       "ks4_em4": 64.9,
@@ -20314,6 +20918,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 439,
      "igcse": false,
      "trend": {
@@ -20324,6 +20929,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -20364,6 +20970,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 648,
      "igcse": false,
      "trend": {
@@ -20374,6 +20981,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -20414,6 +21022,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 861,
      "igcse": false,
      "trend": {
@@ -20424,6 +21033,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -20464,6 +21074,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1036,
      "igcse": false,
      "trend": {
@@ -20474,6 +21085,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 60.6,
       "ks4_em4": 91.2,
@@ -20536,6 +21148,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1142,
      "igcse": false,
      "trend": {
@@ -20547,6 +21160,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 59.9,
       "ks4_em4": 88.8,
@@ -20609,6 +21223,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1296,
      "igcse": false,
      "trend": {
@@ -20620,6 +21235,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 58.2,
       "ks4_em4": 85.4,
@@ -20694,6 +21310,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1294,
      "igcse": false,
      "trend": {
@@ -20705,6 +21322,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 58.7,
       "ks4_em4": 81.6,
@@ -20807,6 +21425,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 95,
      "igcse": false,
      "trend": {
@@ -20817,6 +21436,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -20857,6 +21477,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 240,
      "igcse": false,
      "trend": {
@@ -20867,6 +21488,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 34.85,
       "ks5_aps_alevel": 34.54
@@ -20923,6 +21545,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 304,
      "igcse": false,
      "trend": {
@@ -20933,6 +21556,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -20991,6 +21615,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 188,
      "igcse": false,
      "trend": {
@@ -21001,6 +21626,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "S",
@@ -21041,6 +21667,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 184,
      "igcse": false,
      "trend": {
@@ -21051,6 +21678,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "S",
@@ -21091,6 +21719,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 190,
      "igcse": false,
      "trend": {
@@ -21101,6 +21730,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "S",
@@ -21141,6 +21771,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 193,
      "igcse": false,
      "trend": {
@@ -21151,6 +21782,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 69
      },
@@ -21199,6 +21831,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 199,
      "igcse": false,
      "trend": {
@@ -21209,6 +21842,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 89
      },
@@ -21257,6 +21891,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 210,
      "igcse": false,
      "trend": {
@@ -21267,6 +21902,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 97
      },
@@ -21315,6 +21951,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 205,
      "igcse": false,
      "trend": {
@@ -21325,6 +21962,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -21383,6 +22021,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 534,
      "igcse": false,
      "trend": {
@@ -21394,6 +22033,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -21434,6 +22074,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 768,
      "igcse": false,
      "trend": {
@@ -21445,6 +22086,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -21485,6 +22127,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 951,
      "igcse": false,
      "trend": {
@@ -21496,6 +22139,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.8,
       "ks4_em4": 78,
@@ -21570,6 +22214,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1016,
      "igcse": false,
      "trend": {
@@ -21581,6 +22226,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.3,
       "ks4_em4": 66.9,
@@ -21655,6 +22301,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1078,
      "igcse": false,
      "trend": {
@@ -21666,6 +22313,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.6,
       "ks4_em4": 71.2,
@@ -21741,6 +22389,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1117,
      "igcse": false,
      "trend": {
@@ -21752,6 +22401,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.9,
       "ks4_em4": 67.6,
@@ -21826,6 +22476,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1111,
      "igcse": false,
      "trend": {
@@ -21837,6 +22488,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.1,
       "ks4_em4": 66.8,
@@ -21915,6 +22567,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1301,
      "igcse": false,
      "trend": {
@@ -21926,6 +22579,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -21966,6 +22620,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1330,
      "igcse": false,
      "trend": {
@@ -21977,6 +22632,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -22017,6 +22673,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1372,
      "igcse": false,
      "trend": {
@@ -22028,6 +22685,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.9,
       "ks4_em4": 78,
@@ -22102,6 +22760,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1383,
      "igcse": false,
      "trend": {
@@ -22113,6 +22772,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.4,
       "ks4_em4": 74.8,
@@ -22187,6 +22847,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1332,
      "igcse": false,
      "trend": {
@@ -22198,6 +22859,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51,
       "ks4_em4": 71.4,
@@ -22273,6 +22935,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1319,
      "igcse": false,
      "trend": {
@@ -22284,6 +22947,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 51,
       "ks4_em4": 73.3,
@@ -22358,6 +23022,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1326,
      "igcse": false,
      "trend": {
@@ -22369,6 +23034,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54,
       "ks4_em4": 78,
@@ -22447,6 +23113,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1295,
      "igcse": false,
      "trend": {
@@ -22459,6 +23126,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -22499,6 +23167,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1378,
      "igcse": false,
      "trend": {
@@ -22511,6 +23180,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -22551,6 +23221,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1430,
      "igcse": false,
      "trend": {
@@ -22563,6 +23234,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.7,
       "ks4_em4": 52,
@@ -22637,6 +23309,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1477,
      "igcse": false,
      "trend": {
@@ -22649,6 +23322,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.2,
       "ks2_rwm": 60,
@@ -22729,6 +23403,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1484,
      "igcse": false,
      "trend": {
@@ -22741,6 +23416,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.5,
       "ks2_rwm": 81,
@@ -22822,6 +23498,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1538,
      "igcse": false,
      "trend": {
@@ -22834,6 +23511,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 48.1,
       "ks2_rwm": 82,
@@ -22914,6 +23592,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1505,
      "igcse": false,
      "trend": {
@@ -22926,6 +23605,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.2,
       "ks4_em4": 67,
@@ -23004,6 +23684,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 198,
      "igcse": false,
      "trend": {
@@ -23014,6 +23695,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -23054,6 +23736,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 191,
      "igcse": false,
      "trend": {
@@ -23064,6 +23747,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -23104,6 +23788,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 183,
      "igcse": false,
      "trend": {
@@ -23114,6 +23799,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 24.89
      },
@@ -23162,6 +23848,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 243,
      "igcse": false,
      "trend": {
@@ -23172,6 +23859,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 23.52
      },
@@ -23220,6 +23908,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 258,
      "igcse": false,
      "trend": {
@@ -23230,6 +23919,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 23.04
      },
@@ -23278,6 +23968,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 259,
      "igcse": false,
      "trend": {
@@ -23288,6 +23979,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 23.92
      },
@@ -23336,6 +24028,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 280,
      "igcse": false,
      "trend": {
@@ -23346,6 +24039,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -23404,6 +24098,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 315,
      "igcse": false,
      "trend": {
@@ -23414,6 +24109,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -23454,6 +24150,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 501,
      "igcse": false,
      "trend": {
@@ -23464,6 +24161,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -23504,6 +24202,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 672,
      "igcse": false,
      "trend": {
@@ -23514,6 +24213,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -23554,6 +24254,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 846,
      "igcse": false,
      "trend": {
@@ -23564,6 +24265,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 56.4,
       "ks4_em4": 76.9,
@@ -23626,6 +24328,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 962,
      "igcse": false,
      "trend": {
@@ -23637,6 +24340,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 50.9,
       "ks4_em4": 69.7,
@@ -23699,6 +24403,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1045,
      "igcse": false,
      "trend": {
@@ -23710,6 +24415,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 58.3,
       "ks4_em4": 88.3,
@@ -23784,6 +24490,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1073,
      "igcse": false,
      "trend": {
@@ -23795,6 +24502,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 55.8,
       "ks4_em4": 80.2,
@@ -23873,6 +24581,7 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1239,
      "igcse": false,
      "trend": {
@@ -23884,6 +24593,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -23924,6 +24634,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1260,
      "igcse": false,
      "trend": {
@@ -23935,6 +24646,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -23975,6 +24687,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1329,
      "igcse": false,
      "trend": {
@@ -23986,6 +24699,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 50.5,
       "ks4_em4": 70,
@@ -24060,6 +24774,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1438,
      "igcse": false,
      "trend": {
@@ -24071,6 +24786,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 50.4,
       "ks4_em4": 67.2,
@@ -24145,6 +24861,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1435,
      "igcse": false,
      "trend": {
@@ -24156,6 +24873,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 52.6,
       "ks4_em4": 77.5,
@@ -24231,6 +24949,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1420,
      "igcse": false,
      "trend": {
@@ -24242,6 +24961,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.3,
       "ks4_em4": 67.9,
@@ -24316,6 +25036,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1440,
      "igcse": false,
      "trend": {
@@ -24327,6 +25048,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 47.7,
       "ks4_em4": 71.3,
@@ -24411,6 +25133,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 193,
      "igcse": false,
      "trend": {
@@ -24421,6 +25144,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "S",
@@ -24461,6 +25185,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 394,
      "igcse": false,
      "trend": {
@@ -24471,6 +25196,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -24511,6 +25237,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 582,
      "igcse": false,
      "trend": {
@@ -24521,6 +25248,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -24561,6 +25289,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 764,
      "igcse": false,
      "trend": {
@@ -24571,6 +25300,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -24611,6 +25341,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 891,
      "igcse": false,
      "trend": {
@@ -24621,6 +25352,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 42.4,
       "ks4_em4": 53,
@@ -24681,6 +25413,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 802,
      "igcse": false,
      "trend": {
@@ -24691,6 +25424,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 45.2,
       "ks4_em4": 58,
@@ -24775,6 +25509,7 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 509,
      "igcse": false,
      "trend": {
@@ -24785,6 +25520,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -24825,6 +25561,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 399,
      "igcse": false,
      "trend": {
@@ -24835,6 +25572,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -24875,6 +25613,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 406,
      "igcse": false,
      "trend": {
@@ -24885,6 +25624,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 65
      },
@@ -24933,6 +25673,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 417,
      "igcse": false,
      "trend": {
@@ -24943,6 +25684,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 62
      },
@@ -24991,6 +25733,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 406,
      "igcse": false,
      "trend": {
@@ -25001,6 +25744,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 79
      },
@@ -25049,6 +25793,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 414,
      "igcse": false,
      "trend": {
@@ -25059,6 +25804,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "L",
@@ -25117,6 +25863,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 657,
      "igcse": false,
      "trend": {
@@ -25127,6 +25874,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -25197,6 +25945,7 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 104,
      "igcse": false,
      "trend": {
@@ -25207,6 +25956,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -25247,6 +25997,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 285,
      "igcse": false,
      "trend": {
@@ -25257,6 +26008,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 31.2,
       "ks5_aps_alevel": 31.44
@@ -25311,6 +26063,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 337,
      "igcse": false,
      "trend": {
@@ -25321,6 +26074,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 28.03,
       "ks5_aps_alevel": 28.27
@@ -25377,6 +26131,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 383,
      "igcse": false,
      "trend": {
@@ -25387,6 +26142,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks5_aps_all": 29.13,
       "ks5_aps_alevel": 28.44
@@ -25443,6 +26199,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 394,
      "igcse": false,
      "trend": {
@@ -25453,6 +26210,7 @@
      "phases": [
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -25529,6 +26287,7 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 554,
      "igcse": false,
      "trend": {
@@ -25540,6 +26299,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49.8,
       "ks4_em4": 67.3,
@@ -25614,6 +26374,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 448,
      "igcse": false,
      "trend": {
@@ -25625,6 +26386,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 54.4,
       "ks4_em4": 75.9,
@@ -25700,6 +26462,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 441,
      "igcse": false,
      "trend": {
@@ -25711,6 +26474,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 56.9,
       "ks4_em4": 84.4,
@@ -25785,6 +26549,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 513,
      "igcse": false,
      "trend": {
@@ -25796,6 +26561,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 59.3,
       "ks4_em4": 84.4,
@@ -25874,6 +26640,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 568,
      "igcse": false,
      "trend": {
@@ -25885,6 +26652,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -25925,6 +26693,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 638,
      "igcse": false,
      "trend": {
@@ -25936,6 +26705,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "M",
@@ -25976,6 +26746,7 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 630,
      "igcse": false,
      "trend": {
@@ -25987,6 +26758,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 46.1,
       "ks4_em4": 72,
@@ -26103,6 +26875,7 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 816,
      "igcse": false,
      "trend": {
@@ -26113,6 +26886,7 @@
      "phases": [
       "secondary"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 44,
       "ks4_em4": 51.1,
@@ -26175,6 +26949,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1029,
      "igcse": false,
      "trend": {
@@ -26186,6 +26961,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 44.4,
       "ks4_em4": 56.4,
@@ -26246,6 +27022,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 1011,
      "igcse": false,
      "trend": {
@@ -26257,6 +27034,7 @@
       "secondary",
       "post16"
      ],
+     "counted": true,
      "results": {
       "ks4_a8": 49,
       "ks4_em4": 65.7,
@@ -26365,6 +27143,7 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 718,
      "igcse": false,
      "trend": {
@@ -26375,6 +27154,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {
       "ks2_rwm": 78
      },
@@ -26423,6 +27203,7 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "kind": "mainstream",
      "roll": 610,
      "igcse": false,
      "trend": {
@@ -26433,6 +27214,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -26491,6 +27273,7 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 724,
      "igcse": false,
      "trend": {
@@ -26501,6 +27284,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -26541,6 +27325,7 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 763,
      "igcse": false,
      "trend": {
@@ -26551,6 +27336,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -26591,6 +27377,7 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 750,
      "igcse": false,
      "trend": {
@@ -26601,6 +27388,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -26641,6 +27429,7 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 841,
      "igcse": false,
      "trend": {
@@ -26651,6 +27440,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",
@@ -26691,6 +27481,7 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "kind": "mainstream",
      "roll": 868,
      "igcse": false,
      "trend": {
@@ -26701,6 +27492,7 @@
      "phases": [
       "primary"
      ],
+     "counted": true,
      "results": {},
      "boarders": 0,
      "size_band": "XL",

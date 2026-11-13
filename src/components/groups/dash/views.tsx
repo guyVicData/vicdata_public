@@ -14,8 +14,9 @@ import { FEATURED_ROW_BG, featuredRow, productAccent } from "@/components/shell/
 import { GROUP_NOTES, GROUP_SOURCE_LABELS, groupNote } from "@/catalogue/notes";
 import { periodLabel, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexedLabel } from "@/lib/index-base";
-import { FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, ordinal, PHASE_NOUN, type GroupOverview, type GroupSchools, type SchoolRow } from "@/lib/groups/dash";
+import { FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, ordinal, PHASE_NOUN, POOL_MIN_NOTE, tooFewWords, type GroupOverview, type GroupSchools, type SchoolRow } from "@/lib/groups/dash";
 import { arrowOf, dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
+import { SetTrend, SideBySide } from "./views-sets";
 import { ARROW, arrowed, flatBand } from "@/lib/signed-delta";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
@@ -59,7 +60,12 @@ export function GroupNow({ o, compact }: { o: GroupOverview; compact: boolean })
     <div className="flex flex-col gap-2.5">
       {!compact && <div className="text-[13px] font-bold text-[var(--fg)]">The group now</div>}
       <div className="grid grid-cols-2 gap-2">
-        <Stat label="Schools" value={<span className="text-[var(--accent)]">{n.schools}</span>} sub={phaseLine || " "} accent />
+        <Stat
+          label="Schools"
+          value={<span className="text-[var(--accent)]">{n.notCounted ? <>{n.schools} <span className="text-[13px] font-semibold text-[var(--muted2)]">of {n.notCounted.total}</span></> : n.schools}</span>}
+          sub={n.notCounted ? `${n.schools} of ${n.notCounted.total} schools; ${n.notCounted.words}` : phaseLine || " "}
+          accent
+        />
         <Stat label="Combined roll" value={fmt(n.roll, "pupils")} sub={n.sinceFirst !== null ? `${pctText(n.sinceFirst)} since ${periodLabel(o.years.first)}` : " "} />
         <Stat label="Schools growing" value={<>{g.growing} <span className="text-[13px] font-semibold text-[var(--muted2)]">of {g.of}</span></>} sub={`since ${periodLabel(g.from)}, like for like`} />
         <Stat label="Areas" value={`${n.las.length} LA${n.las.length === 1 ? "" : "s"}`} sub={n.regions.filter((r) => r.code !== "outside_england").map((r) => r.name).join(", ") || " "} />
@@ -111,12 +117,13 @@ export function GroupNow({ o, compact }: { o: GroupOverview; compact: boolean })
 
 // ------------------------------------------------------------------------------ Against others
 
-export const MAIN_ROWS = ["group", "peer_band:band", "non_group:england", "areas:la", "england:england"];
+// 0.8 group sets (M4): the single-academy trust pool sits with the defaults; mix-matched non-group stays a
+// row of its own (its toggle went with the named-group chips: sets of groups are chosen in the picker).
+export const MAIN_ROWS = ["group", "peer_band:band", "non_group:england", "sat:england", "areas:la", "england:england"];
 
-export function AgainstOthers({ o, average, candidates = [], onNamed, highlightNote }: { o: GroupOverview; average: boolean; candidates?: { id: string; label: string; schools: number }[]; onNamed?: (ids: string[]) => void; highlightNote?: ReactNode }) {
-  const [mix, setMix] = useState(o.compare.key === "mix_matched");
-  const named = o.compare.key.startsWith("peer_named:") ? o.compare.key.slice(11).split(",") : [];
-  const a = { ...o.against, rows: o.against.rows.filter((r) => MAIN_ROWS.includes(r.key) || r.kind === "peer_named" || (mix && r.kind === "mix_matched")) };
+export function AgainstOthers({ o, average, highlightNote }: { o: GroupOverview; average: boolean; highlightNote?: ReactNode }) {
+  if (o.sideBySide) return <SideBySide o={o} average={average} />;
+  const a = { ...o.against, rows: o.against.rows.filter((r) => MAIN_ROWS.includes(r.key) || r.kind === "mix_matched") };
   const head = (m: string) => `${MEASURE_SHORT[m] === "A level" ? "A-level pts" : MEASURE_SHORT[m]}`;
   const yearOfCol = (m: string) => (o.years.results[m] !== null ? periodLabel(o.years.results[m]!) : "");
   return (
@@ -154,9 +161,15 @@ export function AgainstOthers({ o, average, candidates = [], onNamed, highlightN
                   const c = r.cells[m];
                   const v = average ? c?.average : c?.value;
                   return (
-                    <Td key={m} className="whitespace-nowrap" title={c && c.n !== null ? `${c.n.toLocaleString("en-GB")} schools with ${MEASURE_LABEL[m]}, ${yearOfCol(m)}` : "no figure"}>
-                      {fmt(v ?? null, unitOf(m), m === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}
-                      {c && c.n !== null && <span className="ml-1 text-[10px] font-normal text-[var(--muted2)]">({c.n.toLocaleString("en-GB")})</span>}
+                    <Td key={m} className="whitespace-nowrap" title={c?.tooFew ? POOL_MIN_NOTE : c && c.n !== null ? `${c.n.toLocaleString("en-GB")} schools with ${MEASURE_LABEL[m]}, ${yearOfCol(m)}` : "no figure"}>
+                      {c?.tooFew && c.n !== null ? (
+                        <i className="text-[11px] font-normal text-[var(--muted2)]">{tooFewWords(c.n)}</i>
+                      ) : (
+                        <>
+                          {fmt(v ?? null, unitOf(m), m === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}
+                          {c && c.n !== null && <span className="ml-1 text-[10px] font-normal text-[var(--muted2)]">({c.n.toLocaleString("en-GB")})</span>}
+                        </>
+                      )}
                     </Td>
                   );
                 })}
@@ -164,26 +177,6 @@ export function AgainstOthers({ o, average, candidates = [], onNamed, highlightN
             ))}
           </tbody>
         </table>
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {candidates.length > 0 && onNamed && (
-          <>
-            <span className="text-[11.5px] font-bold text-[var(--muted2)]">Add to the comparison</span>
-            {candidates.slice(0, 4).map((c) => {
-              const on = named.includes(c.id);
-              return (
-                <button key={c.id} type="button" aria-pressed={on} onClick={() => onNamed(on ? named.filter((x) => x !== c.id) : [...named, c.id].slice(-3))} className={`rounded-full border px-2.5 py-[3px] text-[11.5px] font-bold ${on ? "border-[var(--accent)] text-[var(--fg)]" : "border-[var(--panel-border2)] text-[var(--muted2)]"}`}>
-                  {on ? "✓" : "+"} {c.label}
-                </button>
-              );
-            })}
-          </>
-        )}
-        {a.mixAvailable && (
-          <button type="button" aria-pressed={mix} onClick={() => setMix(!mix)} className={`ml-auto rounded-full border px-2.5 py-[3px] text-[11.5px] font-bold ${mix ? "border-[var(--accent)] text-[var(--fg)]" : "border-[var(--panel-border2)] text-[var(--muted2)]"}`} title={GROUP_NOTES.mixMatched.replace(/\{group\}/g, o.group.name)}>
-            Mix-matched: {mix ? "on" : "off"}
-          </button>
-        )}
       </div>
       {a.counts && <div className="text-[12px] text-[var(--muted)]">{a.counts}.</div>}
       {a.place && <div className="text-[12px] font-semibold text-[var(--fg)]">{a.place}.</div>}
@@ -290,6 +283,9 @@ export function RollTrend({ o, fullscreen, room }: { o: GroupOverview; fullscree
   const lines = o.trends.roll.lines;
   const { base, out } = indexTo(lines.map((l) => l.pts));
   if (!lines.length || lines[0].pts.filter((p) => p.value !== null).length < 2) return <Empty>Not enough census years to draw a trend.</Empty>;
+  // 0.8 group sets (M4, D3): against a set of groups, the median and its middle half (and the large view).
+  if (o.sideBySide)
+    return <SetTrend lines={lines.map((l, i) => ({ key: l.key, label: l.label, pts: out[i].map((p) => ({ year: p.year, value: p.value })) }))} title={`Combined roll, indexed (${indexedLabel(base)})`} format={(v) => v.toFixed(0)} reference={{ y: 100 }} fullscreen={fullscreen} room={room} footnote={GROUP_NOTES.likeForLike} />;
   const years = lines[0].pts.map((p) => p.year);
   const colour = (i: number) => (i === 0 ? "var(--accent)" : i === 1 ? "var(--adm-grey-1,#a1a1aa)" : "var(--adm-grey-2,#71717a)");
   return (
@@ -319,6 +315,18 @@ export function ResultsTrend({ o, average, fullscreen, room }: { o: GroupOvervie
   const p = parts[Math.min(i, parts.length - 1)];
   const colour = (k: number) => (k === 0 ? "var(--accent)" : k === 1 ? "var(--adm-grey-1,#a1a1aa)" : "var(--adm-grey-2,#71717a)");
   const years = p.lines[0].pts.map((x) => x.year);
+  const switcher = parts.length > 1 && (
+    <div className="flex flex-wrap gap-1.5">
+      {parts.map((x, k) => (
+        <button key={x.measure} type="button" onClick={() => setI(k)} aria-pressed={k === i} className={`rounded-full border px-2.5 py-[3px] text-[11.5px] font-bold ${k === Math.min(i, parts.length - 1) ? "border-[var(--accent)] text-[var(--fg)]" : "border-[var(--panel-border2)] text-[var(--muted2)]"}`}>
+          {MEASURE_SHORT[x.measure] === "Att 8" ? "Attainment 8" : x.measure === "ks5_aps_alevel" ? "A-level points" : "KS2"}
+        </button>
+      ))}
+    </div>
+  );
+  // 0.8 group sets (M4, D3): against a set of groups, the median and its middle half (and the large view).
+  if (o.sideBySide)
+    return <SetTrend lines={p.lines.map((l) => ({ key: l.key, label: l.label, pts: average ? l.average : l.pts }))} title={`${MEASURE_LABEL[p.measure]} against ${o.picker.name}`} controls={switcher || null} format={(v) => fmt(v, unitOf(p.measure))} fullscreen={fullscreen} room={room} footnote={`${average ? "Average school: each school counts once." : "Pupil-weighted."} ${MEASURE_LABEL[p.measure]}.`} />;
   return (
     <>
       {(() => {

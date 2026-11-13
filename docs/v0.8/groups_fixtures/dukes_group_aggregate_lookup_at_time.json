@@ -119,7 +119,7 @@
        "group_pupils": 115
       }
      ],
-     "pct": 2,
+     "pct": 2.01,
      "sector": "independent",
      "regions": [
       {
@@ -129,10 +129,10 @@
        "region_pupils": 66053
       },
       {
-       "pct": 4.3,
+       "pct": 4.34,
        "region_code": "E12000007",
        "group_pupils": 6233,
-       "region_pupils": 145122
+       "region_pupils": 143662
       },
       {
        "pct": 0.31,
@@ -141,7 +141,7 @@
        "region_pupils": 145172
       }
      ],
-     "area_pupils": 356347,
+     "area_pupils": 354887,
      "group_pupils": 7144
     },
     "regions": {
@@ -204,7 +204,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -342,7 +342,7 @@
        "group_pupils": 0
       }
      ],
-     "pct": 1.21,
+     "pct": 1.24,
      "sector": "independent",
      "regions": [
       {
@@ -352,10 +352,10 @@
        "region_pupils": 10365
       },
       {
-       "pct": 1.43,
+       "pct": 1.52,
        "region_code": "E12000007",
        "group_pupils": 257,
-       "region_pupils": 17932
+       "region_pupils": 16945
       },
       {
        "pct": 1.21,
@@ -364,7 +364,7 @@
        "region_pupils": 23936
       }
      ],
-     "area_pupils": 52233,
+     "area_pupils": 51246,
      "group_pupils": 634
     },
     "results": {
@@ -508,13 +508,13 @@
        "region_pupils": 21278
       },
       {
-       "pct": 6.51,
+       "pct": 6.52,
        "region_code": "E12000007",
        "group_pupils": 3806,
-       "region_pupils": 58455
+       "region_pupils": 58398
       }
      ],
-     "area_pupils": 79733,
+     "area_pupils": 79676,
      "group_pupils": 3912
     },
     "results": {
@@ -530,7 +530,7 @@
      "roll": [
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       }
      ]
@@ -628,10 +628,10 @@
        "region_pupils": 27814
       },
       {
-       "pct": 2.08,
+       "pct": 2.09,
        "region_code": "E12000007",
        "group_pupils": 1057,
-       "region_pupils": 50925
+       "region_pupils": 50534
       },
       {
        "pct": 0.23,
@@ -640,7 +640,7 @@
        "region_pupils": 61550
       }
      ],
-     "area_pupils": 140289,
+     "area_pupils": 139898,
      "group_pupils": 1387
     },
     "results": {
@@ -675,7 +675,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -820,7 +820,7 @@
        "group_pupils": 110
       }
      ],
-     "pct": 1.94,
+     "pct": 1.95,
      "sector": "independent",
      "regions": [
       {
@@ -830,10 +830,10 @@
        "region_pupils": 64850
       },
       {
-       "pct": 4.1,
+       "pct": 4.14,
        "region_code": "E12000007",
        "group_pupils": 5948,
-       "region_pupils": 144967
+       "region_pupils": 143513
       },
       {
        "pct": 0.31,
@@ -842,7 +842,7 @@
        "region_pupils": 142304
       }
      ],
-     "area_pupils": 352121,
+     "area_pupils": 350667,
      "group_pupils": 6839
     },
     "change": {
@@ -934,7 +934,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -1078,7 +1078,7 @@
        "group_pupils": 0
       }
      ],
-     "pct": 1.17,
+     "pct": 1.19,
      "sector": "independent",
      "regions": [
       {
@@ -1088,10 +1088,10 @@
        "region_pupils": 10094
       },
       {
-       "pct": 1.45,
+       "pct": 1.53,
        "region_code": "E12000007",
        "group_pupils": 259,
-       "region_pupils": 17889
+       "region_pupils": 16895
       },
       {
        "pct": 1.23,
@@ -1100,7 +1100,7 @@
        "region_pupils": 23649
       }
      ],
-     "area_pupils": 51632,
+     "area_pupils": 50638,
      "group_pupils": 603
     },
     "change": {
@@ -1279,13 +1279,13 @@
        "region_pupils": 20759
       },
       {
-       "pct": 6.2,
+       "pct": 6.21,
        "region_code": "E12000007",
        "group_pupils": 3605,
-       "region_pupils": 58102
+       "region_pupils": 58049
       }
      ],
-     "area_pupils": 78861,
+     "area_pupils": 78808,
      "group_pupils": 3722
     },
     "change": {
@@ -1330,7 +1330,7 @@
      "roll": [
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       }
      ]
@@ -1427,10 +1427,10 @@
        "region_pupils": 27775
       },
       {
-       "pct": 2.01,
+       "pct": 2.03,
        "region_code": "E12000007",
        "group_pupils": 1031,
-       "region_pupils": 51282
+       "region_pupils": 50897
       },
       {
        "pct": 0.21,
@@ -1439,7 +1439,7 @@
        "region_pupils": 61310
       }
      ],
-     "area_pupils": 140367,
+     "area_pupils": 139982,
      "group_pupils": 1358
     },
     "change": {
@@ -1503,7 +1503,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -1673,7 +1673,7 @@
        "group_pupils": 111
       }
      ],
-     "pct": 1.89,
+     "pct": 1.9,
      "sector": "independent",
      "regions": [
       {
@@ -1683,10 +1683,10 @@
        "region_pupils": 65686
       },
       {
-       "pct": 3.96,
+       "pct": 4.01,
        "region_code": "E12000007",
        "group_pupils": 5793,
-       "region_pupils": 146106
+       "region_pupils": 144616
       },
       {
        "pct": 0.31,
@@ -1695,7 +1695,7 @@
        "region_pupils": 145327
       }
      ],
-     "area_pupils": 357119,
+     "area_pupils": 355629,
      "group_pupils": 6743
     },
     "change": {
@@ -1787,7 +1787,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -1824,7 +1824,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -1849,7 +1849,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -1891,7 +1891,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -1926,7 +1926,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -1978,7 +1978,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -2003,7 +2003,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -2045,7 +2045,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -2070,7 +2070,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -2356,7 +2356,7 @@
        "group_pupils": 0
       }
      ],
-     "pct": 1.26,
+     "pct": 1.28,
      "sector": "independent",
      "regions": [
       {
@@ -2366,10 +2366,10 @@
        "region_pupils": 10452
       },
       {
-       "pct": 1.47,
+       "pct": 1.55,
        "region_code": "E12000007",
        "group_pupils": 272,
-       "region_pupils": 18537
+       "region_pupils": 17507
       },
       {
        "pct": 1.19,
@@ -2378,7 +2378,7 @@
        "region_pupils": 23751
       }
      ],
-     "area_pupils": 52740,
+     "area_pupils": 51710,
      "group_pupils": 662
     },
     "change": {
@@ -2634,13 +2634,13 @@
        "region_pupils": 20601
       },
       {
-       "pct": 5.94,
+       "pct": 5.95,
        "region_code": "E12000007",
        "group_pupils": 3414,
-       "region_pupils": 57460
+       "region_pupils": 57416
       }
      ],
-     "area_pupils": 78061,
+     "area_pupils": 78017,
      "group_pupils": 3517
     },
     "change": {
@@ -2685,7 +2685,7 @@
      "roll": [
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       }
      ]
@@ -2797,10 +2797,10 @@
        "region_pupils": 28173
       },
       {
-       "pct": 2.07,
+       "pct": 2.08,
        "region_code": "E12000007",
        "group_pupils": 1089,
-       "region_pupils": 52659
+       "region_pupils": 52271
       },
       {
        "pct": 0.23,
@@ -2809,7 +2809,7 @@
        "region_pupils": 63311
       }
      ],
-     "area_pupils": 144143,
+     "area_pupils": 143755,
      "group_pupils": 1454
     },
     "change": {
@@ -2873,7 +2873,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -2905,7 +2905,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -2930,7 +2930,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -2972,7 +2972,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3007,7 +3007,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -3059,7 +3059,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3084,7 +3084,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -3126,7 +3126,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3151,7 +3151,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -3391,10 +3391,10 @@
        "region_pupils": 66555
       },
       {
-       "pct": 3.91,
+       "pct": 3.95,
        "region_code": "E12000007",
        "group_pupils": 5767,
-       "region_pupils": 147512
+       "region_pupils": 146027
       },
       {
        "pct": 0.33,
@@ -3403,7 +3403,7 @@
        "region_pupils": 148111
       }
      ],
-     "area_pupils": 362178,
+     "area_pupils": 360693,
      "group_pupils": 6791
     },
     "change": {
@@ -3490,7 +3490,7 @@
      "roll": [
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3517,7 +3517,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3542,7 +3542,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -3579,7 +3579,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3614,7 +3614,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -3671,7 +3671,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3691,7 +3691,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "prep_no_ks2"
       },
       {
@@ -3748,7 +3748,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3773,7 +3773,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -3805,7 +3805,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -3830,7 +3830,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -4133,7 +4133,7 @@
        "group_pupils": 0
       }
      ],
-     "pct": 1.35,
+     "pct": 1.38,
      "sector": "independent",
      "regions": [
       {
@@ -4143,10 +4143,10 @@
        "region_pupils": 10725
       },
       {
-       "pct": 1.63,
+       "pct": 1.72,
        "region_code": "E12000007",
        "group_pupils": 309,
-       "region_pupils": 18979
+       "region_pupils": 17975
       },
       {
        "pct": 1.14,
@@ -4155,7 +4155,7 @@
        "region_pupils": 24421
       }
      ],
-     "area_pupils": 54125,
+     "area_pupils": 53121,
      "group_pupils": 732
     },
     "change": {
@@ -4419,10 +4419,10 @@
        "pct": 5.88,
        "region_code": "E12000007",
        "group_pupils": 3392,
-       "region_pupils": 57699
+       "region_pupils": 57646
       }
      ],
-     "area_pupils": 78516,
+     "area_pupils": 78463,
      "group_pupils": 3500
     },
     "change": {
@@ -4467,7 +4467,7 @@
      "roll": [
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       }
      ],
@@ -4499,7 +4499,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -4519,7 +4519,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "prep_no_ks2"
       },
       {
@@ -4671,10 +4671,10 @@
        "region_pupils": 28501
       },
       {
-       "pct": 2.11,
+       "pct": 2.13,
        "region_code": "E12000007",
        "group_pupils": 1140,
-       "region_pupils": 53913
+       "region_pupils": 53521
       },
       {
        "pct": 0.29,
@@ -4683,7 +4683,7 @@
        "region_pupils": 65265
       }
      ],
-     "area_pupils": 147679,
+     "area_pupils": 147287,
      "group_pupils": 1545
     },
     "change": {
@@ -4742,7 +4742,7 @@
      "roll": [
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -4764,7 +4764,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -4789,7 +4789,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -4826,7 +4826,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -4861,7 +4861,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -4903,7 +4903,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -4928,7 +4928,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -4960,7 +4960,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "not_yet_open"
       },
       {
@@ -4985,7 +4985,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -5230,10 +5230,10 @@
        "region_pupils": 66395
       },
       {
-       "pct": 4.05,
+       "pct": 4.09,
        "region_code": "E12000007",
        "group_pupils": 5936,
-       "region_pupils": 146741
+       "region_pupils": 145234
       },
       {
        "pct": 0.34,
@@ -5242,7 +5242,7 @@
        "region_pupils": 147952
       }
      ],
-     "area_pupils": 361088,
+     "area_pupils": 359581,
      "group_pupils": 7062
     },
     "change": {
@@ -5371,7 +5371,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -5438,7 +5438,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -5495,7 +5495,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "prep_no_ks2"
       },
       {
@@ -5592,7 +5592,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -5649,7 +5649,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -5905,7 +5905,7 @@
        "group_pupils": 32
       }
      ],
-     "pct": 1.44,
+     "pct": 1.47,
      "sector": "independent",
      "regions": [
       {
@@ -5915,10 +5915,10 @@
        "region_pupils": 10951
       },
       {
-       "pct": 1.71,
+       "pct": 1.81,
        "region_code": "E12000007",
        "group_pupils": 326,
-       "region_pupils": 19098
+       "region_pupils": 18057
       },
       {
        "pct": 1.17,
@@ -5927,7 +5927,7 @@
        "region_pupils": 24969
       }
      ],
-     "area_pupils": 55018,
+     "area_pupils": 53977,
      "group_pupils": 795
     },
     "change": {
@@ -6139,10 +6139,10 @@
        "pct": 5.97,
        "region_code": "E12000007",
        "group_pupils": 3393,
-       "region_pupils": 56876
+       "region_pupils": 56829
       }
      ],
-     "area_pupils": 77312,
+     "area_pupils": 77265,
      "group_pupils": 3495
     },
     "change": {
@@ -6212,7 +6212,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "prep_no_ks2"
       },
       {
@@ -6369,7 +6369,7 @@
        "group_pupils": 25
       }
      ],
-     "pct": 1.13,
+     "pct": 1.14,
      "sector": "independent",
      "regions": [
       {
@@ -6379,10 +6379,10 @@
        "region_pupils": 28426
       },
       {
-       "pct": 2.28,
+       "pct": 2.3,
        "region_code": "E12000007",
        "group_pupils": 1236,
-       "region_pupils": 54167
+       "region_pupils": 53773
       },
       {
        "pct": 0.3,
@@ -6391,7 +6391,7 @@
        "region_pupils": 65700
       }
      ],
-     "area_pupils": 148293,
+     "area_pupils": 147899,
      "group_pupils": 1680
     },
     "change": {
@@ -6485,7 +6485,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -6552,7 +6552,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -6619,7 +6619,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -6676,7 +6676,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -6904,7 +6904,7 @@
        "group_pupils": 121
       }
      ],
-     "pct": 1.99,
+     "pct": 2,
      "sector": "independent",
      "regions": [
       {
@@ -6914,10 +6914,10 @@
        "region_pupils": 64496
       },
       {
-       "pct": 4.07,
+       "pct": 4.11,
        "region_code": "E12000007",
        "group_pupils": 5839,
-       "region_pupils": 143539
+       "region_pupils": 142052
       },
       {
        "pct": 0.37,
@@ -6926,7 +6926,7 @@
        "region_pupils": 143611
       }
      ],
-     "area_pupils": 351646,
+     "area_pupils": 350159,
      "group_pupils": 7014
     },
     "change": {
@@ -7050,7 +7050,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -7097,7 +7097,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "prep_no_ks2"
       },
       {
@@ -7189,7 +7189,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -7241,7 +7241,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -7505,7 +7505,7 @@
        "group_pupils": 44
       }
      ],
-     "pct": 1.54,
+     "pct": 1.57,
      "sector": "independent",
      "regions": [
       {
@@ -7515,10 +7515,10 @@
        "region_pupils": 10601
       },
       {
-       "pct": 1.75,
+       "pct": 1.85,
        "region_code": "E12000007",
        "group_pupils": 329,
-       "region_pupils": 18794
+       "region_pupils": 17743
       },
       {
        "pct": 1.2,
@@ -7527,7 +7527,7 @@
        "region_pupils": 25174
       }
      ],
-     "area_pupils": 54569,
+     "area_pupils": 53518,
      "group_pupils": 841
     },
     "change": {
@@ -7726,7 +7726,7 @@
        "group_pupils": 109
       }
      ],
-     "pct": 4.37,
+     "pct": 4.38,
      "sector": "independent",
      "regions": [
       {
@@ -7739,10 +7739,10 @@
        "pct": 5.75,
        "region_code": "E12000007",
        "group_pupils": 3165,
-       "region_pupils": 55086
+       "region_pupils": 55047
       }
      ],
-     "area_pupils": 74877,
+     "area_pupils": 74838,
      "group_pupils": 3275
     },
     "change": {
@@ -7812,7 +7812,7 @@
       },
       {
        "urn": "149692",
-       "name": "Radnor House Prep School",
+       "name": "Kneller Hall Junior School",
        "reason": "prep_no_ks2"
       },
       {
@@ -7986,10 +7986,10 @@
        "region_pupils": 27987
       },
       {
-       "pct": 2.76,
+       "pct": 2.78,
        "region_code": "E12000007",
        "group_pupils": 1481,
-       "region_pupils": 53687
+       "region_pupils": 53291
       },
       {
        "pct": 0.33,
@@ -7998,7 +7998,7 @@
        "region_pupils": 63824
       }
      ],
-     "area_pupils": 145498,
+     "area_pupils": 145102,
      "group_pupils": 1914
     },
     "change": {
@@ -8087,7 +8087,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -8139,7 +8139,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -8191,7 +8191,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -8316,7 +8316,7 @@
       },
       "roll_change_1": {
        "of": 2,
-       "rank": 1,
+       "rank": 2,
        "tied": false
       }
      },
@@ -8404,7 +8404,7 @@
        "group_pupils": 101
       }
      ],
-     "pct": 1.91,
+     "pct": 1.92,
      "sector": "independent",
      "regions": [
       {
@@ -8414,10 +8414,10 @@
        "region_pupils": 61583
       },
       {
-       "pct": 3.87,
+       "pct": 3.92,
        "region_code": "E12000007",
        "group_pupils": 5304,
-       "region_pupils": 136923
+       "region_pupils": 135465
       },
       {
        "pct": 0.37,
@@ -8426,7 +8426,7 @@
        "region_pupils": 135810
       }
      ],
-     "area_pupils": 334316,
+     "area_pupils": 332858,
      "group_pupils": 6392
     },
     "change": {
@@ -8555,7 +8555,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -8612,7 +8612,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -8669,7 +8669,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -8868,7 +8868,7 @@
        "group_pupils": 58
       }
      ],
-     "pct": 1.54,
+     "pct": 1.58,
      "sector": "independent",
      "regions": [
       {
@@ -8878,10 +8878,10 @@
        "region_pupils": 10063
       },
       {
-       "pct": 1.67,
+       "pct": 1.78,
        "region_code": "E12000007",
        "group_pupils": 307,
-       "region_pupils": 18334
+       "region_pupils": 17280
       },
       {
        "pct": 1.27,
@@ -8890,7 +8890,7 @@
        "region_pupils": 23796
       }
      ],
-     "area_pupils": 52193,
+     "area_pupils": 51139,
      "group_pupils": 806
     },
     "change": {
@@ -8965,7 +8965,7 @@
      "places": {
       "roll_change_1": {
        "of": 2,
-       "rank": 1,
+       "rank": 2,
        "tied": false
       }
      },
@@ -9049,13 +9049,13 @@
        "region_pupils": 18638
       },
       {
-       "pct": 5.35,
+       "pct": 5.36,
        "region_code": "E12000007",
        "group_pupils": 2785,
-       "region_pupils": 52011
+       "region_pupils": 51998
       }
      ],
-     "area_pupils": 70649,
+     "area_pupils": 70636,
      "group_pupils": 2889
     },
     "change": {
@@ -9211,10 +9211,10 @@
        "region_pupils": 27147
       },
       {
-       "pct": 2.62,
+       "pct": 2.64,
        "region_code": "E12000007",
        "group_pupils": 1360,
-       "region_pupils": 51841
+       "region_pupils": 51450
       },
       {
        "pct": 0.3,
@@ -9223,7 +9223,7 @@
        "region_pupils": 60869
       }
      ],
-     "area_pupils": 139857,
+     "area_pupils": 139466,
      "group_pupils": 1749
     },
     "change": {
@@ -9317,7 +9317,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -9374,7 +9374,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -9431,7 +9431,7 @@
       },
       {
        "urn": "137018",
-       "name": "Radnor House",
+       "name": "Kneller Hall School",
        "reason": "igcse"
       },
       {
@@ -9521,6 +9521,7 @@
  "build": {
   "meta": {
    "bands": [
+    "peer:foundation_trust:all",
     "peer:independent_company:21-40",
     "peer:mat:41+"
    ],
@@ -9528,7 +9529,7 @@
     "3320",
     "club_iss:dukes-education"
    ],
-   "commit": "bf1671c",
+   "commit": "db7a27b",
    "periods": [
     2019,
     2020,
@@ -9539,8 +9540,12 @@
     2025
    ],
    "reasons": {
+    "ap": "alternative provision: not counted in group figures",
+    "pru": "pupil referral unit: not counted in group figures",
     "igcse": "IGCSE: not ranked at GCSE",
     "closed": "closed",
+    "nursery": "nursery school: not counted in group figures",
+    "special": "special school: not counted in group figures",
     "no_census": "no census return",
     "prep_no_ks2": "prep: no KS2 published",
     "not_yet_open": "not yet open",
@@ -9548,6 +9553,7 @@
     "outside_england": "outside England",
     "no_results_published": "no results published"
    },
+   "sat_set": "sat:all",
    "measures": {
     "ks4_a8": "GCSE Attainment 8",
     "ks4_p8": "Progress 8",
@@ -9620,6 +9626,8 @@
    "peer_types": {
     "mat": "MATs",
     "federation": "federations",
+    "foundation_trust": "foundation trusts",
+    "independent_other": "other independent groups",
     "independent_charity": "independent charities",
     "independent_company": "independent companies"
    },
@@ -9644,10 +9652,26 @@
     "21-40",
     "41+"
    ],
+   "not_counted": [
+    "ap",
+    "nursery",
+    "pru",
+    "special"
+   ],
    "subject_min": {
     "entries": 10,
     "schools": 2
    },
+   "listed_types": [
+    "federation",
+    "foundation_trust",
+    "independent_charity",
+    "independent_company",
+    "independent_other",
+    "mat"
+   ],
+   "whole_type_band": "all",
+   "foundation_trust": "1337",
    "phase_min_pupils": 10,
    "subject_families": [
     {
@@ -9691,11 +9715,17 @@
      "family_id": "enterprise_applied"
     }
    ],
-   "inputs_fetched_at": "2026-10-16 09:44:18",
-   "min_group_schools": 2
+   "inputs_fetched_at": "2026-11-08 17:20:04",
+   "min_group_schools": 2,
+   "non_mainstream_groups": 190,
+   "state_funded_overrides": {
+    "101849": "City technology college (BRIT School): state-funded; GIAS types it independent",
+    "108420": "City technology college (Emmanuel College): state-funded; GIAS types it independent",
+    "123627": "City technology college (Thomas Telford School): state-funded; GIAS types it independent"
+   }
   },
   "build_id": 1,
-  "computed_at": "2026-10-16T09:50:15.801+00:00"
+  "computed_at": "2026-11-08T18:09:40.212+00:00"
  },
  "group": {
   "name": "Dukes Education",

@@ -7,14 +7,15 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { cachedReference } from "../server-cache";
 import { groupFixturesDir } from "./fixture-switch";
-import { groupIndex } from "./production";
 import { displayName } from "./dash";
+import type { GroupIndex } from "./library";
+import { nearestInSize } from "./group-sets";
 
 export type Reading = "at_time" | "listed_now";
 export type Phase = "all" | "primary" | "secondary" | "post16";
 export const READINGS: Reading[] = ["at_time", "listed_now"];
 
-export type MeasureFig = { weighted: number | null; average_school: number | null; n_with_figure: number; n_weighted?: number; weight?: number | null };
+export type MeasureFig = { weighted: number | null; average_school: number | null; n_with_figure: number; n_weighted?: number; weight?: number | null; /** R-MIN-SCHOOLS (D9): a pooled figure on fewer than 5 schools, withheld */ tooFew?: boolean };
 export type Change = { from_period?: number; combined_pct: number | null; combined_base?: number | null; same_schools_pct: number | null; same_schools?: number; growing: number; shrinking: number };
 export type Excluded = { urn: string; name: string; reason: string };
 export type Place = { rank: number; of: number; tied: boolean };
@@ -76,8 +77,9 @@ export type GroupAggregate = {
   build: { build_id: number; computed_at: string; meta: BuildMeta } | null;
 };
 
-export type ComparisonKind = "peer_band" | "non_group" | "areas" | "england" | "mix_matched";
-export const COMPARISON_KINDS: ComparisonKind[] = ["peer_band", "non_group", "areas", "england", "mix_matched"];
+// 0.8 group sets (M1, M4): "sat" is production's single-academy trust pool (sat:all), state groups only.
+export type ComparisonKind = "peer_band" | "non_group" | "sat" | "areas" | "england" | "mix_matched";
+export const COMPARISON_KINDS: ComparisonKind[] = ["peer_band", "non_group", "sat", "areas", "england", "mix_matched"];
 export type ComparisonRow = { kind: ComparisonKind | "peer_named"; variant: string; set_id: string | null; label: string; reading: Reading; period: number; phase: Phase; figures: Figures };
 
 export type SchoolYearFigures = {
@@ -93,6 +95,10 @@ export type SchoolYearFigures = {
   trend: Record<"1" | "3" | "5", number | null>;
   igcse: boolean;
   ks4_pupils: number | null;
+  /** 0.8 group pools (LF4): the school's kind, and whether it counts in group figures (special, AP, PRU
+   * and nursery schools are members but don't). Absent in builds before the like-for-like rule. */
+  kind?: "mainstream" | "special" | "ap" | "pru" | "nursery";
+  counted?: boolean;
 };
 export type SchoolYearRow = {
   urn: string;
@@ -179,6 +185,13 @@ export function groupComparisons(groupId: string, kinds: string[]): Promise<Comp
   return cachedReference(`groups:comparison:${groupId}:${key}`, () => rpc<ComparisonRow[]>("group_comparison_lookup", { p_group_id: groupId, p_kinds: kinds }), TTL_MS);
 }
 
+/** 0.8 group sets (M3): the groups library's cards, every listed group (group_index_lookup, one call). */
+export function groupLibraryIndex(): Promise<GroupIndex> {
+  const dir = groupFixturesDir(process.env);
+  if (dir) return Promise.resolve(fixture<GroupIndex>(dir, "group_index_lookup.json") ?? { build: null, groups: [] });
+  return cachedReference("groups:index", () => rpc<GroupIndex>("group_index_lookup", {}), TTL_MS);
+}
+
 /** Every member school (and each predecessor it carries), its years nested. */
 export function groupSchoolsYear(groupId: string): Promise<SchoolYearRow[]> {
   const dir = groupFixturesDir(process.env);
@@ -209,13 +222,12 @@ export async function namedCandidates(groupId: string, type: string, schools: nu
     for (const r of named) if (r.phase === "all" && !by.has(r.variant)) by.set(r.variant, { id: r.variant, label: displayName(r.label), schools: r.figures.n_schools });
     return Array.from(by.values());
   }
+  // 0.8 group sets (M4): from the library's index (one call; the listed groups only), nearest the group's
+  // own size. (The route used to pass 0 on Academic and Pupils, which sorted from the smallest group up.)
   try {
-    const all = await groupIndex();
-    return all
-      .filter((g) => g.groupId !== groupId && g.type === type && g.source !== "self_declared" && g.schools >= 2)
-      .sort((a, b) => Math.abs(a.schools - schools) - Math.abs(b.schools - schools) || b.schools - a.schools)
-      .slice(0, 12)
-      .map((g) => ({ id: g.groupId, label: displayName(g.name), schools: g.schools }));
+    const index = await groupLibraryIndex();
+    const size = schools > 0 ? schools : (index.groups.find((c) => c.group_id === groupId)?.schools ?? 0);
+    return nearestInSize(index.groups, { group_id: groupId, type, schools: size }, 12).map((g) => ({ id: g.group_id, label: displayName(g.name), schools: g.schools }));
   } catch {
     return [];
   }

@@ -23,6 +23,7 @@ import { accentVars, productAccent } from "@/components/shell/accent";
 import { useWidth } from "@/components/admissions/views/charts";
 import { fallbackReturn, returnLabel, safeReturnTo } from "@/lib/sets/return-to";
 import { leaveEditor } from "@/lib/sets/editor-return";
+import { GroupSetEditorLoader } from "@/components/sets/GroupSetEditor";
 
 const PHONE = 600;
 
@@ -132,10 +133,18 @@ function EditorLoader() {
   );
 }
 
+// 0.8 group sets (M4, M5): ?account=<group account>&kind=group_peers|group_schools opens the editor in
+// group mode (GroupSetEditor.tsx). Every other address is the school editor above, exactly as before.
+function EditorBranch() {
+  const sp = useSearchParams();
+  const kind = sp.get("kind");
+  return sp.get("account") && (kind === "group_peers" || kind === "group_schools") ? <GroupSetEditorLoader /> : <EditorLoader />;
+}
+
 export default function SetEditPage() {
   return (
     <Suspense fallback={null}>
-      <EditorLoader />
+      <EditorBranch />
     </Suspense>
   );
 }

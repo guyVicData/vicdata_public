@@ -10,9 +10,11 @@ import { periodLabel } from "@/catalogue/years";
 import { MEASURE_LABEL, MEASURE_UNIT, ordinal, PEER_PLURAL, PHASE_NOUN } from "@/lib/groups/dash";
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
-import { reasonWords } from "@/lib/groups/dash";
+import { reasonWords, tooFewWords } from "@/lib/groups/dash";
 import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 import { featuredRow } from "@/components/shell/accent";
+import { ofGroupsWords } from "@/lib/groups/group-sets";
+import { RollSideBySide } from "./views-sets";
 
 const unitOf = (m: string): Unit => (MEASURE_UNIT[m] === "pct" ? "pct" : MEASURE_UNIT[m] === "va" ? "va" : "points");
 const f = (v: number | null | undefined, m: string) => fmt(v ?? null, unitOf(m), m.startsWith("ks5_aps") ? "aps_per_entry" : undefined);
@@ -37,10 +39,44 @@ export function AcademicNow({ a, average }: { a: GroupAcademic; average: boolean
             <div className="grid grid-cols-2 gap-2">
               <Tile label={`Schools with ${h.phase === "secondary" ? "GCSE" : h.phase === "post16" ? "A-level" : "KS2"} results`} value={<span className="text-[var(--accent)]">{h.withFigure}</span>} sub={`of ${h.inPhase} · the rest listed, with the reason`} accent />
               {h.measures.slice(0, 2).map((m) => (
-                <Tile key={m.measure} label={m.label} value={f(average ? m.group?.average_school : m.group?.weighted, m.measure)} sub={`${average ? "average school" : "pupil-weighted"} · ${o.compare.label.toLowerCase().startsWith("peer") ? "peers" : o.compare.label} ${f(average ? m.set?.average_school : m.set?.weighted, m.measure)} · England ${f(m.england?.weighted, m.measure)}`} />
+                <Tile
+                  key={m.measure}
+                  label={m.label}
+                  value={f(average ? m.group?.average_school : m.group?.weighted, m.measure)}
+                  sub={
+                    m.median
+                      ? `${average ? "average school" : "pupil-weighted"} · set median ${f(average ? m.median.average : m.median.value, m.measure)} (${ofGroupsWords(m.median.n, m.median.of)}) · England ${f(m.england?.weighted, m.measure)}`
+                      : `${average ? "average school" : "pupil-weighted"} · ${o.picker.short} ${m.set?.tooFew ? tooFewWords(m.set.n_with_figure) : f(average ? m.set?.average_school : m.set?.weighted, m.measure)} · England ${f(m.england?.weighted, m.measure)}`
+                  }
+                />
               ))}
               <Tile label={`Rank among peer ${peer}`} value={place ? ordinal(place.rank, place.tied) : "—"} sub={place ? `of ${place.of} ${peer} with ${o.group.type === "mat" ? "the same size band" : "a similar size"}` : "no peer figure this year"} />
             </div>
+            {h.groups && (
+              <div className="flex flex-col gap-0.5 text-[12px]" data-academic-side-by-side={h.phase}>
+                <Lbl>{main.label}, side by side · {yr(h.year)}</Lbl>
+                <div className="flex justify-between gap-2 font-bold">
+                  <span className="truncate">{o.group.name}</span>
+                  <span className="tabular-nums">{f(average ? main.group?.average_school : main.group?.weighted, main.measure)}</span>
+                </div>
+                {h.groups.map((g) => (
+                  <div key={g.id} className="flex justify-between gap-2">
+                    <span className="truncate" title={g.label}>{g.label}</span>
+                    <span className="tabular-nums">{(average ? g.average : g.value) === null && g.notPublished ? <i className="text-[11px] text-[var(--muted2)]">not published</i> : f(average ? g.average : g.value, main.measure)}</span>
+                  </div>
+                ))}
+                {main.median && (
+                  <div className="flex justify-between gap-2 italic text-[var(--muted)]">
+                    <span>Median · {ofGroupsWords(main.median.n, main.median.of)}{o.sideBySide?.median.mixed ? " · mixed types" : ""}</span>
+                    <span className="tabular-nums">{f(average ? main.median.average : main.median.value, main.measure)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between gap-2 text-[var(--muted2)]">
+                  <span>England</span>
+                  <span className="tabular-nums">{f(main.england?.weighted, main.measure)}</span>
+                </div>
+              </div>
+            )}
             <div className="text-[11.5px] text-[var(--muted2)]">
               Spread across the group: lowest {f(h.spread.lowest, main.measure)} · median {f(h.spread.median, main.measure)} · highest {f(h.spread.highest, main.measure)} ({h.spread.n} schools)
             </div>
@@ -104,7 +140,7 @@ export function SchoolsRanked({ a, highlight, fullscreen }: { a: GroupAcademic; 
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[var(--muted2)]">
         <span>Group median {f(r.groupMedian, r.measure)}</span>
-        {r.set && <span>{r.set.label} {f(r.set.value, r.measure)}{r.set.n !== null ? ` (${r.set.n} schools)` : ""}</span>}
+        {r.set && <span>{r.set.label} {r.set.value === null && r.set.n !== null && r.set.n > 0 && r.set.n < 5 ? tooFewWords(r.set.n) : <>{f(r.set.value, r.measure)}{r.set.n !== null ? ` (${r.set.n} schools)` : ""}</>}</span>}
         <span>Non-group {f(r.nonGroup, r.measure)}</span>
         <span>England {f(r.england, r.measure)}</span>
       </div>
@@ -260,6 +296,12 @@ export function PupilsNow({ p, compact }: { p: GroupPupils; compact: boolean }) 
               <span className={dirClass(n.change[k].sameSchools, 0.5)}>{fmt(n.change[k].sameSchools, "pct")} like for like · {fmt(n.change[k].combined, "pct")} combined</span>
             </div>
           ))}
+        </div>
+      )}
+      {!compact && p.overview.sideBySide && (
+        <div className="flex flex-col gap-1">
+          <Lbl>Roll and change, side by side · {p.overview.picker.name}</Lbl>
+          <RollSideBySide o={p.overview} />
         </div>
       )}
     </div>
