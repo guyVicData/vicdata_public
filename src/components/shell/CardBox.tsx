@@ -20,7 +20,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
 import { PanelNote, SourceNote, WhatThisShows } from "./PanelFooter";
-import { ChevronDown } from "./PanelIcons";
 import { PanelIconRow } from "./PanelIconRow";
 import { reportUsage, useUsageScope } from "@/lib/usage-client";
 import { useViewMarks } from "@/components/feedback/ViewSurface";
@@ -287,11 +286,15 @@ export function CardBox({
         onClick={onExpand}
         aria-expanded={false}
         aria-label={`Open: ${title}`}
-        className="mt-3 flex w-full items-center gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] px-3 py-2.5 text-left hover:border-[var(--panel-border2)] print:hidden"
+        // 0.8 front door (C19): a shut panel is a raised bar -- a step lighter than its column, a border,
+        // a soft shadow, a solid chevron and its lead figure in the accent -- so it reads as a button.
+        data-shut-panel=""
+        className="mt-3 flex w-full items-center gap-2 rounded-[10px] border border-[var(--shut-border)] bg-[var(--shut-bg)] px-3 py-2.5 text-left hover:border-[var(--muted3)] print:hidden"
+        style={{ boxShadow: "var(--shut-shadow)" }}
       >
-        <span className="min-w-0 flex-grow truncate text-[13px] font-semibold text-[var(--muted2)]">{title}</span>
-        {headline && <span className="shrink-0 text-[13px] font-bold tabular-nums text-[var(--fg)]">{headline}</span>}
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-[var(--muted3)]">{ChevronDown}</span>
+        <span className="flex h-6 w-4 shrink-0 items-center justify-center text-[var(--fg)]">{SHUT_CHEVRON}</span>
+        <span className="min-w-0 flex-grow truncate text-[13px] font-semibold text-[var(--fg)]">{title}</span>
+        {headline && <span className="shrink-0 text-[13px] font-bold tabular-nums" style={{ color: SHUT_FIGURE }}>{headline}</span>}
       </button>
     );
   }
@@ -385,7 +388,9 @@ export function CardBox({
       onPointerDownCapture={marks ? () => touchPanel(marks.surface, marks.view.panelId) : undefined}
       onFocusCapture={marks ? () => touchPanel(marks.surface, marks.view.panelId) : undefined}
       className={[
-        "mt-3 flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3",
+        // 0.8 front door (C19): an open panel is a sunk well, the chart's own plate (--box-bg on a
+        // dashboard is the ladder's well; its border is the well's).
+        "mt-3 flex flex-col gap-2 rounded-[10px] border border-[var(--well-border,var(--panel-border))] bg-[var(--box-bg)] p-3",
         fixedHeight ? "relative overflow-hidden pb-9" : "",
       ].join(" ")}
       // PANEL_HEIGHT is computed from the real grid, not copied from the wireframe -- see
@@ -519,3 +524,12 @@ export function CardBox({
     </div>
   );
 }
+
+// 0.8 front door (C19): the shut bar's solid chevron (pointing at what opening it shows) and its lead
+// figure in the accent, mixed toward --fg so it reads in both themes (accentText's share).
+const SHUT_CHEVRON = (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="9 5 16 12 9 19" />
+  </svg>
+);
+const SHUT_FIGURE = "color-mix(in srgb, var(--accent, var(--fg)) var(--accent-text-mix, 65%), var(--fg))";

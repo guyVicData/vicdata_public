@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 198 rules: 190 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 202 rules: 194 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -178,7 +178,7 @@ What a number is allowed to be. 198 rules: 190 active, 8 superseded; 22 must lif
 | R-ROLL-INDEXED-SET | active | SMT Overview's Roll, indexed (and its table) draws the school's line (day and boarding at a boarding school), the selected set's average day roll, and -- where the set has boarders -- its average boarding roll as a grey dotted line (F-11). No England or LA line. The averages are over the set's schools with a figure in every year shown, indexed from the same base year as the school's lines, under the same filters. | no | auto: rollIndexedSet | — |
 | R-MARKET-FOLLOWS-SET | active | SMT Overview's market share at 11+ (From Admissions, and the Scorecard's row) is a share of the selected set: the school's Year 7 against the Year 7s of the set's schools, even where Admissions has chosen its own rivals (F-9). Its tag, title and (i) name the set. Pupils' Market share is unchanged (R-MARKET-DEFAULT-RIVALS). | no | auto: marketFollowsSet | — |
 | R-FEEDBACK-PAGE | active | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. | no | auto: feedbackPage | — |
-| R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
+| R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT orange and the groups (head office) bronze (0.8 front door C20; SMT violet and groups orange before). One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
 | R-FEEDBACK-STATUSES | active | A feedback item's statuses are new, triaged, planned, fixed (merged to main, with resolved_commit), deployed (the live build holds resolved_commit -- set by the server only, stamped deployed_at and deployed_build) and done (checked on the live site), or won't do. Fixed and deployed are still open: the author's icon stays yellow until done. Nobody sets deployed by hand; fixed needs its commit. | no | auto: feedbackDeployGate | — |
 | R-FEEDBACK-PROMOTE | active | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time. | no | auto: feedbackDeployGate | — |
 | R-FEEDBACK-DEPLOY-GAPS | active | feedback_deploy_gaps lists the items that claim more than the live build (the newest app_builds row) has: deployed or done at a commit the live build doesn't hold, and fixed items older than 48 hours not yet deployed. The inbox shows the count as a banner. | no | auto: feedbackDeployGate | — |
@@ -206,6 +206,10 @@ What a number is allowed to be. 198 rules: 190 active, 8 superseded; 22 must lif
 | R-VA-SUBJECT-MATCH | active | Every value-added subject name is matched to the results file's name in the same qualification, so its area follows from subject_family_map: the list Guy approved on 8 Nov 2026 (docs/v0.8/va_subject_matches_v1.md). It lives in the ingest's shared crosswalk (subject_label_map rows for their qualification, 20261108120000) and the app reads it there (academic_subject_label_map_lookup); until that lands, from src/lib/smt/va-subject-matches.ts, which goes once it has. While both exist they agree. No value-added subject is left without an area or an outside mark (the EPQ, the IB's whole-diploma and core rows). The (i) on the by-area view says which matches are VicData's. | no | auto: vaSubjectMatch | — |
 | R-SMT-ENTRIES-SIZE | active | In SMT Academic's Entries mode each subject's cohort carries a size badge XS-XL against England: the fifths (p20/p40/p60/p80) of all schools entering that subject in that qualification that year, schools with no entries left out, and one row per qualification for its own total (subject "All subjects"). The cut points are precomputed per (key stage, qualification, subject, year) into subject_entry_size_fifths by scripts/sync-subject-entry-size-fifths.ts -- never computed on a page view, no per-request read of every school's entries -- and read in one cached load per year (entrySizeFifths). The badge is the existing one (sizeBadgeForValue: exactly on a cut point is the band above; BADGE_ORDER). Fewer than MIN_SCHOOLS_TO_SIZE (10) schools entering: no badge, and the view says "too few schools to size". Subjects are their latest names; years come from the data, so a new release is a re-run of the sync. | no | auto: smtEntriesSize | — |
 | R-SMT-ENTRIES-ONE-TOTAL | active | One entry total per page: column 1's total, every group line and share, the entries mix, the subject areas' shares and the board's shares all come from the same subject-by-qualification rows (Post-16: academic_subject_qualification_headline, whose sum per year is DfE's own "All subjects" total exam entries; GCSE: the subject rollup), so every total on the page agrees. | no | auto: smtEntriesOneTotal | — |
+| R-THEME-MID-SCOPE | active | The theme switch is Dark · Mid · Light, remembered per person (one localStorage key, as before). Mid applies to the homes and the walks only: every other page -- every dashboard, the sets pages, admin pages -- reads useTeacherTheme(), which answers Dark under Mid, and only the files listed in MID_PAGES (src/lib/front-door/scope.ts) read the person's Mid choice (useThemePref). In Mid the page, its header and the "Also here" band stay dark; only the area being worked in (a [data-field]) takes its part's colour. | no | auto: themeMidScope | — |
+| R-THEME-CONTRAST | active | Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. | no | auto: themeContrast | — |
+| R-PANEL-LADDER | active | On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. | no | auto: panelLadder | — |
+| R-ROLE-COLOURS | active | SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan. | no | auto: roleColours | — |
 
 ## Cards
 
@@ -2933,7 +2937,7 @@ What a number is allowed to be. 198 rules: 190 active, 8 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. |
+| Statement | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT orange and the groups (head office) bronze (0.8 front door C20; SMT violet and groups orange before). One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. |
 | Why | Guy (F-17): in a table the featured school's row has to be found at a glance, and the tint says whose dashboard it is. |
 | Applies to | every table view: Admissions, Teacher (GCSE, Post-16), SMT, groups |
 | Enforced in | - src/app/globals.css<br>- src/components/shell/accent.ts:FEATURED_ROW_BG<br>- src/components/admissions/views/Tables.tsx:RivalsTable<br>- src/components/teacher/SchoolRankingTable.tsx<br>- src/components/teacher/SortTable.tsx<br>- src/components/teacher/SeriesViews.tsx:YearTable<br>- src/components/groups/dash/views.tsx<br>- src/lib/featured-row.test.ts |
@@ -3372,6 +3376,70 @@ What a number is allowed to be. 198 rules: 190 active, 8 superseded; 22 must lif
 | Tagged at | - src/lib/smt/academic.ts |
 | Test case | Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries (100183), ks5: Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total. [runner: smtEntriesOneTotal] |
 | Origin | 0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-THEME-MID-SCOPE
+
+| Field | Content |
+| --- | --- |
+| Statement | The theme switch is Dark · Mid · Light, remembered per person (one localStorage key, as before). Mid applies to the homes and the walks only: every other page -- every dashboard, the sets pages, admin pages -- reads useTeacherTheme(), which answers Dark under Mid, and only the files listed in MID_PAGES (src/lib/front-door/scope.ts) read the person's Mid choice (useThemePref). In Mid the page, its header and the "Also here" band stay dark; only the area being worked in (a [data-field]) takes its part's colour. |
+| Why | Guy (C18, 9-13 Nov): a friendlier mid-tone for the homes and walks; he leans to Mid there only and wants to see it on dashboards later. |
+| Applies to | every page with #teacher-root |
+| Enforced in | - src/components/shell/TeacherChrome.tsx:useTeacherTheme, useThemePref, effectiveTheme, ThemeToggle<br>- src/lib/front-door/scope.ts:MID_PAGES<br>- src/app/globals.css ([data-pref="mid"] [data-field])<br>- src/lib/front-door/theme-scope.test.ts |
+| Tagged at | - src/components/shell/TeacherChrome.tsx<br>- src/lib/front-door/scope.ts<br>- src/lib/front-door/theme-scope.test.ts<br>- src/lib/front-door/theme-scope.ts |
+| Test case | the source tree (no database) (110110), ks4: effectiveTheme maps Mid to Dark; useThemePref is read only by MID_PAGES; every dashboard, sets and admin root draws data-theme from useTeacherTheme. [runner: themeMidScope] |
+| Origin | 0.8 front door part 1, C18 (docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-THEME-CONTRAST
+
+| Field | Content |
+| --- | --- |
+| Statement | Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. |
+| Why | C18: white text fails on these fields; Guy asked for every pair checked and the table logged. |
+| Applies to | the Mid fields and tiles (GCSE, Post-16, top level, head office, Admissions); the ladder's shut bar, well and column in Dark and Light |
+| Enforced in | - src/app/globals.css<br>- src/lib/front-door/contrast.ts:contrastTable<br>- src/lib/front-door/contrast.test.ts |
+| Tagged at | - src/lib/front-door/contrast.test.ts<br>- src/lib/front-door/contrast.ts |
+| Test case | the stylesheet (no database) (110110), ks4: Every row of the contrast table reads its colours from globals.css and passes AA for its kind. [runner: themeContrast] |
+| Origin | 0.8 front door part 1, C18 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-PANEL-LADDER
+
+| Field | Content |
+| --- | --- |
+| Statement | On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. |
+| Why | C19: open and shut panels shared one tone (--box-bg), about 6% from the column, so shut panels didn't stand out. |
+| Applies to | every dashboard: CardBox (open and shut), DashboardColumn, ShellPage, ShellRow's head |
+| Enforced in | - src/app/globals.css (:has([data-dash-ladder]), --shut-*, --well-border)<br>- src/components/shell/CardBox.tsx<br>- src/components/shell/DashboardGrid.tsx<br>- src/components/shell/Rows.tsx<br>- src/lib/front-door/contrast.ts:ladderSteps |
+| Tagged at | - src/lib/front-door/contrast.test.ts<br>- src/lib/front-door/contrast.ts<br>- src/lib/front-door/theme-scope.test.ts<br>- src/lib/front-door/theme-scope.ts |
+| Test case | the stylesheet and the shell (no database) (110110), ks4: Shut bar against column at or above the logged steps in Dark and Light; well white in Light and darker than its column in Dark; column lighter than page; the shell marks DashboardGrid and ShellPage and draws the shut bar with the shut tokens. [runner: panelLadder] |
+| Origin | 0.8 front door part 1, C19 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ROLE-COLOURS
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan. |
+| Why | C20: SMT was #a78bfa, the same violet as Post-16; head office needs to read as top level but distinct from SMT. |
+| Applies to | the shell, the homes, the set creator colours, the group pages (through GROUP_ACCENT and the tokens) |
+| Enforced in | - src/lib/teacher-view-theme.ts:ROLE_ACCENT, ROLE_ACCENT_LIGHT, GROUP_ACCENT<br>- src/components/smt/ui.tsx:smtVars<br>- src/app/globals.css (--set-smt-*, --set-group-*, --row-featured-smt, --row-featured-groups) |
+| Tagged at | - src/lib/front-door/contrast.test.ts<br>- src/lib/front-door/contrast.ts |
+| Test case | the theme module and the stylesheet (no database) (110110), ks4: SMT orange (Dark and Light values, Light 4.5:1 on white), bronze 4.5:1 on the dark panel and 3:1 on white, Post-16 violet unchanged, the SMT and group tokens orange and bronze and readable. [runner: roleColours] |
+| Origin | 0.8 front door part 1, C20 |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

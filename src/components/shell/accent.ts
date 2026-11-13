@@ -5,8 +5,8 @@
 //
 //   Teacher     by phase: PHASE_ACCENT (GCSE green, Post-16 violet; KS2 none)
 //   Admissions  by role:  ROLE_ACCENT.admissions (cyan)
-//   SMT         by role:  ROLE_ACCENT.smt (violet)
-//   Groups      GROUP_ACCENT (orange, as the group wireframes draw it; to confirm with Guy)
+//   SMT         by role:  ROLE_ACCENT.smt (orange, 0.8 front door C20; ROLE_ACCENT_LIGHT.smt on Light)
+//   Groups      GROUP_ACCENT (head office's deep bronze, 0.8 front door C20)
 import type { CSSProperties } from "react";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { GROUP_ACCENT, PHASE_ACCENT, ROLE_ACCENT } from "@/lib/teacher-view-theme";
@@ -29,8 +29,8 @@ export function accentVars(accent: Accent | null | undefined, featured: Featured
 // 0.8 Admissions feedback round 1 (F-17): the featured school's row in every table is tinted in its
 // product's own colour -- one token per product, light and dark, in globals.css (#teacher-root). A
 // product's root names its token as --row-featured (featuredRowVars); every table reads
-// FEATURED_ROW_BG. Teacher by phase: GCSE, Post-16 and KS2. SMT's token is Post-16's violet, as the
-// role and phase accents already share it.
+// FEATURED_ROW_BG. Teacher by phase: GCSE, Post-16 and KS2. SMT's token is orange (0.8 front door C20),
+// head office's bronze.
 // 0.8 feedback deploy gate (F-22): every table and rank view with school rows tints the focus school's
 // row. KS2 (no accent) has a neutral token; the Data View (its own pages, outside #teacher-root, on the
 // system theme) has its red, set on :root in globals.css.

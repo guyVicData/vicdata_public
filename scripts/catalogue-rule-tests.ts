@@ -199,6 +199,20 @@ async function latestYearOf(L: Awaited<ReturnType<typeof lib>>, stage: "ks4" | "
   return Y.latestPeriodOf(stage);
 }
 
+
+// 0.8 front door: the stylesheet and the src tree, read once for the offline front-door runners.
+let frontDoorCache: { css: string; files: { file: string; text: string }[] } | null = null;
+async function frontDoorSources() {
+  if (frontDoorCache) return frontDoorCache;
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const src = path.join(ROOT, "src");
+  const files = (readdirSync(src, { recursive: true }) as string[])
+    .filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(".test.") && !f.includes("__"))
+    .map((f) => ({ file: `src/${f}`, text: readFileSync(path.join(src, f), "utf8") }));
+  frontDoorCache = { css: readFileSync(path.join(src, "app/globals.css"), "utf8"), files };
+  return frontDoorCache;
+}
+
 const RUNNERS: Record<string, Runner> = {
   // R-KS5-ENGLAND-EXACT: 100369 Chemistry 2024/25, own IB HL 58.29; England exact HL 43.13, SL 37.84.
   async englandExact({ adv, ref, agg }) {
@@ -3433,6 +3447,51 @@ const RUNNERS: Record<string, Runner> = {
   },
   // R-FEATURED-ROW-EVERYWHERE (F-22): every table or rank view of schools marks and tints the focus row;
   // a row of schools without the mark must be listed with why (src/lib/featured-row-scan.ts).
+  // 0.8 front door part 1 (C18-C20): offline checks on the stylesheet, the theme module and the shell.
+  async themeMidScope() {
+    const fd = await frontDoorSources();
+    const { midScopeFindings } = await import("../src/lib/front-door/theme-scope");
+    const { effectiveTheme } = await import("../src/components/shell/TeacherChrome");
+    const f = midScopeFindings(fd.files);
+    const pass = effectiveTheme("mid") === "dark" && !f.unlisted.length && !f.stale.length;
+    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none" }) };
+  },
+  async themeContrast() {
+    const fd = await frontDoorSources();
+    const { AA, contrast, contrastTable } = await import("../src/lib/front-door/contrast");
+    const rows = contrastTable(fd.css);
+    const bad = rows.filter((r) => !r.fg || !r.bg || contrast(r.fg, r.bg) < AA[r.kind]);
+    const min = Math.min(...rows.map((r) => contrast(r.fg, r.bg)));
+    return { pass: !bad.length, detail: fmt({ pairs: rows.length, failing: bad.map((r) => r.name).join("; ") || "none", lowest: min.toFixed(2) }) };
+  },
+  async panelLadder() {
+    const fd = await frontDoorSources();
+    const { LADDER_STEP, ladderSteps } = await import("../src/lib/front-door/contrast");
+    const { ladderShellFindings } = await import("../src/lib/front-door/theme-scope");
+    const s = ladderSteps(fd.css);
+    const shell = ladderShellFindings(fd.files);
+    const pass = s.darkFill >= LADDER_STEP.darkFill && s.darkBorder >= LADDER_STEP.darkBorder && s.lightBorder >= LADDER_STEP.lightBorder && !shell.length;
+    return { pass, detail: fmt({ darkFill: s.darkFill.toFixed(2), darkBorder: s.darkBorder.toFixed(2), lightFill: s.lightFill.toFixed(2), lightBorder: s.lightBorder.toFixed(2), shell: shell.join("; ") || "ok" }) };
+  },
+  async roleColours() {
+    const fd = await frontDoorSources();
+    const { contrast, tokensOf } = await import("../src/lib/front-door/contrast");
+    const t = await import("../src/lib/teacher-view-theme");
+    const light = tokensOf(fd.css, ":root");
+    const dark = tokensOf(fd.css, ':root[data-theme="dark"], #teacher-root[data-theme="dark"]');
+    const checks: [string, boolean][] = [
+      ["SMT orange", t.ROLE_ACCENT.smt.hex === "#fb923c"],
+      ["SMT light 4.5:1", contrast(t.ROLE_ACCENT_LIGHT.smt.hex, "#ffffff") >= 4.5],
+      ["bronze on dark 4.5:1", contrast(t.GROUP_ACCENT.hex, "#131315") >= 4.5],
+      ["bronze on white 3:1", contrast(t.GROUP_ACCENT.hex, "#ffffff") >= 3],
+      ["Post-16 violet", t.PHASE_ACCENT.ks5?.hex === "#a78bfa"],
+      ["set-smt orange", light["--set-smt-bg"] === "#feebdc" && dark["--set-smt-bg"] === "#412c1d"],
+      ["set-group bronze", light["--set-group-bg"] === "#f3e6d8"],
+      ["SMT smtVars light accent", /ROLE_ACCENT_LIGHT\.smt/.test(fd.files.find((f) => f.file === "src/components/smt/ui.tsx")?.text ?? "")],
+    ];
+    const bad = checks.filter(([, ok]) => !ok).map(([n]) => n);
+    return { pass: !bad.length, detail: fmt({ checks: checks.length, failing: bad.join(", ") || "none" }) };
+  },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");
     const { featuredRowFindings, NO_FOCUS_ROWS } = await import("../src/lib/featured-row-scan");

@@ -2347,7 +2347,7 @@ export const RULES: Rule[] = [
   {
     id: "R-TABLE-FEATURED-ROW",
     statement:
-      "In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT violet, groups orange. One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes.",
+      "In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT orange and the groups (head office) bronze (0.8 front door C20; SMT violet and groups orange before). One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes.",
     why: "Guy (F-17): in a table the featured school's row has to be found at a glance, and the tint says whose dashboard it is.",
     appliesTo: "every table view: Admissions, Teacher (GCSE, Post-16), SMT, groups",
     enforcedIn: ["src/app/globals.css", "src/components/shell/accent.ts:FEATURED_ROW_BG", "src/components/admissions/views/Tables.tsx:RivalsTable", "src/components/teacher/SchoolRankingTable.tsx", "src/components/teacher/SortTable.tsx", "src/components/teacher/SeriesViews.tsx:YearTable", "src/components/groups/dash/views.tsx", "src/lib/featured-row.test.ts"],
@@ -2651,6 +2651,51 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/smt/academic.ts:buildAcademic", "src/lib/smt/academic-data.ts:qualRows"],
     testCase: { urn: "100183", school: "Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries", phase: "ks5", expect: "Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total.", check: "smtEntriesOneTotal" },
     origin: "0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1)",
+    status: "active",
+  },
+  // ------------------------------------------------------------------ 0.8 front door, part 1
+  {
+    id: "R-THEME-MID-SCOPE",
+    statement:
+      "The theme switch is Dark · Mid · Light, remembered per person (one localStorage key, as before). Mid applies to the homes and the walks only: every other page -- every dashboard, the sets pages, admin pages -- reads useTeacherTheme(), which answers Dark under Mid, and only the files listed in MID_PAGES (src/lib/front-door/scope.ts) read the person's Mid choice (useThemePref). In Mid the page, its header and the \"Also here\" band stay dark; only the area being worked in (a [data-field]) takes its part's colour.",
+    why: "Guy (C18, 9-13 Nov): a friendlier mid-tone for the homes and walks; he leans to Mid there only and wants to see it on dashboards later.",
+    appliesTo: "every page with #teacher-root",
+    enforcedIn: ["src/components/shell/TeacherChrome.tsx:useTeacherTheme, useThemePref, effectiveTheme, ThemeToggle", "src/lib/front-door/scope.ts:MID_PAGES", "src/app/globals.css ([data-pref=\"mid\"] [data-field])", "src/lib/front-door/theme-scope.test.ts"],
+    testCase: { urn: "110110", school: "the source tree (no database)", phase: "ks4", expect: "effectiveTheme maps Mid to Dark; useThemePref is read only by MID_PAGES; every dashboard, sets and admin root draws data-theme from useTeacherTheme.", check: "themeMidScope" },
+    origin: "0.8 front door part 1, C18 (docs/v0.8/vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-THEME-CONTRAST",
+    statement:
+      "Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates.",
+    why: "C18: white text fails on these fields; Guy asked for every pair checked and the table logged.",
+    appliesTo: "the Mid fields and tiles (GCSE, Post-16, top level, head office, Admissions); the ladder's shut bar, well and column in Dark and Light",
+    enforcedIn: ["src/app/globals.css", "src/lib/front-door/contrast.ts:contrastTable", "src/lib/front-door/contrast.test.ts"],
+    testCase: { urn: "110110", school: "the stylesheet (no database)", phase: "ks4", expect: "Every row of the contrast table reads its colours from globals.css and passes AA for its kind.", check: "themeContrast" },
+    origin: "0.8 front door part 1, C18",
+    status: "active",
+  },
+  {
+    id: "R-PANEL-LADDER",
+    statement:
+      "On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark and Light: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens.",
+    why: "C19: open and shut panels shared one tone (--box-bg), about 6% from the column, so shut panels didn't stand out.",
+    appliesTo: "every dashboard: CardBox (open and shut), DashboardColumn, ShellPage, ShellRow's head",
+    enforcedIn: ["src/app/globals.css (:has([data-dash-ladder]), --shut-*, --well-border)", "src/components/shell/CardBox.tsx", "src/components/shell/DashboardGrid.tsx", "src/components/shell/Rows.tsx", "src/lib/front-door/contrast.ts:ladderSteps"],
+    testCase: { urn: "110110", school: "the stylesheet and the shell (no database)", phase: "ks4", expect: "Shut bar against column at or above the logged steps in Dark and Light; well white in Light and darker than its column in Dark; column lighter than page; the shell marks DashboardGrid and ShellPage and draws the shut bar with the shut tokens.", check: "panelLadder" },
+    origin: "0.8 front door part 1, C19",
+    status: "active",
+  },
+  {
+    id: "R-ROLE-COLOURS",
+    statement:
+      "SMT reads the top level's orange everywhere SMT's accent is used (ROLE_ACCENT.smt #fb923c; on Light ROLE_ACCENT_LIGHT.smt #c2410c, through smtVars), its featured-row and set-creator tokens included; head office (the group product) reads deep bronze (GROUP_ACCENT #a8743f on the dashboards; #8A5A2B on the Mid homes); Post-16 stays violet, GCSE green, Admissions cyan.",
+    why: "C20: SMT was #a78bfa, the same violet as Post-16; head office needs to read as top level but distinct from SMT.",
+    appliesTo: "the shell, the homes, the set creator colours, the group pages (through GROUP_ACCENT and the tokens)",
+    enforcedIn: ["src/lib/teacher-view-theme.ts:ROLE_ACCENT, ROLE_ACCENT_LIGHT, GROUP_ACCENT", "src/components/smt/ui.tsx:smtVars", "src/app/globals.css (--set-smt-*, --set-group-*, --row-featured-smt, --row-featured-groups)"],
+    testCase: { urn: "110110", school: "the theme module and the stylesheet (no database)", phase: "ks4", expect: "SMT orange (Dark and Light values, Light 4.5:1 on white), bronze 4.5:1 on the dark panel and 3:1 on white, Post-16 violet unchanged, the SMT and group tokens orange and bronze and readable.", check: "roleColours" },
+    origin: "0.8 front door part 1, C20",
     status: "active",
   },
 ];

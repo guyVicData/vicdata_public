@@ -17,7 +17,8 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 
 export function ShellPage({ phone, rootRef, children }: { phone: boolean; rootRef?: Ref<HTMLDivElement>; children: ReactNode }) {
   return (
-    <div ref={rootRef} className={cx("mx-auto flex w-full max-w-[1440px] flex-col", phone ? "gap-0" : "gap-[14px] px-7 py-5")}>
+    // 0.8 front door (C19): data-dash-ladder marks a dashboard, so the page takes the panel layer ladder.
+    <div ref={rootRef} data-dash-ladder="" className={cx("mx-auto flex w-full max-w-[1440px] flex-col", phone ? "gap-0" : "gap-[14px] px-7 py-5")}>
       {children}
     </div>
   );
@@ -25,7 +26,18 @@ export function ShellPage({ phone, rootRef, children }: { phone: boolean; rootRe
 
 export function RowHead({ title, context, open, onToggle }: { title: string; context: string; open: boolean; onToggle: () => void }) {
   return (
-    <button type="button" onClick={onToggle} aria-expanded={open} className="flex items-center gap-2 px-[2px] py-1 text-left text-[12.5px] font-bold text-[var(--fg)]">
+    // 0.8 front door (C19): a shut row's head is the ladder's raised bar (it reads as a button).
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      data-shut-panel={open ? undefined : ""}
+      className={cx(
+        "flex items-center gap-2 text-left text-[12.5px] font-bold text-[var(--fg)]",
+        open ? "px-[2px] py-1" : "rounded-[10px] border border-[var(--shut-border)] bg-[var(--shut-bg)] px-3 py-1.5",
+      )}
+      style={open ? undefined : { boxShadow: "var(--shut-shadow)" }}
+    >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ transform: open ? undefined : "rotate(-90deg)" }}>
         <polyline points="6 9 12 15 18 9" />
       </svg>

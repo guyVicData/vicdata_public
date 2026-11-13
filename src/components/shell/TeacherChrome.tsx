@@ -19,40 +19,64 @@
 //    honest lever. The existing Data View print stylesheet already forces a white body,
 //    so this completes the same job for themed subtrees rather than adding a second
 //    export mechanism.
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { ExportIcon } from "./PanelFooter";
 
+// 0.8 front door (C18): three themes, Dark · Mid · Light, remembered per person as before (the same
+// localStorage key; an old "dark" or "light" reads unchanged). Mid belongs to the homes and the walks
+// only: everything else -- dashboards, the sets pages, admin pages -- asks for `useTeacherTheme()`,
+// which answers Dark under Mid. So no dashboard, set or group component needed to change, and Mid can
+// never reach them by accident (R-THEME-MID-SCOPE).
 export type Theme = "dark" | "light";
+export type ThemePref = "dark" | "mid" | "light";
 const STORAGE_KEY = "vicdata.teacher.theme";
 
+// One small store, shared by every hook on the page, so the switch (in the nav) and the page's own
+// theme can't disagree: a click in the nav re-renders whichever page reads the theme.
+let pref: ThemePref | null = null;
+const listeners = new Set<() => void>();
+function readPref(): ThemePref {
+  if (pref) return pref;
+  pref = "dark"; // "defaulting to dark" (§7): the default, not a forced value -- a stored choice wins.
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark" || stored === "mid") pref = stored;
+  } catch {
+    // Private browsing and blocked site-data both throw here. A theme is a convenience, so failing
+    // to read one must never break the page.
+  }
+  return pref;
+}
+export function setThemePref(next: ThemePref) {
+  pref = next;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, next);
+  } catch {
+    // As above -- the in-memory theme still applies for this visit.
+  }
+  for (const l of listeners) l();
+}
+function subscribe(l: () => void) {
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
+// The server has no localStorage: it (and hydration) renders Dark, then the stored choice applies.
+const serverPref = (): ThemePref => "dark";
+
+/** The person's chosen theme, Mid included: for the homes and the walks only. */
+export function useThemePref(): [ThemePref, (t: ThemePref) => void] {
+  const p = useSyncExternalStore(subscribe, readPref, serverPref);
+  return [p, setThemePref];
+}
+
+/** Dark under Mid (C18): what every dashboard, sets page and admin page draws in. */
+export function effectiveTheme(p: ThemePref): Theme {
+  return p === "light" ? "light" : "dark";
+}
+
 export function useTeacherTheme(): [Theme, (t: Theme) => void] {
-  // §7's "defaulting to dark" -- the default, not a forced value: a stored choice wins.
-  const [theme, setTheme] = useState<Theme>("dark");
-  useEffect(() => {
-    // Read inside an async callback rather than the effect body -- the same fix already
-    // applied to the dashboard page's own loader, for the same reason: a synchronous
-    // setState in an effect body triggers cascading renders. It cannot go in a useState
-    // initializer either, because localStorage does not exist during SSR and reading it
-    // there would hydrate mismatched markup.
-    (async () => {
-      try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored === "light" || stored === "dark") setTheme(stored);
-      } catch {
-        // Private browsing and blocked site-data both throw here. A theme is a
-        // convenience, so failing to read one must never break the dashboard.
-      }
-    })();
-  }, []);
-  const set = (t: Theme) => {
-    setTheme(t);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, t);
-    } catch {
-      // As above -- the in-memory theme still applies for this visit.
-    }
-  };
-  return [theme, set];
+  const [p] = useThemePref();
+  return [effectiveTheme(p), setThemePref];
 }
 
 // Top-nav rounds: the toggle and Export used to be one inseparable pair. The toggle now
@@ -62,46 +86,53 @@ export function useTeacherTheme(): [Theme, (t: Theme) => void] {
 // The print-forcing effect lives in ThemeToggle: it depends only on the theme, and the
 // toggle is the one thing every page that owns a theme renders. It still runs when the
 // toggle is print:hidden -- CSS hides the button, not the component.
-export function ThemeToggle({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
+//
+// 0.8 front door (C18): the switch is Dark · Mid · Light. It reads the person's choice from the store,
+// so a dashboard in Mid shows Mid picked while it draws Dark. `theme` and `onTheme` stay for the
+// callers: the print swap uses the theme the page draws in.
+export function ThemeToggle({ theme }: { theme: Theme; onTheme?: (t: Theme) => void }) {
+  const [p, setP] = useThemePref();
   useEffect(() => {
     const root = document.getElementById("teacher-root");
     if (!root) return;
+    const restore = root.getAttribute("data-theme") ?? theme;
     const before = () => root.setAttribute("data-theme", "light");
-    const after = () => root.setAttribute("data-theme", theme);
+    const after = () => root.setAttribute("data-theme", restore);
     window.addEventListener("beforeprint", before);
     window.addEventListener("afterprint", after);
     return () => {
       window.removeEventListener("beforeprint", before);
       window.removeEventListener("afterprint", after);
     };
-  }, [theme]);
+  }, [theme, p]);
 
-  const next: Theme = theme === "dark" ? "light" : "dark";
   return (
-    <button
-      type="button"
-      onClick={() => onTheme(next)}
-      aria-label={`Switch to ${next} theme`}
-      title={`Switch to ${next} theme`}
-      className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]"
-    >
-      {theme === "dark" ? SUN_ICON : MOON_ICON}
-    </button>
+    <div role="radiogroup" aria-label="Theme" className="flex h-[34px] shrink-0 items-center gap-0.5 rounded-full border border-[var(--panel-border2)] p-[3px]">
+      {THEME_CHOICES.map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={p === value}
+          onClick={() => setP(value)}
+          title={value === "mid" ? "Mid: the homes and walkthroughs in colour (dashboards stay dark)" : `${label} theme`}
+          className={
+            p === value
+              ? "h-full rounded-full bg-[var(--fg)] px-2.5 text-[11.5px] font-semibold text-[var(--bg)]"
+              : "h-full rounded-full px-2.5 text-[11.5px] text-[var(--muted)] hover:text-[var(--fg)]"
+          }
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
-
-// The icon shows the theme a click switches TO.
-const SUN_ICON = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-  </svg>
-);
-const MOON_ICON = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-);
+const THEME_CHOICES: [ThemePref, string][] = [
+  ["dark", "Dark"],
+  ["mid", "Mid"],
+  ["light", "Light"],
+];
 
 // Content round S2: an icon, the same glyph every panel's own Export uses, so the
 // whole-dashboard export and a panel's read as the same action at two sizes.
