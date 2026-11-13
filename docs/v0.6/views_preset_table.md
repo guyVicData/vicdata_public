@@ -182,33 +182,39 @@ Read the columns as:
 | 85 | `DV-SMT-O-MARKET-LINE` | Market share | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Market share at 11+, against your rivals | none (draft) |
 | 86 | `DV-SMT-O-MARKET-TABLE` | Market share, table | **table** · yearColumns: every; years: down | smt.school · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Market share at 11+, year by year | none (draft) |
 | 87 | `DV-SMT-A-NOW` | The level now | **numbers** · — | smt.results · follows · school · — · actual · latest | all | all | TilesIcon | [level] now | none (draft) |
-| 88 | `DV-SMT-A-AREAS` | Subject areas | **strengths** · order: gap; showFlags: true | smt.subjects · follows · subject · — · actual · latest | all | all | AdmStrengthsIcon | Where [school] leads and trails [set], by subject area | none (draft) |
-| 89 | `DV-SMT-A-SUBJECTS` | Subjects | **table** · yearColumns: latest; extra: rank+change; sort: listed | smt.subjects · follows · subject · — · actual · latest | all | all | TableIcon | Each subject, its rank, and where it's heading | none (draft) |
-| 90 | `DV-SMT-A-VA` | Value added | **table** · yearColumns: latest | smt.value_added · follows · subject · — · actual · latest | all | all | AdmNumbersIcon | Value added | none (draft) |
-| 91 | `DV-SMT-A-GRADES` | Grade profile | **bar** · orientation: horizontal; values: true | smt.subjects · follows · grade · — · actual · latest | all | all | HorizontalBarsIcon | Grade profile | none (draft) |
-| 92 | `DV-SMT-A-TREND-LINE` | Results trend | **line** · — | smt.results · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | [level] results against [set] | none (draft) |
-| 93 | `DV-SMT-A-TREND-TABLE` | Results, table | **table** · yearColumns: every; years: down | smt.results · follows · year · — · actual · from first, rolls on | all | all | TableIcon | [level] results against [set], year by year | none (draft) |
-| 94 | `DV-SMT-A-BANDS` | Results by band | **line** · — | smt.results · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Top 25%, middle 50%, bottom 25% | none (draft) |
-| 95 | `DV-SMT-A-MIX` | Entries mix | **bar** · orientation: vertical | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | VerticalBarsIcon | Entries mix, year by year | none (draft) |
-| 96 | `DV-SMT-A-MIX-TABLE` | Entries mix, table | **table** · yearColumns: every; years: down | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Entries mix, year by year | none (draft) |
-| 97 | `DV-SMT-P-NOW` | Your pupils now | **numbers** · — | smt.school · follows · school · — · actual · latest | all | all | TilesIcon | Your pupils now | none (draft) |
-| 98 | `DV-SMT-P-SHAPE` | Shape and size | **shapes** · columns: 1 | smt.school · follows · school · — · actual · latest | all | all | AdmShapeIcon | Pupils in each year group | none (draft) |
-| 99 | `DV-SMT-P-ENTRIES` | Entry points | **table** · yearColumns: latest | smt.school · follows · school · — · actual · latest | all | all | AdmFunnelIcon | Entry points at a glance | none (draft) |
-| 100 | `DV-SMT-P-LEAVING` | Leaving at 16 | **table** · yearColumns: every; years: down | smt.school · follows · year · — · actual · from first, rolls on | all | all | ChangeArrowIcon | Leaving at 16 | none (draft) |
-| 101 | `DV-SMT-P-MARKET` | Market share | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | DonutIcon | Market share at 11+, against your rivals | none (draft) |
-| 102 | `DV-SMT-P-PHASES` | Roll by phase | **line** · — | smt.school · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Roll by phase, indexed (the first year every line shares = 100) | none (draft) |
-| 103 | `DV-SMT-P-PHASES-TABLE` | Roll by phase, table | **table** · yearColumns: every; years: down | smt.school · follows · year · — · indexed · from first, rolls on | all | all | TableIcon | Roll by phase, year by year | none (draft) |
-| 104 | `DV-SMT-P-POOL` | The pool | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPipelineIcon | The pool for your main entry point | none (draft) |
-| 105 | `DV-SMT-P-AREA` | School-age population | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPopulationIcon | The area's school-age population | none (draft) |
-| 106 | `DV-SMT-C-NOW` | The area now | **numbers** · — | smt.area · follows · school · — · actual · latest | all | all | TilesIcon | The area now | none (draft) |
-| 107 | `DV-SMT-C-MAP` | Map | **map** · colour: value | smt.area · follows · school · — · actual · latest | all | all | MapPinIcon | Where the school-age children live | none (draft) |
-| 108 | `DV-SMT-C-BYAGE` | Population by age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Children by single year of age | none (draft) |
-| 109 | `DV-SMT-C-BIRTHS` | Births and projections | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Births and projections | none (draft) |
-| 110 | `DV-SMT-C-NEARBY` | Children nearby over time | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Children nearby over time | none (draft) |
-| 111 | `DV-SMT-C-BIRTHS-INDEXED` | Births, indexed | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Births, indexed | none (draft) |
-| 112 | `DV-SMT-C-BIRTHS-TABLE` | Births, table | **table** · yearColumns: every; years: down | smt.area · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Births, year by year | none (draft) |
-| 113 | `DV-SMT-C-PROJECTION` | Projection | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | School-age population, projected | none (draft) |
-| 114 | `DV-SMT-C-AGES` | By single year of age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Population by single year of age | none (draft) |
+| 88 | `DV-SMT-A-CHART` | Chart | **bar** · orientation: horizontal; values: true | smt.results · follows · school · — · actual · latest | all | all | HorizontalBarsIcon | [group], against [set] | none (draft) |
+| 89 | `DV-SMT-A-TABLE` | Ranking table | **table** · yearColumns: latest; extra: rank+change | smt.results · follows · school · — · actual · latest | all | all | TableIcon | [group], the set ranked | none (draft) |
+| 90 | `DV-SMT-A-MAP` | Map | **map** · colour: value | smt.results · follows · school · — · actual · latest | all | all | MapPinIcon | [group], the set on the map | none (draft) |
+| 91 | `DV-SMT-A-AREAS` | By subject area | **table** · yearColumns: latest; extra: rank; sort: listed | smt.subjects · follows · subject · — · actual · latest | all | all | AdmStrengthsIcon | Each subject area, its subjects by qualification | none (draft) |
+| 92 | `DV-SMT-A-GRADES` | Grade profile | **bar** · orientation: horizontal; values: true | smt.subjects · follows · grade · — · actual · latest | all | all | VerticalBarsIcon | Grade profile | none (draft) |
+| 93 | `DV-SMT-A-TREND-LINE` | Trend | **line** · — | smt.results · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | [group] against [set] | none (draft) |
+| 94 | `DV-SMT-A-TREND-TABLE` | Trend table | **table** · yearColumns: every; years: down | smt.results · follows · year · — · actual · from first, rolls on | all | all | TableIcon | [group] against [set], year by year | none (draft) |
+| 95 | `DV-SMT-A-LINES` | Every line | **table** · yearColumns: latest; extra: change | smt.results · follows · school · — · change · latest | all | all | ChangeArrowIcon | Last year to this, every line | none (draft) |
+| 96 | `DV-SMT-A-MOVES` | Biggest moves | **table** · yearColumns: latest; extra: change; sort: listed | smt.subjects · follows · subject · — · change · latest | all | all | ChangeArrowIcon | Biggest moves in entries | none (draft) |
+| 97 | `DV-SMT-A-MIX` | Entries mix | **bar** · orientation: vertical | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | VerticalBarsIcon | Entries by qualification group, year by year | none (draft) |
+| 98 | `DV-SMT-A-MIX-TABLE` | Entries mix, table | **table** · yearColumns: every; years: down | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Entries by qualification group, year by year | none (draft) |
+| 99 | `DV-SMT-A-AGAINST` | Against the set | **table** · yearColumns: latest; sort: listed | smt.subjects · follows · subject · — · actual · latest | all | all | AdmStrengthsIcon | Where your mix differs most from the set | none (draft) |
+| 100 | `DV-SMT-A-SETMOVES` | The set's schools | **table** · yearColumns: latest; extra: change; sort: listed | smt.results · follows · school · — · change · latest | all | all | ChangeArrowIcon | The set's schools, rising and falling | none (draft) |
+| 101 | `DV-SMT-P-NOW` | Your pupils now | **numbers** · — | smt.school · follows · school · — · actual · latest | all | all | TilesIcon | Your pupils now | none (draft) |
+| 102 | `DV-SMT-P-SHAPE` | Shape and size | **shapes** · columns: 1 | smt.school · follows · school · — · actual · latest | all | all | AdmShapeIcon | Pupils in each year group | none (draft) |
+| 103 | `DV-SMT-P-GIRLS-BOYS` | Girls and boys | **bar** · orientation: vertical | smt.school · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Girls and boys in each year group | none (draft) |
+| 104 | `DV-SMT-P-DAY-BOARDING` | Day and boarding | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Day and boarding pupils | none (draft) |
+| 105 | `DV-SMT-P-ENTRIES` | Entry points | **table** · yearColumns: latest | smt.school · follows · school · — · actual · latest | all | all | AdmFunnelIcon | Entry points at a glance | none (draft) |
+| 106 | `DV-SMT-P-LEAVING` | Leaving at 16 | **table** · yearColumns: every; years: down | smt.school · follows · year · — · actual · from first, rolls on | all | all | ChangeArrowIcon | Leaving at 16 | none (draft) |
+| 107 | `DV-SMT-P-MARKET` | Market share | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | DonutIcon | Market share at 11+, against your rivals | none (draft) |
+| 108 | `DV-SMT-P-PHASES` | Roll by phase | **line** · — | smt.school · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Roll by phase, indexed (the first year every line shares = 100) | none (draft) |
+| 109 | `DV-SMT-P-PHASES-TABLE` | Roll by phase, table | **table** · yearColumns: every; years: down | smt.school · follows · year · — · indexed · from first, rolls on | all | all | TableIcon | Roll by phase, year by year | none (draft) |
+| 110 | `DV-SMT-P-POOL` | The pool | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPipelineIcon | The pool for your main entry point | none (draft) |
+| 111 | `DV-SMT-P-AREA` | School-age population | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPopulationIcon | The area's school-age population | none (draft) |
+| 112 | `DV-SMT-C-NOW` | The area now | **numbers** · — | smt.area · follows · school · — · actual · latest | all | all | TilesIcon | The area now | none (draft) |
+| 113 | `DV-SMT-C-MAP` | Map | **map** · colour: value | smt.area · follows · school · — · actual · latest | all | all | MapPinIcon | Where the school-age children live | none (draft) |
+| 114 | `DV-SMT-C-BYAGE` | Population by age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Children by single year of age | none (draft) |
+| 115 | `DV-SMT-C-BIRTHS` | Births and projections | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Births and projections | none (draft) |
+| 116 | `DV-SMT-C-NEARBY` | Children nearby over time | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Children nearby over time | none (draft) |
+| 117 | `DV-SMT-C-BIRTHS-INDEXED` | Births, indexed | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Births, indexed | none (draft) |
+| 118 | `DV-SMT-C-BIRTHS-TABLE` | Births, table | **table** · yearColumns: every; years: down | smt.area · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Births, year by year | none (draft) |
+| 119 | `DV-SMT-C-PROJECTION` | Projection | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | School-age population, projected | none (draft) |
+| 120 | `DV-SMT-C-AGES` | By single year of age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Population by single year of age | none (draft) |
 
 <!-- preset-table:end -->
 
@@ -321,16 +327,20 @@ Read the columns as:
 | `DV-SMT-O-RESULTS-TABLE` | As the line, year by year, with the schools behind each band. |
 | `DV-SMT-O-MARKET-LINE` | Market share at 11+ against the largest rival, from Admissions (read-only; empty with the reason without rivals). |
 | `DV-SMT-O-MARKET-TABLE` | As the line, year by year. |
-| `DV-SMT-A-NOW` | The level's headlines (both phases at Whole school), value added with its reason, the grade profile. |
-| `DV-SMT-A-AREAS` | Each subject area against the set: rank, gap to the set's average, its move since 2022/23, flags. |
-| `DV-SMT-A-SUBJECTS` | The area's subjects: entries, average, rank in the set and England, since 2022/23, the subject explorer link. |
-| `DV-SMT-A-VA` | A-level value added by qualification type and by subject, with intervals; Progress 8 or its reason. |
-| `DV-SMT-A-GRADES` | The grade profile in bands, latest year. |
-| `DV-SMT-A-TREND-LINE` | The level's headline (or the area's average) against the set's middle half. |
+| `DV-SMT-A-NOW` | The level's headlines for the mode (Results, Entries or Value added) and the qualification group, value added with its band or reason; GCSE and Post-16 only. |
+| `DV-SMT-A-CHART` | The group's figure for the school and the set (Results: each school by its quarter in the set, the median marked; Value added: a dot and its 95% range, a line at 0, England's place on a strip). |
+| `DV-SMT-A-TABLE` | The set ranked on the group's figure: place in the set, the region and England, the change; Value added's "n clearly above / below". |
+| `DV-SMT-A-MAP` | The school and the set's schools, located, coloured by the group's figure (Value added: by band). |
+| `DV-SMT-A-AREAS` | Each subject area, its subjects by qualification: Results ranked against the same subject in the same qualification; Entries' three years, XS-XL and share against the set; Value added's set as dots. |
+| `DV-SMT-A-GRADES` | The grade profile, each qualification on its own scale, with its top-grade share. |
+| `DV-SMT-A-TREND-LINE` | The group's figure against the set's middle half. |
 | `DV-SMT-A-TREND-TABLE` | As the line, year by year. |
-| `DV-SMT-A-BANDS` | Reserved: results by band arrive with their own round. |
-| `DV-SMT-A-MIX` | Each area's (or subject's) share of the entries, year by year. |
+| `DV-SMT-A-LINES` | Last year to this, every line of the level. |
+| `DV-SMT-A-MOVES` | Entries: the biggest moves in entries. |
+| `DV-SMT-A-MIX` | Entries by qualification group, year by year. |
 | `DV-SMT-A-MIX-TABLE` | As the columns, year by year. |
+| `DV-SMT-A-AGAINST` | Entries: where the school's mix differs most from the set's. |
+| `DV-SMT-A-SETMOVES` | Value added: the set's schools, rising and falling. |
 
 0.8 SMT round 2: Pupils and Context follow the level too (Pupils highlights the level's ages); Context follows its Area pill (around the school, or the LA).
 
@@ -338,6 +348,8 @@ Read the columns as:
 |---|---|
 | `DV-SMT-P-NOW` | Your pupils now: roll and change since 2019/20, girls and boys (mixed), day and boarding (boarding), staying on at 16, XS-XL by phase, the LA context line. |
 | `DV-SMT-P-SHAPE` | Pupils in each year group, the shape and since when, the shapes around (the LA's same-range schools, the set, staying on in the set's sixth forms); never ranked. |
+| `DV-SMT-P-GIRLS-BOYS` | Mixed schools only: girls' share by year group against the middle of the set's mixed schools, its change since 2019/20, and where it shifts (Year 7 against Years 8-11, the sixth form against Years 7-11). |
+| `DV-SMT-P-DAY-BOARDING` | Boarding schools only: boarders' share of the whole roll each census year, against the middle of the set's boarding schools. |
 | `DV-SMT-P-ENTRIES` | Each Admissions entry point: its cohort now and its next pool; read-only. |
 | `DV-SMT-P-LEAVING` | Year 11 to Year 12, year by year: staying on and net leavers. |
 | `DV-SMT-P-MARKET` | Market share at 11+, from Admissions; read-only. |
