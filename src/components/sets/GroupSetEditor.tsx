@@ -13,7 +13,8 @@
 // "Add groups" opens the groups library as a sheet, filtered to groups like us; at 8 a further tick is
 // refused ("8 is the most a set holds", GROUP_SET_CAP). Back, Cancel and Save leave the same way
 // (R-SETS-WAY-BACK: leaveEditor). Everything is saved under the member's own session; View as and a peek
-// open it read-only. School sets keep their own editor (SetEditor.tsx), unchanged.
+// open it read-only. School sets keep their own editor (SetEditor.tsx), unchanged. R-GROUP-SET-PICKER,
+// R-GROUP-SUBSET-FILTER, R-SETS-WAY-BACK.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTeacherTheme } from "@/components/shell/TeacherChrome";

@@ -1,0 +1,59 @@
+// SSR parity for the shared sets code school pages use (SetSelector and its pieces, the way-back rules).
+// Copied into each tree's src/ as __parity_sets.tsx and run with tsx; prints JSON.
+import { createElement as h } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import * as Sel from "@/components/sets/SetSelector";
+import * as R from "@/lib/sets/return-to";
+
+const out: Record<string, unknown> = {};
+const noop = () => undefined;
+const row = (k: string, o: Partial<Sel.SetMenuRow> = {}): Sel.SetMenuRow => ({ key: k, name: `Set ${k}`, count: 10, creator: "smt", ...o });
+const school = [row("s1", { pinned: true, creatorLabel: "Harris Federation", creator: "group" }), row("s2", { pinned: true, creator: "admissions" }), ...Array.from({ length: 6 }, (_, i) => row(`s${i + 3}`, { creator: i % 2 ? "school_admin" : "smt" }))];
+const mine = Array.from({ length: 7 }, (_, i) => row(`m${i}`, { creator: "me", lastUsedAt: `2026-11-0${i + 1}`, main: i === 2 ? 3 : undefined }));
+const defaults = [row("d1", { creator: "default", name: "10 nearest | independent", count: 10 }), row("d2", { creator: "default", name: "All in the LA", count: null }), row("d3", { creator: "victoria_consultancy", name: "VC set", count: 12 })];
+let n = 0;
+for (const kind of ["compared_against", "feeders"] as const)
+  for (const phone of [false, true])
+    for (const open of [false, true])
+      for (const variant of ["full", "empty", "readonly"] as const) {
+        const props: Sel.SetSelectorProps = {
+          label: kind === "feeders" ? "Feeder schools" : "Compared against",
+          kind,
+          current: variant === "empty" ? null : { name: "Set s3", count: 10, main: kind === "feeders" ? 4 : undefined },
+          rows: variant === "empty" ? { default: defaults, school: [], mine: [] } : { default: defaults, school, mine },
+          mine: variant === "readonly" ? null : { active: 7, cap: 8 },
+          selectedKey: variant === "empty" ? null : "s3",
+          onPick: noop,
+          onEdit: variant === "readonly" ? null : { label: "Edit this set…", onClick: noop },
+          onNew: variant === "readonly" ? null : { label: "New set…", onClick: noop, disabled: true, title: "8 of 8" },
+          manageHref: variant === "readonly" ? null : "/sets?kind=compared_against",
+          manageUrn: "137625",
+          extraDefault: [{ label: "Schools in…", onClick: noop }],
+          width: variant === "full" ? 260 : undefined,
+          phone,
+          loading: variant === "empty",
+          defaultOpen: open,
+        };
+        out[`sel-${kind}-${phone ? "phone" : "desk"}-${open ? "open" : "shut"}-${variant}`] = renderToStaticMarkup(h(Sel.SetSelector, props));
+        n++;
+      }
+out.pill = ["default", "admissions", "smt", "school_admin", "group", "victoria_consultancy", "me"].map((c) => renderToStaticMarkup(h(Sel.CreatorPill, { creator: c as Sel.SetMenuRow["creator"] })));
+out.header = [renderToStaticMarkup(h(Sel.SetHeaderLine, { kind: "compared_against", set: { name: "10 nearest", count: 10 } })), renderToStaticMarkup(h(Sel.SetHeaderLine, { kind: "feeders", set: { name: "Day", count: 28, main: 6 } }))];
+out.words = [Sel.countWords(1), Sel.countWords(10, 3), Sel.countWords(null), Sel.setHeaderWords("feeders", { name: "x", count: 2, main: 1 })];
+// The way-back rules, over school addresses (and junk).
+const addrs = ["/teacher/admissions?view=pipelines&entry=11%2B&school=110110", "/teacher/admissions?view=market-share&entry=16%2B", "/teacher/ks4?school=137625", "/teacher/ks5", "/teacher/smt", "/teacher/smt/academic?school=1", "/teacher/smt/pupils", "/sets", "/sets/default?name=X", "/sets/0f7e0f7e-0f7e-4f7e-8f7e-0f7e0f7e0f7e?urn=1", "/sets/edit?x=1", "https://evil.example/", "//evil", "/\\evil", "javascript:alert(1)", "/teacher", "/teacher/people", "/schools/137625", "", "/teacher/admissionsX"];
+const ctxs: R.ReturnContext[] = [
+  { kind: "compared_against", entry: "11+", phase: null, product: "admissions", urn: "110110", schoolName: "Leighton Park" },
+  { kind: "feeders", entry: "16+", phase: null, product: "admissions", urn: "110110", schoolName: "Leighton Park" },
+  { kind: "compared_against", entry: "11+", phase: "ks4", product: "teacher", urn: "137625", schoolName: "X" },
+  { kind: "compared_against", entry: "16+", phase: "ks5", product: "smt", urn: "137625", schoolName: "X", originSetName: "Mine" },
+];
+out.rules = addrs.map((a) => {
+  const ok = R.safeReturnTo(a);
+  return { a, ok, dash: R.safeDashboardReturn(a), labels: ok ? ctxs.map((c) => R.returnLabel(ok, c)) : null, dl: ok ? R.dashboardLabel(ok) : null, kind: ok ? R.pageSetKind(ok) : null, setFor: ok ? R.setForPage(ok, { id: "0f7e0f7e-0f7e-4f7e-8f7e-0f7e0f7e0f7e", kind: "compared_against", entry: "11+", phase: "ks4" }) : null, ws: ok ? R.withSchool(ok, "137625") : null, href: ok ? R.wayBackHref(ok, "0f7e0f7e-0f7e-4f7e-8f7e-0f7e0f7e0f7e") : null };
+});
+out.fallback = ctxs.map((c) => R.fallbackReturn(c));
+out.roles = [R.setsRole({ roles: ["smt"] }), R.setsRole({ roles: [], lead: true }), R.roleDashboard("smt", "1"), R.roleDashboard("teacher", null)];
+out.plan = [R.planLeave({ returnTo: "/teacher/ks4?school=1", fallback: false, referrer: "https://v.x/teacher/ks4?school=1", origin: "https://v.x", historyLength: 3 }), R.planLeave({ returnTo: "/sets/0f7e0f7e-0f7e-4f7e-8f7e-0f7e0f7e0f7e?urn=1", fallback: false, referrer: "", origin: "https://v.x", historyLength: 1, savedId: "1f7e0f7e-0f7e-4f7e-8f7e-0f7e0f7e0f7e" })];
+out.prefixes = R.RETURN_PREFIXES;
+console.log(JSON.stringify({ n, out }));

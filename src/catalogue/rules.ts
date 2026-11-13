@@ -2472,7 +2472,7 @@ export const RULES: Rule[] = [
     statement:
       "One set selector everywhere a page compares with a set (src/components/sets/SetSelector.tsx): Teacher's Comparisons column, SMT and Admissions. Its label is plain text outside the button (\"Compared against\"; \"Feeder schools\" on Pipelines); the button holds only the set, with an accent border, the name in bold and its number of schools. Its menu is always three blocks in this order: Default (no heading), School sets (each row tagged with its creator: Admissions, SMT, the school's group under its own name, Victoria Consultancy), My sets (\"n of 8\"); the current set ticked and every row's count shown; then Edit this set…, New set…, Manage sets. Only sets that fit the page appear (kind, and entry point or phase: Admissions' 11+ compared-against sets on GCSE pages, 16+ on Post-16; feeder sets never in Teacher). Up to 5 pinned school sets and 5 recently used personal sets show, then \"All … (n)…\". In Teacher's column the button has a fixed width that truncates a long name (the full name on hover). On a phone the label sits above a full-width button and the menu is a bottom sheet (Esc, the handle or a tap outside closes it).",
     why: "Sets round 1 (Guy, 6 Nov): one way to choose a set, like a playlist; the old pills looked like filters and the Admissions page had four list controls.",
-    appliesTo: "Teacher (Comparisons), SMT, Admissions",
+    appliesTo: "Teacher (Comparisons), SMT, Admissions; the Group pages (R-GROUP-SET-PICKER: Group sets by Head office, counts in groups)",
     enforcedIn: ["src/components/sets/SetSelector.tsx", "src/components/sets/teacherMenu.ts", "src/lib/sets/admissions-page.ts:buildMenu", "src/components/admissions/AdmissionsSets.tsx", "src/components/smt/SmtDashboard.tsx", "src/components/teacher/ComparisonsPanels.tsx", "src/lib/sets/model.ts:setFitsPage"],
     testCase: { urn: "110110", school: "Leighton Park (the menu, rendered on the server) and the source tree", phase: "ks4", expect: "Label outside the button; the open menu's blocks in the order default, school, mine; a ticked current row; Edit this set…, New set… and Manage sets below; a feeder set and a 16+ set left out of an 11+ compared-against page; 7 school sets show 5 and \"All school sets (7)…\"; Teacher's button width fixed and its name truncating; Admissions, SMT and Teacher all draw SetSelector and none draws the old Compared against pill.", check: "setPill" },
     origin: "0.8 sets round 1 (docs/v0.8/vicdata_0_8_sets_round1_claude_code_prompt_v2.md, B6-B9, G26)",
@@ -2548,8 +2548,8 @@ export const RULES: Rule[] = [
     id: "R-SETS-WAY-BACK",
     statement:
       "The sets library (/sets) and a set view (/sets/<id>) always offer a way back to a dashboard, top left (\"‹ Back to <page>\", a 44 px tap target on a phone). A set menu's Manage sets (Admissions, SMT, Teacher) passes returnTo, the page as it stands (its set choice, filters and school), checked like the editor's (a path on this site, and here a dashboard only, never /sets itself); the label names the page (Back to Pipelines, Back to Market share, Back to GCSE results, Back to Post-16 results, Back to SMT…). The library's set links and the set view's Sets breadcrumb keep returnTo, and the editor opened from either returns to it, so the way back survives a trip through the editor. With no returnTo, or one not allowed, Back goes to the school's dashboard for the person's role (Admissions, else SMT, else Teacher), \"Back to dashboard\". A stored set chosen or saved there goes back with the person when it is the kind the page uses (and its entry point or phase where the page's address names one), as the editor's Save does.",
-    why: "Guy, 8 Nov: on /sets there was no way back except the browser's Back.",
-    appliesTo: "the sets library and the set view; the set menu's Manage sets on Admissions, SMT and Teacher",
+    why: "Guy, 8 Nov: on /sets there was no way back except the browser's Back. 0.8 group sets (M4): the Group pages are a way back too (/teacher/group in RETURN_PREFIXES): the editor in group mode reads \"Back to Harris Federation · Overview\", Manage sets \"Back to Overview\".",
+    appliesTo: "the sets library and the set view; the set menu's Manage sets on Admissions, SMT, Teacher and the Group pages",
     enforcedIn: ["src/lib/sets/return-to.ts:safeDashboardReturn", "src/lib/sets/return-to.ts:dashboardLabel", "src/lib/sets/return-to.ts:roleDashboard", "src/lib/sets/return-to.ts:setForPage", "src/lib/sets/editor-return.ts:manageHrefHere", "src/components/sets/SetsShell.tsx:SetsWayBack", "src/components/sets/SetsLibrary.tsx", "src/app/sets/page.tsx", "src/app/sets/[id]/page.tsx", "src/components/sets/SetSelector.tsx"],
     testCase: { urn: "110110", school: "Leighton Park's library and a set view, rendered on the server, with and without returnTo; the set menu's Manage sets with a page address", phase: "ks4", expect: "Manage sets carries returnTo (the page, its set choice and school) on all three products; the library and set view draw Back first, named for the page, 44 px on a phone; set links and the breadcrumb keep returnTo; a missing, foreign or /sets returnTo falls back to the role's dashboard, \"Back to dashboard\"; a feeder set goes back to Pipelines but not to Market share; the unit tests pass.", check: "setsWayBack" },
     origin: "0.8 sets: way back (Guy, 8 Nov)",
@@ -2652,6 +2652,107 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/smt/academic.ts:buildAcademic", "src/lib/smt/academic-data.ts:qualRows"],
     testCase: { urn: "100183", school: "Plumstead Manor, Post-16 Entries, All; Acland Burghley 100053, GCSE Entries", phase: "ks5", expect: "Column 1's 419 entries (2024/25) equal the entries mix's total for the year, the sum of the group lines and DfE's own All-subjects total entries; the A-level line equals the mix's A-level count less AS; at GCSE the areas' entries add up to column 1's total.", check: "smtEntriesOneTotal" },
     origin: "0.8 SMT Academic round 2 (docs/v0.8/smt_academic_r2_claude_code_prompt_v1.md, fix 1)",
+    status: "active",
+  },
+  // ------------------------------------------------------------------------------------------------
+  // 0.8 group sets (M3-M6): comparison sets of groups and subsets of a group's own schools.
+  {
+    id: "R-GROUP-LIBRARY",
+    statement:
+      "The groups library (/teacher/group/groups, head office only: a member school's SMT reads \"not found\", D2) lists every MAT, federation, foundation trust and independent group with 2 or more current schools, each body once (sponsor records, single-academy trusts, self-declared groups and our own group are never cards; groups mostly of special, AP, PRU or nursery schools are held out until their own comparison, LF3 and N2). A card has the regions tile map as its artwork (shaded by where its schools are), its type and size (\"MAT · 41 schools\", \"+2 likely\"), its regions main first (\"London · also South East, East\"; a tie counts in each, D5), its phases, its roll and 3-year change, and one results headline for the phase in view against its sector's England (on All phases its main phase, labelled; \"Results not published\" for an independent group without them, D7). Groups like us is the default (same type, our own peer set first, then nearest in size); the filters (type, size band, region by most schools in or has a school in, phases, search) and the sort live in the address; a phone shows one column with the filters in a bottom sheet. Add to set… (M4) lists the sets of groups this person may change, ticks the ones already holding the group, and adds or takes it out through the editor's own save path (save_set), refusing a ninth group; New set with this group… opens the editor with it in. View as and a peek see it disabled.",
+    why: "Brief v2 §4 (Guy's D5, D7, LF3, N2): find the groups worth comparing with, then collect them like playlists.",
+    appliesTo: "the groups library and a group's page; Add to set…",
+    enforcedIn: ["src/lib/groups/library.ts:libraryCards", "src/lib/groups/library.ts:headlineWords", "src/lib/groups/library-page.ts:libraryGroupPage", "src/components/groups/library/GroupLibrary.tsx", "src/components/groups/library/GroupLibraryPage.tsx", "src/components/groups/library/AddToSet.tsx", "src/app/api/group/library/route.ts", "src/app/api/group/library/group/route.ts"],
+    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes Education (the group fixtures, docs/v0.8/groups_fixtures) (the index: 1,642 listed groups)", expect: "Harris's like-us list starts with the other MATs with 41+ schools, nearest in size; no sponsor, SAT, self-declared or non-mainstream group is a card; regions main first, ties in both; Dukes's headline reads \"Results not published\" where an independent group has none; the filters round-trip through the address.", check: "groupLibrary" },
+    origin: "0.8 group sets M3 and M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §4)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-SET-PICKER",
+    statement:
+      "The Group pages' Overview, Academic and Pupils compare through the one SetSelector (R-SET-PILL): \"Compared against\", the button holding the set's name and \"n groups\" (or a pool's count), three blocks -- Default (computed, never stored: our size band, non-group schools, single-academy trusts for a state group, our areas, England by sector, nearest in size), Group sets (made by the head office, tagged \"Head office\" in the group's colour) and My sets (\"n of 8\", the person's personal sets of any kind) -- then Edit this set…, New set…, Make default (admins), Duplicate to My sets (a group set), Manage sets (/sets?account=). It replaces the Compared-against pill, the named-group chips and the Mix-matched toggle (mix-matched non-group stays a row of Against others). A member school's SMT, View as and a peek get Default and the group's sets, read-only: no actions, no My sets (D2). Old ?compare= links keep working (peer_band, non_group, areas, england, mix_matched map onto today's keys; peer_named:a,b opens as an unsaved set of those groups, up to 8). The editor and Manage sets work in group mode (/sets/edit?account=&kind=group_peers, /sets?account=): rows are groups (type, size, regions, headline), Add groups opens the library as a sheet filtered to groups like us, 8 is the most a set holds (GROUP_SET_CAP, one setting), and Back, Cancel and Save leave the way they came (R-SETS-WAY-BACK). Schools has no comparison: its selector is Showing (R-GROUP-SUBSET-FILTER).",
+    why: "Brief v2 §5.1, §5.4 (Guy's D2): one way to choose a comparison, as schools have, without anything a school's SMT could change.",
+    appliesTo: "Group pages: Overview, Academic, Pupils; the set editor and the sets library in group mode",
+    enforcedIn: ["src/components/groups/dash/GroupSetPicker.tsx:GroupSetPicker", "src/lib/groups/group-sets.ts:normaliseCompare", "src/lib/groups/group-sets.ts:resolveCompare", "src/lib/groups/dash.ts:buildOverview", "src/components/sets/GroupSetEditor.tsx", "src/components/sets/GroupSetsLibrary.tsx", "src/app/api/group/dash/route.ts", "src/app/api/group/sets/route.ts", "src/lib/groups/group-sets-server.ts:readGroupSets"],
+    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes Education (the group fixtures, docs/v0.8/groups_fixtures) (the picker rendered on the server; the keys)", expect: "Harris's Default block is MATs with 41+ schools (16 groups), Non-group schools, Single-academy trusts, its areas, England, mainstream state-funded and Nearest in size (5 groups); Dukes's has no SAT row and England, independent mainstream; head office sees Group sets (Head office) and My sets (1 of 8) with New set… and Manage sets; a school's SMT sees the group's sets and none of My sets or the actions; old keys map as stated.", check: "groupSetPicker" },
+    origin: "0.8 group sets M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §5; docs/v0.8/vicdata_0_8_group_sets_m4_m6_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-SET-SIDE-BY-SIDE",
+    statement:
+      "A set of groups is shown side by side, never pooled: our group first and highlighted, then each group in the set (up to 8), then the set's median -- of the groups' own figures, one vote per group with a figure, never ours, labelled \"n of m groups\" (and \"mixed types\" when the set mixes types). Every row shows its type and size and its rank within its own type (R-GROUP-RANK-SAME-TYPE); a measure a type never publishes (an independent group's Progress 8 or KS2) reads \"not published\" and the row stays; a group no longer listed keeps its row with \"no figures\". The Weighting switch applies to every row and the median follows it; the Reading switch applies to every row. Overview's Against others is the side-by-side table (England beneath as a reference); Academic's Results now sets our group against the median and England with the set's headline side by side; Pupils' Now shows roll and change side by side. Each group's figures are production's own (group_comparison_lookup, peer_named:<id>), with the same counted-schools rule (LF4) as the pages; the map is unaffected.",
+    why: "Brief v2 §5.3 (Guy's D3): a set is a handful of named groups to look across, not another pool.",
+    appliesTo: "Overview (Against others), Academic (Results now), Pupils (Pupils now), with a set of groups chosen",
+    enforcedIn: ["src/lib/groups/dash.ts:buildOverview", "src/lib/groups/dash-r3.ts:buildAcademic", "src/lib/groups/group-sets.ts:medianOf", "src/lib/groups/group-sets.ts:notPublished", "src/components/groups/dash/views-sets.tsx:SideBySide", "src/components/groups/dash/views-sets.tsx:RollSideBySide", "src/components/groups/dash/views-r3.tsx:AcademicNow"],
+    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes Education (the group fixtures, docs/v0.8/groups_fixtures): Harris against its five nearest MATs; Ark and a foundation trust; Dukes against a company and a charity", expect: "Rows: Harris, then the five in the set's order, then the median equal to the median of their own figures (5 of 5 groups), each figure the lookup's own; a mixed set reads \"mixed types\"; Dukes's Progress 8 reads \"not published\" on every row; average-school Weighting changes every row and the median.", check: "groupSetSideBySide" },
+    origin: "0.8 group sets M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §5; docs/v0.8/vicdata_0_8_group_sets_m4_m6_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-SET-TRENDS",
+    statement:
+      "Against a set of groups, a trend panel draws our group (solid, the accent), the set's median (dashed) and the middle half of the set's groups (the 25th to the 75th percentile each year, shaded): no hover, no pinning. With fewer than 4 groups in the set there is no band at all, and the (i) says why; in a year with fewer than 4 figures the band breaks. The band's (i) reads \"the middle half of the N groups in this set\". Full screen (the large view) draws every group's line thin and muted with ours on top in full colour, lists the set's groups beside the chart (hover or click brings a line forward, click pins it; tap on a phone) and has a toggle for the median and band. The band is taken after the index is re-based, so it follows the chart's base year.",
+    why: "Brief v2 §5.3 (Guy's D3).",
+    appliesTo: "Overview and Pupils' roll trend; Overview's and Academic's results trends (incl. Post-16)",
+    enforcedIn: ["src/lib/groups/group-sets.ts:setTrend", "src/lib/groups/group-sets.ts:bandWords", "src/components/groups/dash/views-sets.tsx:SetTrend", "src/components/groups/dash/views.tsx:RollTrend", "src/components/groups/dash/views.tsx:ResultsTrend"],
+    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes Education (the group fixtures, docs/v0.8/groups_fixtures): Harris against its five nearest MATs, and against two", expect: "The panel has the median of 5 groups and the middle half, and no list to pin; full screen lists all five to bring forward, with the median and band toggle; with 2 groups the panel says there is no band under 4 groups; quartiles as stated on a hand-made case.", check: "groupSetTrends" },
+    origin: "0.8 group sets M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §5; docs/v0.8/vicdata_0_8_group_sets_m4_m6_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-SET-DEFAULT",
+    statement:
+      "The Group pages open on our size band -- \"MATs with 41+ schools\", or \"All foundation trusts\" for a type with no bands or a group alone in its band (D4) -- until a head-office admin uses Make default on a group set. That default applies to the whole group, granted member schools included; if the set is deleted or archived, the pages fall back to the size band; anyone can still switch in the picker. One default per head office and kind (the database's unique index); Make default clears the old one first. An admin can also make the size band the default again.",
+    why: "Brief v2 §5.2 (Guy's D8).",
+    appliesTo: "Group pages: Overview, Academic, Pupils (the picker's default); Manage sets",
+    enforcedIn: ["src/lib/groups/group-sets.ts:pageDefault", "src/lib/groups/group-sets.ts:groupDefaultOf", "src/lib/groups/group-sets.ts:resolveCompare", "src/lib/sets/group-store.ts:makeGroupDefault", "src/lib/sets/group-store.ts:clearGroupDefault", "supabase/migrations/20261121100000_v08_group_sets.sql:sets_one_group_default_idx"],
+    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes Education (the group fixtures, docs/v0.8/groups_fixtures) (the resolution, pure) and PGlite (the default's storage)", expect: "No default: the band; the group's default set opens the page; a deleted or archived default, or a personal one, falls back to the band; one default per head office and kind, a member can't change it.", check: "groupSetDefault" },
+    origin: "0.8 group sets M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §5; docs/v0.8/vicdata_0_8_group_sets_m4_m6_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-SUBSET-FILTER",
+    statement:
+      "Every Group page has a second selector, \"Showing\": All n schools (the default), the group's subsets and My subsets. A subset is a set of the group's own schools (kind group_schools), made in the same editor (current members only; likely members offered and labelled). It filters the Schools table, the map, Joined and left and every per-school list (Schools ranked, value added, entry cohorts, leaving at 16, market share, the projections); the group-level figures stay whole-group, with the one line \"Showing 18 of 59 schools · group figures are for all 59\". No subset sums. A school that has left the group drops out of the filter, and the page, the editor and Manage sets say so. Share with the group (admins) moves a personal set, of groups or of schools, to the group and frees the slot (D6); Duplicate on any group set gives a private copy.",
+    why: "Brief v2 §6 (Guy's D6): look at part of the group without inventing figures for it.",
+    appliesTo: "Group pages: Overview, Schools, Academic, Pupils; the editor and Manage sets in group mode",
+    enforcedIn: ["src/lib/groups/subset-view.ts:filterDash", "src/lib/groups/subset-view.ts:subsetOf", "src/lib/groups/group-sets.ts:subsetFilter", "src/components/groups/dash/GroupSetPicker.tsx:GroupShowingPicker", "src/components/groups/dash/GroupDashboard.tsx", "src/lib/sets/group-store.ts:shareGroupSet"],
+    testCase: { urn: "3320", school: "Harris Federation 3320 (the fixtures): 18 secondaries and a school that has left", expect: "Schools table, map, Joined and left and every per-school list hold the 18; the group's tiles, results and totals are byte-identical to the whole group's; the line reads \"Showing 18 of 59 schools · group figures are for all 59\"; the leaver drops out and is counted; a school's SMT sees the group's subsets read-only.", check: "groupSubsetFilter" },
+    origin: "0.8 group sets M5 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §6)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-SETS-RLS",
+    statement:
+      "A head office's sets (owner_scope 'group', creator 'head_office') are read by every member of that head office, both roles, and platform admins, and written only by its admins (is_group_admin): create, change, archive, pin, Make default. A personal set made for a group is its owner's, who must be a member of that head office. A set of groups holds groups only (set_group_members, at most 8: the trigger backs GROUP_SET_CAP), never schools; a subset holds schools only. Share with the group (share_set_with_group) moves an admin's own personal set to the head office; Duplicate is an ordinary save of a personal copy. Another group's admin, a school's SMT, an Admissions lead and anon read and write none of it through RLS: a member school's SMT reads the group's sets through the server after its live grant is checked (dashViewer), never anyone's personal sets, and View as and a peek read the same way, read-only. School sets keep their shape, policies and save path.",
+    why: "Brief v2 §7 (Guy's D2, D6, D8).",
+    appliesTo: "public.sets (group kinds), set_group_members, share_set_with_group, save_set; the group routes",
+    enforcedIn: ["supabase/migrations/20261121100000_v08_group_sets.sql", "src/lib/groups/group-sets-server.ts:readGroupSets", "src/lib/sets/group-store.ts", "supabase/tests/v08_group_sets_pglite.mjs", "supabase/ops/group_sets/verify_group_sets.sql"],
+    testCase: { urn: "3320", school: "Harris and Dukes head offices, a Harris school's SMT, Leighton Park's Admissions lead, a platform admin and anon (PGlite)", expect: "Every case as stated, incl. the app's own reads (a member sees the group's sets and their own only), Make default's two steps, Add to set…, the ninth group refused, Share moving a set of groups and a subset, the rollback; v08_group_sets_pglite.mjs all pass.", check: "groupSetsRls" },
+    origin: "0.8 group sets M2 and M4-M5 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §7)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-NON-GROUP",
+    statement:
+      "Each state school counts in exactly one of: a listed group (MAT, federation or foundation trust of 2 or more current schools), the single-academy trust pool (sat:all), or non-group. Independents: a listed independent group, else non-group. Production computes the pools so (M1, ~/dev/vicdata, its verify); the app offers non-group and the single-academy trusts as separate rows and defaults, words non-group as \"State schools in England in no listed group … and not a single-academy trust\", offers no SAT pool to an independent group, and never sums them.",
+    why: "Brief v2 §8.4 (Guy's D1): no school counted twice across a group, non-group and the SAT pool.",
+    appliesTo: "Against others, the picker's Default block, every comparison against non-group or the SAT pool",
+    enforcedIn: ["src/lib/groups/dash.ts:NON_GROUP_STATE_NOTE", "src/lib/groups/dash.ts:SAT_NOTE", "src/lib/groups/dash.ts:buildOverview", "src/lib/groups/group-sets.ts:normaliseCompare", "~/dev/vicdata ingest/group_aggregates.py (production, M1)"],
+    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes (the fixtures, production's own rows)", expect: "Harris's non-group and SAT rows are distinct sets with different figures and both in the Default block; Dukes has non-group and no SAT; the non-group note says it excludes single-academy trusts and listed groups.", check: "groupNonGroup" },
+    origin: "0.8 group sets M1 and M4 (docs/v0.8/group_sets_m1_report_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-GROUP-RANK-SAME-TYPE",
+    statement:
+      "A group is ranked only among groups of its own type: within its size band (\"9th of 16 MATs with 41+ schools\"), or among all groups of its type where the type has no bands or the band holds it alone (\"12th of 74 foundation trusts\", D4). A set may mix types, but every row's rank in the side-by-side table, and the library's group page, stay within the row's own type; production's places are shown as they are (the of-count is the groups with that figure that year).",
+    why: "Brief v2 §5.3 and §4 (Guy's D4).",
+    appliesTo: "the side-by-side table, Against others' place line, Academic's rank tile, the library's group page",
+    enforcedIn: ["src/lib/groups/dash.ts:buildOverview", "src/lib/groups/dash.ts:peerWords", "src/lib/groups/library-page.ts:libraryGroupPage"],
+    testCase: { urn: "3320", school: "Harris against Ark (MAT) and North Tyneside (foundation trust), the fixtures", expect: "Harris and Ark read \"… of N MATs with 41+ schools\"; North Tyneside reads \"… of N foundation trusts\".", check: "groupRankSameType" },
+    origin: "0.8 group sets M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §5; docs/v0.8/vicdata_0_8_group_sets_m4_m6_claude_code_prompt_v1.md)",
     status: "active",
   },
 ];

@@ -156,14 +156,33 @@ The app shows each figure's school count (R-GROUP-COUNTS), but a benchmark of on
 
 ## Guy's commands
 
+(Reworded on 13 Nov 2026 into the seven-step template, R-REPORT-COMMANDS-ORDER; the commands are the
+ones this report gave on 8 Nov. M1 was production's round: the merge below was done on 13 Nov, `437a211`.
+The app's own commands for the whole round are in `group_sets_report_v1.md`.)
+
+**1. Migrations** — none in the app this round. Production's were made and promoted in M1 (above). Look at the before/after table first:
+
 ```sh
-# 1. Look at the before/after table
 open ~/dev/vicdata_group_sets/docs/vicdata_group_sets_m1_before_after.md
+```
 
-# 2. When happy: merge production's branch (so the next promote keeps these definitions)
+**2. Merge and push** — production's branch, so the next promote keeps these definitions (done 13 Nov, `437a211`):
+
+```sh
 cd ~/dev/vicdata && git status -sb && git merge --no-ff feat/group-sets-production -m "Merge 0.8 group sets M1: sat:all, non-group redefined, whole-type peer sets, the groups index" && git push
+```
 
-# 3. Re-check production any time (read-only)
+**3. Render deploys main on its own** — nothing to deploy for M1 (production's ingest, not the app).
+
+**4. Wait until /api/version shows the merge** — not needed for M1.
+
+**5. Republish** — none this round.
+
+**6. Set fixed** — none this round.
+
+**7. Live check** — production, read-only, any time:
+
+```sh
 cd ~/dev/vicdata_group_sets && .venv/bin/python run_group_aggregates.py verify && .venv/bin/python run_group_aggregates.py timing
 ```
 

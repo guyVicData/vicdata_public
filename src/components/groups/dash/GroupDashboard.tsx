@@ -336,7 +336,8 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
         {phone ? (
           <PhoneStack>
             <div className="text-[16px] font-bold">{o.group.name}</div>
-            <div className="self-start">{switcher}</div>
+            {/* 0.8 group sets: on a phone the switcher (with Groups library) scrolls sideways, never the page. */}
+            <div className="max-w-full self-start overflow-x-auto">{switcher}</div>
             <div className="flex flex-wrap gap-[6px]">
               {chips.map((c) => (
                 <EntryChip key={c.key} label={c.key === "all" ? "All" : c.label} active={c.key === params.focus} onClick={() => onFocus(c.key)} />
@@ -635,7 +636,7 @@ function captionOf(id: ViewId, c: Ctx): ReactNode {
   if (READING_IN_METHOD.includes(id)) return c.params.reading === "at_time" && undated ? reading : null;
   switch (id) {
     case "GRP-O-AGAINST":
-      return c.o.sideBySide ? `${GROUP_NOTES.comparesOnly} Each row is a group's own figures; the median is one vote per group with a figure.` : `${GROUP_NOTES.comparesOnly} ${GROUP_NOTES.missingListed} ${groupNote("mixMatched", { group: c.o.group.name })}`;
+      return c.o.sideBySide ? "Each row is a group's own figures; the median is one vote per group with a figure. A set may mix types; each group's rank stays within its own type." : `${GROUP_NOTES.comparesOnly} ${GROUP_NOTES.missingListed} ${groupNote("mixMatched", { group: c.o.group.name })}`;
     case "GRP-S-TABLE":
       // Its method says the missing schools are listed.
       return null;

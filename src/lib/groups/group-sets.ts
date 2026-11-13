@@ -16,6 +16,7 @@
 //   peer_named:a,b,…                        an unsaved set of these groups (old links, up to 8)
 // Old keys (peer_band, non_group, areas, england, mix_matched) map onto these (normaliseCompare).
 // ?showing= (M5): all (the default) or set:<uuid>, a subset of our own schools.
+// Rules: R-GROUP-SET-PICKER, R-GROUP-SET-DEFAULT, R-GROUP-SET-SIDE-BY-SIDE, R-GROUP-SET-TRENDS, R-GROUP-SUBSET-FILTER.
 import type { IndexCard } from "./library";
 import type { CompareKey, GroupSetInput } from "./dash";
 

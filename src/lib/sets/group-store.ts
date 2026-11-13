@@ -1,7 +1,7 @@
 // VicData 0.8 group sets (M4, M5): writing a head office's sets. Additive beside ./store.ts (school sets
 // keep their own path, unchanged). Every call runs under the member's own session, so the database
 // decides who may do what (20261121100000_v08_group_sets.sql: sets_* policies, check_set_creator, the
-// cap triggers, save_set, share_set_with_group). Never used from View as or a peek: those pages offer no
+// cap triggers, save_set, share_set_with_group; R-GROUP-SETS-RLS, R-GROUP-SET-DEFAULT). Never used from View as or a peek: those pages offer no
 // writes, and the database would refuse them anyway (a platform admin is no head-office admin).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GROUP_SET_CAP, type GroupSetKind } from "../groups/group-sets";

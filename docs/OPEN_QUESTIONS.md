@@ -2975,3 +2975,29 @@ report is `docs/v0.8/group_sets_report_v1.md`). Each is the most reasonable read
 25. **The Showing button uses the bars icon** (the shared `KindIcon` knows only compared-against and
     feeders); its label "Showing" and its "n schools" tell it apart. A subset icon is for the front door
     restyle if wanted.
+
+**M6**
+26. **The nine R-GROUP rules are new to the catalogue**, R-GROUP-LIBRARY included: M3 built the library and
+    tested it, but never added the rule to `src/catalogue/rules.ts`. Each has a runner in
+    `scripts/catalogue-rule-tests.ts` that runs its own fixture-backed unit tests (by name) or the PGlite
+    suite. R-GROUP-NON-GROUP checks the app's side (distinct non-group and SAT rows, no SAT pool for an
+    independent group, the note's words); the partition itself is production's (M1, the ingest's verify).
+27. **Rules rewritten:** R-SET-PILL (applies to the Group pages, through R-GROUP-SET-PICKER) and
+    R-SETS-WAY-BACK (the Group pages are a way back). **None retired:** no catalogued rule named the
+    Compared-against pill, the named-group chips or Mix-matched.
+28. **The M1 report's "Guy's commands"** were reworded into the seven-step template, same commands, so
+    R-REPORT-COMMANDS-ORDER passes (it failed on the base). The note at the top of that section says so.
+29. **Two layout fixes found by the screenshots:** on a phone the dashboard switcher (with M3's "Groups
+    library") made every Group page wider than 390 and clipped the selectors' sheets; it now scrolls on its
+    own. A tall set pushed the median below Against others' fold; the table scrolls in the panel with its
+    header and median held in view.
+30. **Browser parity.** The Teacher harness (docs/v0.7/audit_scripts/parity_harness, adapted in the session
+    scratchpad: the worktree's paths, base `fa79371` instead of `main`, `.env.local` beside `.env`, and
+    Playwright's headless Chromium) ran once on the finished branch. The Admissions and SMT harnesses
+    were not run: their pages bundle only two changed shared modules, `SetSelector.tsx` and
+    `return-to.ts` (plus `rules.ts`, which only the Platform catalogue screen draws; esbuild metafile of
+    `/teacher/admissions`, `/teacher/smt`, `/teacher/smt/academic`), and both render and answer
+    byte-identically on every school input in the SSR parity. Say if you want them run before the merge.
+31. **Walk-through needs a head-office login.** No group account exists live, View as and peeks are
+    read-only, and a set needs a head office's account id: the live check starts by creating Harris's group
+    account and a head-office admin (round 1's flow).

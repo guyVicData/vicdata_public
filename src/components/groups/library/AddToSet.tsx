@@ -5,7 +5,7 @@
 // group's -- each ticked when the group is already in it; a tick adds or removes the group through the
 // same save path as the editor (save_set, under the member's own session), refusing a ninth group
 // ("8 is the most a set holds"). "New set with this group…" opens the editor with it in. View as, a peek
-// and a member school's SMT never see it enabled (D2).
+// and a member school's SMT never see it enabled (D2). R-GROUP-LIBRARY.
 import { useEffect, useRef, useState } from "react";
 import { useSmt } from "@/components/smt/api";
 import { createBrowserSupabaseClient } from "@/lib/supabase";

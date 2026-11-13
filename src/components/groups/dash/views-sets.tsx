@@ -11,7 +11,8 @@
 //                     beside the chart -- hover or click brings a line forward, click pins it (tap on a
 //                     phone) -- and a toggle for the median and band.
 // Every figure arrives from /api/group/dash (each group's own figures, production's); the median and the
-// band are taken here over those figures, one vote per group (group-sets.ts).
+// band are taken here over those figures, one vote per group (group-sets.ts). R-GROUP-SET-SIDE-BY-SIDE,
+// R-GROUP-SET-TRENDS, R-GROUP-RANK-SAME-TYPE.
 import { useMemo, useState, type ReactNode } from "react";
 import { Empty, Key, LineSwatch, fillHeight } from "@/components/admissions/ui";
 import { LineChart } from "@/components/admissions/views/charts";
@@ -50,9 +51,10 @@ export function SideBySide({ o, average, compact = false }: { o: GroupOverview; 
   return (
     <div className="flex min-h-0 flex-col gap-2" data-side-by-side="">
       {!compact && <div className="text-[13px] font-bold text-[var(--fg)]">{o.group.name} against {o.picker.name}, side by side</div>}
-      <div className="overflow-x-auto rounded-[10px] border border-[var(--panel-border)]">
+      {/* The table scrolls inside the panel with its header and the median row held in view. */}
+      <div className="min-h-0 overflow-auto rounded-[10px] border border-[var(--panel-border)]">
         <table className="w-full border-collapse text-[12.5px]">
-          <thead>
+          <thead className="sticky top-0 z-[1] bg-[var(--panel-bg)]">
             <tr className="border-b border-[var(--panel-border)] text-left">
               <Th className="w-[34%]"> </Th>
               {!compact && <Th>Schools</Th>}
@@ -70,7 +72,7 @@ export function SideBySide({ o, average, compact = false }: { o: GroupOverview; 
               <tr key={r.key} data-featured-row={r.ours ? "" : undefined} data-set-group={r.ours ? "ours" : r.key.slice(11)} className={`border-b border-[var(--panel-border)] ${r.ours ? "font-bold" : ""}`} style={r.ours ? { background: FEATURED_ROW_BG } : undefined}>
                 <Td>
                   <span title={r.label} className="line-clamp-2 max-w-[22rem]">{r.label}</span>
-                  <span className="block text-[10.5px] font-semibold text-[var(--muted2)]">
+                  <span className="block max-w-[24rem] truncate text-[10.5px] font-semibold text-[var(--muted2)]" title={`${r.typeSize}${r.rank ? ` · ${r.rank}` : ""}`}>
                     {r.typeSize}
                     {r.rank && !compact ? ` · ${r.rank}` : ""}
                   </span>
@@ -83,7 +85,7 @@ export function SideBySide({ o, average, compact = false }: { o: GroupOverview; 
                 ))}
               </tr>
             ))}
-            <tr data-set-median="" className="border-b border-[var(--panel-border)] bg-[var(--box-bg)] italic">
+            <tr data-set-median="" className="sticky bottom-0 z-[1] border-b border-[var(--panel-border)] bg-[var(--box-bg)] italic">
               <Td>
                 <span className="font-semibold not-italic">{compact ? "Median" : "Median of the set"}</span>
                 <span className="block text-[10.5px] font-semibold not-italic text-[var(--muted2)]">
