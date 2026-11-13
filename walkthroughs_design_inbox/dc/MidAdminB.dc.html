@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>School admin, option B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>body{margin:0;background:#0a0a0b} .hub{transition:transform .18s ease, box-shadow .18s ease;cursor:pointer} .hub:hover{transform:translateY(-3px);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),0 2px 4px rgba(0,0,0,.08),0 14px 26px -8px rgba(0,0,0,.22),0 40px 70px -20px rgba(0,0,0,.34) !important}</style>
+</helmet>
+<div style="width:1280px;min-height:400px;background:#0a0a0b;font-family:Inter,system-ui,-apple-system,sans-serif;display:flex;flex-direction:column">
+<header style="display:flex;align-items:center;justify-content:space-between;padding:18px 40px;background:#0a0a0b;border-bottom:1px solid #1c1c1f">
+ <div style="display:flex;align-items:center;gap:12px"><div style="width:30px;height:30px;border-radius:8px;background:#f2f2f3;color:#0a0a0b;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">V</div><span style="font-weight:600;font-size:16px;color:#f2f2f3">VicData</span><span style="color:#6a6a70;font-size:14px">Sample School</span></div>
+ <div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;border:1px solid #2a2a2f;border-radius:999px;padding:5px 12px;color:#d4d4d8">School admin<dc-import name="Icon" glyph="chevronDown" size="{{ 12 }}" color="#9a9aa0" hint-size="12px,12px"></dc-import></span><span style="display:flex;gap:2px;padding:3px;border-radius:99px;border:1px solid #2a2a2f"><span style="padding:3px 10px;border-radius:99px;font-size:12px;color:#8a8a90">Dark</span><span style="padding:3px 10px;border-radius:99px;font-size:12px;background:#f2f2f3;color:#0a0a0b;font-weight:600">Mid</span><span style="padding:3px 10px;border-radius:99px;font-size:12px;color:#8a8a90">Light</span></span><span style="font-size:12px;color:#8a8a90;border:1px solid #2a2a2f;border-radius:999px;padding:4px 10px">Illustrative data</span><div style="width:34px;height:34px;border-radius:50%;background:#1e1e22;display:flex;align-items:center;justify-content:center;font-size:13px;color:#9a9aa0">SA</div></div></header><section style="background:#0a0a0b;padding:44px 40px 56px"><div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;color:#fbbf24;font-weight:600">School admin</span><h1 style="margin:0;font-size:34px;font-weight:600;letter-spacing:-.02em;color:#f2f2f3">Sample School’s account</h1>
+<p style="margin:0;font-size:16px;color:#9a9aa0">Opened from the account menu. Your home page stays the teacher home.</p></div>
+<div style="border:1px solid #222226;border-radius:14px;background:#131315;overflow:hidden"><div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222226">
+<span style="width:34px;height:34px;border-radius:9px;background:rgba(251,191,36,.14);display:flex;align-items:center;justify-content:center"><dc-import name="Icon" glyph="check" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></span>
+<span style="display:flex;flex-direction:column;flex:1"><span style="font-size:15px;font-weight:500;color:#f2f2f3">Join requests</span><span style="font-size:13px;color:#8a8a90">3 waiting</span></span>
+<span style="font-size:12px;font-weight:700;color:#0a0a0b;background:#fbbf24;border-radius:99px;padding:3px 9px">3 new</span><dc-import name="Icon" glyph="arrowRight" size="{{ 16 }}" color="#8a8a90" hint-size="16px,16px"></dc-import></div><div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222226">
+<span style="width:34px;height:34px;border-radius:9px;background:rgba(251,191,36,.14);display:flex;align-items:center;justify-content:center"><dc-import name="Icon" glyph="candidates" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></span>
+<span style="display:flex;flex-direction:column;flex:1"><span style="font-size:15px;font-weight:500;color:#f2f2f3">People and roles</span><span style="font-size:13px;color:#8a8a90">42 people · 4 roles</span></span>
+<dc-import name="Icon" glyph="arrowRight" size="{{ 16 }}" color="#8a8a90" hint-size="16px,16px"></dc-import></div><div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222226">
+<span style="width:34px;height:34px;border-radius:9px;background:rgba(251,191,36,.14);display:flex;align-items:center;justify-content:center"><dc-import name="Icon" glyph="admshape" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></span>
+<span style="display:flex;flex-direction:column;flex:1"><span style="font-size:15px;font-weight:500;color:#f2f2f3">Teams</span><span style="font-size:13px;color:#8a8a90">6 teams</span></span>
+<dc-import name="Icon" glyph="arrowRight" size="{{ 16 }}" color="#8a8a90" hint-size="16px,16px"></dc-import></div><div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222226">
+<span style="width:34px;height:34px;border-radius:9px;background:rgba(251,191,36,.14);display:flex;align-items:center;justify-content:center"><dc-import name="Icon" glyph="ranklist" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></span>
+<span style="display:flex;flex-direction:column;flex:1"><span style="font-size:15px;font-weight:500;color:#f2f2f3">School sets</span><span style="font-size:13px;color:#8a8a90">5 shared feeder and rival sets</span></span>
+<dc-import name="Icon" glyph="arrowRight" size="{{ 16 }}" color="#8a8a90" hint-size="16px,16px"></dc-import></div><div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222226">
+<span style="width:34px;height:34px;border-radius:9px;background:rgba(251,191,36,.14);display:flex;align-items:center;justify-content:center"><dc-import name="Icon" glyph="school" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></span>
+<span style="display:flex;flex-direction:column;flex:1"><span style="font-size:15px;font-weight:500;color:#f2f2f3">Head office sharing</span><span style="font-size:13px;color:#8a8a90">2 of 4 dashboards shared</span></span>
+<dc-import name="Icon" glyph="arrowRight" size="{{ 16 }}" color="#8a8a90" hint-size="16px,16px"></dc-import></div><div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222226">
+<span style="width:34px;height:34px;border-radius:9px;background:rgba(251,191,36,.14);display:flex;align-items:center;justify-content:center"><dc-import name="Icon" glyph="lock" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></span>
+<span style="display:flex;flex-direction:column;flex:1"><span style="font-size:15px;font-weight:500;color:#f2f2f3">Sign-ins and devices</span><span style="font-size:13px;color:#8a8a90">58 devices · 1 flag</span></span>
+<span style="font-size:12px;font-weight:700;color:#0a0a0b;background:#fbbf24;border-radius:99px;padding:3px 9px">1 flag</span><dc-import name="Icon" glyph="arrowRight" size="{{ 16 }}" color="#8a8a90" hint-size="16px,16px"></dc-import></div><div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222226">
+<span style="width:34px;height:34px;border-radius:9px;background:rgba(251,191,36,.14);display:flex;align-items:center;justify-content:center"><dc-import name="Icon" glyph="external" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></span>
+<span style="display:flex;flex-direction:column;flex:1"><span style="font-size:15px;font-weight:500;color:#f2f2f3">Membership</span><span style="font-size:13px;color:#8a8a90">Renews 1 Sep 2027 · 60 seats</span></span>
+<dc-import name="Icon" glyph="arrowRight" size="{{ 16 }}" color="#8a8a90" hint-size="16px,16px"></dc-import></div></div></div></section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

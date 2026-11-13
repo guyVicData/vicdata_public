@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GCSE walkthroughs — prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0a0a0b}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0;margin:0;text-align:left}
+button:focus-visible{outline:2px solid #34d399;outline-offset:3px}
+a{color:#34d399}a:hover{color:#6ee7b7}
+.qcard:hover{border-color:#34d399 !important;background:rgba(52,211,153,0.07) !important}
+.ghost:hover{background:#1a1a1d !important}
+.railbtn:hover{background:#1a1a1d}
+.next:hover{background:#6ee7b7 !important}
+.mini:hover{border-color:#34d399 !important}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #0a0a0b; color: #f2f2f3; font-family: Inter, system-ui, -apple-system, sans-serif; display: flex; flex-direction: column">
+
+<sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; flex: 1">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 18px 40px; border-bottom: 1px solid #1c1c1f">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="width: 30px; height: 30px; border-radius: 8px; background: #f2f2f3; color: #0a0a0b; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">V</div>
+      <span style="font-weight: 600; font-size: 16px">VicData</span>
+      <span style="color: #6a6a70; font-size: 14px">Sample School</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span style="font-size: 12px; color: #8a8a90; border: 1px solid #2a2a2f; border-radius: 999px; padding: 4px 10px">Illustrative data</span>
+      <div style="width: 34px; height: 34px; border-radius: 50%; background: #1e1e22; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #9a9aa0">GT</div>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 1160px; margin: 0 auto; padding: 52px 40px 64px; box-sizing: border-box; display: flex; flex-direction: column; gap: 44px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <h1 style="margin: 0; font-size: 44px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em">What would you like to know?</h1>
+      <p style="margin: 0; font-size: 18px; color: #9a9aa0">Pick a question. Each one walks you through a few screens, one thing at a time.</p>
+    </div>
+
+    <section style="display: flex; flex-direction: column; gap: 18px" aria-label="GCSE">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="background: rgba(52,211,153,0.14); color: #34d399; font-weight: 600; font-size: 13px; padding: 5px 10px; border-radius: 8px">GCSE</span>
+          <button class="ghost" style="display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(52,211,153,0.45); color: #34d399; border-radius: 999px; padding: 6px 12px 6px 14px; font-size: 15px" aria-label="Subject: Geography. Change subject">Geography<dc-import name="Icon" glyph="chevronDown" size="{{ 14 }}" color="#34d399" hint-size="14px,14px"></dc-import></button>
+        </div>
+        <button onClick="{{openDashFromHome}}" class="ghost" style="display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: #9a9aa0; padding: 8px 12px; border-radius: 10px"><dc-import name="Icon" glyph="dashboard" size="{{ 18 }}" color="#9a9aa0" hint-size="18px,18px"></dc-import>Open the full GCSE dashboard</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px">
+        <sc-for list="{{walkCards}}" as="w" hint-placeholder-count="3">
+          <button onClick="{{w.start}}" class="qcard" style="display: flex; flex-direction: column; justify-content: space-between; gap: 22px; min-height: 236px; padding: 24px 26px; border-radius: 18px; border: 1px solid #1e1e22; background: #131315; transition: border-color .15s, background .15s">
+            <span style="display: flex; align-items: center; gap: 12px">
+              <span style="width: 56px; height: 56px; border-radius: 15px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center"><dc-import glyph="{{w.icon}}" name="Icon" size="{{ 28 }}" color="#34d399" hint-size="28px,28px"></dc-import></span>
+              <span style="font-size: 14px; font-weight: 600; color: #34d399; letter-spacing: 0.01em">{{w.colLabel}}</span>
+            </span>
+            <span style="font-size: 25px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em">{{w.home}}</span>
+            <span style="display: flex; align-items: center; justify-content: space-between; color: #8a8a90; font-size: 14px"><span>{{w.meta}}</span><span style="width: 36px; height: 36px; border-radius: 50%; background: #34d399; display: flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="arrowRight" size="{{ 18 }}" color="#062b1f" hint-size="18px,18px"></dc-import></span></span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 14px" aria-label="Post-16">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+        <span style="background: rgba(167,139,250,0.14); color: #a78bfa; font-weight: 600; font-size: 13px; padding: 5px 10px; border-radius: 8px">Post-16</span>
+        <span style="font-size: 15px; color: #a78bfa">Geography A-level</span>
+        <span style="font-size: 13px; color: #6a6a70">· the same three questions (not wired in this mockup)</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px">
+        <sc-for list="{{post16Cards}}" as="w" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; border: 1px solid #1e1e22; background: #0e0e10">
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(167,139,250,0.14); display: flex; align-items: center; justify-content: center; flex: none"><dc-import glyph="{{w.icon}}" name="Icon" size="{{ 20 }}" color="#a78bfa" hint-size="20px,20px"></dc-import></div>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 600; color: #a78bfa">{{w.colLabel}}</span><span style="font-size: 16px; font-weight: 500; color: #d4d4d8">{{w.home}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 14px; border-top: 1px solid #1c1c1f; padding-top: 30px" aria-label="Also here">
+      <span style="font-size: 13px; color: #6a6a70; text-transform: uppercase; letter-spacing: 0.08em">Also here</span>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid #1e1e22">
+          <div style="width: 34px; height: 34px; border-radius: 9px; background: rgba(34,211,238,0.14); display: flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="library" size="{{ 18 }}" color="#22d3ee" hint-size="18px,18px"></dc-import></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500">Dashboards</span><span style="font-size: 13px; color: #8a8a90">Every dashboard, in full</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid #1e1e22">
+          <div style="width: 34px; height: 34px; border-radius: 9px; background: rgba(251,191,36,0.14); display: flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="candidates" size="{{ 18 }}" color="#fbbf24" hint-size="18px,18px"></dc-import></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500">Recruitment</span><span style="font-size: 13px; color: #8a8a90">Who joins, and from where</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid #1e1e22">
+          <div style="width: 34px; height: 34px; border-radius: 9px; background: rgba(251,113,133,0.14); display: flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="meetings" size="{{ 18 }}" color="#fb7185" hint-size="18px,18px"></dc-import></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500">Meetings</span><span style="font-size: 13px; color: #8a8a90">Next: Humanities review, 18 Nov</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</sc-if>
+
+<sc-if value="{{isWalk}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; flex: 1">
+  <header style="display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding: 12px 32px; border-bottom: 1px solid #1c1c1f">
+    <div style="display: flex; align-items: center; gap: 12px; min-width: 0">
+      <button onClick="{{goHome}}" class="ghost" aria-label="Close and go back to the questions" style="width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="close" size="{{ 20 }}" color="#9a9aa0" hint-size="20px,20px"></dc-import></button>
+      <span style="width: 28px; height: 28px; border-radius: 8px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center; flex: none"><dc-import glyph="{{walk.icon}}" name="Icon" size="{{ 16 }}" color="#34d399" hint-size="16px,16px"></dc-import></span>
+      <span style="font-size: 15px; color: #d4d4d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{walk.home}}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px" aria-label="{{stepLabel}}">
+      <sc-for list="{{dots}}" as="d" hint-placeholder-count="5"><span style="{{d.style}}"></span></sc-for>
+    </div>
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px">
+      <span style="font-size: 13px; color: #34d399; border: 1px solid rgba(52,211,153,0.45); border-radius: 999px; padding: 4px 10px">Geography · GCSE</span>
+      <span style="font-size: 12px; color: #8a8a90; border: 1px solid #2a2a2f; border-radius: 999px; padding: 4px 10px">Illustrative data</span>
+      <span style="font-size: 14px; color: #8a8a90; white-space: nowrap">{{stepLabel}}</span>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 1140px; margin: 0 auto; padding: 22px 40px 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; flex: 1">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+        <h1 style="margin: 0; font-size: 36px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em">{{cur.q}}</h1>
+        <p style="margin: 0; font-size: 20px; line-height: 1.45; color: #d4d4d8; max-width: 820px">{{cur.a}}</p>
+      </div>
+      <button onClick="{{toDash}}" class="mini" aria-label="Show me this on the full dashboard" style="flex: none; width: 214px; border: 1px solid #2a2a2f; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; background: #0e0e10">
+        <span style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #8a8a90"><span>On the dashboard</span><span style="color: #34d399; display: inline-flex; align-items: center; gap: 3px">Show me<dc-import name="Icon" glyph="external" size="{{ 11 }}" color="#34d399" hint-size="11px,11px"></dc-import></span></span>
+        <span style="font-size: 12px; font-weight: 600; color: #d4d4d8">{{mini.dashName}}</span>
+        <span style="display: grid; grid-template-columns: 44px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center">
+          <span></span>
+          <sc-for list="{{mini.cols}}" as="c" hint-placeholder-count="3"><span style="display: flex; justify-content: center"><dc-import glyph="{{c.icon}}" name="Icon" size="{{ 12 }}" color="{{c.colour}}" hint-size="12px,12px"></dc-import></span></sc-for>
+          <sc-for list="{{mini.rows}}" as="r" hint-placeholder-count="2">
+            <span style="font-size: 10px; color: #8a8a90">{{r.label}}</span>
+            <sc-for list="{{r.cells}}" as="cell" hint-placeholder-count="3"><span style="height: 16px; border-radius: 4px; {{cell.style}}"></span></sc-for>
+          </sc-for>
+        </span>
+      </button>
+    </div>
+
+    <section aria-label="{{cur.colLabel}} panel" style="background: #131315; border: 1px solid #1e1e22; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="height: 3px; background: #34d399"></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 18px; border-bottom: 1px solid #1e1e22">
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1">
+          <span style="width: 30px; height: 30px; border-radius: 8px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center; flex: none"><dc-import glyph="{{cur.col}}" name="Icon" size="{{ 17 }}" color="#34d399" hint-size="17px,17px"></dc-import></span>
+          <span style="font-size: 15px; font-weight: 600">{{cur.colLabel}}</span>
+          <span style="font-size: 14px; color: #9a9aa0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">— {{cur.colQ}}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex: none">
+          <sc-if value="{{cur.hasProposed}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #fbbf24; border: 1px dashed rgba(251,191,36,0.6); border-radius: 999px; padding: 4px 10px">Proposed addition</span></sc-if>
+          <sc-if value="{{cur.hasPill}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border: 1px solid #2a2a2f; border-radius: 999px; padding: 4px 8px 4px 12px"><span style="color: #8a8a90">{{cur.pillLabel}}</span><span style="color: #e4e4e7">{{cur.pillValue}}</span><dc-import name="Icon" glyph="chevronDown" size="{{ 12 }}" color="#8a8a90" hint-size="12px,12px"></dc-import></span></sc-if>
+          <span style="font-size: 12px; color: #9a9aa0; background: #1a1a1d; border-radius: 6px; padding: 4px 8px">{{cur.row}} · Data 2024/25</span>
+        </div>
+      </div>
+
+      <div style="display: flex; height: 416px">
+        <div style="width: 198px; flex: none; border-right: 1px solid #1e1e22; padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; box-sizing: border-box">
+          <span style="font-size: 11px; color: #6a6a70; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 8px 6px">Views</span>
+          <sc-for list="{{rail}}" as="ri" hint-placeholder-count="4">
+            <button onClick="{{ri.pick}}" class="railbtn" aria-pressed="{{ri.pressed}}" title="{{ri.tip}}" style="display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; font-size: 12.5px; {{ri.style}}">
+              <span style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex: none; {{ri.iconStyle}}"><dc-import glyph="{{ri.icon}}" name="Icon" size="{{ 15 }}" color="currentColor" hint-size="15px,15px"></dc-import></span>
+              <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ri.label}}</span>
+              <sc-if value="{{ri.ext}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="external" size="{{ 11 }}" color="#6a6a70" hint-size="11px,11px"></dc-import></sc-if>
+            </button>
+          </sc-for>
+          <span style="margin-top: auto; font-size: 11px; line-height: 1.4; color: #6a6a70; padding: 0 8px">The same views, in the same order, as this panel's rail on the dashboard.</span>
+        </div>
+
+        <div style="flex: 1; min-width: 0; padding: 14px 22px 14px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 14px; font-weight: 500; color: #e4e4e7">{{viewTitle}}</span>
+          <sc-if value="{{hasLegend}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: #b4b4ba">
+              <sc-for list="{{legend}}" as="l" hint-placeholder-count="3"><span style="display: inline-flex; align-items: center; gap: 7px"><span style="position: relative; display: inline-flex; align-items: center; justify-content: center"><span style="{{l.mark}}"></span><span style="position: absolute; left: 50%; top: 50%; {{l.shape}}"></span></span>{{l.label}}</span></sc-for>
+            </div>
+          </sc-if>
+          <div style="flex: 1; min-height: 0; position: relative">
+
+            <sc-if value="{{showTable}}" hint-placeholder-val="{{ false }}">
+              <div style="height: 100%; overflow: auto; font-size: 14px">
+                <div style="{{tb.gridStyle}}; color: #8a8a90; font-size: 12.5px; border-bottom: 1px solid #2a2a2f; padding: 0 0 8px">
+                  <sc-for list="{{tb.head}}" as="h" hint-placeholder-count="2"><span style="{{h.style}}">{{h.v}}</span></sc-for>
+                </div>
+                <sc-for list="{{tb.rows}}" as="r" hint-placeholder-count="4">
+                  <div style="{{tb.gridStyle}}; {{r.style}}; border-bottom: 1px solid #1c1c1f; padding: 8px 0">
+                    <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="2"><span style="{{c.style}}">{{c.v}}</span></sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showTiles}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 14px; height: 100%">
+                <div style="flex: 1; background: #0e0e10; border-radius: 14px; padding: 18px 26px; display: flex; flex-direction: column; justify-content: center">
+                  <div style="font-size: 96px; font-weight: 700; color: #34d399; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">{{ch.main}}</div>
+                  <div style="font-size: 17px; color: #b4b4ba; margin-top: 10px">{{ch.mainLabel}}</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+                  <sc-for list="{{ch.tiles}}" as="t" hint-placeholder-count="3">
+                    <div style="background: #0e0e10; border-radius: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px">
+                      <span style="display: flex; align-items: center; gap: 10px"><dc-import glyph="{{t.icon}}" name="Icon" size="{{ 22 }}" color="#9a9aa0" hint-size="22px,22px"></dc-import><span style="font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; {{t.style}}">{{t.fig}}</span></span>
+                      <span style="font-size: 13px; color: #9a9aa0">{{t.scope}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showVbars}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; height: 100%">
+                <div style="flex: 1; position: relative; display: flex; align-items: flex-end; gap: {{ch.gap}}; border-bottom: 1px solid #3a3a40; padding: 0 4px">
+                  <div style="position: absolute; left: 0; right: 0; bottom: {{ch.avgBottom}}; border-top: 2px dashed #a1a1aa; pointer-events: none"></div>
+                  <sc-for list="{{ch.bars}}" as="b" hint-placeholder-count="6">
+                    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px">
+                      <span style="font-size: 12px; font-variant-numeric: tabular-nums; {{b.valStyle}}">{{b.val}}</span>
+                      <div style="width: 100%; max-width: 58px; border-radius: 5px 5px 0 0; {{b.barStyle}}"></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display: flex; gap: {{ch.gap}}; padding: 6px 4px 0">
+                  <sc-for list="{{ch.bars}}" as="b" hint-placeholder-count="6"><span style="flex: 1; min-width: 0; text-align: center; font-size: 11.5px; line-height: 1.25; {{b.labStyle}}">{{b.label}}</span></sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showH}}" hint-placeholder-val="{{ false }}">
+              <div style="position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: {{ch.gap}}">
+                <sc-if value="{{ch.hasMarker}}" hint-placeholder-val="{{ false }}">
+                  <div style="position: absolute; top: 0; bottom: 0; left: {{ch.markerLeft}}; border-left: 2px dashed #a1a1aa; pointer-events: none"></div>
+                </sc-if>
+                <sc-for list="{{ch.rows}}" as="r" hint-placeholder-count="5">
+                  <div style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 64px; align-items: center; gap: 12px">
+                    <span style="font-size: 13.5px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; {{r.labStyle}}">{{r.label}}</span>
+                    <div style="height: {{ch.bh}}; background: #1a1a1d; border-radius: 5px; overflow: hidden"><div style="height: 100%; border-radius: 5px; {{r.barStyle}}"></div></div>
+                    <span style="font-size: 13.5px; font-variant-numeric: tabular-nums; {{r.labStyle}}">{{r.val}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showGrades}}" hint-placeholder-val="{{ false }}">
+              <div style="height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 6px">
+                <sc-for list="{{ch.rows}}" as="r" hint-placeholder-count="10">
+                  <div style="display: grid; grid-template-columns: 70px minmax(0, 1fr) 120px; align-items: center; gap: 12px">
+                    <span style="font-size: 13px; color: #d4d4d8; text-align: right">Grade {{r.g}}</span>
+                    <div style="position: relative; height: 20px; background: #1a1a1d; border-radius: 4px">
+                      <div style="position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; {{r.barStyle}}"></div>
+                      <div style="position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: 2px; background: #c98500; {{r.tickStyle}}"></div>
+                    </div>
+                    <span style="font-size: 13px; color: #b4b4ba; font-variant-numeric: tabular-nums">{{r.val}}</span>
+                  </div>
+                </sc-for>
+                <div style="display: grid; grid-template-columns: 70px minmax(0, 1fr) 120px; gap: 12px; margin-top: 2px">
+                  <span></span>
+                  <div style="position: relative; height: 16px; border-top: 1px solid #3a3a40">
+                    <sc-for list="{{ch.axis}}" as="a" hint-placeholder-count="5"><span style="position: absolute; top: 3px; font-size: 11px; color: #8a8a90; transform: translateX(-50%); {{a.style}}">{{a.label}}</span></sc-for>
+                  </div>
+                  <span style="font-size: 11px; color: #8a8a90; padding-top: 3px">% of pupils</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showDumb}}" hint-placeholder-val="{{ false }}">
+              <div style="height: 100%; display: flex; flex-direction: column">
+                <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; column-gap: 14px; font-size: 11.5px; color: #8a8a90; height: 16px">
+                  <span></span>
+                  <div style="position: relative"><sc-for list="{{ch.ticks}}" as="t" hint-placeholder-count="4"><span style="position: absolute; left: {{t.left}}; transform: translateX(-50%)">{{t.label}}</span></sc-for></div>
+                  <span>Change</span>
+                </div>
+                <sc-for list="{{ch.rows}}" as="r" hint-placeholder-count="15">
+                  <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; column-gap: 14px; align-items: center; height: 20px; border-radius: 5px; {{r.rowStyle}}">
+                    <span style="display: flex; align-items: center; gap: 7px; justify-content: flex-end; font-size: 12.5px; white-space: nowrap; {{r.labStyle}}">{{r.name}}<span style="width: 7px; height: 7px; border-radius: 2px; flex: none; background: {{r.c}}"></span></span>
+                    <div style="position: relative; height: 100%">
+                      <sc-for list="{{ch.ticks}}" as="t" hint-placeholder-count="4"><span style="position: absolute; top: 0; bottom: 0; left: {{t.left}}; border-left: 1px solid #222226"></span></sc-for>
+                      <span style="position: absolute; top: 50%; height: 0; left: {{r.barLeft}}; width: {{r.barWidth}}; border-top: {{r.barBorder}}; transform: translateY(-50%)"></span>
+                      <span style="position: absolute; top: 50%; left: {{r.from}}; width: {{r.ringPx}}; height: {{r.ringPx}}; border-radius: 50%; border: 2px solid {{r.c}}; background: #131315; box-sizing: border-box; transform: translate(-50%, -50%)"></span>
+                      <span style="position: absolute; top: 50%; left: {{r.to}}; width: {{r.dotPx}}; height: {{r.dotPx}}; border-radius: 50%; background: {{r.c}}; transform: translate(-50%, -50%)"></span>
+                      <span style="position: absolute; top: 50%; left: calc({{r.to}} + {{r.numOffset}}); transform: translate({{r.numShift}}, -50%); font-size: 11.5px; font-variant-numeric: tabular-nums; {{r.labStyle}}">{{r.v1}}</span>
+                    </div>
+                    <span style="font-size: 12.5px; font-variant-numeric: tabular-nums; {{r.labStyle}}">{{r.change}}</span>
+                  </div>
+                </sc-for>
+                <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; column-gap: 14px; margin-top: 4px"><span></span><span style="font-size: 11.5px; color: #8a8a90">Entries (pupils)</span><span></span></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showRank}}" hint-placeholder-val="{{ false }}">
+              <div style="height: 100%; overflow: auto; font-size: 14px">
+                <div style="display: grid; grid-template-columns: 56px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; color: #8a8a90; font-size: 12.5px; border-bottom: 1px solid #2a2a2f; padding: 0 0 8px"><span>Rank</span><span>School</span><span style="text-align: right">{{ch.valHead}}</span><span style="text-align: right">Distance</span></div>
+                <sc-for list="{{ch.rows}}" as="r" hint-placeholder-count="11">
+                  <div style="display: grid; grid-template-columns: 56px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 6px 0; border-bottom: 1px solid #1c1c1f; align-items: center; {{r.style}}"><span style="font-variant-numeric: tabular-nums">{{r.rank}}</span><span>{{r.school}}</span><span style="text-align: right; font-variant-numeric: tabular-nums">{{r.val}}</span><span style="text-align: right; font-variant-numeric: tabular-nums">{{r.dist}}</span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showLine}}" hint-placeholder-val="{{ false }}">
+              <div style="position: relative; height: 100%" role="img" aria-label="{{viewTitle}}">
+                <span style="position: absolute; left: 0; top: 0; font-size: 12px; color: #8a8a90">{{ch.yCaption}}</span>
+                <div style="position: absolute; left: 56px; top: 28px; bottom: 30px; right: {{ch.rightPx}}">
+                  <sc-for list="{{ch.ticks}}" as="t" hint-placeholder-count="4">
+                    <div style="position: absolute; left: 0; right: 0; top: {{t.top}}; border-top: 1px solid #26262a"></div>
+                    <span style="position: absolute; left: -54px; width: 46px; text-align: right; top: {{t.top}}; transform: translateY(-50%); font-size: 12px; color: #8a8a90">{{t.label}}</span>
+                  </sc-for>
+                  <sc-for list="{{ch.gaps}}" as="g" hint-placeholder-count="0"><span style="position: absolute; left: {{g.left}}; bottom: 6px; transform: translateX(-50%); font-size: 11px; color: #8a8a90; white-space: nowrap; background: #131315; padding: 0 4px">{{g.label}}</span></sc-for>
+                  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" width="100%" height="100%" style="position: absolute; inset: 0; overflow: visible" aria-hidden="true">
+                    <sc-for list="{{ch.series}}" as="s" hint-placeholder-count="1"><polyline points="{{s.gapPts}}" fill="none" stroke="{{s.c}}" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round" opacity="{{s.gapOp}}" vector-effect="non-scaling-stroke"></polyline><polyline points="{{s.pts}}" fill="none" stroke="{{s.c}}" stroke-width="{{s.sw}}" stroke-dasharray="{{s.dash}}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline></sc-for>
+                  </svg>
+                  <sc-for list="{{ch.marks}}" as="m" hint-placeholder-count="0"><span style="position: absolute; {{m.style}}"></span></sc-for>
+                  <sc-for list="{{ch.series}}" as="s" hint-placeholder-count="1">
+                    <span style="position: absolute; left: 100%; top: {{s.lt}}; width: {{s.dotPx}}; height: {{s.dotPx}}; border-radius: 50%; background: {{s.c}}; transform: translate(-50%, -50%)"></span>
+                    <span style="position: absolute; left: calc(100% + 12px); top: {{s.labTop}}; transform: translateY(-50%); font-size: 13px; white-space: nowrap; color: {{s.c}}; font-weight: {{s.fw}}">{{s.el}}</span>
+                  </sc-for>
+                  <sc-for list="{{ch.pts}}" as="p" hint-placeholder-count="0"><span style="position: absolute; left: {{p.left}}; top: {{p.top}}; transform: translate(-50%, -150%); font-size: 12px; color: #d4d4d8; white-space: nowrap">{{p.label}}</span></sc-for>
+                  <sc-for list="{{ch.xl}}" as="x" hint-placeholder-count="5"><span style="position: absolute; left: {{x.left}}; top: calc(100% + 8px); transform: translateX(-50%); font-size: 12px; color: #8a8a90; white-space: nowrap">{{x.label}}</span></sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showMap}}" hint-placeholder-val="{{ false }}">
+              <div style="position: relative; height: 100%; border-radius: 12px; background: #0e0e10; overflow: hidden">
+                <div style="position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%; border: 1px dashed #34343a"></div>
+                <div style="position: absolute; left: 50%; top: 50%; width: 400px; height: 400px; margin: -200px 0 0 -200px; border-radius: 50%; border: 1px dashed #34343a"></div>
+                <span style="position: absolute; left: calc(50% + 104px); top: calc(50% - 8px); font-size: 11px; color: #8a8a90">3 miles</span>
+                <span style="position: absolute; left: calc(50% + 204px); top: calc(50% - 8px); font-size: 11px; color: #8a8a90">6 miles</span>
+                <sc-for list="{{ch.pts}}" as="p" hint-placeholder-count="11">
+                  <div style="position: absolute; left: {{p.l}}; top: {{p.t}}; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px">
+                    <span style="{{p.dot}}"></span>
+                    <span style="font-size: 11.5px; white-space: nowrap; {{p.labStyle}}">{{p.label}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: flex-start; gap: 8px; padding: 9px 18px; border-top: 1px solid #1e1e22; font-size: 12.5px; color: #9a9aa0; line-height: 1.5">
+        <dc-import name="Icon" glyph="info" size="{{ 15 }}" color="#9a9aa0" hint-size="15px,15px"></dc-import>
+        <span>{{cur.note}}</span>
+      </div>
+    </section>
+
+    <nav style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto" aria-label="Walk navigation">
+      <button onClick="{{goBack}}" class="ghost" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 12px; border: 1px solid #2a2a2f; font-size: 15px"><dc-import name="Icon" glyph="arrowLeft" size="{{ 18 }}" color="#d4d4d8" hint-size="18px,18px"></dc-import>{{backLabel}}</button>
+      <button onClick="{{goNext}}" class="next" style="display: inline-flex; align-items: center; gap: 16px; padding: 11px 14px 11px 22px; border-radius: 14px; background: #34d399; color: #062b1f; max-width: 560px; transition: background .15s">
+        <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75">{{nextKicker}}</span>
+          <span style="font-size: 16px; font-weight: 600; line-height: 1.3">{{nextText}}</span>
+        </span>
+        <span style="width: 38px; height: 38px; border-radius: 50%; background: rgba(6,43,31,0.12); display: flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="arrowRight" size="{{ 20 }}" color="#062b1f" hint-size="20px,20px"></dc-import></span>
+      </button>
+    </nav>
+  </main>
+</div>
+</sc-if>
+
+<sc-if value="{{isEnd}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; flex: 1">
+  <header style="display: flex; align-items: center; gap: 12px; padding: 12px 32px; border-bottom: 1px solid #1c1c1f">
+    <button onClick="{{goHome}}" class="ghost" aria-label="Close and go back to the questions" style="width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" size="{{ 20 }}" color="#9a9aa0" hint-size="20px,20px"></dc-import></button>
+    <span style="width: 28px; height: 28px; border-radius: 8px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center"><dc-import glyph="{{walk.icon}}" name="Icon" size="{{ 16 }}" color="#34d399" hint-size="16px,16px"></dc-import></span>
+    <span style="font-size: 15px; color: #d4d4d8">{{walk.home}}</span>
+  </header>
+  <main style="width: 100%; max-width: 1140px; margin: 0 auto; padding: 40px 40px 56px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: center; gap: 16px">
+      <span style="width: 52px; height: 52px; border-radius: 50%; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="check" size="{{ 26 }}" color="#34d399" hint-size="26px,26px"></dc-import></span>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.02em">{{walk.endTitle}}</h1>
+        <span style="font-size: 17px; color: #9a9aa0">Here's what you found, and where each answer lives on the dashboard.</span>
+      </div>
+    </div>
+    <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; border: 1px solid #1e1e22; border-radius: 16px; background: #131315">
+      <sc-for list="{{recap}}" as="r" hint-placeholder-count="5">
+        <li style="display: grid; grid-template-columns: 40px minmax(0, 1fr) 210px auto; gap: 16px; align-items: center; padding: 14px 20px; {{r.border}}">
+          <span style="width: 32px; height: 32px; border-radius: 9px; background: rgba(52,211,153,0.10); display: flex; align-items: center; justify-content: center"><dc-import glyph="{{r.view}}" name="Icon" size="{{ 17 }}" color="#34d399" hint-size="17px,17px"></dc-import></span>
+          <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 14px; color: #8a8a90">{{r.q}}</span><span style="font-size: 16.5px; color: #f2f2f3; line-height: 1.4">{{r.a}}</span></span>
+          <span style="display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #9a9aa0"><dc-import glyph="{{r.col}}" name="Icon" size="{{ 14 }}" color="#34d399" hint-size="14px,14px"></dc-import>{{r.where}}</span>
+          <button onClick="{{r.open}}" class="ghost" style="font-size: 14px; color: #9a9aa0; padding: 8px 12px; border-radius: 10px; white-space: nowrap">Look again</button>
+        </li>
+      </sc-for>
+    </ol>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 18px; font-weight: 600">Where next?</span>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px">
+        <sc-for list="{{otherWalks}}" as="w" hint-placeholder-count="2">
+          <button onClick="{{w.start}}" class="qcard" style="display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: 16px; border: 1px solid #1e1e22; background: #131315">
+            <span style="width: 46px; height: 46px; border-radius: 13px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center; flex: none"><dc-import glyph="{{w.icon}}" name="Icon" size="{{ 24 }}" color="#34d399" hint-size="24px,24px"></dc-import></span>
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 12px; font-weight: 600; color: #34d399">{{w.colLabel}}</span><span style="font-size: 17px; font-weight: 600; line-height: 1.3">{{w.home}}</span></span>
+            <dc-import name="Icon" glyph="arrowRight" size="{{ 20 }}" color="#34d399" hint-size="20px,20px"></dc-import>
+          </button>
+        </sc-for>
+        <button onClick="{{openDashFromEnd}}" class="qcard" style="display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: 16px; border: 1px dashed #2a2a2f">
+          <span style="width: 46px; height: 46px; border-radius: 13px; background: #1a1a1d; display: flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="dashboard" size="{{ 24 }}" color="#d4d4d8" hint-size="24px,24px"></dc-import></span>
+          <span style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 17px; font-weight: 600">Open the full dashboard</span><span style="font-size: 14px; color: #8a8a90">Every panel and view at once</span></span>
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+</sc-if>
+
+<sc-if value="{{isDash}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; flex: 1">
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 28px; border-bottom: 1px solid #1c1c1f; flex-wrap: wrap">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+      <button onClick="{{dashBack}}" class="ghost" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 10px; border: 1px solid #2a2a2f; font-size: 14px"><dc-import name="Icon" glyph="arrowLeft" size="{{ 16 }}" color="#d4d4d8" hint-size="16px,16px"></dc-import>{{dashBackLabel}}</button>
+      <span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(52,211,153,0.14); color: #34d399; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">G</span>
+      <span style="font-size: 15px; font-weight: 600">GCSE — Sample School</span>
+      <div style="display: inline-flex; border: 1px solid #2a2a2f; border-radius: 10px; padding: 3px; gap: 2px">
+        <sc-for list="{{dashTabs}}" as="t" hint-placeholder-count="2"><button onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button></sc-for>
+      </div>
+      <span style="font-size: 13px; color: #34d399; border: 1px solid rgba(52,211,153,0.45); border-radius: 999px; padding: 4px 10px">Geography</span>
+      <sc-if value="{{dashShowPill}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border: 1px solid #2a2a2f; border-radius: 999px; padding: 4px 10px"><span style="color: #8a8a90">Results</span><span>Average points</span></span></sc-if>
+    </div>
+    <span style="font-size: 12px; color: #8a8a90; border: 1px solid #2a2a2f; border-radius: 999px; padding: 4px 10px">Full dashboard (sketch)</span>
+  </header>
+  <sc-if value="{{dashHasHl}}" hint-placeholder-val="{{ false }}">
+    <div style="margin: 14px 28px 0; padding: 11px 16px; border-radius: 12px; background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.35); font-size: 14px; color: #d4d4d8; display: flex; align-items: center; gap: 10px">
+      <dc-import name="Icon" glyph="info" size="{{ 18 }}" color="#34d399" hint-size="18px,18px"></dc-import>
+      <span>You were on <strong style="font-weight: 600; color: #f2f2f3">{{dashHlCol}} · {{dashHlRow}}</strong>, showing <strong style="font-weight: 600; color: #f2f2f3">{{dashHlView}}</strong>. Here it is, with the same icon picked on its rail.</span>
+    </div>
+  </sc-if>
+  <div style="padding: 14px 28px 32px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+      <sc-for list="{{dashCols}}" as="c" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 2px 2px; min-width: 0">
+          <span style="width: 32px; height: 32px; border-radius: 9px; background: rgba(52,211,153,0.14); display: flex; align-items: center; justify-content: center; flex: none"><dc-import glyph="{{c.icon}}" name="Icon" size="{{ 18 }}" color="#34d399" hint-size="18px,18px"></dc-import></span>
+          <span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 15px; font-weight: 600">{{c.label}}</span><span style="font-size: 12px; color: #9a9aa0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.q}}</span></span>
+        </div>
+      </sc-for>
+    </div>
+    <sc-for list="{{dashRows}}" as="row" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 13px; color: #d4d4d8; font-weight: 600">{{row.label}}</span><span style="font-size: 12px; color: #8a8a90; background: #1a1a1d; border-radius: 6px; padding: 2px 7px">Data 2024/25</span></span>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+          <sc-for list="{{row.panels}}" as="p" hint-placeholder-count="3">
+            <div style="border-radius: 14px; background: #131315; height: 212px; display: flex; overflow: visible; position: relative; {{p.style}}">
+              <div style="width: 40px; border-right: 1px solid #1e1e22; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 12px 0; position: relative">
+                <sc-for list="{{p.rail}}" as="ri" hint-placeholder-count="4"><span style="position: relative; width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; {{ri.style}}"><dc-import glyph="{{ri.g}}" name="Icon" size="{{ 15 }}" color="{{ri.c}}" hint-size="15px,15px"></dc-import><sc-if value="{{ri.tip}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 34px; top: 1px; white-space: nowrap; font-size: 12px; background: #34d399; color: #062b1f; font-weight: 600; padding: 3px 8px; border-radius: 6px; z-index: 2">{{ri.label}}</span></sc-if></span></sc-for>
+              </div>
+              <div style="flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0">
+                <span style="font-size: 13px; font-weight: 500; color: #d4d4d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{p.title}}</span>
+                <div style="flex: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center; {{p.bodyStyle}}"><dc-import glyph="{{p.big}}" name="Icon" size="{{ 46 }}" color="{{p.bigColor}}" hint-size="46px,46px"></dc-import></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const ACC = '#34d399', HUM = '#fcd34d', OTHER = '#4b4b52';
+    const GREYS = ['#b5b5b1', '#8a8a87', '#6b6b68'];
+    const HUMS = ['#fde68a', '#fbbf24', '#b45309'];
+    const NEAR = '#d55181', LA = '#3987e5', REG = '#d95926', ENG = '#c98500';
+    const set = (o) => this.setState(Object.assign({}, st, o));
+    const ord = (n) => { const s = ['th', 'st', 'nd', 'rd']; const v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+    const f1 = (v) => v.toFixed(1);
+    const sw = (c) => 'width: 12px; height: 12px; border-radius: 3px; background: ' + c;
+    const ln = (c, dash) => 'width: 20px; height: 0; border-top: 3px ' + (dash ? 'dashed ' : 'solid ') + c;
+    const tick = (c) => 'width: 3px; height: 14px; border-radius: 2px; background: ' + c;
+    const dot = (c, r) => 'width: ' + r + 'px; height: ' + r + 'px; border-radius: 50%; background: ' + c;
+    const avgMark = 'width: 20px; height: 0; border-top: 2px dashed #a1a1aa';
+
+    const COLQ = {
+      candidates: 'How many pupils take Geography?',
+      results: 'How well do pupils do in Geography?',
+      context: 'How does Geography sit alongside the rest of the school?',
+      comparisons: 'How does Geography compare with other schools?'
+    };
+    const COLNAME = { candidates: 'Candidates', results: 'Results', context: 'Context', comparisons: 'Comparisons' };
+    const RAILS = {
+      cand_c1_cur: [['Number tiles', 'tiles']],
+      ctx_cur: [['Share (donut)', 'donut'], ['Bar chart', 'vbars'], ['Ranked list', 'ranklist'], ['Sortable table', 'table']],
+      cand_c1_tr: [['Indexed', 'indexed'], ['Actual', 'line'], ['Trend table', 'table'], ['Area chart', 'line'], ['Change table', 'table']],
+      res_c1_cur: [['Number tiles', 'tiles'], ['Grade distribution', 'grades'], ['Bar chart', 'hbars'], ['Sortable table', 'ranklist']],
+      res_c1_tr: [['Chart', 'line'], ['Trend table', 'table'], ['Map', 'map'], ['Area chart', 'line'], ['Change table', 'table'], ['Spread by year', 'grades']],
+      ctx_tr: [['Indexed', 'indexed'], ['Actual', 'line'], ['Change (dumbbell)', 'dumbbell'], ['Trend table', 'table'], ['Change list', 'ranklist'], ['Change table', 'table']],
+      c3_cur: [['Number tiles', 'tiles'], ['Map', 'map'], ['Bar chart', 'hbars'], ['Ranking', 'ranklist']],
+      c3_tr: [['Chart', 'line'], ['Trend table', 'table'], ['Trend map', 'map'], ['Ranked bars', 'hbars'], ['Change table', 'table'], ['Change map', 'map']]
+    };
+
+    const SUBJ = [
+      ['English Language', 'Eng Lang', 180, 5.0, 'core'], ['Maths', 'Maths', 180, 4.9, 'core'], ['English Literature', 'Eng Lit', 176, 5.3, 'core'],
+      ['Combined Science', 'Comb Sci', 150, 4.8, 'core'], ['History', 'History', 92, 5.1, 'hum'], ['Geography', 'Geography', 84, 5.4, 'geo'],
+      ['French', 'French', 64, 5.2, 'core'], ['Religious Studies', 'RS', 61, 5.8, 'hum'], ['Spanish', 'Spanish', 40, 5.3, 'core'],
+      ['Art and Design', 'Art', 38, 6.0, 'core'], ['Computer Science', 'Comp Sci', 36, 5.1, 'core'], ['Biology', 'Biology', 30, 6.5, 'core'],
+      ['Business', 'Business', 28, 4.6, 'core'], ['Classics', 'Classics', 18, 6.6, 'hum']
+    ];
+    const colourOf = (f) => f === 'geo' ? ACC : (f === 'hum' ? HUM : OTHER);
+    const SCH = [
+      ['You', 0, 84, 5.4, 50, 50], ['School A', 0.8, 120, 4.9, 54.0, 36.5], ['School B', 1.4, 96, 5.8, 45.3, 57.8],
+      ['School C', 1.9, 70, 4.7, 56.0, 62.0], ['School D', 2.3, 66, 5.6, 42.8, 35.5], ['School E', 2.9, 58, 5.2, 60.4, 39.1],
+      ['School F', 3.4, 52, 4.8, 37.0, 53.2], ['School G', 3.8, 47, 6.1, 61.2, 77.0], ['School H', 4.6, 40, 4.5, 33.5, 32.7],
+      ['School I', 5.2, 31, 5.3, 68.7, 30.5], ['School J', 5.9, 25, 4.3, 28.8, 72.1]
+    ];
+
+    const vbars = (items, avg, avgLabel, legend) => {
+      const max = Math.max.apply(null, items.map((i) => i.v).concat([avg]));
+      const H = 190;
+      return {
+        kind: 'vbars', gap: items.length > 8 ? '6px' : '22px', legend: legend,
+        avgBottom: Math.round(avg / max * H) + 'px', avgLabel: avgLabel,
+        bars: items.map((it) => ({
+          label: it.short, val: it.fmt,
+          barStyle: 'height: ' + Math.max(3, Math.round(it.v / max * H)) + 'px; background: ' + it.c,
+          valStyle: it.hl ? 'color: #f2f2f3; font-weight: 600' : 'color: #9a9aa0',
+          labStyle: it.hl ? 'color: #f2f2f3; font-weight: 600' : 'color: #9a9aa0'
+        }))
+      };
+    };
+    const hbars = (items, o) => {
+      const n = items.length;
+      return {
+        kind: 'h', gap: n > 10 ? '5px' : '12px', bh: n > 10 ? '15px' : '24px', legend: o.legend,
+        hasMarker: !!o.marker, markerLeft: o.marker ? 'calc(182px + (100% - 258px) * ' + (o.marker / o.max).toFixed(3) + ')' : '0',
+        rows: items.map((it) => ({
+          label: it.label, val: it.fmt,
+          labStyle: it.hl ? 'color: #f2f2f3; font-weight: 600' : 'color: #9a9aa0',
+          barStyle: 'width: ' + Math.max(1.5, it.v / o.max * 100).toFixed(1) + '%; background: ' + it.c
+        }))
+      };
+    };
+    const dumb = (list) => {
+      const MAX = 200; const pc = (v) => (v / MAX * 100).toFixed(2) + '%';
+      const OTHC = '#7a7a80';
+      const make = (name, t, v0, v1, isAvg) => {
+        const c = t === 'geo' ? ACC : t === 'hum' ? HUM : (isAvg ? '#a1a1aa' : OTHC);
+        const lo = Math.min(v0, v1), hi = Math.max(v0, v1), up = v1 >= v0, d = v1 - v0;
+        return { name: name, raw: [v0, v1], c: c, v1: String(v1), from: pc(v0), to: pc(v1), barLeft: pc(lo), barWidth: ((hi - lo) / MAX * 100).toFixed(2) + '%',
+          barBorder: (t === 'geo' ? '3.5px' : '2px') + (isAvg ? ' dashed ' : ' solid ') + c,
+          ringPx: t === 'geo' ? '12px' : '10px', dotPx: t === 'geo' ? '14px' : '11px', numOffset: up ? '11px' : '-11px', numShift: up ? '0' : '-100%',
+          change: d > 0 ? '▲ +' + d : d < 0 ? '▼ ' + d : '= 0',
+          labStyle: t === 'geo' ? 'color: #34d399; font-weight: 600' : (isAvg ? 'color: #d4d4d8; font-style: italic' : 'color: #b4b4ba'),
+          rowStyle: t === 'geo' ? 'background: rgba(52,211,153,0.07)' : (isAvg ? 'border-top: 1px solid #2a2a2f' : '') };
+      };
+      const sorted = list.slice().sort((a, b) => b[2] - a[2]);
+      const rows = sorted.map((r) => make(r[0], r[3], r[1], r[2], false));
+      const a0 = Math.round(list.reduce((x, r) => x + r[1], 0) / list.length), a1 = Math.round(list.reduce((x, r) => x + r[2], 0) / list.length);
+      rows.push(make('School average', 'x', a0, a1, true));
+      return { kind: 'dumb', rows: rows, ticks: [0, 50, 100, 150].map((t) => ({ left: pc(t), label: String(t) })),
+        legend: [{ mark: 'width: 9px; height: 9px; border-radius: 50%; border: 2px solid #b4b4ba; box-sizing: border-box', label: '2018/19' }, { mark: 'width: 11px; height: 11px; border-radius: 50%; background: #b4b4ba', label: '2024/25' }, { mark: sw(ACC), label: 'Geography' }, { mark: sw(HUM), label: 'Other Humanities subjects' }, { mark: sw('#7a7a80'), label: 'Other subjects' }, { mark: avgMark, label: 'School average' }] };
+    };
+    const SHAPE = {
+      sq: (c, sz) => 'width: ' + sz + 'px; height: ' + sz + 'px; background: ' + c + '; transform: translate(-50%, -50%)',
+      tri: (c, sz) => 'width: ' + (sz + 3) + 'px; height: ' + (sz + 2) + 'px; background: ' + c + '; clip-path: polygon(50% 0, 100% 100%, 0 100%); transform: translate(-50%, -50%)',
+      dia: (c, sz) => 'width: ' + sz + 'px; height: ' + sz + 'px; background: ' + c + '; transform: translate(-50%, -50%) rotate(45deg)'
+    };
+    const line = (xs, series, o) => {
+      const n = xs.length;
+      const X = (i) => i / (n - 1) * 100;
+      const Y = (v) => o.invert ? (v - o.min) / (o.max - o.min) * 100 : (o.max - v) / (o.max - o.min) * 100;
+      const single = series.length === 1;
+      const gaps = o.gaps || [];
+      const pc = (v) => v.toFixed(2) + '%';
+      const marks = [];
+      series.forEach((sr) => { if (sr.m) sr.v.forEach((v, i) => { if (i < n - 1) marks.push({ style: 'left: ' + pc(X(i)) + '; top: ' + pc(Y(v)) + '; ' + SHAPE[sr.m](sr.c, 8) }); }); });
+      return {
+        kind: 'line', fmt: o.fmt, yCaption: o.yCaption, legend: o.legend, extraRows: o.extraRows || [], rightPx: single ? '48px' : '200px',
+        ticks: o.ticks.map((t) => ({ top: pc(Y(t)), label: o.fmt(t) })),
+        xl: xs.map((x, i) => ({ left: pc(X(i)), label: x })),
+        gaps: gaps.map((g) => ({ left: pc((X(g.i) + X(g.i + 1)) / 2), label: g.label })),
+        marks: marks,
+        series: series.map((sr) => {
+          const last = sr.v[n - 1];
+          const pts = sr.v.map((v, i) => [i, v]).filter((p) => !gaps.some((g) => p[0] === g.i));
+          return {
+            label: sr.label, raw: sr.v,
+            pts: pts.map((p) => (X(p[0]) * 10).toFixed(1) + ',' + (Y(p[1]) * 10).toFixed(1)).join(' '),
+            gapPts: gaps.length ? gaps.map((g) => (X(g.i) * 10).toFixed(1) + ',' + (Y(sr.v[g.i]) * 10).toFixed(1) + ' ' + (X(g.i + 1) * 10).toFixed(1) + ',' + (Y(sr.v[g.i + 1]) * 10).toFixed(1)).join(' ') : '0,0 0,0',
+            gapOp: gaps.length ? '0.8' : '0',
+            c: sr.c, sw: sr.hl ? 3.5 : 2, dash: sr.dash || '', dotPx: sr.hl ? '11px' : '8px',
+            lt: pc(Y(last)), labTop: 'calc(' + pc(Y(last)) + ' + ' + (sr.off || 0) + 'px)',
+            el: sr.label + '  ' + o.fmt(last), fw: sr.hl ? '600' : '400'
+          };
+        }),
+        pts: single || o.labelFocus ? (series.find((x) => x.hl) || series[0]).v.slice(0, n - 1).map((v, i) => ({ left: pc(X(i)), top: pc(Y(v)), label: o.fmt(v) })) : []
+      };
+    };
+
+    const humItems = (k, fmt) => SUBJ.filter((s) => s[4] !== 'core').slice().sort((a, b) => b[k] - a[k]).map((s) => ({ label: s[0], short: s[1], v: s[k], fmt: fmt(s[k]), c: colourOf(s[4]), hl: s[4] === 'geo' }));
+    const allItems = (k, fmt) => SUBJ.slice().sort((a, b) => b[k] - a[k]).map((s) => ({ label: s[0], short: s[1], v: s[k], fmt: fmt(s[k]), c: colourOf(s[4]), hl: s[4] === 'geo' }));
+    const famLegend = (avg) => [{ mark: sw(ACC), label: 'Geography' }, { mark: sw(HUM), label: 'Other Humanities subjects' }, { mark: sw(OTHER), label: 'Other subjects' }, { mark: avgMark, label: avg }];
+    const schItems = (arr, k, fmt) => arr.map((s) => ({ label: (s[0] === 'You' ? 'This school' : s[0] + '  · ' + s[1] + ' mi'), v: s[k], fmt: fmt(s[k]), c: s[0] === 'You' ? ACC : '#5b5b62', hl: s[0] === 'You' }));
+    const schLegend = (avg) => [{ mark: sw(ACC), label: 'This school' }, { mark: sw('#5b5b62'), label: 'The 10 nearest schools offering Geography' }, { mark: 'width: 0; height: 14px; border-left: 2px dashed #a1a1aa', label: avg }];
+    const Y7 = ['2018/19', '2019/20', '2020/21', '2021/22', '2022/23', '2023/24', '2024/25'];
+    const Y5 = ['2018/19', '2021/22', '2022/23', '2023/24', '2024/25'];
+    const noExams = [{ i: 0, label: 'not published 2019/20–2020/21' }];
+
+    const WALKS = {
+      many: {
+        icon: 'candidates', colLabel: 'Candidates', home: COLQ.candidates, endTitle: "That's how many pupils take Geography.",
+        meta: '6 screens · Candidates and Context',
+        steps: [
+          { q: 'How many took Geography this year?', a: '84 pupils took Geography GCSE in 2024/25, 6 more than the year before.',
+            col: 'candidates', row: 'Current', d: 0, c: 0, r: 0, railKey: 'cand_c1_cur', active: 0,
+            title: 'Geography Candidates: 2024/25',
+            note: 'Pupils entered for Geography GCSE in 2024/25 (DfE). Ranks: largest first; subjects with the same number share a place.',
+            chart: { kind: 'tiles', main: '84', mainLabel: 'entries in 2024/25 (78 in 2023/24)', tiles: [{ icon: 'podium', fig: '2nd', scope: 'of 4 in Humanities', style: '' }, { icon: 'school', fig: '6th', scope: 'of 14 subjects at the school', style: '' }, { icon: 'change', fig: '+35%', scope: 'since 2018/19', style: 'color: #34d399' }] },
+            table: { head: ['', 'Geography'], rows: [['Entries, 2024/25', '84'], ['Entries, 2023/24', '78'], ['Rank in Humanities', '2nd of 4'], ['Rank in the school', '6th of 14'], ['Change since 2018/19', '+35%']] } },
+          { q: 'How does it compare with the other Humanities subjects?', a: 'Geography is the second-largest Humanities subject, after History, and above the Humanities average of 64.',
+            col: 'context', row: 'Current', d: 0, c: 1, r: 0, railKey: 'ctx_cur', active: 1, pill: ['Compared against', 'Subject category'],
+            title: 'Entries by subject in Humanities',
+            note: 'Humanities is the subject category Geography belongs to across VicData. Average: the plain average of the four subjects.',
+            chart: vbars(humItems(2, (v) => String(v)), 64, 'Humanities average 64', [{ mark: sw(ACC), label: 'Geography' }, { mark: sw(HUM), label: 'Other Humanities subjects' }, { mark: avgMark, label: 'Humanities average: 64' }]) },
+          { q: 'And across the whole school?', a: 'With 84 entries, Geography is the 6th-largest of the school’s 14 GCSE subjects, right on the school average.',
+            col: 'context', row: 'Current', d: 0, c: 1, r: 0, railKey: 'ctx_cur', active: 1, pill: ['Compared against', 'Whole school'],
+            title: 'Entries by subject in the whole school',
+            note: 'English, Maths and Combined Science are taken by almost every pupil, so they always lead. Average: the plain average of the 14 subjects.',
+            chart: vbars(allItems(2, (v) => String(v)), 84, 'School average 84', famLegend('School average: 84')) },
+          { q: 'Has that gone up or down?', a: 'Up every year since 2018/19, from 62 to 84. The other Humanities subjects have stayed much flatter.',
+            col: 'candidates', row: 'Trends', d: 0, c: 0, r: 1, railKey: 'cand_c1_tr', active: 1,
+            title: 'Entries in Humanities',
+            note: 'Pupils entered each year. Geography is drawn in your colour; the other Humanities subjects in shades of the Humanities colour, each with its own marker shape.',
+            chart: line(Y7, [
+              { label: 'History', v: [95, 93, 90, 92, 88, 90, 92], c: HUMS[0], m: 'sq', off: -4 },
+              { label: 'Geography', v: [62, 66, 70, 71, 74, 78, 84], c: ACC, hl: true, off: 6 },
+              { label: 'Religious Studies', v: [50, 52, 55, 57, 58, 60, 61], c: HUMS[1], m: 'tri' },
+              { label: 'Classics', v: [12, 14, 15, 15, 16, 17, 18], c: HUMS[2], m: 'dia' }
+            ], { min: 0, max: 100, ticks: [0, 25, 50, 75, 100], fmt: (v) => String(v), yCaption: 'Entries (pupils)', legend: [{ mark: ln(ACC), label: 'Geography' }, { mark: ln(HUMS[0]), shape: SHAPE.sq(HUMS[0], 7), label: 'History' }, { mark: ln(HUMS[1]), shape: SHAPE.tri(HUMS[1], 7), label: 'Religious Studies' }, { mark: ln(HUMS[2]), shape: SHAPE.dia(HUMS[2], 7), label: 'Classics' }] }) },
+          { q: 'Has it grown more than other subjects?', a: 'Yes. Geography grew by 22 pupils since 2018/19, more than any other subject. Most stayed level; French fell by 16.',
+            col: 'context', row: 'Trends', d: 0, c: 1, r: 1, railKey: 'ctx_tr', active: 2, proposed: true, pill: ['Compared against', 'Whole school'],
+            title: 'Entries by subject in the whole school, 2018/19 and 2024/25, largest first',
+            note: 'Ordered by this year’s entries. Ring: 2018/19; dot: 2024/25. Change in pupils; ▲ / ▼ show direction, so colour is free to mean the subject area. Proposed new view on the dashboard’s Context › Trends rail.',
+            chart: dumb([['English Language', 178, 180, 'x'], ['Maths', 176, 180, 'x'], ['English Literature', 170, 176, 'x'], ['Combined Science', 160, 150, 'x'], ['History', 95, 92, 'hum'], ['Geography', 62, 84, 'geo'], ['French', 80, 64, 'x'], ['Religious Studies', 50, 61, 'hum'], ['Spanish', 28, 40, 'x'], ['Art and Design', 42, 38, 'x'], ['Computer Science', 22, 36, 'x'], ['Biology', 26, 30, 'x'], ['Business', 35, 28, 'x'], ['Classics', 12, 18, 'hum']]) },
+          { q: 'Is the same thing happening nearby and nationally?', a: 'No. Geography entries have grown faster here than at the 10 nearest schools, in the LA or in England.',
+            col: 'candidates', row: 'Trends', d: 0, c: 0, r: 1, railKey: 'cand_c1_tr', active: 3, proposed: true,
+            title: 'Geography against the 10 nearest schools, its LA and England, year by year',
+            note: 'Every line starts at 100 in 2018/19, so growth compares whatever the size. Region is in the table: its line runs almost on top of England’s, as on the dashboard. Proposed: the dashboard’s Area chart adds the 10 nearest.',
+            chart: line(Y7, [
+              { label: 'This school', v: [100, 106, 113, 115, 119, 126, 135], c: ACC, hl: true },
+              { label: '10 nearest', v: [100, 102, 104, 107, 108, 110, 112], c: NEAR },
+              { label: 'LA', v: [100, 101, 103, 104, 105, 107, 108], c: LA },
+              { label: 'England', v: [100, 100, 101, 102, 102, 103, 104], c: ENG, off: 6 }
+            ], { min: 96, max: 140, ticks: [100, 110, 120, 130, 140], fmt: (v) => String(v), yCaption: 'Entries, indexed (2018/19 = 100)',
+              legend: [{ mark: ln(ACC), label: 'This school' }, { mark: ln(NEAR), label: '10 nearest schools' }, { mark: ln(LA), label: 'LA' }, { mark: ln(ENG), label: 'England' }],
+              extraRows: [['Region', [100, 101, 102, 103, 104, 105, 106]]] }) }
+        ]
+      },
+      well: {
+        icon: 'results', colLabel: 'Results', home: COLQ.results, endTitle: "That's how well pupils do in Geography.",
+        meta: '6 screens · Results and Context',
+        steps: [
+          { q: 'What did they get this year?', a: 'An average of 5.4 per pupil in 2024/25, up from 5.1, and 0.4 above England.',
+            col: 'results', row: 'Current', d: 1, c: 0, r: 0, railKey: 'res_c1_cur', active: 0, pill: ['Results', 'Average points'],
+            title: 'Geography Results: 2024/25',
+            note: 'Average points: the average GCSE grade per entry on the 9–1 scale (a 5.4 sits between a 5 and a 6). Switch the measure on the dashboard’s Results pill.',
+            chart: { kind: 'tiles', main: '5.4', mainLabel: 'average points in 2024/25 (5.1 in 2023/24)', tiles: [{ icon: 'podium', fig: '3rd', scope: 'of 4 in Humanities', style: '' }, { icon: 'school', fig: '5th', scope: 'of 14 subjects at the school', style: '' }, { icon: 'flag', fig: '+0.4', scope: 'above England (5.0)', style: 'color: #34d399' }] },
+            table: { head: ['', 'Geography'], rows: [['Average points, 2024/25', '5.4'], ['Average points, 2023/24', '5.1'], ['Rank in Humanities', '3rd of 4'], ['Rank in the school', '5th of 14'], ['England, 2024/25', '5.0']] } },
+          { q: 'How were the grades spread?', a: 'Most pupils got a 4 to a 7. More got the top grades than across England: 32% got a 7 or above, against 21%.',
+            col: 'results', row: 'Current', d: 1, c: 0, r: 0, railKey: 'res_c1_cur', active: 1, pill: ['Results', 'Grade bands'],
+            title: 'Geography’s grades: share of pupils at each grade, against England',
+            note: '84 pupils in all. Bars: the share of this school’s pupils at each grade. Amber marks: England’s share at the same grade.',
+            chart: (() => {
+              const g = [['9', 6, 4], ['8', 9, 7], ['7', 12, 10], ['6', 14, 13], ['5', 13, 15], ['4', 14, 17], ['3', 8, 14], ['2', 5, 10], ['1', 2, 6], ['U', 1, 4]];
+              const MAX = 20;
+              return { kind: 'grades', legend: [{ mark: sw(ACC), label: 'This school: % of pupils' }, { mark: tick(ENG), label: 'England: % of pupils' }],
+                rows: g.map((x) => { const p = x[1] / 84 * 100; return { g: x[0], val: x[1] + (x[1] === 1 ? ' pupil · ' : ' pupils · ') + Math.round(p) + '%', barStyle: 'width: ' + (p / MAX * 100).toFixed(1) + '%; background: ' + ACC, tickStyle: 'left: calc(' + (x[2] / MAX * 100).toFixed(1) + '% - 1px)' }; }),
+                axis: [0, 5, 10, 15].map((v) => ({ label: v + '%', style: 'left: ' + (v / MAX * 100) + '%' })),
+                tableRows: g.map((x) => [x[0], String(x[1]), Math.round(x[1] / 84 * 100) + '%', x[2] + '%']) };
+            })(),
+            table: null },
+          { q: 'How does that compare with the other Humanities subjects?', a: 'Geography is 3rd of the four. Classics’ 6.6 comes from just 18 pupils, so treat it with care.',
+            col: 'context', row: 'Current', d: 1, c: 1, r: 0, railKey: 'ctx_cur', active: 1, pill: ['Compared against', 'Subject category'],
+            title: 'Results by subject in Humanities',
+            note: 'Average points. With fewer than 20 pupils, one or two results move a subject’s figure a lot.',
+            chart: vbars(humItems(3, f1), 5.7, 'Humanities average 5.7', [{ mark: sw(ACC), label: 'Geography' }, { mark: sw(HUM), label: 'Other Humanities subjects' }, { mark: avgMark, label: 'Humanities average: 5.7' }]) },
+          { q: 'And across the whole school?', a: 'At 5.4, Geography is 5th of the school’s 14 subjects, level with the school average.',
+            col: 'context', row: 'Current', d: 1, c: 1, r: 0, railKey: 'ctx_cur', active: 1, pill: ['Compared against', 'Whole school'],
+            title: 'Results by subject in the whole school',
+            note: 'Average points. The average is the plain average of the 14 subjects.',
+            chart: vbars(allItems(3, f1), 5.4, 'School average 5.4', famLegend('School average: 5.4')) },
+          { q: 'Are results going up or down?', a: 'Up this year, from 5.1 to 5.4, back near the 2021/22 high. Geography sits in the middle of the Humanities subjects.',
+            col: 'results', row: 'Trends', d: 1, c: 0, r: 1, railKey: 'res_c1_tr', active: 0, pill: ['Results', 'Average points'],
+            title: 'Results in Humanities: each subject’s line',
+            note: 'No results were published for 2019/20 or 2020/21 (dotted). Grading in 2021/22 was more generous than usual, so compare it with care.',
+            chart: line(Y5, [
+              { label: 'Classics', v: [6.2, 6.9, 6.4, 6.5, 6.6], c: HUMS[2], m: 'dia' },
+              { label: 'RS', v: [5.5, 6.0, 5.6, 5.7, 5.8], c: HUMS[1], m: 'tri' },
+              { label: 'Geography', v: [5.0, 5.6, 5.1, 5.1, 5.4], c: ACC, hl: true },
+              { label: 'History', v: [4.9, 5.4, 5.0, 5.0, 5.1], c: HUMS[0], m: 'sq' }
+            ], { min: 4.5, max: 7.0, ticks: [4.5, 5.0, 5.5, 6.0, 6.5, 7.0], fmt: f1, gaps: noExams, labelFocus: true, yCaption: 'Average points',
+              legend: [{ mark: ln(ACC), label: 'Geography' }, { mark: ln(HUMS[0]), shape: SHAPE.sq(HUMS[0], 7), label: 'History' }, { mark: ln(HUMS[1]), shape: SHAPE.tri(HUMS[1], 7), label: 'Religious Studies' }, { mark: ln(HUMS[2]), shape: SHAPE.dia(HUMS[2], 7), label: 'Classics' }] }) },
+          { q: 'Is the same thing happening nearby and nationally?', a: 'Geography is ahead of the 10 nearest schools, the LA and England, and the gap has widened since 2022/23.',
+            col: 'results', row: 'Trends', d: 1, c: 0, r: 1, railKey: 'res_c1_tr', active: 3, proposed: true, pill: ['Results', 'Average points'],
+            title: 'Geography against the 10 nearest schools, its LA and England, year by year',
+            note: 'Average points (the only Results measure with LA and England figures). Region is in the table: its line runs almost on top of England’s. Proposed: the Area chart adds the 10 nearest.',
+            chart: line(Y5, [
+              { label: 'This school', v: [5.0, 5.6, 5.1, 5.1, 5.4], c: ACC, hl: true },
+              { label: '10 nearest', v: [4.9, 5.4, 5.0, 5.0, 5.1], c: NEAR },
+              { label: 'LA', v: [4.8, 5.3, 4.9, 4.9, 5.0], c: LA, off: -2 },
+              { label: 'England', v: [4.7, 5.3, 4.8, 4.8, 4.9], c: ENG, off: 4 }
+            ], { min: 4.4, max: 5.8, ticks: [4.4, 4.8, 5.2, 5.6], fmt: f1, gaps: noExams, yCaption: 'Average points',
+              legend: [{ mark: ln(ACC), label: 'This school' }, { mark: ln(NEAR), label: '10 nearest schools' }, { mark: ln(LA), label: 'LA' }, { mark: ln(ENG), label: 'England' }],
+              extraRows: [['Region', [4.7, 5.3, 4.8, 4.9, 4.9]]] }) }
+        ]
+      },
+      nearby: {
+        icon: 'comparisons', colLabel: 'Comparisons', home: COLQ.comparisons, endTitle: "That's how Geography compares with other schools.",
+        meta: '5 screens · Comparisons',
+        steps: [
+          { q: 'Which schools are nearby?', a: '10 schools within 6 miles also offer Geography GCSE.',
+            col: 'comparisons', row: 'Current', d: 1, c: 2, r: 0, railKey: 'c3_cur', active: 1, pill: ['Compared against', '10 nearest schools'],
+            title: 'Geography by school, on the map',
+            note: 'The 10 nearest schools offering Geography GCSE. Swap the set on the dashboard’s Compared against pill (local rivals, or a set of your own).',
+            chart: { kind: 'map', legend: [{ mark: dot(ACC, 14), label: 'This school' }, { mark: dot('#8a8a90', 11), label: 'School offering Geography (letter · distance)' }, { mark: 'width: 18px; height: 10px; border-radius: 50%; border: 1px dashed #8a8a90', label: 'Distance rings' }],
+              pts: SCH.map((s) => ({ l: s[4] + '%', t: s[5] + '%', label: s[0] === 'You' ? 'This school' : s[0].replace('School ', '') + ' · ' + s[1] + ' mi', dot: s[0] === 'You' ? 'width: 20px; height: 20px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 6px rgba(52,211,153,0.2)' : 'width: 12px; height: 12px; border-radius: 50%; background: #8a8a90', labStyle: s[0] === 'You' ? 'color: #34d399; font-weight: 600; font-size: 13px' : 'color: #b4b4ba' })) },
+            table: { head: ['School', 'Distance'], rows: SCH.map((s) => [s[0] === 'You' ? 'This school' : s[0], s[1] ? s[1] + ' miles' : '—']) } },
+          { q: 'How many take it at each?', a: 'Your 84 entries are the 3rd-largest of the 11. Only Schools A and B enter more.',
+            col: 'comparisons', row: 'Current', d: 0, c: 2, r: 0, railKey: 'c3_cur', active: 2, pill: ['Compared against', '10 nearest schools'],
+            title: 'Entries by school in the 10 nearest schools',
+            note: 'Pupils entered for Geography GCSE in 2024/25, nearest school first. Dashed line: the average of the 10 nearest.',
+            chart: hbars(schItems(SCH, 2, (v) => String(v)), { max: 130, marker: 60.5, legend: schLegend('Average of the 10 nearest: 61') }) },
+          { q: 'How did they do at each?', a: 'Average points range from 4.3 to 6.1. Yours is 5.4, above the 10 nearest’s average of 5.1.',
+            col: 'comparisons', row: 'Current', d: 1, c: 2, r: 0, railKey: 'c3_cur', active: 2, pill: ['Compared against', '10 nearest schools'],
+            title: 'Results by school in the 10 nearest schools',
+            note: 'Average points in 2024/25, nearest school first. Dashed line: the average of the 10 nearest.',
+            chart: hbars(schItems(SCH, 3, f1), { max: 7, marker: 5.12, legend: schLegend('Average of the 10 nearest: 5.1') }) },
+          { q: 'Where do we rank?', a: 'You rank 4th of 11. Schools G, B and D are ahead.',
+            col: 'comparisons', row: 'Current', d: 1, c: 2, r: 0, railKey: 'c3_cur', active: 3, pill: ['Compared against', '10 nearest schools'],
+            title: 'Schools ranked by Geography average points in the 10 nearest schools',
+            note: 'Ranked by average points. Small entries (School J has 25 pupils) can move a long way in a year.',
+            chart: { kind: 'rank', valHead: 'Average points', rows: SCH.slice().sort((a, b) => b[3] - a[3]).map((s, i) => ({ rank: ord(i + 1), school: s[0] === 'You' ? 'This school' : s[0], val: f1(s[3]), dist: s[1] ? s[1] + ' mi' : '—', style: s[0] === 'You' ? 'color: #34d399; font-weight: 600; background: rgba(52,211,153,0.08); box-shadow: inset 3px 0 0 #34d399' : 'color: #d4d4d8' })) } },
+          { q: 'Has our position changed?', a: 'You’ve moved up from 7th in 2018/19 to 4th this year.',
+            col: 'comparisons', row: 'Trends', d: 1, c: 2, r: 1, railKey: 'c3_tr', active: 0, pill: ['Compared against', '10 nearest schools'],
+            title: 'This school’s rank against the 10 nearest schools, year by year',
+            note: 'Rank by average points among the same 11 schools each year (1st at the top). No results published for 2019/20 or 2020/21.',
+            chart: line(Y5, [{ label: 'Rank', v: [7, 5, 6, 5, 4], c: ACC, hl: true }], { min: 1, max: 11, invert: true, ticks: [1, 3, 5, 7, 9, 11], fmt: ord, gaps: noExams, yCaption: 'Rank among 11 schools',
+              legend: [{ mark: ln(ACC), label: 'This school’s rank (1st at the top)' }] }) }
+        ]
+      }
+    };
+    const ORDER = ['many', 'well', 'nearby'];
+
+    const screen = st.screen || 'home';
+    const walkId = st.walk || 'many';
+    const walk = WALKS[walkId];
+    const steps = walk.steps;
+    const stepIx = Math.min(st.step || 0, steps.length - 1);
+    const cur0 = steps[stepIx];
+    const cur = Object.assign({}, cur0, {
+      colLabel: COLNAME[cur0.col], colQ: COLQ[cur0.col],
+      hasPill: !!cur0.pill, pillLabel: cur0.pill ? cur0.pill[0] : '', pillValue: cur0.pill ? cur0.pill[1] : '',
+      hasProposed: !!cur0.proposed
+    });
+    const asTable = !!st.asTable;
+    const ch = cur.chart;
+    const railDef = RAILS[cur.railKey];
+
+    const start = (id) => () => this.setState({ screen: 'walk', walk: id, step: 0, asTable: false });
+    const walkCards = ORDER.map((id) => ({ icon: WALKS[id].icon, colLabel: WALKS[id].colLabel, home: WALKS[id].home, meta: WALKS[id].meta, start: start(id) }));
+    const post16Cards = [
+      { icon: 'candidates', colLabel: 'Candidates', home: 'How many students take Geography?' },
+      { icon: 'results', colLabel: 'Results', home: 'How well do students do in Geography?' },
+      { icon: 'comparisons', colLabel: 'Comparisons', home: 'How does Geography compare with other schools?' }
+    ];
+
+    const tableIx = railDef.findIndex((r, i) => i !== cur.active && /table/i.test(r[0]));
+    const rail = railDef.map((r, i) => {
+      const isChart = i === cur.active;
+      const isTable = i === tableIx;
+      const on = (isChart && !asTable) || (isTable && asTable);
+      const ext = !isChart && !isTable;
+      return {
+        label: r[0], icon: r[1], ext: ext, pressed: on ? 'true' : 'false',
+        tip: ext ? 'Open ' + r[0] + ' on the dashboard' : 'Show ' + r[0],
+        style: on ? 'background: rgba(52,211,153,0.12); color: #f2f2f3; font-weight: 600' : (ext ? 'color: #8a8a90' : 'color: #d4d4d8'),
+        iconStyle: on ? 'background: #34d399; color: #062b1f' : 'background: #1a1a1d; color: currentColor',
+        pick: isChart ? () => set({ asTable: false }) : (isTable ? () => set({ asTable: true }) : () => set({ screen: 'dash', dashFrom: 'walk', dashD: null, railSel: i }))
+      };
+    });
+    if (tableIx < 0) {
+      rail.push({ label: 'As a table', icon: 'table', ext: false, pressed: asTable ? 'true' : 'false', tip: 'Show as a table',
+        style: asTable ? 'background: rgba(52,211,153,0.12); color: #f2f2f3; font-weight: 600' : 'color: #d4d4d8',
+        iconStyle: asTable ? 'background: #34d399; color: #062b1f' : 'background: #1a1a1d; color: currentColor',
+        pick: () => set({ asTable: !asTable }) });
+    }
+
+    const tableOf = () => {
+      let head = [''], rows = [], hlRow = -1;
+      if (cur.table) { head = cur.table.head; rows = cur.table.rows; }
+      else if (ch.kind === 'grades') { head = ['Grade', 'Pupils', 'This school', 'England']; rows = ch.tableRows; }
+      else if (ch.kind === 'vbars') { head = ['Subject', walkId === 'many' ? 'Entries' : 'Average points']; rows = ch.bars.map((b) => [b.label, String(b.val)]); hlRow = ch.bars.findIndex((b) => b.labStyle.indexOf('600') > -1); }
+      else if (ch.kind === 'h') { head = ['School', walkId === 'nearby' && stepIx === 1 ? 'Entries' : 'Average points']; rows = ch.rows.map((r) => [r.label, String(r.val)]); hlRow = ch.rows.findIndex((r) => r.labStyle.indexOf('600') > -1); }
+      else if (ch.kind === 'dumb') { head = ['Subject', '2018/19', '2024/25', 'Change']; rows = ch.rows.map((r) => [r.name, String(r.raw[0]), String(r.raw[1]), r.change]); hlRow = ch.rows.findIndex((r) => r.name === 'Geography'); }
+      else if (ch.kind === 'rank') { head = ['Rank', 'School', 'Average points']; rows = ch.rows.map((r) => [r.rank, r.school, r.val]); hlRow = ch.rows.findIndex((r) => r.school === 'This school'); }
+      else if (ch.kind === 'line') {
+        head = [''].concat(ch.xl.map((x) => x.label));
+        const fmt = ch.fmt;
+        rows = ch.series.map((s) => [s.label].concat(s.raw.map(fmt))).concat(ch.extraRows.map((r) => [r[0]].concat(r[1].map(fmt))));
+        hlRow = ch.series.findIndex((s) => s.fw === '600');
+      }
+      const n = head.length;
+      return {
+        gridStyle: 'display: grid; grid-template-columns: minmax(0, 2fr) repeat(' + (n - 1) + ', minmax(0, 1fr)); gap: 12px; align-items: center',
+        head: head.map((h, i) => ({ v: h, style: i ? 'text-align: right' : '' })),
+        rows: rows.map((r, ri) => ({ style: ri === hlRow ? 'color: #34d399; font-weight: 600' : 'color: #d4d4d8', cells: r.map((v, i) => ({ v: v, style: i ? 'text-align: right; font-variant-numeric: tabular-nums' : '' })) }))
+      };
+    };
+    const tb = tableOf();
+    const legend = asTable ? [] : (ch.legend || []).map((l) => Object.assign({ shape: 'display: none' }, l));
+
+    const dots = steps.map((s, i) => ({ style: i === stepIx ? 'width: 26px; height: 8px; border-radius: 4px; background: #34d399' : (i < stepIx ? 'width: 8px; height: 8px; border-radius: 4px; background: rgba(52,211,153,0.5)' : 'width: 8px; height: 8px; border-radius: 4px; background: #2a2a2f') }));
+    const isLast = stepIx === steps.length - 1;
+
+    const colSets = [['candidates', 'context', 'comparisons'], ['results', 'context', 'comparisons']];
+    const mini = {
+      dashName: (cur.d ? 'GCSE Results' : 'GCSE Candidates'),
+      cols: colSets[cur.d].map((c, i) => ({ icon: c, colour: i === cur.c ? ACC : '#6a6a70' })),
+      rows: ['Current', 'Trends'].map((rl, r) => ({ label: rl, cells: [0, 1, 2].map((c) => ({ style: (c === cur.c && r === cur.r) ? 'background: #34d399' : 'background: #1f1f23; border: 1px solid #2a2a2f' })) }))
+    };
+
+    const whereOf = (s) => (s.d ? 'GCSE Results' : 'GCSE Candidates') + ' › ' + COLNAME[s.col] + ' › ' + s.row;
+    const recap = steps.map((s, i) => ({ q: s.q, a: s.a, view: RAILS[s.railKey][s.active][1], col: s.col, where: whereOf(s), border: i ? 'border-top: 1px solid #1e1e22' : '', open: () => this.setState({ screen: 'walk', walk: walkId, step: i, asTable: false }) }));
+    const otherWalks = ORDER.filter((id) => id !== walkId).map((id) => ({ icon: WALKS[id].icon, colLabel: WALKS[id].colLabel, home: WALKS[id].home, start: start(id) }));
+
+    const fromWalk = (st.dashFrom || 'walk') === 'walk';
+    const dashD = st.dashD != null ? st.dashD : (fromWalk ? cur.d : 0);
+    const railSel = st.railSel != null ? st.railSel : cur.active;
+    const panelRailKey = (d, c, r) => {
+      if (c === 0 && r === 0) return d ? 'res_c1_cur' : 'cand_c1_cur';
+      if (c === 0) return d ? 'res_c1_tr' : 'cand_c1_tr';
+      if (c === 1) return r === 0 ? 'ctx_cur' : 'ctx_tr';
+      return r === 0 ? 'c3_cur' : 'c3_tr';
+    };
+    const hlOn = fromWalk && dashD === cur.d;
+    const dashRows = ['Current', 'Trends'].map((rl, r) => ({
+      label: rl,
+      panels: [0, 1, 2].map((c) => {
+        const hl = hlOn && cur.c === c && cur.r === r;
+        const rk = (hl ? cur.railKey : panelRailKey(dashD, c, r));
+        const items = RAILS[rk];
+        const selIx = hl ? railSel : 0;
+        return {
+          title: COLNAME[colSets[dashD][c]] + ' · ' + items[selIx][0],
+          style: hl ? 'border: 2px solid #34d399; box-shadow: 0 0 0 6px rgba(52,211,153,0.15)' : 'border: 1px solid #1e1e22',
+          bodyStyle: hl ? 'background: rgba(52,211,153,0.08)' : 'background: #0e0e10',
+          big: items[selIx][1], bigColor: hl ? '#34d399' : '#3f3f46',
+          rail: items.map((it, i) => ({ g: it[1], label: it[0], tip: hl && i === selIx, c: i === selIx ? (hl ? '#062b1f' : '#d4d4d8') : '#6a6a70', style: i === selIx ? (hl ? 'background: #34d399' : 'background: #232327') : '' }))
+        };
+      })
+    }));
+    const tabStyle = (on) => on ? 'padding: 6px 12px; border-radius: 7px; font-size: 13px; background: #232327; color: #f2f2f3' : 'padding: 6px 12px; border-radius: 7px; font-size: 13px; color: #8a8a90';
+
+    return {
+      isHome: screen === 'home', isWalk: screen === 'walk', isEnd: screen === 'end', isDash: screen === 'dash',
+      walkCards: walkCards, post16Cards: post16Cards, walk: walk, cur: cur, ch: ch, tb: tb, dots: dots, rail: rail, mini: mini,
+      viewTitle: cur.title + (asTable ? ' (table)' : ''), legend: legend, hasLegend: legend.length > 0,
+      stepLabel: 'Step ' + (stepIx + 1) + ' of ' + steps.length,
+      showTable: asTable, showTiles: !asTable && ch.kind === 'tiles', showVbars: !asTable && ch.kind === 'vbars', showH: !asTable && ch.kind === 'h',
+      showGrades: !asTable && ch.kind === 'grades', showRank: !asTable && ch.kind === 'rank', showDumb: !asTable && ch.kind === 'dumb', showLine: !asTable && ch.kind === 'line', showMap: !asTable && ch.kind === 'map',
+      backLabel: stepIx === 0 ? 'Questions' : 'Back',
+      nextKicker: isLast ? 'Finish' : 'Next',
+      nextText: isLast ? 'See what you found' : steps[stepIx + 1].q,
+      recap: recap, otherWalks: otherWalks,
+      dashTabs: [0, 1].map((d) => ({ label: d ? 'Results' : 'Candidates', style: tabStyle(dashD === d), pick: () => this.setState(Object.assign({}, st, { dashD: d })) })),
+      dashCols: colSets[dashD].map((x) => ({ icon: x, label: COLNAME[x], q: COLQ[x] })),
+      dashRows: dashRows, dashHasHl: hlOn, dashShowPill: dashD === 1,
+      dashHlCol: COLNAME[cur.col], dashHlRow: cur.row, dashHlView: RAILS[cur.railKey][railSel][0],
+      dashBackLabel: fromWalk ? 'Back to the walk' : (st.dashFrom === 'end' ? 'Back' : 'Back to questions'),
+      goHome: () => this.setState({ screen: 'home' }),
+      goBack: () => stepIx === 0 ? this.setState({ screen: 'home' }) : set({ step: stepIx - 1, asTable: false }),
+      goNext: () => isLast ? set({ screen: 'end' }) : set({ step: stepIx + 1, asTable: false }),
+      toDash: () => set({ screen: 'dash', dashFrom: 'walk', dashD: null, railSel: null }),
+      openDashFromHome: () => set({ screen: 'dash', dashFrom: 'home', dashD: 0, railSel: null }),
+      openDashFromEnd: () => set({ screen: 'dash', dashFrom: 'end', dashD: null, railSel: null }),
+      dashBack: () => set({ screen: fromWalk ? 'walk' : (st.dashFrom === 'end' ? 'end' : 'home'), dashD: null, railSel: null })
+    };
+  }
+}
+</script>
+</body>
+</html>
