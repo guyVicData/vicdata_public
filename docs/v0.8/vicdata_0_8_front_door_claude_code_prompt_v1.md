@@ -16,7 +16,7 @@ Guy wants VicData friendlier for staff who aren't stats-minded, and ready for **
 4. **Account security:** new-device codes, a device cap, "Where you're signed in", joining on the school's own email domain.
 5. **School admin:** a plain account page and a membership page (no payments yet).
 
-**Design files:** a folder `walkthroughs_design_inbox/` is at `~/dev/vicdata_public/.walkthroughs_design_inbox/` (untracked). **Move it** (not copy) to `docs/v0.8/front_door_design/` on your branch and commit it first. Its `README.md` maps every screen to a PNG (`png/`) and its source board (`dc/*.dc.html`). They are design references (layout, wording, colour, behaviour), not code to port. **Every figure, school name and date in them is illustrative.** Use real data everywhere.
+**Design files:** the folder `walkthroughs_design_inbox/` is at the top level of the repo, `~/dev/vicdata_public/walkthroughs_design_inbox/` (no dot in front of the name; already committed on `main`). **Move it** (`git mv`, not copy) to `docs/v0.8/front_door_design/` on your branch and commit that move first. Its `README.md` maps every screen to a PNG (`png/`) and its source board (`dc/*.dc.html`). They are design references (layout, wording, colour, behaviour), not code to port. **Every figure, school name and date in them is illustrative.** Use real data everywhere.
 
 ## The decisions (Guy, 9–13 Nov)
 
@@ -201,7 +201,7 @@ At phone width (the shell's 358 px card, viewports 360–430), every new surface
 
 ## Ground rules
 
-- **Branch `v0.8-front-door` from current `main`** (`101c48e`), fetched over HTTPS. Commit this prompt and the design files first. Use worktrees for parallel parts if they help.
+- **Branch `v0.8-front-door` from current `main`** (it already holds this prompt and the design files), fetched over HTTPS. Commit the design folder's move first. Use worktrees for parallel parts if they help.
 - **These must be clean at every milestone:** tsc, eslint and build; the unit, rule, RLS and usage-log tests; every PGlite suite (run as their headers say; `view-as-pages.test.ts` with `--test-force-exit`); every parity harness.
 - **Allowed differences in parity:** the new routes and pages; the gate; the panel ladder (every dashboard); SMT and head office colours; the set creator colours; the theme switch. **Figures never change.**
 - **No database writes.** Migrations are written and tested in PGlite, and Guy applies them. Give each migration's step with the `schema_migrations` insert, per the template in `docs/FEEDBACK.md`.
