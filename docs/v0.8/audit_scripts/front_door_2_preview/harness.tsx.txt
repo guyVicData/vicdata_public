@@ -1,0 +1,135 @@
+// Front door part 2: the report's screenshot and 390 px measurement harness. Renders the app's own components
+// (pages where they load through stubbed fetch / Supabase, else the component inside its page's own frame),
+// with fixtures captured read-only through the app's route handlers (cap/cap.ts). ?page=… &theme=dark|light|mid
+import { createRoot } from "react-dom/client";
+import { useMemo, type CSSProperties } from "react";
+import { GuidedSetEditor, type GuidedPage, type GuidedStart } from "@/components/sets/GuidedSetEditor";
+import { SetsLibrary } from "@/components/sets/SetsLibrary";
+import { SetsShell } from "@/components/sets/SetsShell";
+import { SchoolAccountPage, MembershipPage } from "@/components/school-admin/SchoolAccount";
+import { HomeFrame, HomeHeading } from "@/components/front-door/home";
+import { AdmissionsSection, SmtSection, TeacherPhaseSection } from "@/components/front-door/sections";
+import { FirstVisitFrame, WelcomeContent, SetupPage } from "@/components/front-door/first-visit";
+import { WalkPage } from "@/components/front-door/WalkPage";
+import { useTeacherTheme } from "@/components/shell/TeacherChrome";
+import { useWidth } from "@/components/admissions/views/charts";
+import { accentVars, productAccent } from "@/components/shell/accent";
+import { guidedKindOf } from "@/lib/sets/guided";
+import type { EditorData } from "@/lib/sets/editor-data";
+import type { LibraryData } from "@/lib/sets/library";
+
+type Fx = Record<string, unknown>;
+const FX = (window as unknown as { __FX: Fx }).__FX;
+const P = new URLSearchParams(location.search);
+const page = P.get("page") ?? "guided-feeders";
+
+function GuidedFrame({ kind }: { kind: "feeders" | "compared_against" }) {
+  const [theme] = useTeacherTheme();
+  const [ref, width] = useWidth<HTMLDivElement>();
+  const fx = FX[`editor:${kind}`] as { set: { id: string; name: string; members: { urn: string; tier: "main" | null }[] } & Record<string, unknown>; data: EditorData };
+  const product = "admissions" as const;
+  const g = guidedKindOf(kind, product);
+  const pageProps: GuidedPage = {
+    urn: "110110",
+    schoolName: "Leighton Park School",
+    kind,
+    g,
+    entry: "11+",
+    entryAge: 11,
+    phase: null,
+    entryChoices: [{ label: "11+", href: "#", on: true }, { label: "16+", href: "#", on: false }],
+    setChoices: [{ label: fx.set.name, href: "#", on: true }],
+    newSetHref: "#",
+    product,
+    accentHex: productAccent(product)!.hex,
+    returnTo: "/teacher",
+    returnFallback: false,
+    returnLabel: "Admissions home",
+    profileId: "p",
+    schoolAccountId: "a",
+    schoolCreator: "admissions",
+    readOnly: false,
+  };
+  const start: GuidedStart = useMemo(() => ({ set: fx.set as never, name: fx.set.name, members: fx.set.members, mode: "save" }), [fx]);
+  const phone = width > 0 && width < 600;
+  return (
+    <main id="teacher-root" data-theme={theme} ref={ref} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={accentVars(productAccent(product)) as CSSProperties}>
+      <div className={phone ? "" : "mx-auto max-w-[1380px] px-7 py-6"}>{width > 0 && <GuidedSetEditor page={pageProps} start={start} phone={phone} initialData={fx.data} />}</div>
+    </main>
+  );
+}
+
+function Library() {
+  const data = FX["/api/sets/library?urn=110110"] as LibraryData;
+  return <SetsShell>{(phone) => <SetsLibrary data={data} phone={phone} back={{ returnTo: "/teacher/admissions", fallback: false, label: "Back to Pipelines" }} />}</SetsShell>;
+}
+
+function TeacherHome() {
+  return <HomeFrame heading={<HomeHeading sub="Leighton Park School: GCSE and Post-16, the questions your figures answer." onField={false} />} sections={[<TeacherPhaseSection key="ks4" urn="110110" phase="ks4" />, <TeacherPhaseSection key="ks5" urn="110110" phase="ks5" />]} also={[]} />;
+}
+function AdmissionsHome() {
+  return <HomeFrame heading={null} sections={[<AdmissionsSection key="a" urn="110110" heading={<HomeHeading sub="Leighton Park School's pools, share and sets." onField />} />]} also={[]} />;
+}
+function SmtHome() {
+  return <HomeFrame heading={null} sections={[<SmtSection key="s" heading={<HomeHeading sub="Leighton Park School, as a whole." onField />} />]} also={[]} />;
+}
+function Welcome() {
+  return (
+    <FirstVisitFrame field="gcse">
+      <WelcomeContent busy={false} onGo={() => {}} />
+    </FirstVisitFrame>
+  );
+}
+
+const PAGES: Record<string, () => React.ReactElement> = {
+  "guided-feeders": () => <GuidedFrame kind="feeders" />,
+  "guided-rivals": () => <GuidedFrame kind="compared_against" />,
+  library: () => <Library />,
+  account: () => <SchoolAccountPage />,
+  membership: () => <MembershipPage />,
+  "home-teacher": () => <TeacherHome />,
+  "home-admissions": () => <AdmissionsHome />,
+  "home-smt": () => <SmtHome />,
+  welcome: () => <Welcome />,
+  setup: () => <SetupPage />,
+  walk: () => <WalkPage walkId={P.get("walk") ?? "gcse-many"} />,
+};
+
+createRoot(document.getElementById("root")!).render(PAGES[page]());
+
+// The account route's answer for the harness: the real summary (fx.account) and the membership page's view of a
+// record built from Leighton Park's real join date (no live record exists yet: the migration isn't applied).
+import { accountRows, membershipView, phasesWords, waitingCount, type MembershipRecord } from "@/lib/school-admin/membership";
+(window as unknown as { __ACC: (ms: string, today: string, waitingOnly: boolean) => unknown }).__ACC = (ms, today, waitingOnly) => {
+  const a = FX.account as Parameters<typeof accountRows>[0] & { ages: { low: number | null; high: number | null } };
+  const joined = String(FX.lpJoined).slice(0, 10);
+  const plus = (iso: string, months: number) => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() + months);
+    return d.toISOString().slice(0, 10);
+  };
+  const plan = { code: "secondary", name: "School membership", appliesTo: "secondary" as const, priceMonthPence: 1000, priceYearPence: 12000, perSchoolMonthPence: null, pilotMonths: 6 };
+  const pilotEnd = plus(joined, 6);
+  const rec: MembershipRecord | null =
+    ms === "none"
+      ? null
+      : {
+          status: ms === "active" ? "active" : "pilot",
+          plan,
+          joinedOn: joined,
+          pilotEndsOn: ms === "active" ? null : pilotEnd,
+          renewsOn: ms === "active" ? plus(pilotEnd, 12) : pilotEnd,
+          autoRenew: true,
+          coveredBy: null,
+          billingContactName: null,
+          billingContactEmail: null,
+          purchaseOrder: null,
+          invoiceAddress: null,
+          card: null,
+          invoices: ms === "active" ? [{ periodStart: pilotEnd, periodEnd: plus(pilotEnd, 12), amountPence: 12000, status: "paid", pdf: false }, { periodStart: joined, periodEnd: pilotEnd, amountPence: 0, status: "free", pdf: false }] : [{ periodStart: joined, periodEnd: pilotEnd, amountPence: 0, status: "free", pdf: false }],
+        };
+  const s = { ...a, membership: rec, membershipNotSetUp: false };
+  const rows = accountRows(s, today);
+  if (waitingOnly) return { isSchoolAdmin: true, waiting: waitingCount(rows) };
+  return { school: a.school, readOnly: false, rows, waiting: waitingCount(rows), who: { people: a.people, activeThisMonth: a.activeThisMonth, roles: a.roles }, membership: rec ? membershipView(rec, { phases: phasesWords(a.ages.low, a.ages.high), today }) : null, membershipNotSetUp: false };
+};
