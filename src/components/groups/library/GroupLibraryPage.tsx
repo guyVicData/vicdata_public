@@ -17,6 +17,7 @@ import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
 import { headlineWords, phaseWords, regionWords, rollWords, typeAndSize } from "@/lib/groups/library";
 import type { LibraryGroupPage } from "@/lib/groups/library-page";
 import { RegionArtwork } from "./GroupLibrary";
+import { AddToSet } from "./AddToSet";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 const SOURCE_WORD: Record<string, string> = { gias_groups: "GIAS", gias: "GIAS", club_iss: "Club ISS", companies_house: "Companies House", gias_proprietor: "GIAS (proprietor)" };
@@ -35,7 +36,7 @@ export function GroupLibraryPage({ id }: { id: string }) {
   const back = search.get("back");
   const q = new URLSearchParams(acc);
   q.set("id", id);
-  const load = useSmt<LibraryGroupPage & { source: string }>(`/api/group/library/group?${q.toString()}`, null);
+  const load = useSmt<LibraryGroupPage & { source: string; viewer?: { as: string; accountId: string } }>(`/api/group/library/group?${q.toString()}`, null);
   const libraryHref = `/teacher/group/groups${back ? `?${back}` : acc.toString() ? `?${acc}` : ""}`;
   return (
     <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
@@ -44,7 +45,7 @@ export function GroupLibraryPage({ id }: { id: string }) {
         <AdmissionsTeacherNav schoolUrn={null} theme={theme} onTheme={setTheme} />
         <Link href={libraryHref} className="text-[12px] font-bold text-[var(--group-accent-text)]">← Back to the groups library</Link>
         {load.status === "ready" ? (
-          <Page p={load.data} />
+          <Page p={load.data} query={acc.toString()} />
         ) : (
           <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">{load.status === "loading" ? "Loading the group…" : load.code === 404 ? "Not found." : load.message}</div>
         )}
@@ -53,7 +54,7 @@ export function GroupLibraryPage({ id }: { id: string }) {
   );
 }
 
-function Page({ p }: { p: LibraryGroupPage & { source: string } }) {
+function Page({ p, query }: { p: LibraryGroupPage & { source: string; viewer?: { as: string; accountId: string } }; query: string }) {
   const c = p.card;
   const ts = typeAndSize(c);
   const members: ConsortiumMapMember[] = useMemo(() => p.schools.filter((s) => s.easting !== null && s.northing !== null).map((s) => ({ urn: s.urn, name: s.name, easting: s.easting!, northing: s.northing!, roll: s.roll })), [p.schools]);
@@ -79,7 +80,7 @@ function Page({ p }: { p: LibraryGroupPage & { source: string } }) {
             return <div key={ph} className={h.value === null ? "italic text-[var(--muted2)]" : "font-semibold"}>{h.text}{h.value !== null && c.headline[ph]?.period ? <span className="font-normal text-[var(--muted2)]"> · {yr(c.headline[ph]!.period!)}</span> : null}</div>;
           }) : <div className="italic text-[var(--muted2)]">{headlineWords(c, "all").text}</div>}
           <div className="mt-1">
-            <button type="button" disabled title="Sets of groups come with the set picker (next round)" className="cursor-not-allowed rounded-full border border-[var(--panel-border2)] px-3 py-1 text-[12px] font-bold text-[var(--muted2)] opacity-70">Add to set…</button>
+            {!p.isUs && <AddToSet groupId={c.group_id} account={p.viewer?.accountId ?? ""} query={query} readOnly={p.viewer?.as !== "head_office"} />}
           </div>
         </div>
       </header>

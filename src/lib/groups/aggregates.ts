@@ -7,9 +7,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { cachedReference } from "../server-cache";
 import { groupFixturesDir } from "./fixture-switch";
-import { groupIndex } from "./production";
 import { displayName } from "./dash";
 import type { GroupIndex } from "./library";
+import { nearestInSize } from "./group-sets";
 
 export type Reading = "at_time" | "listed_now";
 export type Phase = "all" | "primary" | "secondary" | "post16";
@@ -77,8 +77,9 @@ export type GroupAggregate = {
   build: { build_id: number; computed_at: string; meta: BuildMeta } | null;
 };
 
-export type ComparisonKind = "peer_band" | "non_group" | "areas" | "england" | "mix_matched";
-export const COMPARISON_KINDS: ComparisonKind[] = ["peer_band", "non_group", "areas", "england", "mix_matched"];
+// 0.8 group sets (M1, M4): "sat" is production's single-academy trust pool (sat:all), state groups only.
+export type ComparisonKind = "peer_band" | "non_group" | "sat" | "areas" | "england" | "mix_matched";
+export const COMPARISON_KINDS: ComparisonKind[] = ["peer_band", "non_group", "sat", "areas", "england", "mix_matched"];
 export type ComparisonRow = { kind: ComparisonKind | "peer_named"; variant: string; set_id: string | null; label: string; reading: Reading; period: number; phase: Phase; figures: Figures };
 
 export type SchoolYearFigures = {
@@ -221,13 +222,12 @@ export async function namedCandidates(groupId: string, type: string, schools: nu
     for (const r of named) if (r.phase === "all" && !by.has(r.variant)) by.set(r.variant, { id: r.variant, label: displayName(r.label), schools: r.figures.n_schools });
     return Array.from(by.values());
   }
+  // 0.8 group sets (M4): from the library's index (one call; the listed groups only), nearest the group's
+  // own size. (The route used to pass 0 on Academic and Pupils, which sorted from the smallest group up.)
   try {
-    const all = await groupIndex();
-    return all
-      .filter((g) => g.groupId !== groupId && g.type === type && g.source !== "self_declared" && g.schools >= 2)
-      .sort((a, b) => Math.abs(a.schools - schools) - Math.abs(b.schools - schools) || b.schools - a.schools)
-      .slice(0, 12)
-      .map((g) => ({ id: g.groupId, label: displayName(g.name), schools: g.schools }));
+    const index = await groupLibraryIndex();
+    const size = schools > 0 ? schools : (index.groups.find((c) => c.group_id === groupId)?.schools ?? 0);
+    return nearestInSize(index.groups, { group_id: groupId, type, schools: size }, 12).map((g) => ({ id: g.group_id, label: displayName(g.name), schools: g.schools }));
   } catch {
     return [];
   }

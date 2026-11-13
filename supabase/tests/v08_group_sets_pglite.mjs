@@ -156,6 +156,40 @@ check("a personal set is never the default", !!e, e);
 check("deleting the default leaves none (the app falls back to the size band)", !(await err(() => as("HA", () => q(`delete from sets where id = $1`, [S1])))) && (await q(`select count(*)::int n from sets where group_account_id = $1 and is_default`, [GA])).rows[0].n === 0);
 check("…and its groups went with it", (await q(`select count(*)::int n from set_group_members where set_id = $1`, [S1])).rows[0].n === 0);
 
+console.log("\n-- M4, M5: the app's own reads and writes (group-sets-server.ts, group-store.ts)");
+// readGroupSets as head office: the caller's session, the group's account, both group kinds.
+const appRead = (who) => as(who, () => q(`select id, owner_scope, owner_profile_id from sets where group_account_id = $1 and kind in ('group_peers','group_schools') and not archived`, [GA])).then((r) => r.rows);
+const hoSees = await appRead("HO");
+check("a member's read: the group's sets and their own personal ones, no one else's", hoSees.every((r) => r.owner_scope === "group" || r.owner_profile_id === P.HO) && hoSees.some((r) => r.id === MY) && hoSees.some((r) => r.id === ADM), JSON.stringify(hoSees));
+check("…the admin's read doesn't include the member's personal sets", (await appRead("HA")).every((r) => r.id !== MY && r.id !== DUP));
+check("a school's SMT reads none of them through RLS (the server reads for it)", (await appRead("SS")).length === 0);
+const svc = await asService(() => q(`select id from sets where group_account_id = $1 and owner_scope = 'group' and kind in ('group_peers','group_schools') and not archived`, [GA]));
+check("the server's read for a granted school: the group's sets only (owner_scope = 'group')", svc.rows.length > 0 && svc.rows.every((r) => r.id !== MY && r.id !== DUP));
+// Make default, as the app does it: the old default cleared, then the new one set.
+const S2 = await save("HA", groupSet({ name: "Default A" }), G(["2157"]));
+const S3 = await save("HA", groupSet({ name: "Default B" }), G(["5143"]));
+check("Make default: an admin sets one", !(await err(() => save("HA", { is_default: true }, null, S2))));
+check("Make default on another: clear the old, set the new", !(await err(() => save("HA", { is_default: false }, null, S2))) && !(await err(() => save("HA", { is_default: true }, null, S3))));
+check("…one default for the group, the new one", JSON.stringify((await q(`select id from sets where group_account_id = $1 and kind = 'group_peers' and is_default`, [GA])).rows.map((r) => r.id)) === JSON.stringify([S3]));
+e = await err(() => save("HO", { is_default: false }, null, S3));
+check("a member can't clear the group's default", !!e, e);
+// Add to set…: the library replaces a set's groups through save_set.
+check("Add to set…: a member adds a group to their own set", !(await err(() => save("HO", {}, G(["2157", "4076"]), MY))) && (await count("HO", `select count(*) n from set_group_members where set_id = '${MY}'`)) === 2);
+e = await err(() => save("HO", {}, G(["2157"]), S3));
+check("…but not to a group set (a member)", !!e, e);
+e = await err(() => save("HO", {}, G(["g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8", "g9"]), MY));
+check("…and never a ninth group", !!e && /at most 8/.test(e), e);
+// Archive (frees a personal slot; an archived default is no default).
+check("Archive: an admin archives the default (and unsets it)", !(await err(() => save("HA", { archived: true, is_default: false }, null, S3))) && (await q(`select count(*)::int n from sets where group_account_id = $1 and is_default and not archived`, [GA])).rows[0].n === 0);
+// The cap counts every active personal set, of any kind.
+check("My sets n of 8: the member's active personal sets, every kind", (await count("HO", `select count(*) n from sets where owner_scope = 'personal' and owner_profile_id = '${P.HO}' and not archived`)) === 2);
+// Share with the group works for a subset too (D6: of groups or of schools).
+const MYSUB = await save("HA", { name: "My secondaries", kind: "group_schools", owner_scope: "personal", owner_profile_id: P.HA, group_account_id: GA, creator_kind: "me" }, [{ urn: "100001" }]);
+check("Share with the group moves a personal subset too", !(await err(() => as("HA", () => q(`select share_set_with_group($1)`, [MYSUB])))) && (await q(`select owner_scope from sets where id = $1`, [MYSUB])).rows[0].owner_scope === "group");
+check("…and the member now reads its school", (await count("HO", `select count(*) n from set_members where set_id = '${MYSUB}'`)) === 1);
+// Duplicate of a subset (a personal copy of the group's subset).
+check("Duplicate a subset as a member's own", !!(await save("HO", { name: "Copy of secondaries", kind: "group_schools", owner_scope: "personal", owner_profile_id: P.HO, group_account_id: GA, creator_kind: "me" }, [{ urn: "100001" }])));
+
 console.log("\n-- school sets are unchanged");
 const LS = await save("LL", { name: "Rivals 11+", kind: "compared_against", entry_point: "11+", owner_scope: "school", school_account_id: LP, creator_kind: "admissions" }, [{ urn: "100001" }, { urn: "110110", tier: null }]);
 check("the Admissions lead still saves a school set with its schools", !!LS && (await count("LL", `select count(*) n from set_members where set_id = '${LS}'`)) === 2);

@@ -7,7 +7,8 @@
 
 /** The pages that open the set editor, so the only places it returns to. A prefix matches the page and
  * anything under it (`/sets` matches `/sets/abc`), never a longer name (`/setsX`). */
-export const RETURN_PREFIXES = ["/teacher/admissions", "/teacher/ks4", "/teacher/ks5", "/teacher/smt", "/sets"] as const;
+// 0.8 group sets (M4, R-SETS-WAY-BACK): the Group pages and the groups library open the editor too.
+export const RETURN_PREFIXES = ["/teacher/admissions", "/teacher/ks4", "/teacher/ks5", "/teacher/smt", "/teacher/group", "/sets"] as const;
 
 const MAX_LENGTH = 2000;
 // Any parse base will do: it only has to be an origin that no input can reach by itself.
@@ -43,10 +44,10 @@ export function safeReturnTo(raw: string | null | undefined): string | null {
 // origin (so nothing is added and browser back agrees), otherwise replacing the editor's entry. Save
 // going back hands the saved set's id to the origin through sessionStorage (the handover below).
 
-export type SetsProduct = "admissions" | "smt" | "teacher";
+export type SetsProduct = "admissions" | "smt" | "teacher" | "group";
 
 export type ReturnContext = {
-  kind: "compared_against" | "feeders";
+  kind: "compared_against" | "feeders" | "group_peers" | "group_schools";
   entry: string;
   phase: "ks4" | "ks5" | null;
   product: SetsProduct;
@@ -93,6 +94,8 @@ export function returnLabel(returnTo: string, c: ReturnContext): string {
   }
   if (underPrefix(p, "/teacher/ks4") || underPrefix(p, "/teacher/ks5")) return `Back to ${c.schoolName} · ${PHASE_WORD[p.startsWith("/teacher/ks5") ? "ks5" : "ks4"]}`;
   if (underPrefix(p, "/teacher/smt")) return c.phase ? `Back to SMT · ${PHASE_WORD[c.phase]}` : "Back to SMT";
+  // 0.8 group sets: "Back to Harris Federation · Overview" (schoolName carries the group's name here).
+  if (underPrefix(p, "/teacher/group")) return `Back to ${c.schoolName} · ${groupPageWord(p)}`;
   if (p === "/sets") return "Back to Sets";
   if (p === "/sets/default") return `Back to ${q.get("name") || "the set"}`;
   return `Back to ${c.originSetName || "the set"}`;
@@ -216,6 +219,10 @@ export function safeDashboardReturn(raw: string | null | undefined): string | nu
   return ok && underPrefix(new URL(ok, BASE).pathname, "/teacher") ? ok : null;
 }
 
+const GROUP_PAGE: Record<string, string> = { "/teacher/group/overview": "Overview", "/teacher/group/schools": "Schools", "/teacher/group/academic": "Academic", "/teacher/group/pupils": "Pupils", "/teacher/group/groups": "Groups library" };
+/** A Group page's name from its path ("Overview"; a group's own page in the library is "Groups library"). */
+export const groupPageWord = (p: string) => GROUP_PAGE[p.replace(/\/$/, "")] ?? (p.startsWith("/teacher/group/groups/") ? "Groups library" : "Group");
+
 const SMT_PAGE: Record<string, string> = { "/teacher/smt": "SMT", "/teacher/smt/academic": "SMT Academic", "/teacher/smt/pupils": "SMT Pupils", "/teacher/smt/context": "SMT Context" };
 
 /** "Back to Pipelines", "Back to Market share", "Back to GCSE results", "Back to SMT Academic"… named
@@ -227,6 +234,7 @@ export function dashboardLabel(returnTo: string): string {
   if (underPrefix(p, "/teacher/ks4")) return "Back to GCSE results";
   if (underPrefix(p, "/teacher/ks5")) return "Back to Post-16 results";
   if (underPrefix(p, "/teacher/smt")) return `Back to ${SMT_PAGE[p.replace(/\/$/, "")] ?? "SMT"}`;
+  if (underPrefix(p, "/teacher/group")) return `Back to ${groupPageWord(p)}`;
   return "Back to dashboard";
 }
 

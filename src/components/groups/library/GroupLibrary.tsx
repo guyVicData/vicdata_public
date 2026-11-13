@@ -6,7 +6,7 @@
 // headline for the phase in view against England. "Groups like us" is the default view. Filters: type,
 // size band, region (most schools in / has a school in), phases, search; sort. On a phone the cards are
 // one column and the filters a bottom sheet. Head office only; the server decides (/api/group/library).
-// Each card opens the group's page (GroupLibraryPage); Add to set… arrives with the set picker (M4).
+// Each card opens the group's page (GroupLibraryPage); Add to set… (M4) adds it to a set of groups.
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTeacherTheme } from "@/components/shell/TeacherChrome";
@@ -16,6 +16,7 @@ import { useWidth } from "@/components/admissions/views/charts";
 import { GroupViewAsBanner } from "@/components/groups/GroupViewAsBanner";
 import { groupDashVars } from "@/components/groups/dash/GroupDashboard";
 import { useSmt } from "@/components/smt/api";
+import { AddToSet } from "./AddToSet";
 import { displayName, FOCUS_LABEL, REGION_NAMES, type Focus } from "@/lib/groups/dash";
 import {
   DEFAULT_FILTER, filterFromQuery, filterToQuery, headlineWords, LIBRARY_TYPES, libraryCards, likeUsWords, phaseWords, regionWords, rollWords,
@@ -166,7 +167,7 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
         <div className="rounded-[12px] border border-dashed border-[var(--panel-border2)] p-6 text-center text-[13px] text-[var(--muted2)]">No groups match. Clear a filter, or turn off Groups like us.</div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-          {cards.slice(0, shown).map((c) => <Card key={c.group_id} c={c} focus={f.focus} acc={acc} />)}
+          {cards.slice(0, shown).map((c) => <Card key={c.group_id} c={c} focus={f.focus} acc={acc} account={d.viewer.accountId} readOnly={d.viewer.as !== "head_office"} />)}
         </div>
       )}
       {shown < cards.length && (
@@ -231,7 +232,7 @@ function Filters({ f, set, us }: { f: LibraryFilter; set: (p: Partial<LibraryFil
   );
 }
 
-function Card({ c, focus, acc }: { c: IndexCard; focus: Focus; acc: string }) {
+export function Card({ c, focus, acc, account, readOnly }: { c: IndexCard; focus: Focus; acc: string; account: string; readOnly: boolean }) {
   const ts = typeAndSize(c);
   const h = headlineWords(c, focus);
   const name = displayName(c.name);
@@ -256,9 +257,7 @@ function Card({ c, focus, acc }: { c: IndexCard; focus: Focus; acc: string }) {
       </div>
       <div className="mt-auto flex items-center justify-between gap-2 pt-1">
         <Link href={href} className="text-[12px] font-bold text-[var(--group-accent-text)]">Open →</Link>
-        <button type="button" disabled title="Sets of groups come with the set picker (next round)" className="cursor-not-allowed rounded-full border border-[var(--panel-border2)] px-3 py-1 text-[12px] font-bold text-[var(--muted2)] opacity-70">
-          Add to set…
-        </button>
+        <AddToSet groupId={c.group_id} account={account} query={acc} readOnly={readOnly} />
       </div>
     </article>
   );

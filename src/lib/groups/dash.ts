@@ -9,6 +9,7 @@ import { SHAPE_LABELS } from "../data-view-cards";
 import type { AgeGenderCounts } from "../roll-data";
 import type { ComparisonKind, ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, Reading, SchoolYearRow } from "./aggregates";
 import { competitionRanks } from "../rank";
+import { GROUP_SET_CAP, groupsWord, medianOf, notPublished, ofGroupsWords } from "./group-sets";
 
 export type Focus = Phase;
 export const FOCI: Focus[] = ["all", "primary", "secondary", "post16"];
@@ -128,23 +129,29 @@ export function notCountedWords(by: Record<string, number>): string | null {
   return `${parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0]} not counted`;
 }
 
+export const SAT_NOTE = "Schools that are single-academy trusts (an academy trust of one school), pooled: production's own benchmark, kept apart from non-group schools so no school counts twice.";
+export const GROUP_TYPE_SHORT: Record<string, string> = { mat: "MAT", federation: "Federation", foundation_trust: "Foundation trust", independent_company: "Independent company", independent_charity: "Independent charity", independent_other: "Other independent group" };
+export const typeSizeWords = (type: string, schools: number) => `${GROUP_TYPE_SHORT[type] ?? GROUP_TYPE_LABEL[type] ?? type} · ${schools.toLocaleString("en-GB")} school${schools === 1 ? "" : "s"}`;
+const schoolsCount = (n: number | null) => (n === null ? "…" : `${n.toLocaleString("en-GB")} school${n === 1 ? "" : "s"}`);
+
 export const NON_GROUP_STATE_NOTE = "State schools in England in no listed group (MAT, federation or foundation trust of 2 or more schools) and not a single-academy trust: mostly LA-maintained schools. Single-academy trusts are a benchmark of their own.";
 
-/** "peer_named:3317,4072" (up to three) or a kind; anything else is the default. */
+/** "peer_named:3317,4072" (a set of groups: up to GROUP_SET_CAP, 0.8 group sets) or a kind; anything
+ * else is the default. The page's address keys (group-sets.ts) resolve to one of these. */
 export function parseCompare(raw: string | null | undefined): CompareKey {
   if (!raw) return DEFAULT_COMPARE;
   if (raw.startsWith("peer_named:")) {
-    const ids = raw.slice(11).split(",").map((s) => s.trim()).filter((s) => /^[\w:.-]{1,80}$/.test(s)).slice(0, 3);
+    const ids = raw.slice(11).split(",").map((s) => s.trim()).filter((s) => /^[\w:.-]{1,80}$/.test(s)).slice(0, GROUP_SET_CAP);
     return ids.length ? (`peer_named:${ids.join(",")}` as CompareKey) : DEFAULT_COMPARE;
   }
-  return (["peer_band", "non_group", "areas", "england", "mix_matched"] as const).includes(raw as ComparisonKind) ? (raw as ComparisonKind) : DEFAULT_COMPARE;
+  return (["peer_band", "non_group", "sat", "areas", "england", "mix_matched"] as const).includes(raw as ComparisonKind) ? (raw as ComparisonKind) : DEFAULT_COMPARE;
 }
 export const namedIds = (k: CompareKey): string[] => (k.startsWith("peer_named:") ? k.slice(11).split(",") : []);
 
 /** The lookup kinds a page asks for: every standard kind (the Against others table shows them all),
  * plus the named groups picked. */
 export function kindsFor(k: CompareKey): string[] {
-  return ["peer_band", "non_group", "areas", "england", "mix_matched", ...namedIds(k).map((id) => `peer_named:${id}`)];
+  return ["peer_band", "non_group", "sat", "areas", "england", "mix_matched", ...namedIds(k).map((id) => `peer_named:${id}`)];
 }
 
 // ----------------------------------------------------------------------------------------- helpers
@@ -241,7 +248,7 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
     s.rows.push({ period: r.period, phase: r.phase, figures: pooled ? withheld(r.figures) : r.figures });
     by.set(key, s);
   }
-  const order = ["peer_band:band", "non_group:england", "non_group:areas", "areas:la", "areas:region", "england:england", "mix_matched:non_group"];
+  const order = ["peer_band:band", "non_group:england", "non_group:areas", "sat:england", "areas:la", "areas:region", "england:england", "mix_matched:non_group"];
   const sorted = Array.from(by.values()).sort((a, b) => {
     const ia = order.indexOf(a.key);
     const ib = order.indexOf(b.key);
@@ -253,7 +260,7 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
 /** The set the trends compare against, for a choice. */
 export function chosenSets(sets: SetRef[], k: CompareKey): SetRef[] {
   if (k.startsWith("peer_named:")) return namedIds(k).map((id) => sets.find((s) => s.key === `peer_named:${id}`)).filter((s): s is SetRef => !!s);
-  const key = { peer_band: "peer_band:band", non_group: "non_group:england", areas: "areas:la", england: "england:england", mix_matched: "mix_matched:non_group" }[k as ComparisonKind];
+  const key = { peer_band: "peer_band:band", non_group: "non_group:england", sat: "sat:england", areas: "areas:la", england: "england:england", mix_matched: "mix_matched:non_group" }[k as ComparisonKind];
   const s = sets.find((x) => x.key === key);
   return s ? [s] : [];
 }
@@ -261,7 +268,29 @@ export function chosenSets(sets: SetRef[], k: CompareKey): SetRef[] {
 // --------------------------------------------------------------------------------- the overview
 
 export type AgainstCell = { value: number | null; n: number | null; average: number | null; tooFew?: boolean };
-export type AgainstRow = { key: string; label: string; kind: SetRef["kind"]; schools: number | null; roll: { pct: number | null; years: number }; growing: { pct: number | null; n: number; of: number }; cells: Record<string, AgainstCell> };
+export type AgainstRow = { key: string; label: string; kind: SetRef["kind"]; schools: number | null; pupils: number | null; roll: { pct: number | null; years: number }; growing: { pct: number | null; n: number; of: number }; cells: Record<string, AgainstCell> };
+
+/** 0.8 group sets (M4): a set of groups as the page uses it -- the address key, its name, where it came
+ * from (nearest in size, a stored set, or an unsaved one from an old link) and its groups, each with the
+ * type and size the library knows (the index card). */
+export type GroupSetInput = { key: string; name: string; source: "nearest" | "set" | "unsaved"; setId: string | null; scope: "group" | "personal" | null; groups: { id: string; label: string; type: string; schools: number }[] };
+
+/** One row of the side-by-side table: a group with its type and size, and its same-type rank. */
+export type SideRow = AgainstRow & { ours: boolean; type: string; typeSize: string; rank: string | null; missing: boolean; notPublished: string[] };
+export type MedianCell = { value: number | null; average: number | null; n: number; of: number };
+export type SideBySide = {
+  columns: string[];
+  rows: SideRow[];
+  median: { label: string; mixed: boolean; n: number; schools: number | null; pupils: number | null; roll: number | null; growing: number | null; cells: Record<string, MedianCell> };
+  england: AgainstRow | null;
+};
+/** The picker's Default block: computed, never stored (brief §5.2). */
+export type PickerRow = { key: string; name: string; countText: string; title: string };
+export type Picker = { key: string; name: string; countText: string; short: string; defaults: PickerRow[]; set: GroupSetInput | null };
+
+const cap1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+/** The size band's name in the picker: "MATs with 41+ schools", or "All foundation trusts" (D4). */
+export const bandSetName = (peer: { type: string; band: string; n_groups?: number }) => (peer.band === "all" ? peerWords(peer).set : cap1(peerWords(peer).place));
 
 export type GroupOverview = {
   kind: "overview";
@@ -285,6 +314,9 @@ export type GroupOverview = {
     rollExcluded: Excluded[];
   };
   against: { columns: string[]; rows: AgainstRow[]; counts: string; place: string | null; mixAvailable: boolean };
+  /** 0.8 group sets (M4): the set picker's state, and a set of groups side by side (null for a pool). */
+  picker: Picker;
+  sideBySide: SideBySide | null;
   peerPlaces: Record<string, Place>;
   trends: {
     roll: { lines: { key: string; label: string; pts: Pt[] }[] };
@@ -312,6 +344,7 @@ function againstRows(sets: SetRef[], focus: Focus, measures: string[], latest: R
       label: s.label,
       kind: s.kind,
       schools: now?.n_schools ?? null,
+      pupils: now?.roll ?? null,
       roll: { pct: ch5?.same_schools_pct ?? null, years: 5 },
       growing: { pct: ch3 && of ? Math.round((1000 * ch3.growing) / of) / 10 : null, n: ch3?.growing ?? 0, of },
       cells,
@@ -319,7 +352,7 @@ function againstRows(sets: SetRef[], focus: Focus, measures: string[], latest: R
   });
 }
 
-export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow[]; compare: CompareKey; focus: Focus; namedLabels?: Record<string, string>; name?: string }): GroupOverview {
+export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow[]; compare: CompareKey; focus: Focus; namedLabels?: Record<string, string>; name?: string; groupSet?: GroupSetInput | null; addressKey?: string; nearest?: { id: string }[] }): GroupOverview {
   const { agg, comps, focus } = input;
   const reading = agg.reading;
   const name = input.name ?? displayName(agg.group.name);
@@ -367,13 +400,69 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
   const options = [
     ...(peer ? [opt("peer_band", "peer_band:band", peerWords(peer).set, peerWords(peer).info(name))] : []),
     opt("non_group", "non_group:england", "Non-group schools", sector === "independent" ? "Standalone independent schools in England (in no independent group of 2 or more schools)." : NON_GROUP_STATE_NOTE),
+    ...(sector === "state" && sets.some((s) => s.key === "sat:england") ? [opt("sat", "sat:england", "Single-academy trusts", SAT_NOTE)] : []),
     opt("areas", "areas:la", `All schools in ${name}’s areas`, `Every school in the LAs where ${name}’s schools sit, weighted to ${name}’s pupils in each.`),
     opt("england", "england:england", englandWords(sector).label, englandWords(sector).info),
     opt("mix_matched", "mix_matched:non_group", mixMatchedLabel(name), `Non-group schools in ${name}’s regions, reweighted to its mix of phases and regions, so the gap isn’t geography.`),
-    ...namedIds(input.compare).map((id) => opt(`peer_named:${id}` as CompareKey, `peer_named:${id}`, input.namedLabels?.[id] ?? sets.find((s) => s.key === `peer_named:${id}`)?.label ?? id, "A named group of the same type, its own figures.")),
+    ...namedIds(input.compare).map((id) => opt(`peer_named:${id}` as CompareKey, `peer_named:${id}`, input.groupSet?.groups.find((g) => g.id === id)?.label ?? input.namedLabels?.[id] ?? sets.find((s) => s.key === `peer_named:${id}`)?.label ?? id, "A named group, its own figures.")),
   ];
   const chosen = chosenSets(sets, input.compare);
-  const cmpLabel = input.compare.startsWith("peer_named:") ? chosen.map((s) => s.label).join(", ") || "named groups" : (options.find((o) => o.key === input.compare)?.label ?? "Peer groups");
+
+  // 0.8 group sets (M4): the picker's Default block (brief §5.2), computed here from the same sets.
+  const ngKey = `non_group:${sector}`;
+  const defaults: PickerRow[] = [];
+  if (peer) defaults.push({ key: peer.set_id, name: bandSetName(peer), countText: groupsWord(peer.n_groups), title: peerWords(peer).info(name) });
+  defaults.push({ key: ngKey, name: "Non-group schools", countText: schoolsCount(nOf("non_group:england")), title: sector === "independent" ? "Standalone independent schools in England (in no independent group of 2 or more schools)." : NON_GROUP_STATE_NOTE });
+  if (sector === "state" && sets.some((s) => s.key === "sat:england")) defaults.push({ key: "sat:all", name: "Single-academy trusts", countText: schoolsCount(nOf("sat:england")), title: SAT_NOTE });
+  defaults.push({ key: "areas:la", name: `All schools in ${name}’s areas`, countText: schoolsCount(nOf("areas:la")), title: `Every school in the LAs where ${name}’s schools sit, weighted to ${name}’s pupils in each.` });
+  defaults.push({ key: "england:all", name: englandWords(sector).label, countText: schoolsCount(nOf("england:england")), title: englandWords(sector).info });
+  if (input.nearest?.length) defaults.push({ key: "nearest", name: "Nearest in size, same type", countText: groupsWord(input.nearest.length), title: `The ${input.nearest.length} ${PEER_PLURAL[agg.group.type] ?? "groups"} nearest ${name} in size, side by side, with their median.` });
+  const pickerKey = input.groupSet?.key ?? input.addressKey ?? (peer?.set_id ?? ngKey);
+  const pooledRow = defaults.find((x) => x.key === pickerKey) ?? null;
+  const cmpLabel = input.groupSet ? input.groupSet.name : input.compare.startsWith("peer_named:") ? chosen.map((s) => s.label).join(", ") || "named groups" : (pooledRow?.name ?? options.find((o) => o.key === input.compare)?.label ?? "Peer groups");
+  const picker: Picker = {
+    key: pickerKey,
+    name: cmpLabel,
+    countText: input.groupSet ? groupsWord(input.groupSet.groups.length) : (pooledRow?.countText ?? ""),
+    short: input.compare === "peer_band" ? "peers" : cmpLabel,
+    defaults,
+    set: input.groupSet ?? null,
+  };
+
+  // 0.8 group sets (M4, brief §5.3): a set of groups side by side -- our group first, each group with its
+  // type, size and same-type rank (R-GROUP-RANK-SAME-TYPE), then the set's median (one vote per group with
+  // a figure, "n of m groups"; "mixed types" when the set mixes them; a measure a type never publishes
+  // reads "not published" and the row stays). Every figure is the group's own, from production.
+  let sideBySide: SideBySide | null = null;
+  if (input.groupSet) {
+    const byKey = new Map(rows.map((r) => [r.key, r]));
+    const rankIn = (rs: { period: number; phase: Phase; figures: Figures }[]): string | null => {
+      if (hy === null) return null;
+      const f = rs.find((r) => r.period === hy && r.phase === MEASURE_PHASE[headline])?.figures;
+      const p = f?.peer?.places?.[headline];
+      return p && f?.peer ? `${ordinal(p.rank, p.tied)} of ${p.of} ${peerWords(f.peer).place}` : null;
+    };
+    const ours: SideRow = { ...rows[0], ours: true, type: agg.group.type, typeSize: typeSizeWords(agg.group.type, agg.membership.confirmed + agg.membership.likely), rank: rankIn(agg.rows), missing: false, notPublished: measures.filter((m) => notPublished(agg.group.type, m)) };
+    const groupRows: SideRow[] = input.groupSet.groups.map((g) => {
+      const r = byKey.get(`peer_named:${g.id}`);
+      const set = sets.find((x) => x.key === `peer_named:${g.id}`);
+      const base: AgainstRow = r ?? { key: `peer_named:${g.id}`, label: g.label, kind: "peer_named", schools: null, pupils: null, roll: { pct: null, years: 5 }, growing: { pct: null, n: 0, of: 0 }, cells: {} };
+      return { ...base, label: g.label, ours: false, type: g.type, typeSize: typeSizeWords(g.type, g.schools), rank: set ? rankIn(set.rows) : null, missing: !r, notPublished: measures.filter((m) => notPublished(g.type, m)) };
+    });
+    const have = groupRows.filter((r) => !r.missing);
+    const cells: Record<string, MedianCell> = {};
+    for (const m of measures) {
+      const vals = have.map((r) => r.cells[m]?.value ?? null);
+      cells[m] = { value: medianOf(vals), average: medianOf(have.map((r) => r.cells[m]?.average ?? null)), n: vals.filter((v) => v !== null).length, of: groupRows.length };
+    }
+    const types = new Set(input.groupSet.groups.map((g) => g.type));
+    sideBySide = {
+      columns: measures,
+      rows: [ours, ...groupRows],
+      median: { label: `Median of the set · ${ofGroupsWords(have.length, groupRows.length)}`, mixed: types.size > 1, n: have.length, schools: medianOf(have.map((r) => r.schools)), pupils: medianOf(have.map((r) => r.pupils)), roll: medianOf(have.map((r) => r.roll.pct)), growing: medianOf(have.map((r) => r.growing.pct)), cells },
+      england: byKey.get("england:england") ? { ...byKey.get("england:england")!, label: englandWords(sector).label } : null,
+    };
+  }
 
   // Trends: like-for-like roll index, the group against the chosen set(s); results by phase; share.
   const lineOf = (s: SetRef, phase: Phase) => chainedIndex(s.rows.filter((r) => r.phase === phase).sort((a, b) => a.period - b.period));
@@ -401,7 +490,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
     group: { id: agg.group.group_id, name, typeLabel: GROUP_TYPE_LABEL[agg.group.type] ?? agg.group.type, type: agg.group.type, sources: agg.membership.sources, asOf: agg.membership.as_of, confirmed: agg.membership.confirmed, likely: agg.membership.likely, outsideEngland: agg.membership.outside_england },
     reading,
     focus,
-    compare: { key: input.compare, label: cmpLabel, n: chosen[0] ? nOf(chosen[0].key) : null, options },
+    compare: { key: input.compare, label: cmpLabel, n: input.groupSet ? null : chosen[0] ? nOf(chosen[0].key) : null, options },
     years: { census, first, results: latest },
     now: {
       schools: ph.n_schools,
@@ -424,6 +513,8 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
       rollExcluded: excludedRoll,
     },
     against: { columns: measures, rows, counts, place, mixAvailable: sets.some((s) => s.kind === "mix_matched") },
+    picker,
+    sideBySide,
     peerPlaces: places,
     trends: {
       roll: { lines: rollLines },

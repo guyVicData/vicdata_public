@@ -12,12 +12,12 @@
   "group_index_lookup()": "group_index_lookup.json",
   "group_aggregate_lookup('3320', 'at_time' | 'listed_now')": "harris_group_aggregate_lookup_<reading>.json",
   "group_comparison_lookup('3320', [\"peer_band\",\"non_group\",\"sat\",\"areas\",\"england\",\"mix_matched\"])": "harris_group_comparison_lookup.json",
-  "group_comparison_lookup('3320', [\"peer_named:2157\",\"peer_named:5143\"])": "harris_group_comparison_lookup_named.json",
   "group_schools_year_lookup('3320')": "harris_group_schools_year_lookup.json",
   "group_aggregate_lookup('club_iss:dukes-education', 'at_time' | 'listed_now')": "dukes_group_aggregate_lookup_<reading>.json",
   "group_comparison_lookup('club_iss:dukes-education', [\"peer_band\",\"non_group\",\"sat\",\"areas\",\"england\",\"mix_matched\"])": "dukes_group_comparison_lookup.json",
-  "group_comparison_lookup('club_iss:dukes-education', [\"peer_named:ch:01550681\"])": "dukes_group_comparison_lookup_named.json",
-  "group_schools_year_lookup('club_iss:dukes-education')": "dukes_group_schools_year_lookup.json"
+  "group_schools_year_lookup('club_iss:dukes-education')": "dukes_group_schools_year_lookup.json",
+  "group_comparison_lookup('3320', [\"peer_named:2157\",\"peer_named:5143\", + 8 more])": "harris_group_comparison_lookup_named.json",
+  "group_comparison_lookup('club_iss:dukes-education', [\"peer_named:ch:01550681\", + 5 more])": "dukes_group_comparison_lookup_named.json"
  },
  "files": [
   "harris_group_aggregate_lookup_at_time.json",
@@ -31,5 +31,26 @@
   "harris_group_comparison_lookup_named.json",
   "dukes_group_comparison_lookup_named.json",
   "group_index_lookup.json"
- ]
+ ],
+ "named_m4": {
+  "note": "0.8 group sets M4 (13 Nov 2026): the named files gained more groups for sets of groups (nearest in size, a mixed-type set), read from production's group_comparison_lookup (anon, read-only, the app's own call). The groups already here were re-read and are identical value for value, so production and these fixtures agree.",
+  "harris_added": [
+   "4076",
+   "2053",
+   "4474",
+   "4127",
+   "4320",
+   "4124",
+   "3586",
+   "1337"
+  ],
+  "dukes_added": [
+   "ch:16134999",
+   "club_iss:cognita",
+   "club_iss:inspired-education",
+   "ch:07391840",
+   "club_iss:girls-day-school-trust"
+  ],
+  "read_at": "2026-11-13"
+ }
 }

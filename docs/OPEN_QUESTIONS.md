@@ -2877,3 +2877,82 @@ Leighton Park) keeps its key `(set_id, urn)`, its `on conflict` and its save pat
 takes `{ "group_id": ... }` elements for a set of groups and writes them there; triggers keep groups out of
 school sets (and schools out of a set of groups) and cap a set at 8 groups. Less risk to the school sets
 already in use; the same RLS (`can_read_set` / `can_write_set`). Accepted by Guy, 8 Nov.
+
+## 2026-11-13: group sets M4–M6
+
+The round's calls (`docs/v0.8/vicdata_0_8_group_sets_m4_m6_claude_code_prompt_v1.md`, unattended; the
+report is `docs/v0.8/group_sets_report_v1.md`). Each is the most reasonable reading; say if one is wrong.
+
+**Before M4**
+1. **Merge.** `main` (d691f42) merged into the branch as `fa79371`, no conflicts. Fetched over the
+   checkout's own remote (SSH, `github-guyvicdata`), not HTTPS: the same repository.
+2. **§2 re-check (brief v2, "What's real today").** The facts hold; the line numbers moved:
+   - the Compared-against `PillMenu`: `GroupDashboard.tsx:221-254` (was 214-248);
+   - the compare keys: `dash.ts:104` (`CompareKey`), `:134` (`parseCompare`), `:146` (`kindsFor`) (was 92-110);
+   - the named-group chips and the Mix-matched toggle: `views.tsx:179-198` (was 168-181);
+   - the Schools tab ignoring the pill: `api/group/dash/route.ts:43`; the sort bug (`namedCandidates(…, 0)`):
+     `:47`. Both as described;
+   - `RETURN_PREFIXES` (`return-to.ts:10`) has no `/teacher/group`; `ReturnContext` is school-centred (`:48`).
+   - Not in the brief's §2 but real: the M3 library (index fixture, `group_index_lookup`), and the
+     comparison fixtures already carry `sat:all` rows (state groups).
+3. **Production's branch:** `~/dev/vicdata` `origin/main` (437a211) still contains `b190b91`.
+4. **Live row counts (read-only):** `group_accounts` 0, `group_memberships` 0, `sets` 6 (99 members, one
+   school account: Leighton Park). Unchanged: no group uses the site yet.
+
+**M4**
+5. **More named groups in the fixtures, from production.** The Harris and Dukes `*_named.json` files held 2
+   and 1 groups: too few for "Nearest in size" (5) or a band (4+). I read 8 more for Harris (the 5 nearest
+   MATs, 2 more MATs, a foundation trust) and 5 more for Dukes (incl. a charity) from production's
+   `group_comparison_lookup`, anon and read-only, the app's own call. The groups already in the files were
+   re-read and are identical value for value (and so is Harris's standard comparison file, 448 rows), so
+   production and the fixtures agree. Noted in `manifest.json` (`named_m4`).
+6. **Address keys.** `?compare=` holds production's set ids for the pools (`peer:mat:41+`, `non_group:state`,
+   `sat:all`, `areas:la`) and `england:all` (labelled by sector, E1/E2); `nearest` for "Nearest in size,
+   same type" (resolved to the 5 ids each time, so an old link never goes stale); `set:<uuid>` for a stored
+   set; `peer_named:a,b` for an unsaved set (up to 8 now, was 3). Absent: the group's default set, else the
+   size band (D8). Old keys map: `peer_band` → the band, `non_group` → non-group, `areas` → `areas:la`,
+   `england` → `england:all`, **`mix_matched` → non-group** (mix-matched has no picker row; it stays a row of
+   its own in Against others, now always shown since its toggle went with the chips).
+7. **"Head office" colour.** Group sets use the existing `group` creator (the group accent) labelled "Head
+   office", rather than a new creator kind: a new `CreatorKind` would have touched every school page's
+   creator maps. Its own colour on the Group pages, as asked.
+8. **Make default** is two `save_set` calls (clear the old default, then set the new): no new database
+   function, so no change to the M2 migration. If the second fails the page falls back to the size band,
+   never two defaults (the unique index). Admins also get **"Make the size band the default"** (clears it),
+   since D8 has no other way back. Both in the picker and in Manage sets.
+9. **Against others with a set of groups** is the side-by-side table only, with England as a muted reference
+   row under the median; the pooled rows (peers, non-group, SAT, areas, mix-matched) show when a pool is
+   chosen. The "Growing faster than …" flag compares with the set's median there.
+10. **Same-type rank wording** uses production's place as it stands ("1st of 13 MATs with 41+ schools": 13
+    of the band's 16 have an Attainment 8 that year), on every row of the side-by-side table.
+11. **"Not published"**: an independent group's Progress 8 and KS2 (DfE publishes neither); any other missing
+    figure is a dash. A group in a stored set that is no longer listed keeps its row with "no figures".
+12. **The median** is of the set's groups only (never ours), one vote per group with a figure; the trend
+    band (25th–75th percentile) is drawn after the index is re-based, so it follows the chart's base year,
+    and only in years with 4+ groups with a figure.
+13. **No picker on Schools** (it gets Showing in M5). Pupils' Now shows roll and change side by side;
+    Academic's Results now shows the phase headline side by side under its tiles, with the median and England.
+14. **Who sees what.** Head office reads its sets with its own session (RLS); a member school's SMT, View as
+    and a peek read the group's sets with the service role after `dashViewer` (never anyone's personal
+    sets), and get no actions and no My sets (D2). The library's "Add to set…" is disabled for them.
+15. **The editor and Manage sets in group mode** are their own components (`GroupSetEditor.tsx`,
+    `GroupSetsLibrary.tsx`), opened from `/sets/edit` and `/sets` when the address has `?account=` (and a group
+    kind): the school editor, library and set view are untouched (parity). There is no `/sets/<id>` page for a
+    group set: Manage sets opens the editor (read-only where you can't change it).
+16. **`namedCandidates` rebuilt on the library's index** (one call, the listed groups) and sorted by the
+    group's own size: this fixes the Academic/Pupils sort (they passed 0) and stops the England-wide
+    `groupIndex()` scan. The dash route no longer sends `candidates` (nothing draws them).
+17. **R-FEATURED-ROW-EVERYWHERE** failed on the base already (M3's library page lists another group's schools
+    with no focus row); that page and the group-mode editor are now listed in `NO_FOCUS_ROWS` with why. The
+    unit test F-22 passes again.
+18. **Parity for M4 and M5** is a server-render parity of the shared sets code school pages use (SetSelector
+    in 24 states, the creator pills and header line, every way-back rule over 20 addresses) on the base tree
+    against the branch: identical except `RETURN_PREFIXES` gaining `/teacher/group`. The browser harnesses
+    (Teacher, Admissions, SMT) run once on the finished branch in M6, against the same base.
+19. **Pre-existing failures, not this round's** (identical on the base, `fa79371`): 6 unit tests
+    (`editor-guarantees` 4, `featured-row` 1 — now fixed, `viewspec` 1) and 2 in `v08_view_as_editing_pglite`,
+    all from SMT Academic's views not yet registered (`DV-SMT-A-SUBJECTS`, `-VA`, `-BANDS`) or the preset doc;
+    R-REPORT-COMMANDS-ORDER on `group_sets_m1_report_v1.md` (no seven-step commands; fixed with this round's
+    report).
+20. **Headless Chrome.** The installed Google Chrome (157) dies at start-up here ("Failed to get the path for
+    1001"); the harness uses Playwright's headless Chromium (131) in the session scratchpad.

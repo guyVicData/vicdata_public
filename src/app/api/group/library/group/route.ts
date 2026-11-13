@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const card = index.groups.find((c) => c.group_id === id);
     if (!card) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const [agg, schools] = await Promise.all([groupAggregate(id, "at_time"), groupSchoolsYear(id)]);
-    return NextResponse.json({ source: groupDataSource(), ...libraryGroupPage(card, agg, schools, index.groups.find((c) => c.group_id === who.viewer.groupId) ?? null) });
+    return NextResponse.json({ source: groupDataSource(), viewer: { as: who.viewer.as, accountId: who.viewer.account.id }, ...libraryGroupPage(card, agg, schools, index.groups.find((c) => c.group_id === who.viewer.groupId) ?? null) });
   } catch (err) {
     console.error("[group/library/group] failed:", err);
     return NextResponse.json({ error: "Could not read the group." }, { status: 502 });

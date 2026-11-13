@@ -28,12 +28,12 @@ async function seatsOf(supabase: SupabaseClient, userId: string): Promise<School
 
 /** The viewer for ?account=, or the response to send instead (401 signed out; 404 for everyone else
  * not allowed -- another group's head office reads exactly as a group that doesn't exist). */
-export async function dashViewer(request: NextRequest): Promise<{ viewer: DashViewer; userId: string } | NextResponse> {
+export async function dashViewer(request: NextRequest): Promise<{ viewer: DashViewer; userId: string; supabase: SupabaseClient } | NextResponse> {
   const caller = await groupCaller(request);
   if (caller instanceof NextResponse) return caller;
   const accountId = request.nextUrl.searchParams.get("account");
   const asOffice = groupDashAccess({ accountId, offices: caller.offices, viewAs: caller.viewAs, account: null, seats: [], members: [], grants: [] });
-  if (asOffice.ok) return { viewer: asOffice.viewer, userId: caller.userId };
+  if (asOffice.ok) return { viewer: asOffice.viewer, userId: caller.userId, supabase: caller.supabase };
   if (caller.viewAs) return NextResponse.json({ error: "Not found." }, { status: 404 });
   // A member school's SMT, through a live grant.
   const seats = (await seatsOf(caller.supabase, caller.userId)).filter((s) => s.canSeeSmt);
@@ -56,7 +56,7 @@ export async function dashViewer(request: NextRequest): Promise<{ viewer: DashVi
     const account = toAccount(c);
     const [members, grants] = await Promise.all([groupMembers(account.groupId), accountGrants(account.id)]);
     const r = groupDashAccess({ accountId, offices: [], viewAs: false, account, seats, members, grants });
-    if (r.ok) return { viewer: r.viewer, userId: caller.userId };
+    if (r.ok) return { viewer: r.viewer, userId: caller.userId, supabase: caller.supabase };
   }
   return NextResponse.json({ error: "Not found." }, { status: 404 });
 }

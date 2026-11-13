@@ -27,6 +27,8 @@ export type SetMenuRow = {
   title?: string;
   pinned?: boolean;
   lastUsedAt?: string | null;
+  /** 0.8 group sets: the count in words where it isn't schools ("16 groups"). */
+  countText?: string;
 };
 
 export type SetMenuAction = { label: string; onClick: () => void; title?: string; disabled?: boolean };
@@ -34,7 +36,7 @@ export type SetMenuAction = { label: string; onClick: () => void; title?: string
 export type SetSelectorProps = {
   label: string;
   kind: SetKind;
-  current: { name: string; count: number | null; main?: number } | null;
+  current: { name: string; count: number | null; main?: number; countText?: string } | null;
   rows: { default: SetMenuRow[]; school: SetMenuRow[]; mine: SetMenuRow[] };
   mine: { active: number; cap: number } | null;
   selectedKey: string | null;
@@ -52,6 +54,12 @@ export type SetSelectorProps = {
   loading?: boolean;
   /** Open on first render (the rule tests render the menu on the server). */
   defaultOpen?: boolean;
+  /** 0.8 group sets (additive): the middle block's name ("Group sets" on the Group pages). */
+  blockLabels?: { school?: string; schoolAll?: string };
+  /** 0.8 group sets (additive): more actions after New set… (Make default, Duplicate to My sets). */
+  extraActions?: SetMenuAction[];
+  /** 0.8 group sets (additive): no My sets block (a member school's SMT on the Group pages, View as). */
+  hideMine?: boolean;
 };
 
 export const SET_MENU_LIMIT = 5;
@@ -157,7 +165,7 @@ export function SetSelector(p: SetSelectorProps) {
     a.onClick();
   };
   const name = p.current?.name ?? (p.loading ? "Loading…" : "Choose a set");
-  const count = p.current ? (p.current.count ?? "…") : "";
+  const count = p.current ? (p.current.countText ?? p.current.count ?? "…") : "";
   const rowH = p.phone ? "min-h-[44px]" : "min-h-[34px]";
 
   const row = (r: SetMenuRow, tag: boolean) => {
@@ -176,7 +184,7 @@ export function SetSelector(p: SetSelectorProps) {
         <span aria-hidden="true" className="w-[14px] shrink-0 text-[var(--accent,var(--fg))]">{on ? "✓" : ""}</span>
         <span className="min-w-0 flex-1 truncate">{r.name}</span>
         {tag && <CreatorPill creator={r.creator} label={r.creatorLabel} />}
-        <span className="shrink-0 tabular-nums text-[11.5px] text-[var(--muted2)]">{r.count ?? "…"}{r.main ? ` · ${r.main} main` : ""}</span>
+        <span className="shrink-0 tabular-nums text-[11.5px] text-[var(--muted2)]">{r.countText ?? r.count ?? "…"}{r.main ? ` · ${r.main} main` : ""}</span>
       </button>
     );
   };
@@ -200,12 +208,12 @@ export function SetSelector(p: SetSelectorProps) {
         {p.rows.default.map((r) => row(r, false))}
         {(p.extraDefault ?? []).map((a) => actionBtn(a))}
       </div>
-      <div data-set-block="school" role="group" aria-label="School sets" className="mt-1 border-t border-[var(--panel-border)] pt-1">
-        {heading("School sets")}
+      <div data-set-block="school" role="group" aria-label={p.blockLabels?.school ?? "School sets"} className="mt-1 border-t border-[var(--panel-border)] pt-1">
+        {heading(p.blockLabels?.school ?? "School sets")}
         {school.length ? schoolShown.map((r) => row(r, true)) : <div className="px-3 py-1 text-[12px] text-[var(--muted2)]">None yet.</div>}
-        {more(school.length, "school", "All school sets")}
+        {more(school.length, "school", p.blockLabels?.schoolAll ?? "All school sets")}
       </div>
-      <div data-set-block="mine" role="group" aria-label="My sets" className="mt-1 border-t border-[var(--panel-border)] pt-1">
+      {!p.hideMine && <div data-set-block="mine" role="group" aria-label="My sets" className="mt-1 border-t border-[var(--panel-border)] pt-1">
         {heading(
           <>
             My sets{p.mine ? <span className="ml-1 font-semibold normal-case tracking-normal">{p.mine.active} of {p.mine.cap}</span> : null}
@@ -213,13 +221,14 @@ export function SetSelector(p: SetSelectorProps) {
         )}
         {mine.length ? mineShown.map((r) => row(r, false)) : <div className="px-3 py-1 text-[12px] text-[var(--muted2)]">None yet.</div>}
         {more(mine.length, "mine", "All my sets")}
-      </div>
+      </div>}
     </>
   );
   const actions = (
     <div data-set-actions="" className="border-t border-[var(--panel-border)] pt-1">
       {actionBtn(p.onEdit)}
       {actionBtn(p.onNew)}
+      {(p.extraActions ?? []).map((a) => actionBtn(a))}
       {p.manageHref ? (
         <a href={manageHrefHere(p.manageHref, p.manageUrn)} role="menuitem" className={`flex w-full items-center rounded-[8px] px-3 py-[6px] text-left text-[12.5px] hover:bg-[var(--box-bg)] ${rowH}`}>
           Manage sets
@@ -237,7 +246,7 @@ export function SetSelector(p: SetSelectorProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        title={p.current ? `${p.current.name} · ${countWords(p.current.count, p.current.main)}` : undefined}
+        title={p.current ? `${p.current.name} · ${p.current.countText ?? countWords(p.current.count, p.current.main)}` : undefined}
         onClick={() => setOpen((o) => !o)}
         style={p.width && !p.phone ? { width: p.width } : undefined}
         className={`flex min-w-0 items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--accent,var(--fg))] bg-[var(--panel-bg)] px-3 text-left ${p.phone ? "min-h-[44px] w-full" : "min-h-[32px] max-w-[340px]"}`}
