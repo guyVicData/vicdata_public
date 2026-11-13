@@ -1,3 +1,5 @@
+> **SUPERSEDED 13 Nov 2026.** Split into three prompts, run in this order: `vicdata_0_8_front_door_part1_theme_homes_walks_claude_code_prompt_v1.md`, `…_part2_sets_admin_phone_…`, `…_part3_signin_gate_security_…` (Part 3 waits for Guy's review). Don't build from this file; it's kept as the record of the decisions.
+
 # VicData 0.8: The friendly front door. Beta access, homes and walkthroughs, guided sets, account security, school admin
 
 A Claude Code prompt for the app repo (`~/dev/vicdata_public`) and the app database (`lnhulykjlxmoneappnsp`). Written 13 Nov 2026 from Guy's decisions, 9–13 Nov, made on the design canvas "VicData walkthroughs — GCSE mockup". The decision records are in the project: `claude/vicdata_walkthroughs_decisions_v1.md` and `claude/vicdata_beta_access_and_security_decisions_v1.md`. Where this prompt and those records differ, this prompt wins.
