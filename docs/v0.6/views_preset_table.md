@@ -260,6 +260,7 @@ Read the columns as:
 | `DV-C2-TR-ACTUAL` | As Indexed, at real values. |
 | `DV-C2-TR-TABLE` | The rows are the group. |
 | `DV-C2-TR-CHANGELIST` | The group's average (reference, mean): its change as a dashed line through the ranked rows. |
+| `DV-C2-TR-DUMBBELL` | 0.8 front door (draft, the walk's): every comparable subject's first-year and latest entries, largest first; the school average a dashed row last. Its preset draws Ranked change's bars until ViewSpec has a dumbbell kind. |
 | `DV-C2-TR-CHANGETABLE` | The rows are the group. |
 | `DV-C3-CUR-TILES` | **Ranking only:** the school's rank in the ranking's **whole population**, and that population's average (same year), on the ranking's own measure (the phase headline). |
 | `DV-C3-CUR-MAP` | The set's schools, coloured by value (the accent scale); the rank is the map's own. |
