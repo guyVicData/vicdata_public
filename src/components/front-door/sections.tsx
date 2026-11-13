@@ -17,6 +17,8 @@ import { useSmtSet } from "@/components/smt/useSmtSet";
 import { setPhaseOf } from "@/lib/smt/levels";
 import { periodLabel } from "@/catalogue/years";
 import { entryPoint } from "@/lib/admissions/entry-points";
+import { setFitsPage, type SetKind, type StoredSet } from "@/lib/sets/model";
+import { guidedHref } from "@/lib/sets/guided";
 import { HomeSection, NoWalkTile, QuestionTile, walkHref, type TileFigure } from "./home";
 import { useThemePref } from "@/components/shell/TeacherChrome";
 import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
@@ -49,7 +51,7 @@ function SubjectSwitch({ subjects, value, onChange }: { subjects: { key: string;
   return (
     <label className="inline-flex items-center gap-1.5 rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]">
       Subject
-      <select data-subject-switch="" value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="max-w-[16rem] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none">
+      <select data-subject-switch="" value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="min-h-[44px] max-w-[16rem] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none sm:min-h-0">
         {subjects.map((s) => (
           <option key={s.key} value={s.key}>
             {s.label}
@@ -121,13 +123,21 @@ export function TeacherKs2Section() {
 
 // ------------------------------------------------------------------------------------------------ sets
 
-type LibraryLite = { stored: { kind: string; owner_scope?: string }[]; defaults: unknown[] };
+type LibraryLite = { stored: Pick<StoredSet, "kind" | "entryPoint" | "phase" | "ownerScope" | "isDefault" | "archived" | "members">[]; defaults: unknown[] };
+
+/** The school set a guided question opens on (the default set of the kind for the page, else its first). */
+function schoolSetFor(lib: LibraryLite, kind: SetKind, page: { entryPoint?: string | null; phase?: "ks4" | "ks5" | null }) {
+  const fit = lib.stored.filter((s) => s.ownerScope === "school" && !s.archived && setFitsPage(s, { kind, ...page }));
+  return fit.find((s) => s.isDefault) ?? fit[0] ?? null;
+}
 
 /**
  * D21: the sets card on the SMT and Admissions homes -- the school's sets with their real counts (the sets
- * library route's own answer), opening the round-1 library (/sets). Part 2 points it at the guided editor.
+ * library route's own answer), opening the guided editor (0.8 front door part 2): Admissions "18 feeders ·
+ * 9 rivals at 11+ — Who feeds us, and who do we compete with?", one button per question; SMT "4 comparison
+ * sets — Who do we measure ourselves against?". "All sets" keeps the round-1 library for power users.
  */
-export function SetsCard({ urn }: { urn: string }) {
+export function SetsCard({ urn, role = "admissions", entry = null }: { urn: string; role?: "admissions" | "smt"; entry?: string | null }) {
   const [lib, setLib] = useState<LibraryLite | null | "none">(null);
   useEffect(() => {
     let live = true;
@@ -137,21 +147,49 @@ export function SetsCard({ urn }: { urn: string }) {
     };
   }, [urn]);
   if (lib === "none") return null;
-  const saved = lib ? lib.stored.length : null;
-  const ready = lib ? lib.defaults.length : null;
+  const e = entry ?? "11+";
+  const pill = "inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--panel-border2)] px-4 text-[13.5px] font-semibold text-[var(--fg)] hover:border-[var(--tile-accent-text,var(--accent))]";
+  const icon = (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="7" cy="7" r="3" /><circle cx="17" cy="7" r="3" /><circle cx="7" cy="17" r="3" /><circle cx="17" cy="17" r="3" /></svg>
+    </span>
+  );
+  let figure: string;
+  let question: string;
+  let buttons: { label: string; href: string }[];
+  if (role === "smt") {
+    const n = lib ? lib.stored.filter((s) => s.kind === "compared_against" && !s.archived && s.ownerScope === "school").length : null;
+    figure = n === null ? "Comparison sets" : `${n} comparison ${n === 1 ? "set" : "sets"}`;
+    question = "Who do we measure ourselves against?";
+    buttons = [{ label: "Choose our comparison schools", href: guidedHref({ urn, kind: "compared_against", product: "smt", phase: "ks4", fromHome: true }) }];
+  } else {
+    const feeders = lib ? schoolSetFor(lib, "feeders", { entryPoint: e }) : null;
+    const rivals = lib ? schoolSetFor(lib, "compared_against", { entryPoint: e }) : null;
+    figure = lib ? `${feeders?.members.length ?? 0} feeders · ${rivals?.members.length ?? 0} rivals at ${e}` : `Feeders and rivals at ${e}`;
+    question = "Who feeds us, and who do we compete with?";
+    buttons = [
+      { label: "Who feeds us?", href: guidedHref({ urn, kind: "feeders", product: "admissions", entry: e, fromHome: true }) },
+      { label: "Who do we compete with?", href: guidedHref({ urn, kind: "compared_against", product: "admissions", entry: e, fromHome: true }) },
+    ];
+  }
   return (
-    <Link href="/sets" data-sets-card="" className="fd-tile flex items-center gap-4 rounded-[14px] px-5 py-4 text-[var(--fg)]">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="7" cy="7" r="3" /><circle cx="17" cy="7" r="3" /><circle cx="7" cy="17" r="3" /><circle cx="17" cy="17" r="3" /></svg>
+    <div data-sets-card={role} className="fd-tile flex flex-wrap items-center gap-4 rounded-[14px] px-5 py-4 text-[var(--fg)]">
+      {icon}
+      <span className="min-w-0 flex-grow basis-[220px]">
+        <span className="block text-[15.5px] font-semibold">{figure}</span>
+        <span className="block text-[13px] text-[var(--muted2)]">{question}</span>
       </span>
-      <span className="min-w-0 flex-grow">
-        <span className="block text-[15.5px] font-semibold">Sets of schools</span>
-        <span className="block text-[13px] text-[var(--muted2)]">
-          {saved === null ? "The schools you compare against, and your feeders" : `${saved} saved ${saved === 1 ? "set" : "sets"} · ${ready} ready-made`}
-        </span>
+      <span className="flex flex-wrap items-center gap-2">
+        {buttons.map((b) => (
+          <Link key={b.href} href={b.href} className={pill}>
+            {b.label} <span aria-hidden="true">&rarr;</span>
+          </Link>
+        ))}
+        <Link href="/sets" className="inline-flex min-h-[44px] items-center px-2 text-[13px] text-[var(--muted2)] hover:text-[var(--fg)]">
+          All sets
+        </Link>
       </span>
-      <span aria-hidden="true" className="text-[var(--muted2)]">&rarr;</span>
-    </Link>
+    </div>
   );
 }
 
@@ -213,7 +251,7 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       note={primary ? "KS2 tests did not run in 2019/20 or 2020/21, so those years show as gaps." : null}
     >
       {/* D21: the school's sets, then (0.8 groups r1) the school's group where its head office holds a group account. */}
-      <SetsCard urn={member.schoolUrn} />
+      <SetsCard urn={member.schoolUrn} role="smt" />
       <SchoolGroupTile urn={member.schoolUrn} />
     </HomeSection>
   );
@@ -299,7 +337,7 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
         entries && entries.length > 0 ? (
           <label className="inline-flex items-center gap-1.5 rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]">
             Entry point
-            <select data-entry-switch="" value={current ?? ""} onChange={(e) => setEntry(e.target.value)} className="bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none">
+            <select data-entry-switch="" value={current ?? ""} onChange={(e) => setEntry(e.target.value)} className="min-h-[44px] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none sm:min-h-0">
               {entries.map((e) => (
                 <option key={e} value={e}>
                   {entryPoint(e)?.label ?? e}
@@ -316,7 +354,7 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
         <QuestionTile key={w.id} walk={w} figure={(i === 0 ? f?.pool : f?.share) ?? null} ctx={{ entry: label }} href={walkHref(w, params)} loading={!f} />
       ))}
     >
-      <SetsCard urn={urn} />
+      <SetsCard urn={urn} role="admissions" entry={current} />
     </HomeSection>
   );
 }

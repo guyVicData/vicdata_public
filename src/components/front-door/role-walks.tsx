@@ -37,7 +37,7 @@ import { entryPoint } from "@/lib/admissions/entry-points";
 import { periodLabel } from "@/catalogue/years";
 import { dataviewById } from "@/catalogue/dataviews";
 import { fillTemplate, groupWalkDash, screenMeta, type Walk } from "@/lib/front-door/walks";
-import { Found, MiniMap, Rail, useStep, WalkFooter, WalkFrame, WalkPanel } from "./WalkPage";
+import { Found, MiniMap, Rail, RAIL_LIST, RAIL_ROW, useStep, WalkFooter, WalkFrame, WalkPanel, WalkScreen } from "./WalkPage";
 import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/components/groups/dash/GroupDashboard";
 import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
 import type { ProjectionRow } from "@/components/groups/dash/views-r3";
@@ -68,26 +68,30 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
   const next = step + 1 < walk.screens.length ? screens[step + 1].question : "Here's what you found";
   return (
     <>
-      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-col gap-2">
-          <h1 data-walk-question="" className="text-[28px] font-semibold leading-tight tracking-[-0.01em] text-[var(--field-ink)] sm:text-[36px]">{sc.question}</h1>
-          <p data-walk-answer="" className="text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{sc.answer}</p>
-        </div>
-        <MiniMap cols={cols} spot={s.spot} name={`${walk.label}`} href={walk.dashboard} />
-      </div>
-      <WalkPanel
-        icon={walk.icon}
-        name={colName}
-        question={colQuestion}
-        pills={[]}
-        controls={sc.controls}
-        tag={sc.tag ?? `${s.spot.row === 0 ? "Current" : "Trends"}`}
-        title={sc.title}
-        note={sc.note}
-        rail={sc.rail ?? <Rail view={s.view} asTable={asTable} onTable={() => {}} dashboard={walk.dashboard} />}
-      >
-        <div className="min-w-0 overflow-x-auto">{sc.body}</div>
-      </WalkPanel>
+      <WalkScreen
+        head={
+          <>
+            <h1 data-walk-question="" className="text-[28px] font-semibold leading-tight tracking-[-0.01em] text-[var(--field-ink)] sm:text-[36px]">{sc.question}</h1>
+            <p data-walk-answer="" className="text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{sc.answer}</p>
+          </>
+        }
+        map={<MiniMap cols={cols} spot={s.spot} name={`${walk.label}`} href={walk.dashboard} />}
+        panel={
+          <WalkPanel
+            icon={walk.icon}
+            name={colName}
+            question={colQuestion}
+            pills={[]}
+            controls={sc.controls}
+            tag={sc.tag ?? `${s.spot.row === 0 ? "Current" : "Trends"}`}
+            title={sc.title}
+            note={sc.note}
+            rail={sc.rail ?? <Rail view={s.view} asTable={asTable} onTable={() => {}} dashboard={walk.dashboard} />}
+          >
+            <div className="min-w-0 overflow-x-auto">{sc.body}</div>
+          </WalkPanel>
+        }
+      />
       <WalkFooter onBack={() => (step === 0 ? router.push(walk.product === "group" ? "/teacher/group" : "/teacher") : onStep(step - 1))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => onStep(step + 1)} next={next} />
     </>
   );
@@ -398,11 +402,11 @@ function GroupWalk({ walk }: { walk: Walk }) {
 /** The group view's own rail, names written out: lit = this screen's view; any other opens the dashboard. */
 function GroupRail({ rail, active, dashboard }: { rail: { id: string; label: string; icon: string }[]; active: string; dashboard: string }) {
   return (
-    <ul className="flex flex-col gap-0.5" data-walk-rail="">
+    <ul className={RAIL_LIST} data-walk-rail="">
       {rail.map((r) => {
         const on = r.id === active;
         const row = (
-          <span className={`flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
+          <span className={`${RAIL_ROW} ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
             <span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}>
               <RailGlyph name={r.icon} size={13} />
             </span>

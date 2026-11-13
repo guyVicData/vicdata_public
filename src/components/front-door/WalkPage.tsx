@@ -86,7 +86,7 @@ export function WalkHeader({ walk, step, steps, chip, band }: { walk: Walk; step
         <ViewAsBanner />
       </div>
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-        <Link href={homeOf(walk)} aria-label="Close the walk" className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--wh-muted)] hover:text-[var(--wh-fg)]">{CLOSE}</Link>
+        <Link href={homeOf(walk)} aria-label="Close the walk" className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--wh-muted)] hover:text-[var(--wh-fg)] sm:h-8 sm:w-8">{CLOSE}</Link>
         <span data-walk-head-icon="" className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--wh-tint)] text-[var(--wh-accent)]">
           <WalkGlyph icon={walk.icon} size={17} />
         </span>
@@ -111,10 +111,10 @@ function homeOf(walk: Walk): string {
 /** The mini-map: the dashboard's 3x2 grid, column icons above, this panel lit; Show me opens the dashboard. */
 export function MiniMap({ cols, spot, name, href }: { cols: string[]; spot: { col: number; row: number }; name: string; href: string }) {
   return (
-    <aside data-mini-map="" className="fd-tile w-full max-w-[220px] shrink-0 rounded-[12px] p-3">
+    <aside data-mini-map="" className="fd-tile w-full shrink-0 rounded-[12px] p-3 sm:max-w-[220px]">
       <div className="flex items-center justify-between text-[11.5px] text-[var(--muted)]">
         On the dashboard
-        <Link href={href} className="font-semibold text-[var(--tile-accent-text,var(--fg))]">Show me &#8599;</Link>
+        <Link href={href} className="inline-flex min-h-[44px] items-center font-semibold text-[var(--tile-accent-text,var(--fg))] sm:min-h-0">Show me &#8599;</Link>
       </div>
       <p className="mt-1 text-[13px] font-semibold text-[var(--fg)]">{name}</p>
       <div className="mt-2 grid grid-cols-[3.2rem_repeat(3,1fr)] items-center gap-1 text-[10.5px] text-[var(--muted)]">
@@ -155,8 +155,9 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
         <span className="rounded-[6px] bg-[var(--box-bg)] px-2 py-0.5 text-[12px] text-[var(--muted2)]">{tag}</span>
       </div>
       <div className="grid md:grid-cols-[200px_minmax(0,1fr)]">
-        <nav aria-label="Views" className="flex flex-col gap-1 border-b border-[var(--panel-border)] p-3 md:border-b-0 md:border-r">
-          <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Views</p>
+        {/* G (phone): the rail is a horizontal scroll of named chips above the chart; a column from md up. */}
+        <nav aria-label="Views" className="flex min-w-0 flex-col gap-1 border-b border-[var(--panel-border)] p-3 md:border-b-0 md:border-r">
+          <p className="hidden px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)] md:block">Views</p>
           {rail}
           <p className="mt-auto hidden px-2 pt-6 text-[11px] text-[var(--muted)] md:block">The same views, in the same order, as this panel&rsquo;s rail on the dashboard.</p>
         </nav>
@@ -180,13 +181,13 @@ export function Rail({ view, asTable, onTable, dashboard }: { view: string; asTa
   const dv = dataviewById(view);
   const views = dv ? DATAVIEWS.filter((d) => d.host.id === dv.host.id && d.host.panel === dv.host.panel && (d.status === "live" || d.id === view) && d.renderer !== "RD-YEAR-TABLE" && d.renderer !== "RD-SORT-TABLE") : [];
   const row = (on: boolean, icon: string, label: string) => (
-    <span className={`flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
+    <span className={`${RAIL_ROW} ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
       <span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name={icon} size={13} /></span>
       {label}
     </span>
   );
   return (
-    <ul className="flex flex-col gap-0.5" data-walk-rail="">
+    <ul className={RAIL_LIST} data-walk-rail="">
       {(views.length ? views : dv ? [dv] : []).map((d) =>
         d.id === view ? (
           <li key={d.id}>
@@ -208,18 +209,35 @@ export function Rail({ view, asTable, onTable, dashboard }: { view: string; asTa
 /** Back, and Next previewing the next question (or "Here's what you found"). */
 export function WalkFooter({ onBack, onNext, backLabel, next }: { onBack: () => void; onNext: () => void; backLabel: string; next: string }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-      <button type="button" onClick={onBack} className="fd-tile inline-flex items-center gap-2 rounded-[12px] px-4 py-3 text-[15px] text-[var(--fg)]">{ARROW_L} {backLabel}</button>
-      <button type="button" onClick={onNext} data-walk-next="" className="flex min-w-0 max-w-full items-center gap-4 rounded-[14px] bg-[var(--tile-accent,var(--accent))] px-5 py-3 text-left text-[var(--tile-on-accent,#0a0a0b)]">
+    // G (phone): Back and Next in a sticky bottom bar; from sm up, the row under the panel.
+    <div data-walk-footer="" className="sticky bottom-0 z-30 -mx-4 flex flex-nowrap items-center justify-between gap-3 border-t border-[var(--panel-border)] bg-[var(--bg)] px-4 py-2.5 sm:static sm:mx-0 sm:flex-wrap sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-2">
+      <button type="button" onClick={onBack} className="fd-tile inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-[12px] px-4 py-3 text-[15px] text-[var(--fg)]">{ARROW_L} {backLabel}</button>
+      <button type="button" onClick={onNext} data-walk-next="" className="flex min-h-[44px] min-w-0 max-w-full flex-1 items-center gap-4 rounded-[14px] bg-[var(--tile-accent,var(--accent))] px-5 py-3 text-left text-[var(--tile-on-accent,#0a0a0b)] sm:flex-none">
         <span className="min-w-0">
           <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">Next</span>
-          <span className="block text-[15.5px] font-semibold">{next}</span>
+          <span className="block truncate text-[15.5px] font-semibold sm:whitespace-normal">{next}</span>
         </span>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/10">{ARROW_R}</span>
       </button>
     </div>
   );
 }
+
+/** G: one screen's layout -- the question and answer, the panel, the mini-map. On a phone they stack in that
+ * order (the mini-map under the chart); from sm up the mini-map sits beside the question, as before. */
+export function WalkScreen({ head, map, panel }: { head: ReactNode; map: ReactNode; panel: ReactNode }) {
+  return (
+    <div data-walk-screen="" className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_220px] sm:gap-x-4">
+      <div className="flex min-w-0 flex-col gap-2 sm:col-start-1 sm:row-start-1">{head}</div>
+      <div className="min-w-0 sm:col-span-2 sm:row-start-2">{panel}</div>
+      <div className="min-w-0 sm:col-start-2 sm:row-start-1">{map}</div>
+    </div>
+  );
+}
+
+/** The rail's list and row: chips in a horizontal scroll on a phone, the panel's column from md up. */
+export const RAIL_LIST = "-mx-3 flex flex-row gap-1.5 overflow-x-auto px-3 pb-0.5 md:mx-0 md:flex-col md:gap-0.5 md:overflow-visible md:px-0 md:pb-0";
+export const RAIL_ROW = "flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-full border border-[var(--panel-border2)] px-3 py-1.5 text-[13px] md:min-h-0 md:whitespace-normal md:rounded-[8px] md:border-0 md:px-2";
 
 /** The step, kept in the address (?step=) so a refresh or a shared link opens the same screen. */
 export function useStep(n: number): [number, (s: number) => void] {
@@ -304,16 +322,20 @@ function TeacherWalk({ walk }: { walk: Walk }) {
   const next = step + 1 < n ? screens[step + 1].question : "Here's what you found";
   return (
     <WalkFrame walk={walk} step={step} steps={n} chip={chip}>
-      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex flex-col gap-2">
-          <h1 data-walk-question="" className="text-[28px] font-semibold leading-tight tracking-[-0.01em] text-[var(--field-ink)] sm:text-[36px]">{sc.question}</h1>
-          <p data-walk-answer="" className="text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{sc.answer}</p>
-        </div>
-        <MiniMap cols={TEACHER_COLS(s.view)} spot={s.spot} name={`${PHASE_LABELS[phase]} ${COLUMN_NAME[col]}`} href={walk.dashboard} />
-      </div>
-      <WalkPanel icon={col} name={COLUMN_NAME[col]} question={colQuestion[col]} pills={pills} tag={sc.tag} title={sc.title} note={sc.note} rail={<Rail view={s.view} asTable={asTable} onTable={setAsTable} dashboard={walk.dashboard} />}>
-        <WalkChart chart={sc.chart} p={pal} asTable={asTable} />
-      </WalkPanel>
+      <WalkScreen
+        head={
+          <>
+            <h1 data-walk-question="" className="text-[28px] font-semibold leading-tight tracking-[-0.01em] text-[var(--field-ink)] sm:text-[36px]">{sc.question}</h1>
+            <p data-walk-answer="" className="text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{sc.answer}</p>
+          </>
+        }
+        map={<MiniMap cols={TEACHER_COLS(s.view)} spot={s.spot} name={`${PHASE_LABELS[phase]} ${COLUMN_NAME[col]}`} href={walk.dashboard} />}
+        panel={
+          <WalkPanel icon={col} name={COLUMN_NAME[col]} question={colQuestion[col]} pills={pills} tag={sc.tag} title={sc.title} note={sc.note} rail={<Rail view={s.view} asTable={asTable} onTable={setAsTable} dashboard={walk.dashboard} />}>
+            <WalkChart chart={sc.chart} p={pal} asTable={asTable} />
+          </WalkPanel>
+        }
+      />
       <WalkFooter onBack={() => (step === 0 ? router.push("/teacher") : (setAsTable(false), setStep(step - 1)))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => { setAsTable(false); setStep(step + 1); }} next={next} />
     </WalkFrame>
   );

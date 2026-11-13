@@ -16,12 +16,14 @@ import { returnToHere, savedSetFromEditor, useEditorReturnReload } from "@/lib/s
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { saveSet } from "@/lib/sets/store";
 import type { LibraryData } from "@/lib/sets/library";
-import { filterLibrary, foldersOf, sectionCounts, sortLibrary, usedWords, type LibraryFilter, type LibraryItem, type LibrarySection, type LibrarySort } from "@/lib/sets/library-view";
+import { filterLibrary, foldersOf, makerOf, MAKER_WORD, MAKERS, sectionCounts, sortLibrary, usedWords, type LibraryFilter, type LibraryItem, type LibrarySection, type LibrarySort, type Maker } from "@/lib/sets/library-view";
 import type { SetKind } from "@/lib/sets/model";
-import { CreatorPill, KindIcon, creatorColours } from "./SetSelector";
+import { KindIcon } from "./SetSelector";
 import { SetsWayBack } from "./SetsShell";
 
 const KIND_WORD: Record<SetKind, string> = { compared_against: "Compared against", feeders: "Feeder schools" };
+// D23: the sidebar's coloured markers (the sections a maker owns).
+const SECTION_MARKER: Partial<Record<LibrarySection, Maker>> = { default: "default", school: "school", mine: "mine" };
 
 export function libraryItems(d: LibraryData): LibraryItem[] {
   const stored: LibraryItem[] = d.stored.map((s) => ({
@@ -90,18 +92,38 @@ export function editHref(urn: string, x: LibraryItem, duplicate = false): string
   return `/sets/edit?${q.toString()}`;
 }
 
-function Artwork({ x, size }: { x: LibraryItem; size: number }) {
-  const c = creatorColours(x.creator);
+// 0.8 front door part 2 (D23): the maker's colour, as a solid gradient (globals.css --maker-*). Mine is an
+// outline in the person's phase colour.
+export function makerFill(m: Maker, mine: string): { background: string; color: string; border?: string } {
+  if (m === "mine") return { background: "transparent", color: mine, border: `1.5px solid ${mine}` };
+  return { background: `linear-gradient(140deg, var(--maker-${m}-from), var(--maker-${m}-to))`, color: `var(--maker-${m}-ink)` };
+}
+
+/** The set's icon tile: the kind's icon (bars, streams) on its maker's gradient. */
+export function MakerTile({ x, size, mine }: { x: Pick<LibraryItem, "creator" | "kind">; size: number; mine: string }) {
+  const m = makerOf(x);
   return (
-    <div className="relative flex shrink-0 items-center justify-center rounded-[10px]" style={{ width: size, height: size, background: c.bg === "transparent" ? "var(--box-bg)" : c.bg, color: c.fg, border: c.bg === "transparent" ? `1px solid ${c.border}` : undefined }}>
-      <KindIcon kind={x.kind} size={Math.round(size * 0.45)} stroke={1.6} />
-    </div>
+    <span data-maker-tile={m} aria-hidden="true" className="relative flex shrink-0 items-center justify-center rounded-[10px]" style={{ width: size, height: size, ...makerFill(m, mine) }}>
+      <KindIcon kind={x.kind} size={Math.round(size * 0.46)} stroke={2} />
+    </span>
+  );
+}
+
+/** "Made by": a solid gradient pill in the maker's colour. */
+export function MakerPill({ x, mine }: { x: Pick<LibraryItem, "creator" | "kind">; mine: string }) {
+  const m = makerOf(x);
+  return (
+    <span data-set-creator={x.creator} data-maker={m} className="inline-flex shrink-0 items-center rounded-full px-[8px] text-[10.5px] font-bold leading-[18px]" style={makerFill(m, mine)}>
+      {MAKER_WORD[m]}
+    </span>
   );
 }
 
 export type LibraryBack = { returnTo: string; fallback: boolean; label: string };
 
-export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData; phone?: boolean; initial?: Partial<LibraryFilter>; back?: LibraryBack }) {
+export function SetsLibrary({ data, phone, initial, back, phase }: { data: LibraryData; phone?: boolean; initial?: Partial<LibraryFilter>; back?: LibraryBack; phase?: "ks4" | "ks5" | null }) {
+  // Mine's outline: the person's phase colour (Post-16 violet when the page that sent them was Post-16).
+  const mine = phase === "ks5" ? "var(--maker-mine-post16)" : "var(--maker-mine)";
   const [filter, setFilter] = useState<LibraryFilter>({ section: "all", query: "", kind: "all", entry: null, ...initial });
   const [sort, setSort] = useState<LibrarySort>("recent");
   const [items, setItems] = useState<LibraryItem[]>(() => libraryItems(data));
@@ -241,7 +263,10 @@ export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData;
     <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Kind">
       {(["all", "compared_against", "feeders"] as const).map((k) => (
         <button key={k} type="button" aria-pressed={filter.kind === k} onClick={() => setFilter((f) => ({ ...f, kind: k }))} className={`min-w-[44px] rounded-full border px-3 text-[12px] font-semibold ${hit} ${filter.kind === k ? "border-[var(--accent,var(--fg))]" : "border-[var(--panel-border2)] text-[var(--chip-fg)]"}`}>
-          {k === "all" ? "All" : KIND_WORD[k]}
+          <span className="inline-flex items-center gap-1.5">
+            {k !== "all" && <KindIcon kind={k} size={14} />}
+            {k === "all" ? "All" : KIND_WORD[k]}
+          </span>
         </button>
       ))}
     </div>
@@ -265,19 +290,19 @@ export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData;
   );
   const tiles = pinned.length ? (
     <section data-library-pinned="" className="flex flex-col gap-2">
-      <h2 className="text-[13px] font-bold">Pinned school sets <span className="font-normal text-[var(--muted2)]">· first in everyone&rsquo;s menu</span></h2>
-      <div className={phone ? "-mx-4 flex gap-3 overflow-x-auto px-4 pb-1" : "grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3"}>
+      <h2 className="text-[14px] font-bold">Pinned <span className="font-normal text-[var(--muted2)]">· first in everyone&rsquo;s menu</span></h2>
+      <div className={phone ? "-mx-4 flex gap-3 overflow-x-auto px-4 pb-1" : "grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3"}>
         {pinned.map((x) => {
-          const c = creatorColours(x.creator);
+          const m = makerOf(x);
           return (
-            <a key={x.key} href={open(x)} data-library-tile={x.key} className={`flex min-h-[44px] shrink-0 flex-col gap-2 overflow-hidden rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] ${phone ? "w-[200px]" : ""}`}>
-              <span className="h-[4px] w-full" style={{ background: c.fg }} />
-              <div className="flex items-center gap-3 px-3 pb-3">
-                <Artwork x={x} size={56} />
+            <a key={x.key} href={open(x)} data-library-tile={x.key} data-maker={m} className={`flex min-h-[44px] shrink-0 flex-col overflow-hidden rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] ${phone ? "w-[230px]" : ""}`}>
+              <span aria-hidden="true" className="h-[4px] w-full" style={{ background: m === "mine" ? mine : `linear-gradient(90deg, var(--maker-${m}-from), var(--maker-${m}-to))` }} />
+              <div className="flex items-center gap-3 px-4 py-4">
+                <MakerTile x={x} size={60} mine={mine} />
                 <div className="min-w-0">
-                  <div className="truncate text-[13px] font-bold">{x.name}</div>
-                  <div className="text-[11.5px] text-[var(--muted2)]">{KIND_WORD[x.kind]} · {x.entry ?? (x.phase === "ks5" ? "Post-16" : x.phase === "ks4" ? "GCSE" : "")} · {x.count}</div>
-                  <CreatorPill creator={x.creator} />
+                  <div className="truncate text-[15px] font-bold">{x.name}</div>
+                  <div className="text-[12px] text-[var(--muted2)]">{KIND_WORD[x.kind]} · {x.entry ?? (x.phase === "ks5" ? "Post-16" : x.phase === "ks4" ? "GCSE" : "")} · {x.count}</div>
+                  <div className="pt-1"><MakerPill x={x} mine={mine} /></div>
                 </div>
               </div>
             </a>
@@ -292,14 +317,13 @@ export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData;
       {phone ? (
         <div className="flex flex-col gap-2">
           {shown.map((x) => {
-            const c = creatorColours(x.creator);
             return (
               <div key={x.key} data-library-card={x.key} {...savedRing(x)} className="flex items-center gap-3 rounded-[10px] border border-[var(--panel-border)] p-2">
-                <span style={{ color: c.fg }}><KindIcon kind={x.kind} size={20} /></span>
+                <MakerTile x={x} size={36} mine={mine} />
                 <a href={open(x)} className="min-h-[44px] min-w-0 flex-1">
                   <div className="truncate text-[13px] font-semibold">{x.name}</div>
                   <div className="flex flex-wrap items-center gap-1 text-[11.5px] text-[var(--muted2)]">
-                    <CreatorPill creator={x.creator} /> {x.count} schools · used {usedWords(x.lastUsedAt)}
+                    <MakerPill x={x} mine={mine} /> {x.count} schools · used {usedWords(x.lastUsedAt)}
                   </div>
                 </a>
                 {more(x)}
@@ -329,12 +353,11 @@ export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData;
           </thead>
           <tbody>
             {shown.map((x) => {
-              const c = creatorColours(x.creator);
               return (
                 <tr key={x.key} data-library-row={x.key} {...savedRing(x)} className="border-t border-[var(--panel-border)]">
-                  <td className="py-[6px]">
-                    <div className="flex items-center gap-2">
-                      <span style={{ color: c.fg }}><KindIcon kind={x.kind} size={16} /></span>
+                  <td className="py-[7px]">
+                    <div className="flex items-center gap-3">
+                      <MakerTile x={x} size={32} mine={mine} />
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-semibold">{x.name}</div>
                         {x.description && <div className="truncate text-[11px] text-[var(--muted2)]">{x.description}</div>}
@@ -342,7 +365,7 @@ export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData;
                     </div>
                   </td>
                   <td className="truncate whitespace-nowrap">{KIND_WORD[x.kind]} · {x.entry ?? (x.phase === "ks5" ? "Post-16" : x.phase === "ks4" ? "GCSE" : "any")}</td>
-                  <td><CreatorPill creator={x.creator} /></td>
+                  <td><MakerPill x={x} mine={mine} /></td>
                   <td className="text-right tabular-nums">{x.count}</td>
                   <td className="pl-3 text-[var(--muted2)]">{usedWords(x.lastUsedAt)}</td>
                   <td className="text-right">
@@ -363,7 +386,7 @@ export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData;
   );
 
   const newSet = (
-    <a href={`/sets/edit?${new URLSearchParams({ urn, kind: filter.kind === "feeders" ? "feeders" : "compared_against", entry: filter.entry ?? data.entries[0] ?? "11+", returnTo: returnToHere(urn, `/sets?urn=${urn}`) })}`} className={`inline-flex items-center rounded-[10px] bg-[var(--accent,var(--fg))] px-4 text-[13px] font-bold text-[var(--bg)] ${phone ? "min-h-[44px]" : "min-h-[34px]"}`}>
+    <a href={`/sets/edit?${new URLSearchParams({ urn, kind: filter.kind === "feeders" ? "feeders" : "compared_against", entry: filter.entry ?? data.entries[0] ?? "11+", returnTo: returnToHere(urn, `/sets?urn=${urn}`) })}`} data-library-new="" style={makerFill("school", mine)} className={`inline-flex items-center rounded-[10px] px-4 text-[13.5px] font-bold ${phone ? "min-h-[44px]" : "min-h-[38px]"}`}>
       + New set
     </a>
   );
@@ -424,10 +447,24 @@ export function SetsLibrary({ data, phone, initial, back }: { data: LibraryData;
         <div className="px-2 pb-1 text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">Library</div>
         {sections.map((s) => (
           <button key={s.id} type="button" aria-current={filter.section === s.id} onClick={() => setFilter((f) => ({ ...f, section: s.id }))} className={`flex min-h-[32px] items-center justify-between rounded-[8px] px-2 text-left text-[13px] ${filter.section === s.id ? "bg-[var(--box-bg)] font-semibold" : ""}`}>
-            <span>{s.label}</span>
+            <span className="inline-flex items-center gap-2">
+              {SECTION_MARKER[s.id] && <span data-section-marker={SECTION_MARKER[s.id]} aria-hidden="true" className="inline-block h-[10px] w-[10px] rounded-[3px]" style={makerFill(SECTION_MARKER[s.id]!, mine)} />}
+              {s.label}
+            </span>
             <span className="text-[11.5px] text-[var(--muted2)]">{s.count}</span>
           </button>
         ))}
+        <div data-library-key="" className="flex flex-col gap-1.5 px-2 pb-1 pt-4">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">Who made it</div>
+          {MAKERS.map((m) => (
+            <span key={m} className="inline-flex items-center gap-2 text-[12.5px]">
+              <span aria-hidden="true" className="flex h-[22px] w-[22px] items-center justify-center rounded-[6px]" style={makerFill(m, mine)}>
+                <KindIcon kind="compared_against" size={12} />
+              </span>
+              {MAKER_WORD[m]}
+            </span>
+          ))}
+        </div>
         <div className="px-2 pb-1 pt-3 text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">Folders</div>
         {folders.map((f) => (
           <button key={f} type="button" aria-current={filter.section === `folder:${f}`} onClick={() => setFilter((x) => ({ ...x, section: `folder:${f}` }))} className={`min-h-[32px] rounded-[8px] px-2 text-left text-[13px] ${filter.section === `folder:${f}` ? "bg-[var(--box-bg)] font-semibold" : ""}`}>

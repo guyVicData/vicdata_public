@@ -1,0 +1,67 @@
+// Harness capture (read-only): the routes' own answers, through the real route handlers, for the report's
+// screenshots. Writes fx.json. Run: node cap.mjs (bundled by esbuild with the caller stub).
+import { NextRequest } from "next/server";
+import { writeFileSync } from "node:fs";
+import { GET as setsLibrary } from "@/app/api/sets/library/route";
+import { GET as setsEditor } from "@/app/api/sets/editor/route";
+import { GET as admLists } from "@/app/api/admissions/lists/route";
+import { GET as admPipeline } from "@/app/api/admissions/pipeline/route";
+import { GET as admMarket } from "@/app/api/admissions/market-share/route";
+import { GET as smtSchool } from "@/app/api/smt/school/route";
+import { POST as smtOverview } from "@/app/api/smt/overview/route";
+import { GET as phases } from "@/app/api/teacher/phases/route";
+import { POST as chooserSet } from "@/app/api/teacher/chooser-set/route";
+import { GET as savedSets } from "@/app/api/teacher/saved-comparator-sets/route";
+import { loadTeacherModel } from "@/lib/front-door/teacher-data";
+import { readAccountSummary } from "@/lib/school-admin/account-server";
+import { createServiceRoleSupabaseClient } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+
+const H = { authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` };
+const get = async (fn: (r: NextRequest) => Promise<Response>, url: string) => {
+  const r = await fn(new NextRequest(`http://h${url}`, { headers: H }));
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+const post = async (fn: (r: NextRequest) => Promise<Response>, url: string, body: unknown) => {
+  const r = await fn(new NextRequest(`http://h${url}`, { method: "POST", headers: { ...H, "content-type": "application/json" }, body: JSON.stringify(body) }));
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+(async () => {
+const out: Record<string, unknown> = {};
+const LP = "110110";
+const lib = await get(setsLibrary, `/api/sets/library?urn=${LP}`);
+out[`/api/sets/library?urn=${LP}`] = lib.body;
+const stored = ((lib.body as { stored?: { id: string; name: string; kind: string; entryPoint: string | null; ownerScope: string; members: { urn: string; tier: string | null }[] }[] })?.stored ?? []);
+out.lpStored = stored.map((s) => ({ id: s.id, name: s.name, kind: s.kind, entry: s.entryPoint, scope: s.ownerScope, n: s.members.length }));
+for (const kind of ["feeders", "compared_against"]) {
+  const set = stored.find((s) => s.kind === kind && s.entryPoint === "11+" && s.ownerScope === "school");
+  const urns = (set?.members ?? []).map((m) => m.urn).sort().join(",");
+  const e = await get(setsEditor, `/api/sets/editor?urn=${LP}&kind=${kind}&entry=11%2B&urns=${urns}&n=120&wide=1`);
+  out[`editor:${kind}`] = { set, data: e.body };
+}
+out[`/api/admissions/lists?urn=${LP}`] = (await get(admLists, `/api/admissions/lists?urn=${LP}`)).body;
+out[`/api/admissions/pipeline?urn=${LP}&entry=11+`] = (await get(admPipeline, `/api/admissions/pipeline?urn=${LP}&entry=11%2B`)).body;
+out[`/api/admissions/market-share?urn=${LP}&entry=11+`] = (await get(admMarket, `/api/admissions/market-share?urn=${LP}&entry=11%2B`)).body;
+out[`/api/smt/school?urn=${LP}`] = (await get(smtSchool, `/api/smt/school?urn=${LP}`)).body;
+for (const phase of ["ks4", "ks5"]) {
+  const cs = await post(chooserSet, "/api/teacher/chooser-set", { urn: LP, phase, set: { kind: "nearest" } });
+  out[`chooser:${phase}`] = cs.body;
+  out[`saved:${phase}`] = (await get(savedSets, `/api/teacher/saved-comparator-sets?urn=${LP}&phase=${phase}`)).body;
+  const urns = ((cs.body as { rows?: { urn: string }[] })?.rows ?? []).map((r) => r.urn);
+  out[`overview:${phase}`] = { urns, body: (await post(smtOverview, "/api/smt/overview", { urn: LP, set: { kind: "nearest", label: "10 nearest", urns } })).body };
+}
+out.phases = (await get(phases, `/api/teacher/phases?urn=${LP}`)).body;
+const anon = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+out["teacher:110110:ks4:lite"] = await loadTeacherModel(anon, LP, "ks4", { focusKey: null, ticked: [], full: false, lite: true });
+out["teacher:110110:ks5:lite"] = await loadTeacherModel(anon, LP, "ks5", { focusKey: null, ticked: [], full: false, lite: true });
+out["teacher:110110:ks4"] = await loadTeacherModel(anon, LP, "ks4", { focusKey: null, ticked: [], full: false });
+out["teacher:110110:ks5"] = await loadTeacherModel(anon, LP, "ks5", { focusKey: null, ticked: [], full: false });
+out["teacher:137625:ks4:full:geo"] = await loadTeacherModel(anon, "137625", "ks4", { focusKey: "Geography::GCSE (9-1) Full Course", ticked: [], full: true });
+const today = "2026-11-13";
+out.account = await readAccountSummary(createServiceRoleSupabaseClient(), { urn: LP, today });
+const { data: acc } = await createServiceRoleSupabaseClient().from("school_accounts").select("created_at").eq("school_urn", LP).maybeSingle<{ created_at: string }>();
+out.lpJoined = acc?.created_at ?? null;
+writeFileSync(process.argv[2] ?? "fx.json", JSON.stringify(out));
+console.log("wrote", Object.keys(out).length, "keys");
+
+})();

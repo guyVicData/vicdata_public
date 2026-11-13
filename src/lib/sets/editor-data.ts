@@ -41,6 +41,17 @@ export type EditorRow = {
   igcse: boolean;
   easting: number | null;
   northing: number | null;
+  // 0.8 front door part 2 (D22, additive: the round-1 editor ignores them): what the guided editor's
+  // chips and "This set now" read.
+  /** Statutory age range (GIAS), for the feeder kinds (Primary, Junior, Prep) and "Has Year 6". */
+  low: number | null;
+  high: number | null;
+  /** The whole-school roll in the latest census (full-time pupils 4+, nursery headcount), for "Similar size". */
+  roll: number | null;
+  /** The latest GCSE headline (Attainment 8), null for an IGCSE school or none published. */
+  gcse: number | null;
+  /** The latest post-16 headline (A-level points per entry), null if none published. */
+  post16: number | null;
 };
 
 export type EditorData = {
@@ -55,10 +66,21 @@ export type EditorData = {
   suggestionsTotal: number;
 };
 
+/** The whole-school roll in a census year: every age's pupils (the cohort table's definition). */
+function rollAt(table: Map<number, Map<number, { male: number; female: number }>> | undefined, period: number): number | null {
+  const byAge = table?.get(period);
+  if (!byAge) return null;
+  let n = 0;
+  for (const c of byAge.values()) n += c.male + c.female;
+  return n > 0 ? n : null;
+}
+
 const holds = (t: { low: number | null; high: number | null }, age: number) => (t.low ?? 99) <= age && (t.high ?? -1) >= age;
 const km = (a: SchoolTraits | undefined, b: SchoolTraits | undefined) => (a?.easting == null || a.northing == null || b?.easting == null || b.northing == null ? null : Math.round((Math.hypot(a.easting - b.easting, a.northing - b.northing) / 1000) * 10) / 10);
 
-export type SuggestionFilter = { sector: "all" | "state" | "independent"; boardingOnly: boolean; n: number };
+/** `wide` (the guided editor, D22): feeders are every school teaching any age from Reception to the
+ * year before entry, so "Has Year 6" is a chip rather than a rule; compared-against sets are unchanged. */
+export type SuggestionFilter = { sector: "all" | "state" | "independent"; boardingOnly: boolean; n: number; wide?: boolean };
 
 export async function editorData(urn: string, ep: EntryPoint, kind: SetKind, urns: string[], f: SuggestionFilter): Promise<EditorData> {
   const age = kind === "feeders" ? Math.max(4, ep.age - 1) : ep.age;
@@ -66,14 +88,16 @@ export async function editorData(urn: string, ep: EntryPoint, kind: SetKind, urn
   const traits = await fetchSchoolTraits(Array.from(new Set([urn, ...urns, ...near.map((c) => c.urn)])));
   const me = traits.get(urn);
   const inSet = new Set(urns);
-  const teaching = (t: SchoolTraits) => t.urn !== urn && holds(t, age) && (kind === "feeders" || holds(t, age + 1));
+  // Wide feeders: some age from Reception to the year before entry, and not a secondary (a prep to 13 is in).
+  const teachesUpTo = (t: SchoolTraits) => (t.low ?? 99) <= age && (t.high ?? -1) >= 4 && (t.high ?? 99) <= Math.max(age, 13);
+  const teaching = (t: SchoolTraits) => t.urn !== urn && (f.wide && kind === "feeders" ? teachesUpTo(t) : holds(t, age) && (kind === "feeders" || holds(t, age + 1)));
   const pool = Array.from(traits.values())
     .filter((t) => !inSet.has(t.urn) && teaching(t))
     .filter((t) => (f.sector === "all" ? true : t.sector === f.sector))
     .filter((t) => (f.boardingOnly ? t.boarding : true))
     .map((t) => ({ t, d: km(me, t) }))
     .sort((a, b) => (a.d ?? 1e9) - (b.d ?? 1e9));
-  const shown = pool.slice(0, Math.max(1, Math.min(60, f.n)));
+  const shown = pool.slice(0, Math.max(1, Math.min(f.wide ? 120 : 60, f.n)));
   const all = Array.from(new Set([urn, ...urns, ...shown.map((x) => x.t.urn)]));
   const [census, thresholds, k4, k5, ig] = await Promise.all([cachedCensus(all), loadThresholds(), latestResults("ks4"), latestResults("ks5"), igcseAmong(all)]);
   const [p4, p5] = await Promise.all([k4.period === null ? null : headlinePopulation("ks4", k4.period), k5.period === null ? null : headlinePopulation("ks5", k5.period)]);
@@ -103,6 +127,11 @@ export async function editorData(urn: string, ep: EntryPoint, kind: SetKind, urn
       igcse: ig.has(u),
       easting: t?.easting ?? null,
       northing: t?.northing ?? null,
+      low: t?.low ?? null,
+      high: t?.high ?? null,
+      roll: rollAt(census.get(u)?.table, P),
+      gcse: ig.has(u) || k4.period === null ? null : (p4?.get(u)?.get(k4.period) ?? null),
+      post16: k5.period === null ? null : (p5?.get(u)?.get(k5.period) ?? null),
     };
   };
   return {

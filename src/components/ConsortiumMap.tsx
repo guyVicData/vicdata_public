@@ -66,7 +66,7 @@ export type ConsortiumMapMember = {
 //   redrawKey   redraw when it changes (a new "Shade by"), not only when the dots do
 // Over 200 areas draw on one canvas layer (a neighbourhood map holds up to ~1,600).
 export type ConsortiumMapArea = { id: string; geometry: GeoJSON.MultiPolygon; fill: string; fillOpacity: number; stroke: string; tooltip: string; weight?: number };
-export type ConsortiumMapMarker = { color: string; fillColor: string; fillOpacity: number; radius: number; weight: number };
+export type ConsortiumMapMarker = { color: string; fillColor: string; fillOpacity: number; radius: number; weight: number; dashArray?: string };
 export type ConsortiumMapOptions = {
   areas?: ConsortiumMapArea[];
   circle?: { easting: number; northing: number; metres: number; colour: string };
@@ -79,9 +79,14 @@ export type ConsortiumMapOptions = {
   heightClass?: string;
   onSelect?: (urn: string) => void;
   fitPadding?: number;
+  // 0.8 front door part 2 (D22, additive; absent for every older map): the guided sets editor's
+  //   rings       dashed distance rings round a point, each labelled "5 km" at its north edge
+  //   labelOf     a permanent label beside a dot (main feeders, close rivals, the school itself)
+  rings?: { easting: number; northing: number; km: readonly number[]; colour: string };
+  labelOf?: (m: ConsortiumMapMember) => string | null;
 };
 
-export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas, circle, fitCircle, markerOf, redrawKey }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
+export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas, circle, fitCircle, markerOf, redrawKey, rings, labelOf }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const router = useRouter();
@@ -112,6 +117,14 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
         }
       }
       if (circle && centre) L.circle(centre, { radius: circle.metres, color: circle.colour, weight: 1.5, fill: false, interactive: false, dashArray: "5 4" }).addTo(map);
+      if (rings) {
+        const at = bngToLatLng(rings.easting, rings.northing);
+        for (const km of rings.km) {
+          L.circle(at, { radius: km * 1000, color: rings.colour, weight: 1, opacity: 0.6, fill: false, interactive: false, dashArray: "4 5" }).addTo(map);
+          const north = bngToLatLng(rings.easting, rings.northing + km * 1000);
+          L.marker(north, { interactive: false, icon: L.divIcon({ className: "vd-ring-label", html: `<span>${km} km</span>`, iconSize: [44, 16], iconAnchor: [22, 8] }) }).addTo(map);
+        }
+      }
       const group: LayerGroup = L.layerGroup().addTo(map);
       const rolls = members.map((m) => m.roll).filter((r): r is number => r !== null);
       const minRoll = rolls.length ? Math.min(...rolls) : 0;
@@ -136,10 +149,13 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
             weight: isTarget ? 3 : 1.5,
           },
         );
-        marker.bindTooltip(tooltipOf ? tooltipOf(m) : `${m.name}${m.roll !== null ? ` — ${m.roll.toLocaleString()} pupils` : ""}`, {
-          direction: "top",
-          offset: [0, -4],
-        });
+        const label = labelOf ? labelOf(m) : null;
+        if (label) marker.bindTooltip(label, { permanent: true, direction: "right", offset: [6, 0], className: "vd-map-label" });
+        else
+          marker.bindTooltip(tooltipOf ? tooltipOf(m) : `${m.name}${m.roll !== null ? ` — ${m.roll.toLocaleString()} pupils` : ""}`, {
+            direction: "top",
+            offset: [0, -4],
+          });
         marker.on("click", () => (onSelect ? onSelect(m.urn) : router.push(`/schools/${m.urn}`)));
         (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
         marker.addTo(group);

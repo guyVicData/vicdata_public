@@ -40,7 +40,7 @@ export function GroupDashChips({ accountId, size = "md", library = false }: { ac
       {GROUP_DASHBOARD_NAMES.map((n) => {
         const href = GROUP_DASHBOARD_LIVE[n];
         return href ? (
-          <Link key={n} href={`${href}?account=${accountId}`} data-group-dash={n} className={`rounded-full border border-[var(--group-card-edge)] bg-[var(--group-switch-on)] px-[11px] ${pad} text-[12px] font-bold text-[var(--group-switch-knob-on)]`}>
+          <Link key={n} href={`${href}?account=${accountId}`} data-group-dash={n} className={`inline-flex min-h-[44px] items-center rounded-full border border-[var(--group-card-edge)] bg-[var(--group-switch-on)] px-[11px] sm:min-h-0 ${pad} text-[12px] font-bold text-[var(--group-switch-knob-on)]`}>
             {n}
           </Link>
         ) : (
@@ -51,7 +51,7 @@ export function GroupDashChips({ accountId, size = "md", library = false }: { ac
       })}
       {/* 0.8 group sets (M3): head office's groups library (never on a member school's tile, D2). */}
       {library && (
-        <Link href={`/teacher/group/groups?account=${accountId}`} data-group-dash="Library" className={`rounded-full border border-[var(--group-card-edge)] px-[11px] ${pad} text-[12px] font-bold text-[var(--group-accent-text)]`}>
+        <Link href={`/teacher/group/groups?account=${accountId}`} data-group-dash="Library" className={`inline-flex min-h-[44px] items-center rounded-full border border-[var(--group-card-edge)] px-[11px] sm:min-h-0 ${pad} text-[12px] font-bold text-[var(--group-accent-text)]`}>
           Groups library
         </Link>
       )}
@@ -162,7 +162,7 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
     return frame(
       plain(
         <>
-          <Link href="/login?next=/teacher/group" className="font-bold text-[var(--group-accent-text)]">Sign in</Link> to see your group.
+          <Link href="/login?next=/teacher/group" className="inline-flex min-h-[44px] items-center font-bold text-[var(--group-accent-text)] sm:min-h-0">Sign in</Link> to see your group.
         </>,
       ),
     );
@@ -195,7 +195,7 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
               offices.all.length > 1 ? (
                 <span className="flex flex-wrap gap-1.5" role="group" aria-label="Group">
                   {offices.all.map((x) => (
-                    <Link key={x.id} href={`/teacher/group?account=${x.id}`} aria-current={x.id === o.id ? "true" : undefined} className={`rounded-full border border-[var(--field-chip-border)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)] ${x.id === o.id ? "bg-[var(--field-chip-bg)] font-semibold" : ""}`}>
+                    <Link key={x.id} href={`/teacher/group?account=${x.id}`} aria-current={x.id === o.id ? "true" : undefined} className={`inline-flex min-h-[44px] items-center rounded-full border border-[var(--field-chip-border)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)] sm:min-h-0 ${x.id === o.id ? "bg-[var(--field-chip-bg)] font-semibold" : ""}`}>
                       {x.name}
                     </Link>
                   ))}
@@ -230,7 +230,7 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
                 <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" aria-label="Our schools">
                   {d.schools.map((s) => (
                     <li key={s.urn}>
-                      <Link href={s.vicdata ? `/teacher/smt?headOffice=${s.urn}` : `/schools/${s.urn}`} className="fd-tile flex items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
+                      <Link href={s.vicdata ? `/teacher/smt?headOffice=${s.urn}` : `/schools/${s.urn}`} className="fd-tile flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
                           <SchoolsGlyph />
                         </span>

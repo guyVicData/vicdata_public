@@ -19,6 +19,7 @@ import { fetchNavLabels, saveNavLabels } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PhaseGlyph } from "@/components/teacher/HomeCard";
+import { showAdminBadge } from "@/lib/school-admin/membership";
 import { PanelMenu, MenuDivider, useDismiss } from "./PanelMenu";
 import { ChevronDown } from "./PanelIcons";
 import { MeasureToggle, type FocusSubject, type SharedMeasure } from "./ControlBar";
@@ -212,6 +213,9 @@ export function AccountMenu() {
   // 0.6 S1: People and Teams for School-Admins, Platform for platform admins -- found here,
   // in the one menu every Teacher view page carries.
   const [canManage, setCanManage] = useState(false);
+  // 0.8 front door part 2 (F26, R-ADMIN-BADGE): what waits on the School-Admin's account page (join
+  // requests, a pilot's card); the badge shows exactly when it's more than nothing, to a School-Admin only.
+  const [waiting, setWaiting] = useState(0);
   const [platformAdmin, setPlatformAdmin] = useState(false);
   // 0.8 View as: the one place View as starts, for platform admins (in View as too: it changes it).
   const [staff, setStaff] = useState(false);
@@ -232,6 +236,11 @@ export function AccountMenu() {
         viewAs ? Promise.resolve({ data: false, error: null }) : supabase.rpc("is_platform_admin"),
       ]);
       setCanManage(school.status === "ready" && school.school.canManage);
+      if (school.status === "ready" && school.school.canManage) {
+        const r = await fetch(`/api/school-admin/account?urn=${encodeURIComponent(school.school.schoolUrn)}&waiting=1`, { headers: { Authorization: `Bearer ${data.session.access_token}` } }).catch(() => null);
+        const w = r && r.ok ? ((await r.json().catch(() => null)) as { isSchoolAdmin: boolean; waiting: number } | null) : null;
+        setWaiting(w && showAdminBadge(w) ? w.waiting : 0);
+      }
       setPlatformAdmin(!admin.error && admin.data === true);
       setStaff(await isPlatformAdminCached(supabase));
     })();
@@ -254,9 +263,14 @@ export function AccountMenu() {
         aria-haspopup="menu"
         aria-label="Account"
         title="Account"
-        className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]"
+        className={`${canManage && waiting > 0 ? "relative " : ""}flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]`}
       >
         {ACCOUNT_ICON}
+        {canManage && waiting > 0 && (
+          <span data-admin-menu-badge="" aria-label={`${waiting} waiting on your school's account`} className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[var(--admin-badge-bg,#fbbf24)] px-1 text-[10.5px] font-bold text-[var(--admin-badge-fg,#1f1300)]">
+            {waiting}
+          </span>
+        )}
       </button>
       {open && (
         <PanelMenu label="Account" align="right" width={memberSchools ? 240 : 180}>
@@ -271,6 +285,10 @@ export function AccountMenu() {
               </button>
               {canManage && (
                 <>
+                  <Link href="/teacher/school-account" data-school-account="" className={`${rowClass} flex items-center justify-between gap-2`} onClick={() => setOpen(false)}>
+                    School account
+                    {waiting > 0 && <span className="rounded-full bg-[var(--admin-badge-bg,#fbbf24)] px-1.5 text-[10.5px] font-bold leading-[17px] text-[var(--admin-badge-fg,#1f1300)]">{waiting}</span>}
+                  </Link>
                   <Link href="/teacher/people" className={rowClass} onClick={() => setOpen(false)}>People</Link>
                   <Link href="/teacher/teams" className={rowClass} onClick={() => setOpen(false)}>Teams</Link>
                 </>

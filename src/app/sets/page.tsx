@@ -39,7 +39,7 @@ function Library() {
             <p className={`${phone ? "py-4" : "py-6"} text-[13px] text-[var(--muted2)]`}>{m.status === "error" ? m.message : data === "error" ? "Could not read the sets." : "Loading your sets…"}</p>
           </div>
         ) : (
-          <SetsLibrary key={data.school.urn} data={data} phone={phone} back={back} initial={{ kind, entry: entry && data.entries.includes(entry) ? entry : null, query: sp.get("q") ?? "", ...(section ? { section } : {}) }} />
+          <SetsLibrary key={data.school.urn} data={data} phone={phone} back={back} phase={sp.get("phase") === "ks5" ? "ks5" : sp.get("phase") === "ks4" ? "ks4" : null} initial={{ kind, entry: entry && data.entries.includes(entry) ? entry : null, query: sp.get("q") ?? "", ...(section ? { section } : {}) }} />
         )
       }
     </SetsShell>

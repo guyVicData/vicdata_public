@@ -249,6 +249,36 @@ body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #080
   --set-vc-fg: #9e2257; --set-vc-bg: #fde8ef;
 }
 
+/* 0.8 front door part 2 (D23): the sets library's maker colours -- solid two-stop gradients for the icon
+   tiles, the pinned tiles' top strip and the "Made by" pills, the same in Dark and Light (they're solid
+   fills on either page). Default graphite; School (a curated compared-against set) orange; Head office
+   bronze; Admissions (feeders) sky; Victoria Consultancy rose. -ink is the text and icon on the fill, at
+   4.5:1 or more on both stops (R-THEME-CONTRAST's maker rows). Mine is an outline in the person's phase
+   colour (--maker-mine; the accent when the page has one). */
+#teacher-root {
+  --maker-default-from: #71717a; --maker-default-to: #3f3f46; --maker-default-ink: #ffffff;
+  --maker-school-from: #fb923c; --maker-school-to: #ea580c; --maker-school-ink: #1f0f04;
+  --maker-head_office-from: #9c6a3a; --maker-head_office-to: #6b431e; --maker-head_office-ink: #ffffff;
+  --maker-admissions-from: #5ac8fa; --maker-admissions-to: #1596db; --maker-admissions-ink: #04202f;
+  --maker-vc-from: #e11d48; --maker-vc-to: #9f1239; --maker-vc-ink: #ffffff;
+  --maker-mine: #12713a; --maker-mine-post16: #5b3dd1;
+}
+#teacher-root[data-theme="dark"] { --maker-mine: #34d399; --maker-mine-post16: #a78bfa; }
+
+/* 0.8 front door part 2 (F26, F28): the School-Admin's colour on its plain pages (ROLE_ACCENT.school_admin,
+   amber) -- the role label, the row icons' glyph and links (--admin-text), their tint, and the badge (dark
+   ink on the amber). R-THEME-CONTRAST's admin rows. */
+#teacher-root { --admin-text: #8a5d00; --admin-tint: #fdf3dc; --admin-badge-bg: #fbbf24; --admin-badge-fg: #1f1300; }
+#teacher-root[data-theme="dark"] { --admin-text: #fbbf24; --admin-tint: #2a2412; }
+
+/* 0.8 front door part 2 (D22): the guided editor's map -- the distance rings' "5 km" labels and the
+   permanent labels beside main feeders, close rivals and the school (Leaflet tooltips, restyled). */
+.vd-ring-label { background: none; border: 0; }
+.vd-ring-label span { display: block; text-align: center; font: 600 11px/16px system-ui, sans-serif; color: #475569; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+.leaflet-tooltip.vd-map-label { background: rgba(255,255,255,.92); border: 0; box-shadow: none; padding: 0 5px; font: 600 12px/18px system-ui, sans-serif; color: #17171b; }
+.leaflet-tooltip.vd-map-label::before { display: none; }
+@media (max-width: 599px) { [data-guided-map] .leaflet-container .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; } }
+
 /* F-22 (feedback deploy gate): the Data View's featured row. Its pages (the Data View, a saved set) are
    outside #teacher-root and follow the system theme, so the token is on :root, light and dark: the red
    it already drew (red-50, and red-950 at 40% over the dark page), now one token. Text on it: 16:1

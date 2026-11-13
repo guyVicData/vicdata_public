@@ -45,3 +45,29 @@ test("entry points: the school's saved ones, else its age range's", () => {
   assert.deepEqual(entriesFor([], 3, 11), ["4+"]);
   assert.deepEqual(entriesFor([], 16, 19), ["16+"]);
 });
+
+// 0.8 front door part 2 (D23, R-SETS-MAKER-COLOURS): who made a set, as the library colours it.
+test("R-SETS-MAKER-COLOURS: makers -- School orange for curated compared-against sets, Admissions sky for feeders, head office, VC, Mine, Default", async () => {
+  const { makerOf, MAKERS, MAKER_WORD } = await import("./library-view");
+  assert.equal(makerOf({ creator: "smt", kind: "compared_against" }), "school");
+  assert.equal(makerOf({ creator: "admissions", kind: "compared_against" }), "school", "a curated compared-against set is the school's, whoever curated it");
+  assert.equal(makerOf({ creator: "school_admin", kind: "compared_against" }), "school");
+  assert.equal(makerOf({ creator: "admissions", kind: "feeders" }), "admissions");
+  assert.equal(makerOf({ creator: "school_admin", kind: "feeders" }), "admissions");
+  assert.equal(makerOf({ creator: "group", kind: "compared_against" }), "head_office");
+  assert.equal(makerOf({ creator: "victoria_consultancy", kind: "compared_against" }), "vc");
+  assert.equal(makerOf({ creator: "me", kind: "feeders" }), "mine");
+  assert.equal(makerOf({ creator: "default", kind: "feeders" }), "default");
+  assert.deepEqual(MAKERS.map((m) => MAKER_WORD[m]), ["School", "Head office", "Admissions", "Victoria Consultancy", "Mine", "Default"], "the Who made it key");
+  const { readFileSync } = await import("node:fs");
+  const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+  const { tokensOf, makerPairs, contrast, AA } = await import("../front-door/contrast");
+  const t = tokensOf(css, "#teacher-root");
+  assert.equal(t["--maker-school-from"], "#fb923c", "School orange");
+  assert.equal(t["--maker-head_office-to"], "#6b431e", "Head office bronze");
+  assert.equal(t["--maker-admissions-to"], "#1596db", "Admissions sky");
+  for (const p of makerPairs(css)) assert.ok(contrast(p.fg, p.bg) >= AA[p.kind], `${p.name}: ${contrast(p.fg, p.bg).toFixed(2)}`);
+  const lib = readFileSync(new URL("../../components/sets/SetsLibrary.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(lib, /CreatorPill|creatorColours/, "the library draws maker pills and tiles, not round 1's tinted pills");
+  assert.match(lib, /data-library-key/, "the sidebar's Who made it key");
+});

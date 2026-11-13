@@ -2,6 +2,8 @@
 // contrast table the report logs. Used by the rule runners (R-THEME-CONTRAST, R-PANEL-LADDER,
 // R-ROLE-COLOURS) and the unit tests, so the logged table and the stylesheet can't drift apart.
 
+import { GROUP_ACCENT, GROUP_BRONZE } from "../teacher-view-theme";
+
 /** WCAG 2 relative luminance of a #rrggbb colour. */
 export function luminance(hex: string): number {
   const h = hex.replace("#", "");
@@ -96,7 +98,49 @@ export function contrastTable(css: string): Pair[] {
   pairs.push({ name: "Ladder Light: muted text on the page", fg: ll["--muted"] ?? light["--muted"], bg: ll["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: muted text on the page", fg: ld["--muted"] ?? dark["--muted"], bg: ld["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Light: muted2 text on the page", fg: light["--muted2"], bg: ll["--bg"], kind: "small" });
-  return [...pairs, ...walkHeadPairs(css)];
+  return [...pairs, ...walkHeadPairs(css), ...makerPairs(css), ...groupPairs(), ...adminPairs(css)];
+}
+
+/**
+ * 0.8 front door part 2 (D23): the sets library's maker colours -- the ink (pill text, small; the kind
+ * icon, a mark) on both stops of each maker's gradient, and Mine's outline colour on the panel.
+ */
+export const MAKER_KEYS = ["default", "school", "head_office", "admissions", "vc"] as const;
+export function makerPairs(css: string): Pair[] {
+  const t = tokensOf(css, "#teacher-root");
+  const d = tokensOf(css, SEL.dark);
+  const pairs: Pair[] = [];
+  for (const m of MAKER_KEYS) {
+    const label = { default: "Default", school: "School", head_office: "Head office", admissions: "Admissions", vc: "Victoria Consultancy" }[m];
+    pairs.push({ name: `Sets library ${label}: pill text on the light stop`, fg: t[`--maker-${m}-ink`], bg: t[`--maker-${m}-from`], kind: "small" });
+    pairs.push({ name: `Sets library ${label}: pill text on the dark stop`, fg: t[`--maker-${m}-ink`], bg: t[`--maker-${m}-to`], kind: "small" });
+  }
+  pairs.push({ name: "Sets library Mine (GCSE): outline text on the Light panel", fg: t["--maker-mine"], bg: "#ffffff", kind: "small" });
+  pairs.push({ name: "Sets library Mine (Post-16): outline text on the Light panel", fg: t["--maker-mine-post16"], bg: "#ffffff", kind: "small" });
+  pairs.push({ name: "Sets library Mine (GCSE): outline text on the Dark panel", fg: d["--maker-mine"], bg: "#141417", kind: "small" });
+  pairs.push({ name: "Sets library Mine (Post-16): outline text on the Dark panel", fg: d["--maker-mine-post16"], bg: "#141417", kind: "small" });
+  return pairs;
+}
+
+/**
+ * 0.8 front door part 2 (FD5): the Group pages' bronze text and chips (GROUP_BRONZE, teacher-view-theme.ts),
+ * which replaced the orange left from before Part 1: accent text on the panel and on the chip, the chip's
+ * text on its fill, the strong text on the panel; Light on white, Dark on the ladder's well and column.
+ */
+export function groupPairs(): Pair[] {
+  const pairs: Pair[] = [];
+  for (const [theme, panels] of [["light", ["#ffffff"]], ["dark", ["#0b0b0d", "#141417"]]] as const) {
+    const b = GROUP_BRONZE[theme];
+    const T = theme === "light" ? "Light" : "Dark";
+    for (const bg of panels) {
+      pairs.push({ name: `Group pages ${T}: accent text on the panel ${bg}`, fg: b.accentText, bg, kind: "small" });
+      pairs.push({ name: `Group pages ${T}: strong text on the panel ${bg}`, fg: b.strong, bg, kind: "small" });
+    }
+    if (theme === "dark") for (const bg of panels) pairs.push({ name: `Group pages Dark: the accent (GROUP_ACCENT) as text on the panel ${bg}`, fg: GROUP_ACCENT.hex, bg, kind: "small" });
+    pairs.push({ name: `Group pages ${T}: accent text on the chip`, fg: b.accentText, bg: b.chipBg, kind: "small" });
+    pairs.push({ name: `Group pages ${T}: chip text on the chip`, fg: b.chipFg, bg: b.chipBg, kind: "small" });
+  }
+  return pairs;
 }
 
 /**
@@ -147,4 +191,21 @@ export function ladderSteps(css: string) {
     lightBorder: contrast(sl["--shut-border"], ll["--panel-bg"]),
     tokens: { ll, ld, sl, sd },
   };
+}
+
+/**
+ * 0.8 front door part 2 (F26, F28): the School-Admin's plain pages -- the role label and links (--admin-text)
+ * on the panel and on the icon's tint, Dark and Light, and the badge's ink on its amber.
+ */
+export function adminPairs(css: string): Pair[] {
+  const t = tokensOf(css, "#teacher-root");
+  const d = { ...t, ...tokensOf(css, SEL.dark) };
+  return [
+    { name: "School admin Light: role text and links on the panel", fg: t["--admin-text"], bg: "#ffffff", kind: "small" },
+    { name: "School admin Light: the row icon on its tint", fg: t["--admin-text"], bg: t["--admin-tint"], kind: "mark" },
+    { name: "School admin Dark: role text and links on the panel", fg: d["--admin-text"], bg: "#141417", kind: "small" },
+    { name: "School admin Dark: role text on the page", fg: d["--admin-text"], bg: "#08080a", kind: "small" },
+    { name: "School admin Dark: the row icon on its tint", fg: d["--admin-text"], bg: d["--admin-tint"], kind: "mark" },
+    { name: "School admin: the badge's text on its amber (both themes)", fg: t["--admin-badge-fg"], bg: t["--admin-badge-bg"], kind: "small" },
+  ];
 }

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="app.css"><link rel="stylesheet" href="leaflet.css">
+<style>body{margin:0} .leaflet-tile-pane{display:none} .leaflet-container{background:#eef1f4}</style>
+<script>
+window.process = { env: { NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "http://x", NEXT_PUBLIC_SUPABASE_ANON_KEY: "x" } };
+const P = new URLSearchParams(location.search);
+const THEME = P.get("theme") || "dark";
+try { localStorage.clear(); localStorage.setItem("vicdata.teacher.theme", THEME); sessionStorage.clear(); } catch {}
+window.__MISSES = [];
+window.onerror = (m) => { document.title = "ERR " + m; };
+</script>
+<script src="fx.js"></script>
+<script>
+const URN = P.get("urn") || "110110";
+const NAME = URN === "137625" ? "The Chase" : "Leighton Park School";
+const ME = "00000000-0000-0000-0000-000000000001";
+window.__DB = {
+  school_memberships: [{ id: "m1", profile_id: ME, status: "approved", is_admin: true, roles: ["teacher", "smt", "admissions"], role: null, admissions_lead: true, approved_at: "2026-09-07", school_account_id: "acc", school_accounts: { id: "acc", school_urn: URN, account_holder_membership_id: null, schools: { current_name: NAME } } }],
+  profiles: [{ id: ME, full_name: "Sam Morgan", email: "sam@school.example" }],
+  teacher_view_preferences: [], front_door_state: [{ profile_id: ME, welcome_seen_at: "2026-11-01", last_visit_at: "2026-11-12", whats_new_seen_at: "2026-11-12" }],
+  schools: [{ urn: "110110", statutory_low_age: 11, statutory_high_age: 18, boarders_name: "Boarding school", current_name: "Leighton Park School" }],
+  meetings: [], dashboards: [], teacher_view_onboarding: [],
+};
+window.__RPC = { is_platform_admin: false, changelog_for_me: [] };
+const realFetch = window.fetch;
+window.fetch = async (input, init) => {
+  const u = new URL(typeof input === "string" ? input : input.url, location.href);
+  const json = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
+  if (!u.pathname.startsWith("/api/")) return realFetch(input, init);
+  const q = u.searchParams, F = window.__FX;
+  if (u.pathname === "/api/usage") return new Response(null, { status: 204 });
+  if (u.pathname === "/api/sets/editor") return json(F[`editor:${q.get("kind")}`].data);
+  if (u.pathname === "/api/sets/library") return json(F["/api/sets/library?urn=110110"]);
+  if (u.pathname === "/api/school-admin/account") return json(window.__ACC(P.get("ms") || "pilot", P.get("today") || "2026-11-13", q.get("waiting") === "1"));
+  if (u.pathname === "/api/teacher/phases") return json(F.phases);
+  if (u.pathname === "/api/group/school") return json({ groups: [], schoolAdmin: true });
+  if (u.pathname === "/api/teacher/saved-comparator-sets") return json({ sets: [], school: [], mine: [] });
+  if (u.pathname === "/api/teacher/chooser-set") { const b = JSON.parse(init.body); return json(F["chooser:" + b.phase]); }
+  if (u.pathname === "/api/smt/overview") { const b = JSON.parse(init.body); const o = ["ks4", "ks5"].map((p) => F["overview:" + p]).find((x) => JSON.stringify(x.urns) === JSON.stringify(b.set.urns)) || F["overview:ks4"]; return json(o.body); }
+  if (u.pathname === "/api/front-door/teacher") {
+    const k = q.get("urn") === "137625" ? "teacher:137625:ks4:full:geo" : `teacher:${q.get("urn")}:${q.get("phase")}${q.get("lite") === "1" ? ":lite" : ""}`;
+    return F[k] ? json(F[k]) : (window.__MISSES.push(u.pathname + u.search), json({ error: "miss" }, 404));
+  }
+  for (const k of Object.keys(F)) if (k.startsWith(u.pathname + "?") && (!k.includes("entry=") || k.includes("entry=" + (q.get("entry") || "")))) return json(F[k]);
+  if (F["post:" + u.pathname]) return json(F["post:" + u.pathname]);
+  window.__MISSES.push((init && init.method || "GET") + " " + u.pathname + u.search + (init && init.body ? " " + init.body : ""));
+  return json({ error: "miss" }, 404);
+};
+</script>
+</head><body><div id="root"></div><script src="bundle.js"></script></body></html>

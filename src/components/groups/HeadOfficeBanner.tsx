@@ -3,7 +3,7 @@
 // VicData 0.8 groups r1 (G2): the strip over a member school's SMT dashboards when head office opens
 // them -- read-only, and the way back to the group's home.
 import Link from "next/link";
-import { GROUP_ACCENT } from "@/lib/teacher-view-theme";
+import { GROUP_ACCENT, GROUP_BRONZE } from "@/lib/teacher-view-theme";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 
 export function HeadOfficeBanner({ note, className = "" }: { note: string; className?: string }) {
@@ -16,7 +16,7 @@ export function HeadOfficeBanner({ note, className = "" }: { note: string; class
     >
       <span>{note}</span>
       <span className="flex-grow" />
-      <Link href="/teacher/group" className="font-bold" style={{ color: theme === "dark" ? GROUP_ACCENT.hex : "#c2410c" }}>
+      <Link href="/teacher/group" className="font-bold" style={{ color: theme === "dark" ? GROUP_ACCENT.hex : GROUP_BRONZE.light.accentText }}>
         Back to the group &rarr;
       </Link>
     </div>

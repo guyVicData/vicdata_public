@@ -227,6 +227,15 @@ async function frontDoorModels() {
   ];
   return frontDoorModelCache;
 }
+// 0.8 front door part 2: the tests in one unit file whose names carry the rule's id, in their own process.
+function unitByRule(file: string, ruleId: string, env: Record<string, string> = {}): { pass: boolean; detail: string } {
+  const root = new URL("..", import.meta.url).pathname;
+  const r = spawnSync("npx", ["-y", "tsx", "--env-file=.env.local", "--test", "--test-force-exit", "--test-name-pattern", ruleId, file], { cwd: root, encoding: "utf8", env: { ...process.env, ...env } });
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  const lines = out.split("\n").filter((l) => /^(ok|not ok) \d+ - /.test(l) && l.includes(ruleId));
+  const failed = lines.filter((l) => l.startsWith("not ok"));
+  return { pass: r.status === 0 && lines.length > 0 && !failed.length, detail: `${lines.length - failed.length} of ${lines.length} pass${failed.length ? `; failing: ${failed.map((l) => l.replace(/^not ok \d+ - /, "")).join("; ")}` : ""}` };
+}
 // 0.8 group sets: run group unit tests on the fixtures (the switch on; production's own rows), optionally
 // only the tests whose names match, and a PGlite suite, from the repo root.
 function groupTests(files: string[], pattern: string | null): { pass: boolean; detail: string } {
@@ -3489,8 +3498,62 @@ const RUNNERS: Record<string, Runner> = {
     const { midScopeFindings } = await import("../src/lib/front-door/theme-scope");
     const { effectiveTheme } = await import("../src/components/shell/TeacherChrome");
     const f = midScopeFindings(fd.files);
-    const pass = effectiveTheme("mid") === "dark" && !f.unlisted.length && !f.stale.length;
-    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none" }) };
+    // 0.8 front door part 2: the new sets and admin pages draw their root's theme from useTeacherTheme (Dark under Mid).
+    const NEW_PAGES = ["src/app/sets/guided/page.tsx", "src/components/school-admin/SchoolAccount.tsx"];
+    const newPages = NEW_PAGES.filter((p) => {
+      const t = fd.files.find((x) => x.file === p)?.text ?? "";
+      return !(t.includes("useTeacherTheme()") && t.includes('id="teacher-root" data-theme={theme}') && !t.includes("useThemePref"));
+    });
+    const pass = effectiveTheme("mid") === "dark" && !f.unlisted.length && !f.stale.length && !newPages.length;
+    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none", newPagesDark: newPages.length ? `not Dark under Mid: ${newPages.join(", ")}` : `${NEW_PAGES.length} ok` }) };
+  },
+  // 0.8 front door part 2: a unit test file's tests named for the rule, run in their own process.
+  async guidedSets(_L, rule) {
+    const unit = unitByRule("src/lib/sets/guided.test.ts", rule.id);
+    // Live: Leighton Park's 11+ rivals (its 10 nearest | independent default), This set now from the editor
+    // route's own rows equals the rows' figures, worked out here by hand.
+    const { editorData } = await import("../src/lib/sets/editor-data");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const { admissionsRecipes } = await import("../src/lib/sets/recipes");
+    const { setNow } = await import("../src/lib/sets/guided");
+    const { IGCSE_SWITCH_SHARE } = await import("../src/lib/sets/results-coverage");
+    const ep = entryPoint("11+")!;
+    const rec = (await admissionsRecipes("110110", ep, "compared_against"))[0];
+    const d = await editorData("110110", ep, "compared_against", rec.urns, { sector: "all", boardingOnly: false, n: 120, wide: true });
+    const now = setNow("rivals", d.rows, {}, d.focus, 11);
+    const kms = d.rows.map((r) => r.km).filter((k): k is number => k !== null).sort((a, b) => a - b);
+    const noGcse = d.rows.filter((r) => !r.hasGcse).length;
+    const wantMeasure = noGcse / d.rows.length > IGCSE_SWITCH_SHARE && d.rows.filter((r) => !r.hasPost16).length < noGcse ? "post16" : "gcse";
+    const live = now.schools === rec.urns.length && now.km?.min === kms[0] && now.km?.max === kms[kms.length - 1] && now.results?.igcse === d.rows.filter((r) => r.igcse).length && now.results?.measure === wantMeasure && now.mix.b === d.rows.filter((r) => r.boarding).length;
+    return { pass: unit.pass && live, detail: fmt({ unit: unit.detail, set: `${rec.name} (${rec.urns.length})`, km: now.km ? `${now.km.min}-${now.km.max}, median ${now.km.median}` : "none", mix: `${now.mix.a} day · ${now.mix.b} boarding`, results: now.results ? `${now.results.measure} avg ${now.results.avg} (you ${now.results.you}) · ${now.results.igcse} IGCSE` : "none", suggestions: d.suggestionsTotal, live }) };
+  },
+  async membershipRule(_L, rule) {
+    const unit = unitByRule("src/lib/school-admin/membership.test.ts", rule.id);
+    const root = new URL("..", import.meta.url).pathname;
+    const pg = spawnSync("node", ["supabase/tests/v08_front_door_r2_membership_pglite.mjs"], { cwd: root, encoding: "utf8" });
+    const pgPass = (pg.stdout.match(/^PASS /gm) ?? []).length;
+    const pgFail = (pg.stdout.match(/^FAIL /gm) ?? []).length;
+    return { pass: unit.pass && pg.status === 0 && pgFail === 0 && pgPass > 0, detail: fmt({ unit: unit.detail, pglite: `${pgPass} pass, ${pgFail} fail` }) };
+  },
+  async adminBadge(_L, rule) {
+    const unit = unitByRule("src/lib/school-admin/membership.test.ts", rule.id);
+    // Live, read-only: Leighton Park's rows from the route's own reader (the service role here, as View as reads).
+    const { createServiceRoleSupabaseClient } = await import("../src/lib/supabase");
+    const { readAccountSummary } = await import("../src/lib/school-admin/account-server");
+    const { accountRows, waitingCount } = await import("../src/lib/school-admin/membership");
+    const today = new Date().toISOString().slice(0, 10);
+    const s = await readAccountSummary(createServiceRoleSupabaseClient(), { urn: "110110", today });
+    const rows = accountRows(s, today);
+    const live = rows[0].id === "join" && (s.joinRequests > 0) === !!rows[0].badge && waitingCount(rows) === rows.filter((r) => r.badge).reduce((n, r) => n + (r.id === "join" ? s.joinRequests : 1), 0) && !rows.some((r) => /sign-?ins/i.test(r.title));
+    return { pass: unit.pass && live, detail: fmt({ unit: unit.detail, rows: rows.map((r) => `${r.title}: ${r.summary}${r.badge ? ` [${r.badge}]` : ""}`).join("; "), waiting: waitingCount(rows), live }) };
+  },
+  async frontDoorMobile(_L, rule) {
+    const unit = unitByRule("src/lib/front-door/mobile.test.tsx", rule.id);
+    return { pass: unit.pass, detail: unit.detail };
+  },
+  async setsMakerColours(_L, rule) {
+    const unit = unitByRule("src/lib/sets/library.test.ts", rule.id);
+    return { pass: unit.pass, detail: unit.detail };
   },
   async themeContrast() {
     const fd = await frontDoorSources();
