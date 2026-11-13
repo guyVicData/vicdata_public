@@ -5,7 +5,11 @@
 // improved, each school's main entry cohort and Year 12 against Year 11.
 import { TREND_BASE_PERIOD } from "@/catalogue/years";
 import type { ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, SchoolYearRow, SubjectArea } from "./aggregates";
-import { buildOverview, chosenSets, fig, firstCensus, GROWING_SPAN, latestCensus, latestFor, MEASURE_LABEL, MEASURE_PHASE, rankWithin, reasonWords, setsFor, type CompareKey, type Focus, type GroupOverview } from "./dash";
+import { buildOverview, chosenSets, fig, firstCensus, GROWING_SPAN, latestCensus, latestFor, MEASURE_LABEL, MEASURE_PHASE, rankWithin, reasonWords, setsFor, type CompareKey, type Focus, type GroupOverview, type GroupSetInput, type MedianCell } from "./dash";
+import { medianOf, notPublished } from "./group-sets";
+
+/** 0.8 group sets (M4): what the Academic and Pupils builders pass on to buildOverview. */
+type SetPass = { groupSet?: GroupSetInput | null; addressKey?: string; nearest?: { id: string }[] };
 
 type Pt = { year: number; value: number | null };
 type Ph = Exclude<Phase, "all">;
@@ -37,7 +41,9 @@ const memberOf = (s: SchoolYearRow, p: number, reading: "at_time" | "listed_now"
 export type PhaseHeadline = {
   phase: Ph;
   year: number | null;
-  measures: { measure: string; label: string; group: MeasureFig | null; set: MeasureFig | null; england: MeasureFig | null; place: Place | null }[];
+  measures: { measure: string; label: string; group: MeasureFig | null; set: MeasureFig | null; england: MeasureFig | null; place: Place | null; /** a set of groups: its median */ median?: MedianCell | null }[];
+  /** A set of groups (M4): each group's figure on the phase's headline, side by side. */
+  groups?: { id: string; label: string; type: string; value: number | null; average: number | null; n: number | null; notPublished: boolean }[];
   inPhase: number;
   withFigure: number;
   excluded: Excluded[];
@@ -68,12 +74,16 @@ export function phasesFor(agg: GroupAggregate, focus: Focus): Ph[] {
   return focus === "all" ? all : [focus];
 }
 
-export function buildAcademic(input: { agg: GroupAggregate; comps: ComparisonRow[]; schools: SchoolYearRow[]; compare: CompareKey; focus: Focus; name?: string; namedLabels?: Record<string, string> }): GroupAcademic {
+export function buildAcademic(input: { agg: GroupAggregate; comps: ComparisonRow[]; schools: SchoolYearRow[]; compare: CompareKey; focus: Focus; name?: string; namedLabels?: Record<string, string> } & SetPass): GroupAcademic {
   const { agg, comps, schools, focus } = input;
   const reading = agg.reading;
-  const overview = buildOverview({ agg, comps, compare: input.compare, focus, name: input.name, namedLabels: input.namedLabels });
+  const pass: SetPass = { groupSet: input.groupSet, addressKey: input.addressKey, nearest: input.nearest };
+  const overview = buildOverview({ agg, comps, compare: input.compare, focus, name: input.name, namedLabels: input.namedLabels, ...pass });
   const sets = setsFor(agg, comps, reading, overview.group.name);
-  const chosen = chosenSets(sets, input.compare)[0] ?? null;
+  // A set of groups has no one comparison row: its median stands in (below).
+  const gs = input.groupSet ?? null;
+  const chosen = gs ? null : (chosenSets(sets, input.compare)[0] ?? null);
+  const named = gs ? gs.groups.map((g) => ({ g, s: sets.find((x) => x.key === `peer_named:${g.id}`) ?? null })) : [];
   const england = sets.find((s) => s.key === "england:england") ?? null;
   const nonGroup = sets.find((s) => s.key === "non_group:england") ?? null;
   const phases = phasesFor(agg, focus);
@@ -95,7 +105,16 @@ export function buildAcademic(input: { agg: GroupAggregate; comps: ComparisonRow
         set: chosen ? fig(figAt(chosen.rows, year, ph), m) : null,
         england: england ? fig(figAt(england.rows, year, ph), m) : null,
         place: g?.peer?.places?.[m] ?? null,
+        ...(gs ? { median: (() => {
+          const fs = named.filter((x) => x.s).map((x) => fig(figAt(x.s!.rows, year, ph), m));
+          const v = fs.map((f) => f?.weighted ?? null);
+          return { value: medianOf(v), average: medianOf(fs.map((f) => f?.average_school ?? null)), n: v.filter((x) => x !== null).length, of: named.length };
+        })() } : {}),
       })),
+      ...(gs ? { groups: named.map(({ g, s }) => {
+        const f = s ? fig(figAt(s.rows, year, ph), ms[0]) : null;
+        return { id: g.id, label: g.label, type: g.type, value: f?.weighted ?? null, average: f?.average_school ?? null, n: f ? f.n_with_figure : null, notPublished: notPublished(g.type, ms[0]) };
+      }) } : {}),
       inPhase: g?.n_schools ?? 0,
       withFigure: fig(g, ms[0])?.n_with_figure ?? 0,
       excluded: g?.excluded?.[ms[0]] ?? [],
@@ -176,7 +195,7 @@ export function buildAcademic(input: { agg: GroupAggregate; comps: ComparisonRow
     else steady++;
   }
 
-  const p16 = phasesFor(agg, "all").includes("post16") ? buildOverview({ agg, comps, compare: input.compare, focus: "post16", name: input.name, namedLabels: input.namedLabels }).trends.results : null;
+  const p16 = phasesFor(agg, "all").includes("post16") ? buildOverview({ agg, comps, compare: input.compare, focus: "post16", name: input.name, namedLabels: input.namedLabels, ...pass }).trends.results : null;
   return {
     kind: "academic",
     overview,
@@ -190,7 +209,11 @@ export function buildAcademic(input: { agg: GroupAggregate; comps: ComparisonRow
       year: ry,
       rows: rankedRows,
       groupMedian: median(groupVals),
-      set: chosen ? { label: chosen.label, value: fig(figAt(chosen.rows, ry, rph), rm)?.weighted ?? null, n: fig(figAt(chosen.rows, ry, rph), rm)?.n_with_figure ?? null } : null,
+      set: chosen
+        ? { label: chosen.label, value: fig(figAt(chosen.rows, ry, rph), rm)?.weighted ?? null, n: fig(figAt(chosen.rows, ry, rph), rm)?.n_with_figure ?? null }
+        : gs
+          ? { label: "Set median", value: medianOf(named.filter((x) => x.s).map((x) => fig(figAt(x.s!.rows, ry, rph), rm)?.weighted ?? null)), n: null }
+          : null,
       nonGroup: nonGroup ? (fig(figAt(nonGroup.rows, ry, rph), rm)?.weighted ?? null) : null,
       england: england ? (fig(figAt(england.rows, ry, rph), rm)?.weighted ?? null) : null,
     },
@@ -240,10 +263,10 @@ export function entryAge(byAge: number[]): number | null {
   return first >= 0 ? first : null;
 }
 
-export function buildPupils(input: { agg: GroupAggregate; comps: ComparisonRow[]; schools: SchoolYearRow[]; compare: CompareKey; focus: Focus; name?: string; namedLabels?: Record<string, string> }): GroupPupils {
+export function buildPupils(input: { agg: GroupAggregate; comps: ComparisonRow[]; schools: SchoolYearRow[]; compare: CompareKey; focus: Focus; name?: string; namedLabels?: Record<string, string> } & SetPass): GroupPupils {
   const { agg, schools, focus } = input;
   const reading = agg.reading;
-  const overview = buildOverview({ agg, comps: input.comps, compare: input.compare, focus, name: input.name, namedLabels: input.namedLabels });
+  const overview = buildOverview({ agg, comps: input.comps, compare: input.compare, focus, name: input.name, namedLabels: input.namedLabels, groupSet: input.groupSet, addressKey: input.addressKey, nearest: input.nearest });
   const census = latestCensus(agg);
   const first = firstCensus(agg);
   const all = agg.rows.find((r) => r.period === census && r.phase === "all")!.figures;

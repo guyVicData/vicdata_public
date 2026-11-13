@@ -1,0 +1,31 @@
+// A chainable fake Supabase client over window.__DB (table -> rows). Read-only harness.
+type Rows = Record<string, unknown>[];
+function q(table: string) {
+  const db = ((window as unknown as { __DB: Record<string, Rows> }).__DB ?? {}) as Record<string, Rows>;
+  let rows: Rows = (db[table] ?? []).slice();
+  const api: Record<string, unknown> = {};
+  const self = () => api;
+  for (const m of ["select", "order", "limit", "range", "neq", "not", "is", "gte", "lte", "ilike", "like", "or", "filter", "match"]) api[m] = self;
+  api.eq = (col: string, v: unknown) => { rows = rows.filter((r) => !(col in r) || String(r[col]) === String(v)); return api; };
+  api.in = (col: string, vs: unknown[]) => { rows = rows.filter((r) => !(col in r) || vs.map(String).includes(String(r[col]))); return api; };
+  api.maybeSingle = async () => ({ data: rows[0] ?? null, error: null });
+  api.single = async () => ({ data: rows[0] ?? null, error: null });
+  api.insert = () => ({ ...api, then: (f: (x: unknown) => unknown) => f({ data: null, error: { code: "42501", message: "harness" } }) });
+  api.update = api.insert; api.delete = api.insert; api.upsert = api.insert;
+  api.then = (f: (x: unknown) => unknown) => Promise.resolve(f({ data: rows, error: null }));
+  return api;
+}
+const client = {
+  auth: {
+    getSession: async () => ({ data: { session: { user: { id: "00000000-0000-0000-0000-000000000001" }, access_token: "harness-token" } } }),
+    getUser: async () => ({ data: { user: { id: "00000000-0000-0000-0000-000000000001" } } }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+    signOut: async () => ({}),
+  },
+  from: (t: string) => q(t),
+  rpc: async (name: string) => ({ data: ((window as unknown as { __RPC?: Record<string, unknown> }).__RPC ?? {})[name] ?? false, error: null }),
+};
+export const createBrowserSupabaseClient = () => client;
+export const createServerAnonSupabaseClient = () => client;
+export const createServiceRoleSupabaseClient = () => client;
+export default client;

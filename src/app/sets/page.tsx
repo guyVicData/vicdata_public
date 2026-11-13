@@ -11,6 +11,7 @@ import { SetsShell, SetsWayBack, useSetsMember, wayBack } from "@/components/set
 import { entryOfPhase } from "@/lib/sets/model";
 import type { LibraryData } from "@/lib/sets/library";
 import type { LibraryFilter } from "@/lib/sets/library-view";
+import { GroupSetsLibraryPage } from "@/components/sets/GroupSetsLibrary";
 
 function Library() {
   const sp = useSearchParams();
@@ -45,10 +46,17 @@ function Library() {
   );
 }
 
+// 0.8 group sets (M4, M5): ?account=<group account> is Manage sets for a head office
+// (GroupSetsLibrary.tsx). Every other address is the school library above, exactly as before.
+function LibraryBranch() {
+  const sp = useSearchParams();
+  return sp.get("account") ? <GroupSetsLibraryPage /> : <Library />;
+}
+
 export default function SetsLibraryPage() {
   return (
     <Suspense fallback={null}>
-      <Library />
+      <LibraryBranch />
     </Suspense>
   );
 }

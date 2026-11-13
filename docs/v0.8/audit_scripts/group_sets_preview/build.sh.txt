@@ -1,0 +1,5 @@
+#!/bin/zsh
+D=${0:A:h}; REPO=${REPO:-/Users/guy/dev/vicdata_public_group}
+cd $D
+node css.mjs app.css $REPO >/dev/null && echo "[build] css"
+npx -y esbuild@0.24.0 $D/harness.tsx --bundle --outfile=$D/bundle.js --jsx=automatic --tsconfig=$REPO/tsconfig.json --alias:@/lib/supabase=$D/stubs/supabase.ts --alias:next/navigation=$D/stubs/navigation.ts --alias:next/link=$D/stubs/link.tsx --alias:next/dynamic=$D/stubs/dynamic.tsx --alias:react=$REPO/node_modules/react --alias:react-dom=$REPO/node_modules/react-dom --define:process.env.NODE_ENV=\"production\" --loader:.css=empty --log-level=error && echo "[build] bundle"

@@ -9,6 +9,11 @@ const MEMBERSHIP = "Group membership: {membershipSources} (as of {asOf})";
 const CENSUS = "DfE school census (January), every member school's own rows from 2019/20 (and a member's GIAS predecessors)";
 const RESULTS = "DfE performance tables: KS2, KS4 (Attainment 8, English and maths, Progress 8) and KS5 (A-level and all-qualification points per entry, A-level value added)";
 const READING = "Reading: {reading}. 'Members at the time' counts a school in a year only if it was a member on that year's census day (15 January), where the source dates membership; sources without dates count every listed school every year. 'All schools listed now' counts every current member every year.";
+// 0.8 group pools (Guy, 8 Nov): like for like, the rules every figure here follows.
+const COUNTED = "Group figures count mainstream schools: special schools, alternative provision, pupil referral units and nursery schools are listed as members but not counted in the group's figures or any comparison set's, so like is compared with like.";
+const ROLL_AGES = "Roll counts pupils of all ages, including nursery classes in primary schools.";
+const ENGLAND = "{england}: {englandNote}";
+const POOL_MIN = "A pooled figure needs at least 5 schools with the figure (R-MIN-SCHOOLS); fewer would identify them and swing too much to be a benchmark.";
 const WEIGHTED = "Results are pupil-weighted: each school counts by its pupils (GCSE pupils, KS2 cohort, post-16 entries); 'average school' is the plain mean of the schools' figures.";
 
 export const METHODS_GROUPS: Record<string, ViewMethod> = {
@@ -17,15 +22,15 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group's member schools; schools outside England are counted and listed, not added up",
     years: "The latest census, {census}; change over 1, 3 and 5 years",
     leftOut: ["Schools outside England (no DfE census): listed, never added", "Schools not yet open in a year"],
-    steps: [READING, "We add up the member schools' census rolls for the year: the combined roll.", "Change is shown two ways: combined (every school counted each year, so schools that joined add to it) and like for like (only schools with a roll in both years).", "Schools growing are the schools whose roll rose over three years, among those with both years.", "Each school's size (XS to XL) places its largest phase among national fifths for that phase."],
+    steps: [READING, "We add up the member mainstream schools' census rolls for the year: the combined roll.", ROLL_AGES, COUNTED, "Change is shown two ways: combined (every school counted each year, so schools that joined add to it) and like for like (only schools with a roll in both years).", "Schools growing are the schools whose roll rose over three years, among those with both years.", "Each school's size (XS to XL) places its largest phase among national fifths for that phase."],
     rounding: ["Rolls to whole pupils", "Changes to one decimal place"],
   },
   "GRP-O-AGAINST": {
-    sources: [MEMBERSHIP, CENSUS, RESULTS, "Comparison sets: peer groups, non-group schools, the group's areas and England (group_comparison_lookup)"],
+    sources: [MEMBERSHIP, CENSUS, RESULTS, "Comparison sets: peer groups, non-group schools, single-academy trusts, the group's areas and England, and each named group's own figures (group_comparison_lookup)"],
     geography: "The group against {setLabel} and the other sets in the table",
     years: "Roll: like-for-like change over 5 years to {census}. Results: each measure's latest published year ({resultsYear})",
     leftOut: ["IGCSE schools from every GCSE figure (the IGCSE rule)", "Schools without a published result that year, listed in Current and Schools", "Self-declared groups never enter a peer set"],
-    steps: [READING, WEIGHTED, "Peer groups are groups of the same type and size band (2–5, 6–10, 11–20, 21–40, 41+ schools); the band's figure takes all their schools together, each counted once.", "Non-group schools: for a MAT, LA-maintained schools and single-academy trusts; for an independent group, standalone independent schools.", "The group's areas: every school in the LAs where its schools sit, weighted to the group's pupils in each LA, so a London-heavy group isn't set against England's mix.", "Mix-matched: non-group schools only, in the group's regions, reweighted to its own mix of phases and regions (labelled \"Non-group schools, same regions and phases as\" the group).", "Each figure shows how many schools stand behind it; the group's place in its peer band shares ties."],
+    steps: [READING, WEIGHTED, "Peer groups are groups of the same type and size band (2–5, 6–10, 11–20, 21–40, 41+ schools); the band's figure takes all their schools together, each counted once. Foundation trusts and other independent groups have no bands: each is set against all groups of its type, and so is a group alone in its band.", "Non-group schools: for a state group, schools in no listed group (MAT, federation or foundation trust of 2 or more schools) and not a single-academy trust, mostly LA-maintained; single-academy trusts are a benchmark of their own. For an independent group, standalone independent schools.", "The group's areas: every school in the LAs where its schools sit, weighted to the group's pupils in each LA, so a London-heavy group isn't set against England's mix.", "Mix-matched: non-group schools only, in the group's regions, reweighted to its own mix of phases and regions (labelled \"Non-group schools, same regions and phases as\" the group).", "Each figure shows how many schools stand behind it; the group's place in its peer band shares ties.", "A set of groups (0.8 group sets: the group's sets, My sets, nearest in size) is shown side by side instead: the group first, then each group in the set with its own figures, its type and size and its rank within its own type, then the set's median, one vote per group with a figure (\"n of m groups\"; \"mixed types\" when the set mixes them). A measure a type never publishes reads \"not published\".", ENGLAND, POOL_MIN, COUNTED],
     rounding: ["Attainment 8 and points to one decimal place (A-level points two)", "Percentages to one decimal place", "Value added to two decimal places"],
   },
   "GRP-O-MAP": {
@@ -57,7 +62,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group and {setLabel}, by phase",
     years: "Each measure's published years to {resultsYear}",
     leftOut: ["IGCSE schools from GCSE figures", "Years DfE didn't publish a measure"],
-    steps: [READING, WEIGHTED, "Each phase's headline is drawn for the group and the comparison set: Attainment 8 for secondaries, A-level points for sixth forms, KS2 reading, writing and maths for primaries."],
+    steps: [READING, WEIGHTED, "Each phase's headline is drawn for the group and the comparison set: Attainment 8 for secondaries, A-level points for sixth forms, KS2 reading, writing and maths for primaries.", POOL_MIN, COUNTED],
     rounding: ["As the measure is published"],
   },
   "GRP-O-SHARE": {
@@ -73,7 +78,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group's member schools",
     years: "The latest census, {census}",
     leftOut: ["Schools outside England: counted and listed"],
-    steps: [READING, "Schools and the combined roll, as Overview counts them.", "Day and boarding: the census's boarders across the member schools.", "Membership: confirmed members, and likely ones (Companies House shows the group controlling the school's company, not yet confirmed by a second source), each labelled."],
+    steps: [READING, "Schools and the combined roll, as Overview counts them.", ROLL_AGES, COUNTED, "Day and boarding: the census's boarders across the member schools.", "Membership: confirmed members, and likely ones (Companies House shows the group controlling the school's company, not yet confirmed by a second source), each labelled."],
     rounding: ["Rolls to whole pupils"],
   },
   "GRP-S-TABLE": {
@@ -81,7 +86,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "Every current member school",
     years: "Roll: {census}. Results: each measure's latest published year ({resultsYear})",
     leftOut: ["None: a school without a figure shows the reason (IGCSE: not ranked at GCSE; prep: no KS2 published; outside England; no results published)"],
-    steps: ["One row per current member school: its roll, size, shape by age, headline result for the phase in view, its rank within the group and nationally (ties share a place; IGCSE schools out at GCSE), value added where published, and its roll change over the last year.", "Each name opens the school's SMT dashboards, read-only, where head office has access and the school has its own VicData membership; otherwise its public page."],
+    steps: ["One row per current member school: its roll, size, shape by age, headline result for the phase in view, its rank within the group and nationally (ties share a place; IGCSE schools out at GCSE), value added where published, and its roll change over the last year.", "Each name opens the school's SMT dashboards, read-only, where head office has access and the school has its own VicData membership; otherwise its public page.", "A special school, alternative provision, pupil referral unit or nursery school shows its own roll and a tag (\"AP · not in group figures\") in place of results: it is a member, not counted in group figures."],
     rounding: ["As published"],
   },
   "GRP-S-GROWING": {
@@ -113,7 +118,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group's schools in the phase in view; the comparison set and England beside them",
     years: "Each measure's latest published year ({resultsYear})",
     leftOut: ["IGCSE schools from every GCSE figure (listed, with the reason)", "Schools without a published result, listed with the reason"],
-    steps: [READING, WEIGHTED, "The group's place in its peer band ranks it among groups of the same type and size band on the same figure, ties shared.", "The spread gives the group's lowest, middle (median) and highest school on the headline."],
+    steps: [READING, WEIGHTED, "The group's place in its peer band ranks it among groups of the same type and size band on the same figure, ties shared.", "The spread gives the group's lowest, middle (median) and highest school on the headline.", ENGLAND, POOL_MIN, COUNTED],
     rounding: ["As published"],
   },
   "GRP-A-RANKED": {
@@ -121,7 +126,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "Every current member school in the phase in view",
     years: "The headline's latest published year ({resultsYear})",
     leftOut: ["IGCSE schools: 'not ranked at GCSE', never ranked", "Schools without a figure: listed with the reason"],
-    steps: ["Each school's headline (Attainment 8, A-level points or KS2), its rank within the group (ties share a place) and its national rank.", "Beside them: the group's median school, the comparison set and non-group schools (pupil-weighted) and England."],
+    steps: ["Each school's headline (Attainment 8, A-level points or KS2), its rank within the group (ties share a place) and its national rank.", "Beside them: the group's median school, the comparison set and non-group schools (pupil-weighted) and England.", ENGLAND, POOL_MIN, COUNTED],
     rounding: ["As published"],
   },
   "GRP-A-AREAS": {
@@ -145,7 +150,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group and {setLabel}, by phase",
     years: "Each measure's published years",
     leftOut: ["IGCSE schools from GCSE figures"],
-    steps: [READING, WEIGHTED, "Each phase's headline over the years, the group against the comparison set."],
+    steps: [READING, WEIGHTED, "Each phase's headline over the years, the group against the comparison set.", POOL_MIN, COUNTED],
     rounding: ["As published"],
   },
   "GRP-A-POST16": {
@@ -153,7 +158,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group's sixth forms and {setLabel}",
     years: "Each published year",
     leftOut: ["Schools without a sixth form"],
-    steps: [READING, "A-level points per entry over the years, pupil-weighted by entries, the group against the comparison set."],
+    steps: [READING, "A-level points per entry over the years, pupil-weighted by entries, the group against the comparison set.", POOL_MIN, COUNTED],
     rounding: ["Two decimal places"],
   },
   "GRP-A-IMPROVING": {
@@ -177,7 +182,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "The group's schools in England",
     years: "The latest census, {census}, and the one before",
     leftOut: ["Schools outside England"],
-    steps: [READING, "Roll by phase: pupils aged 5–10, 11–15 and 16–18.", "Year 12 against Year 11: pupils aged 16 this January against pupils aged 15 last January, over the schools with a sixth form both years (SMT round 2's wording).", "Day and boarding from the census's boarders."],
+    steps: [READING, ROLL_AGES, COUNTED, "Roll by phase: pupils aged 5–10, 11–15 and 16–18.", "Year 12 against Year 11: pupils aged 16 this January against pupils aged 15 last January, over the schools with a sixth form both years (SMT round 2's wording).", "Day and boarding from the census's boarders."],
     rounding: ["Whole pupils; percentages to one decimal place"],
   },
   "GRP-P-SHAPE": {
@@ -248,6 +253,8 @@ export const GROUP_METHOD_FALLBACK: Record<string, string> = {
   reading: "members at the time",
   from: "the first year held",
   base: "the first year every line shares",
+  england: "England, mainstream state-funded",
+  englandNote: "from DfE's school-level results",
 };
 
 const fill = (s: string, vars: Record<string, string | number | null | undefined>) =>

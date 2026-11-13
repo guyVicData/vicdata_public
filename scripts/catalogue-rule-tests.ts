@@ -11,6 +11,7 @@
 // runners reproduce the page's computation here, verbatim, on the lib's own rows; each
 // says so. Swap them to the lifted functions once those exist.
 import { existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { RULES, ruleById, type Rule } from "../src/catalogue";
 
@@ -225,6 +226,23 @@ async function frontDoorModels() {
     await loadTeacherModel(sb, "110110", "ks5", { focusKey: null, ticked: [], full: true }),
   ];
   return frontDoorModelCache;
+}
+// 0.8 group sets: run group unit tests on the fixtures (the switch on; production's own rows), optionally
+// only the tests whose names match, and a PGlite suite, from the repo root.
+function groupTests(files: string[], pattern: string | null): { pass: boolean; detail: string } {
+  const root = new URL("..", import.meta.url).pathname;
+  const args = ["-y", "tsx", "--test", "--test-force-exit", ...(pattern ? ["--test-name-pattern", pattern] : []), ...files];
+  const r = spawnSync("npx", args, { cwd: root, encoding: "utf8", env: { ...process.env, VICDATA_GROUP_FIXTURES: "true", VICDATA_GROUP_FIXTURES_DIR: `${root}docs/v0.8/groups_fixtures`, NODE_ENV: "test" } });
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  const pass = Number(/# pass (\d+)/.exec(out)?.[1] ?? 0);
+  const fail = Number(/# fail (\d+)/.exec(out)?.[1] ?? 1);
+  return { pass: r.status === 0 && fail === 0 && pass > 0, detail: `${pass} pass, ${fail} fail` };
+}
+function pglite(file: string): { ok: boolean; out: string; summary: string } {
+  const root = new URL("..", import.meta.url).pathname;
+  const r = spawnSync("node", [file], { cwd: root, encoding: "utf8" });
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  return { ok: r.status === 0, out, summary: (/(\d+ passed, \d+ failed)/.exec(out)?.[1]) ?? (r.status === 0 ? "pass" : "FAIL") };
 }
 
 const RUNNERS: Record<string, Runner> = {
@@ -3867,6 +3885,49 @@ const RUNNERS: Record<string, Runner> = {
     const folded = /<details data-view-close|<details data-view-where/.test(view) && /<details data-view-where/.test(view);
     const pass = wide.length === 0 && small.length === 0 && sheet && sticky && tabs && folded;
     return { pass, detail: fmt({ fixedWidthsOver358: wide.join(" | ") || 0, controlsUnder44: small.slice(0, 6).join(" | ") || 0, controlsUnder44Count: small.length, menuSheet: sheet, editorStickyBar: sticky, libraryTabsAndCards: tabs, viewFolded: folded }) };
+  },
+  // 0.8 group sets (M3-M6): the R-GROUP set rules, each on the group fixtures (the switch on, as the group
+  // tests run) through its own unit tests, by name (node --test --test-name-pattern); RLS through PGlite.
+  async groupLibrary() {
+    return groupTests(["src/lib/groups/library.test.ts"], null);
+  },
+  async groupSetPicker() {
+    return groupTests(["src/lib/groups/group-sets.test.ts"], "R-GROUP-SET-PICKER|the Default block|nearest in size|R-SETS-WAY-BACK|the cap|save modes");
+  },
+  async groupSetSideBySide() {
+    return groupTests(["src/lib/groups/group-sets.test.ts"], "R-GROUP-SET-SIDE-BY-SIDE|not published|Weighting switch|Academic and Pupils");
+  },
+  async groupSetTrends() {
+    return groupTests(["src/lib/groups/group-sets.test.ts"], "R-GROUP-SET-TRENDS");
+  },
+  async groupSetDefault() {
+    const unit = groupTests(["src/lib/groups/group-sets.test.ts"], "R-GROUP-SET-DEFAULT|resolution");
+    const pg = pglite("supabase/tests/v08_group_sets_pglite.mjs");
+    return { pass: unit.pass && pg.ok && /PASS one default per head office and kind/.test(pg.out) && /PASS a member can't clear the group's default/.test(pg.out), detail: fmt({ unit: unit.detail, pglite: pg.ok ? pg.summary : "FAIL" }) };
+  },
+  async groupSubsetFilter() {
+    return groupTests(["src/lib/groups/subset-view.test.ts"], null);
+  },
+  async groupSetsRls() {
+    const pg = pglite("supabase/tests/v08_group_sets_pglite.mjs");
+    return { pass: pg.ok, detail: fmt({ pglite: pg.summary }) };
+  },
+  async groupNonGroup() {
+    const { readFileSync } = await import("node:fs");
+    const root = new URL("..", import.meta.url).pathname;
+    const fx = (f: string) => JSON.parse(readFileSync(`${root}docs/v0.8/groups_fixtures/${f}`, "utf8")) as { kind: string; reading: string; period: number; phase: string; set_id: string | null; figures: { n_schools: number; results: Record<string, { weighted: number | null }> } }[];
+    const h = fx("harris_group_comparison_lookup.json").filter((r) => r.reading === "at_time" && r.phase === "secondary" && r.period === 2025);
+    const ng = h.find((r) => r.kind === "non_group" && r.set_id === "non_group:state");
+    const sat = h.find((r) => r.kind === "sat");
+    const dukesSat = fx("dukes_group_comparison_lookup.json").some((r) => r.kind === "sat");
+    const { NON_GROUP_STATE_NOTE } = await import("../src/lib/groups/dash");
+    const unit = groupTests(["src/lib/groups/group-sets.test.ts"], "the Default block");
+    const distinct = !!ng && !!sat && ng.figures.n_schools !== sat.figures.n_schools && ng.figures.results.ks4_a8?.weighted !== sat.figures.results.ks4_a8?.weighted;
+    const words = /not a single-academy trust/.test(NON_GROUP_STATE_NOTE) && /no listed group/.test(NON_GROUP_STATE_NOTE);
+    return { pass: distinct && !dukesSat && words && unit.pass, detail: fmt({ harrisNonGroup: ng?.figures.n_schools ?? "none", harrisSat: sat?.figures.n_schools ?? "none", distinct, dukesHasNoSat: !dukesSat, note: words, unit: unit.detail }) };
+  },
+  async groupRankSameType() {
+    return groupTests(["src/lib/groups/group-sets.test.ts"], "R-GROUP-RANK-SAME-TYPE");
   },
   // R-SETS-WAY-BACK: the library and the set view, rendered on the server with and without returnTo; the
   // set menu's Manage sets rendered with a page address; the pure rules (return-to.test.ts, editor-return.test.ts).

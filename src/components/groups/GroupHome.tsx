@@ -33,7 +33,7 @@ export const GROUP_DASHBOARD_NAMES = ["Overview", "Schools", "Academic", "Pupils
 export const GROUP_DASHBOARD_LIVE: Record<(typeof GROUP_DASHBOARD_NAMES)[number], string | null> = { Overview: "/teacher/group/overview", Schools: "/teacher/group/schools", Academic: "/teacher/group/academic", Pupils: "/teacher/group/pupils" };
 
 /** The group card's dashboard chips: a live one opens that dashboard for this account; a coming one is dashed. */
-export function GroupDashChips({ accountId, size = "md" }: { accountId: string; size?: "md" | "sm" }) {
+export function GroupDashChips({ accountId, size = "md", library = false }: { accountId: string; size?: "md" | "sm"; library?: boolean }) {
   const pad = size === "sm" ? "py-[5px]" : "py-[6px]";
   return (
     <>
@@ -49,6 +49,12 @@ export function GroupDashChips({ accountId, size = "md" }: { accountId: string; 
           </span>
         );
       })}
+      {/* 0.8 group sets (M3): head office's groups library (never on a member school's tile, D2). */}
+      {library && (
+        <Link href={`/teacher/group/groups?account=${accountId}`} data-group-dash="Library" className={`rounded-full border border-[var(--group-card-edge)] px-[11px] ${pad} text-[12px] font-bold text-[var(--group-accent-text)]`}>
+          Groups library
+        </Link>
+      )}
     </>
   );
 }
@@ -98,9 +104,9 @@ export function summaryLine(d: Pick<GroupHomeData, "summary">): string {
 // dashboard, each a question with its walk (B12), then "Our schools" (each opens that school's SMT home
 // read-only, as before) and "Also here": My dashboards, Access, Meetings.
 //
-// Seam for group sets (merging to main first): its "Groups library" link (on GroupDashChips' `library`
-// prop there) belongs in "Also here" here -- GROUPS_LIBRARY_HREF, null until that route is on main.
-const GROUPS_LIBRARY_HREF: ((accountId: string) => string) | null = null;
+// Group sets' "Groups library" (its library page, /teacher/group/groups) is in "Also here" on this home;
+// GroupDashChips keeps its `library` chip for the places that draw the chips.
+const GROUPS_LIBRARY_HREF = (accountId: string) => `/teacher/group/groups?account=${accountId}`;
 
 export function GroupHome() {
   const [pref] = useThemePref();
@@ -169,7 +175,7 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
   const heading = <HomeHeading sub="How the group is doing, and how its schools compare. Each question walks you through a few screens." onField />;
   const also: AlsoItem[] = [
     ...(!offices.viewAs ? [{ href: "/dashboards", title: "My dashboards", line: "Yours, and those shared with head office", icon: <DashboardsGlyph />, colour: DASHBOARDS_TILE }] : []),
-    ...(GROUPS_LIBRARY_HREF ? [{ href: GROUPS_LIBRARY_HREF(o.id), title: "Groups library", line: "Groups to compare against", icon: <GroupGlyph />, colour: GROUP_ACCENT }] : []),
+    { href: GROUPS_LIBRARY_HREF(o.id), title: "Groups library", line: "Groups to compare against", icon: <GroupGlyph />, colour: GROUP_ACCENT },
     ...(!o.noAccount ? [{ href: d && (d.canManage || d.viewAs) ? `/teacher/group/access${offices.all.length > 1 ? `?account=${o.id}` : ""}` : null, title: "Access", line: d ? groupNote("accessCard", { n: d.access.seeing, m: d.access.of }) : "…", icon: <LockGlyph />, colour: ACCESS_TILE }] : []),
     ...(!offices.viewAs ? [{ href: "/teacher/meetings", title: "Meetings", line: nextMeeting ? `Next: ${nextMeeting.name}, ${shortDate(nextMeeting.date)}` : "What do you need to show, and to whom?", icon: <MeetingsGlyph />, colour: FEATURE_ACCENT.meetings }] : []),
   ];

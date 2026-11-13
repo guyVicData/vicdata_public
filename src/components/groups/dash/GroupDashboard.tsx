@@ -32,7 +32,13 @@ import { groupMethodOf } from "@/catalogue/methods-groups";
 import { periodLabel, ROLL_WORD, rollDirectionOfPct } from "@/catalogue/years";
 import { indexTo, indexBaseWords } from "@/lib/index-base";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
-import { FOCI, FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, parseCompare, type CompareKey, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
+import { englandWords, FOCI, FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
+import { bandWords } from "@/lib/groups/group-sets";
+import type { GroupSetsInfo } from "@/lib/groups/group-sets-server";
+import { savedSetFromEditor, useEditorReturnReload } from "@/lib/sets/editor-return";
+import { GroupSetPicker, GroupShowingPicker } from "./GroupSetPicker";
+import { filterDash, subsetOf } from "@/lib/groups/subset-view";
+import { normaliseShowing } from "@/lib/groups/group-sets";
 import type { Reading } from "@/lib/groups/aggregates";
 import { AcademicNow, BandsReserved, EntryCohorts, GroupShape, GrowingShrinking, ImprovingDeclining, LeavingAt16, MarketShare, ProjectionPerSchool, PupilsNow, SchoolsRanked, SubjectAreasAcross, ValueAddedPanel, type ProjectionRow } from "./views-r3";
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
@@ -55,7 +61,7 @@ const ROW_TRENDS = 340;
 export const GROUP_BADGE = <span className="text-[19px] font-extrabold leading-none">G</span>;
 
 type Viewer = { as: "head_office" | "view_as" | "school"; accountId: string; groupId: string; name: string; urn: string | null };
-export type DashResponse = { viewer: Viewer; source: "production" | "fixtures"; membership: MembershipRow[]; overview?: GroupOverview; map?: MapSchool[]; schools?: GroupSchools; now?: GroupOverview; candidates?: { id: string; label: string; schools: number }[]; academic?: GroupAcademic; pupils?: GroupPupils };
+export type DashResponse = { viewer: Viewer; source: "production" | "fixtures"; membership: MembershipRow[]; overview?: GroupOverview; map?: MapSchool[]; schools?: GroupSchools; now?: GroupOverview; academic?: GroupAcademic; pupils?: GroupPupils; sets?: GroupSetsInfo; nearest?: { id: string; label: string; type: string; schools: number }[] };
 
 /** The page root's variables: Admissions' semantic colours, the group accent (orange). */
 export function groupDashVars(theme: Theme): CSSProperties {
@@ -72,15 +78,19 @@ export function groupDashVars(theme: Theme): CSSProperties {
 
 // ------------------------------------------------------------------------------- the address
 
-type Params = { account: string | null; reading: Reading; compare: CompareKey; focus: Focus; school: string | null };
+// 0.8 group sets (M4): ?compare= is the set picker's key (src/lib/groups/group-sets.ts), absent for the
+// page's default (the group's default set, else the size band); the server reads it, old keys included.
+// M5: ?showing=set:<uuid> is a subset of the group's own schools (absent: all of them).
+type Params = { account: string | null; reading: Reading; compare: string | null; focus: Focus; school: string | null; showing: string | null };
 function readParams(): Params {
   const sp = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
   return {
     account: sp.get("account"),
     reading: sp.get("reading") === "listed_now" ? "listed_now" : "at_time",
-    compare: parseCompare(sp.get("compare")),
+    compare: sp.get("compare")?.slice(0, 1200) || null,
     focus: FOCI.includes(sp.get("focus") as Focus) ? (sp.get("focus") as Focus) : "all",
     school: sp.get("school"),
+    showing: normaliseShowing(sp.get("showing")),
   };
 }
 function writeParams(p: Params) {
@@ -88,9 +98,10 @@ function writeParams(p: Params) {
   const set = (k: string, v: string | null, def: string | null) => (v === null || v === def ? sp.delete(k) : sp.set(k, v));
   set("account", p.account, null);
   set("reading", p.reading, "at_time");
-  set("compare", p.compare, "peer_band");
+  set("compare", p.compare, null);
   set("focus", p.focus, "all");
   set("school", p.school, null);
+  set("showing", p.showing, null);
   window.history.replaceState(window.history.state, "", `${window.location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
 }
 
@@ -104,13 +115,27 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
     setParamsState(next);
     writeParams(next);
   };
-  const q = new URLSearchParams({ dash, reading: params.reading, compare: params.compare, focus: params.focus });
+  // A change to the sets (Make default) reads the page afresh: `v` keeps the answer out of the visit's cache.
+  const [version, setVersion] = useState(0);
+  const q = new URLSearchParams({ dash, reading: params.reading, focus: params.focus });
+  if (params.compare) q.set("compare", params.compare);
   if (params.account) q.set("account", params.account);
+  if (version) q.set("v", String(version));
   const load = useSmt<DashResponse>(`/api/group/dash?${q.toString()}`, null);
+  // Back from the set editor: the saved set is used here (useSet in the address, or the handover).
+  useEditorReturnReload();
+  const [handed] = useState(() => savedSetFromEditor());
+  const [applied, setApplied] = useState(false);
+  if (!applied && handed && load.status === "ready") {
+    setApplied(true);
+    const s = load.data.sets?.sets.find((x) => x.id === handed);
+    if (s && s.kind === "group_peers" && params.compare !== `set:${s.id}`) setParams({ compare: `set:${s.id}` });
+    if (s && s.kind === "group_schools" && params.showing !== `set:${s.id}`) setParams({ showing: `set:${s.id}` });
+  }
   return (
     <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
       {load.status === "ready" ? (
-        <Dashboard d={load.data} dash={dash} params={params} setParams={setParams} theme={theme} onTheme={setTheme} />
+        <Dashboard d={load.data} dash={dash} params={params} setParams={setParams} theme={theme} onTheme={setTheme} onSetsChanged={() => setVersion((n) => n + 1)} />
       ) : (
         <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
           <GroupViewAsBanner />
@@ -139,9 +164,14 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
 
 // ---------------------------------------------------------------------------------- dashboard
 
-type Ctx = { d: DashResponse; o: GroupOverview; s: GroupSchools | null; dash: GroupDash; params: Params; average: boolean; phone: boolean; focusBar: ReactNode; highlight: (urn: string | null) => void; setNamed: (ids: string[]) => void; projection: ProjectionRow[] | null };
+type Ctx = { d: DashResponse; o: GroupOverview; s: GroupSchools | null; dash: GroupDash; params: Params; average: boolean; phone: boolean; focusBar: ReactNode; highlight: (urn: string | null) => void; projection: ProjectionRow[] | null };
 
-function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResponse; dash: GroupDash; params: Params; setParams: (p: Partial<Params>) => void; theme: Theme; onTheme: (t: Theme) => void }) {
+function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsChanged }: { d: DashResponse; dash: GroupDash; params: Params; setParams: (p: Partial<Params>) => void; theme: Theme; onTheme: (t: Theme) => void; onSetsChanged: () => void }) {
+  // 0.8 group sets (M5): a subset filters every list of schools on the page; the group's figures stay whole.
+  const subsetSet = params.showing ? (whole.sets?.sets.find((x) => x.kind === "group_schools" && `set:${x.id}` === params.showing) ?? null) : null;
+  const total = (whole.now ?? whole.overview)!.group.confirmed + (whole.now ?? whole.overview)!.group.likely;
+  const subset = useMemo(() => subsetOf(subsetSet, (whole.map ?? []).map((m) => m.urn), total), [subsetSet, whole.map, total]);
+  const d = useMemo(() => (subset ? filterDash(whole, subset.kept) : whole), [whole, subset]);
   const [rootRef, width] = useWidth<HTMLDivElement>();
   const phone = width > 0 && width < PHONE;
   const router = useRouter();
@@ -153,8 +183,8 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
   const s = d.schools ?? null;
   const quiet = d.viewer.as === "view_as";
   const usage: UsageScope | null = useMemo(
-    () => (d.viewer.urn ? { product: "groups", urn: d.viewer.urn, dashboard: DASH_ID[dash], level: `${params.focus}/${params.reading}`, setKind: params.compare.split(":")[0], resolved: true } : null),
-    [d.viewer.urn, dash, params.focus, params.reading, params.compare],
+    () => (d.viewer.urn ? { product: "groups", urn: d.viewer.urn, dashboard: DASH_ID[dash], level: `${params.focus}/${params.reading}`, setKind: o.picker.key.split(":")[0], resolved: true } : null),
+    [d.viewer.urn, dash, params.focus, params.reading, o.picker.key],
   );
   useUsagePageView(quiet ? null : usage);
 
@@ -189,6 +219,12 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
           </button>
         );
       })}
+      {/* 0.8 group sets (M3): the groups library, for head office (a member school's SMT doesn't see it, D2). */}
+      {d.viewer.as !== "school" && (
+        <Link href={`/teacher/group/groups${window.location.search}`} className="rounded-full px-4 py-1.5 text-[13px] font-bold text-[var(--group-accent-text)] hover:text-[var(--fg)]" data-library-link="">
+          Groups library
+        </Link>
+      )}
     </div>
   );
 
@@ -212,40 +248,36 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
     </PillMenu>
   );
   const cmp = o.compare;
-  const comparePill = (
-    <PillMenu label="Compared against" value={cmp.label} menuLabel="Compared against" width={340} align="right" title={`${cmp.label}${cmp.n !== null ? `: ${cmp.n.toLocaleString("en-GB")} schools` : ""}`}>
-      {(close) => (
-        <>
-          {cmp.options.filter((x) => !x.key.startsWith("peer_named:")).map((x) => (
-            <MenuRow key={x.key} label={`${x.label}${x.n !== null ? ` · ${x.n.toLocaleString("en-GB")} schools` : ""}`} title={x.info} selected={x.key === cmp.key} onClick={() => { setParams({ compare: x.key }); close(); }} />
-          ))}
-          {(d.candidates?.length ?? 0) > 0 && (
-            <>
-              <MenuDivider />
-              <div className="px-3 pb-1 pt-1 text-[11px] font-bold text-[var(--muted2)]">Named groups (up to 3)</div>
-              {d.candidates!.map((g) => {
-                const ids = cmp.key.startsWith("peer_named:") ? cmp.key.slice(11).split(",") : [];
-                const on = ids.includes(g.id);
-                return (
-                  <MenuRow
-                    key={g.id}
-                    label={`${g.label} · ${g.schools} schools`}
-                    selected={on}
-                    onClick={() => {
-                      const next = on ? ids.filter((x) => x !== g.id) : [...ids, g.id].slice(-3);
-                      setParams({ compare: next.length ? (`peer_named:${next.join(",")}` as CompareKey) : "peer_band" });
-                      close();
-                    }}
-                  />
-                );
-              })}
-            </>
-          )}
-          <div className="px-3 pb-2 pt-1 text-[11px] leading-snug text-[var(--muted2)]">{GROUP_NOTES.comparesOnly}</div>
-        </>
-      )}
-    </PillMenu>
+  // 0.8 group sets (M4): the one set picker replaces the Compared-against pill, the named-group chips and
+  // the Mix-matched toggle. Schools has no comparison: its selector is Showing (M5).
+  const comparePill =
+    dash === "schools" ? null : (
+      <GroupSetPicker
+        picker={o.picker}
+        sets={d.sets ?? { sets: [], notSetUp: true, personalActive: 0, cap: 8, admin: false, canKeep: false, defaults: { group_peers: null, group_schools: null } }}
+        account={d.viewer.accountId}
+        phone={phone}
+        onPick={(key) => setParams({ compare: key })}
+        onChanged={onSetsChanged}
+      />
+    );
+  const showingPill = (
+    <GroupShowingPicker
+      showing={subsetSet}
+      total={total}
+      sets={d.sets ?? { sets: [], notSetUp: true, personalActive: 0, cap: 8, admin: false, canKeep: false, defaults: { group_peers: null, group_schools: null } }}
+      account={d.viewer.accountId}
+      phone={phone}
+      onPick={(key) => setParams({ showing: key, school: null })}
+    />
   );
+  // "Showing 18 of 59 schools · group figures are for all 59" (and leavers dropping out), under the bar.
+  const subsetLine = subset ? (
+    <div data-subset-line="" className={`text-[12.5px] font-semibold text-[var(--group-accent-text)] ${phone ? "" : "mx-auto max-w-[1440px] px-1"}`}>
+      {subset.line}
+      {subset.leftLine && <span className="ml-1 font-normal text-[var(--muted)]">· {subset.leftLine}</span>}
+    </div>
+  ) : null;
   const undated = !o.group.sources.includes("gias_groups") && !o.group.sources.includes("gias");
   const readingPill = (
     <MenuChip
@@ -262,13 +294,14 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
   const pills = (
     <>
       <Divider />
+      {showingPill}
       {highlightPill}
       {comparePill}
       {readingPill}
     </>
   );
 
-  const ctx: Ctx = { d, o, s, dash, params, average, phone, focusBar, highlight: (urn) => setParams({ school: urn }), setNamed: (ids) => setParams({ compare: ids.length ? (`peer_named:${ids.join(",")}` as CompareKey) : "peer_band" }), projection: proj.status === "ready" ? proj.data.rows : proj.status === "error" ? [] : null };
+  const ctx: Ctx = { d, o, s, dash, params, average, phone, focusBar, highlight: (urn) => setParams({ school: urn }), projection: proj.status === "ready" ? (subset ? proj.data.rows.filter((r) => subset.kept.has(r.urn)) : proj.data.rows) : proj.status === "error" ? [] : null };
   const layout = LAYOUT[dash];
   const [open, setOpen] = useState<Record<string, boolean>>({ now: true, trends: true });
   const census = o.years.census;
@@ -288,7 +321,7 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
     ref: d.viewer.accountId,
     name: o.group.name,
     role: d.viewer.as === "school" ? "school" : "head_office",
-    state: { focus: params.focus, reading: params.reading, compare: params.compare, school: params.school, weighting: average ? "average" : "pupil" },
+    state: { focus: params.focus, reading: params.reading, compare: o.picker.key, school: params.school, weighting: average ? "average" : "pupil" },
   });
 
   return (
@@ -303,12 +336,17 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
         {phone ? (
           <PhoneStack>
             <div className="text-[16px] font-bold">{o.group.name}</div>
-            <div className="self-start">{switcher}</div>
+            {/* 0.8 group sets: on a phone the switcher (with Groups library) scrolls sideways, never the page. */}
+            <div className="max-w-full self-start overflow-x-auto">{switcher}</div>
             <div className="flex flex-wrap gap-[6px]">
               {chips.map((c) => (
                 <EntryChip key={c.key} label={c.key === "all" ? "All" : c.label} active={c.key === params.focus} onClick={() => onFocus(c.key)} />
               ))}
             </div>
+            {/* 0.8 group sets: the two selectors on a phone (full width, bottom sheets). */}
+            {comparePill}
+            {showingPill}
+            {subsetLine}
             <PhoneBody c={ctx} layout={layout} />
           </PhoneStack>
         ) : (
@@ -329,6 +367,7 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
               noEdit
               chrome={pills}
             />
+            {subsetLine}
             {(["now", "trends"] as const).map((row) => (
               <ShellRow key={row} title={row === "now" ? "Now" : "Trends"} context={rowContext(row)} open={open[row] !== false} onToggle={() => setOpen((x) => ({ ...x, [row]: x[row] === false }))}>
                 {layout[row].map((cell) => (
@@ -500,7 +539,7 @@ function headerOf(id: ViewId, c: Ctx): { tag: string; context: ReactNode } {
     case "GRP-S-NOW":
       return { tag: "Current", context: f };
     case "GRP-O-AGAINST":
-      return { tag: "Against others", context: "the group, its peers, non-group schools, its areas and England" };
+      return { tag: "Against others", context: c.o.sideBySide ? `side by side with ${c.o.picker.name}` : "the group, its peers, non-group schools, its areas and England" };
     case "GRP-O-MAP":
       return { tag: "Map", context: "member schools, sized by roll" };
     case "GRP-O-JOINED":
@@ -567,10 +606,13 @@ function methodVars(c: Ctx): Record<string, string | number | null> {
     asOf: c.o.group.asOf,
     census: periodLabel(c.o.years.census),
     resultsYear: latest.length ? periodLabel(Math.max(...latest)) : null,
-    setLabel: `${c.o.compare.label}${c.o.compare.n !== null ? ` (${c.o.compare.n.toLocaleString("en-GB")} schools)` : ""}`,
+    setLabel: `${c.o.compare.label}${c.o.picker.countText ? ` (${c.o.picker.countText})` : c.o.compare.n !== null ? ` (${c.o.compare.n.toLocaleString("en-GB")} schools)` : ""}`,
     reading: c.params.reading === "at_time" ? GROUP_NOTES.readingAtTime : GROUP_NOTES.readingListed,
     from: periodLabel(c.o.years.first),
     base: indexBaseWords(base),
+    // E1, E2: England follows the group's sector.
+    england: englandWords(c.o.group.type.startsWith("independent") ? "independent" : "state").label,
+    englandNote: englandWords(c.o.group.type.startsWith("independent") ? "independent" : "state").info,
   };
 }
 
@@ -594,12 +636,12 @@ function captionOf(id: ViewId, c: Ctx): ReactNode {
   if (READING_IN_METHOD.includes(id)) return c.params.reading === "at_time" && undated ? reading : null;
   switch (id) {
     case "GRP-O-AGAINST":
-      return `${GROUP_NOTES.comparesOnly} ${GROUP_NOTES.missingListed}${c.params.compare === "mix_matched" ? ` ${groupNote("mixMatched", { group: c.o.group.name })}` : ""}`;
+      return c.o.sideBySide ? "Each row is a group's own figures; the median is one vote per group with a figure. A set may mix types; each group's rank stays within its own type." : `${GROUP_NOTES.comparesOnly} ${GROUP_NOTES.missingListed} ${groupNote("mixMatched", { group: c.o.group.name })}`;
     case "GRP-S-TABLE":
       // Its method says the missing schools are listed.
       return null;
     case "GRP-O-ROLL":
-      return `${reading} ${GROUP_NOTES.likeForLike} ${groupNote("comparedAgainst", { set: c.o.compare.label })}`;
+      return `${reading} ${GROUP_NOTES.likeForLike} ${groupNote("comparedAgainst", { set: c.o.compare.label })}${c.o.sideBySide ? ` ${bandWords(c.o.sideBySide.rows.length - 1)}` : ""}`;
     case "GRP-S-GROWING":
       return `${reading} ${GROUP_NOTES.likeForLike}`;
     // 0.8 IGCSE subjects (follow-up 5): the trends' legends truncate a long set name; the (i) has it in full.
@@ -607,7 +649,7 @@ function captionOf(id: ViewId, c: Ctx): ReactNode {
     case "GRP-A-TREND":
     case "GRP-A-POST16":
     case "GRP-P-ROLL":
-      return `${reading} ${groupNote("comparedAgainst", { set: c.o.compare.label })}`;
+      return `${reading} ${groupNote("comparedAgainst", { set: c.o.compare.label })}${c.o.sideBySide ? ` ${bandWords(c.o.sideBySide.rows.length - 1)}` : ""}`;
     default:
       return reading;
   }
@@ -617,11 +659,13 @@ function flagOf(id: ViewId, c: Ctx): ReactNode {
   if (id === "GRP-O-SHARE") return shareFlag(c.o.trends.share.series);
   if (id === "GRP-O-ROLL" || id === "GRP-O-AGAINST") {
     const g = c.o.against.rows[0]?.roll.pct;
-    const peer = c.o.against.rows.find((r) => r.key === "peer_band:band")?.roll.pct;
+    // 0.8 group sets (M4): against a set of groups, the set's median stands in for the peers.
+    const peer = c.o.sideBySide ? c.o.sideBySide.median.roll : c.o.against.rows.find((r) => r.key === "peer_band:band")?.roll.pct;
+    const who = c.o.sideBySide ? "the set" : "peers";
     if (g === null || g === undefined) return null;
     if (id === "GRP-O-AGAINST" && peer !== null && peer !== undefined) {
       const dd = g - peer;
-      return <span className={`text-[12px] font-bold ${dirClass(dd, 0.5, 1)}`}>{arrowOf(dd, 0.5, 1)} {dd > 0.5 ? "Growing faster than peers" : dd < -0.5 ? "Growing slower than peers" : "In line with peers"}</span>;
+      return <span className={`text-[12px] font-bold ${dirClass(dd, 0.5, 1)}`}>{arrowOf(dd, 0.5, 1)} {dd > 0.5 ? `Growing faster than ${who}` : dd < -0.5 ? `Growing slower than ${who}` : `In line with ${who}`}</span>;
     }
     // R-ROLL-WORDS-3YR: the group's roll word is its like-for-like change over 3 census years, steady
     // when it rounds to 0% (R-FLAT-BAND). (It was the 5-year change with a ±1% band.)
@@ -643,7 +687,7 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
     case "GRP-O-NOW":
       return <GroupNow o={c.o} compact={c.phone && !fullscreen} />;
     case "GRP-O-AGAINST":
-      return <AgainstOthers o={c.o} average={c.average} candidates={c.d.candidates} onNamed={c.setNamed} />;
+      return <AgainstOthers o={c.o} average={c.average} />;
     case "GRP-O-MAP":
       return c.d.map ? <GroupMap name={c.o.group.name} schools={c.d.map} highlight={hl} fullscreen={fullscreen} room={room} /> : <Empty>The map is on Overview.</Empty>;
     case "GRP-O-JOINED":
