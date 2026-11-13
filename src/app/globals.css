@@ -184,6 +184,28 @@ body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #080
   --field-ink: #062436; --field-ink-soft: #062436; --tile-accent: #0b6fa6; --tile-tint: #dcf1fc; --tile-accent-text: #0b6fa6;
 }
 
+/* 0.8 front door (Guy, 13 Nov): the walk's header band, its own tokens on the band itself (WalkHeader), so
+   nothing inherits the page's text colour: in Mid the band is dark over a Light page and read dark grey
+   on black before. "dark" in Dark and Mid, "light" in Light. --wh-accent is the part's colour as text
+   and marks (the icon, the chip, the lit step), --wh-tint the icon's badge (the accent at 16% over the
+   band). Every pair is in the contrast table (R-THEME-CONTRAST, contrast.ts walkHeadPairs). */
+#teacher-root [data-walk-head="dark"] {
+  --wh-bg: #0a0a0b; --wh-border: #26262b; --wh-fg: #f2f2f3; --wh-muted: #a1a1a8; --wh-dot: #6b6b73;
+}
+#teacher-root [data-walk-head="dark"][data-part="gcse"] { --wh-accent: #34d399; --wh-tint: #112a22; }
+#teacher-root [data-walk-head="dark"][data-part="post16"] { --wh-accent: #a78bfa; --wh-tint: #231f31; }
+#teacher-root [data-walk-head="dark"][data-part="top"] { --wh-accent: #fb923c; --wh-tint: #312013; }
+#teacher-root [data-walk-head="dark"][data-part="group"] { --wh-accent: #c99a66; --wh-tint: #29211a; }
+#teacher-root [data-walk-head="dark"][data-part="admissions"] { --wh-accent: #22d3ee; --wh-tint: #0e2a2f; }
+#teacher-root [data-walk-head="light"] {
+  --wh-bg: #ffffff; --wh-border: #e2e2e7; --wh-fg: #17171b; --wh-muted: #55555c; --wh-dot: #8a8a92;
+}
+#teacher-root [data-walk-head="light"][data-part="gcse"] { --wh-accent: #12713a; --wh-tint: #d9e8df; }
+#teacher-root [data-walk-head="light"][data-part="post16"] { --wh-accent: #5b3dd1; --wh-tint: #e5e0f8; }
+#teacher-root [data-walk-head="light"][data-part="top"] { --wh-accent: #b13c0b; --wh-tint: #f3e0d8; }
+#teacher-root [data-walk-head="light"][data-part="group"] { --wh-accent: #7e4f24; --wh-tint: #eae3dc; }
+#teacher-root [data-walk-head="light"][data-part="admissions"] { --wh-accent: #0b6fa6; --wh-tint: #d8e8f1; }
+
 /* 0.8 front door (B9): a home tile -- near-white in Mid with layered shading (a bright top edge, a hairline
    inner border, three stacked soft shadows: MidTeacher.dc.html SHADE), the panel tone in Dark and Light --
    lifting on hover (translateY -3px, a longer softer shadow). */

@@ -3,9 +3,8 @@
 // VicData 0.8 front door (B12): SMT's, Admissions' and head office's walks. Each screen shows the
 // dashboard's own view -- the real component, fed by the dashboard's own route -- enlarged in the walk's
 // panel, with the screen's question and a one-line answer from the same data (answers below: honest about
-// small numbers and missing years). Head office's group views live in the group dashboard (group code is
-// off limits while group sets is built): its screens draw the view's own figures where the group home's
-// route has them, and open the group dashboard at the view otherwise (logged).
+// small numbers and missing years). Head office's screens draw the group dashboard's own views the same
+// way (groupWalkView), with group sets' picker where a screen compares.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -36,14 +35,17 @@ import { AcademicRanking } from "@/components/admissions/panels/Academic";
 import { MarketNow } from "@/components/admissions/panels/MarketNow";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { periodLabel } from "@/catalogue/years";
-import { signedValue } from "@/lib/signed-delta";
 import { dataviewById } from "@/catalogue/dataviews";
-import { fillTemplate, screenMeta, type Walk } from "@/lib/front-door/walks";
+import { fillTemplate, groupWalkDash, screenMeta, type Walk } from "@/lib/front-door/walks";
 import { Found, MiniMap, Rail, useStep, WalkFooter, WalkFrame, WalkPanel } from "./WalkPage";
-import type { GroupHomeData } from "@/components/groups/GroupHome";
+import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/components/groups/dash/GroupDashboard";
+import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
+import type { ProjectionRow } from "@/components/groups/dash/views-r3";
+import { groupAnswer } from "@/lib/front-door/group-answers";
+import { RailGlyph } from "./home";
 
 type Load<T> = { status: "loading" } | { status: "error"; message?: string } | { status: "ready"; data: T };
-type Screenish = { question: string; answer: string; title: string; body: ReactNode; note: string };
+type Screenish = { question: string; answer: string; title: string; body: ReactNode; note: string; rail?: ReactNode; tag?: string; controls?: ReactNode };
 
 const pct = (v: number | null | undefined, d = 0) => (v == null ? null : `${v > 0 ? "up" : v < 0 ? "down" : "level,"} ${Math.abs(v).toFixed(d)}%`);
 const n = (v: number | null | undefined) => (v == null ? "—" : Math.round(v).toLocaleString("en-GB"));
@@ -63,7 +65,6 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
   const router = useRouter();
   const s = walk.screens[step];
   const sc = screens[step];
-  const meta = screenMeta(s.view);
   const next = step + 1 < walk.screens.length ? screens[step + 1].question : "Here's what you found";
   return (
     <>
@@ -79,18 +80,11 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
         name={colName}
         question={colQuestion}
         pills={[]}
-        tag={`${s.spot.row === 0 ? "Current" : "Trends"}`}
+        controls={sc.controls}
+        tag={sc.tag ?? `${s.spot.row === 0 ? "Current" : "Trends"}`}
         title={sc.title}
         note={sc.note}
-        rail={
-          s.view.startsWith("GRP-") ? (
-            <ul className="flex flex-col gap-0.5" data-walk-rail="">
-              <li className="rounded-[8px] bg-[rgba(var(--accent-rgb,138,138,144),0.16)] px-2 py-1.5 text-[13px] font-semibold">{meta?.label}</li>
-            </ul>
-          ) : (
-            <Rail view={s.view} asTable={asTable} onTable={() => {}} dashboard={walk.dashboard} />
-          )
-        }
+        rail={sc.rail ?? <Rail view={s.view} asTable={asTable} onTable={() => {}} dashboard={walk.dashboard} />}
       >
         <div className="min-w-0 overflow-x-auto">{sc.body}</div>
       </WalkPanel>
@@ -327,49 +321,97 @@ function AdmissionsWalk({ walk, urn }: { walk: Walk; urn: string }) {
 
 // ------------------------------------------------------------------------------------------------ head office
 
+// The group views that read the comparison (the set picker sets it): these screens carry the picker.
+const GROUP_COMPARES = new Set(["GRP-O-AGAINST", "GRP-O-ROLL", "GRP-O-RESULTS", "GRP-A-NOW", "GRP-A-RANKED", "GRP-A-TREND", "GRP-P-ROLL"]);
+const GROUP_COLS: Record<string, string[]> = { overview: ["TilesIcon", "TableIcon", "TrendLineIcon"], schools: ["TilesIcon", "TableIcon", "AdmShapeIcon"], academic: ["TilesIcon", "RankListIcon", "TrendLineIcon"], pupils: ["TilesIcon", "AdmShapeIcon", "IndexedLineIcon"] };
+
+/**
+ * Head office's walks (Guy, 13 Nov: group code allowed now): each screen draws the group dashboard's own
+ * view (groupWalkView: the same ViewBody, header words and caption) from the dashboard route's own answer,
+ * enlarged in the walk's panel with its own rail and an answer sentence (group-answers.ts). Where a screen
+ * compares, the walk opens on the set picker's Default "Nearest in size, same type" -- side by side with the
+ * set's median, the trends with its median and middle half -- and the picker (read-only: Default and the
+ * group's sets) changes it in place.
+ */
 function GroupWalk({ walk }: { walk: Walk }) {
+  const [pref] = useThemePref();
+  const theme = pref === "mid" ? "light" : effectiveTheme(pref);
   const [step, setStep] = useStep(walk.screens.length);
-  const [d, setD] = useState<Load<GroupHomeData>>({ status: "loading" });
-  const account = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("account") : null;
-  useEffect(() => {
-    (async () => {
-      const { data: s } = await createBrowserSupabaseClient().auth.getSession();
-      if (!account) return setD({ status: "error" });
-      const r = await fetch(`/api/group/home?account=${account}`, { headers: { Authorization: `Bearer ${s.session?.access_token ?? ""}` } }).catch(() => null);
-      setD(r?.ok ? { status: "ready", data: (await r.json()) as GroupHomeData } : { status: "error" });
-    })();
-  }, [account]);
-  const dash = account ? `${walk.dashboard}?account=${account}` : walk.dashboard;
-  const w = useMemo(() => ({ ...walk, dashboard: dash }), [walk, dash]);
-  if (d.status === "loading") return <Loading walk={w} />;
-  const g = d.status === "ready" ? d.data : null;
-  const screens: Screenish[] = walk.screens.map((s, i) => {
-    const meta = screenMeta(s.view);
-    const first = i === 0 && g;
-    const answer = first
-      ? `${g.summary.schools} schools${g.summary.changePct !== null ? `; the combined roll ${pct(g.summary.changePct, 1)} over 3 years` : ""}; ${g.summary.growing} of ${g.summary.compared} growing.`
-      : `${meta?.label ?? "This view"}, on the group dashboard.`;
+  const dash = groupWalkDash(walk.screens[0]?.view ?? "GRP-O-NOW");
+  const [account] = useState(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("account") : null));
+  const [compare, setCompare] = useState<string | null>(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("compare") : null) ?? (dash === "schools" ? null : "nearest"));
+  const q = new URLSearchParams({ dash, reading: "at_time", focus: "all" });
+  if (account) q.set("account", account);
+  if (compare) q.set("compare", compare);
+  const load = useSmt<DashResponse>(`/api/group/dash?${q.toString()}`, null);
+  const projQ = new URLSearchParams(account ? { account } : {});
+  const proj = useSmt<{ rows: ProjectionRow[] }>(walk.screens.some((s) => s.view === "GRP-P-PROJECTION") ? `/api/group/projection?${projQ.toString()}` : null, null);
+  const dashHref = account ? `${walk.dashboard}?account=${account}` : walk.dashboard;
+  const w = useMemo(() => ({ ...walk, dashboard: dashHref }), [walk, dashHref]);
+  if (load.status === "loading") return <Loading walk={w} />;
+  if (load.status === "error") return <Loading walk={w} text={load.code === 404 ? "Not found." : "This walk couldn't load the group's figures."} />;
+  const d = load.data;
+  const projection = proj.status === "ready" ? proj.data.rows : null;
+  const o = (dash === "schools" ? d.now : d.overview) ?? null;
+  const screens: (Screenish & { rail: ReactNode; tag: string; controls: ReactNode })[] = walk.screens.map((s) => {
+    const view = groupWalkView(d, dash, s.view as ViewId, projection, s.spot.row === 0 ? 420 : 320);
+    const label = screenMeta(s.view)?.label ?? s.view;
+    const picker =
+      GROUP_COMPARES.has(s.view) && o ? (
+        <GroupSetPicker
+          picker={o.picker}
+          sets={{ ...(d.sets ?? { sets: [], notSetUp: true, personalActive: 0, cap: 8, admin: false, canKeep: false, defaults: { group_peers: null, group_schools: null } }), canKeep: false, admin: false, sets: (d.sets?.sets ?? []).filter((x) => x.scope === "group") }}
+          account={d.viewer.accountId}
+          phone={false}
+          onPick={(key) => setCompare(key)}
+          onChanged={() => {}}
+        />
+      ) : null;
     return {
       question: s.question,
-      answer,
-      title: meta?.label ?? s.view,
-      note: "The group dashboard draws this view; the walk opens it there (the group pages are built in their own round).",
-      body: first ? (
-        <ul className="grid gap-2 sm:grid-cols-3">
-          <li className="rounded-[10px] border border-[var(--panel-border)] p-3"><p className="text-[24px] font-semibold">{g.summary.schools}</p><p className="text-[12.5px] text-[var(--muted)]">schools</p></li>
-          <li className="rounded-[10px] border border-[var(--panel-border)] p-3"><p className="text-[24px] font-semibold">{g.summary.growing} of {g.summary.compared}</p><p className="text-[12.5px] text-[var(--muted)]">growing</p></li>
-          {g.summary.changePct !== null && <li className="rounded-[10px] border border-[var(--panel-border)] p-3"><p className="text-[24px] font-semibold">{signedValue(g.summary.changePct, 1)}%</p><p className="text-[12.5px] text-[var(--muted)]">combined roll, 3 years</p></li>}
-        </ul>
-      ) : (
-        <Link href={dash} className="inline-flex rounded-[10px] bg-[var(--tile-accent,var(--accent))] px-4 py-2.5 text-[14px] font-semibold text-[var(--tile-on-accent,#0a0a0b)]">Open {meta?.label ?? "this view"} on the group dashboard</Link>
+      answer: groupAnswer(s.view, d, projection),
+      title: label,
+      tag: `${view.header.tag}${typeof view.header.context === "string" && view.header.context ? ` · ${view.header.context}` : ""}`,
+      note: typeof view.caption === "string" ? view.caption : "",
+      controls: (
+        <>
+          {picker}
+          {view.flag}
+        </>
       ),
+      rail: <GroupRail rail={view.rail} active={s.view} dashboard={dashHref} />,
+      body: <div style={groupDashVars(theme)} data-group-walk-view={s.view}>{view.body}</div>,
     };
   });
   const n2 = walk.screens.length;
   return (
-    <WalkFrame walk={w} step={step} steps={n2} chip={g?.office.name ?? "Head office"}>
-      {step >= n2 ? <Found walk={w} screens={screens} params={{ account }} ctx={{}} onBack={() => setStep(n2 - 1)} /> : <RoleScreen walk={w} step={step} screens={screens} cols={["TilesIcon", "SchoolIcon", "RankListIcon"]} colName={walk.label} colQuestion={walk.question} onStep={setStep} />}
+    <WalkFrame walk={w} step={step} steps={n2} chip={d.viewer.name ?? o?.group.name ?? "Head office"}>
+      {step >= n2 ? (
+        <Found walk={w} screens={screens} params={{ account }} ctx={{}} onBack={() => setStep(n2 - 1)} />
+      ) : (
+        <RoleScreen walk={w} step={step} screens={screens} cols={GROUP_COLS[dash]} colName={walk.label} colQuestion={walk.question} onStep={setStep} />
+      )}
     </WalkFrame>
+  );
+}
+
+/** The group view's own rail, names written out: lit = this screen's view; any other opens the dashboard. */
+function GroupRail({ rail, active, dashboard }: { rail: { id: string; label: string; icon: string }[]; active: string; dashboard: string }) {
+  return (
+    <ul className="flex flex-col gap-0.5" data-walk-rail="">
+      {rail.map((r) => {
+        const on = r.id === active;
+        const row = (
+          <span className={`flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
+            <span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}>
+              <RailGlyph name={r.icon} size={13} />
+            </span>
+            {r.label}
+          </span>
+        );
+        return <li key={r.id}>{on ? <span aria-current="true">{row}</span> : <Link href={dashboard} title={`Opens the dashboard: ${r.label}`}>{row}</Link>}</li>;
+      })}
+    </ul>
   );
 }
 

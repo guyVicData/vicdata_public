@@ -3561,10 +3561,18 @@ const RUNNERS: Record<string, Runner> = {
     const { walkConfigProblems, walkScreenProblems } = await import("../src/lib/front-door/walks-check");
     const ms = await frontDoorModels();
     const problems = [...walkConfigProblems(), ...ms.flatMap((m) => walkScreenProblems(m))];
-    return { pass: !problems.length, detail: fmt({ models: ms.map((m) => `${m.school.name} ${m.phase} ${m.focus?.label}`).join("; "), problems: problems.join("; ") || "none" }) };
+    // Head office's walks (Guy, 13 Nov): the group dashboard's own views on the Harris and Dukes fixtures.
+    const g = spawnSync("npx", ["-y", "tsx", "--test", "--test-force-exit", "src/lib/front-door/group-walks.test.tsx"], { cwd: ROOT, encoding: "utf8" });
+    const gOut = `${g.stdout ?? ""}${g.stderr ?? ""}`;
+    const gPass = Number(/# pass (\d+)/.exec(gOut)?.[1] ?? 0);
+    const gFail = Number(/# fail (\d+)/.exec(gOut)?.[1] ?? 1);
+    const groupOk = g.status === 0 && gFail === 0 && gPass > 0;
+    return { pass: !problems.length && groupOk, detail: fmt({ models: ms.map((m) => `${m.school.name} ${m.phase} ${m.focus?.label}`).join("; "), problems: problems.join("; ") || "none", groupWalks: `${gPass} pass, ${gFail} fail (Harris, Dukes)` }) };
   },
   async walkKeys() {
     const { keyProblems } = await import("../src/lib/front-door/walks-check");
+    const { niceAxis } = await import("../src/lib/front-door/axis");
+    let ticks = 0;
     const { teacherScreens } = await import("../src/lib/front-door/teacher-screens");
     const { WALKS } = await import("../src/lib/front-door/walks");
     const ms = await frontDoorModels();
@@ -3575,10 +3583,20 @@ const RUNNERS: Record<string, Runner> = {
         teacherScreens(m, w).forEach((sc, i) => {
           charts++;
           problems.push(...keyProblems(sc.chart).map((p) => `${w.id} ${i + 1}: ${p}`));
+          // Guy, 13 Nov: round ticks (1, 2, 2.5, 5 x 10^n) from zero or a floor, never the range in quarters.
+          if (sc.chart.kind === "lines") {
+            const vals = sc.chart.series.flatMap((x) => x.values).filter((v): v is number => v !== null);
+            const ax = niceAxis(vals, { place: sc.chart.yCaption.startsWith("Place") });
+            const step = ax.ticks.length > 1 ? Number((ax.ticks[ax.ticks.length - 1] - ax.ticks[ax.ticks.length - 2]).toPrecision(9)) : 1;
+            const mant = Number((step / 10 ** Math.floor(Math.log10(step))).toPrecision(6));
+            if (![1, 2, 2.5, 5].includes(mant) || ax.lo > Math.min(...vals) || ax.hi < Math.max(...vals)) problems.push(`${w.id} ${i + 1}: ticks ${ax.ticks.join(", ")}`);
+            ticks++;
+          }
         });
     const charts_src = (await import("node:fs")).readFileSync(path.join(ROOT, "src/components/front-door/charts.tsx"), "utf8");
     const svgText = /<text[\s>]/.test(charts_src);
-    return { pass: !problems.length && !svgText, detail: fmt({ charts, problems: problems.join("; ") || "none", svgTextInCharts: svgText }) };
+    const usesNice = /niceAxis\(/.test(charts_src);
+    return { pass: !problems.length && !svgText && usesNice, detail: fmt({ charts, lineAxes: ticks, problems: problems.join("; ") || "none", svgTextInCharts: svgText, roundTicks: usesNice }) };
   },
   async dumbbell() {
     const { dumbbellProblems } = await import("../src/lib/front-door/walks-check");

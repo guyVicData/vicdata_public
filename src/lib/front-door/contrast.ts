@@ -41,6 +41,8 @@ export const SEL = {
   shutDark: '#teacher-root[data-theme="dark"]',
   midField: '#teacher-root[data-pref="mid"] [data-field]',
   field: (f: MidField) => `#teacher-root[data-pref="mid"] [data-field="${f}"]`,
+  walkHead: (band: "dark" | "light") => `#teacher-root [data-walk-head="${band}"]`,
+  walkHeadPart: (band: "dark" | "light", f: MidField) => `#teacher-root [data-walk-head="${band}"][data-part="${f}"]`,
 } as const;
 
 /** The parts of the site with their own colour in Mid (C18), and their two gradient stops. */
@@ -94,6 +96,28 @@ export function contrastTable(css: string): Pair[] {
   pairs.push({ name: "Ladder Light: muted text on the page", fg: ll["--muted"] ?? light["--muted"], bg: ll["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: muted text on the page", fg: ld["--muted"] ?? dark["--muted"], bg: ld["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Light: muted2 text on the page", fg: light["--muted2"], bg: ll["--bg"], kind: "small" });
+  return [...pairs, ...walkHeadPairs(css)];
+}
+
+/**
+ * The walk's header band (Guy, 13 Nov), "dark" (Dark and Mid) and "light" (Light): the question, the close
+ * button and "Step n of N" on the band (small text), the step dots (marks), and each part's accent as the
+ * chip's text (small) and the icon on its badge (a mark).
+ */
+export function walkHeadPairs(css: string): Pair[] {
+  const pairs: Pair[] = [];
+  for (const band of ["dark", "light"] as const) {
+    const t = tokensOf(css, SEL.walkHead(band));
+    const where = band === "dark" ? "Walk header (Dark, Mid)" : "Walk header (Light)";
+    pairs.push({ name: `${where}: the question`, fg: t["--wh-fg"], bg: t["--wh-bg"], kind: "small" });
+    pairs.push({ name: `${where}: close, Step n of N`, fg: t["--wh-muted"], bg: t["--wh-bg"], kind: "small" });
+    pairs.push({ name: `${where}: a step dot`, fg: t["--wh-dot"], bg: t["--wh-bg"], kind: "mark" });
+    for (const f of Object.keys(MID_FIELDS) as MidField[]) {
+      const p = tokensOf(css, SEL.walkHeadPart(band, f));
+      pairs.push({ name: `${where} ${MID_FIELDS[f].label}: the chip and lit step`, fg: p["--wh-accent"], bg: t["--wh-bg"], kind: "small" });
+      pairs.push({ name: `${where} ${MID_FIELDS[f].label}: the icon on its badge`, fg: p["--wh-accent"], bg: p["--wh-tint"], kind: "mark" });
+    }
+  }
   return pairs;
 }
 

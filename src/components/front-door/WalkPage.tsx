@@ -45,6 +45,14 @@ const INFO = (
 
 /** The accent for focus lines on a light plate (the phase accents are pale on white: C16). */
 const LIGHT_FOCUS: Record<string, string> = { gcse: "#12a05c", post16: "#7c5ce6", smt: "#c2410c", smt_primary: "#c2410c", admissions: "#0b7bb8", group: "#8a5a2b" };
+/** SMT's, Admissions' and head office's accent in a walk (the panel bar, the lit rail view): the role
+ * colour on Dark, its contrast-checked deeper tone on a light plate (Mid, Light). */
+const ROLE_WALK_ACCENT: Record<string, { dark: { hex: string; rgb: string }; light: { hex: string; rgb: string } }> = {
+  smt: { dark: { hex: "#fb923c", rgb: "251,146,60" }, light: { hex: "#c2410c", rgb: "194,65,12" } },
+  smt_primary: { dark: { hex: "#fb923c", rgb: "251,146,60" }, light: { hex: "#c2410c", rgb: "194,65,12" } },
+  admissions: { dark: { hex: "#22d3ee", rgb: "34,211,238" }, light: { hex: "#0b6fa6", rgb: "11,111,166" } },
+  group: { dark: { hex: "#a8743f", rgb: "168,116,63" }, light: { hex: "#8a5a2b", rgb: "138,90,43" } },
+};
 const FIELD: Record<string, "gcse" | "post16" | "top" | "group" | "admissions"> = { gcse: "gcse", post16: "post16", smt: "top", smt_primary: "top", admissions: "admissions", group: "group" };
 
 // ------------------------------------------------------------------------------------------------ the frame
@@ -53,33 +61,45 @@ export function WalkFrame({ walk, step, steps, chip, children }: { walk: Walk; s
   const [pref] = useThemePref();
   const theme = effectiveTheme(pref);
   const mid = pref === "mid";
-  const accent = walk.product === "gcse" || walk.product === "post16" ? PHASE_ACCENT[walk.product === "gcse" ? "ks4" : "ks5"]! : null;
+  const accent = walk.product === "gcse" || walk.product === "post16" ? PHASE_ACCENT[walk.product === "gcse" ? "ks4" : "ks5"]! : (ROLE_WALK_ACCENT[walk.product]?.[mid || theme === "light" ? "light" : "dark"] ?? null);
   const style = (accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as CSSProperties;
   return (
     <main id="teacher-root" data-theme={mid ? "light" : theme} data-pref={pref} data-walk={walk.id} className="flex min-h-screen flex-col bg-[var(--bg)] text-[var(--fg)]" style={style}>
-      <header data-theme={mid ? "dark" : undefined} className="border-b border-[var(--border)] bg-[var(--bg)] text-[var(--fg)]">
-        <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
-          <ViewAsBanner />
-        </div>
-        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-          <Link href={homeOf(walk)} aria-label="Close the walk" className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--fg)]">{CLOSE}</Link>
-          <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[rgba(var(--accent-rgb,138,138,144),0.16)] text-[var(--accent,var(--fg))]">
-            <WalkGlyph icon={walk.icon} size={17} />
-          </span>
-          <span className="min-w-0 flex-grow text-[15px] font-medium">{fillTemplate(walk.question, { subject: chip?.split(" · ")[0] ?? null })}</span>
-          <ol className="hidden items-center gap-1.5 sm:flex" aria-label="Steps">
-            {Array.from({ length: steps }, (_, i) => (
-              <li key={i} aria-current={i === step ? "step" : undefined} className={`h-1.5 rounded-full ${i === step ? "w-6 bg-[var(--accent,var(--fg))]" : "w-1.5 bg-[var(--panel-border2)]"}`} />
-            ))}
-          </ol>
-          {chip && <span className="rounded-full border border-[var(--accent,var(--panel-border2))] px-3 py-1 text-[13px] text-[var(--accent,var(--fg))]">{chip}</span>}
-          <span className="text-[13px] text-[var(--muted)]">{step < steps ? `Step ${step + 1} of ${steps}` : "Done"}</span>
-        </div>
-      </header>
+      <WalkHeader walk={walk} step={step} steps={steps} chip={chip} band={mid || theme === "dark" ? "dark" : "light"} />
       <section data-field={FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
         <div className="mx-auto flex max-w-[1160px] flex-col gap-6">{children}</div>
       </section>
     </main>
+  );
+}
+
+/**
+ * The walk's header band: close, the walk's icon and question, step dots, the subject·phase chip, "Step n
+ * of N". Its colours are its own tokens (globals.css, [data-walk-head]), set on the band itself, so in Mid
+ * -- a dark band over a Light page -- nothing inherits the page's dark text (Guy, 13 Nov: dark grey on
+ * black). Every pair is in the contrast table (R-THEME-CONTRAST).
+ */
+export function WalkHeader({ walk, step, steps, chip, band }: { walk: Walk; step: number; steps: number; chip: string | null; band: "dark" | "light" }) {
+  return (
+    <header data-walk-head={band} data-part={FIELD[walk.product]} data-theme={band === "dark" ? "dark" : undefined} className="border-b border-[var(--wh-border)] bg-[var(--wh-bg)] text-[var(--wh-fg)]">
+      <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
+        <ViewAsBanner />
+      </div>
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
+        <Link href={homeOf(walk)} aria-label="Close the walk" className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--wh-muted)] hover:text-[var(--wh-fg)]">{CLOSE}</Link>
+        <span data-walk-head-icon="" className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--wh-tint)] text-[var(--wh-accent)]">
+          <WalkGlyph icon={walk.icon} size={17} />
+        </span>
+        <span className="min-w-0 flex-grow text-[15px] font-medium text-[var(--wh-fg)]">{fillTemplate(walk.question, { subject: chip?.split(" · ")[0] ?? null })}</span>
+        <ol className="hidden items-center gap-1.5 sm:flex" aria-label="Steps">
+          {Array.from({ length: steps }, (_, i) => (
+            <li key={i} aria-current={i === step ? "step" : undefined} className={`h-1.5 rounded-full ${i === step ? "w-6 bg-[var(--wh-accent)]" : "w-1.5 bg-[var(--wh-dot)]"}`} />
+          ))}
+        </ol>
+        {chip && <span data-walk-head-chip="" className="rounded-full border border-[var(--wh-accent)] px-3 py-1 text-[13px] font-medium text-[var(--wh-accent)]">{chip}</span>}
+        <span className="text-[13px] text-[var(--wh-muted)]">{step < steps ? `Step ${step + 1} of ${steps}` : "Done"}</span>
+      </div>
+    </header>
   );
 }
 
@@ -121,7 +141,7 @@ function RowCells({ label, lit }: { label: string; lit: number }) {
 }
 
 /** The panel: the dashboard's own panel, enlarged. */
-export function WalkPanel({ icon, name, question, pills, tag, rail, title, note, children }: { icon: string; name: string; question: string; pills: string[]; tag: string; rail: ReactNode; title: string; note: string; children: ReactNode }) {
+export function WalkPanel({ icon, name, question, pills, tag, rail, title, note, controls, children }: { icon: string; name: string; question: string; pills: string[]; tag: string; rail: ReactNode; title: string; note: string; controls?: ReactNode; children: ReactNode }) {
   return (
     <div data-walk-panel="" className="overflow-hidden rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
       <div className="h-[3px] bg-[var(--accent,var(--tile-accent))]" />
@@ -131,6 +151,7 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
         {pills.map((p) => (
           <span key={p} data-walk-pill="" className="rounded-full border border-[var(--panel-border2)] px-2.5 py-0.5 text-[12px] text-[var(--muted2)]">{p}</span>
         ))}
+        {controls && <span data-walk-controls="" className="flex flex-wrap items-center gap-2">{controls}</span>}
         <span className="rounded-[6px] bg-[var(--box-bg)] px-2 py-0.5 text-[12px] text-[var(--muted2)]">{tag}</span>
       </div>
       <div className="grid md:grid-cols-[200px_minmax(0,1fr)]">

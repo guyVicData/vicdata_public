@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { AA, contrast, contrastTable, LADDER_STEP, ladderSteps, tokensOf } from "./contrast";
+import { AA, contrast, contrastTable, LADDER_STEP, ladderSteps, tokensOf, walkHeadPairs } from "./contrast";
 import { GROUP_ACCENT, PHASE_ACCENT, ROLE_ACCENT, ROLE_ACCENT_LIGHT } from "../teacher-view-theme";
 
 const css = readFileSync(path.join(__dirname, "../../app/globals.css"), "utf8");
@@ -24,6 +24,18 @@ test("R-THEME-CONTRAST: every Mid text/background pair and the ladder's text pai
     const r = contrast(p.fg, p.bg);
     assert.ok(r >= AA[p.kind], `${p.name}: ${p.fg} on ${p.bg} = ${r.toFixed(2)} < ${AA[p.kind]}`);
   }
+});
+
+test("R-THEME-CONTRAST: the walk header draws only its own tokens, both bands, every part", () => {
+  const src = readFileSync(path.join(__dirname, "../../components/front-door/WalkPage.tsx"), "utf8");
+  const head = src.slice(src.indexOf("export function WalkHeader"), src.indexOf("function homeOf"));
+  assert.ok(head.length > 200, "WalkHeader found");
+  const vars = [...head.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]);
+  assert.ok(vars.length >= 8);
+  for (const v of vars) assert.match(v, /^--wh-/, `WalkHeader reads ${v}`);
+  const rows = walkHeadPairs(css);
+  assert.equal(rows.length, 2 * (3 + 5 * 2));
+  for (const p of rows) assert.ok(contrast(p.fg, p.bg) >= AA[p.kind], `${p.name}: ${p.fg} on ${p.bg}`);
 });
 
 test("R-PANEL-LADDER: a shut panel differs from its column by the logged step, Dark and Light", () => {

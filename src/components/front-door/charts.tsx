@@ -12,6 +12,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { SUBJECT_FAMILY_COLOURS } from "@/lib/subject-family-colours";
 import type { Chart, KeyEntry, Marker, Role } from "@/lib/front-door/teacher-screens";
+import { niceAxis } from "@/lib/front-door/axis";
 import { RailGlyph } from "./home";
 
 export const REF = { la: "#3987e5", england: "#c98500", nearest: "#d55181" } as const;
@@ -101,15 +102,14 @@ const fmt = (v: number, d: number) => (d ? v.toFixed(d) : Math.round(v).toLocale
 function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette }) {
   const vals = c.series.flatMap((s) => s.values).filter((v): v is number => v !== null);
   if (!vals.length) return <p className="text-[13px]" style={{ color: p.muted }}>No figures to draw.</p>;
-  const rawMin = Math.min(...vals), rawMax = Math.max(...vals);
-  const pad = (rawMax - rawMin || Math.abs(rawMax) || 1) * 0.12;
-  const min = c.yCaption.startsWith("Place") ? Math.max(0, rawMin - 1) : Math.max(0, rawMin - pad) === 0 && rawMin > 0 && rawMin - pad < 0 ? 0 : rawMin - pad;
-  const max = rawMax + pad;
   const flip = c.yCaption.startsWith("Place"); // 1st at the top
+  // Round ticks (1, 2, 2.5, 5 x 10^n) from zero or a floor below the lowest value (Guy, 13 Nov).
+  const axis = niceAxis(vals, { place: flip });
+  const [min, max] = [axis.lo, axis.hi];
   const n = c.years.length;
   const x = (i: number) => (n === 1 ? 50 : (i / (n - 1)) * 100);
   const y = (v: number) => (flip ? ((v - min) / (max - min)) * 100 : 100 - ((v - min) / (max - min)) * 100);
-  const ticks = Array.from({ length: 5 }, (_, k) => min + ((max - min) * k) / 4);
+  const ticks = axis.ticks;
   // End labels: at each line's last real point, nudged apart so they never overlap.
   const ends = c.series
     .map((s, si) => {
@@ -126,7 +126,7 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
         {/* Gridlines and the y ticks: HTML. */}
         {ticks.map((t, k) => (
           <div key={k} className="absolute inset-x-0" style={{ top: `${y(t)}%`, borderTop: `1px solid ${p.grid}` }}>
-            <span data-html-label="tick" className="absolute -left-10 -translate-y-1/2 text-[11px] tabular-nums" style={{ color: p.muted }}>{fmt(t, c.digits && max - min < 10 ? c.digits : 0)}</span>
+            <span data-html-label="tick" className="absolute -left-10 -translate-y-1/2 text-[11px] tabular-nums" style={{ color: p.muted }}>{fmt(t, axis.digits)}</span>
           </div>
         ))}
         {/* Unpublished years: dotted and labelled. */}

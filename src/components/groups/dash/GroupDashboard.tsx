@@ -385,7 +385,7 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
 
 // -------------------------------------------------------------------------------- the layout
 
-type ViewId =
+export type ViewId =
   | "GRP-O-NOW" | "GRP-O-AGAINST" | "GRP-O-MAP" | "GRP-O-JOINED" | "GRP-O-ROLL" | "GRP-O-RESULTS" | "GRP-O-SHARE"
   | "GRP-S-NOW" | "GRP-S-TABLE" | "GRP-S-GROWING" | "GRP-S-SCATTER" | "GRP-S-SHAPES"
   | "GRP-A-NOW" | "GRP-A-RANKED" | "GRP-A-AREAS" | "GRP-A-VA" | "GRP-A-TREND" | "GRP-A-POST16" | "GRP-A-IMPROVING" | "GRP-A-BANDS"
@@ -746,6 +746,31 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
       return p ? <GrowingShrinking p={p} /> : <Skeleton />;
   }
   return null;
+}
+
+// ------------------------------------------------------------------------------ a walk's screen
+
+/**
+ * 0.8 front door (B12; Guy, 13 Nov): one group view for a walk's screen, drawn exactly as this dashboard
+ * draws it -- the same ViewBody, header words, caption and flag -- from the dashboard route's own answer.
+ * The rail is the view's own cell, in the dashboard's order, empty views hidden as the dashboard hides them.
+ * The walk has no phone layout of its own (Part 2) and no highlight; Weighting is pupil-weighted, the
+ * dashboard's default.
+ */
+export function groupWalkView(d: DashResponse, dash: GroupDash, id: ViewId, projection: ProjectionRow[] | null, room = 360) {
+  const params: Params = { account: d.viewer.accountId, reading: "at_time", compare: null, focus: "all", school: null, showing: null };
+  const o = (dash === "schools" ? d.now : d.overview)!;
+  const c: Ctx = { d, o, s: d.schools ?? null, dash, params, average: false, phone: false, focusBar: null, highlight: () => {}, projection };
+  const cell = [...LAYOUT[dash].now, ...LAYOUT[dash].trends].find((x) => x.views.some((y) => y.id === id)) ?? null;
+  const rail = cell ? visibleRail(cell.views.map((x) => ({ id: x.id, label: x.label, icon: x.icon })), (x) => groupHasContent(x, c)) : [];
+  return {
+    header: headerOf(id, c),
+    caption: captionOf(id, c),
+    flag: flagOf(id, c),
+    rail,
+    has: groupHasContent(id, c),
+    body: <ViewBody id={id} c={c} fullscreen={false} room={room} />,
+  };
 }
 
 // -------------------------------------------------------------------------------------- phone

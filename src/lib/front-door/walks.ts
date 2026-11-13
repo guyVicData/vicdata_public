@@ -292,6 +292,11 @@ const groupWalks: Walk[] = [
   },
 ];
 
+/** Which group dashboard a group view's walk screen draws from (its ID's letter: O, S, A, P). */
+export function groupWalkDash(view: string): "overview" | "schools" | "academic" | "pupils" {
+  return ({ O: "overview", S: "schools", A: "academic", P: "pupils" } as const)[view.charAt(4) as "O" | "S" | "A" | "P"] ?? "overview";
+}
+
 /** The group dashboard's own view names and rail icons (GROUP_VIEWS in GroupDashboard.tsx, read there;
  * copied here because that file is a client component; a unit test keeps the two equal). */
 export const GROUP_VIEW_META: Record<string, { label: string; icon: string }> = {
