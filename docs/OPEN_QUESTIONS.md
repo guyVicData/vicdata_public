@@ -2956,3 +2956,22 @@ report is `docs/v0.8/group_sets_report_v1.md`). Each is the most reasonable read
     report).
 20. **Headless Chrome.** The installed Google Chrome (157) dies at start-up here ("Failed to get the path for
     1001"); the harness uses Playwright's headless Chromium (131) in the session scratchpad.
+
+**M5**
+21. **The filter runs in the page**, over the answer it already has (`src/lib/groups/subset-view.ts`): the
+    Schools table, the map, Joined and left, Schools ranked, value added, the excluded-school notes, entry
+    cohorts, leaving at 16, market share and the per-school projections. Every group-level figure (tiles,
+    Against others, trends, the group median, Year 12 against Year 11) is left whole, with the one line
+    "Showing 18 of 59 schools · group figures are for all 59" under the bar. No subset sums.
+22. **Showing sits on every Group page** (Overview, Schools, Academic, Pupils), beside Highlight a school;
+    picking a subset clears a highlighted school. On a phone both selectors now sit under the phase chips
+    (full width, bottom sheets): the old compare pill had no phone form.
+23. **No "Make default" for a subset.** D8 is about the comparison; a default subset would quietly hide
+    schools from everyone in the group, including granted schools. The storage allows one (the migration's
+    one-default index is per kind), so it can be added if wanted.
+24. **A school that has left** drops out of the filter; the page line, the editor ("left the group: drops out
+    of the filter", greyed) and Manage sets say how many. The fixtures have no leavers (Harris and Dukes keep
+    every member), so this is proved in the unit test with a made-up URN, not in a screenshot.
+25. **The Showing button uses the bars icon** (the shared `KindIcon` knows only compared-against and
+    feeders); its label "Showing" and its "n schools" tell it apart. A subset icon is for the front door
+    restyle if wanted.

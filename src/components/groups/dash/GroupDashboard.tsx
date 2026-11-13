@@ -36,7 +36,9 @@ import { englandWords, FOCI, FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, type Focu
 import { bandWords } from "@/lib/groups/group-sets";
 import type { GroupSetsInfo } from "@/lib/groups/group-sets-server";
 import { savedSetFromEditor, useEditorReturnReload } from "@/lib/sets/editor-return";
-import { GroupSetPicker } from "./GroupSetPicker";
+import { GroupSetPicker, GroupShowingPicker } from "./GroupSetPicker";
+import { filterDash, subsetOf } from "@/lib/groups/subset-view";
+import { normaliseShowing } from "@/lib/groups/group-sets";
 import type { Reading } from "@/lib/groups/aggregates";
 import { AcademicNow, BandsReserved, EntryCohorts, GroupShape, GrowingShrinking, ImprovingDeclining, LeavingAt16, MarketShare, ProjectionPerSchool, PupilsNow, SchoolsRanked, SubjectAreasAcross, ValueAddedPanel, type ProjectionRow } from "./views-r3";
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
@@ -78,7 +80,8 @@ export function groupDashVars(theme: Theme): CSSProperties {
 
 // 0.8 group sets (M4): ?compare= is the set picker's key (src/lib/groups/group-sets.ts), absent for the
 // page's default (the group's default set, else the size band); the server reads it, old keys included.
-type Params = { account: string | null; reading: Reading; compare: string | null; focus: Focus; school: string | null };
+// M5: ?showing=set:<uuid> is a subset of the group's own schools (absent: all of them).
+type Params = { account: string | null; reading: Reading; compare: string | null; focus: Focus; school: string | null; showing: string | null };
 function readParams(): Params {
   const sp = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
   return {
@@ -87,6 +90,7 @@ function readParams(): Params {
     compare: sp.get("compare")?.slice(0, 1200) || null,
     focus: FOCI.includes(sp.get("focus") as Focus) ? (sp.get("focus") as Focus) : "all",
     school: sp.get("school"),
+    showing: normaliseShowing(sp.get("showing")),
   };
 }
 function writeParams(p: Params) {
@@ -97,6 +101,7 @@ function writeParams(p: Params) {
   set("compare", p.compare, null);
   set("focus", p.focus, "all");
   set("school", p.school, null);
+  set("showing", p.showing, null);
   window.history.replaceState(window.history.state, "", `${window.location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
 }
 
@@ -125,6 +130,7 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
     setApplied(true);
     const s = load.data.sets?.sets.find((x) => x.id === handed);
     if (s && s.kind === "group_peers" && params.compare !== `set:${s.id}`) setParams({ compare: `set:${s.id}` });
+    if (s && s.kind === "group_schools" && params.showing !== `set:${s.id}`) setParams({ showing: `set:${s.id}` });
   }
   return (
     <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
@@ -160,7 +166,12 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
 
 type Ctx = { d: DashResponse; o: GroupOverview; s: GroupSchools | null; dash: GroupDash; params: Params; average: boolean; phone: boolean; focusBar: ReactNode; highlight: (urn: string | null) => void; projection: ProjectionRow[] | null };
 
-function Dashboard({ d, dash, params, setParams, theme, onTheme, onSetsChanged }: { d: DashResponse; dash: GroupDash; params: Params; setParams: (p: Partial<Params>) => void; theme: Theme; onTheme: (t: Theme) => void; onSetsChanged: () => void }) {
+function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsChanged }: { d: DashResponse; dash: GroupDash; params: Params; setParams: (p: Partial<Params>) => void; theme: Theme; onTheme: (t: Theme) => void; onSetsChanged: () => void }) {
+  // 0.8 group sets (M5): a subset filters every list of schools on the page; the group's figures stay whole.
+  const subsetSet = params.showing ? (whole.sets?.sets.find((x) => x.kind === "group_schools" && `set:${x.id}` === params.showing) ?? null) : null;
+  const total = (whole.now ?? whole.overview)!.group.confirmed + (whole.now ?? whole.overview)!.group.likely;
+  const subset = useMemo(() => subsetOf(subsetSet, (whole.map ?? []).map((m) => m.urn), total), [subsetSet, whole.map, total]);
+  const d = useMemo(() => (subset ? filterDash(whole, subset.kept) : whole), [whole, subset]);
   const [rootRef, width] = useWidth<HTMLDivElement>();
   const phone = width > 0 && width < PHONE;
   const router = useRouter();
@@ -250,6 +261,23 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme, onSetsChanged }
         onChanged={onSetsChanged}
       />
     );
+  const showingPill = (
+    <GroupShowingPicker
+      showing={subsetSet}
+      total={total}
+      sets={d.sets ?? { sets: [], notSetUp: true, personalActive: 0, cap: 8, admin: false, canKeep: false, defaults: { group_peers: null, group_schools: null } }}
+      account={d.viewer.accountId}
+      phone={phone}
+      onPick={(key) => setParams({ showing: key, school: null })}
+    />
+  );
+  // "Showing 18 of 59 schools · group figures are for all 59" (and leavers dropping out), under the bar.
+  const subsetLine = subset ? (
+    <div data-subset-line="" className={`text-[12.5px] font-semibold text-[var(--group-accent-text)] ${phone ? "" : "mx-auto max-w-[1440px] px-1"}`}>
+      {subset.line}
+      {subset.leftLine && <span className="ml-1 font-normal text-[var(--muted)]">· {subset.leftLine}</span>}
+    </div>
+  ) : null;
   const undated = !o.group.sources.includes("gias_groups") && !o.group.sources.includes("gias");
   const readingPill = (
     <MenuChip
@@ -266,13 +294,14 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme, onSetsChanged }
   const pills = (
     <>
       <Divider />
+      {showingPill}
       {highlightPill}
       {comparePill}
       {readingPill}
     </>
   );
 
-  const ctx: Ctx = { d, o, s, dash, params, average, phone, focusBar, highlight: (urn) => setParams({ school: urn }), projection: proj.status === "ready" ? proj.data.rows : proj.status === "error" ? [] : null };
+  const ctx: Ctx = { d, o, s, dash, params, average, phone, focusBar, highlight: (urn) => setParams({ school: urn }), projection: proj.status === "ready" ? (subset ? proj.data.rows.filter((r) => subset.kept.has(r.urn)) : proj.data.rows) : proj.status === "error" ? [] : null };
   const layout = LAYOUT[dash];
   const [open, setOpen] = useState<Record<string, boolean>>({ now: true, trends: true });
   const census = o.years.census;
@@ -313,6 +342,10 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme, onSetsChanged }
                 <EntryChip key={c.key} label={c.key === "all" ? "All" : c.label} active={c.key === params.focus} onClick={() => onFocus(c.key)} />
               ))}
             </div>
+            {/* 0.8 group sets: the two selectors on a phone (full width, bottom sheets). */}
+            {comparePill}
+            {showingPill}
+            {subsetLine}
             <PhoneBody c={ctx} layout={layout} />
           </PhoneStack>
         ) : (
@@ -333,6 +366,7 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme, onSetsChanged }
               noEdit
               chrome={pills}
             />
+            {subsetLine}
             {(["now", "trends"] as const).map((row) => (
               <ShellRow key={row} title={row === "now" ? "Now" : "Trends"} context={rowContext(row)} open={open[row] !== false} onToggle={() => setOpen((x) => ({ ...x, [row]: x[row] === false }))}>
                 {layout[row].map((cell) => (

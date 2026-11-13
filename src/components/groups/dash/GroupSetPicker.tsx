@@ -103,3 +103,37 @@ export function GroupSetPicker({ picker, sets, account, phone, onPick, onChanged
     />
   );
 }
+
+/** M5 (brief v2 §6, R-GROUP-SUBSET-FILTER): the "Showing" selector on every Group page -- "All 59 schools"
+ * (the default), the group's subsets and My subsets. It filters the page's lists of schools; the group's
+ * figures stay whole-group. Edit, New subset…, Duplicate and Manage sets for head office; a member school's
+ * SMT and View as see the group's subsets, read-only. */
+export function GroupShowingPicker({ showing, total, sets, account, phone, onPick, defaultOpen }: { showing: GroupSetRow | null; total: number; sets: GroupSetsInfo; account: string; phone: boolean; onPick: (key: string | null) => void; defaultOpen?: boolean }) {
+  const subs = sets.sets.filter((s) => s.kind === "group_schools");
+  const go = (href: string) => window.location.assign(href);
+  const all = { key: "all", name: `All ${total} schools`, count: total, countText: `${total} school${total === 1 ? "" : "s"}`, creator: "default" as const, title: "Every school in the group" };
+  const canChange = (s: GroupSetRow) => sets.canKeep && (s.scope === "personal" || sets.admin);
+  const keep = sets.canKeep && !sets.notSetUp;
+  const extra: SetMenuAction[] = [];
+  if (keep && showing && showing.scope === "group") extra.push({ label: "Duplicate to My sets…", onClick: () => go(groupEditorHref({ account, kind: "group_schools", members: showing.members, name: `${showing.name} (copy)`, from: `set:${showing.id}` })) });
+  return (
+    <SetSelector
+      label="Showing"
+      kind="compared_against"
+      current={showing ? { name: showing.name, count: showing.members.length, countText: `${showing.members.length} school${showing.members.length === 1 ? "" : "s"}` } : { name: all.name, count: total, countText: all.countText }}
+      rows={{ default: [all], school: subs.filter((s) => s.scope === "group").map((s) => setRowOf(s, null)), mine: subs.filter((s) => s.scope === "personal").map((s) => setRowOf(s, null)) }}
+      mine={sets.canKeep ? { active: sets.personalActive, cap: sets.cap } : null}
+      selectedKey={showing ? `set:${showing.id}` : "all"}
+      onPick={(r) => onPick(r.key === "all" ? null : r.key)}
+      onEdit={keep && showing ? { label: canChange(showing) ? "Edit this subset…" : "Open this subset…", onClick: () => go(groupEditorHref({ account, kind: "group_schools", set: showing.id })) } : null}
+      onNew={keep ? { label: "New subset…", onClick: () => go(groupEditorHref({ account, kind: "group_schools" })) } : null}
+      extraActions={extra}
+      manageHref={keep ? `/sets?account=${encodeURIComponent(account)}` : null}
+      manageUrn={null}
+      blockLabels={{ school: "Group subsets", schoolAll: "All group subsets" }}
+      hideMine={!sets.canKeep}
+      phone={phone}
+      defaultOpen={defaultOpen}
+    />
+  );
+}

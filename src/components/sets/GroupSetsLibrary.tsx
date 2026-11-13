@@ -15,7 +15,7 @@ import { useTeacherTheme } from "@/components/shell/TeacherChrome";
 import { useWidth } from "@/components/admissions/views/charts";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { archiveGroupSet, clearGroupDefault, deleteGroupSet, makeGroupDefault, shareGroupSet } from "@/lib/sets/group-store";
-import { groupsWord, type GroupSetKind, type GroupSetRow } from "@/lib/groups/group-sets";
+import { groupsWord, leftWords, subsetFilter, type GroupSetKind, type GroupSetRow } from "@/lib/groups/group-sets";
 import { SetsWayBack, wayBack } from "./SetsShell";
 import { CreatorPill } from "./SetSelector";
 import type { GroupSetsResponse } from "./GroupSetEditor";
@@ -33,7 +33,8 @@ export function GroupSetsLibraryPage() {
   const phone = width > 0 && width < PHONE;
   const account = sp.get("account") ?? "";
   const [v, setV] = useState(0);
-  const q = new URLSearchParams({ account });
+  // The group's schools come too, so a subset can say which of its schools have left the group (M5).
+  const q = new URLSearchParams({ account, with: "schools" });
   for (const k of ["lookAs", "as", "peek"]) if (sp.get(k)) q.set(k, sp.get(k)!);
   if (v) q.set("v", String(v));
   const load = useSmt<GroupSetsResponse>(`/api/group/sets?${q}`, null);
@@ -91,6 +92,10 @@ function Library({ d, back, onChanged, phone }: { d: GroupSetsResponse; back: st
             {s.archived && <span className="text-[11px] text-[var(--muted2)]">archived</span>}
           </div>
           <div className="text-[11.5px] text-[var(--muted2)]">{s.kind === "group_peers" ? groupsWord(s.members.length) : `${s.members.length} school${s.members.length === 1 ? "" : "s"}`}{s.description ? ` · ${s.description}` : ""}</div>
+          {s.kind === "group_schools" && d.schools && (() => {
+            const left = subsetFilter(s.members, d.schools.filter((x) => x.current).map((x) => x.urn)).left.length;
+            return left ? <div className="text-[11.5px] text-[var(--muted)]" data-left-note="">{leftWords(left)}</div> : null;
+          })()}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {!s.archived && <a href={pageFor(s)} className={btn}>Use</a>}
