@@ -210,14 +210,14 @@ cd ~/dev/vicdata_public && M=$(git rev-parse --short=12 HEAD) && until curl -s h
 **5. Republish the ten slugs** (after step 4), then check their versions:
 
 ```
-cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && npx -y tsx scripts/dashboards-seed-sql.ts --live https://vicdata.co.uk --only vicdata.ks4.candidates,vicdata.ks4.results,vicdata.ks5.candidates,vicdata.ks5.results,vicdata.smt.overview,vicdata.smt.academic,vicdata.smt.pupils,vicdata.smt.context,vicdata.admissions.pipelines,vicdata.admissions.market-share > /tmp/review_fixes_republish.sql && supabase db query --linked -f /tmp/review_fixes_republish.sql && supabase db query --linked "select d.slug, v.version, v.label from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.slug like 'vicdata.ks%' or d.slug like 'vicdata.smt.%' or d.slug like 'vicdata.admissions.%' order by 1"
+cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && npx -y tsx scripts/dashboards-seed-sql.ts --live https://vicdata.co.uk --only vicdata.ks4.candidates,vicdata.ks4.results,vicdata.ks5.candidates,vicdata.ks5.results,vicdata.smt.overview,vicdata.smt.academic,vicdata.smt.pupils,vicdata.smt.context,vicdata.admissions.pipelines,vicdata.admissions.market-share > /tmp/review_fixes_republish.sql && supabase db query --remote --yes -f /tmp/review_fixes_republish.sql && supabase db query --remote --read-only "select d.slug, v.version, v.label from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.slug like 'vicdata.ks%' or d.slug like 'vicdata.smt.%' or d.slug like 'vicdata.admissions.%' order by 1"
 ```
 
 Expect each of the ten one version up.
 
 **6. Set fixed:** none (no feedback items).
 
-**7. Live walk-through** on vicdata.co.uk:
+**7. Live check** on vicdata.co.uk:
 
 - **An Admissions walk at 11+** (View as… → Admissions, Leighton Park):
   - the header says 11+ (Year 7);
