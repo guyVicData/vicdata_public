@@ -56,7 +56,7 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const l = line ? lastPt(line.actual) : null;
       if (!f || !l || f.year === l.year) return "Not enough census years to see a trend.";
       const pct = f.value ? ((l.value! - f.value) / f.value) * 100 : null;
-      return `${cap(l.value! > f.value! ? "grown" : l.value! < f.value! ? "shrunk" : "held level")}: from ${n(f.value)} in ${periodLabel(f.year)} to ${n(l.value)} in ${periodLabel(l.year)}${pct !== null ? ` (${pctWords(pct)})` : ""}.`;
+      return `${cap(l.value! > f.value! ? "grown" : l.value! < f.value! ? "shrunk" : "held level")}${line.label ? ` (${line.label.toLowerCase()})` : ""}: from ${n(f.value)} in ${periodLabel(f.year)} to ${n(l.value)} in ${periodLabel(l.year)}${pct !== null ? ` (${pctWords(pct)})` : ""}.`;
     }
     case "DV-SMT-O-RESULTS-LINE": {
       const o = data as Overview;
@@ -159,14 +159,18 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const p = data as Pupils;
       const l = p.leaving[p.leaving.length - 1];
       if (!l || l.stayingPct === null) return "No Year 11 to Year 12 figures yet.";
+      if (l.stayingPct > 100) return `Year 12 in ${periodLabel(l.year)} was ${Math.round(l.stayingPct)}% of the year before's Year 11: more joined at 16 than left${l.leaving !== null ? ` (${n(-l.leaving)} net)` : ""}.`;
       return `${Math.round(l.stayingPct)}% stayed on into Year 12 in ${periodLabel(l.year)}${l.leaving !== null ? (l.leaving >= 0 ? `; ${n(l.leaving)} left at 16 (net)` : `; ${n(-l.leaving)} more joined at 16 than left (net)`) : ""}.`;
     }
     case "DV-SMT-P-PHASES": {
       const p = data as Pupils;
-      const parts = p.trends.phases.map((ph) => ({ ph, f: firstPt(ph.actual), l: lastPt(ph.actual) })).filter((x) => x.f && x.l && x.f.year !== x.l.year && x.f.value);
+      const all = p.trends.phases.map((ph) => ({ ph, f: firstPt(ph.actual), l: lastPt(ph.actual) })).filter((x) => x.f && x.l && x.f.year !== x.l.year && x.f.value);
+      // England's line is a comparator, not a phase: said after the school's phases.
+      const parts = all.filter((x) => !/england/i.test(x.ph.label));
+      const eng = all.find((x) => /england/i.test(x.ph.label));
       if (!parts.length) return "Not enough census years to compare the phases.";
       const word = (x: (typeof parts)[number]) => `${x.ph.label} ${pctWords(((x.l!.value! - x.f!.value!) / x.f!.value!) * 100)}`;
-      return `Since ${periodLabel(parts[0].f!.year)}: ${listJoin(parts.map(word))}.`;
+      return `Since ${periodLabel(parts[0].f!.year)}: ${listJoin(parts.map(word))}${eng ? `; England ${word(eng).replace(/^England /, "")}` : ""}.`;
     }
     case "DV-SMT-P-AREA": {
       const p = data as Pupils;
@@ -175,7 +179,8 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const l = lastPt(ar.pts);
       const who = `${possessive(ar.laName ?? "the LA")} residents aged ${ar.agesWord}`;
       if (!f || !l || f.year === l.year) return `${cap(who)}: not enough years yet.`;
-      return `${cap(who)} have ${l.value! > f.value! ? "grown" : l.value! < f.value! ? "fallen" : "held level"}: ${n(f.value)} in ${f.year}, ${n(l.value)} in ${l.year}${f.value ? ` (${pctWords(((l.value! - f.value) / f.value) * 100)})` : ""}.`;
+      const fw = ar.forward ? lastPt(ar.forward.pts) : null;
+      return `${cap(who)} have ${l.value! > f.value! ? "grown" : l.value! < f.value! ? "fallen" : "held level"}: ${n(f.value)} in mid-${f.year}, ${n(l.value)} in mid-${l.year}${f.value ? ` (${pctWords(((l.value! - f.value) / f.value) * 100)})` : ""}${fw && fw.value !== null && fw.year > l.year ? `; projected ${n(fw.value)} by ${fw.year} (${pctWords(((fw.value - l.value!) / l.value!) * 100)}, not a forecast)` : ""}.`;
     }
     case "DV-SMT-C-NOW": {
       const c = data as Context;
@@ -193,7 +198,7 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       if (!ages.length) return "No residents by age for the area yet.";
       const top = [...ages].sort((x, y) => y.value - x.value)[0];
       const low = [...ages].sort((x, y) => x.value - y.value)[0];
-      return `The largest age is ${top.age}, with ${n(top.value)} children; the smallest is ${low.age}, with ${n(low.value)}${c.byAge.period ? ` (${c.byAge.period})` : ""}.`;
+      return `Of the school's ages (${c.agesWord}), age ${top.age} has the most children, ${n(top.value)}, and age ${low.age} the fewest, ${n(low.value)}${c.byAge.period ? ` (mid-${c.byAge.period})` : ""}.`;
     }
     case "DV-SMT-C-BIRTHS": {
       const c = data as Context;
