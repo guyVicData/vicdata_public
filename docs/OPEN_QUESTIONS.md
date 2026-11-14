@@ -3182,3 +3182,16 @@ Built straight through from `docs/v0.8/vicdata_0_8_front_door_2b_claude_code_pro
 - **Charts:** the reference colours (LA, England, the 10 nearest) are fixed in every theme; the peer-line ambers deepen because the field draws Light's palette.
 - **The KS2 dashboard in Mid wasn't drawn by a harness** (the Teacher harness has no KS2 fixture); it runs the same Teacher code path with the "top" part. On Guy's live check.
 - **Rules:** R-THEME-MID-SCOPE **rewritten** (Mid was homes-and-walks-only; now dashboards follow it, sets and admin pages render Dark under Mid; its runner checks every dashboard root's plumbing and every sets and admin root's absence of it); R-THEME-CONTRAST extended (midDashPairs: 15 pairs; 112 in all, all pass); R-PANEL-LADDER extended to Mid (the steps above; no Mid rule overrides a ladder token).
+
+## 2026-11-13: front door, design cross-check
+
+Built straight through from `docs/v0.8/vicdata_0_8_front_door_design_crosscheck_claude_code_prompt_v1.md` on `v0.8-front-door-crosscheck` (from `main` 284e083, run 14 Nov). The calls made along the way:
+
+### M1–M2: the grabs and the differences
+
+- **The homes are grabbed from the real page** (`src/app/teacher/page.tsx`, the config renderer, a membership of the role), not from `HomeFrame` with stand-in sections as Part 2's harness did, so "Also here" and the nav are the app's own. The head office home and every dashboard come from 2b's harnesses (`GroupHome`, `TeacherDashboard`), the walks from `WalkPage`. Fixtures re-read through the app's route handlers (read-only), including SMT Context's tile figure and a primary school (Ash Green Primary Academy, 142990) for the primary SMT home.
+- **The walk boards are Dark at 1280 × 900; the homes Mid at 1280;** the sets, editors and membership boards Dark at 1440, the admin account board Mid (admin pages draw Dark under Mid). Matched so.
+- **Classes.** A difference a decision already covers is Decided, citing it; a board's own illustrative marker ("Illustrative data", "Other states of this page", "Proposed addition") is Decided, not a miss; differences of data only are counted, not listed. The table is `docs/v0.8/front_door_crosscheck/differences_v1.md`.
+- **The typeface (Inter on the boards, Arial in the app's `body`) and the header's missing school name are Guy's calls**, not misses: each moves every page of VicData, not the front door alone.
+- **`other_roles.png` is read as superseded where the homes' boards differ** (Admissions' third walk, SMT's screen lists): B12 says the cards' icon rows set the screens.
+- **The changelog's seeded entry** ("Mid gives the homes and walkthroughs their own colour") is stale since 2b put Mid on the dashboards. Not changed: the seed may already be applied live (keyed on title, a re-run adds nothing), and its words are Guy's to publish (G10).
