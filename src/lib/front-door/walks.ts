@@ -151,7 +151,8 @@ const smtWalks = (primary: boolean): Walk[] => {
       id: `${product}-pupils`,
       product,
       question: primary ? "Are we filling our Reception places?" : "Who are our pupils, and are numbers holding up?",
-      icon: "AdmRollIcon",
+      // Crosscheck (14 Nov, home_smt.png / home_group.png): the Pupils badge is the year-groups stack.
+      icon: "AdmShapeIcon",
       label: "Pupils",
       kind: "Dashboard",
       dashboard: `${SMT_O}/pupils`,
@@ -278,7 +279,7 @@ const groupWalks: Walk[] = [
     id: "group-pupils",
     product: "group",
     question: "Are pupil numbers holding up across the group?",
-    icon: "AdmRollIcon",
+    icon: "AdmShapeIcon",
     label: "Pupils",
     kind: "Group dashboard",
     dashboard: `${GRP}/pupils`,

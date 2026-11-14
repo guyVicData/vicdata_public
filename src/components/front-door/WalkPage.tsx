@@ -23,6 +23,7 @@ import { pickMembership, resolveViewAs, resolvePeek } from "@/lib/view-as";
 import { dataviewById, DATAVIEWS } from "@/catalogue/dataviews";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PHASE_LABELS } from "@/lib/teacher-view-phases";
+import { teacherDashboardFor } from "@/catalogue/dashboards/teacher";
 import { fillTemplate, screenMeta, walkById, walksFor, type Walk } from "@/lib/front-door/walks";
 import type { TeacherModel } from "@/lib/front-door/teacher-model";
 import { teacherScreens, type Screen } from "@/lib/front-door/teacher-screens";
@@ -67,7 +68,8 @@ export function WalkFrame({ walk, step, steps, chip, children }: { walk: Walk; s
     <main id="teacher-root" data-theme={mid ? "light" : theme} data-pref={pref} data-walk={walk.id} className="flex min-h-screen flex-col bg-[var(--bg)] text-[var(--fg)]" style={style}>
       <WalkHeader walk={walk} step={step} steps={steps} chip={chip} band={mid || theme === "dark" ? "dark" : "light"} />
       <section data-field={FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
-        <div className="mx-auto flex max-w-[1160px] flex-col gap-6">{children}</div>
+        {/* Crosscheck (14 Nov): the boards' walk column is 1060 px (the homes keep 1160). */}
+        <div className="mx-auto flex max-w-[1060px] flex-col gap-6">{children}</div>
       </section>
     </main>
   );
@@ -86,18 +88,23 @@ export function WalkHeader({ walk, step, steps, chip, band }: { walk: Walk; step
         <ViewAsBanner />
       </div>
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-        <Link href={homeOf(walk)} aria-label="Close the walk" className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--wh-muted)] hover:text-[var(--wh-fg)] sm:h-8 sm:w-8">{CLOSE}</Link>
-        <span data-walk-head-icon="" className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--wh-tint)] text-[var(--wh-accent)]">
-          <WalkGlyph icon={walk.icon} size={17} />
+        {/* Crosscheck (14 Nov, walk_*.png): the step dots sit centred, the walk on the left, chip and step right. */}
+        <span className="flex w-full min-w-0 items-center gap-x-4 sm:w-auto sm:flex-1">
+          <Link href={homeOf(walk)} aria-label="Close the walk" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--wh-muted)] hover:text-[var(--wh-fg)] sm:h-8 sm:w-8">{CLOSE}</Link>
+          <span data-walk-head-icon="" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--wh-tint)] text-[var(--wh-accent)]">
+            <WalkGlyph icon={walk.icon} size={17} />
+          </span>
+          <span className="min-w-0 text-[15px] font-medium text-[var(--wh-fg)]">{fillTemplate(walk.question, { subject: chip?.split(" · ")[0] ?? null })}</span>
         </span>
-        <span className="min-w-0 flex-grow text-[15px] font-medium text-[var(--wh-fg)]">{fillTemplate(walk.question, { subject: chip?.split(" · ")[0] ?? null })}</span>
         <ol className="hidden items-center gap-1.5 sm:flex" aria-label="Steps">
           {Array.from({ length: steps }, (_, i) => (
             <li key={i} aria-current={i === step ? "step" : undefined} className={`h-1.5 rounded-full ${i === step ? "w-6 bg-[var(--wh-accent)]" : "w-1.5 bg-[var(--wh-dot)]"}`} />
           ))}
         </ol>
-        {chip && <span data-walk-head-chip="" className="rounded-full border border-[var(--wh-accent)] px-3 py-1 text-[13px] font-medium text-[var(--wh-accent)]">{chip}</span>}
-        <span className="text-[13px] text-[var(--wh-muted)]">{step < steps ? `Step ${step + 1} of ${steps}` : "Done"}</span>
+        <span className="flex items-center gap-x-4 sm:flex-1 sm:justify-end">
+          {chip && <span data-walk-head-chip="" className="rounded-full border border-[var(--wh-accent)] px-3 py-1 text-[13px] font-medium text-[var(--wh-accent)]">{chip}</span>}
+          <span className="text-[13px] text-[var(--wh-muted)]">{step < steps ? `Step ${step + 1} of ${steps}` : "Done"}</span>
+        </span>
       </div>
     </header>
   );
@@ -148,9 +155,15 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
       <div className="flex flex-wrap items-center gap-2.5 border-b border-[var(--panel-border)] px-4 py-3">
         <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[rgba(var(--accent-rgb,138,138,144),0.16)] text-[var(--accent,var(--fg))]"><WalkGlyph icon={icon} size={17} /></span>
         <p className="min-w-0 flex-grow text-[15px]"><strong>{name}</strong> <span className="text-[var(--muted)]">— {question}</span></p>
-        {pills.map((p) => (
-          <span key={p} data-walk-pill="" className="rounded-full border border-[var(--panel-border2)] px-2.5 py-0.5 text-[12px] text-[var(--muted2)]">{p}</span>
-        ))}
+        {pills.map((p) => {
+          // "Compared against: Subject category" draws as the dashboard's pill: the label, then the setting.
+          const [label, value] = p.includes(": ") ? p.split(": ") : [null, p];
+          return (
+            <span key={p} data-walk-pill="" title="Set on the dashboard" className="rounded-full border border-[var(--panel-border2)] px-2.5 py-0.5 text-[12px] text-[var(--muted2)]">
+              {label && <>{label} </>}<strong className="font-medium text-[var(--fg)]">{value}</strong>
+            </span>
+          );
+        })}
         {controls && <span data-walk-controls="" className="flex flex-wrap items-center gap-2">{controls}</span>}
         <span className="rounded-[6px] bg-[var(--box-bg)] px-2 py-0.5 text-[12px] text-[var(--muted2)]">{tag}</span>
       </div>
@@ -177,9 +190,40 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
 }
 
 /** The panel's rail: the views on this panel's rail on the dashboard (lit = this one), then "As a table". */
-export function Rail({ view, asTable, onTable, dashboard }: { view: string; asTable: boolean; onTable: (on: boolean) => void; dashboard: string }) {
+export function Rail({ view, asTable, onTable, dashboard, rail }: { view: string; asTable: boolean; onTable: (on: boolean) => void; dashboard: string; rail?: string[] }) {
   const dv = dataviewById(view);
-  const views = dv ? DATAVIEWS.filter((d) => d.host.id === dv.host.id && d.host.panel === dv.host.panel && (d.status === "live" || d.id === view) && d.renderer !== "RD-YEAR-TABLE" && d.renderer !== "RD-SORT-TABLE") : [];
+  const isTable = (d: { renderer: string }) => d.renderer === "RD-YEAR-TABLE" || d.renderer === "RD-SORT-TABLE";
+  // Crosscheck (14 Nov): given the dashboard panel's own rail (its config), the walk lists exactly that, in
+  // its order, its table views in place (they switch the walk to the chart's table); else the catalogue's.
+  if (rail && rail.length) {
+    const list = rail.map((id) => dataviewById(id)).filter((d): d is NonNullable<typeof d> => !!d);
+    const tableView = list.find(isTable);
+    return (
+      <ul className={RAIL_LIST} data-walk-rail="">
+        {list.map((d) => {
+          const on = d.id === view ? !asTable : isTable(d) && d === tableView && asTable;
+          const row = (
+            <span className={`${RAIL_ROW} ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name={d.railIcon} size={13} /></span>
+              <span className="min-w-0 flex-1">{d.label}</span>
+              {d.id !== view && d !== tableView && <span aria-hidden="true" className="hidden text-[11px] text-[var(--muted)] md:inline">&#8599;</span>}
+            </span>
+          );
+          return d.id === view ? (
+            <li key={d.id}><button type="button" className="w-full text-left" onClick={() => onTable(false)} aria-pressed={!asTable}>{row}</button></li>
+          ) : d === tableView ? (
+            <li key={d.id}><button type="button" className="w-full text-left" onClick={() => onTable(true)} aria-pressed={asTable}>{row}</button></li>
+          ) : (
+            <li key={d.id}><Link href={dashboard} title={`Opens the dashboard at this panel: ${d.label}`}>{row}</Link></li>
+          );
+        })}
+        {!tableView && (
+          <li><button type="button" className="w-full text-left" onClick={() => onTable(true)} aria-pressed={asTable}><span className={`${RAIL_ROW} ${asTable ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}><span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${asTable ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name="TableIcon" size={13} /></span>As a table</span></button></li>
+        )}
+      </ul>
+    );
+  }
+  const views = dv ? DATAVIEWS.filter((d) => d.host.id === dv.host.id && d.host.panel === dv.host.panel && (d.status === "live" || d.id === view) && !isTable(d)) : [];
   const row = (on: boolean, icon: string, label: string) => (
     <span className={`${RAIL_ROW} ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
       <span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name={icon} size={13} /></span>
@@ -207,15 +251,16 @@ export function Rail({ view, asTable, onTable, dashboard }: { view: string; asTa
 }
 
 /** Back, and Next previewing the next question (or "Here's what you found"). */
-export function WalkFooter({ onBack, onNext, backLabel, next }: { onBack: () => void; onNext: () => void; backLabel: string; next: string }) {
+export function WalkFooter({ onBack, onNext, backLabel, next, finish = false }: { onBack: () => void; onNext: () => void; backLabel: string; next: string; finish?: boolean }) {
   return (
     // G (phone): Back and Next in a sticky bottom bar; from sm up, the row under the panel.
     <div data-walk-footer="" className="sticky bottom-0 z-30 -mx-4 flex flex-nowrap items-center justify-between gap-3 border-t border-[var(--panel-border)] bg-[var(--bg)] px-4 py-2.5 sm:static sm:mx-0 sm:flex-wrap sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-2">
-      <button type="button" onClick={onBack} className="fd-tile inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-[12px] px-4 py-3 text-[15px] text-[var(--fg)]">{ARROW_L} {backLabel}</button>
+      {/* Crosscheck (14 Nov, walk_*.png): Back is an outlined button beside the solid Next. */}
+      <button type="button" onClick={onBack} className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] px-4 py-3 text-[15px] text-[var(--fg)] hover:bg-[var(--box-bg)]">{ARROW_L} {backLabel}</button>
       <button type="button" onClick={onNext} data-walk-next="" className="flex min-h-[44px] min-w-0 max-w-full flex-1 items-center gap-4 rounded-[14px] bg-[var(--tile-accent,var(--accent))] px-5 py-3 text-left text-[var(--tile-on-accent,#0a0a0b)] sm:flex-none">
         <span className="min-w-0">
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">Next</span>
-          <span className="block truncate text-[15.5px] font-semibold sm:whitespace-normal">{next}</span>
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">{finish ? "Finish" : "Next"}</span>
+          <span className="block truncate text-[15.5px] font-semibold sm:whitespace-normal">{finish ? "See what you found" : next}</span>
         </span>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/10">{ARROW_R}</span>
       </button>
@@ -259,7 +304,10 @@ export function useStep(n: number): [number, (s: number) => void] {
 
 // ------------------------------------------------------------------------------------------------ Teacher
 
-const TEACHER_COLS = (screenView: string) => [screenView.includes("-RES-") ? "results" : "candidates", "context", "rankings"];
+/** The dashboard a Teacher walk screen lives on: Results for a Results view or a screen set on points. */
+function modeOf(s: { view: string; options?: { measure?: string } }): "candidates" | "results" {
+  return s.view.startsWith("DV-C1-RES") || s.view.startsWith("DV-C1-CNT") || s.options?.measure === "points" ? "results" : "candidates";
+}
 const COLUMN_NAME: Record<string, string> = { candidates: "Candidates", results: "Results", context: "Context", rankings: "Comparisons" };
 
 function columnOf(view: string): string {
@@ -308,16 +356,28 @@ function TeacherWalk({ walk }: { walk: Walk }) {
   const s = walk.screens[step];
   const sc = screens[step];
   const col = columnOf(s.view);
+  // Crosscheck (14 Nov): a screen lives on GCSE Candidates or GCSE Results (the boards' mini-map names the
+  // dashboard, never a column); its rail is that dashboard panel's own.
+  const mode = modeOf(s);
+  const dashCfg = teacherDashboardFor(phase, mode);
+  const panelCfg = dashCfg.panels.find((pc) => pc.column === (["candidates", "results"].includes(col) ? "c1" : col === "context" ? "c2" : "c3") && pc.row === (s.spot.row === 0 ? "current" : "trends"));
+  const railIds = (panelCfg?.dataviews ?? []).flatMap((v) => (v.kind === "view" ? [v.dataview as string] : [])).filter((id) => {
+    const d = dataviewById(id);
+    const m = s.options?.measure === "points" ? "points" : null;
+    if (id === s.view) return true;
+    return !!d && d.status === "live" && (!m || !d.resultsMeasures || d.resultsMeasures.includes(m as never));
+  });
   const pills = [
     ...(s.options?.against === "category" && col === "context" ? ["Compared against: Subject category"] : []),
     ...(s.options?.against === "whole" ? ["Compared against: Whole school"] : []),
     ...(s.options?.measure === "points" ? ["Results measure: Average points"] : []),
   ];
   const colQuestion: Record<string, string> = {
+    // The column questions of the one vocabulary (vocabulary.png §1).
     candidates: `How many ${phase === "ks5" ? "students" : "pupils"} take ${model.focus?.subject ?? "your subject"}?`,
-    results: `How well do they do in ${model.focus?.subject ?? "your subject"}?`,
+    results: `How well do ${phase === "ks5" ? "students" : "pupils"} do in ${model.focus?.subject ?? "your subject"}?`,
     context: `How does ${model.focus?.subject ?? "your subject"} sit alongside the rest of the school?`,
-    rankings: phase === "ks5" ? "How do we compare with sixth forms nearby?" : "How do we compare with schools nearby?",
+    rankings: `How does ${model.focus?.subject ?? "your subject"} compare with other ${phase === "ks5" ? "sixth forms" : "schools"}?`,
   };
   const next = step + 1 < n ? screens[step + 1].question : "Here's what you found";
   return (
@@ -329,14 +389,14 @@ function TeacherWalk({ walk }: { walk: Walk }) {
             <p data-walk-answer="" className="text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{sc.answer}</p>
           </>
         }
-        map={<MiniMap cols={TEACHER_COLS(s.view)} spot={s.spot} name={`${PHASE_LABELS[phase]} ${COLUMN_NAME[col]}`} href={walk.dashboard} />}
+        map={<MiniMap cols={[mode, "context", "rankings"]} spot={s.spot} name={`${PHASE_LABELS[phase]} ${mode === "results" ? "Results" : "Candidates"}`} href={walk.dashboard} />}
         panel={
-          <WalkPanel icon={col} name={COLUMN_NAME[col]} question={colQuestion[col]} pills={pills} tag={sc.tag} title={sc.title} note={sc.note} rail={<Rail view={s.view} asTable={asTable} onTable={setAsTable} dashboard={walk.dashboard} />}>
+          <WalkPanel icon={col} name={COLUMN_NAME[col]} question={colQuestion[col]} pills={pills} tag={sc.tag} title={sc.title} note={sc.note} rail={<Rail view={s.view} asTable={asTable} onTable={setAsTable} dashboard={walk.dashboard} rail={railIds} />}>
             <WalkChart chart={sc.chart} p={pal} asTable={asTable} />
           </WalkPanel>
         }
       />
-      <WalkFooter onBack={() => (step === 0 ? router.push("/teacher") : (setAsTable(false), setStep(step - 1)))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => { setAsTable(false); setStep(step + 1); }} next={next} />
+      <WalkFooter onBack={() => (step === 0 ? router.push("/teacher") : (setAsTable(false), setStep(step - 1)))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => { setAsTable(false); setStep(step + 1); }} next={next} finish={step + 1 >= n} />
     </WalkFrame>
   );
 }
@@ -371,7 +431,7 @@ export function Found({ walk, screens, params, ctx, onBack }: { walk: Walk; scre
         <Link href={walk.dashboard} className="inline-flex items-center gap-2 rounded-[12px] bg-[var(--tile-accent,var(--accent))] px-4 py-3 text-[14.5px] font-semibold text-[var(--tile-on-accent,#0a0a0b)]">Open the full dashboard {ARROW_R}</Link>
       </div>
       <div>
-        <button type="button" onClick={onBack} className="fd-tile inline-flex items-center gap-2 rounded-[12px] px-4 py-3 text-[15px] text-[var(--fg)]">{ARROW_L} Back</button>
+        <button type="button" onClick={onBack} className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] px-4 py-3 text-[15px] text-[var(--fg)] hover:bg-[var(--box-bg)]">{ARROW_L} Back</button>
       </div>
     </div>
   );

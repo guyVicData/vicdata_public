@@ -18,11 +18,11 @@ export type Chart =
   | { kind: "tiles"; main: { figure: string; label: string }; tiles: { icon: string; figure: string; scope: string }[]; keys: KeyEntry[] }
   | { kind: "vbars"; rows: { label: string; value: number; role: Role }[]; average: { value: number; label: string } | null; unit: string; yCaption: string; keys: KeyEntry[] }
   | { kind: "lines"; years: string[]; series: { label: string; values: Series; role: Role; shade?: number; marker?: Marker }[]; unpublished: number[]; yCaption: string; extraRows?: { label: string; values: Series }[]; keys: KeyEntry[]; digits: number }
-  | { kind: "dumbbell"; rows: { label: string; first: number; latest: number; role: Role }[]; firstYear: string; latestYear: string; keys: KeyEntry[] }
-  | { kind: "grades"; rows: { grade: string; count: number; share: number; england: number | null }[]; total: number; keys: KeyEntry[] }
+  | { kind: "dumbbell"; rows: { label: string; first: number; latest: number; role: Role }[]; firstYear: string; latestYear: string; noun: string; keys: KeyEntry[] }
+  | { kind: "grades"; rows: { grade: string; count: number; share: number; england: number | null }[]; total: number; noun: [string, string]; keys: KeyEntry[] }
   | { kind: "hbars"; rows: { label: string; value: number; role: Role; note?: string }[]; unit: string; digits: number; keys: KeyEntry[] }
   | { kind: "ranking"; rows: { rank: number; label: string; value: number; role: Role; distanceKm: number | null }[]; unit: string; digits: number; keys: KeyEntry[] }
-  | { kind: "map"; points: { label: string; easting: number; northing: number; role: Role; value: number | null }[]; keys: KeyEntry[] }
+  | { kind: "map"; points: { label: string; easting: number; northing: number; role: Role; value: number | null; distanceKm?: number | null }[]; keys: KeyEntry[] }
   | { kind: "none"; reason: string; keys: KeyEntry[] };
 
 export type Screen = { question: string; answer: string; title: string; note: string; chart: Chart; tag: string };
@@ -226,7 +226,8 @@ export function teacherScreen(m: TeacherModel, walk: Walk, i: number): Screen {
           yCaption: pts ? "Average points per entry" : `Entries, indexed (${years[0] ?? "first year"} = 100)`,
           // Region: in the table only, never a line (R-WALK-RHYTHM).
           extraRows: m.area.region ? [{ label: m.area.region.name, values: cut(pts ? m.area.region.points : idx(m.area.region.entries)) }] : [],
-          keys: shown.map((l) => ({ label: l.role === "focus" ? "This school" : l.role === "nearest" ? `${m.nearest.length - 1} nearest schools` : l.role === "la" ? "LA" : l.label, role: l.role, mark: "line" as const })),
+          // Crosscheck (14 Nov): the key names each line as its end label does (the school, its LA by name).
+          keys: shown.map((l) => ({ label: l.role === "nearest" ? `${m.nearest.length - 1} nearest schools` : l.label, role: l.role, mark: "line" as const })),
           digits: pts ? pointsDigits(m) : 0,
         },
       };
@@ -275,7 +276,7 @@ export function teacherScreen(m: TeacherModel, walk: Walk, i: number): Screen {
         answer,
         title: `${subject}'s grades: share of ${m.phase === "ks5" ? "students" : "pupils"} at each grade${g.englandShare ? ", against England" : ""}`,
         note: `${pupils(m, total)} in all. Bars: the share of this school's ${m.phase === "ks5" ? "students" : "pupils"} at each grade.${g.englandShare ? " Amber marks: England's share at the same grade." : " England's shares aren't published for this qualification."}`,
-        chart: { kind: "grades", rows, total, keys: [{ label: "This school: % at each grade", role: "focus", mark: "swatch" }, ...(g.englandShare ? [{ label: "England: % at each grade", role: "england" as Role, mark: "tick" as const }] : [])] },
+        chart: { kind: "grades", rows, total, noun: m.phase === "ks5" ? ["student", "students"] : ["pupil", "pupils"], keys: [{ label: "This school: % at each grade", role: "focus", mark: "swatch" }, ...(g.englandShare ? [{ label: "England: % at each grade", role: "england" as Role, mark: "tick" as const }] : [])] },
       };
     }
     // ---------------------------------------------------------------- nearby
@@ -288,7 +289,7 @@ export function teacherScreen(m: TeacherModel, walk: Walk, i: number): Screen {
         answer: `The ${m.nearest.length - 1} nearest ${m.phase === "ks5" ? "sixth forms" : "schools"}, all within ${Math.ceil(far)} km; ${offering} of them published ${subject} entries.`,
         title: `${m.school.name} and the ${m.nearest.length - 1} nearest`,
         note: `The dashboard's default comparison: the ${m.nearest.length - 1} nearest ${m.phase === "ks5" ? "schools with a sixth form" : "schools"} by its own rules.${m.nearestNote ? ` ${m.nearestNote}` : ""} Positions on the national grid; no base map in the walk.`,
-        chart: placed.length ? { kind: "map", points: placed.map((x) => ({ label: x.name, easting: x.easting!, northing: x.northing!, role: x.isTarget ? "focus" : "nearest", value: lastOf(x.entries) })), keys: [{ label: m.school.name, role: "focus", mark: "dot" }, { label: "The nearest schools", role: "nearest", mark: "dot" }] } : { kind: "none", reason: "No positions published for these schools.", keys: [] },
+        chart: placed.length ? { kind: "map", points: placed.map((x) => ({ label: x.name, easting: x.easting!, northing: x.northing!, role: x.isTarget ? "focus" : "nearest", value: lastOf(x.entries), distanceKm: x.distanceKm })), keys: [{ label: m.school.name, role: "focus", mark: "dot" }, { label: "The nearest schools", role: "nearest", mark: "dot" }] } : { kind: "none", reason: "No positions published for these schools.", keys: [] },
       };
     }
     case "nearby-entries":
@@ -375,12 +376,13 @@ function dumbbellScreen(m: TeacherModel, base: { question: string; tag: string }
     ...base,
     answer,
     title: `Entries by subject in the whole school, ${fy} and ${ly}, largest first`,
-    note: `Ordered by this year's entries. Ring: ${fy}; dot: ${ly}. Change in ${m.phase === "ks5" ? "students" : "pupils"}; ▲ / ▼ show direction, so colour is free to mean the subject area. A proposed view for the dashboard's Context › Trends rail.`,
+    note: `Ordered by this year's entries. Ring: ${fy}; dot: ${ly}. Change in ${m.phase === "ks5" ? "students" : "pupils"}; ▲ / ▼ show direction, so colour is free to mean the subject area. The same view is on the dashboard's Context › Trends rail, "Change (dumbbell)".`,
     chart: {
       kind: "dumbbell",
       rows: d.rows,
       firstYear: fy,
       latestYear: ly,
+      noun: m.phase === "ks5" ? "students" : "pupils",
       keys: [
         { label: subject, role: "focus", mark: "swatch" },
         { label: `Other ${cat} subjects`, role: "peer", mark: "swatch" },

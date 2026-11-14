@@ -5,8 +5,7 @@
 //
 // The two years are the first and the latest in that span that any subject holds. One row per subject
 // with a figure in both, largest this year first (ties by name); the focus
-// marked; the comparison group's own per-subject average (the panel's group line) as the dashed row last,
-// else the plain average of the rows drawn. Change is in entries (latest less first). Pure, so the rule
+// marked; the plain average of the rows drawn (the same subjects in both years) as the dashed row last. Change is in entries (latest less first). Pure, so the rule
 // test runs it on fixtures and the walk's ordering rule (dumbbellRows) is the same.
 
 export type DumbbellSeries = { key: string; label: string; colour: string; values: (number | null)[] };
@@ -46,16 +45,15 @@ export function dashboardDumbbell(
   }
   if (!rows.length) return null;
   rows.sort((x, y) => y.latest - x.latest || x.label.localeCompare(y.label));
-  const g = span.series.find((s) => s.key === "group-0");
-  const ga = g?.values[fi];
-  const gb = g?.values[li];
-  let average: DashboardDumbbell["average"] = null;
-  if (g && ga != null && gb != null) average = { label: `${opts.group?.label ?? g.label} average`, first: ga, latest: gb, change: gb - ga };
-  else {
-    const a = mean(rows.map((r) => r.first));
-    const b = mean(rows.map((r) => r.latest));
-    if (a !== null && b !== null) average = { label: "Average of these subjects", first: a, latest: b, change: b - a };
-  }
+  // The dashed row is the plain average of the rows drawn, at both ends (the board's "school average ...
+  // the plain average of the 14 subjects"). Not the panel's group line: that is a per-year mean over every
+  // subject the group holds that year, so a subject left out here (one year only) moves it, and it could
+  // fall while every row drawn rose (crosscheck, 14 Nov: The Chase, English Language, "Average ▼ 14").
+  const a = mean(rows.map((r) => r.first));
+  const b = mean(rows.map((r) => r.latest));
+  const n = rows.length;
+  const named = opts.group?.label ? `${opts.group.label} average` : "Average";
+  const average: DashboardDumbbell["average"] = a !== null && b !== null ? { label: `${named}: the ${n} ${n === 1 ? "subject" : "subjects"} drawn, both years`, first: a, latest: b, change: b - a } : null;
   return { rows, average, firstPeriod: span.periods[fi], latestPeriod: span.periods[li], leftOut };
 }
 

@@ -70,8 +70,10 @@ export function NumberTiles({
       {tiles.length > 0 && (
         // Guy's "subsidiary figures in a row": three across a ~400px card (each ~5.5rem),
         // wrapping to fewer only on a narrower one rather than squeezing a detail line to
-        // a word per line.
-        <ul className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${fullscreen ? "11rem" : "5.5rem"}, 1fr))` }}>
+        // a word per line. Crosscheck (14 Nov): 5rem, not 5.5rem -- in Mid the coloured field's padding makes
+        // the card ~265 px inside, so three 5.5rem tiles wrapped to two rows and the panel's fixed height cut
+        // the third ("+0.4 above the England average") off. Dark and Light (~280 px) draw three across as before.
+        <ul className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${fullscreen ? "11rem" : "5rem"}, 1fr))` }}>
           {tiles.map((t) => (
             <li key={t.key} className={`flex min-w-0 flex-col gap-1 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] ${fullscreen ? "px-3.5 py-3" : "px-2 py-2"}`}>
               <div className="flex items-center gap-1.5">

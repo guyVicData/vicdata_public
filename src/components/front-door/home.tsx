@@ -211,7 +211,16 @@ export function HomeSection({
           <div className={`grid grid-cols-1 gap-[18px] ${cols === 3 ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"}`}>{tiles}</div>
         )}
         {children}
-        {note && <p className="text-[13px] text-[var(--field-ink)]">{note}</p>}
+        {/* Crosscheck (14 Nov, home_primary_smt.png): a written note carries the (i), as a panel's note line does.
+            A note given as elements (head office's status lines) draws as before: it may hold nothing. */}
+        {typeof note === "string" && note ? (
+          <p data-home-note="" className="flex items-start gap-2 text-[13px] text-[var(--field-ink)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="mt-[2px] shrink-0"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
+            <span>{note}</span>
+          </p>
+        ) : (
+          note && <p className="text-[13px] text-[var(--field-ink)]">{note}</p>
+        )}
       </div>
     </section>
   );

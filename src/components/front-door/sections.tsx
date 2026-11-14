@@ -19,7 +19,7 @@ import { periodLabel } from "@/catalogue/years";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { setFitsPage, type SetKind, type StoredSet } from "@/lib/sets/model";
 import { guidedHref } from "@/lib/sets/guided";
-import { HomeSection, NoWalkTile, QuestionTile, walkHref, type TileFigure } from "./home";
+import { HomeHeading, HomeSection, NoWalkTile, QuestionTile, walkHref, type TileFigure } from "./home";
 import { useThemePref } from "@/components/shell/TeacherChrome";
 import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
 import { smtContextFigure, smtContextUrl } from "@/lib/front-door/tile-figures";
@@ -218,6 +218,9 @@ function smtFigures(o: Overview | null, primary: boolean): Record<string, TileFi
   return out;
 }
 
+/** The line under a primary school's SMT heading (the board's wording). */
+export const PRIMARY_SMT_SUBLINE = "How the school is doing, who is joining, and how many young children live nearby. Each question walks you through a few screens.";
+
 function SmtInner({ member, heading }: { member: SmtMember; heading?: React.ReactNode }) {
   const [pref] = useThemePref();
   const school = useSmt<SmtSchool>(`/api/smt/school?urn=${member.schoolUrn}`, null);
@@ -239,7 +242,8 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       field="top"
       accent={accent}
       chip="SMT"
-      heading={heading}
+      // Crosscheck (14 Nov, home_primary_smt.png): a primary school's SMT home has its own line under the heading.
+      heading={heading && primary ? <HomeHeading sub={PRIMARY_SMT_SUBLINE} onField /> : heading}
       controls={chips.map((c, i) => (
         <span key={c} className={`rounded-full px-3.5 py-1.5 text-[14px] ${pick(i === 0, "bg-[var(--field-chip-bg)] font-semibold")} border border-[var(--field-chip-border)] text-[var(--field-chip-fg)]`}>
           {c}
