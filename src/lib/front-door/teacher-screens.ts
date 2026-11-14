@@ -7,6 +7,7 @@
 import { periodLabel } from "@/catalogue/years";
 import { firstReal, lastOf, ordinal, prevOf, rankOf, type SubjectRow, type TeacherModel } from "./teacher-model";
 import type { Walk, WalkScreen } from "./walks";
+import { listJoin, placeOf, smallNote } from "./words";
 
 type Series = (number | null)[];
 export type Role = "focus" | "peer" | "other" | "average" | "la" | "england" | "nearest" | "region";
@@ -184,33 +185,46 @@ export function teacherScreen(m: TeacherModel, walk: Walk, i: number): Screen {
     case "points-area": {
       const sel = (x: { entries: Series; points: Series }) => (pts ? x.points : x.entries);
       const nearAvg: Series = m.periods.map((_, k) => mean(m.nearest.filter((x) => !x.isTarget).map((x) => sel(x)[k]).filter((v): v is number => v !== null)));
+      const nNear = m.nearest.length - 1;
       const lines: { label: string; v: Series; role: Role }[] = [
         { label: m.school.name, v: sel(f), role: "focus" },
-        { label: `${m.nearest.length - 1} nearest`, v: nearAvg, role: "nearest" },
+        { label: `${nNear} nearest`, v: nearAvg, role: "nearest" },
         ...(m.area.la ? [{ label: m.area.la.name, v: sel(m.area.la), role: "la" as Role }] : []),
         ...(m.area.england ? [{ label: "England", v: sel(m.area.england), role: "england" as Role }] : []),
       ];
       // Entries are indexed (first shared year = 100) so growth compares whatever the size; points are actual.
+      // Review fixes (14 Nov, M1): an indexed chart starts at that base year, so every line is 100 at the
+      // year the caption names (it started at the first year any line had a figure, and crossed 100 later).
       const shared = m.periods.findIndex((_, k) => lines.every((l) => l.v[k] !== null && l.v[k] !== 0));
       const idx = (v: Series) => (shared < 0 ? v.map(() => null) : v.map((x) => (x === null ? null : (x / (v[shared] as number)) * 100)));
       const shown = lines.map((l) => ({ ...l, v: pts ? l.v : idx(l.v) }));
-      const { from, years } = span(m, shown.map((l) => l.v));
+      const sp = span(m, shown.map((l) => l.v));
+      const from = pts || shared < 0 ? sp.from : shared;
+      const years = m.periods.slice(from).map(periodLabel);
       const cut = (v: Series) => v.slice(from);
       const fs = cut(shown[0].v);
       const lastI = fs.length - 1;
       const growth = (v: Series) => (v[lastI] ?? null);
       const mine = growth(fs);
-      const others = shown.slice(1).map((l) => ({ label: l.label, g: growth(cut(l.v)) })).filter((o) => o.g !== null) as { label: string; g: number }[];
+      const others = shown.slice(1).map((l) => ({ label: l.label, role: l.role, g: growth(cut(l.v)) })).filter((o) => o.g !== null) as { label: string; role: Role; g: number }[];
+      // Each comparator by name and value, in a sentence; one with no figure is left out (and said so).
+      const nameOf = (o: { label: string; role: Role }) => (o.role === "nearest" ? (nNear === 1 ? "the nearest school" : `the ${nNear} nearest schools`) : o.label);
+      const placeWord = (o: { label: string; role: Role }) => (o.role === "nearest" ? `at ${nameOf(o)}` : `in ${o.label}`);
+      const missing = shown.slice(1).filter((l) => !others.some((o) => o.label === l.label));
+      const missingWord = missing.length ? ` ${listJoin(missing.map((l) => nameOf(l)))} ${missing.length === 1 ? "has" : "have"} no figure for ${years[lastI]}.` : "";
+      const base100 = years[0];
       const answer =
         mine === null || !others.length
           ? `Not enough published years to compare ${subject} here with schools nearby and nationally.`
           : pts
-            ? `${subject} here averaged ${fmtP(mine)} in ${years[lastI]}: ${others.map((o) => `${o.label} ${fmtP(o.g)}`).join(", ")}.`
-            : others.every((o) => mine > o.g)
-              ? `Yes and more: ${subject} entries have grown faster here than at the ${m.nearest.length - 1} nearest schools, in ${m.area.la?.name ?? "the LA"} or in England.`
-              : others.every((o) => mine < o.g)
-                ? `No: ${subject} entries have grown more slowly here than at the ${m.nearest.length - 1} nearest schools, in ${m.area.la?.name ?? "the LA"} and in England.`
-                : `Partly: ${subject} entries here moved to ${fmtP(mine, 0)} (from 100), against ${others.map((o) => `${o.label} ${fmtP(o.g, 0)}`).join(", ")}.`;
+            ? `${subject} here averaged ${fmtP(mine)} in ${years[lastI]}${smallNote(m.phase, lastOf(f.entries))}, against ${listJoin(others.map((o) => `${fmtP(o.g)} ${placeWord(o)}`))}.${missingWord}`
+            : (() => {
+                const ch = mine - 100;
+                const lead = Math.abs(ch) < 0.5 ? `${subject} entries here are level since ${base100}` : `${subject} entries here ${ch > 0 ? "rose" : "fell"} ${Math.abs(ch).toFixed(0)}% since ${base100}`;
+                const same = others.every((o) => Math.sign(Math.round(o.g - 100)) === Math.sign(Math.round(ch)));
+                const verdict = same ? "Yes" : others.every((o) => Math.sign(Math.round(o.g - 100)) !== Math.sign(Math.round(ch))) ? "No" : "Partly";
+                return `${verdict}: ${lead} (index ${fmtP(mine, 0)}), against ${listJoin(others.map((o) => `${fmtP(o.g, 0)} ${placeWord(o)}`))}.${missingWord}`;
+              })();
       return {
         ...base,
         answer,
@@ -330,8 +344,17 @@ export function teacherScreen(m: TeacherModel, walk: Walk, i: number): Screen {
       const of: Series = m.periods.map((_, k) => m.nearest.filter((x) => x.points[k] !== null).length || null);
       const { from, years } = span(m, [ranks]);
       const rs = ranks.slice(from);
-      const r = real(rs);
-      const answer = r.length < 2 ? `Not enough years with results to see ${subject}'s place change.` : `${rs[rs.length - 1]! < r[0] ? "Up" : rs[rs.length - 1]! > r[0] ? "Down" : "The same"}: ${ordinal(r[0])} in ${years[rs.findIndex((v) => v !== null)]}, ${ordinal(rs[rs.length - 1] ?? r[r.length - 1])} in ${years[years.length - 1]}.`;
+      const ofs = of.slice(from);
+      // Review fixes (14 Nov, M1): compare the first and the last year that have a place, each labelled
+      // with its own year and "of N" (a latest year with no place read as "Up").
+      const fi = rs.findIndex((v) => v !== null);
+      const li = rs.length - 1 - [...rs].reverse().findIndex((v) => v !== null);
+      const placed = rs.filter((v) => v !== null).length;
+      const at = (k: number) => `${placeOf(rs[k]!, ofs[k] ?? rs[k]!)} in ${years[k]}`;
+      const answer =
+        fi < 0 || placed < 2
+          ? `Not enough years with results to see the place of ${subject} change.`
+          : `${rs[li]! < rs[fi]! ? "Up" : rs[li]! > rs[fi]! ? "Down" : "The same"}: ${at(fi)}, ${at(li)}.${li < rs.length - 1 ? ` The school has no place for ${years[rs.length - 1]}.` : ""}`;
       return {
         ...base,
         answer,

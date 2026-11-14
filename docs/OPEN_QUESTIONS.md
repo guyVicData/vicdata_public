@@ -3265,3 +3265,34 @@ Built straight through from `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_
 29. **A non-mainstream group's school that isn't open yet reads "not yet open"** on its library page (it read "School"). This was found in the screenshots and fixed.
 
 - **14 Nov (review before merge): a school's own FSM % is withheld under 10 pupils on roll** (`FSM_MIN_PUPILS`, `src/lib/groups/non-mainstream.ts`). Harris Aspire Academy (AP, 2 pupils on the January census) read "FSM 0.0% (region 56.4%)": arithmetically true, misleading beside a regional pool. It now reads "FSM: too few pupils (2)". 10 is DfE's usual small-number threshold; a test pins it.
+
+---
+
+## 2026-11-14: review fixes
+
+The 14 Nov reviews (`docs/v0.8/review_14nov/`), Guy's "run all the fixes" (Q1–Q8). Each call below was
+taken without asking, as the prompt says; the report (`docs/v0.8/review_fixes_report_v1.md`) lists every
+finding by number.
+
+**M1 (wrong figures and charts).**
+- **Mini-maps from config.** A walk screen's `spot` is no longer written by hand: `walks.ts:spotOf` reads
+  it from the Teacher, SMT and Admissions dashboard configs and from the group layout, which moved to
+  plain data (`src/lib/groups/dash-layout.ts`, read by `GroupDashboard.tsx` too, so the two can't drift).
+  A panel spanning two columns lights both cells. The end screen says "Trends row, column 2 (Pipeline)".
+- **The Admissions walk draws with the dashboard's own `viewBody`** (`AdmissionsWalkBody`), the way the
+  head office walk does; it fetches the same three routes it did. Its shape route isn't fetched, so
+  Entry point now draws without the shape tile line (EntryNow takes `shape: null`, as the dashboard does
+  while shape loads).
+- **Titles.** Every placeholder is filled (`walk-titles.ts`: `[feeder-age]` from the pipeline's pool
+  trends, `[la]` its LA, `[rivals]` "rivals", `[entry-year]` "Year 7", `[entry age band]` "Years 7–11");
+  a title with one left falls back to the view's label.
+- **SMT's market screen** reads Admissions' 11+ share (`marketAt11`), which is 11+ by design; the answer
+  is now worked out from the data, so a school without an 11+ entry gets the route's own reason, not an
+  11+ sentence. The figure stays 11+ (no new route).
+- **Group Schools FSM.** Withheld under `FSM_MIN_PUPILS` with the placing's own rule (`dash.ts:fsmCell`).
+  No current school in the fixture groups is under 10 pupils (Nexus's small ones are past years; Harris
+  Aspire is in a mainstream group, where the placing already withheld it), so **no figure on the
+  fixtures moves**; the test runs the rule on production's own small school-years.
+- **Fixtures.** Real answers captured read-only (the routes' own handlers with a stand-in caller, as the
+  front door harness did) into `docs/v0.8/review_14nov/fixtures/` (Leighton Park, The Chase): the walk
+  tests run on them with no database.

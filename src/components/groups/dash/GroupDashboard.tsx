@@ -48,6 +48,7 @@ import { AgainstOthers, dateText, MAIN_ROWS, GroupMap, GroupNow, JoinedLeft, Res
 import { arrowOf, dirClass } from "@/components/smt/ui";
 import { NmAgainst, NmFsmTrend, NmLine, NmNoResults, NmNow } from "./views-nm";
 import { ARROW, arrowed } from "@/lib/signed-delta";
+import { GROUP_LAYOUT_IDS, type GroupLayoutCell } from "@/lib/groups/dash-layout";
 
 export type GroupDash = "overview" | "schools" | "academic" | "pupils";
 export const GROUP_DASHES: { key: GroupDash; label: string; live: boolean }[] = [
@@ -452,52 +453,11 @@ export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-N-RESULTS": { label: "Results", icon: "GradesIcon" },
 };
 const v = (id: ViewId) => ({ id, ...GROUP_VIEWS[id] });
-const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = {
-  academic: {
-    now: [
-      { id: "a-now", span: 1, views: [v("GRP-A-NOW")] },
-      { id: "a-large", span: 2, views: [v("GRP-A-RANKED"), v("GRP-A-AREAS"), v("GRP-A-VA")] },
-    ],
-    trends: [
-      { id: "a-trend", span: 1, views: [v("GRP-A-TREND")] },
-      { id: "a-post16", span: 1, views: [v("GRP-A-POST16")] },
-      { id: "a-improving", span: 1, views: [v("GRP-A-IMPROVING"), v("GRP-A-BANDS")] },
-    ],
-  },
-  pupils: {
-    now: [
-      { id: "p-now", span: 1, views: [v("GRP-P-NOW")] },
-      { id: "p-large", span: 2, views: [v("GRP-P-SHAPE"), v("GRP-P-ENTRIES"), v("GRP-P-LEAVING"), v("GRP-P-MARKET")] },
-    ],
-    trends: [
-      { id: "p-roll", span: 1, views: [v("GRP-P-ROLL")] },
-      { id: "p-projection", span: 1, views: [v("GRP-P-PROJECTION")] },
-      { id: "p-growing", span: 1, views: [v("GRP-P-GROWING")] },
-    ],
-  },
-  overview: {
-    now: [
-      { id: "o-now", span: 1, views: [v("GRP-O-NOW")] },
-      { id: "o-large", span: 2, views: [v("GRP-O-AGAINST"), v("GRP-O-MAP"), v("GRP-O-JOINED")] },
-    ],
-    trends: [
-      { id: "o-roll", span: 1, views: [v("GRP-O-ROLL")] },
-      { id: "o-results", span: 1, views: [v("GRP-O-RESULTS")] },
-      { id: "o-share", span: 1, views: [v("GRP-O-SHARE")] },
-    ],
-  },
-  schools: {
-    now: [
-      { id: "s-now", span: 1, views: [v("GRP-S-NOW")] },
-      { id: "s-large", span: 2, views: [v("GRP-S-TABLE"), v("GRP-O-MAP")] },
-    ],
-    trends: [
-      { id: "s-growing", span: 1, views: [v("GRP-S-GROWING")] },
-      { id: "s-scatter", span: 1, views: [v("GRP-S-SCATTER")] },
-      { id: "s-shapes", span: 1, views: [v("GRP-S-SHAPES")] },
-    ],
-  },
-};
+// The mainstream layout is plain data (src/lib/groups/dash-layout.ts), read here and by the walks' mini-maps.
+const cellsOf = (cells: GroupLayoutCell[]): CellDef[] => cells.map((c) => ({ id: c.id, span: c.span, views: c.views.map((id) => v(id as ViewId)) }));
+const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = Object.fromEntries(
+  (Object.keys(GROUP_LAYOUT_IDS) as GroupDash[]).map((d) => [d, { now: cellsOf(GROUP_LAYOUT_IDS[d].now), trends: cellsOf(GROUP_LAYOUT_IDS[d].trends) }]),
+) as Record<GroupDash, { now: CellDef[]; trends: CellDef[] }>;
 
 // 0.8 non-mainstream groups (M6): a special and AP trust's or nursery federation's pages. Roll, its
 // same-schools change and FSM against its peer set and its kinds' pools; its mainstream line where it has

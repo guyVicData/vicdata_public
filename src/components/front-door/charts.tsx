@@ -254,7 +254,7 @@ function HBars({ c, p }: { c: Extract<Chart, { kind: "hbars" }>; p: Palette }) {
   return (
     <div data-bars="horizontal" className="flex flex-col gap-1.5">
       {c.rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[minmax(0,16rem)_1fr_3.5rem] items-center gap-2 text-[12.5px]">
+        <div key={i} className="grid grid-cols-[minmax(0,38%)_minmax(0,1fr)_3rem] items-center gap-2 text-[12.5px] sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_3.5rem]">
           <span className="truncate" title={r.label} style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400 }}>{r.label}</span>
           <span className="relative h-4">
             <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.value / max) * 100}%`, background: roleColour(p, r.role) }} />

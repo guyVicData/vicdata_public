@@ -565,7 +565,7 @@ function NmSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highli
                   <Td>{r.kindTag ?? "—"}</Td>
                   <Td>{r.ages ?? "—"}</Td>
                   <Td>{r.roll === null ? "—" : r.roll.toLocaleString("en-GB")}</Td>
-                  <Td className="whitespace-nowrap">{r.fsm === null || r.fsm === undefined ? "—" : `${r.fsm.toFixed(1)}%`}<span className="text-[var(--muted2)]">{p ? region(p.fsm.pool) : ""}</span></Td>
+                  <Td className="whitespace-nowrap">{r.fsmFewPupils != null ? <i className="text-[var(--muted2)]">too few pupils ({r.fsmFewPupils})</i> : r.fsm === null || r.fsm === undefined ? "—" : `${r.fsm.toFixed(1)}%`}<span className="text-[var(--muted2)]">{p ? region(p.fsm.pool) : ""}</span></Td>
                   <Td className={`whitespace-nowrap ${dirClass(r.trend, 0.5, 1)}`}>{r.trend === null ? "—" : arrowed(r.trend, (x) => `${x.toFixed(1)}%`, 1, 0.5)}<span className="text-[var(--muted2)]">{p ? region(p.change.pool, true) : ""}</span></Td>
                   <Td className="text-[var(--muted2)]">{p?.pool ? (p.pool.tooFew ? tooFewWords(p.pool.n) : (p.pool.label.split(", ").slice(1).join(", ") || p.pool.label)) : r.reason ? <i>{r.reason}</i> : "—"}</Td>
                   <Td className="text-[var(--muted2)]">{r.joined ? dateText(r.joined) : r.basis === "assumed" ? "undated" : "—"}</Td>

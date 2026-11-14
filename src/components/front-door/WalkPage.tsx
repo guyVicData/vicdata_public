@@ -24,7 +24,7 @@ import { dataviewById, DATAVIEWS } from "@/catalogue/dataviews";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PHASE_LABELS } from "@/lib/teacher-view-phases";
 import { teacherDashboardFor } from "@/catalogue/dashboards/teacher";
-import { fillTemplate, screenMeta, walkById, walksFor, type Walk } from "@/lib/front-door/walks";
+import { fillTemplate, screenMeta, teacherModeOf, walkById, walksFor, type Walk } from "@/lib/front-door/walks";
 import type { TeacherModel } from "@/lib/front-door/teacher-model";
 import { teacherScreens, type Screen } from "@/lib/front-door/teacher-screens";
 import { palette, WalkChart } from "./charts";
@@ -58,7 +58,7 @@ const FIELD: Record<string, "gcse" | "post16" | "top" | "group" | "admissions"> 
 
 // ------------------------------------------------------------------------------------------------ the frame
 
-export function WalkFrame({ walk, step, steps, chip, children }: { walk: Walk; step: number; steps: number; chip: string | null; children: ReactNode }) {
+export function WalkFrame({ walk, step, steps, chip, ctx, children }: { walk: Walk; step: number; steps: number; chip: string | null; ctx?: { subject?: string | null; category?: string | null; entry?: string | null }; children: ReactNode }) {
   const [pref] = useThemePref();
   const theme = effectiveTheme(pref);
   const mid = pref === "mid";
@@ -66,7 +66,7 @@ export function WalkFrame({ walk, step, steps, chip, children }: { walk: Walk; s
   const style = (accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as CSSProperties;
   return (
     <main id="teacher-root" data-theme={mid ? "light" : theme} data-pref={pref} data-walk={walk.id} className="flex min-h-screen flex-col bg-[var(--bg)] text-[var(--fg)]" style={style}>
-      <WalkHeader walk={walk} step={step} steps={steps} chip={chip} band={mid || theme === "dark" ? "dark" : "light"} />
+      <WalkHeader walk={walk} step={step} steps={steps} chip={chip} ctx={ctx} band={mid || theme === "dark" ? "dark" : "light"} />
       <section data-field={FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
         {/* Crosscheck (14 Nov): the boards' walk column is 1060 px (the homes keep 1160). */}
         <div className="mx-auto flex max-w-[1060px] flex-col gap-6">{children}</div>
@@ -81,7 +81,7 @@ export function WalkFrame({ walk, step, steps, chip, children }: { walk: Walk; s
  * -- a dark band over a Light page -- nothing inherits the page's dark text (Guy, 13 Nov: dark grey on
  * black). Every pair is in the contrast table (R-THEME-CONTRAST).
  */
-export function WalkHeader({ walk, step, steps, chip, band }: { walk: Walk; step: number; steps: number; chip: string | null; band: "dark" | "light" }) {
+export function WalkHeader({ walk, step, steps, chip, ctx, band }: { walk: Walk; step: number; steps: number; chip: string | null; ctx?: { subject?: string | null; category?: string | null; entry?: string | null }; band: "dark" | "light" }) {
   return (
     <header data-walk-head={band} data-part={FIELD[walk.product]} data-theme={band === "dark" ? "dark" : undefined} className="border-b border-[var(--wh-border)] bg-[var(--wh-bg)] text-[var(--wh-fg)]">
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
@@ -94,7 +94,7 @@ export function WalkHeader({ walk, step, steps, chip, band }: { walk: Walk; step
           <span data-walk-head-icon="" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--wh-tint)] text-[var(--wh-accent)]">
             <WalkGlyph icon={walk.icon} size={17} />
           </span>
-          <span className="min-w-0 text-[15px] font-medium text-[var(--wh-fg)]">{fillTemplate(walk.question, { subject: chip?.split(" · ")[0] ?? null })}</span>
+          <span className="min-w-0 text-[15px] font-medium text-[var(--wh-fg)]">{fillTemplate(walk.question, ctx ?? { subject: chip?.split(" · ")[0] ?? null })}</span>
         </span>
         <ol className="hidden items-center gap-1.5 sm:flex" aria-label="Steps">
           {Array.from({ length: steps }, (_, i) => (
@@ -116,7 +116,7 @@ function homeOf(walk: Walk): string {
 }
 
 /** The mini-map: the dashboard's 3x2 grid, column icons above, this panel lit; Show me opens the dashboard. */
-export function MiniMap({ cols, spot, name, href }: { cols: string[]; spot: { col: number; row: number }; name: string; href: string }) {
+export function MiniMap({ cols, spot, name, href }: { cols: string[]; spot: { col: number; row: number; span?: number; panel?: string }; name: string; href: string }) {
   return (
     <aside data-mini-map="" className="fd-tile w-full shrink-0 rounded-[12px] p-3 sm:max-w-[220px]">
       <div className="flex items-center justify-between text-[11.5px] text-[var(--muted)]">
@@ -130,18 +130,20 @@ export function MiniMap({ cols, spot, name, href }: { cols: string[]; spot: { co
           <span key={i} className="flex justify-center"><WalkGlyph icon={c} size={12} /></span>
         ))}
         {["Current", "Trends"].map((r, ri) => (
-          <RowCells key={r} label={r} lit={spot.row === ri ? spot.col : -1} />
+          <RowCells key={r} label={r} lit={spot.row === ri ? spot.col : -1} span={spot.span ?? 1} />
         ))}
       </div>
     </aside>
   );
 }
-function RowCells({ label, lit }: { label: string; lit: number }) {
+function RowCells({ label, lit, span }: { label: string; lit: number; span: number }) {
+  // Review fixes (14 Nov, M1): a panel spanning two columns lights both.
+  const on = (c: number) => lit >= 0 && c >= lit && c < lit + span;
   return (
     <>
       <span>{label}</span>
       {[0, 1, 2].map((c) => (
-        <span key={c} data-lit={c === lit ? "" : undefined} className={`h-4 rounded-[4px] ${c === lit ? "bg-[var(--tile-accent,var(--accent))]" : "bg-[var(--box-bg)] ring-1 ring-[var(--panel-border)]"}`} />
+        <span key={c} data-lit={on(c) ? "" : undefined} className={`h-4 rounded-[4px] ${on(c) ? "bg-[var(--tile-accent,var(--accent))]" : "bg-[var(--box-bg)] ring-1 ring-[var(--panel-border)]"}`} />
       ))}
     </>
   );
@@ -304,10 +306,7 @@ export function useStep(n: number): [number, (s: number) => void] {
 
 // ------------------------------------------------------------------------------------------------ Teacher
 
-/** The dashboard a Teacher walk screen lives on: Results for a Results view or a screen set on points. */
-function modeOf(s: { view: string; options?: { measure?: string } }): "candidates" | "results" {
-  return s.view.startsWith("DV-C1-RES") || s.view.startsWith("DV-C1-CNT") || s.options?.measure === "points" ? "results" : "candidates";
-}
+const modeOf = teacherModeOf;
 const COLUMN_NAME: Record<string, string> = { candidates: "Candidates", results: "Results", context: "Context", rankings: "Comparisons" };
 
 function columnOf(view: string): string {
@@ -416,7 +415,7 @@ export function Found({ walk, screens, params, ctx, onBack }: { walk: Walk; scre
               <span className="min-w-0">
                 <span className="block text-[15px] font-semibold text-[var(--fg)]">{screens[i]?.question}</span>
                 <span className="mt-0.5 block text-[14px] text-[var(--muted2)]">{screens[i]?.answer}</span>
-                <span className="mt-1 block text-[12px] text-[var(--muted)]">On the dashboard: {meta?.label ?? s.view}, {s.spot.row === 0 ? "Current" : "Trends"}</span>
+                <span className="mt-1 block text-[12px] text-[var(--muted)]">On the dashboard: {meta?.label ?? s.view}, {spotWords(s.spot)}</span>
               </span>
             </li>
           );
@@ -435,6 +434,13 @@ export function Found({ walk, screens, params, ctx, onBack }: { walk: Walk; scre
       </div>
     </div>
   );
+}
+
+/** Where a view lives, in words: "Trends row, column 2 (Pipeline)" -- from the spot the config gives. */
+export function spotWords(spot: { col: number; row: number; span?: number; panel?: string }): string {
+  const cols = (spot.span ?? 1) === 2 ? `columns ${spot.col + 1}–${spot.col + 2}` : `column ${spot.col + 1}`;
+  const row = spot.row === 0 ? "Current" : "Trends";
+  return `${row} row, ${cols}${spot.panel && spot.panel !== row ? ` (${spot.panel})` : ""}`;
 }
 
 // ------------------------------------------------------------------------------------------------ entry

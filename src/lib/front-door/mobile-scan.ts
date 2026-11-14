@@ -28,7 +28,6 @@ export const FRONT_DOOR_SURFACES = [
 /** Controls that pass another way, by file and a snippet of the tag, with why. */
 export const MOBILE_EXCEPTIONS: { file: string; has: string; why: string }[] = [
   { file: "src/components/groups/SchoolGroupTile.tsx", has: 'role="switch"', why: "the Admissions share switch sits in a label that is 44 px on a phone (the label's words click it too)" },
-  { file: "src/components/front-door/role-walks.tsx", has: '<Link className="underline" href={walk.dashboard}>', why: "an inline link in the sentence a screen shows when it opens the dashboard instead of drawing (Context's map)" },
   { file: "src/components/sets/GuidedSetEditor.tsx", has: 'type="checkbox"', why: "the tick sits in a 44 px label (h-[44px] w-[44px] on a phone)" },
   { file: "src/components/sets/GuidedSetEditor.tsx", has: 'type="range"', why: "the slider is h-[44px] on a phone" },
   { file: "src/components/front-door/WalkPage.tsx", has: 'className="w-full text-left"', why: "a rail button wraps its row (RAIL_ROW: min-h-[44px] on a phone)" },
