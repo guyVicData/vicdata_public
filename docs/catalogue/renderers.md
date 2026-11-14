@@ -47,7 +47,7 @@ Shape requirements only, no rules. 50 renderers.
 | Min height | Plot row min-h 110px (accordion round floor); bars fallback 96px body. |
 | Fullscreen | Plot height 220px (bars 200px). |
 | Phone | SVG stretches to the width; HTML axes keep labels upright; x ticks thin by measured width. |
-| Used by | DV-C3-TR-CHART |
+| Used by | DV-C3-TR-CHART, DV-C3-TR-RANK |
 
 ### RD-YEAR-TABLE — YearTable
 

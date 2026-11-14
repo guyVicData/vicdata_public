@@ -849,7 +849,7 @@ export const DATAVIEWS: Dataview[] = [
       viewType: "graph",
     },
     params: ["against:context"],
-    titleTemplate: "Entries by subject in [comparison-group], [first-year] and [year], largest first",
+    titleTemplate: "Entries by subject in [comparison-group], [first-year] and [latest], largest first",
     renderer: "RD-DUMBBELL",
     host: c2("trend", "Change (dumbbell)"),
     audience: SUBJECT_ACADEMIC,

@@ -13,7 +13,7 @@ import { qualificationFamilyOf, qualificationShortLabel } from "@/lib/teacher-vi
 export type TeacherPhaseId = "ks4" | "ks5";
 type Series = (number | null)[];
 
-export type SubjectRow = { key: string; label: string; subject: string; qualificationType: string; focus: boolean; entries: Series; points: Series };
+export type SubjectRow = { key: string; label: string; subject: string; qualificationType: string; focus: boolean; entries: Series; points: Series; /** Its subject family (review fixes, M7: colour by family). */ familyId?: string | null };
 export type SchoolRow = { urn: string; name: string; distanceKm: number | null; isTarget: boolean; entries: Series; points: Series; easting: number | null; northing: number | null };
 export type AreaLine = { name: string; entries: Series; points: Series } | null;
 
@@ -79,7 +79,7 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
       points: periods.map((p) => subjectPointsAt(phase, item, rowsAt(own, p))),
     };
   };
-  const rowOf = (i: SubjectItem): SubjectRow => ({ key: i.key, label: i.label, subject: i.subject, qualificationType: i.qualificationType, focus: i.key === key, ...seriesFor(i, input.headline, input.qualificationHeadline) });
+  const rowOf = (i: SubjectItem): SubjectRow => ({ key: i.key, label: i.label, subject: i.subject, qualificationType: i.qualificationType, focus: i.key === key, familyId: familyFor(input.headline, i.subject)?.id ?? null, ...seriesFor(i, input.headline, input.qualificationHeadline) });
 
   const { inFocusQualFamily } = focusQualificationFamily(phase, focusItem);
   const categoryItems = candidateItemsOf(categoryItemsOf(focusItem, items, input.headline, inFocusQualFamily), phase);

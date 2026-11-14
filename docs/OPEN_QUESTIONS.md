@@ -3296,3 +3296,50 @@ finding by number.
 - **Fixtures.** Real answers captured read-only (the routes' own handlers with a stand-in caller, as the
   front door harness did) into `docs/v0.8/review_14nov/fixtures/` (Leighton Park, The Chase): the walk
   tests run on them with no database.
+
+**M2 (screenshots).** The walk harness renders the app's own WalkPage for every walk on fixtures captured from the
+routes (docs/v0.8/audit_scripts/review_fixes_preview). The phone footer is pinned static in full-page shots (it is
+sticky live). **Reading:** every before-shot was read by three reviewers; rate limits stopped one at 34 of 111, so
+the after-shots were downscaled and re-read in two passes (the report says which were seen). **Left, not walk
+code:** the dashboards' own components the walks now draw show what the dashboards show -- trend charts without a
+value axis (dashboards.md #11, not among Q1–Q8), the Admissions momentum scatter's labels, phone tables that scroll
+sideways, the group pickers truncated at 390. Logged for a dashboard round.
+
+**M3 (words).** Possessive: the bare apostrophe ("Physics' grades"), and titles rephrased where it reads better
+("Physics grades, 2024/25"). Small numbers: the front door's own 10 (`SMALL_N`, the same as FSM_MIN_PUPILS), not
+Teacher's MINIMUM_SUBJECT_N (5), because the walks already promised "under 10 says only". Voice: questions say
+"we/our", answers name the school or "here"; Admissions keeps "you/your" (its dashboard titles say "Your …").
+The grading caveat reuses the dashboards' words ("grades were awarded more generously"). Head office counts: the
+walk's one count is the schools in the census figures; the map and table say how their member count relates.
+
+**M4 (tables).** Teacher's ranked % change lists a base under MINIMUM_SUBJECT_N (5) after the others with † and its
+counts (2→6), rather than hiding it. SMT's Current tiles beside the Scorecard keep the roll and context and drop the
+results tiles (M6, Q5); compact (phone, home) keeps them all. "joined after results": a school with a headline but
+no in-group rank whose join date is after that year's summer.
+
+**M5 (titles).** Teacher's dashboard hosts draw most titles in code; the catalogue templates (which the walks, the
+editor, the chooser and meeting slots read) were rewritten, and the host strings the review named were changed to
+match (results trends name the measure; SMT's market share; group tags). Moving every Teacher host to read the
+catalogue is a larger round. Rules rewritten for the new words: R-SCORECARD-ROWS-BY-TYPE (header "10 nearest
+rank"), R-MARKET-FOLLOWS-SET (unchanged check, title keeps "against {set}"); tests pinning old titles updated
+(view-titles, change-summary, meeting-ops, legend, viewspec, the teacher edit pin -- config hashes identical).
+
+**M6 (configs).** Q5: Admissions' donut and Share ranks leave the rails (their dataviews stay for old saved views);
+SMT Academic's mix table leaves; the ranking table drops its Change column. Q6: Rank over time (DV-C3-TR-RANK) is
+on Comparisons › Trends, drawn by the host from its trend table; **left: the optional nearest-schools line on the
+area charts** -- the Candidates/Results geography chart doesn't load the comparison set's series, and adding that
+fetch is its own change (the walk keeps drawing the line). Q7: the dumbbell's scale starts at a round floor and
+`?against=whole` opens Context on the whole school for the visit (not saved); the dumbbell isn't auto-selected.
+R-INDEP-ENTRY-TILES rewritten: a state school's Current no longer shows Attainment 8 and Progress 8 (the Scorecard
+does). Slugs to republish: vicdata.ks4.candidates, vicdata.ks4.results, vicdata.ks5.candidates,
+vicdata.ks5.results, vicdata.smt.overview, vicdata.smt.academic, vicdata.smt.pupils, vicdata.smt.context,
+vicdata.admissions.pipelines, vicdata.admissions.market-share.
+
+**M7 (colour).** The palette is a proposal for Guy's live review (the board): picked by CIEDE2000, closest pair
+18.5, 12.0 or more from every accent and fixed line; Mid's values are Light's (Mid plates are white). Health &
+Care's green (#188118) sits 13.4 from GCSE's accent by the numbers but reads close by eye beside it: one to look at
+live. Families are known to the colour helpers through a registry the Teacher dashboard fills from the rows it
+loads (the family map is one national taxonomy); a subject not yet registered keeps the old colour. Several lines of
+one family are told apart by a fixed shade by name, never by rank. Qualification groups: eight colours of their own.
+**Not done:** dashboard-page colour screenshots (Teacher, SMT, Admissions, head office in three themes): the round's
+harness draws the walks, which draw the same components; the dashboards' palette is on Guy's live check.

@@ -4,6 +4,7 @@
 // Phone.dc.html), on the same kit as round 2's (./views.tsx). Every figure and n arrives from
 // /api/group/dash (the group lookups, worded by src/lib/groups/dash-r3.ts).
 import { windowCut } from "@/lib/subject-ranking-view";
+import { familyColourVar } from "@/lib/subject-family-colours";
 import { useState, type ReactNode } from "react";
 import { Empty, Key, LineSwatch, Lbl, PairTile, Tile, fillHeight } from "@/components/admissions/ui";
 import { LineChart } from "@/components/admissions/views/charts";
@@ -182,7 +183,7 @@ export function SubjectAreasAcross({ a }: { a: GroupAcademic }) {
       <div className="flex flex-col gap-1 text-[12.5px]">
         {s.rows.map((r) => (
           <div key={r.familyId} className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.6fr)_60px_minmax(0,1.3fr)] items-center gap-2" title={r.group ? `${r.group.n_schools} schools, ${r.group.entries.toLocaleString("en-GB")} entries` : ""}>
-            <span className="truncate">{r.label}</span>
+            <span className="flex min-w-0 items-center gap-1.5"><span aria-hidden="true" data-family-swatch={r.familyId} className="inline-block h-[9px] w-[9px] shrink-0 rounded-[2px]" style={{ background: familyColourVar(r.familyId) }} /><span className="truncate">{r.label}</span></span>
             <span className="relative h-[10px] rounded-[3px] bg-[var(--box-bg)]">
               <span className="absolute top-0 h-full w-px bg-[var(--muted2)]" style={{ left: "50%" }} />
               {r.gap !== null && <span className="absolute top-0 h-full rounded-[3px]" style={{ left: r.gap >= 0 ? "50%" : `${50 - (50 * Math.abs(r.gap)) / max}%`, width: `${(50 * Math.abs(r.gap)) / max}%`, background: r.gap >= 0 ? "var(--adm-up-fg)" : "var(--adm-down-fg)" }} />}

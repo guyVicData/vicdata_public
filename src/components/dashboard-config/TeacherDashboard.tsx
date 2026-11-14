@@ -22,6 +22,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
+import { registerSubjectFamilies } from "@/lib/subject-family-registry";
 import { useEditorReturnReload } from "@/lib/sets/editor-return";
 import { NEAREST_KEY, rankingKey, takeUseSet, teacherEditorHref, teacherMenuRows } from "@/components/sets/teacherMenu";
 import type { SetMenuRow } from "@/components/sets/SetSelector";
@@ -412,6 +413,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         loadedEntries = body.subjectData?.entries ?? [];
         setEntries(body.subjectData?.entries ?? []);
         setGradeRows(body.subjectData?.gradeDistribution ?? []);
+        // Review fixes (14 Nov, M7): every subject's family, for colouring by family (R-SUBJECT-COLOUR).
+        registerSubjectFamilies(body.headline ?? []);
         setHeadline(body.headline ?? []);
         setQualificationHeadline(body.qualificationHeadline ?? []);
         loadedHeadline = body.headline ?? [];

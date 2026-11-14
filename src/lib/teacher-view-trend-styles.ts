@@ -5,6 +5,8 @@
 // One module so Column 1, Context and Comparisons all draw "each subject (or school)
 // individually" the same way. The charts render these; none of them re-derive them.
 import type { ChangeDirection } from "./trend-colours";
+import { familyOfKey } from "./subject-family-registry";
+import { familyColourVar } from "./subject-family-colours";
 import { signedDelta } from "./signed-delta";
 
 // ------------------------------------------------------------------ grey tints
@@ -35,7 +37,12 @@ export function tintInOrder(keysInCurrentOrder: string[], focusKey: string | nul
   const others = keysInCurrentOrder.filter((k) => k !== focusKey);
   const greys = greyTints(others.length);
   const out = new Map<string, string>();
-  others.forEach((k, i) => out.set(k, greys[i]));
+  // Review fixes (14 Nov, M7, R-SUBJECT-COLOUR): a subject whose family is known takes its family's colour
+  // (one family, one colour, whatever its place in the order); the rest keep the grey ramp.
+  others.forEach((k, i) => {
+    const fam = familyOfKey(k);
+    out.set(k, fam ? familyColourVar(fam) : greys[i]);
+  });
   if (focusKey !== null && keysInCurrentOrder.includes(focusKey)) out.set(focusKey, focusColour);
   return out;
 }
@@ -62,9 +69,32 @@ export function paletteInOrder(
   const usable = palette.filter((c) => accentHue === null || hueDistance(hueOf(c), accentHue) > 40);
   const hues = usable.length ? usable : palette;
   const out = new Map<string, string>();
-  keysInCurrentOrder.filter((k) => k !== focusKey).forEach((k, i) => out.set(k, hues[i % hues.length]));
+  // Review fixes (14 Nov, M7): trend lines by subject family, never by rank -- a subject keeps its colour as
+  // its rank changes. Only a key with no known family (a school, an area line) takes the palette by order.
+  // Several lines of one family are told apart by shade, in a fixed order (by name), so the shade too
+  // stays put whatever the ranks do.
+  const others = keysInCurrentOrder.filter((k) => k !== focusKey);
+  const sameFamily = new Map<string, string[]>();
+  for (const k of others) {
+    const fam = familyOfKey(k);
+    if (fam) sameFamily.set(fam, [...(sameFamily.get(fam) ?? []), k]);
+  }
+  for (const ks of sameFamily.values()) ks.sort((a, b) => a.localeCompare(b));
+  others.forEach((k, i) => {
+    const fam = familyOfKey(k);
+    if (!fam) return out.set(k, hues[i % hues.length]);
+    const j = sameFamily.get(fam)!.indexOf(k);
+    out.set(k, familyShade(fam, j));
+  });
   if (focusKey !== null && keysInCurrentOrder.includes(focusKey)) out.set(focusKey, focusColour);
   return out;
+}
+
+/** A family's colour, the j-th shade: the strong colour, then mixed toward the plate in steps (five at most). */
+export function familyShade(familyId: string, j: number): string {
+  const steps = [100, 72, 50, 84, 60];
+  const p = steps[j % steps.length];
+  return p === 100 ? familyColourVar(familyId) : `color-mix(in srgb, ${familyColourVar(familyId)} ${p}%, var(--box-bg, #888))`;
 }
 
 function hueOf(hex: string): number {

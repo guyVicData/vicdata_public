@@ -444,3 +444,26 @@ body:has(#teacher-root[data-theme="dark"]) {
     padding: 0;
   }
 }
+
+/* 0.8 review fixes (14 Nov, M7): the subject families' colours, by theme (src/lib/subject-family-colours.ts;
+   R-SUBJECT-COLOUR keeps the two in step). */
+:root, #teacher-root[data-theme="light"] {
+  --subject-family-sciences-maths: #3e5698;
+  --subject-family-humanities-social: #811f18;
+  --subject-family-languages-literature: #341881;
+  --subject-family-arts-media-design: #b422a1;
+  --subject-family-business-law: #6d2c4a;
+  --subject-family-technology-eng-construction: #188173;
+  --subject-family-health-care: #188118;
+  --subject-family-enterprise-applied: #818118;
+}
+:root[data-theme="dark"], #teacher-root[data-theme="dark"], [data-theme="dark"] {
+  --subject-family-sciences-maths: #a1b0d9;
+  --subject-family-humanities-social: #e0655c;
+  --subject-family-languages-literature: #7f5ce0;
+  --subject-family-arts-media-design: #e05cce;
+  --subject-family-business-law: #d9a1bb;
+  --subject-family-technology-eng-construction: #76e5d6;
+  --subject-family-health-care: #5ce05c;
+  --subject-family-enterprise-applied: #e0e05c;
+}

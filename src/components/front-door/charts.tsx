@@ -40,7 +40,16 @@ export function peerShade(p: Palette, k: number): string {
   return p.dark ? mixHex(p.peer, "#000000", steps[k % 5] * 0.6) : mixHex(p.peer, "#ffffff", steps[k % 5]);
 }
 
-export function roleColour(p: Palette, role: Role, shade?: number): string {
+export function roleColour(p: Palette, role: Role, shade?: number, family?: string | null): string {
+  // Review fixes (14 Nov, M7, R-SUBJECT-COLOUR): a subject that names its family takes the family's colour
+  // (a peer's shade of it), never a colour by rank; the focus keeps the accent.
+  if (family && (role === "peer" || role === "other")) {
+    const fam = SUBJECT_FAMILY_COLOURS[family];
+    if (fam) {
+      const c = p.dark ? fam.dark[1] : fam.light[1];
+      return shade === undefined || role !== "peer" ? c : p.dark ? mixHex(c, "#000000", [0, 0.22, 0.42, 0.58, 0.7][shade % 5] * 0.6) : mixHex(c, "#ffffff", [0, 0.3, 0.5, 0.15, 0.4][shade % 5]);
+    }
+  }
   switch (role) {
     case "focus":
       return p.focus;
@@ -76,7 +85,7 @@ export function ChartKey({ keys, p }: { keys: KeyEntry[]; p: Palette }) {
   return (
     <ul data-chart-key="" className="flex flex-wrap gap-x-4 gap-y-1.5 text-[12.5px]" style={{ color: p.muted }}>
       {keys.map((k, i) => {
-        const c = roleColour(p, k.role, k.shade);
+        const c = roleColour(p, k.role, k.shade, k.family);
         const mark =
           k.mark === "swatch" ? <span className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: c }} />
           : k.mark === "line" ? <span className="inline-flex items-center gap-0.5"><span className="inline-block h-[2.5px] w-4 rounded" style={{ background: c }} />{k.marker && <MarkerShape marker={k.marker} colour={c} size={7} />}</span>
@@ -169,7 +178,7 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
         ))}
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
           {c.series.map((s, si) => {
-            const col = roleColour(p, s.role, s.shade);
+            const col = roleColour(p, s.role, s.shade, s.family);
             const segs: string[][] = [];
             let cur: string[] = [];
             s.values.forEach((v, i) => {
@@ -199,7 +208,7 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
           s.values.map((v, i) =>
             v === null || (!s.marker && s.role !== "focus") ? null : (
               <span key={`${si}-${i}`} className="absolute -translate-x-1/2 -translate-y-1/2 leading-none" style={{ left: `${x(i)}%`, top: `${y(v)}%` }}>
-                <MarkerShape marker={s.marker ?? "circle"} colour={roleColour(p, s.role, s.shade)} size={s.role === "focus" ? 8 : 7} />
+                <MarkerShape marker={s.marker ?? "circle"} colour={roleColour(p, s.role, s.shade, s.family)} size={s.role === "focus" ? 8 : 7} />
               </span>
             ),
           ),
@@ -208,7 +217,7 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
         {ends.map((e) => {
           const s = c.series[e.si];
           return (
-            <span key={e.si} data-html-label="end" title={`${e.label} ${flip ? ordinalWord(e.v) : fmt(e.v, c.digits)}`} className="absolute left-[calc(100%+8px)] flex max-w-[142px] -translate-y-1/2 whitespace-nowrap text-[11.5px] font-semibold" style={{ top: `${e.top}%`, color: roleColour(p, s.role, s.shade) }}>
+            <span key={e.si} data-html-label="end" title={`${e.label} ${flip ? ordinalWord(e.v) : fmt(e.v, c.digits)}`} className="absolute left-[calc(100%+8px)] flex max-w-[142px] -translate-y-1/2 whitespace-nowrap text-[11.5px] font-semibold" style={{ top: `${e.top}%`, color: roleColour(p, s.role, s.shade, s.family) }}>
               {/* Review fixes (G6): a long name is cut with an ellipsis inside the gutter; the figure always shows. */}
               <span className="min-w-0 truncate">{e.label}</span>&nbsp;<span className="shrink-0">{flip ? ordinalWord(e.v) : fmt(e.v, c.digits)}</span>
             </span>
@@ -218,7 +227,8 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
         <div className="absolute inset-x-0 top-[calc(100%+6px)]">
           {c.years.map((yr, i) =>
             n <= 7 || i === 0 || i === n - 1 || i % 2 === 0 ? (
-              <span key={i} data-html-label="year" className="absolute -translate-x-1/2 text-[11px]" style={{ left: `${x(i)}%`, color: p.muted }}>{yr}</span>
+              // Review fixes (M2): on a phone only the first and last years and every other one between, so the labels never run together.
+              <span key={i} data-html-label="year" className={`absolute -translate-x-1/2 text-[11px] ${i !== 0 && i !== n - 1 && (n > 3 && i % 2 === 1) ? "hidden sm:inline" : ""}`} style={{ left: `${x(i)}%`, color: p.muted }}>{yr}</span>
             ) : null,
           )}
         </div>
@@ -240,7 +250,7 @@ function VBars({ c, p }: { c: Extract<Chart, { kind: "vbars" }>; p: Palette }) {
           <div key={r.label} className="grid grid-cols-[minmax(0,9rem)_1fr_3rem] items-center gap-2 text-[12px]">
             <span className="truncate" title={r.label} style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400 }}>{r.label}</span>
             <span className="relative h-3.5">
-              <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.value / max) * 100}%`, background: roleColour(p, r.role) }} />
+              <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.value / max) * 100}%`, background: roleColour(p, r.role, undefined, r.family) }} />
               {c.average && <span className="absolute -inset-y-0.5 border-l-2 border-dashed" style={{ left: `${(c.average.value / max) * 100}%`, borderColor: p.average }} />}
             </span>
             <span className="text-right tabular-nums" style={{ color: p.text }}>{fmt(r.value, digits)}</span>
@@ -260,7 +270,7 @@ function VBars({ c, p }: { c: Extract<Chart, { kind: "vbars" }>; p: Palette }) {
           <div key={r.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
             {/* Review fixes (G3): the value sits on a plate above the dashed average line. */}
             <span data-html-label="value" className="relative z-10 rounded px-0.5 text-[11.5px] font-semibold tabular-nums" style={{ color: r.role === "focus" ? p.focus : p.text, background: p.plate }}>{fmt(r.value, digits)}</span>
-            <span className="w-full max-w-[56px] rounded-t-[4px]" style={{ height: `${(r.value / max) * 100}%`, background: roleColour(p, r.role) }} />
+            <span className="w-full max-w-[56px] rounded-t-[4px]" style={{ height: `${(r.value / max) * 100}%`, background: roleColour(p, r.role, undefined, r.family) }} />
           </div>
         ))}
       </div>
@@ -321,7 +331,7 @@ export function DumbbellChart({ c, p }: { c: Extract<Chart, { kind: "dumbbell" }
           </span>
         </div>
         {c.rows.map((r, i) => {
-          const col = r.role === "average" ? p.average : roleColour(p, r.role);
+          const col = r.role === "average" ? p.average : roleColour(p, r.role, undefined, r.family);
           const a = at(Math.min(r.first, r.latest));
           const b = at(Math.max(r.first, r.latest));
           const ch = Math.round(r.latest - r.first);

@@ -12,6 +12,7 @@
 //   AreasView       subject areas, each area's subjects by qualification
 //   GradesView      the grade profile (Results)
 //   TrendBand / TrendTable / EveryLine / Moves / MixBars / Against   row 2
+import { familyColourVar } from "@/lib/subject-family-colours";
 import dynamic from "next/dynamic";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
@@ -458,7 +459,7 @@ export function AreasView({ a }: { a: Academic }) {
           </thead>
           <tbody>
             {blocks.map((b) => (
-              <AreaRows key={b.id} label={b.label} quals={b.quals} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} sized={sized} />
+              <AreaRows key={b.id} familyId={b.id} label={b.label} quals={b.quals} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} sized={sized} />
             ))}
             {a.areas.outside.length > 0 && <AreaRows label="Outside the subject areas" quals={[{ qualification: "EPQ", short: "EPQ", subjects: a.areas.outside }]} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} sized={sized} />}
           </tbody>
@@ -468,12 +469,16 @@ export function AreasView({ a }: { a: Academic }) {
   );
 }
 
-function AreaRows({ label, quals, mode, unit, vals, maxShare, sized }: { label: string; quals: { qualification: string; short: string; subjects: AreaSubject[] }[]; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; maxShare: number; sized: boolean }) {
+function AreaRows({ label, quals, mode, unit, vals, maxShare, sized, familyId = null }: { familyId?: string | null; label: string; quals: { qualification: string; short: string; subjects: AreaSubject[] }[]; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; maxShare: number; sized: boolean }) {
   const cols = mode === "entries" ? (sized ? 8 : 7) : 5;
   return (
     <>
       <tr>
-        <td colSpan={cols} className="px-2 pb-1 pt-3 text-[12px] font-extrabold text-[var(--fg)]">{label}</td>
+        <td colSpan={cols} className="px-2 pb-1 pt-3 text-[12px] font-extrabold text-[var(--fg)]">
+          {/* Review fixes (14 Nov, M7): the subject family's colour beside its heading (R-SUBJECT-COLOUR). */}
+          {familyId && <span aria-hidden="true" data-family-swatch={familyId} className="mr-1.5 inline-block h-[9px] w-[9px] rounded-[2px] align-baseline" style={{ background: familyColourVar(familyId) }} />}
+          {label}
+        </td>
       </tr>
       {quals.map((q) => (
         <QualRows key={q.qualification} q={q} mode={mode} unit={unit} vals={vals} cols={cols} maxShare={maxShare} sized={sized} />
@@ -743,7 +748,10 @@ export function Moves({ a }: { a: Academic }) {
   );
 }
 
-const MIX_COLOURS = ["var(--accent)", "var(--ac-above)", "var(--ac-below)", "var(--adm-grey-soft)", "var(--ac-mid)"];
+// Review fixes (14 Nov, M7): qualification groups have colours of their own -- not the above/below-the-set
+// blue and orange this dashboard uses for something else -- eight of them, so none repeats after five.
+export const QUAL_GROUP_COLOURS = ["#4e79a7", "#76b7b2", "#59a14f", "#edc948", "#b07aa1", "#9c755f", "#bab0ac", "#e15759"];
+const MIX_COLOURS = QUAL_GROUP_COLOURS;
 export function MixBars({ a, fullscreen, room }: { a: Academic; fullscreen: boolean; room?: number }) {
   const mix = a.trends.mix;
   if (!mix.years.length) return <Centre>No entries to show at this level.</Centre>;

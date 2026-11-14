@@ -7,6 +7,7 @@
 import { periodLabel } from "@/catalogue/years";
 import { dataviewById } from "@/catalogue/dataviews";
 import { fillTitle } from "./walk-titles";
+import { SUBJECT_FAMILY_NAMES } from "@/lib/subject-family-colours";
 import { firstReal, lastOf, ordinal, prevOf, rankOf, type SubjectRow, type TeacherModel } from "./teacher-model";
 import type { Walk, WalkScreen } from "./walks";
 import { gradingCaveat, learners, listJoin, placeOf, plural, smallNote } from "./words";
@@ -15,13 +16,13 @@ type Series = (number | null)[];
 export type Role = "focus" | "peer" | "other" | "average" | "la" | "england" | "nearest" | "region";
 export type Marker = "square" | "triangle" | "diamond" | "circle";
 /** A key entry: one per colour and mark on the chart (B14, R-WALK-KEYS). */
-export type KeyEntry = { label: string; role: Role; mark: "swatch" | "line" | "dash" | "tick" | "ring" | "dot"; shade?: number; marker?: Marker };
+export type KeyEntry = { label: string; role: Role; mark: "swatch" | "line" | "dash" | "tick" | "ring" | "dot"; shade?: number; marker?: Marker; family?: string | null };
 
 export type Chart =
   | { kind: "tiles"; main: { figure: string; label: string }; tiles: { icon: string; figure: string; scope: string }[]; keys: KeyEntry[] }
-  | { kind: "vbars"; rows: { label: string; value: number; role: Role }[]; average: { value: number; label: string } | null; unit: string; yCaption: string; keys: KeyEntry[] }
-  | { kind: "lines"; years: string[]; series: { label: string; values: Series; role: Role; shade?: number; marker?: Marker }[]; unpublished: number[]; yCaption: string; extraRows?: { label: string; values: Series }[]; keys: KeyEntry[]; digits: number }
-  | { kind: "dumbbell"; rows: { label: string; first: number; latest: number; role: Role }[]; firstYear: string; latestYear: string; noun: string; keys: KeyEntry[] }
+  | { kind: "vbars"; rows: { label: string; value: number; role: Role; family?: string | null }[]; average: { value: number; label: string } | null; unit: string; yCaption: string; keys: KeyEntry[] }
+  | { kind: "lines"; years: string[]; series: { label: string; values: Series; role: Role; shade?: number; marker?: Marker; family?: string | null }[]; unpublished: number[]; yCaption: string; extraRows?: { label: string; values: Series }[]; keys: KeyEntry[]; digits: number }
+  | { kind: "dumbbell"; rows: { label: string; first: number; latest: number; role: Role; family?: string | null }[]; firstYear: string; latestYear: string; noun: string; keys: KeyEntry[] }
   | { kind: "grades"; rows: { grade: string; count: number; share: number; england: number | null }[]; total: number; noun: [string, string]; keys: KeyEntry[] }
   | { kind: "hbars"; rows: { label: string; value: number; role: Role; note?: string; n?: number | null }[]; unit: string; digits: number; keys: KeyEntry[]; caption?: string }
   | { kind: "ranking"; rows: { rank: number; label: string; value: number; role: Role; distanceKm: number | null; n?: number | null }[]; unit: string; digits: number; keys: KeyEntry[]; caption?: string; year?: string }
@@ -52,6 +53,16 @@ function ofRange(ofs: Series): string {
   const lo = Math.min(...v), hi = Math.max(...v);
   return lo === hi ? String(lo) : `${lo}–${hi}`;
 }
+
+/** One key entry per subject family on the chart (R-SUBJECT-COLOUR: keyed wherever more than one family
+ * appears); a chart of one family keeps its single "Other … subjects" entry. */
+function familyKeys(rows: { familyId?: string | null }[], oneLabel: string): KeyEntry[] {
+  const fams = Array.from(new Set(rows.map((r) => r.familyId ?? null)));
+  if (fams.length <= 1) return rows.length ? [{ label: oneLabel, role: "peer", mark: "swatch", family: fams[0] ?? null }] : [];
+  return fams.map((f) => ({ label: f ? (SUBJECT_FAMILY_NAMES[f] ?? f) : "Other subjects", role: (f ? "peer" : "other") as Role, mark: "swatch" as const, family: f }));
+}
+/** Rows in name order: a peer's shade and marker follow its name, never its rank. */
+const byName = <T extends { label: string }>(rows: T[]) => [...rows].sort((a, b) => a.label.localeCompare(b.label));
 
 /** Peer shades (C16): up to about five, light to dark, each with its own marker. */
 const MARKERS: Marker[] = ["square", "triangle", "diamond", "circle"];
@@ -180,14 +191,14 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
           : `${cat} is the subject category ${subject} belongs to across VicData. Average: the plain average of its ${withV.length} subjects.`,
         chart: {
           kind: "vbars",
-          rows: sorted.map((x) => ({ label: x.r.label, value: x.v, role: x.r.focus ? "focus" : !whole || catKeys.has(x.r.key) ? "peer" : "other" })),
+          // Review fixes (14 Nov, M7): every subject in its family's colour, the focus in the accent.
+          rows: sorted.map((x) => ({ label: x.r.label, value: x.v, role: x.r.focus ? "focus" : !whole || catKeys.has(x.r.key) ? "peer" : "other", family: x.r.focus ? null : (x.r.familyId ?? null) })),
           average: avg === null ? null : { value: avg, label: avgLabel },
           unit: pts ? "average points" : "entries",
           yCaption: pts ? `Average points per entry, ${latest}` : `Entries (${learners(m.phase)}), ${latest}`,
           keys: [
             { label: subject, role: "focus", mark: "swatch" },
-            { label: others(whole), role: "peer", mark: "swatch" },
-            ...(whole ? [{ label: "Other subjects", role: "other" as Role, mark: "swatch" as const }] : []),
+            ...familyKeys(sorted.filter((x) => !x.r.focus).map((x) => x.r), others(whole)),
             ...(avg !== null ? [{ label: avgLabel, role: "average" as Role, mark: "dash" as const }] : []),
           ],
         },
@@ -204,7 +215,8 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const unpublished = fs.map((v, k) => (v === null ? k : -1)).filter((k) => k >= 0);
       const series: Extract<Chart, { kind: "lines" }>["series"] = [
         { label: subject, values: fs, role: "focus" },
-        ...peers.map((r, k) => ({ label: r.label, values: cut(sel(r)), role: "peer" as Role, shade: k, marker: MARKERS[k % MARKERS.length] })),
+        // Peers in their family's colour (one family here), each a fixed shade and marker by name, never by rank.
+        ...peers.map((r) => ({ label: r.label, values: cut(sel(r)), role: "peer" as Role, shade: byName(peers).indexOf(r), marker: MARKERS[byName(peers).indexOf(r) % MARKERS.length], family: r.familyId ?? null })),
         ...(pts && real(cut(m.england.points)).length ? [{ label: "England", values: cut(m.england.points), role: "england" as Role }] : []),
       ];
       const r = real(fs);
@@ -230,7 +242,7 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
           series,
           unpublished,
           yCaption: pts ? "Average points per entry" : `Entries (${m.phase === "ks5" ? "students" : "pupils"})`,
-          keys: [{ label: subject, role: "focus", mark: "line" }, ...peers.map((r, k) => ({ label: r.label, role: "peer" as Role, mark: "line" as const, shade: k, marker: MARKERS[k % MARKERS.length] })), ...(series.some((x) => x.role === "england") ? [{ label: "England", role: "england" as Role, mark: "line" as const }] : []), ...(unpublished.length ? [{ label: "No published figure", role: "focus" as Role, mark: "dash" as const }] : [])],
+          keys: [{ label: subject, role: "focus", mark: "line" }, ...peers.map((r) => ({ label: r.label, role: "peer" as Role, mark: "line" as const, shade: byName(peers).indexOf(r), marker: MARKERS[byName(peers).indexOf(r) % MARKERS.length], family: r.familyId ?? null })), ...(series.some((x) => x.role === "england") ? [{ label: "England", role: "england" as Role, mark: "line" as const }] : []), ...(unpublished.length ? [{ label: "No published figure", role: "focus" as Role, mark: "dash" as const }] : [])],
           digits: pts ? pointsDigits(m) : 0,
         },
       };
@@ -433,7 +445,7 @@ export function dumbbellRows(m: TeacherModel): { rows: Extract<Chart, { kind: "d
   const catKeys = new Set(m.category.rows.map((r) => r.key));
   const rows = m.whole.rows
     .filter((r) => r.entries[firstIdx] !== null && r.entries[lastIdx] !== null)
-    .map((r) => ({ label: r.label, first: r.entries[firstIdx] as number, latest: r.entries[lastIdx] as number, role: (r.focus ? "focus" : catKeys.has(r.key) ? "peer" : "other") as Role }))
+    .map((r) => ({ label: r.label, first: r.entries[firstIdx] as number, latest: r.entries[lastIdx] as number, role: (r.focus ? "focus" : catKeys.has(r.key) ? "peer" : "other") as Role, family: r.focus ? null : (r.familyId ?? null) }))
     .sort((a, b) => b.latest - a.latest);
   if (!rows.length) return null;
   const avg = { label: "School average", first: mean(rows.map((r) => r.first))!, latest: mean(rows.map((r) => r.latest))!, role: "average" as Role };
@@ -457,7 +469,7 @@ function dumbbellScreen(m: TeacherModel, base: { question: string; tag: string }
     ...base,
     answer,
     title: `Entries by subject in the whole school, ${fy} and ${ly}, largest first`,
-    note: `Ordered by this year's entries. Ring: ${fy}; dot: ${ly}. Change in ${m.phase === "ks5" ? "students" : "pupils"}; ▲ / ▼ show direction, so colour is free to mean the subject area. The same view is on the dashboard's Context › Trends rail, "Change (dumbbell)".`,
+    note: `Ordered by this year's entries. Ring: ${fy}; dot: ${ly}. Change in ${m.phase === "ks5" ? "students" : "pupils"}; ▲ / ▼ show direction, and colour means the subject family (keyed). The same view is on the dashboard's Context › Trends rail, "Change (dumbbell)".`,
     chart: {
       kind: "dumbbell",
       rows: d.rows,
@@ -466,8 +478,7 @@ function dumbbellScreen(m: TeacherModel, base: { question: string; tag: string }
       noun: m.phase === "ks5" ? "students" : "pupils",
       keys: [
         { label: subject, role: "focus", mark: "swatch" },
-        { label: m.category.label ? `Other ${cat} subjects` : "Other subjects in its area", role: "peer", mark: "swatch" },
-        { label: "Other subjects", role: "other", mark: "swatch" },
+        ...familyKeys(m.whole.rows.filter((r) => !r.focus && d.rows.some((x) => x.label === r.label)), m.category.label ? `Other ${cat} subjects` : "Other subjects in its area"),
         { label: `${fy} (first year)`, role: "other", mark: "ring" },
         { label: `${ly} (latest)`, role: "other", mark: "dot" },
         { label: "School average", role: "average", mark: "dash" },

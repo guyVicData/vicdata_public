@@ -48,15 +48,16 @@ export function keyProblems(c: Chart): string[] {
     if (!has(role, shade)) out.push(`no key for ${role}${shade === undefined ? "" : ` shade ${shade}`}`);
   };
   if (c.kind === "lines") {
-    for (const s of c.series) need(s.role, s.role === "peer" ? s.shade : undefined);
+    for (const s of c.series) if (!(s.family && c.keys.some((k) => k.family === s.family && k.shade === s.shade))) need(s.role, s.role === "peer" ? s.shade : undefined);
     if (c.unpublished.length && !c.keys.some((k) => k.mark === "dash")) out.push("no key for the dotted unpublished years");
   } else if (c.kind === "vbars") {
-    for (const r of new Set(c.rows.map((x) => x.role))) need(r);
+    // Review fixes (14 Nov, M7): a row in its family's colour is keyed by its family's entry (R-SUBJECT-COLOUR).
+    for (const x of c.rows) if (x.family ? !c.keys.some((k) => k.family === x.family) : !has(x.role)) out.push(`no key for ${x.family ?? x.role}`);
     if (c.average) need("average");
   } else if (c.kind === "hbars" || c.kind === "map") {
     for (const r of new Set((c.kind === "map" ? c.points : c.rows).map((x) => x.role))) need(r);
   } else if (c.kind === "dumbbell") {
-    for (const r of new Set(c.rows.map((x) => x.role))) need(r);
+    for (const x of c.rows) if (x.family ? !c.keys.some((k) => k.family === x.family) : !has(x.role)) out.push(`no key for ${x.family ?? x.role}`);
     if (!c.keys.some((k) => k.mark === "ring") || !c.keys.some((k) => k.mark === "dot")) out.push("no key for the ring and the dot");
   } else if (c.kind === "grades") {
     need("focus");

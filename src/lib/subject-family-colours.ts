@@ -25,17 +25,37 @@
 //
 // Provisional like every other first-pass colour choice in this codebase (see
 // tag-colours.ts's own header) -- a starting proposal for Guy to react to live.
-export const SUBJECT_FAMILY_COLOURS: Record<string, { light: [string, string]; dark: [string, string] }> = {
-  sciences_maths: { light: ["#eff6ff", "#1d4ed8"], dark: ["#1e3a5f", "#93c5fd"] }, // blue
-  humanities_social: { light: ["#fffbeb", "#b45309"], dark: ["#4d3410", "#fcd34d"] }, // amber
-  languages_literature: { light: ["#f5f3ff", "#6d28d9"], dark: ["#332355", "#c4b5fd"] }, // violet
-  arts_media_design: { light: ["#fdf2f8", "#be185d"], dark: ["#4a2237", "#f9a8d4"] }, // pink
-  business_law: { light: ["#eef2ff", "#4338ca"], dark: ["#312e81", "#a5b4fc"] }, // indigo
-  technology_eng_construction: { light: ["#ecfeff", "#0e7490"], dark: ["#173d45", "#67e8f9"] }, // cyan
-  health_care: { light: ["#f0fdf4", "#15803d"], dark: ["#14532d", "#4ade80"] }, // green (shared State green, see above)
-  enterprise_applied: { light: ["#fff7ed", "#c2410c"], dark: ["#4a2b14", "#fdba74"] }, // orange
+// 0.8 review fixes (14 Nov, M7; Guy: "colour subject groups everywhere"): re-picked so the eight sit well
+// apart -- the closest pair CIEDE2000 18.5 in Light and in Dark -- and away from the product accents (GCSE
+// green, Post-16 violet, SMT orange, Admissions sky), the fixed lines (England amber, LA blue, the nearest
+// schools' pink), the focus school's red and the group bronze: 12.0 or more from each. Each is 4:1 or better
+// on its plate (WCAG 1.4.11 asks 3:1 of a graphic). The board: docs/v0.8/review_fixes_screenshots/
+// palette_board.png; the pick: docs/v0.8/audit_scripts/review_fixes_preview/palette2.py.txt. [pale, strong]
+// per theme; Mid draws on white plates, so its values are Light's (kept as their own entry so a later
+// change can part them). R-SUBJECT-COLOUR.
+export const SUBJECT_FAMILY_COLOURS: Record<string, { light: [string, string]; mid: [string, string]; dark: [string, string] }> = {
+  sciences_maths: { light: ["#eceef5", "#3e5698"], mid: ["#eceef5", "#3e5698"], dark: ["#262b38", "#a1b0d9"] }, // slate blue
+  humanities_social: { light: ["#f2e9e8", "#811f18"], mid: ["#f2e9e8", "#811f18"], dark: ["#382120", "#e0655c"] }, // brick
+  languages_literature: { light: ["#ebe8f2", "#341881"], mid: ["#ebe8f2", "#341881"], dark: ["#2b2440", "#7f5ce0"] }, // indigo
+  arts_media_design: { light: ["#f7e9f5", "#b422a1"], mid: ["#f7e9f5", "#b422a1"], dark: ["#3c2239", "#e05cce"] }, // magenta
+  business_law: { light: ["#f0eaed", "#6d2c4a"], mid: ["#f0eaed", "#6d2c4a"], dark: ["#382c33", "#d9a1bb"] }, // plum
+  technology_eng_construction: { light: ["#e8f2f1", "#188173"], mid: ["#e8f2f1", "#188173"], dark: ["#21383b", "#76e5d6"] }, // teal
+  health_care: { light: ["#e8f2e8", "#188118"], mid: ["#e8f2e8", "#188118"], dark: ["#1d3a1f", "#5ce05c"] }, // green
+  enterprise_applied: { light: ["#f2f2e8", "#818118"], mid: ["#f2f2e8", "#818118"], dark: ["#38381d", "#e0e05c"] }, // olive
 };
-
+/** The eight families in sort order (the subject_families table's sort_order 0-7), with their names. */
+export const SUBJECT_FAMILY_NAMES: Record<string, string> = {
+  sciences_maths: "Sciences & Maths",
+  humanities_social: "Humanities & Social Sciences",
+  languages_literature: "Languages & Literature",
+  arts_media_design: "Arts, Media & Design",
+  business_law: "Business & Law",
+  technology_eng_construction: "Technology, Engineering & Construction",
+  health_care: "Health & Care",
+  enterprise_applied: "Enterprise & Applied Studies",
+};
+/** A family's strong colour as a CSS variable, resolved by the theme (globals.css). */
+export const familyColourVar = (familyId: string) => `var(${cssVarNameForSubjectFamily(familyId)}, var(--muted2))`;
 const FALLBACK_COLOUR: { light: [string, string]; dark: [string, string] } = {
   light: ["#f5f5f5", "#525252"],
   dark: ["#262626", "#d4d4d4"],
