@@ -45,5 +45,6 @@ test("follow-up 5: every series keeps a one-line legend entry with its full name
   assert.ok(ag.includes(`data-set-name="" title="${attr(LONGEST)}" class="line-clamp-2`), "Against others: the long name clamps, with its tooltip");
   // The results panel's title names the set too: one line, the full title as its tooltip.
   const res = renderToStaticMarkup(createElement(ResultsTrend, { o, average: false, fullscreen: false }));
-  assert.ok(res.includes(`title="${attr(`Results against ${LONGEST}`)}" class="truncate`));
+  // Review fixes (14 Nov, M5): the title names the measure and the span.
+  assert.ok(new RegExp(`title="[A-Za-z0-9 ]+ against ${attr(LONGEST).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(, \\d{4}/\\d{2} to \\d{4}/\\d{2})?" class="truncate`).test(res));
 });

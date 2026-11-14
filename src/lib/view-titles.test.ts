@@ -77,7 +77,8 @@ test("meeting slots: a title with placeholders is filled from the pin; a plain o
   });
   assert.equal(slotTitle(s("[subject] at [school], [year]")), "History at Acland Burghley School, 2024/25");
   assert.equal(slotTitle(s("Our history entries")), "Our history entries");
-  assert.match(slotTitle(s()), /^Entries by subject in Humanities$/);
+  // Review fixes (14 Nov, M5): the title names its year.
+  assert.match(slotTitle(s()), /^Entries by subject in Humanities, \d{4}\/\d{2}$/);
 });
 
 test("a one-view embed (meeting slot, live preview) carries the view's params and title", () => {
@@ -96,8 +97,8 @@ test("History's change summary says when a view's title changes", () => {
   const i = p.dataviews.findIndex((v) => v.kind === "view" && v.dataview === "DV-C2-CUR-BARS");
   p.dataviews[i] = { ...(p.dataviews[i] as View), title: "[subject] beside the rest", params: { title: "[subject] beside the rest" } };
   // 0.6.1 S1: named by its resolved titles, never a placeholder or the internal "Bar chart".
-  assert.match(changeSummary(prev, next), /Retitled \*Results by subject in its category\* “This subject beside the rest” in /);
-  assert.match(changeSummary(next, prev), /\*This subject beside the rest\* in .* is called “Results by subject in its category” again/);
+  assert.match(changeSummary(prev, next), /Retitled \*Average points by subject in its category, \d{4}\/\d{2}\* “This subject beside the rest” in /);
+  assert.match(changeSummary(next, prev), /\*This subject beside the rest\* in .* is called “Average points by subject in its category, \d{4}\/\d{2}” again/);
 });
 
 // 0.6.1 S6 polish (round 4 item 01, the rail tooltip): a member's rail button is named by its
