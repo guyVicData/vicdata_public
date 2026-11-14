@@ -100,6 +100,21 @@ test("R-NM-SETS: a non-mainstream group never shares a set with a mainstream gro
   assert.equal(r.groupSet?.refused, 1);
   const u = resolveCompare("peer_named:5252,2157", { bandKey: "peer:special_ap:11+", sector: "state", ourId: "16125", sets: [], defaultId: null, nearest: [], meta, nm: true, allowed });
   assert.deepEqual(u.groupSet?.groups.map((g) => g.id), ["5252"]);
+  // The editor's Add groups offers only our family; Nearest in size is our family's, of any type.
+  const { sameFamily } = await import("./non-mainstream");
+  const { nearestInSize } = await import("./group-sets");
+  const nexusCard = card.get("16125")!;
+  assert.ok(sameFamily("special_ap", all).every((c) => c.kind === "special_ap"));
+  assert.equal(sameFamily("special_ap", all).length, 106);
+  assert.equal(sameFamily("mainstream", all).length, 1642);
+  assert.equal(sameFamily(undefined, all).length, 1642);
+  const near = nearestInSize(all, nexusCard, 5, (c) => familyOf(c.kind) === "special_ap");
+  assert.equal(near.length, 5);
+  assert.ok(near.every((c) => c.kind === "special_ap" && c.group_id !== "16125"));
+  // A mainstream group's own set drops a special trust too, by the same rule.
+  const h = resolveCompare("peer_named:2157,16125", { bandKey: "peer:mat:41+", sector: "state", ourId: "3320", sets: [], defaultId: null, nearest: [], meta, allowed: (id) => familyOf(card.get(id)?.kind) === "mainstream" });
+  assert.deepEqual(h.groupSet?.groups.map((g) => g.id), ["2157"]);
+  assert.equal(h.groupSet?.refused, 1);
   // A mainstream group never takes a pool key; a non-mainstream group's mainstream keys open on its peer set.
   assert.equal(resolveCompare("pools:england:special", { bandKey: "peer:mat:41+", sector: "state", ourId: "3320", sets: [], defaultId: null, nearest: [], meta }).key, "peer:mat:41+");
   assert.equal(resolveCompare("non_group:state", { bandKey: "peer:special_ap:11+", sector: "state", ourId: "16125", sets: [], defaultId: null, nearest: [], meta, nm: true }).key, "peer:special_ap:11+");

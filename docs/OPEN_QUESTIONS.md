@@ -3246,3 +3246,8 @@ Built straight through from `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_
 19. **On a phone, the non-mainstream tables drop the Schools and Pupils columns** so that roll change and FSM stay in view. Full screen shows every column.
 20. **A non-mainstream group's Schools table has its own columns:** kind, ages, roll, FSM (with the region pool's), 3-year roll change (with the pool's), the region's pool, and joined. A mainstream school reads "Mainstream · in the mainstream line".
 21. **Parity (mainstream):** 624 pages (Harris and Dukes: every dash response the harness serves, the editor and Manage sets, at 1440 and 390) were compared as page text, base 00ca9de against the branch. 620 are identical. The 4 that differ are Harris's Schools table at All phases (both readings, both widths), where its one AP school, Harris Aspire Academy, is placed against its region's pool (NM11, by design).
+
+### M7: group sets
+
+22. **Most of M7 went in with M5** (Add to set…, the editor's Add groups, the route's resolution), since the library's cards needed it. M7 adds the mainstream side-by-side's line when a set holds another family's groups (old sets and old links), and the tests for the editor's offer list and family-wise Nearest in size.
+23. **A set made before this round keeps its stored members.** Groups of another family are left out where the set is used (the picker's side-by-side says how many), and are unticked when the editor opens it (with the one-line reason). Saving then drops them. No stored set is rewritten in the database: no group uses the site yet (`group_accounts` 0 on 13 Nov), so none exists live.
