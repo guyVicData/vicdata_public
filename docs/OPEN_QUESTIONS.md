@@ -3251,3 +3251,10 @@ Built straight through from `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_
 
 22. **Most of M7 went in with M5** (Add to set…, the editor's Add groups, the route's resolution), since the library's cards needed it. M7 adds the mainstream side-by-side's line when a set holds another family's groups (old sets and old links), and the tests for the editor's offer list and family-wise Nearest in size.
 23. **A set made before this round keeps its stored members.** Groups of another family are left out where the set is used (the picker's side-by-side says how many), and are unticked when the editor opens it (with the one-line reason). Saving then drops them. No stored set is rewritten in the database: no group uses the site yet (`group_accounts` 0 on 13 Nov), so none exists live.
+
+### M8: mainstream groups' own special, AP and nursery schools
+
+24. **The placing keeps "not in group figures" for a mainstream group** ("AP, not in group figures · FSM 0.0% (region 56.4%)"): the school is still out of the group's figures, and the line says so. A non-mainstream group's schools read without it ("Special · FSM …").
+25. **The placing is against the school's region's pool, its region from its LA** (`src/lib/region-crosswalk.ts`, the app's LA-to-region table), since the school rows carry no region code. The change shown is 3-year (the Schools table's Trend column, R-ROLL-WORDS-3YR) beside the pool's like-for-like 3-year change.
+26. **The pooled kind line sits in The group now on Schools**, beside England's state-funded pool of the kind (FSM and 3-year same-schools change), only where production writes one (5+ current schools of one kind). Shaw shows its 12 special schools; Harris and Dukes show none, so their pages are unchanged.
+27. **A school with a tiny roll shows DfE's own FSM**, even 0.0% (Harris Aspire Academy, roll 2), as the census publishes it. It is a single school, not a pool, so R-MIN-SCHOOLS doesn't apply.

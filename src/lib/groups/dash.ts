@@ -10,7 +10,7 @@ import type { AgeGenderCounts } from "../roll-data";
 import type { ComparisonKind, ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, Reading, SchoolYearRow } from "./aggregates";
 import { competitionRanks } from "../rank";
 import { GROUP_SET_CAP, groupsWord, medianOf, notPublished, ofGroupsWords } from "./group-sets";
-import { isNonMainstream, placeSchool, placingWords, type Placing } from "./non-mainstream";
+import { isNonMainstream, kindLinesOf, placeSchool, placingWords, poolAt, POOL_WORDS, SCHOOL_KIND_WORDS, type Placing, type PoolKind } from "./non-mainstream";
 import { resolveRegionNation } from "../region-crosswalk";
 import { buildNmParts, nmSetRank, type NmParts } from "./dash-nm";
 
@@ -607,7 +607,11 @@ export type GroupSchools = {
   counts: { listed: number; shown: number; withHeadline: number; withoutHeadline: number };
   /** 0.8 non-mainstream groups: the group's family (absent for a mainstream group). */
   nm?: { family: "special_ap" | "nursery"; placed: number; line: number };
+  /** NM11: a mainstream group's own special (AP, nursery) schools pooled, where it has 5 or more of one
+   * kind (production's kind_lines), beside England's state-funded pool of that kind. */
+  kindLines?: KindLine[];
 };
+export type KindLine = { kind: PoolKind; label: string; schools: number; roll: number; change1: number | null; change3: number | null; fsm: number | null; england: { label: string; change1: number | null; change3: number | null; fsm: number | null } | null };
 
 const REASON_WORDS: Record<string, string> = {
   outside_england: "outside England: no DfE data",
@@ -769,10 +773,27 @@ export function buildSchools(input: {
       joined: m?.joined ?? null,
       lastSeen: m?.lastSeen ?? null,
       link,
-      ...(placing ? { placing, placingText: placingWords(placing) } : {}),
+      ...(placing ? { placing, placingText: placingWords(placing, !isNm) } : {}),
       ...(isNm ? { fsm: (f ?? lastWith)?.fsm?.pct ?? null, kindTag: kindNow ? (NOT_COUNTED_WORDS[kindNow]?.[0] ?? "Mainstream") : null } : {}),
     };
   });
+  // NM11: the pooled kind lines (a mainstream group with 5+ current schools of one kind).
+  const kindLines: KindLine[] = isNm
+    ? []
+    : kindLinesOf(figOf(agg, census, "all")).map(({ kind, figures: f }) => {
+        const eng = input.pools ? poolAt(input.pools, `england:${kind}`, census, reading) : null;
+        const [, , many] = SCHOOL_KIND_WORDS[kind === "ap" ? "ap" : kind];
+        return {
+          kind,
+          label: `Its ${f.n_schools} ${many}`,
+          schools: f.n_schools,
+          roll: f.roll,
+          change1: f.change?.["1"]?.same_schools_pct ?? null,
+          change3: f.change?.["3"]?.same_schools_pct ?? null,
+          fsm: f.fsm?.pct ?? null,
+          england: eng ? { label: `${POOL_WORDS[kind].plural.charAt(0).toUpperCase()}${POOL_WORDS[kind].plural.slice(1)}, England`, change1: eng.change?.["1"]?.same_schools_pct ?? null, change3: eng.change?.["3"]?.same_schools_pct ?? null, fsm: eng.fsm?.pct ?? null } : null,
+        };
+      });
   const shown = rows.filter((r) => r.current && (focus === "all" || r.phases.includes(focus as never) || (r.outsideEngland && focus === "post16")));
   shown.sort((a, b) => (b.roll ?? -1) - (a.roll ?? -1) || a.name.localeCompare(b.name));
   return {
@@ -784,5 +805,6 @@ export function buildSchools(input: {
     rows: shown,
     counts: { listed: rows.filter((r) => r.current).length, shown: shown.length, withHeadline: shown.filter((r) => r.headline).length, withoutHeadline: shown.filter((r) => !r.headline).length },
     ...(isNm ? { nm: { family: agg.group.kind === "nursery" ? ("nursery" as const) : ("special_ap" as const), placed: shown.filter((r) => r.placing).length, line: shown.filter((r) => r.kindTag === "Mainstream").length } } : {}),
+    ...(kindLines.length ? { kindLines } : {}),
   };
 }

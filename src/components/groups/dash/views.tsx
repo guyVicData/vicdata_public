@@ -421,6 +421,15 @@ export function SchoolsNow({ o, membership, schools }: { o: GroupOverview; membe
         {o.group.likely > 0 && <div className="text-[12px] text-[var(--muted2)]">{groupNote("likelyWhyCh", { group: o.group.name })}</div>}
         <div className="text-[11px] text-[var(--muted2)]">{groupNote("membershipAsOf", { date: dateText(o.group.asOf), source: sourcesWord(o.group.sources) })}</div>
       </div>
+      {schools.kindLines?.map((k) => (
+        // NM11: a mainstream group's own special (AP, nursery) schools pooled, at 5 or more of one kind.
+        <div key={k.kind} className="flex flex-col gap-1 border-t border-[var(--panel-border)] pt-2 text-[11.5px]" data-kind-line={k.kind}>
+          <Lbl>{k.label}, pooled</Lbl>
+          <div className="flex items-baseline justify-between gap-2"><span>{k.roll.toLocaleString("en-GB")} pupils · FSM {k.fsm === null ? "—" : `${k.fsm.toFixed(1)}%`}</span><span className={dirClass(k.change3, 0.5)}>{pctText(k.change3)} over 3 years, same schools</span></div>
+          {k.england && <div className="flex items-baseline justify-between gap-2 text-[var(--muted2)]"><span>{k.england.label}: FSM {k.england.fsm === null ? "—" : `${k.england.fsm.toFixed(1)}%`}</span><span>{pctText(k.england.change3)}</span></div>}
+          <div className="text-[10.5px] text-[var(--muted2)]">Not in the group&rsquo;s own figures: pooled here, and each placed against its region in the Schools table.</div>
+        </div>
+      ))}
       <div className="flex min-h-0 flex-col gap-1">
         <Lbl>Joined and left</Lbl>
         <JoinedLeft membership={membership} schools={schools.rows} compact />

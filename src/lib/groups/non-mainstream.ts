@@ -164,11 +164,12 @@ export function placeSchool(f: SchoolYearFigures | null, regionCode: string | nu
   };
 }
 
-/** "Special · FSM 47.5% (region 53.8%) · roll +16.8% (region +14.9%) over 3 years" for the Schools table. */
-export function placingWords(p: Placing): string {
+/** "Special · FSM 47.5% (region 53.8%) · roll +16.8% (region +14.9%) over 3 years" for the Schools table;
+ * in a mainstream group the tag keeps "not in group figures" ("Special, not in group figures · FSM …"). */
+export function placingWords(p: Placing, notCounted = false): string {
   const f = p.fsm.school === null ? "FSM not published" : `FSM ${pct1(p.fsm.school)}${p.fsm.pool !== null ? ` (region ${pct1(p.fsm.pool)})` : ""}`;
   const c = p.change.school === null ? null : `roll ${signed1(p.change.school)}${p.change.pool !== null ? ` (region ${signed1(p.change.pool)})` : ""} over 3 years`;
-  return [p.tag, f, c].filter(Boolean).join(" · ");
+  return [notCounted ? `${p.tag}, not in group figures` : p.tag, f, c].filter(Boolean).join(" · ");
 }
 
 /** The kind lines a mainstream group has (production writes one only at 5+ current schools of a kind). */

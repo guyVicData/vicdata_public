@@ -197,7 +197,7 @@ test("R-NM-OWN-SCHOOLS: a mainstream group's special, AP and nursery schools are
     assert.ok(!/England$/.test(r.placing!.pool!.label), "a region's pool, not England's");
   }
   const walton = s.rows.find((r) => r.name === "Walton Hall Academy")!;
-  assert.match(walton.placingText!, /^Special · FSM 47\.5% \(region \d+\.\d%\) · roll \+16\.8% \(region [+−]\d+\.\d%\) over 3 years$/);
+  assert.match(walton.placingText!, /^Special, not in group figures · FSM 47\.5% \(region \d+\.\d%\) · roll \+16\.8% \(region [+−]\d+\.\d%\) over 3 years$/);
   assert.equal(walton.placing!.pool!.label, "State-funded special schools, West Midlands");
   // A mainstream school is never placed.
   assert.ok(s.rows.filter((r) => !r.placing).every((r) => !r.placingText));
@@ -207,10 +207,16 @@ test("R-NM-OWN-SCHOOLS: a mainstream group's special, AP and nursery schools are
   const all = agg.rows.find((r) => r.phase === "all" && r.period === Math.max(...agg.rows.map((x) => x.period)))!.figures;
   assert.deepEqual(Object.keys(all.kind_lines ?? {}), ["special"]);
   assert.equal(all.kind_lines!.special!.n_schools, 12);
+  // The page's pooled line, beside England's pool of the kind; Harris has none.
+  assert.equal(s.kindLines?.length, 1);
+  assert.deepEqual([s.kindLines![0].kind, s.kindLines![0].schools, s.kindLines![0].roll, s.kindLines![0].fsm], ["special", 12, 1727, 49.85]);
+  assert.equal(s.kindLines![0].england?.fsm, 50.91);
+  assert.ok(placed.every((r) => r.placingText!.includes(", not in group figures · ")));
   // Harris has one AP school, and no kind line.
   const h = (await groupAggregate("3320", "at_time"))!;
   const hs = buildSchools({ agg: h, schools: await groupSchoolsYear("3320"), focus: "all", pools: await groupComparisons("3320", ["pools"]) });
   assert.equal(hs.rows.filter((r) => r.placing).length, 1);
+  assert.equal(hs.kindLines, undefined);
   assert.equal(h.rows.find((r) => r.phase === "all" && r.figures.kind_lines)?.figures.kind_lines ?? null, null);
   // placeSchool is null for a mainstream school.
   const ms = schools.find((x) => x.years.some((y) => y.figures?.kind === "mainstream"))!;
