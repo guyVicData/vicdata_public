@@ -4,7 +4,7 @@
 // board's "same view on the dashboard", docs/v0.8/front_door_design/png/dumbbell.png). One row per subject:
 // a ring at the first year, a dot at the latest, the bar between them in the subject's own colour (the
 // panel's: the focus in the accent, the rest Current's grey ramp, as Ranked change draws them), the change
-// in entries with ▲ / ▼ (no green/red), the focus row tinted; the comparison group's average, dashed, last.
+// in entries with ▲ / ▼ (no green/red), the focus row tinted; the plain average of the rows drawn, dashed, last.
 // On the card the short names and a tight row (15 px) fit about 14 subjects in a 300 px panel; a longer
 // list scrolls inside its box with the focus centred (CentredOnTarget). Full screen: full names, wider.
 import type { DashboardDumbbell } from "@/lib/teacher-dumbbell";
@@ -56,7 +56,7 @@ export function DumbbellView({ d, fullscreen = false, firstLabel, latestLabel }:
         )}
       </div>
       <p className="text-[10.5px] text-[var(--muted3)]">
-        Entries: ring {firstLabel}, dot {latestLabel}; change in entries{d.leftOut ? ` · ${d.leftOut} ${d.leftOut === 1 ? "subject" : "subjects"} without both years left out` : ""}
+        Entries: ring {firstLabel}, dot {latestLabel}; change in entries{d.average ? `; average of the ${d.rows.length} drawn` : ""}{d.leftOut ? ` · ${d.leftOut} ${d.leftOut === 1 ? "subject" : "subjects"} without both years left out` : ""}
       </p>
     </div>
   );

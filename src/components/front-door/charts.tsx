@@ -96,6 +96,11 @@ export function ChartKey({ keys, p }: { keys: KeyEntry[]; p: Palette }) {
 }
 
 const fmt = (v: number, d: number) => (d ? v.toFixed(d) : Math.round(v).toLocaleString("en-GB"));
+/** 1st, 2nd, 3rd, 4th ... 11th, 12th, 13th, 21st (places read as places: the board's "1st", "Rank 4th"). */
+export const ordinalWord = (n: number) => {
+  const r = Math.round(n), t = r % 100;
+  return `${r}${t >= 11 && t <= 13 ? "th" : ["th", "st", "nd", "rd"][r % 10] ?? "th"}`;
+};
 
 // ------------------------------------------------------------------------------------------------ lines
 
@@ -120,13 +125,18 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
     .filter((e): e is { si: number; label: string; v: number; top: number } => !!e)
     .sort((a, b) => a.top - b.top);
   for (let k = 1; k < ends.length; k++) if (ends[k].top - ends[k - 1].top < 9) ends[k].top = ends[k - 1].top + 9;
+  // Crosscheck (14 Nov): a label pushed below the plot sat on the year labels; pull the stack back up.
+  if (ends.length && ends[ends.length - 1].top > 98) {
+    ends[ends.length - 1].top = 98;
+    for (let k = ends.length - 2; k >= 0; k--) if (ends[k + 1].top - ends[k].top < 9) ends[k].top = ends[k + 1].top - 9;
+  }
   return (
     <div data-line-chart="" className="flex flex-col gap-2">
       <div className="relative ml-10 mr-[150px] h-[240px] sm:h-[280px]">
         {/* Gridlines and the y ticks: HTML. */}
         {ticks.map((t, k) => (
           <div key={k} className="absolute inset-x-0" style={{ top: `${y(t)}%`, borderTop: `1px solid ${p.grid}` }}>
-            <span data-html-label="tick" className="absolute -left-10 -translate-y-1/2 text-[11px] tabular-nums" style={{ color: p.muted }}>{fmt(t, axis.digits)}</span>
+            <span data-html-label="tick" className="absolute -left-10 -translate-y-1/2 text-[11px] tabular-nums" style={{ color: p.muted }}>{flip ? ordinalWord(t) : fmt(t, axis.digits)}</span>
           </div>
         ))}
         {/* Unpublished years: dotted and labelled. */}
@@ -176,7 +186,7 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
           const s = c.series[e.si];
           return (
             <span key={e.si} data-html-label="end" className="absolute left-[calc(100%+8px)] -translate-y-1/2 whitespace-nowrap text-[11.5px] font-semibold" style={{ top: `${e.top}%`, color: roleColour(p, s.role, s.shade) }}>
-              {e.label} {fmt(e.v, c.digits)}
+              {e.label} {flip ? ordinalWord(e.v) : fmt(e.v, c.digits)}
             </span>
           );
         })}
@@ -244,7 +254,7 @@ function HBars({ c, p }: { c: Extract<Chart, { kind: "hbars" }>; p: Palette }) {
   return (
     <div data-bars="horizontal" className="flex flex-col gap-1.5">
       {c.rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[minmax(0,12rem)_1fr_3.5rem] items-center gap-2 text-[12.5px]">
+        <div key={i} className="grid grid-cols-[minmax(0,16rem)_1fr_3.5rem] items-center gap-2 text-[12.5px]">
           <span className="truncate" title={r.label} style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400 }}>{r.label}</span>
           <span className="relative h-4">
             <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.value / max) * 100}%`, background: roleColour(p, r.role) }} />
@@ -260,27 +270,56 @@ function HBars({ c, p }: { c: Extract<Chart, { kind: "hbars" }>; p: Palette }) {
 // ------------------------------------------------------------------------------------------------ dumbbell
 
 export function DumbbellChart({ c, p }: { c: Extract<Chart, { kind: "dumbbell" }>; p: Palette }) {
-  const max = Math.max(...c.rows.flatMap((r) => [r.first, r.latest])) * 1.05 || 1;
+  const values = c.rows.flatMap((r) => [r.first, r.latest]);
+  // Crosscheck (14 Nov, dumbbell.png): an axis with round ticks over the rows, the latest value beside its
+  // dot, and the change column headed -- the board's walk size.
+  const axis = niceAxis(values, {});
+  const max = Math.max(axis.hi, ...values) || 1;
+  const at = (v: number) => (Math.max(0, v - axis.lo) / (max - axis.lo || 1)) * 100;
+  const GRID = "grid grid-cols-[minmax(0,9rem)_1fr_3.75rem] items-center gap-2";
   return (
     <div data-dumbbell="" className="flex flex-col gap-0.5">
-      {c.rows.map((r, i) => {
-        const col = r.role === "average" ? p.average : roleColour(p, r.role);
-        const a = (Math.min(r.first, r.latest) / max) * 100;
-        const b = (Math.max(r.first, r.latest) / max) * 100;
-        const ch = Math.round(r.latest - r.first);
-        return (
-          <div key={i} data-dumbbell-row={r.role} className="grid grid-cols-[minmax(0,9rem)_1fr_3.5rem] items-center gap-2 rounded-[6px] px-1 py-[3px] text-[12px]" style={r.role === "focus" ? { background: `color-mix(in srgb, ${p.focus} 16%, transparent)` } : undefined}>
-            <span className="break-words leading-tight" style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" || r.role === "average" ? 700 : 400 }}>{r.label}</span>
-            <span className="relative h-3">
-              <span className="absolute top-1/2 h-[3px] -translate-y-1/2" style={{ left: `${a}%`, width: `${b - a}%`, background: col, opacity: 0.55, ...(r.role === "average" ? { background: "transparent", borderTop: `2px dashed ${col}`, opacity: 1 } : {}) }} />
-              <span className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2" style={{ left: `${(r.first / max) * 100}%`, borderColor: col, background: p.plate }} />
-              <span className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${(r.latest / max) * 100}%`, background: col }} />
-            </span>
-            <span className="text-right tabular-nums" style={{ color: p.text }}>{ch > 0 ? `▲ ${ch}` : ch < 0 ? `▼ ${-ch}` : "– 0"}</span>
-          </div>
-        );
-      })}
-      <p className="mt-1 text-[11.5px]" style={{ color: p.muted }}>Entries, {c.firstYear} (ring) and {c.latestYear} (dot); change in pupils</p>
+      <div className={`${GRID} px-1 text-[11px]`} style={{ color: p.muted }}>
+        <span />
+        <span className="relative h-4">
+          {axis.ticks.map((t) => (
+            <span key={t} data-html-label="tick" className="absolute bottom-0 -translate-x-1/2 tabular-nums" style={{ left: `${at(t)}%` }}>{fmt(t, axis.digits)}</span>
+          ))}
+        </span>
+        <span className="text-right leading-tight">Change since {c.firstYear}</span>
+      </div>
+      <div className="relative">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid grid-cols-[minmax(0,9rem)_1fr_3.75rem] gap-2 px-1">
+          <span />
+          <span className="relative">
+            {axis.ticks.map((t) => <span key={t} className="absolute inset-y-0" style={{ left: `${at(t)}%`, borderLeft: `1px solid ${p.grid}` }} />)}
+          </span>
+        </div>
+        {c.rows.map((r, i) => {
+          const col = r.role === "average" ? p.average : roleColour(p, r.role);
+          const a = at(Math.min(r.first, r.latest));
+          const b = at(Math.max(r.first, r.latest));
+          const ch = Math.round(r.latest - r.first);
+          const right = r.latest >= r.first;
+          return (
+            <div key={i} data-dumbbell-row={r.role} className={`relative ${GRID} rounded-[6px] px-1 py-[3px] text-[12px] ${r.role === "average" ? "mt-1 border-t pt-1.5" : ""}`} style={{ ...(r.role === "focus" ? { background: `color-mix(in srgb, ${p.focus} 16%, transparent)` } : {}), ...(r.role === "average" ? { borderColor: p.grid } : {}) }}>
+              <span className="flex items-center justify-end gap-1.5 text-right leading-tight" style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400, fontStyle: r.role === "average" ? "italic" : undefined }}>
+                <span className="break-words">{r.label}</span>
+                {/* The board's square beside each name: the row's colour (focus, its category, the rest), so the key reads off the names. */}
+                <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-[2px]" style={{ background: col }} />
+              </span>
+              <span className="relative h-3">
+                <span className="absolute top-1/2 h-[3px] -translate-y-1/2" style={{ left: `${a}%`, width: `${b - a}%`, background: col, opacity: 0.55, ...(r.role === "average" ? { background: "transparent", borderTop: `2px dashed ${col}`, opacity: 1 } : {}) }} />
+                <span className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2" style={{ left: `${at(r.first)}%`, borderColor: col, background: p.plate }} />
+                <span className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${at(r.latest)}%`, background: col }} />
+                <span data-html-label="value" className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[11px] tabular-nums ${right ? "pl-2.5" : "-translate-x-full pr-2.5"}`} style={{ left: `${at(r.latest)}%`, color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400 }}>{fmt(r.latest, 0)}</span>
+              </span>
+              <span className="text-right tabular-nums" style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400 }}>{ch > 0 ? `▲ ${ch}` : ch < 0 ? `▼ ${-ch}` : "– 0"}</span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[11.5px]" style={{ color: p.muted }}>Entries ({c.noun}): {c.firstYear} (ring) and {c.latestYear} (dot)</p>
     </div>
   );
 }
@@ -292,16 +331,36 @@ function Grades({ c, p }: { c: Extract<Chart, { kind: "grades" }>; p: Palette })
   return (
     <div data-grades="" className="flex flex-col gap-1">
       {c.rows.map((r) => (
-        <div key={r.grade} className="grid grid-cols-[2.5rem_1fr_7.5rem] items-center gap-2 text-[12.5px]">
-          <span className="font-semibold" style={{ color: p.text }}>{r.grade}</span>
+        <div key={r.grade} className="grid grid-cols-[3.75rem_1fr_6.25rem] items-center gap-2 text-[12.5px] sm:grid-cols-[4.5rem_1fr_8.5rem]">
+          <span className="text-right" style={{ color: p.text }}>Grade {r.grade}</span>
           <span className="relative h-3.5">
             <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.share / max) * 100}%`, background: p.focus }} />
             {r.england !== null && <span className="absolute -inset-y-1 w-[3px] rounded" style={{ left: `calc(${(r.england / max) * 100}% - 1px)`, background: roleColour(p, "england") }} />}
           </span>
-          <span className="tabular-nums" style={{ color: p.muted }}>{r.count} · {Math.round(r.share * 100)}%</span>
+          <span className="tabular-nums" style={{ color: p.muted }}>{r.count} {r.count === 1 ? c.noun[0] : c.noun[1]} · {Math.round(r.share * 100)}%</span>
         </div>
       ))}
-      <p className="mt-1 text-[11.5px]" style={{ color: p.muted }}>Share of {c.total} at each grade (%)</p>
+      <ShareAxis max={max} p={p} />
+      <p className="mt-1 text-[11.5px]" style={{ color: p.muted }}>% of {c.noun[1]} ({c.total} in all)</p>
+    </div>
+  );
+}
+
+/** A % axis under a share chart's bars (the grades): round ticks within the bars' column. */
+function ShareAxis({ max, p }: { max: number; p: Palette }) {
+  const step = max > 0.4 ? 0.1 : 0.05;
+  const ticks: number[] = [];
+  for (let v = 0; v <= max + 1e-9; v += step) ticks.push(v);
+  return (
+    <div className="grid grid-cols-[3.75rem_1fr_6.25rem] gap-2 text-[11px] sm:grid-cols-[4.5rem_1fr_8.5rem]" style={{ color: p.muted }}>
+      <span />
+      <span className="relative h-4 border-t" style={{ borderColor: p.grid }}>
+        {/* On a phone every other tick, so the labels never run together. */}
+        {ticks.map((t, k) => (
+          <span key={t} data-html-label="tick" className={`absolute top-0.5 -translate-x-1/2 tabular-nums ${k % 2 ? "hidden sm:inline" : ""}`} style={{ left: `${(t / max) * 100}%` }}>{Math.round(t * 100)}%</span>
+        ))}
+      </span>
+      <span />
     </div>
   );
 }
@@ -319,8 +378,8 @@ function Ranking({ c, p }: { c: Extract<Chart, { kind: "ranking" }>; p: Palette 
       </thead>
       <tbody>
         {c.rows.map((r, i) => (
-          <tr key={i} data-featured-row={r.role === "focus" ? "" : undefined} style={r.role === "focus" ? { background: `color-mix(in srgb, ${p.focus} 16%, transparent)`, fontWeight: 700 } : undefined} className="border-t" >
-            <td className="py-1.5 pr-2 tabular-nums">{r.rank}</td>
+          <tr key={i} data-featured-row={r.role === "focus" ? "" : undefined} style={{ borderColor: p.grid, ...(r.role === "focus" ? { background: `color-mix(in srgb, ${p.focus} 16%, transparent)`, fontWeight: 700, color: p.focus } : {}) }} className="border-t">
+            <td className="py-1.5 pr-2 tabular-nums">{ordinalWord(r.rank)}</td>
             <td className="py-1.5 pr-2">{r.label}</td>
             <td className="py-1.5 pr-2 text-right tabular-nums">{fmt(r.value, c.digits)}</td>
             <td className="py-1.5 text-right tabular-nums" style={{ color: p.muted }}>{r.role === "focus" ? "—" : r.distanceKm === null ? "" : `${r.distanceKm.toFixed(1)} km`}</td>
@@ -332,16 +391,32 @@ function Ranking({ c, p }: { c: Extract<Chart, { kind: "ranking" }>; p: Palette 
 }
 
 function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) {
-  const xs = c.points.map((q) => q.easting), ys = c.points.map((q) => q.northing);
-  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const span = Math.max(x1 - x0, y1 - y0, 1000) * 1.15;
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const X = (e: number) => 50 + ((e - cx) / span) * 100;
-  const Y = (nn: number) => 50 - ((nn - cy) / span) * 100;
+  // Crosscheck (14 Nov, walk_nearby_1.png): centred on the school with dashed distance rings, as the board
+  // and the guided sets map draw them; each school's distance in the list.
+  const me = c.points.find((q) => q.role === "focus") ?? c.points[0];
+  const far = Math.max(1000, ...c.points.map((q) => Math.hypot(q.easting - me.easting, q.northing - me.northing)));
+  const ringKm = (() => {
+    const km = far / 1000;
+    const step = km <= 3 ? 1 : km <= 8 ? 2 : km <= 16 ? 5 : km <= 40 ? 10 : 20;
+    const out: number[] = [];
+    for (let r = step; r < km + step && out.length < 4; r += step) out.push(r);
+    return out;
+  })();
+  const half = Math.max(far, ringKm[ringKm.length - 1] * 1000) * 1.08;
+  const X = (e: number) => 50 + ((e - me.easting) / half) * 50;
+  const Y = (nn: number) => 50 - ((nn - me.northing) / half) * 50;
   const others = c.points.filter((q) => q.role !== "focus");
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <div className="relative aspect-square w-full max-w-[340px] rounded-[10px]" style={{ background: p.dark ? "#121216" : "#f4f4f7" }}>
+      <div className="relative aspect-square w-full max-w-[340px] overflow-hidden rounded-[10px]" style={{ background: p.dark ? "#121216" : "#f4f4f7" }}>
+        {ringKm.map((r) => {
+          const d = ((r * 1000) / half) * 100;
+          return (
+            <span key={r} data-ring={r} aria-hidden="true" className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed" style={{ left: "50%", top: "50%", width: `${d}%`, height: `${d}%`, borderColor: p.muted, opacity: 0.55 }}>
+              <span data-html-label="ring" className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded px-1 text-[10px]" style={{ background: p.dark ? "#121216" : "#f4f4f7", color: p.muted }}>{r} km</span>
+            </span>
+          );
+        })}
         {c.points.map((q, i) => (
           <span key={i} title={q.label} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${X(q.easting)}%`, top: `${Y(q.northing)}%`, width: q.role === "focus" ? 14 : 10, height: q.role === "focus" ? 14 : 10, background: roleColour(p, q.role), border: `2px solid ${p.plate}` }}>
             {q.role !== "focus" && <span data-html-label="map" className="absolute left-3 top-[-3px] text-[10px] font-semibold" style={{ color: p.muted }}>{others.indexOf(q) + 1}</span>}
@@ -352,7 +427,7 @@ function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) 
         {others.map((q, i) => (
           <li key={i} className="flex gap-2">
             <span className="w-5 shrink-0 text-right tabular-nums" style={{ color: p.muted }}>{i + 1}</span>
-            <span className="min-w-0 flex-grow">{q.label}</span>
+            <span className="min-w-0 flex-grow">{q.label}{q.distanceKm != null && <span style={{ color: p.muted }}> · {q.distanceKm.toFixed(1)} km</span>}</span>
             <span className="tabular-nums" style={{ color: p.muted }}>{q.value === null ? "no entries" : `${q.value} entries`}</span>
           </li>
         ))}
@@ -362,18 +437,22 @@ function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) 
 }
 
 function Tiles({ c, p }: { c: Extract<Chart, { kind: "tiles" }>; p: Palette }) {
+  // Crosscheck (14 Nov, walk_many_1.png / walk_well_1.png): the lead figure large on its own plate, in the
+  // focus colour; each tile its icon beside the figure, a change figure in the focus colour when it is up.
   return (
-    <div className="flex flex-col gap-4">
-      <p className="flex flex-wrap items-baseline gap-x-3">
-        <span className="text-[56px] font-semibold leading-none tracking-[-0.02em]" style={{ color: p.text }}>{c.main.figure}</span>
-        <span className="text-[14px]" style={{ color: p.muted }}>{c.main.label}</span>
-      </p>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col justify-center rounded-[10px] px-5 py-6 sm:min-h-[170px] sm:px-7" style={{ background: `color-mix(in srgb, ${p.text} 4%, transparent)` }}>
+        <span data-tiles-main="" className="text-[64px] font-semibold leading-none tracking-[-0.03em] sm:text-[88px]" style={{ color: p.focus }}>{c.main.figure}</span>
+        <span className="mt-3 text-[15px]" style={{ color: p.muted }}>{c.main.label}</span>
+      </div>
       <div className="grid gap-3 sm:grid-cols-3">
         {c.tiles.map((t, i) => (
-          <div key={i} className="rounded-[10px] border p-3" style={{ borderColor: p.grid }}>
-            <span className="flex h-7 w-7 items-center justify-center rounded-[7px]" style={{ background: `color-mix(in srgb, ${p.focus} 16%, transparent)`, color: p.focus }}><RailGlyph name={t.icon} /></span>
-            <p className="mt-2 text-[22px] font-semibold" style={{ color: p.text }}>{t.figure}</p>
-            <p className="text-[12.5px]" style={{ color: p.muted }}>{t.scope}</p>
+          <div key={i} className="rounded-[10px] px-4 py-3" style={{ background: `color-mix(in srgb, ${p.text} 4%, transparent)` }}>
+            <p className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center" style={{ color: p.muted }}><RailGlyph name={t.icon} size={16} /></span>
+              <span className="text-[24px] font-semibold leading-tight" style={{ color: /^\+/.test(t.figure) ? p.focus : p.text }}>{t.figure}</span>
+            </p>
+            <p className="mt-0.5 text-[12.5px]" style={{ color: p.muted }}>{t.scope}</p>
           </div>
         ))}
       </div>
@@ -399,7 +478,7 @@ export function ChartTable({ c, p }: { c: Chart; p: Palette }) {
     rows = c.rows.map((r) => [r.grade, r.count, `${Math.round(r.share * 100)}%`, r.england === null ? "–" : `${Math.round(r.england * 100)}%`]);
   } else if (c.kind === "ranking") {
     head = ["Rank", "School", c.unit];
-    rows = c.rows.map((r) => [r.rank, r.label, fmt(r.value, c.digits)]);
+    rows = c.rows.map((r) => [ordinalWord(r.rank), r.label, fmt(r.value, c.digits)]);
   } else if (c.kind === "tiles") {
     head = ["", ""];
     rows = [[c.main.label, c.main.figure], ...c.tiles.map((t) => [t.scope, t.figure])];
