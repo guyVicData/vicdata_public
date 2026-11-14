@@ -32,6 +32,9 @@ export function groupAnswer(view: string, d: GroupAnswerData, projection: Projec
   const g = o.group.name;
   const census = periodLabel(o.years.census);
   const ch3 = o.now.change["3"];
+  // A special and AP trust or nursery federation publishes no results (R-NM-NO-RESULTS): every results screen says so.
+  if (o.nm && view.startsWith("GRP-A-")) return `No results are compared for ${g}: its schools are ${o.nm.family === "nursery" ? "nursery schools" : "special, AP and PRU schools"}, and DfE's results tables don't rank them.`;
+
   switch (view) {
     case "GRP-O-NOW":
     case "GRP-S-NOW":
@@ -103,8 +106,6 @@ export function groupAnswer(view: string, d: GroupAnswerData, projection: Projec
   }
   const a = d.academic;
   const p = d.pupils;
-  // A special and AP trust or nursery federation publishes no results (R-NM-NO-RESULTS): every results screen says so.
-  if (o.nm && view.startsWith("GRP-A-")) return `No results are compared for ${g}: its schools are ${o.nm.family === "nursery" ? "nursery schools" : "special, AP and PRU schools"}, and DfE's results tables don't rank them.`;
   switch (view) {
     case "GRP-A-NOW": {
       // The same headline the home's Academic tile shows (tile-figures.ts, front door 2b), so the two agree.

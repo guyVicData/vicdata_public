@@ -401,9 +401,9 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
         ...base,
         answer: me ? `${placeOf(me.rank, ranked.length, "schools")} on average points in ${subject}, ${latest}${smallNote(m.phase, lastOf(f.entries))}.${ranked.length < m.nearest.length ? ` ${plural(m.nearest.length - ranked.length, "school publishes", "schools publish")} no figure.` : ""}` : `${m.school.name} has no published average points in ${subject} for ${latest}, so it isn't ranked.`,
         title: `${subject}: the school and its nearest ranked, ${latest}`,
-        note: "Ranked on average points per entry, highest first; schools with the same figure share a place.",
+        note: "Ranked on average points per entry, highest first, on the unrounded figure: two schools showing the same figure to one decimal can take different places; only an exact tie shares one.",
         // Review fixes (walks.md T1): each school's entries beside its average, and a caption with the year and N.
-        chart: { kind: "ranking", rows: ranked.map((r) => ({ rank: r.rank, label: r.x.name, value: r.v, role: r.x.isTarget ? "focus" : "nearest", distanceKm: r.x.distanceKm, n: lastOf(r.x.entries) })), unit: "average points", digits: 1, year: latest, caption: `Ranked highest first on average points per entry, ${latest}: ${plural(ranked.length, "school")} with a figure${ranked.length < m.nearest.length ? `, ${m.nearest.length - ranked.length} without` : ""}. Schools with the same figure share a place.`, keys: [{ label: m.school.name, role: "focus", mark: "swatch" }] },
+        chart: { kind: "ranking", rows: ranked.map((r) => ({ rank: r.rank, label: r.x.name, value: r.v, role: r.x.isTarget ? "focus" : "nearest", distanceKm: r.x.distanceKm, n: lastOf(r.x.entries) })), unit: "average points", digits: 1, year: latest, caption: `Ranked highest first on average points per entry, ${latest}: ${plural(ranked.length, "school")} with a figure${ranked.length < m.nearest.length ? `, ${m.nearest.length - ranked.length} without` : ""}. Ranked on the unrounded figure, so two schools showing the same one decimal can take different places.`, keys: [{ label: m.school.name, role: "focus", mark: "swatch" }] },
       };
     }
     case "nearby-trend": {
