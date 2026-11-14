@@ -28,7 +28,7 @@ export const FETCH_CACHE_TTL_MS = 5 * 60_000;
 const cache = new Map<string, Entry>();
 
 // The JWT's subject, or the token itself when it isn't a readable JWT.
-function authSubject(token: string): string {
+export function authSubject(token: string): string {
   try {
     const part = token.split(".")[1];
     if (!part) return token;

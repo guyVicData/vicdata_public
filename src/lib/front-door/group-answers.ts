@@ -3,9 +3,10 @@
 // figures: a sentence never invents a number, and says so when there isn't one.
 import { periodLabel } from "@/catalogue/years";
 import { indexTo } from "@/lib/index-base";
-import { MEASURE_LABEL, MEASURE_UNIT, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
+import { MEASURE_LABEL, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { groupWalkDash } from "./walks";
+import { groupAcademicHeadline, groupFig } from "./tile-figures";
 
 /** The parts of the group dashboard route's answer the sentences read (DashResponse, structurally). */
 export type GroupAnswerData = {
@@ -20,7 +21,7 @@ export type ProjectionLite = { urn: string; name: string; now: number | null; en
 
 const n = (v: number) => Math.round(v).toLocaleString("en-GB");
 const pctWords = (v: number, d = 1) => (Math.abs(v) < 0.5 * 10 ** -d ? "level" : `${v > 0 ? "up" : "down"} ${Math.abs(v).toFixed(d)}%`);
-const fig = (v: number, unit: "pct" | "points" | "va") => (unit === "pct" ? `${v.toFixed(0)}%` : unit === "va" ? `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(2)}` : v.toFixed(1));
+const fig = groupFig;
 const plural = (k: number, one: string, many = `${one}s`) => `${n(k)} ${k === 1 ? one : many}`;
 const lastOf = <T extends { value: number | null }>(pts: T[]) => [...pts].reverse().find((p) => p.value !== null) ?? null;
 const firstOf = <T extends { value: number | null }>(pts: T[]) => pts.find((p) => p.value !== null) ?? null;
@@ -98,12 +99,12 @@ export function groupAnswer(view: string, d: GroupAnswerData, projection: Projec
   const p = d.pupils;
   switch (view) {
     case "GRP-A-NOW": {
-      const h = a?.headlines.find((x) => x.measures[0]?.group?.weighted != null) ?? null;
-      const m = h?.measures[0];
-      if (!h || !m || m.group?.weighted == null) return "No results published for the group's schools yet.";
-      const unit = MEASURE_UNIT[m.measure] ?? "points";
-      const withFig = m.group.n_with_figure;
-      return `${m.label}: ${fig(m.group.weighted, unit)} across ${withFig && withFig < h.inPhase ? `the ${withFig} of the group's ${h.inPhase} schools with a published figure` : `the group's ${plural(h.inPhase, "school")}`} in ${h.year !== null ? periodLabel(h.year) : "the latest year"}${m.england?.weighted != null ? `; England ${fig(m.england.weighted, unit)}` : ""}.`;
+      // The same headline the home's Academic tile shows (tile-figures.ts, front door 2b), so the two agree.
+      const hd = groupAcademicHeadline(a);
+      if (!hd) return "No results published for the group's schools yet.";
+      const { headline: h, measure: m, unit } = hd;
+      const withFig = m.group?.n_with_figure;
+      return `${m.label}: ${fig(hd.group, unit)} across ${withFig && withFig < h.inPhase ? `the ${withFig} of the group's ${h.inPhase} schools with a published figure` : `the group's ${plural(h.inPhase, "school")}`} in ${h.year !== null ? periodLabel(h.year) : "the latest year"}${hd.england !== null ? `; England ${fig(hd.england, unit)}` : ""}.`;
     }
     case "GRP-A-RANKED": {
       if (!a) return "Each school against the group and England.";

@@ -212,6 +212,10 @@ body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #080
 .fd-tile { background: var(--tile-bg, var(--panel-bg)); box-shadow: var(--tile-shadow, none); transition: transform .18s ease, box-shadow .18s ease; }
 .fd-tile:hover { transform: translateY(-3px); box-shadow: var(--tile-shadow-hover, none); }
 @media (prefers-reduced-motion: reduce) { .fd-tile, .fd-tile:hover { transition: none; transform: none; } }
+/* 0.8 front door 2b: a tile's late figure (late-figure.ts) fades in when it arrives; the question was there first. */
+@keyframes fd-late-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.fd-late-figure { animation: fd-late-in .45s ease both; }
+@media (prefers-reduced-motion: reduce) { .fd-late-figure { animation: none; } }
 
 /* 0.8 sets round 1 (B21): who made a set, by colour -- Default grey, Admissions cyan, SMT orange (0.8 front
    door C20; violet before), the school's group (head office) deep bronze (orange before), Victoria Consultancy rose; Me is an outline in --fg. -fg is the text and icon,

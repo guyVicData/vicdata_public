@@ -228,9 +228,9 @@ async function frontDoorModels() {
   return frontDoorModelCache;
 }
 // 0.8 front door part 2: the tests in one unit file whose names carry the rule's id, in their own process.
-function unitByRule(file: string, ruleId: string, env: Record<string, string> = {}): { pass: boolean; detail: string } {
+function unitByRule(file: string, ruleId: string, env: Record<string, string> = {}, envFiles: string[] = [".env.local"]): { pass: boolean; detail: string } {
   const root = new URL("..", import.meta.url).pathname;
-  const r = spawnSync("npx", ["-y", "tsx", "--env-file=.env.local", "--test", "--test-force-exit", "--test-name-pattern", ruleId, file], { cwd: root, encoding: "utf8", env: { ...process.env, ...env } });
+  const r = spawnSync("npx", ["-y", "tsx", ...envFiles.map((f) => `--env-file=${f}`), "--test", "--test-force-exit", "--test-name-pattern", ruleId, file], { cwd: root, encoding: "utf8", env: { ...process.env, ...env } });
   const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
   const lines = out.split("\n").filter((l) => /^(ok|not ok) \d+ - /.test(l) && l.includes(ruleId));
   const failed = lines.filter((l) => l.startsWith("not ok"));
@@ -3601,7 +3601,11 @@ const RUNNERS: Record<string, Runner> = {
     const f = teacherTileFigures(m);
     const focus = m.whole.rows.find((r) => r.focus);
     const agree = !!focus && f.many?.figure === String(lastOf(focus.entries)) && (f.well === null || f.well.figure === lastOf(focus.points)?.toFixed(1));
-    return { pass: !unresolved.length && agree && !!f.many, detail: fmt({ walks: WALKS.length, unresolved: unresolved.join(", ") || "none", focus: m.focus?.label ?? "none", many: f.many?.figure ?? "none", well: f.well?.figure ?? "none", nearby: f.nearby ? `${f.nearby.figure} ${f.nearby.unit}` : "none" }) };
+    // Front door 2b (M1): SMT Context's tile against its walk's first screen (Leighton Park, The Chase: live,
+    // both env files), head office Academic's against its (Harris, Dukes: the fixtures).
+    const smt = unitByRule("src/lib/front-door/tile-figures.test.tsx", "R-HOME-TILES", {}, [".env", ".env.local"]);
+    const grp = groupTests(["src/lib/front-door/group-walks.test.tsx"], "R-HOME-TILES");
+    return { pass: !unresolved.length && agree && !!f.many && smt.pass && grp.pass, detail: fmt({ walks: WALKS.length, unresolved: unresolved.join(", ") || "none", focus: m.focus?.label ?? "none", many: f.many?.figure ?? "none", well: f.well?.figure ?? "none", nearby: f.nearby ? `${f.nearby.figure} ${f.nearby.unit}` : "none", smtContext: smt.detail, headOfficeAcademic: grp.detail }) };
   },
   // 0.8 front door (A5-A7): the first visit -- the decisions' unit tests (one test per rule) and the tables'
   // RLS in PGlite. Offline.

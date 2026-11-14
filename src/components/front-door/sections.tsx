@@ -22,6 +22,9 @@ import { guidedHref } from "@/lib/sets/guided";
 import { HomeSection, NoWalkTile, QuestionTile, walkHref, type TileFigure } from "./home";
 import { useThemePref } from "@/components/shell/TeacherChrome";
 import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
+import { smtContextFigure, smtContextUrl } from "@/lib/front-door/tile-figures";
+import type { Context } from "@/lib/smt/context";
+import { useLateTileFigure } from "./late-figure";
 
 async function token(): Promise<string | null> {
   const { data } = await createBrowserSupabaseClient().auth.getSession();
@@ -225,6 +228,10 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
   const walks = walksFor(primary ? "smt_primary" : "smt");
   const figures = smtFigures(o.status === "ready" ? o.data : null, primary);
   const loading = o.status === "loading";
+  // Front door 2b (M1): Context's figure, fetched late through its walk's own read (the area read), once the
+  // home's own reads have settled; cached for the session. No figure until it arrives, and none on an error.
+  const contextId = `${primary ? "smt_primary" : "smt"}-context`;
+  const contextFigure = useLateTileFigure<Context>(s ? smtContextUrl(member.schoolUrn) : null, !!s && !loading, smtContextFigure);
   const accent = pref === "light" ? ROLE_ACCENT_LIGHT.smt : ROLE_ACCENT.smt;
   const chips = s ? (primary ? ["Key stage 2"] : ["Whole school", ...(s.phases.gcse ? ["GCSE"] : []), ...(s.phases.post16 ? ["Post-16"] : [])]) : [];
   return (
@@ -243,7 +250,11 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       links={walks.map((w) => ({ label: w.question, href: w.screens.length ? walkHref(w) : null }))}
       tiles={walks.map((w) =>
         w.screens.length ? (
-          <QuestionTile key={w.id} walk={w} figure={figures[w.id] ?? null} ctx={{}} href={walkHref(w)} loading={loading} />
+          w.id === contextId ? (
+            <QuestionTile key={w.id} walk={w} figure={contextFigure} ctx={{}} href={walkHref(w)} late />
+          ) : (
+            <QuestionTile key={w.id} walk={w} figure={figures[w.id] ?? null} ctx={{}} href={walkHref(w)} loading={loading} />
+          )
         ) : (
           <NoWalkTile key={w.id} walk={w} why="Key stage 2 results by subject aren't in SMT Academic yet. The full SMT dashboards show what there is." />
         ),
