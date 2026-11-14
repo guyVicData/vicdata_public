@@ -52,8 +52,9 @@ test("region: most schools in (a tie counts in both), or has a school in; main r
 
 test("D7: the headline for the phase in view against England; on All phases the main phase, labelled; independents without results say so", () => {
   const sec = card({ main_phase: "secondary", schools_by_phase: { primary: 2, secondary: 3, post16: 1 }, headline: { secondary: { measure: "ks4_a8", period: 2025, weighted: 46.23, n_with_figure: 3, england: 47.63 }, primary: { measure: "ks2_rwm", period: 2024, weighted: 70, n_with_figure: 2, england: 63.84 } } });
-  assert.equal(headlineWords(sec, "all").text, "Secondary · A8 46.2, England 47.6");
-  assert.equal(headlineWords(sec, "primary").text, "Primary · KS2 RWM 70%, England 64%");
+  // Review fixes (tables.md L3): the year and the schools the figure rests on.
+  assert.equal(headlineWords(sec, "all").text, "Secondary · A8 46.2, England 47.6 · 2025/26 · 3 schools");
+  assert.equal(headlineWords(sec, "primary").text, "Primary · KS2 RWM 70%, England 64% · 2024/25 · 2 schools");
   const indie = card({ type: "independent_company", main_phase: "secondary", schools_by_phase: { primary: 0, secondary: 4, post16: 0 }, headline: { secondary: { measure: "ks4_a8", period: null, weighted: null, n_with_figure: 0, england: null } } });
   assert.equal(headlineWords(indie, "all").text, "Results not published");
   assert.equal(headlineWords(sec, "post16").text, "No results published");

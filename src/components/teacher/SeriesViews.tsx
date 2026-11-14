@@ -18,6 +18,7 @@
 import { Fragment, createContext, useContext, useState, type ReactNode } from "react";
 import { IconButton, TransposeIcon } from "./PanelIcons";
 import { windowCut } from "@/lib/subject-ranking-view";
+import { MINIMUM_SUBJECT_N } from "@/lib/academic-data-view";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { countedValues, periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries, signedDelta } from "@/lib/teacher-view-panels";
 import {
@@ -168,7 +169,7 @@ export const ViewTitleOverrideContext = createContext<string | null>(null);
 // 0.6.6: `pos` / `rank` -- a subject ranking's change list (src/lib/subject-ranking-view.ts):
 // the row's position and shared rank in the whole population, drawn in that order, cut for the
 // card or full screen with a break row where positions jump.
-export type ChangeRow = { key: string; label: string; colour: string; value: number | null; pos?: number; rank?: number };
+export type ChangeRow = { key: string; label: string; colour: string; value: number | null; pos?: number; rank?: number; from?: number | null; to?: number | null; small?: boolean };
 
 // A % change, rounded, with its sign: ChangeList's default formatting (a count's change).
 // Points and rates pass their own (formatChange / the measure's formatDelta).
@@ -210,7 +211,9 @@ export function ChangeList({
   // The tone follows the printed figure: a % change is shown rounded, so "+0%" reads flat.
   const dirOf = (v: number | null) => directionOf(v === null ? null : formatValue ? v : Math.round(v));
   const windowed = rows.some((r) => r.pos !== undefined);
-  const byChange = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  // A row on a small base (fewer than MINIMUM_SUBJECT_N entries in the first year) sorts after the others.
+  const byChange = [...rows].sort((a, b) => Number(!!a.small) - Number(!!b.small) || (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const counts = rows.some((r) => r.from != null && r.to != null);
   const rankOfKey = new Map(byChange.map((r, i) => [r.key, r.rank ?? i + 1]));
   const drawn: (ChangeRow | null)[] = windowed
     ? windowCut(rows.map((r) => ({ ...r, pos: r.pos ?? 0, isTarget: r.key === focusKey })), fullscreen)
@@ -234,7 +237,7 @@ export function ChangeList({
         const dir = dirOf(r.value);
         const focus = r.key === focusKey;
         return (
-          <div key={r.key} data-highlight={focus ? "" : undefined} className={`grid ${values ? "grid-cols-[6.5rem_1fr_2.75rem]" : "grid-cols-[6.5rem_1fr]"} items-center gap-2 text-[11px]`}>
+          <div key={r.key} data-highlight={focus ? "" : undefined} className={`grid ${values ? (counts ? "grid-cols-[6.5rem_1fr_2.75rem_3.25rem]" : "grid-cols-[6.5rem_1fr_2.75rem]") : "grid-cols-[6.5rem_1fr]"} items-center gap-2 text-[11px]`}>
             <span className="flex min-w-0 items-center gap-1.5">
               <span className={`${windowed ? (rank >= 1000 ? "w-6" : rank >= 100 ? "w-[18px]" : "w-3") : "w-3"} shrink-0 text-right text-[9px] tabular-nums text-[var(--muted3)]`}>{r.value === null ? "" : windowed ? rank.toLocaleString() : rank}</span>
               <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.colour }} />
@@ -245,6 +248,7 @@ export function ChangeList({
                 title={r.label}
               >
                 {r.label}
+                {r.small ? " †" : ""}
               </span>
             </span>
             <span className="relative h-3.5 rounded-[3px] bg-[var(--panel-border)]">
@@ -278,9 +282,11 @@ export function ChangeList({
                 {r.value === null ? "—" : format(r.value)}
               </span>
             )}
+            {values && counts && <span data-change-counts="" className="text-right tabular-nums text-[10px] text-[var(--muted2)]" title="Entries in the first year and the latest">{r.from != null && r.to != null ? `${r.from}→${r.to}` : ""}</span>}
           </div>
         );
       })}
+      {rows.some((r) => r.small) && <div className="text-[10px] text-[var(--muted2)]">† fewer than {MINIMUM_SUBJECT_N} entries in the first year: a few pupils move its % change a lot, so it is listed after the others.</div>}
       {group && (
         <div className="mt-1 flex items-center gap-1.5 border-t border-dashed border-[var(--panel-border2)] pt-1.5 text-[10px] text-[var(--muted2)]">
           <span className="inline-block h-3 w-0 border-l border-dashed border-[var(--fg)] opacity-60" />
@@ -435,6 +441,7 @@ export function YearTable({
   });
   const cut = windowed ? windowCut(rows.map((r) => ({ ...r, pos: r.s.pos ?? 0, isTarget: r.s.key === focusKey })), fullscreen) : sortedAll;
   const sorted = cut.filter((r): r is (typeof rows)[number] => r !== null);
+  const rankN = Math.max(0, ...rows.map((r) => r.s.pos ?? 0), ...rankOf.values());
   const rankWidth = windowed ? (ranked && Math.max(...rankOf.values()) >= 1000 ? "w-9" : "w-7") : "w-5";
   const onSort = (key: SortKey) =>
     setSort((cur) => (cur.key === key ? { key, dir: cur.dir === 1 ? -1 : 1 } : { key, dir: key === "name" || key === "rank" ? 1 : -1 }));
@@ -561,14 +568,15 @@ export function YearTable({
     <table className={`w-full border-collapse tabular-nums ${fullscreen ? "text-[13px]" : leadingRank ? "text-[11px]" : "text-[11.5px]"}`}>
       <thead className="border-b border-[var(--panel-border2)]">
         <tr>
-          {leadingRank && <th className={`${rankWidth} pb-1.5`} aria-label="Rank" />}
+          {/* Review fixes (tables.md L10): the leading rank column is headed, with how many it ranks. */}
+          {leadingRank && <th className={`${rankWidth} pb-1.5 text-right font-semibold`} aria-label={`Rank of ${rankN}`} title={`Rank of ${rankN.toLocaleString("en-GB")}`}><span className="text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">#</span></th>}
           {head("name", nameHeading, true)}
           {/* Live review Part 4: Rank only in fullscreen. On the card it pushed the year and
               Change columns -- the figures that matter there -- out of view. The ranking
               itself still drives the default sort either way. */}
           {rankShown && head("rank", "Rank")}
           {yearIdx.map((i) => head(i, academicYearLabel(periods[i])))}
-          {counts && <th className={`${pad} pb-1.5 text-right font-semibold`}><span className="whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">n</span></th>}
+          {counts && <th className={`${pad} pb-1.5 text-right font-semibold`} title="Entries"><span className="whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">entries</span></th>}
           {showChange && head("change", "Change")}
         </tr>
       </thead>

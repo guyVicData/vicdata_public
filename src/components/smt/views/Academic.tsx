@@ -335,17 +335,19 @@ export function RankTable({ a }: { a: Academic }) {
         <table className="w-full border-collapse">
           <thead className="sticky top-0 border-b border-[var(--panel-border)] bg-[var(--panel-bg)]">
             <tr>
-              <Th>#</Th>
+              {/* Review fixes (tables.md M7): the rank says of how many, England's is a rank "of N", and the
+                  entries show for every measure that carries them (a small cohort is seen). */}
+              <Th title="1 = highest">Rank of {b.rows.filter((x) => x.value !== null).length}</Th>
               <Th>School</Th>
               <Th className="text-right">Km</Th>
               <Th className="text-right">{b.measure}</Th>
               {va && <Th>95% range</Th>}
               {va && <Th>{a.state.phase === "gcse" ? "DfE band" : "Band"}</Th>}
               {!va && b.rows.some((r) => r.grade) && <Th>Grade</Th>}
-              {b.unit === "share" && <Th className="text-right">Entries</Th>}
+              {b.rows.some((r) => r.entries !== null) && <Th className="text-right">Entries</Th>}
               <Th className="text-right">{prev}</Th>
-              <Th className="text-right">Change</Th>
-              {b.rows.some((r) => r.england) && <Th className="text-right">England</Th>}
+              {/* Review fixes (14 Nov, Q5): no Change column here -- "The set's schools" view draws each school's change. */}
+              {b.rows.some((r) => r.england) && <Th className="text-right">England rank</Th>}
             </tr>
           </thead>
           <tbody>
@@ -364,10 +366,9 @@ export function RankTable({ a }: { a: Academic }) {
                   {va && <Td className="whitespace-nowrap">{r.lo !== null ? `${fmtAc(r.lo, "va")} to ${fmtAc(r.hi, "va")}` : "—"}</Td>}
                   {va && <Td><BandPill band={r.band} /></Td>}
                   {!va && b.rows.some((x) => x.grade) && <Td>{r.grade ?? "—"}</Td>}
-                  {b.unit === "share" && <Td className="text-right">{r.entries ?? "—"}</Td>}
+                  {b.rows.some((x) => x.entries !== null) && <Td className="text-right">{r.entries ?? "—"}</Td>}
                   <Td className="text-right">{fmtAc(r.last, b.unit)}</Td>
-                  <Td className="text-right">{fmtChangeAc(r.change, b.unit)}</Td>
-                  {b.rows.some((x) => x.england) && <Td className="text-right">{r.england ? r.england.rank.toLocaleString("en-GB") : "—"}</Td>}
+                  {b.rows.some((x) => x.england) && <Td className="text-right">{r.england ? `${r.england.rank.toLocaleString("en-GB")} of ${r.england.of.toLocaleString("en-GB")}` : "—"}</Td>}
                 </tr>
               );
             })}
@@ -427,6 +428,8 @@ export function AreasView({ a }: { a: Academic }) {
   const blocks = a.areas.blocks;
   const level = a.state.phase === "gcse" ? "GCSE" : "Post-16";
   const allVals = blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects.flatMap((s) => [s.value, ...s.setValues]))).filter((v): v is number => v !== null);
+  // Review fixes (tables.md L1): Size shows only when England's size table answered for some subject.
+  const sized = [...blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects)), ...a.areas.outside].some((x) => x.size !== null);
   // Entries: one scale for every share bar in the view (to the largest share or typical share shown).
   const shown = [...blocks.flatMap((b) => b.quals.flatMap((q) => q.subjects)), ...a.areas.outside];
   const maxShare = Math.max(0.1, ...shown.flatMap((s) => [s.value ?? 0, s.typical ?? 0]));
@@ -446,18 +449,18 @@ export function AreasView({ a }: { a: Academic }) {
               <Th>Subject, by qualification</Th>
               <Th className="text-right">Entries</Th>
               {mode === "entries" && <Th>{a.areas.period !== null ? `${periodLabel(a.areas.period - 2).slice(0, 7)} → ${periodLabel(a.areas.period).slice(2)}` : ""}</Th>}
-              {mode === "entries" && <Th>Size</Th>}
+              {mode === "entries" && sized && <Th title="The subject's size against England's schools offering it: XS to XL, fifths">Size</Th>}
               <Th className="text-right">{mode === "va" ? "VA" : mode === "entries" ? "Share" : a.state.phase === "gcse" ? "Avg grade" : "Pts"}</Th>
               <Th>{mode === "va" ? "you (ringed) and the set's schools" : mode === "entries" ? "you and the set's typical school" : "you and the set's schools"}</Th>
-              {mode === "entries" && <Th className="text-right">vs set</Th>}
+              {mode === "entries" && <Th className="text-right" title="Your share less the set's typical share, in percentage points">vs set, pp</Th>}
               <Th className="text-right">{mode === "entries" ? "Set offering" : "Place in set"}</Th>
             </tr>
           </thead>
           <tbody>
             {blocks.map((b) => (
-              <AreaRows key={b.id} label={b.label} quals={b.quals} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} />
+              <AreaRows key={b.id} label={b.label} quals={b.quals} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} sized={sized} />
             ))}
-            {a.areas.outside.length > 0 && <AreaRows label="Outside the subject areas" quals={[{ qualification: "EPQ", short: "EPQ", subjects: a.areas.outside }]} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} />}
+            {a.areas.outside.length > 0 && <AreaRows label="Outside the subject areas" quals={[{ qualification: "EPQ", short: "EPQ", subjects: a.areas.outside }]} mode={mode} unit={unit} vals={allVals} maxShare={maxShare} sized={sized} />}
           </tbody>
         </table>
       </div>
@@ -465,21 +468,21 @@ export function AreasView({ a }: { a: Academic }) {
   );
 }
 
-function AreaRows({ label, quals, mode, unit, vals, maxShare }: { label: string; quals: { qualification: string; short: string; subjects: AreaSubject[] }[]; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; maxShare: number }) {
-  const cols = mode === "entries" ? 8 : 5;
+function AreaRows({ label, quals, mode, unit, vals, maxShare, sized }: { label: string; quals: { qualification: string; short: string; subjects: AreaSubject[] }[]; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; maxShare: number; sized: boolean }) {
+  const cols = mode === "entries" ? (sized ? 8 : 7) : 5;
   return (
     <>
       <tr>
         <td colSpan={cols} className="px-2 pb-1 pt-3 text-[12px] font-extrabold text-[var(--fg)]">{label}</td>
       </tr>
       {quals.map((q) => (
-        <QualRows key={q.qualification} q={q} mode={mode} unit={unit} vals={vals} cols={cols} maxShare={maxShare} />
+        <QualRows key={q.qualification} q={q} mode={mode} unit={unit} vals={vals} cols={cols} maxShare={maxShare} sized={sized} />
       ))}
     </>
   );
 }
 
-function QualRows({ q, mode, unit, vals, cols, maxShare }: { q: { qualification: string; short: string; subjects: AreaSubject[] }; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; cols: number; maxShare: number }) {
+function QualRows({ q, mode, unit, vals, cols, maxShare, sized }: { q: { qualification: string; short: string; subjects: AreaSubject[] }; mode: Academic["state"]["mode"]; unit: Unit; vals: number[]; cols: number; maxShare: number; sized: boolean }) {
   return (
     <>
       <tr>
@@ -493,10 +496,10 @@ function QualRows({ q, mode, unit, vals, cols, maxShare }: { q: { qualification:
           </Td>
           <Td className="text-right">{s.entries}</Td>
           {mode === "entries" && <Td className="whitespace-nowrap">{s.counts.map((c) => (c === null ? "—" : c)).join(" → ")}</Td>}
-          {mode === "entries" && <Td>{s.size ? <SizeBadge size={s.size} /> : <span className="text-[var(--muted2)]">—</span>}</Td>}
+          {mode === "entries" && sized && <Td>{s.size ? <SizeBadge size={s.size} /> : <span className="text-[var(--muted2)]">—</span>}</Td>}
           <Td className="text-right font-bold text-[var(--fg)]" title={s.why ?? undefined}>{s.value === null ? <span className="font-normal text-[var(--muted2)]">{s.why ? "not ranked" : "—"}</span> : fmtAc(s.value, unit)}</Td>
           <Td>{s.value !== null && <Dots s={s} unit={unit} vals={vals} mode={mode} maxShare={maxShare} />}</Td>
-          {mode === "entries" && <Td className="text-right">{s.value !== null && s.typical !== null ? signedDelta(s.value - s.typical, (x) => Math.abs(x).toFixed(1), { zero: "±" }) : "none"}</Td>}
+          {mode === "entries" && <Td className="text-right">{s.value !== null && s.typical !== null ? `${signedDelta(s.value - s.typical, (x) => Math.abs(x).toFixed(1), { zero: "±" })} pp` : "none"}</Td>}
           <Td className="whitespace-nowrap text-right">{mode === "entries" ? (s.offering ? `${s.offering.n} of ${s.offering.of}` : "—") : s.only ? "only school" : s.place ? `${ord(s.place.rank)} of ${s.place.of}` : "—"}</Td>
         </tr>
       ))}

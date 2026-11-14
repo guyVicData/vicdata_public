@@ -110,8 +110,9 @@ test("R-GROUP-SET-SIDE-BY-SIDE: ours first, each group, then the median of the g
   assert.equal(t.rows[0].ours, true);
   assert.equal(t.rows[0].label, "Harris Federation");
   assert.deepEqual(t.rows.slice(1).map((r) => r.key), ids.map((id) => `peer_named:${id}`));
-  assert.equal(t.rows[0].typeSize, "MAT · 59 schools", "type and size on every row");
-  assert.equal(t.rows[1].typeSize, "MAT · 57 schools");
+  // Review fixes (tables.md M1): membership is "members"; the Schools column is the schools counted.
+  assert.equal(t.rows[0].typeSize, "MAT · 59 members", "type and size on every row");
+  assert.equal(t.rows[1].typeSize, "MAT · 57 members");
   // The median: one vote per group with a figure, never ours, never re-weighted.
   for (const m of t.columns) {
     const vals = t.rows.slice(1).map((r) => r.cells[m]?.value ?? null);
@@ -134,10 +135,10 @@ test("R-GROUP-RANK-SAME-TYPE and mixed types: each row ranks within its own type
   const o = buildOverview({ agg: H.agg, comps: compsFor(H.comps, ids), compare: "peer_named:2157,1337", focus: "all", groupSet: setOf(ids) });
   const t = o.sideBySide!;
   assert.equal(t.median.mixed, true);
-  assert.match(t.rows[0].rank ?? "", /^\d+(st|nd|rd|th) of \d+ MATs with 41\+ schools$/);
-  assert.match(t.rows[1].rank ?? "", /MATs with 41\+ schools$/);
-  assert.match(t.rows[2].rank ?? "", /of \d+ foundation trusts$/, "a foundation trust ranks among all foundation trusts (D4)");
-  assert.equal(t.rows[2].typeSize, "Foundation trust · 30 schools");
+  assert.match(t.rows[0].rank ?? "", /^\d+(st|nd|rd|th) of \d+ MATs with 41\+ schools on Att 8$/);
+  assert.match(t.rows[1].rank ?? "", /MATs with 41\+ schools on Att 8$/);
+  assert.match(t.rows[2].rank ?? "", /of \d+ foundation trusts on Att 8$/, "a foundation trust ranks among all foundation trusts (D4)");
+  assert.equal(t.rows[2].typeSize, "Foundation trust · 30 members");
 });
 
 test("'not published': a measure a type never publishes keeps its row (Dukes against independents)", () => {

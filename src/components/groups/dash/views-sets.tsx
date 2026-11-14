@@ -18,7 +18,7 @@ import { Empty, Key, LineSwatch, fillHeight } from "@/components/admissions/ui";
 import { LineChart } from "@/components/admissions/views/charts";
 import { FEATURED_ROW_BG } from "@/components/shell/accent";
 import { periodLabel } from "@/catalogue/years";
-import { MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, type GroupOverview, type SideBySide as SideBySideData } from "@/lib/groups/dash";
+import { GROWING_SPAN, MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, type GroupOverview, type SideBySide as SideBySideData } from "@/lib/groups/dash";
 import { bandWords, ofGroupsWords, setTrend, type Pt } from "@/lib/groups/group-sets";
 import { arrowOf, dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
 
@@ -57,12 +57,14 @@ export function SideBySide({ o, average, compact = false }: { o: GroupOverview; 
           <thead className="sticky top-0 z-[1] bg-[var(--panel-bg)]">
             <tr className="border-b border-[var(--panel-border)] text-left">
               <Th className="w-[34%]"> </Th>
-              {!compact && <Th>Schools</Th>}
+              {!compact && <Th>Schools counted</Th>}
               <Th>Roll, 5 years</Th>
-              {!compact && <Th>Growing</Th>}
+              {!compact && <Th>Growing, {GROWING_SPAN} yrs</Th>}
               {cols.map((m) => (
                 <Th key={m}>
+                  {/* Review fixes (tables.md M1): each results column says its year, not only on hover. */}
                   <span title={`${MEASURE_LABEL[m]}, ${yearOfCol(m)}`}>{head(m)}</span>
+                  {yearOfCol(m) && <span className="block text-[10px] font-semibold normal-case text-[var(--muted2)]">{yearOfCol(m)}</span>}
                 </Th>
               ))}
             </tr>
@@ -207,6 +209,14 @@ export function SetTrend({ lines, title, format, fullscreen, room, reference, fo
   // Lines brought forward are drawn last, so they sit above the muted ones (ours always on top).
   const ordered = [...groupSeries.filter((s) => !forward.has(s.id)), ...groupSeries.filter((s) => forward.has(s.id))];
   const last = (l: Line) => [...l.pts].reverse().find((p) => p.value !== null) ?? null;
+  // Review fixes (tables.md L2): a group whose last figure is from an earlier year than the chart's last
+  // says which ("48.6 (23/24)").
+  const endYear = Math.max(...[ours, ...groups].flatMap((l) => l.pts.filter((p) => p.value !== null).map((p) => p.year)));
+  const lastText = (l: Line) => {
+    const p = last(l);
+    if (!p) return "—";
+    return `${format(p.value!)}${p.year !== endYear ? ` (${yr(p.year).slice(2)})` : ""}`;
+  };
   return (
     <div className="flex min-h-0 flex-col gap-2" data-set-trend-large="">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -223,7 +233,7 @@ export function SetTrend({ lines, title, format, fullscreen, room, reference, fo
         <ul className="flex shrink-0 flex-col gap-0.5 text-[12px] md:w-[240px]" aria-label="The set's groups" data-set-trend-list="">
           <li className="flex items-baseline justify-between gap-2 px-2 py-1 font-bold">
             <span className="min-w-0 truncate"><span className="mr-1.5 inline-block h-[3px] w-[12px] align-middle" style={{ background: "var(--accent)" }} />{ours.label}</span>
-            <span className="shrink-0 tabular-nums">{last(ours) ? format(last(ours)!.value!) : "—"}</span>
+            <span className="shrink-0 tabular-nums">{lastText(ours)}</span>
           </li>
           {groups.map((g) => {
             const on = pinned.includes(g.key);
@@ -241,7 +251,7 @@ export function SetTrend({ lines, title, format, fullscreen, room, reference, fo
                   className={`flex min-h-[32px] w-full items-baseline justify-between gap-2 rounded-[8px] px-2 py-1 text-left hover:bg-[var(--box-bg)] ${on ? "bg-[var(--box-bg)] font-semibold" : ""}`}
                 >
                   <span className="min-w-0 truncate">{g.label}{on && <span className="ml-1 rounded-[5px] bg-[var(--adm-tint)] px-[5px] text-[10px] font-bold text-[var(--adm-accent-text)]">pinned</span>}</span>
-                  <span className="shrink-0 tabular-nums text-[var(--muted)]">{last(g) ? format(last(g)!.value!) : "—"}</span>
+                  <span className="shrink-0 tabular-nums text-[var(--muted)]">{lastText(g)}</span>
                 </button>
               </li>
             );

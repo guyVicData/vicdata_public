@@ -188,6 +188,8 @@ export function LeavingAt16({ p, school }: { p: Pupils; school: SmtSchool }) {
           </tbody>
         </table>
       </div>
+      {/* Review fixes (tables.md L9): the set's comparator beside the school's own years. */}
+      {p.shape.around.stayingOnSet.pct !== null && <div className="text-[11.5px] text-[var(--muted2)]">The middle of {p.set.label} (latest year): {Math.round(p.shape.around.stayingOnSet.pct)}% stayed on, across {p.shape.around.stayingOnSet.schools} schools with a sixth form.</div>}
       <div className="mt-auto text-[11px] leading-[1.4] text-[var(--muted2)]">{ADMISSIONS_NOTES.leaving16}</div>
     </>
   );
@@ -330,6 +332,8 @@ export function DayAndBoarding({ p, school, fullscreen = false, room }: { p: Pup
                 <Th>Boarders</Th>
                 <Th>Day</Th>
                 <Th>Boarders&rsquo; share</Th>
+                {/* Review fixes (tables.md L9): the set's middle, the comparator the chart beside it draws. */}
+                {d.set.trend.length > 0 && <Th title={`The middle of the ${d.set.trendSchools} boarding schools in ${p.set.label}`}>Set median share</Th>}
               </tr>
             </thead>
             <tbody>
@@ -339,6 +343,7 @@ export function DayAndBoarding({ p, school, fullscreen = false, room }: { p: Pup
                   <Td>{fmt(r.boarders, "pupils")}</Td>
                   <Td>{fmt(r.day, "pupils")}</Td>
                   <Td className="font-bold text-[var(--fg)]">{pct(r.share)}</Td>
+                  {d.set.trend.length > 0 && <Td className="text-[var(--muted2)]">{pct(d.set.trend.find((t) => t.year === r.year)?.value ?? null)}</Td>}
                 </tr>
               ))}
             </tbody>

@@ -137,7 +137,7 @@ export function notCountedWords(by: Record<string, number>): string | null {
 
 export const SAT_NOTE = "Schools that are single-academy trusts (an academy trust of one school), pooled: production's own benchmark, kept apart from non-group schools so no school counts twice.";
 export const GROUP_TYPE_SHORT: Record<string, string> = { mat: "MAT", federation: "Federation", foundation_trust: "Foundation trust", independent_company: "Independent company", independent_charity: "Independent charity", independent_other: "Other independent group" };
-export const typeSizeWords = (type: string, schools: number) => `${GROUP_TYPE_SHORT[type] ?? GROUP_TYPE_LABEL[type] ?? type} · ${schools.toLocaleString("en-GB")} school${schools === 1 ? "" : "s"}`;
+export const typeSizeWords = (type: string, schools: number, noun = "school") => `${GROUP_TYPE_SHORT[type] ?? GROUP_TYPE_LABEL[type] ?? type} · ${schools.toLocaleString("en-GB")} ${noun}${schools === 1 ? "" : "s"}`;
 const schoolsCount = (n: number | null) => (n === null ? "…" : `${n.toLocaleString("en-GB")} school${n === 1 ? "" : "s"}`);
 
 export const NON_GROUP_STATE_NOTE = "State schools in England in no listed group (MAT, federation or foundation trust of 2 or more schools) and not a single-academy trust: mostly LA-maintained schools. Single-academy trusts are a benchmark of their own.";
@@ -463,14 +463,15 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
       if (hy === null) return null;
       const f = rs.find((r) => r.period === hy && r.phase === MEASURE_PHASE[headline])?.figures;
       const p = f?.peer?.places?.[headline];
-      return p && f?.peer ? `${ordinal(p.rank, p.tied)} of ${p.of} ${peerWords(f.peer).place}` : null;
+      // Review fixes (tables.md M1): the rank names its measure ("… on Att 8").
+      return p && f?.peer ? `${ordinal(p.rank, p.tied)} of ${p.of} ${peerWords(f.peer).place} on ${MEASURE_SHORT[headline] ?? headline}` : null;
     };
-    const ours: SideRow = { ...rows[0], ours: true, type: agg.group.type, typeSize: typeSizeWords(agg.group.type, agg.membership.confirmed + agg.membership.likely), rank: rankIn(agg.rows), missing: false, notPublished: measures.filter((m) => notPublished(agg.group.type, m)) };
+    const ours: SideRow = { ...rows[0], ours: true, type: agg.group.type, typeSize: typeSizeWords(agg.group.type, agg.membership.confirmed + agg.membership.likely, "member"), rank: rankIn(agg.rows), missing: false, notPublished: measures.filter((m) => notPublished(agg.group.type, m)) };
     const groupRows: SideRow[] = input.groupSet.groups.map((g) => {
       const r = byKey.get(`peer_named:${g.id}`);
       const set = sets.find((x) => x.key === `peer_named:${g.id}`);
       const base: AgainstRow = r ?? { key: `peer_named:${g.id}`, label: g.label, kind: "peer_named", schools: null, pupils: null, roll: { pct: null, years: 5 }, growing: { pct: null, n: 0, of: 0 }, cells: {} };
-      return { ...base, label: g.label, ours: false, type: g.type, typeSize: typeSizeWords(g.type, g.schools), rank: set ? rankIn(set.rows) : null, missing: !r, notPublished: measures.filter((m) => notPublished(g.type, m)) };
+      return { ...base, label: g.label, ours: false, type: g.type, typeSize: typeSizeWords(g.type, g.schools, "member"), rank: set ? rankIn(set.rows) : null, missing: !r, notPublished: measures.filter((m) => notPublished(g.type, m)) };
     });
     const have = groupRows.filter((r) => !r.missing);
     const nmMedian = isNm ? { nm: { change1: medianOf(have.map((r) => r.nm?.change1 ?? null)), fsm: medianOf(have.map((r) => r.nm?.fsm ?? null)) } } : {};
