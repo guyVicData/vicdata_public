@@ -216,6 +216,10 @@ test("R-NM-OWN-SCHOOLS: a mainstream group's special, AP and nursery schools are
   const h = (await groupAggregate("3320", "at_time"))!;
   const hs = buildSchools({ agg: h, schools: await groupSchoolsYear("3320"), focus: "all", pools: await groupComparisons("3320", ["pools"]) });
   assert.equal(hs.rows.filter((r) => r.placing).length, 1);
+  // Harris Aspire Academy has 2 pupils: its FSM % is withheld, never "0.0%" beside the region's.
+  const aspire = hs.rows.find((r) => r.placing)!;
+  assert.match(aspire.placingText ?? "", /FSM: too few pupils \(2\)/);
+  assert.doesNotMatch(aspire.placingText ?? "", /FSM 0\.0%/);
   assert.equal(hs.kindLines, undefined);
   assert.equal(h.rows.find((r) => r.phase === "all" && r.figures.kind_lines)?.figures.kind_lines ?? null, null);
   // placeSchool is null for a mainstream school.

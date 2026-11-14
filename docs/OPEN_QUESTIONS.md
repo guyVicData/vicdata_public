@@ -3263,3 +3263,5 @@ Built straight through from `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_
 
 28. **"Like us" lives only in a group's own section.** A special trust's head office browsing the mainstream groups gets no "Groups like us" chip, type highlight or like-us sort, and a mainstream head office gets none in the special, AP and nursery section. This was found in the screenshots and fixed.
 29. **A non-mainstream group's school that isn't open yet reads "not yet open"** on its library page (it read "School"). This was found in the screenshots and fixed.
+
+- **14 Nov (review before merge): a school's own FSM % is withheld under 10 pupils on roll** (`FSM_MIN_PUPILS`, `src/lib/groups/non-mainstream.ts`). Harris Aspire Academy (AP, 2 pupils on the January census) read "FSM 0.0% (region 56.4%)": arithmetically true, misleading beside a regional pool. It now reads "FSM: too few pupils (2)". 10 is DfE's usual small-number threshold; a test pins it.

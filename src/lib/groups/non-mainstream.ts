@@ -135,7 +135,8 @@ export type Placing = {
   kind: PoolKind;
   tag: string;
   pool: { label: string; n: number; tooFew: boolean } | null;
-  fsm: { school: number | null; pool: number | null };
+  /** fewPupils: the school's roll when it is under FSM_MIN_PUPILS (its % is then withheld, not shown). */
+  fsm: { school: number | null; pool: number | null; fewPupils?: number };
   change: { school: number | null; pool: number | null; years: 3 };
 };
 
@@ -144,6 +145,10 @@ export function poolAt(comps: ComparisonRow[], setId: string, period: number, re
   const rows = comps.filter((r) => r.kind === "pools" && r.set_id === setId && r.phase === "all" && r.reading === reading);
   return (rows.find((r) => r.period === period) ?? null)?.figures ?? null;
 }
+
+/** A school's own FSM % is withheld under this many pupils on roll (Guy's session, 14 Nov: Harris Aspire
+ * Academy, 2 pupils, read "FSM 0.0% (region 56.4%)"). DfE's usual small-number threshold. */
+export const FSM_MIN_PUPILS = 10;
 
 /** A special, AP, PRU or nursery school placed against its region's state-funded pool of its kind: its
  * FSM (DfE's own %) and its 3-year roll change, beside the pool's (pupil-weighted FSM; like-for-like
@@ -159,7 +164,9 @@ export function placeSchool(f: SchoolYearFigures | null, regionCode: string | nu
     kind,
     tag: SCHOOL_KIND_WORDS[f.kind ?? (kind === "ap" ? "ap" : kind)][0],
     pool: pool && label ? { label, n, tooFew } : null,
-    fsm: { school: f.fsm?.pct ?? null, pool: pool && !tooFew ? (pool.fsm?.pct ?? null) : null },
+    fsm: typeof f.roll === "number" && f.roll < FSM_MIN_PUPILS
+      ? { school: null, pool: pool && !tooFew ? (pool.fsm?.pct ?? null) : null, fewPupils: f.roll }
+      : { school: f.fsm?.pct ?? null, pool: pool && !tooFew ? (pool.fsm?.pct ?? null) : null },
     change: { school: f.trend?.["3"] ?? null, pool: pool && !tooFew ? (pool.change?.["3"]?.same_schools_pct ?? null) : null, years: 3 },
   };
 }
@@ -167,7 +174,7 @@ export function placeSchool(f: SchoolYearFigures | null, regionCode: string | nu
 /** "Special · FSM 47.5% (region 53.8%) · roll +16.8% (region +14.9%) over 3 years" for the Schools table;
  * in a mainstream group the tag keeps "not in group figures" ("Special, not in group figures · FSM …"). */
 export function placingWords(p: Placing, notCounted = false): string {
-  const f = p.fsm.school === null ? "FSM not published" : `FSM ${pct1(p.fsm.school)}${p.fsm.pool !== null ? ` (region ${pct1(p.fsm.pool)})` : ""}`;
+  const f = p.fsm.fewPupils !== undefined ? `FSM: too few pupils (${p.fsm.fewPupils})` : p.fsm.school === null ? "FSM not published" : `FSM ${pct1(p.fsm.school)}${p.fsm.pool !== null ? ` (region ${pct1(p.fsm.pool)})` : ""}`;
   const c = p.change.school === null ? null : `roll ${signed1(p.change.school)}${p.change.pool !== null ? ` (region ${signed1(p.change.pool)})` : ""} over 3 years`;
   return [notCounted ? `${p.tag}, not in group figures` : p.tag, f, c].filter(Boolean).join(" · ");
 }
