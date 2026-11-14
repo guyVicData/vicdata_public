@@ -177,7 +177,9 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
           <p className="mt-auto hidden px-2 pt-6 text-[11px] text-[var(--muted)] md:block">The same views, in the same order, as this panel&rsquo;s rail on the dashboard.</p>
         </nav>
         <div className="min-w-0 p-4 sm:p-5">
-          <h3 className="mb-3 text-[14px] font-semibold">{title}</h3>
+          {/* Review fixes (14 Nov, M2): SMT's, Admissions' and head office's views carry their own title (the
+              dashboard's), so the walk passes none and the view's title shows once. */}
+          {title && <h3 className="mb-3 text-[14px] font-semibold">{title}</h3>}
           <div data-plate="" className="rounded-[10px] bg-[var(--box-bg)] p-3 sm:p-4">{children}</div>
         </div>
       </div>
@@ -388,7 +390,7 @@ function TeacherWalk({ walk }: { walk: Walk }) {
             <p data-walk-answer="" className="text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{sc.answer}</p>
           </>
         }
-        map={<MiniMap cols={[mode, "context", "rankings"]} spot={s.spot} name={`${PHASE_LABELS[phase]} ${mode === "results" ? "Results" : "Candidates"}`} href={walk.dashboard} />}
+        map={<MiniMap cols={[mode, "context", "rankings"]} spot={s.spot} name={`${PHASE_LABELS[phase]} ${mode === "results" ? "Results" : "Candidates"}`} href={s.options?.against === "whole" && col === "context" ? `${walk.dashboard}?against=whole` : walk.dashboard} />}
         panel={
           <WalkPanel icon={col} name={COLUMN_NAME[col]} question={colQuestion[col]} pills={pills} tag={sc.tag} title={sc.title} note={sc.note} rail={<Rail view={s.view} asTable={asTable} onTable={setAsTable} dashboard={walk.dashboard} rail={railIds} />}>
             <WalkChart chart={sc.chart} p={pal} asTable={asTable} />

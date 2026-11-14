@@ -1,0 +1,6 @@
+// Review fixes (14 Nov, M2): the walks' screenshot harness. The app's own WalkPage (every walk), fed the
+// routes' real answers (fixtures captured read-only), Supabase and next/* stubbed. ?walk=…&step=N (1-based)&theme=
+import { createRoot } from "react-dom/client";
+import { WalkPage } from "@/components/front-door/WalkPage";
+const P = new URLSearchParams(location.search);
+createRoot(document.getElementById("root")!).render(<WalkPage walkId={P.get("walk") ?? "gcse-many"} />);

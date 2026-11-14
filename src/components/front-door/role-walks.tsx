@@ -78,7 +78,7 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
             pills={[]}
             controls={sc.controls}
             tag={sc.tag ?? `${s.spot.row === 0 ? "Current" : "Trends"}`}
-            title={sc.title}
+            title=""
             note={sc.note}
             rail={sc.rail ?? <Rail view={s.view} asTable={asTable} onTable={() => {}} dashboard={walk.dashboard} />}
           >

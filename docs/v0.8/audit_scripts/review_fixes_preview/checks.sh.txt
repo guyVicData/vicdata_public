@@ -1,0 +1,15 @@
+#!/bin/zsh
+# usage: checks.sh <tree> <tag>   build, eslint, rules, pglite in one tree
+T=$1; G=$2; S=/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-e0b52ac9/0b44f427-e2d4-46e1-9c52-e4470c164899/scratchpad
+cd $T
+npx eslint > $S/eslint_$G.txt 2>&1; echo "eslint $?" > $S/checks_$G.txt
+npm run build > $S/build_$G.txt 2>&1; echo "build $?" >> $S/checks_$G.txt
+npx tsc --noEmit -p . > $S/tsc_$G.txt 2>&1; echo "tsc $?" >> $S/checks_$G.txt
+npx -y tsx --env-file=.env --env-file=.env.local scripts/catalogue-rule-tests.ts > $S/rules_$G.txt 2>&1; echo "rules $?" >> $S/checks_$G.txt
+npx -y tsx --test scripts/catalogue-unit-tests.ts > $S/catunit_$G.txt 2>&1; echo "catunit $?" >> $S/checks_$G.txt
+: > $S/pglite_$G.txt
+for f in supabase/tests/*_pglite.mjs; do
+  if grep -q "tsx" $f && head -5 $f | grep -q "npx tsx\|tsx "; then npx tsx $f >> $S/pglite_$G.txt 2>&1; else PGLITE_DIR=$S/pgl node $f >> $S/pglite_$G.txt 2>&1; fi
+  echo "== $? $f" >> $S/pglite_$G.txt
+done
+echo done >> $S/checks_$G.txt
