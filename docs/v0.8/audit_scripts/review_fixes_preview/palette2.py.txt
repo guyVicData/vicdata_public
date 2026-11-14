@@ -1,0 +1,25 @@
+import sys, itertools, json, colorsys
+sys.path.insert(0, sys.argv[1]); from palette import de2000, contrast, rgb2hex, RES_LIGHT, RES_DARK, PLATE
+def hx(h,s,l): r,g,b=colorsys.hls_to_rgb(h/360,l,s); return rgb2hex((r*255,g*255,b*255))
+pairs=[]
+for hue in range(0,360,4):
+    for s in (0.42,0.55,0.68):
+        for ll in (0.30,0.36,0.42):
+            for ld in (0.62,0.68,0.74):
+                L,D=hx(hue,s,ll),hx(hue,s,ld)
+                if contrast(L,PLATE["light"])<3 or contrast(D,PLATE["dark"])<3: continue
+                rl=min(de2000(L,v) for v in RES_LIGHT.values()); rd=min(de2000(D,v) for v in RES_DARK.values())
+                if min(rl,rd)<12: continue
+                pairs.append((hue,L,D))
+def d(p,q): return min(de2000(p[1],q[1]),de2000(p[2],q[2]))
+best=None
+for start in pairs[::5]:
+    ch=[start]
+    while len(ch)<8: ch.append(max(pairs,key=lambda c: min(d(c,x) for x in ch)))
+    m=min(d(a,b) for a,b in itertools.combinations(ch,2))
+    if not best or m>best[0]: best=(m,ch)
+m,ch=best
+ch=sorted(ch,key=lambda x:x[0])
+print("min pair dE2000 (worse of light/dark):",round(m,1),"pairs:",len(pairs))
+for h,L,D in ch: print(h,L,D, "toRes", round(min(de2000(L,v) for v in RES_LIGHT.values()),1), round(min(de2000(D,v) for v in RES_DARK.values()),1), "contrast", round(contrast(L,"#ffffff"),2), round(contrast(D,"#0b0b0d"),2))
+json.dump({"min":m,"pairs":ch},open(sys.argv[2],"w"))

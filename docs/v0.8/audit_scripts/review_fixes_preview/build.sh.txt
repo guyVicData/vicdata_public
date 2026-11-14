@@ -1,0 +1,14 @@
+#!/bin/zsh
+# build.sh <tree>: Tailwind over the tree, the esbuild bundle (stubs for supabase and next/*), the fixtures.
+T=$1; H=/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-e0b52ac9/0b44f427-e2d4-46e1-9c52-e4470c164899/scratchpad/h
+cd $H
+/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-e0b52ac9/0b44f427-e2d4-46e1-9c52-e4470c164899/scratchpad/venv/bin/python -I -c "
+import json,glob,os,sys
+d={}
+for f in glob.glob('$T/docs/v0.8/review_14nov/fixtures/*.json'): d[os.path.basename(f)[:-5]]=json.load(open(f))
+d.update(json.load(open('/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-e0b52ac9/0b44f427-e2d4-46e1-9c52-e4470c164899/scratchpad/fx2.json')))
+open('fx.js','w').write('window.__FX='+json.dumps(d)+';')
+"
+cp $T/node_modules/leaflet/dist/leaflet.css leaflet.css
+sed "s#/Users/guy/.t3/worktrees/vicdata_public/t3-e0b52ac9#$T#g" css.mjs > css_t.mjs && node css_t.mjs app.css $T >/dev/null && echo "[build] css"
+$T/node_modules/.bin/esbuild harness.tsx --bundle --outfile=bundle.js --jsx=automatic --tsconfig=$T/tsconfig.json --alias:@/lib/supabase=$H/stubs/supabase.ts --alias:next/navigation=$H/stubs/navigation.ts --alias:next/link=$H/stubs/link.tsx --alias:next/dynamic=$H/stubs/dynamic.tsx --alias:react=$T/node_modules/react --alias:react-dom=$T/node_modules/react-dom --define:process.env.NODE_ENV=\"production\" --loader:.css=empty --log-level=error && echo "[build] bundle"

@@ -2,7 +2,7 @@
 
 # Dataviews
 
-The registered recipes the chooser offers and dashboards place, in host then rail order. 121 dataviews: 119 live, 2 draft.
+The registered recipes the chooser offers and dashboards place, in host then rail order. 122 dataviews: 120 live, 2 draft.
 
 ## Summary
 
@@ -44,6 +44,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-C3-CUR-BAR | live | teacher.c3.comparisons · current · Bar chart | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, rate, totals | single | ranking | RD-VIEW-CHART |
 | DV-C3-CUR-RANKING | live | teacher.c3.comparisons · current · Ranking | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, rate, totals, rank | single | table | RD-SCHOOL-RANKING-TABLE |
 | DV-C3-TR-CHART | live | teacher.c3.comparisons · trend · Chart | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, rate, totals | trend | graph | RD-TREND-CHART |
+| DV-C3-TR-RANK | live | teacher.c3.comparisons · trend · Rank over time | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, rate, totals | trend | graph | RD-TREND-CHART |
 | DV-C3-TR-TABLE | live | teacher.c3.comparisons · trend · Trend table | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | totals, points, rate | trend | table | RD-YEAR-TABLE |
 | DV-C3-TR-MAP | live | teacher.c3.comparisons · trend · Trend map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | change_points, change_pp, totals | trend | map | RD-RANKINGS-MAP |
 | DV-C3-TR-CHANGELIST | live | teacher.c3.comparisons · trend · Ranked bars | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | pct_change, change_points, change_pp | trend | ranking | RD-CHANGE-LIST |
@@ -146,7 +147,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | numerical |
 | Renderer | RD-NUMBER-TILES |
-| Title template | [subject] Candidates: [year] |
+| Title template | [subject] entries, [year] |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | — |
@@ -175,7 +176,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-MULTI-TREND |
-| Title template | Entries in [category] |
+| Title template | Entries in [category], indexed ([year] = 100) |
 | Title fallback | TrendScaleTitle only (indexed): 'Change since [first year]: each line starts at 100 (no change); 110 = 10% more entries, 90 = 10% fewer.' |
 | Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. |
 | Params | trendStart, showFit |
@@ -204,7 +205,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-MULTI-TREND |
-| Title template | Entries in [category] |
+| Title template | Entries in [category], [year] to [latest] |
 | Title fallback | TrendScaleTitle only (actual): 'Entries each year, real numbers: one scale for every subject, so small ones sit low.' |
 | Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. The Actual button is disabled with no line. |
 | Params | trendStart, showFit |
@@ -262,7 +263,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against its LA and England, year by year |
+| Title template | [subject] entries against its LA and England, indexed, year by year |
 | Title fallback | Plain heading (not ViewTitle), with TrendScaleTitle indexed under it. |
 | Requires (card warning) | GCSE (9-1) Full Course items only at GCSE (area entries are points-eligible entries); LA and England lines (region in the table). |
 | Params | trendStart |
@@ -378,7 +379,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | numerical |
 | Renderer | RD-NUMBER-TILES |
-| Title template | (none) |
+| Title template | [subject] results, [year]: [measure] against England |
 | Title fallback | None: the wrapper title is suppressed for tiles (SubjectPanels.tsx:1042). |
 | Requires (card warning) | England average and gap tiles only with a same-year England figure: points (and bands, from grade geography); threshold shows the rank tile only. |
 | Params | band:range |
@@ -407,7 +408,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | graph |
 | Renderer | RD-GRADE-DISTRIBUTION |
-| Title template | (none) |
+| Title template | [subject] grades, [year]: share at each grade, against England |
 | Title fallback | None (wrapper suppressed). The picked band is shaded; with no range picked, nothing is shaded. |
 | Requires (card warning) | School grades are published from 2021/22 (4 years; 0.6.2). |
 | Params | band:range |
@@ -436,7 +437,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | ranking |
 | Renderer | RD-VIEW-CHART |
-| Title template | Results in [category] |
+| Title template | [Measure] by subject in [category], [year] |
 | Title fallback | None when the category has one subject (plain p, not ViewTitle). |
 | Requires (card warning) | National average marker only where a same-year England figure exists (not on Grade 4+ / A*-E). |
 | Params | band:range |
@@ -465,7 +466,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | table |
 | Renderer | RD-SORT-TABLE |
-| Title template | Results in [category] |
+| Title template | [Measure] by subject in [category], [year], as a table |
 | Title fallback | None when the category has one subject. |
 | Requires (card warning) | Delta column is 'vs National' with an England figure, else 'vs last year'. |
 | Params | sort, band:range |
@@ -494,7 +495,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-MULTI-TREND |
-| Title template | Results in [category]: each subject's line |
+| Title template | [Measure] in [category], each subject's line, [year] to [latest] |
 | Title fallback | [subject], each year |
 | Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. Grade 4+ / A*-E and bands have 4 school years from 2021/22 (0.6.2); a subject with grades in fewer years shows the pp change list. |
 | Params | trendStart, showFit, legendHidden, band:range |
@@ -581,7 +582,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against its LA and England, year by year |
+| Title template | [subject] [measure] against its LA and England, year by year |
 | Title fallback | Plain heading; no TrendScaleTitle (not indexed). |
 | Requires (card warning) | Average points only; at GCSE, GCSE (9-1) Full Course items only. |
 | Params | trendStart |
@@ -639,7 +640,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | graph |
 | Renderer | RD-GRADE-DISTRIBUTION |
-| Title template | (none) |
+| Title template | [subject]: pupils at each grade, [year] |
 | Title fallback | None; the tag reads 'Grade counts [year]' (not 'Current', no 'Data [year]'). |
 | Requires (card warning) | School grades are published from 2021/22 (4 years; 0.6.2). |
 | Params | bandPending, span |
@@ -755,7 +756,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | ranking |
 | Renderer | RD-VERTICAL-BARS |
-| Title template | [Entries\|Results] by subject in [comparison-group] |
+| Title template | [Entries\|measure] by subject in [comparison-group], [year] |
 | Title fallback | None on Results without a compare-against label. Provisional wording (SubjectPanels.tsx:489-491). |
 | Requires (card warning) | — |
 | Params | yearIdx, against:context, chosen:context |
@@ -784,7 +785,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | ranking |
 | Renderer | RD-RANKED-LIST |
-| Title template | [Entries\|Results] by subject in [comparison-group] |
+| Title template | [Entries\|measure] by subject in [comparison-group], [year], ranked list |
 | Title fallback | Provisional wording (SubjectPanels.tsx:489-491). |
 | Requires (card warning) | — |
 | Params | yearIdx, against:context, chosen:context |
@@ -813,7 +814,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | table |
 | Renderer | RD-SORT-TABLE |
-| Title template | [Entries\|Results] by subject in [comparison-group] |
+| Title template | [Entries\|measure] by subject in [comparison-group], [year], as a table |
 | Title fallback | Provisional wording (SubjectPanels.tsx:489-491). |
 | Requires (card warning) | — |
 | Params | yearIdx, sort, against:context, chosen:context |
@@ -842,7 +843,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-MULTI-TREND |
-| Title template | Entries in [comparison-group] |
+| Title template | Entries in [comparison-group], indexed ([year] = 100) |
 | Title fallback | TrendScaleTitle (indexed) under the scope; none without a group. |
 | Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. |
 | Params | trendStart, showFit, legendHidden, against:context |
@@ -871,7 +872,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-MULTI-TREND |
-| Title template | Results in [comparison-group]: each subject's line |
+| Title template | [Measure] in [comparison-group], each subject's line, [year] to [latest] |
 | Title fallback | [subject], each year |
 | Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. |
 | Params | trendStart, showFit, legendHidden, against:context |
@@ -900,7 +901,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-MULTI-TREND |
-| Title template | Entries in [comparison-group] |
+| Title template | Entries in [comparison-group], [year] to [latest] |
 | Title fallback | TrendScaleTitle (actual) under the scope. |
 | Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. Disabled with no line. |
 | Params | trendStart, showFit, legendHidden, against:context |
@@ -987,7 +988,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-DUMBBELL |
-| Title template | Entries by subject in [comparison-group], [first-year] and [year], largest first |
+| Title template | Entries by subject in [comparison-group], [first-year] and [latest], largest first |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | against:context |
@@ -1074,7 +1075,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | map |
 | Renderer | RD-RANKINGS-MAP |
-| Title template | [subject] [measure] by school, on the map |
+| Title template | [subject] [measure] by school, on the map, [year] |
 | Title fallback | [headline] by school, on the map (no subject chip). Provisional wording. |
 | Requires (card warning) | Not for ranking sets; needs the school's location. |
 | Params | set:rankings, chooser:rankings, mapCaption, mapRank |
@@ -1103,7 +1104,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | ranking |
 | Renderer | RD-VIEW-CHART |
-| Title template | [Entries\|Results] by school in the [set] |
+| Title template | [Entries\|measure] by school in the [set], [year] |
 | Title fallback | Ranking measure: '[measure]: [school] against the [set]'s average'. Provisional wording. |
 | Requires (card warning) | — |
 | Params | set:rankings, chooser:rankings |
@@ -1132,7 +1133,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | table |
 | Renderer | RD-SCHOOL-RANKING-TABLE |
-| Title template | Schools ranked by [subject] [measure] in the [set] |
+| Title template | Schools ranked by [subject] [measure] in the [set], [year] |
 | Title fallback | Schools ranked by [headline] in the [set]. Provisional wording. |
 | Requires (card warning) | — |
 | Params | set:rankings, chooser:rankings |
@@ -1175,6 +1176,35 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | Compares with the set's average or one named school (vs: pill); mismatch M8 (set implies its own average). |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. Your school's figure each year is one line.<br>3. The other line is, by default, the plain average of the other schools in the set that have a figure that year (your school not included), or one school you pick with 'vs:'. For a ranking on its headline measure it is the whole population's average.<br>4. A line needs 4 or more years; with fewer the panel shows the table only.<br>5. On points and rates 2021/22 is drawn, but the trend sentence, the 'vs' clause and the fitted line are measured from 2022/23.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers. |
+
+### DV-C3-TR-RANK — Rank over time
+
+| Field | Content |
+| --- | --- |
+| Measures | M-KS4-ENTRIES (GCSE candidates), M-KS5-ENTRIES (Post-16 candidates), M-KS4-POINTS (GCSE average points), M-KS5-POINTS (Post-16 average points), M-KS4-THRESHOLD (GCSE Grade 4+ rate), M-KS5-THRESHOLD (Post-16 A*-E rate), M-KS4-BANDS (GCSE grade bands), M-KS5-BANDS (Post-16 grade bands), M-KS4-HEADLINE (Attainment 8), M-KS5-HEADLINE (A-level points per entry) |
+| Data | academic.candidates, academic.results |
+| Results sub-measures | points, threshold, bands |
+| Phases | ks4, ks5 |
+| Focus | subject, school |
+| Compare | schools |
+| Number types | points, rate, totals |
+| Date mode | trend |
+| View type | graph |
+| Renderer | RD-TREND-CHART |
+| Title template | This school's rank among the [set] on [subject] [measure], year by year |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | trendStart, set:rankings |
+| Rail icon | PodiumIcon |
+| Host | teacher.c3.comparisons, trend, rail "Rank over time" (src/components/teacher/ComparisonsPanels.tsx) |
+| Audience | subject-level, whole-school, academic, market |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 review fixes, 14 Nov (Q6) |
+| Rules | R-RANK-OF-N, R-RANK-TIES, R-IGCSE-EXCL |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
+| Note | Ranks within the comparison set each year, highest first; ties share a place. |
+| Method | 1. Each school's figure each year is the one the trend table shows (the same measure, subject and qualification).<br>2. Your school's place that year is 1 plus the number of schools in the set with a higher figure; schools with the same figure share a place. A year with no figure for your school has no place.<br>3. How many schools had a figure each year is in the table: the 'of N' for each place.<br>4. 1st is drawn at the top.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Places as whole numbers. |
 
 ### DV-C3-TR-TABLE — Trend table
 
@@ -1567,7 +1597,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-ADM-BARS |
-| Title template | Your [entry-year] cohort, year by year |
+| Title template | Your [entry-year] cohort, year by year (bars) |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -1596,7 +1626,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-ADM-TABLE |
-| Title template | Your [entry-year] cohort, year by year |
+| Title template | Your [entry-year] cohort, year by year, as a table |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -1683,7 +1713,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-ADM-TABLE |
-| Title template | [feeder-age]-year-olds: your feeders, [la] and England |
+| Title template | [feeder-age]-year-olds: your feeders, [la] and England, as a table |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -1741,7 +1771,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-ADM-LINE |
-| Title template | Share needed to hold numbers steady |
+| Title template | Share of the pool needed to hold numbers steady at [entry] |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -1770,7 +1800,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-ADM-TABLE |
-| Title template | Share needed to hold numbers steady |
+| Title template | Share of the pool needed to hold numbers steady at [entry], as a table |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -1839,7 +1869,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-GROUP-SHARE |
-| Used on | Admissions Market share › Rivals › Now |
+| Used on | not placed |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. Add the counts for the group total in the latest year.<br>4. Your share is your count divided by that total; the donut fills that share.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location<br>Rounding: Share to 1 decimal place; total to whole pupils. |
 
@@ -2060,7 +2090,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-ADM-LINE |
-| Title template | Your [entry-year] against the [rivals] |
+| Title template | Your [entry-year] against your rivals', indexed |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -2089,7 +2119,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-ADM-BARS |
-| Title template | Your [entry-year] against the [rivals] |
+| Title template | Your [entry-year] against your rivals', year by year (bars) |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -2118,7 +2148,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | ranking |
 | Renderer | RD-ADM-STRENGTHS |
-| Title template | Academic: your rank among the rivals |
+| Title template | Results: your rank among your rivals |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -2234,7 +2264,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-ADM-TABLE |
-| Title template | Your market share at [entry], year by year |
+| Title template | Your market share and rank at [entry], year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -2274,7 +2304,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET |
-| Used on | Admissions Market share › Trends › Trends |
+| Used on | not placed |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).<br>4. List a row per year: your count, the group's total and your rank 'of' the schools with a figure that year.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers. |
 
@@ -2321,7 +2351,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-ADM-LINE |
-| Title template | [entry age band] roll, indexed: you and the [rivals] |
+| Title template | [entry age band] roll, indexed: you and your rivals |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | entryPoint, filters |
@@ -2437,7 +2467,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | map |
 | Renderer | RD-SMT-MAP |
-| Title template | [school] and [set] |
+| Title template | [school] and [set] on the map, sized by roll |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -2611,7 +2641,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-LINE |
-| Title template | Market share at 11+, against your rivals |
+| Title template | Market share at 11+: you and your largest rival |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -2640,7 +2670,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-SMT-TABLE |
-| Title template | Market share at 11+, year by year |
+| Title template | Market share at 11+: you and your largest rival, year by year |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -2698,7 +2728,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | graph |
 | Renderer | RD-SMT-RANK-CHART |
-| Title template | [group], against [set] |
+| Title template | [group] against [set], ranked chart |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -2814,7 +2844,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | graph |
 | Renderer | RD-SMT-GRADES |
-| Title template | Grade profile |
+| Title template | Grades in bands, by qualification, latest year |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -2901,7 +2931,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-LINES |
-| Title template | Last year to this, every line |
+| Title template | Change since last year, every headline measure |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -2988,7 +3018,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-SMT-TABLE |
-| Title template | Entries by qualification group, year by year |
+| Title template | Entries by qualification group, year by year, as a table |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -2999,7 +3029,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-MIX, R-SMT-QUAL-GROUPS |
-| Used on | SMT Academic › Entries › Trends |
+| Used on | not placed |
 | Note | — |
 | Method | 1. One row per year: each group's entries and share, and the year's total.<br>Sources: As the entries mix<br>Rounding: Shares to whole per cent Entries whole numbers |
 
@@ -3046,7 +3076,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-SMT-MOVES |
-| Title template | The set's schools, rising and falling |
+| Title template | [group]: change at each school in [set] |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -3249,7 +3279,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-LINE |
-| Title template | Market share at 11+, against your rivals |
+| Title template | Market share at 11+: you and your largest rival (Pupils) |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -3510,7 +3540,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-NEARBY |
-| Title template | Children nearby over time |
+| Title template | Children of the school's ages nearby, indexed, over time |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -3539,7 +3569,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-LINE |
-| Title template | Births, indexed |
+| Title template | Births in the area, indexed (the first year = 100) |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |
@@ -3597,7 +3627,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-SMT-LINE |
-| Title template | School-age population, projected |
+| Title template | School-age population in the area, projected |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | level, set |

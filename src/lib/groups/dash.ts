@@ -10,7 +10,7 @@ import type { AgeGenderCounts } from "../roll-data";
 import type { ComparisonKind, ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, Reading, SchoolYearRow } from "./aggregates";
 import { competitionRanks } from "../rank";
 import { GROUP_SET_CAP, groupsWord, medianOf, notPublished, ofGroupsWords } from "./group-sets";
-import { isNonMainstream, kindLinesOf, placeSchool, placingWords, poolAt, POOL_WORDS, SCHOOL_KIND_WORDS, type Placing, type PoolKind } from "./non-mainstream";
+import { FSM_MIN_PUPILS, isNonMainstream, kindLinesOf, placeSchool, placingWords, poolAt, POOL_WORDS, SCHOOL_KIND_WORDS, type Placing, type PoolKind } from "./non-mainstream";
 import { resolveRegionNation } from "../region-crosswalk";
 import { buildNmParts, nmSetRank, type NmParts } from "./dash-nm";
 
@@ -137,7 +137,7 @@ export function notCountedWords(by: Record<string, number>): string | null {
 
 export const SAT_NOTE = "Schools that are single-academy trusts (an academy trust of one school), pooled: production's own benchmark, kept apart from non-group schools so no school counts twice.";
 export const GROUP_TYPE_SHORT: Record<string, string> = { mat: "MAT", federation: "Federation", foundation_trust: "Foundation trust", independent_company: "Independent company", independent_charity: "Independent charity", independent_other: "Other independent group" };
-export const typeSizeWords = (type: string, schools: number) => `${GROUP_TYPE_SHORT[type] ?? GROUP_TYPE_LABEL[type] ?? type} · ${schools.toLocaleString("en-GB")} school${schools === 1 ? "" : "s"}`;
+export const typeSizeWords = (type: string, schools: number, noun = "school") => `${GROUP_TYPE_SHORT[type] ?? GROUP_TYPE_LABEL[type] ?? type} · ${schools.toLocaleString("en-GB")} ${noun}${schools === 1 ? "" : "s"}`;
 const schoolsCount = (n: number | null) => (n === null ? "…" : `${n.toLocaleString("en-GB")} school${n === 1 ? "" : "s"}`);
 
 export const NON_GROUP_STATE_NOTE = "State schools in England in no listed group (MAT, federation or foundation trust of 2 or more schools) and not a single-academy trust: mostly LA-maintained schools. Single-academy trusts are a benchmark of their own.";
@@ -463,14 +463,15 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
       if (hy === null) return null;
       const f = rs.find((r) => r.period === hy && r.phase === MEASURE_PHASE[headline])?.figures;
       const p = f?.peer?.places?.[headline];
-      return p && f?.peer ? `${ordinal(p.rank, p.tied)} of ${p.of} ${peerWords(f.peer).place}` : null;
+      // Review fixes (tables.md M1): the rank names its measure ("… on Att 8").
+      return p && f?.peer ? `${ordinal(p.rank, p.tied)} of ${p.of} ${peerWords(f.peer).place} on ${MEASURE_SHORT[headline] ?? headline}` : null;
     };
-    const ours: SideRow = { ...rows[0], ours: true, type: agg.group.type, typeSize: typeSizeWords(agg.group.type, agg.membership.confirmed + agg.membership.likely), rank: rankIn(agg.rows), missing: false, notPublished: measures.filter((m) => notPublished(agg.group.type, m)) };
+    const ours: SideRow = { ...rows[0], ours: true, type: agg.group.type, typeSize: typeSizeWords(agg.group.type, agg.membership.confirmed + agg.membership.likely, "member"), rank: rankIn(agg.rows), missing: false, notPublished: measures.filter((m) => notPublished(agg.group.type, m)) };
     const groupRows: SideRow[] = input.groupSet.groups.map((g) => {
       const r = byKey.get(`peer_named:${g.id}`);
       const set = sets.find((x) => x.key === `peer_named:${g.id}`);
       const base: AgainstRow = r ?? { key: `peer_named:${g.id}`, label: g.label, kind: "peer_named", schools: null, pupils: null, roll: { pct: null, years: 5 }, growing: { pct: null, n: 0, of: 0 }, cells: {} };
-      return { ...base, label: g.label, ours: false, type: g.type, typeSize: typeSizeWords(g.type, g.schools), rank: set ? rankIn(set.rows) : null, missing: !r, notPublished: measures.filter((m) => notPublished(g.type, m)) };
+      return { ...base, label: g.label, ours: false, type: g.type, typeSize: typeSizeWords(g.type, g.schools, "member"), rank: set ? rankIn(set.rows) : null, missing: !r, notPublished: measures.filter((m) => notPublished(g.type, m)) };
     });
     const have = groupRows.filter((r) => !r.missing);
     const nmMedian = isNm ? { nm: { change1: medianOf(have.map((r) => r.nm?.change1 ?? null)), fsm: medianOf(have.map((r) => r.nm?.fsm ?? null)) } } : {};
@@ -592,10 +593,18 @@ export type SchoolRow = {
    * "not in group figures" tag, and every counted school of a non-mainstream group. */
   placing?: Placing | null;
   placingText?: string | null;
-  /** The school's FSM (DfE's own %), on a non-mainstream group's table. */
+  /** The school's FSM (DfE's own %), on a non-mainstream group's table; null under FSM_MIN_PUPILS. */
   fsm?: number | null;
+  /** The school's roll when its FSM % is withheld (under FSM_MIN_PUPILS): "too few pupils (n)". */
+  fsmFewPupils?: number | null;
   kindTag?: string | null;
 };
+
+/** A school's FSM for the Schools table: DfE's %, or withheld (null) with the roll under FSM_MIN_PUPILS. */
+export function fsmCell(f: { roll?: number | null; fsm?: { pct?: number | null } | null } | null | undefined): { fsm: number | null; fsmFewPupils: number | null } {
+  if (f && typeof f.roll === "number" && f.roll < FSM_MIN_PUPILS) return { fsm: null, fsmFewPupils: f.roll };
+  return { fsm: f?.fsm?.pct ?? null, fsmFewPupils: null };
+}
 
 export type GroupSchools = {
   kind: "schools";
@@ -774,7 +783,9 @@ export function buildSchools(input: {
       lastSeen: m?.lastSeen ?? null,
       link,
       ...(placing ? { placing, placingText: placingWords(placing, !isNm) } : {}),
-      ...(isNm ? { fsm: (f ?? lastWith)?.fsm?.pct ?? null, kindTag: kindNow ? (NOT_COUNTED_WORDS[kindNow]?.[0] ?? "Mainstream") : null } : {}),
+      // Review fixes (14 Nov, M1): the FSM % is withheld under FSM_MIN_PUPILS (the placing's own rule, 45bfe9f),
+      // so a 2-pupil school's 0.0% neither shows nor sorts as 0; the cell says why.
+      ...(isNm ? { ...fsmCell(f ?? lastWith), kindTag: kindNow ? (NOT_COUNTED_WORDS[kindNow]?.[0] ?? "Mainstream") : null } : {}),
     };
   });
   // NM11: the pooled kind lines (a mainstream group with 5+ current schools of one kind).

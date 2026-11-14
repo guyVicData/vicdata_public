@@ -132,6 +132,10 @@ export function resolveTemplate(dv: Dataview, p: PinnedSettings, template: strin
     measure: measureName.toLowerCase().replace(/^grade/, "Grade"),
     headline: measure?.name ?? dv.label,
     "Entries|Results": p.data === "academic.results" ? "Results" : "Entries",
+    // Review fixes (14 Nov, M5): the titles that name their measure and span.
+    "Entries|measure": p.data === "academic.results" ? measureName : "Entries",
+    Measure: measureName,
+    latest: p.yearRange?.to || (measure ? measureYearsTo(measure.years) : "") || "the latest year",
     range: "the range picked",
   };
   const out = template

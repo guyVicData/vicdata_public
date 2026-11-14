@@ -10,6 +10,8 @@
 // before): rank, value, change (since the previous year), n (entries) and a bar. A row's
 // own `rank` is its place in the whole list, for a list a look has cut (top 5, around).
 import type { Measure } from "@/lib/teacher-view-panels";
+import type { CSSProperties } from "react";
+import { FEATURED_ROW_ACCENT_TEXT, FEATURED_ROW_BG } from "@/components/shell/accent";
 
 export type RankedListRow = { key: string; label: string; value: number | null; rank?: number | null; change?: string | null; n?: number | null; share?: number | null };
 export type RankedListColumn = "rank" | "sector" | "value" | "change" | "distance" | "n" | "bar";
@@ -31,7 +33,7 @@ export function RankedList({
   return (
     <ol className="flex flex-col gap-1.5 px-0.5 text-[12.5px] text-[var(--muted2)]">
       {rows.map((r, i) => (
-        <li key={r.key} data-highlight={r.key === focusKey ? "" : undefined}>
+        <li key={r.key} data-highlight={r.key === focusKey ? "" : undefined} {...focusRowProps(r.key === focusKey)}>
           <span className="tabular-nums">{r.rank ?? i + 1}</span>&nbsp;&nbsp;
           <span className="font-medium text-[var(--fg)]">{r.label}</span> —{" "}
           {r.value === null ? "no published figure" : `${measure.format(r.value)}${unit}`}
@@ -41,13 +43,19 @@ export function RankedList({
   );
 }
 
+// Review fixes (14 Nov, tables.md M8): the focused subject's row is shaded, as SortTable's, YearTable's and
+// SchoolRankingTable's are (FEATURED_ROW_BG); data-highlight alone drew nothing.
+function focusRowProps(on: boolean): { "data-featured-row"?: ""; className?: string; style?: CSSProperties } {
+  return on ? { "data-featured-row": "", className: "-mx-1 rounded-[5px] px-1", style: { background: FEATURED_ROW_BG, color: FEATURED_ROW_ACCENT_TEXT } } : {};
+}
+
 // The same list with the look's own columns.
 function ColumnsList({ rows, measure, focusKey, columns, unit }: { rows: RankedListRow[]; measure: Measure; focusKey: string | null; columns: RankedListColumn[]; unit: string }) {
   const has = (c: RankedListColumn) => columns.includes(c);
   return (
     <ol className="flex flex-col gap-1.5 px-0.5 text-[12.5px] text-[var(--muted2)]">
       {rows.map((r, i) => (
-        <li key={r.key} data-highlight={r.key === focusKey ? "" : undefined}>
+        <li key={r.key} data-highlight={r.key === focusKey ? "" : undefined} {...focusRowProps(r.key === focusKey)}>
           {has("rank") && (
             <>
               <span className="tabular-nums">{r.rank ?? i + 1}</span>&nbsp;&nbsp;

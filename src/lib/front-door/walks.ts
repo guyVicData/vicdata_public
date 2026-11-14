@@ -12,12 +12,19 @@
 // Where a role's walk needs a view that doesn't exist yet, the screen is left out and listed in
 // WALK_SCREENS_LEFT_OUT (logged in the report).
 import { dataviewById } from "@/catalogue/dataviews";
+import { teacherDashboardFor } from "@/catalogue/dashboards/teacher";
+import { SMT_DASHBOARDS } from "@/catalogue/dashboards/smt";
+import { ADMISSIONS_DASHBOARDS } from "@/catalogue/dashboards/admissions";
+import type { DashboardConfig } from "@/catalogue/types";
+import { GROUP_LAYOUT_IDS } from "@/lib/groups/dash-layout";
 
 export type WalkProduct = "gcse" | "post16" | "smt" | "smt_primary" | "admissions" | "group";
 export type WalkRhythm = "this-year" | "in-context" | "over-time" | "wider";
 
-/** Where a screen lives on its dashboard: the 3x2 grid's column and row (the mini-map, Show me). */
-export type GridSpot = { col: 0 | 1 | 2; row: 0 | 1 };
+/** Where a screen lives on its dashboard: the 3x2 grid's column and row (the mini-map, Show me), how
+ * many columns its panel spans and the panel's name. Review fixes (14 Nov, M1): worked out from the
+ * dashboard's own config (spotOf), never written by hand -- nine were wrong. */
+export type GridSpot = { col: 0 | 1 | 2; row: 0 | 1; span: 1 | 2; panel: string };
 
 export type WalkScreen = {
   /** The dataview it shows (catalogue ID), or a group view ID (the group dashboard's own vocabulary). */
@@ -26,10 +33,15 @@ export type WalkScreen = {
   /** The answer template's key (answers.ts): one template per view. */
   answer: string;
   rhythm: WalkRhythm;
+  /** Filled from the dashboard's config when the walks are built (spotOf). */
   spot: GridSpot;
   /** How the view is set: the pill's measure, what it's compared against. */
   options?: { measure?: "entries" | "points"; against?: "category" | "whole" | "nearest" };
 };
+
+/** A screen as written below: its spot comes from the dashboard's config. */
+type AuthoredScreen = Omit<WalkScreen, "spot">;
+type AuthoredWalk = Omit<Walk, "screens"> & { screens: AuthoredScreen[] };
 
 export type Walk = {
   id: string;
@@ -49,7 +61,7 @@ export type Walk = {
 
 // ------------------------------------------------------------------------------------------------ Teacher
 
-const teacherWalks = (product: "gcse" | "post16"): Walk[] => {
+const teacherWalks = (product: "gcse" | "post16"): AuthoredWalk[] => {
   const phase = product === "gcse" ? "ks4" : "ks5";
   const p16 = product === "post16";
   const dash = `/teacher/${phase}`;
@@ -62,28 +74,28 @@ const teacherWalks = (product: "gcse" | "post16"): Walk[] => {
       label: "Candidates · Context",
       dashboard: dash,
       screens: [
-        { view: "DV-C1-CAND-CUR-TILES", question: p16 ? "How many took [subject] this year?" : "How many took [subject] this year?", answer: "entries-tiles", rhythm: "this-year", spot: { col: 0, row: 0 } },
-        { view: "DV-C2-CUR-BARS", question: "How does it compare with the other subjects in [category]?", answer: "entries-category", rhythm: "in-context", spot: { col: 1, row: 0 }, options: { measure: "entries", against: "category" } },
-        { view: "DV-C2-CUR-BARS", question: "And across the whole school?", answer: "entries-whole", rhythm: "in-context", spot: { col: 1, row: 0 }, options: { measure: "entries", against: "whole" } },
-        { view: "DV-C1-CAND-TR-ACTUAL", question: "Has that gone up or down?", answer: "entries-trend", rhythm: "over-time", spot: { col: 0, row: 1 }, options: { measure: "entries", against: "category" } },
-        { view: "DV-C2-TR-DUMBBELL", question: "Has it grown more than other subjects?", answer: "entries-dumbbell", rhythm: "over-time", spot: { col: 1, row: 1 }, options: { measure: "entries", against: "whole" } },
-        { view: "DV-C1-CAND-TR-GEO-CHART", question: "Is the same thing happening nearby and nationally?", answer: "entries-area", rhythm: "wider", spot: { col: 0, row: 1 }, options: { measure: "entries", against: "nearest" } },
+        { view: "DV-C1-CAND-CUR-TILES", question: "How many took [subject] this year?", answer: "entries-tiles", rhythm: "this-year" },
+        { view: "DV-C2-CUR-BARS", question: "How does it compare with the other subjects in [category]?", answer: "entries-category", rhythm: "in-context", options: { measure: "entries", against: "category" } },
+        { view: "DV-C2-CUR-BARS", question: "And across the whole school?", answer: "entries-whole", rhythm: "in-context", options: { measure: "entries", against: "whole" } },
+        { view: "DV-C1-CAND-TR-ACTUAL", question: "Has that gone up or down?", answer: "entries-trend", rhythm: "over-time", options: { measure: "entries", against: "category" } },
+        { view: "DV-C2-TR-DUMBBELL", question: "Has it grown more than other subjects?", answer: "entries-dumbbell", rhythm: "over-time", options: { measure: "entries", against: "whole" } },
+        { view: "DV-C1-CAND-TR-GEO-CHART", question: "Is the same thing happening nearby and nationally?", answer: "entries-area", rhythm: "wider", options: { measure: "entries", against: "nearest" } },
       ],
     },
     {
       id: `${product}-well`,
       product,
-      question: "How well did they do?",
+      question: "How well did they do in [subject]?",
       icon: "results",
       label: "Results",
       dashboard: dash,
       screens: [
-        { view: "DV-C1-RES-CUR-TILES", question: "What did they get this year?", answer: "points-tiles", rhythm: "this-year", spot: { col: 0, row: 0 }, options: { measure: "points" } },
-        { view: "DV-C1-RES-CUR-GRADES", question: "How were the grades spread?", answer: "grades-spread", rhythm: "this-year", spot: { col: 0, row: 0 }, options: { measure: "points" } },
-        { view: "DV-C2-CUR-BARS", question: "How does it compare with the other subjects in [category]?", answer: "points-category", rhythm: "in-context", spot: { col: 1, row: 0 }, options: { measure: "points", against: "category" } },
-        { view: "DV-C2-CUR-BARS", question: "And across the whole school?", answer: "points-whole", rhythm: "in-context", spot: { col: 1, row: 0 }, options: { measure: "points", against: "whole" } },
-        { view: "DV-C1-RES-TR-CHART", question: "Are results going up or down?", answer: "points-trend", rhythm: "over-time", spot: { col: 0, row: 1 }, options: { measure: "points" } },
-        { view: "DV-C1-RES-TR-GEO-CHART", question: "Is the same thing happening nearby and nationally?", answer: "points-area", rhythm: "wider", spot: { col: 0, row: 1 }, options: { measure: "points", against: "nearest" } },
+        { view: "DV-C1-RES-CUR-TILES", question: "What did they get this year?", answer: "points-tiles", rhythm: "this-year", options: { measure: "points" } },
+        { view: "DV-C1-RES-CUR-GRADES", question: "How were the grades spread?", answer: "grades-spread", rhythm: "this-year", options: { measure: "points" } },
+        { view: "DV-C2-CUR-BARS", question: "How does it compare with the other subjects in [category]?", answer: "points-category", rhythm: "in-context", options: { measure: "points", against: "category" } },
+        { view: "DV-C2-CUR-BARS", question: "And across the whole school?", answer: "points-whole", rhythm: "in-context", options: { measure: "points", against: "whole" } },
+        { view: "DV-C1-RES-TR-CHART", question: "Are results going up or down?", answer: "points-trend", rhythm: "over-time", options: { measure: "points" } },
+        { view: "DV-C1-RES-TR-GEO-CHART", question: "Is the same thing happening nearby and nationally?", answer: "points-area", rhythm: "wider", options: { measure: "points", against: "nearest" } },
       ],
     },
     {
@@ -94,11 +106,11 @@ const teacherWalks = (product: "gcse" | "post16"): Walk[] => {
       label: "Comparisons",
       dashboard: dash,
       screens: [
-        { view: "DV-C3-CUR-MAP", question: p16 ? "Which sixth forms are nearby?" : "Which schools are nearby?", answer: "nearby-map", rhythm: "this-year", spot: { col: 2, row: 0 }, options: { against: "nearest" } },
-        { view: "DV-C3-CUR-BAR", question: "How many take it at each?", answer: "nearby-entries", rhythm: "in-context", spot: { col: 2, row: 0 }, options: { measure: "entries", against: "nearest" } },
-        { view: "DV-C3-CUR-BAR", question: "How did they do at each?", answer: "nearby-points", rhythm: "in-context", spot: { col: 2, row: 0 }, options: { measure: "points", against: "nearest" } },
-        { view: "DV-C3-CUR-RANKING", question: "Where do we rank?", answer: "nearby-rank", rhythm: "in-context", spot: { col: 2, row: 0 }, options: { measure: "points", against: "nearest" } },
-        { view: "DV-C3-TR-CHART", question: "Has our position changed?", answer: "nearby-trend", rhythm: "over-time", spot: { col: 2, row: 1 }, options: { measure: "points", against: "nearest" } },
+        { view: "DV-C3-CUR-MAP", question: p16 ? "Which sixth forms are nearby?" : "Which schools are nearby?", answer: "nearby-map", rhythm: "this-year", options: { against: "nearest" } },
+        { view: "DV-C3-CUR-BAR", question: "How many take it at each school?", answer: "nearby-entries", rhythm: "in-context", options: { measure: "entries", against: "nearest" } },
+        { view: "DV-C3-CUR-BAR", question: "How did they do at each school?", answer: "nearby-points", rhythm: "in-context", options: { measure: "points", against: "nearest" } },
+        { view: "DV-C3-CUR-RANKING", question: "Where do we rank?", answer: "nearby-rank", rhythm: "in-context", options: { measure: "points", against: "nearest" } },
+        { view: "DV-C3-TR-RANK", question: "Has our position changed?", answer: "nearby-trend", rhythm: "over-time", options: { measure: "points", against: "nearest" } },
       ],
     },
   ];
@@ -107,7 +119,7 @@ const teacherWalks = (product: "gcse" | "post16"): Walk[] => {
 // ------------------------------------------------------------------------------------------------ SMT
 
 const SMT_O = "/teacher/smt";
-const smtWalks = (primary: boolean): Walk[] => {
+const smtWalks = (primary: boolean): AuthoredWalk[] => {
   const product: WalkProduct = primary ? "smt_primary" : "smt";
   return [
     {
@@ -119,12 +131,12 @@ const smtWalks = (primary: boolean): Walk[] => {
       kind: "Dashboard",
       dashboard: SMT_O,
       screens: [
-        { view: "DV-SMT-O-NOW", question: "Where does the school stand this year?", answer: "smt-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-        { view: "DV-SMT-O-SCORECARD", question: "How does it compare, headline by headline?", answer: "smt-scorecard", rhythm: "in-context", spot: { col: 1, row: 0 } },
-        { view: "DV-SMT-O-ROLL-LINE", question: "Has the roll grown or shrunk?", answer: "smt-roll-trend", rhythm: "over-time", spot: { col: 0, row: 1 } },
-        { view: "DV-SMT-O-RESULTS-LINE", question: "Are headline results going up or down?", answer: "smt-results-trend", rhythm: "over-time", spot: { col: 1, row: 1 } },
-        { view: "DV-SMT-O-MARKET-LINE", question: "Are we winning more of the pupils around us?", answer: "smt-market", rhythm: "wider", spot: { col: 2, row: 1 } },
-        { view: "DV-SMT-O-FLAGS", question: "What has changed a lot, and stayed changed?", answer: "smt-flags", rhythm: "wider", spot: { col: 2, row: 0 } },
+        { view: "DV-SMT-O-NOW", question: "Where does the school stand this year?", answer: "smt-now", rhythm: "this-year" },
+        { view: "DV-SMT-O-SCORECARD", question: "How does it compare, headline by headline?", answer: "smt-scorecard", rhythm: "in-context" },
+        { view: "DV-SMT-O-ROLL-LINE", question: "Has the roll grown or shrunk?", answer: "smt-roll-trend", rhythm: "over-time" },
+        { view: "DV-SMT-O-RESULTS-LINE", question: "Are headline results going up or down?", answer: "smt-results-trend", rhythm: "over-time" },
+        { view: "DV-SMT-O-MARKET-LINE", question: "Are we winning more of the pupils around us?", answer: "smt-market", rhythm: "wider" },
+        { view: "DV-SMT-O-FLAGS", question: "What has changed a lot, and for good?", answer: "smt-flags", rhythm: "wider" },
       ],
     },
     {
@@ -139,30 +151,32 @@ const smtWalks = (primary: boolean): Walk[] => {
       screens: primary
         ? []
         : [
-            { view: "DV-SMT-A-NOW", question: "How did the school do this year?", answer: "smt-academic-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-            { view: "DV-SMT-A-CHART", question: "How does that compare with the set?", answer: "smt-academic-chart", rhythm: "in-context", spot: { col: 1, row: 0 } },
-            { view: "DV-SMT-A-AREAS", question: "Which subject areas lead, and which trail?", answer: "smt-academic-areas", rhythm: "in-context", spot: { col: 1, row: 0 } },
-            { view: "DV-SMT-A-GRADES", question: "How were the grades spread?", answer: "smt-academic-grades", rhythm: "in-context", spot: { col: 1, row: 0 } },
-            { view: "DV-SMT-A-TREND-LINE", question: "Are results going up or down?", answer: "smt-academic-trend", rhythm: "over-time", spot: { col: 0, row: 1 } },
-            { view: "DV-SMT-A-LINES", question: "What moved most since last year?", answer: "smt-academic-lines", rhythm: "wider", spot: { col: 1, row: 1 } },
+            { view: "DV-SMT-A-NOW", question: "How did the school do this year?", answer: "smt-academic-now", rhythm: "this-year" },
+            { view: "DV-SMT-A-CHART", question: "How does that compare with the set?", answer: "smt-academic-chart", rhythm: "in-context" },
+            { view: "DV-SMT-A-AREAS", question: "Which subject areas lead, and which trail?", answer: "smt-academic-areas", rhythm: "in-context" },
+            { view: "DV-SMT-A-GRADES", question: "How were the grades spread?", answer: "smt-academic-grades", rhythm: "in-context" },
+            { view: "DV-SMT-A-TREND-LINE", question: "Are results going up or down?", answer: "smt-academic-trend", rhythm: "over-time" },
+            { view: "DV-SMT-A-LINES", question: "What moved most since last year?", answer: "smt-academic-lines", rhythm: "wider" },
           ],
     },
     {
       id: `${product}-pupils`,
       product,
-      question: primary ? "Are we filling our Reception places?" : "Who are our pupils, and are numbers holding up?",
+      // Review fixes (24): no screen answers "Are we filling our Reception places?" (no view holds places
+      // or offers), so the primary walk asks what its screens answer.
+      question: primary ? "Who are our pupils, and are numbers holding up from Reception?" : "Who are our pupils, and are numbers holding up?",
       // Crosscheck (14 Nov, home_smt.png / home_group.png): the Pupils badge is the year-groups stack.
       icon: "AdmShapeIcon",
       label: "Pupils",
       kind: "Dashboard",
       dashboard: `${SMT_O}/pupils`,
       screens: [
-        { view: "DV-SMT-P-NOW", question: "How many pupils do we have this year?", answer: "smt-pupils-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-        { view: "DV-SMT-P-SHAPE", question: "How big is each year group?", answer: "smt-pupils-shape", rhythm: "in-context", spot: { col: 1, row: 0 } },
-        { view: "DV-SMT-P-ENTRIES", question: "How many could join at each entry point?", answer: "smt-pupils-entries", rhythm: "in-context", spot: { col: 1, row: 0 } },
-        ...(primary ? [] : [{ view: "DV-SMT-P-LEAVING", question: "How many leave at 16?", answer: "smt-pupils-leaving", rhythm: "over-time" as const, spot: { col: 1, row: 0 } as GridSpot }]),
-        { view: "DV-SMT-P-PHASES", question: "Has each phase grown or shrunk?", answer: "smt-pupils-phases", rhythm: "over-time", spot: { col: 0, row: 1 } },
-        { view: "DV-SMT-P-AREA", question: "Is the area's school-age population changing?", answer: "smt-pupils-area", rhythm: "wider", spot: { col: 1, row: 1 } },
+        { view: "DV-SMT-P-NOW", question: "How many pupils do we have this year?", answer: "smt-pupils-now", rhythm: "this-year" },
+        { view: "DV-SMT-P-SHAPE", question: "How big is each year group?", answer: "smt-pupils-shape", rhythm: "in-context" },
+        { view: "DV-SMT-P-ENTRIES", question: "How many could join at each entry point?", answer: "smt-pupils-entries", rhythm: "in-context" },
+        ...(primary ? [] : [{ view: "DV-SMT-P-LEAVING", question: "How many leave at 16?", answer: "smt-pupils-leaving", rhythm: "over-time" as const }]),
+        { view: "DV-SMT-P-PHASES", question: "Has each phase grown or shrunk?", answer: "smt-pupils-phases", rhythm: "over-time" },
+        { view: "DV-SMT-P-AREA", question: "Is the area's school-age population changing?", answer: "smt-pupils-area", rhythm: "wider" },
       ],
     },
     {
@@ -174,11 +188,11 @@ const smtWalks = (primary: boolean): Walk[] => {
       kind: "Dashboard",
       dashboard: `${SMT_O}/context`,
       screens: [
-        { view: "DV-SMT-C-NOW", question: "What is the area like now?", answer: "smt-context-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-        { view: "DV-SMT-C-MAP", question: "Where do the children live?", answer: "smt-context-map", rhythm: "in-context", spot: { col: 1, row: 0 } },
-        { view: "DV-SMT-C-BYAGE", question: "How old are they?", answer: "smt-context-byage", rhythm: "in-context", spot: { col: 1, row: 0 } },
-        { view: "DV-SMT-C-BIRTHS", question: "How many children are being born nearby?", answer: "smt-context-births", rhythm: "over-time", spot: { col: 0, row: 1 } },
-        { view: "DV-SMT-C-NEARBY", question: "And over the next few years?", answer: "smt-context-nearby", rhythm: "wider", spot: { col: 1, row: 1 } },
+        { view: "DV-SMT-C-NOW", question: "What is the area like now?", answer: "smt-context-now", rhythm: "this-year" },
+        { view: "DV-SMT-C-MAP", question: "Where do the children live?", answer: "smt-context-map", rhythm: "in-context" },
+        { view: "DV-SMT-C-BYAGE", question: "How old are they?", answer: "smt-context-byage", rhythm: "in-context" },
+        { view: "DV-SMT-C-BIRTHS", question: "How many children are being born nearby?", answer: "smt-context-births", rhythm: "over-time" },
+        { view: "DV-SMT-C-NEARBY", question: "And over the next few years?", answer: "smt-context-nearby", rhythm: "wider" },
       ],
     },
   ];
@@ -186,7 +200,7 @@ const smtWalks = (primary: boolean): Walk[] => {
 
 // ------------------------------------------------------------------------------------------------ Admissions
 
-const admissionsWalks: Walk[] = [
+const admissionsWalks: AuthoredWalk[] = [
   {
     id: "admissions-pipeline",
     product: "admissions",
@@ -196,11 +210,11 @@ const admissionsWalks: Walk[] = [
     kind: "Dashboard",
     dashboard: "/teacher/admissions",
     screens: [
-      { view: "DV-ADM-P-NOW", question: "How many children are in the [entry] pool this year?", answer: "adm-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-      { view: "DV-ADM-P-PIPELINE", question: "How many will reach [entry], year by year?", answer: "adm-pipeline", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "DV-ADM-P-MAP", question: "Where do they come from?", answer: "adm-feeders-map", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "DV-ADM-P-POOL-INDEXED", question: "Is the pool growing or shrinking?", answer: "adm-pool-trend", rhythm: "over-time", spot: { col: 0, row: 1 } },
-      { view: "DV-ADM-P-ENTRY-LINE", question: "And our own cohort?", answer: "adm-cohort", rhythm: "wider", spot: { col: 1, row: 1 } },
+      { view: "DV-ADM-P-NOW", question: "How many children are in the [entry] pool this year?", answer: "adm-now", rhythm: "this-year" },
+      { view: "DV-ADM-P-PIPELINE", question: "How many will reach [entry], year by year?", answer: "adm-pipeline", rhythm: "in-context" },
+      { view: "DV-ADM-P-MAP", question: "Where do they come from?", answer: "adm-feeders-map", rhythm: "in-context" },
+      { view: "DV-ADM-P-POOL-INDEXED", question: "Is the pool growing or shrinking?", answer: "adm-pool-trend", rhythm: "over-time" },
+      { view: "DV-ADM-P-ENTRY-LINE", question: "And our own cohort?", answer: "adm-cohort", rhythm: "wider" },
     ],
   },
   {
@@ -212,12 +226,12 @@ const admissionsWalks: Walk[] = [
     kind: "Dashboard",
     dashboard: "/teacher/admissions?dash=market-share",
     screens: [
-      { view: "DV-ADM-M-NOW", question: "What share of the pool joined us this year?", answer: "adm-share-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-      { view: "DV-ADM-M-BARS", question: "How does that compare with our rivals?", answer: "adm-share-rivals", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "DV-ADM-M-MAP", question: "Where are our rivals?", answer: "adm-rivals-map", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "DV-ADM-M-MOMENTUM", question: "Who is gaining, and who is losing?", answer: "adm-momentum", rhythm: "over-time", spot: { col: 1, row: 0 } },
-      { view: "DV-ADM-M-SHARE-LINE", question: "Has our share changed over time?", answer: "adm-share-trend", rhythm: "over-time", spot: { col: 0, row: 1 } },
-      { view: "DV-ADM-M-ACAD-RANK", question: "And how do our results compare?", answer: "adm-academic", rhythm: "wider", spot: { col: 1, row: 1 } },
+      { view: "DV-ADM-M-NOW", question: "What share of the pool joined us this year?", answer: "adm-share-now", rhythm: "this-year" },
+      { view: "DV-ADM-M-BARS", question: "How does that compare with our rivals?", answer: "adm-share-rivals", rhythm: "in-context" },
+      { view: "DV-ADM-M-MAP", question: "Where are our rivals?", answer: "adm-rivals-map", rhythm: "in-context" },
+      { view: "DV-ADM-M-MOMENTUM", question: "Who is gaining, and who is losing?", answer: "adm-momentum", rhythm: "over-time" },
+      { view: "DV-ADM-M-SHARE-LINE", question: "Has our share changed over time?", answer: "adm-share-trend", rhythm: "over-time" },
+      { view: "DV-ADM-M-ACAD-RANK", question: "And how do our results compare?", answer: "adm-academic", rhythm: "wider" },
     ],
   },
 ];
@@ -225,7 +239,7 @@ const admissionsWalks: Walk[] = [
 // ------------------------------------------------------------------------------------------------ head office
 
 const GRP = "/teacher/group";
-const groupWalks: Walk[] = [
+const groupWalks: AuthoredWalk[] = [
   {
     id: "group-overview",
     product: "group",
@@ -235,12 +249,12 @@ const groupWalks: Walk[] = [
     kind: "Group dashboard",
     dashboard: `${GRP}/overview`,
     screens: [
-      { view: "GRP-O-NOW", question: "Where does the group stand this year?", answer: "grp-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-      { view: "GRP-O-AGAINST", question: "How does it compare with other groups?", answer: "grp-against", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "GRP-O-MAP", question: "Where are our schools?", answer: "grp-map", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "GRP-O-ROLL", question: "Has the combined roll grown?", answer: "grp-roll", rhythm: "over-time", spot: { col: 0, row: 1 } },
-      { view: "GRP-O-RESULTS", question: "Are results going up or down?", answer: "grp-results", rhythm: "over-time", spot: { col: 1, row: 1 } },
-      { view: "GRP-O-SHARE", question: "What share of places do we hold?", answer: "grp-share", rhythm: "wider", spot: { col: 2, row: 1 } },
+      { view: "GRP-O-NOW", question: "Where does the group stand this year?", answer: "grp-now", rhythm: "this-year" },
+      { view: "GRP-O-AGAINST", question: "How does it compare with other groups?", answer: "grp-against", rhythm: "in-context" },
+      { view: "GRP-O-MAP", question: "Where are our schools?", answer: "grp-map", rhythm: "in-context" },
+      { view: "GRP-O-ROLL", question: "Has the combined roll grown?", answer: "grp-roll", rhythm: "over-time" },
+      { view: "GRP-O-RESULTS", question: "Are results going up or down?", answer: "grp-results", rhythm: "over-time" },
+      { view: "GRP-O-SHARE", question: "What share of places do we hold?", answer: "grp-share", rhythm: "wider" },
     ],
   },
   {
@@ -252,11 +266,11 @@ const groupWalks: Walk[] = [
     kind: "Group dashboard",
     dashboard: `${GRP}/schools`,
     screens: [
-      { view: "GRP-S-NOW", question: "How many schools, and how many pupils?", answer: "grp-schools-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-      { view: "GRP-S-TABLE", question: "How do the schools compare?", answer: "grp-schools-table", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "GRP-S-GROWING", question: "Which are growing?", answer: "grp-schools-growing", rhythm: "over-time", spot: { col: 0, row: 1 } },
-      { view: "GRP-S-SCATTER", question: "Do the bigger schools do better?", answer: "grp-schools-scatter", rhythm: "wider", spot: { col: 1, row: 1 } },
-      { view: "GRP-S-SHAPES", question: "What shape is each school?", answer: "grp-schools-shapes", rhythm: "wider", spot: { col: 2, row: 1 } },
+      { view: "GRP-S-NOW", question: "How many schools, and how many pupils?", answer: "grp-schools-now", rhythm: "this-year" },
+      { view: "GRP-S-TABLE", question: "How do the schools compare?", answer: "grp-schools-table", rhythm: "in-context" },
+      { view: "GRP-S-GROWING", question: "Which are growing?", answer: "grp-schools-growing", rhythm: "over-time" },
+      { view: "GRP-S-SCATTER", question: "Do the bigger schools do better?", answer: "grp-schools-scatter", rhythm: "wider" },
+      { view: "GRP-S-SHAPES", question: "What shape is each school?", answer: "grp-schools-shapes", rhythm: "wider" },
     ],
   },
   {
@@ -268,11 +282,11 @@ const groupWalks: Walk[] = [
     kind: "Group dashboard",
     dashboard: `${GRP}/academic`,
     screens: [
-      { view: "GRP-A-NOW", question: "What did the group get this year?", answer: "grp-academic-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-      { view: "GRP-A-RANKED", question: "How do our schools rank?", answer: "grp-academic-ranked", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "GRP-A-AREAS", question: "Which subject areas lead?", answer: "grp-academic-areas", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "GRP-A-TREND", question: "Are results going up or down?", answer: "grp-academic-trend", rhythm: "over-time", spot: { col: 0, row: 1 } },
-      { view: "GRP-A-IMPROVING", question: "Which schools are improving?", answer: "grp-academic-improving", rhythm: "wider", spot: { col: 1, row: 1 } },
+      { view: "GRP-A-NOW", question: "What did the group get this year?", answer: "grp-academic-now", rhythm: "this-year" },
+      { view: "GRP-A-RANKED", question: "How do our schools rank?", answer: "grp-academic-ranked", rhythm: "in-context" },
+      { view: "GRP-A-AREAS", question: "Which subject areas lead?", answer: "grp-academic-areas", rhythm: "in-context" },
+      { view: "GRP-A-TREND", question: "Are results going up or down?", answer: "grp-academic-trend", rhythm: "over-time" },
+      { view: "GRP-A-IMPROVING", question: "Which schools are improving?", answer: "grp-academic-improving", rhythm: "wider" },
     ],
   },
   {
@@ -284,11 +298,11 @@ const groupWalks: Walk[] = [
     kind: "Group dashboard",
     dashboard: `${GRP}/pupils`,
     screens: [
-      { view: "GRP-P-NOW", question: "How many pupils does the group have?", answer: "grp-pupils-now", rhythm: "this-year", spot: { col: 0, row: 0 } },
-      { view: "GRP-P-SHAPE", question: "What shape is the group?", answer: "grp-pupils-shape", rhythm: "in-context", spot: { col: 1, row: 0 } },
-      { view: "GRP-P-ROLL", question: "Has the roll grown or shrunk?", answer: "grp-pupils-roll", rhythm: "over-time", spot: { col: 0, row: 1 } },
-      { view: "GRP-P-GROWING", question: "Which schools are growing and shrinking?", answer: "grp-pupils-growing", rhythm: "over-time", spot: { col: 1, row: 1 } },
-      { view: "GRP-P-PROJECTION", question: "How many children live around the schools?", answer: "grp-pupils-projection", rhythm: "wider", spot: { col: 2, row: 1 } },
+      { view: "GRP-P-NOW", question: "How many pupils does the group have?", answer: "grp-pupils-now", rhythm: "this-year" },
+      { view: "GRP-P-SHAPE", question: "What shape is the group?", answer: "grp-pupils-shape", rhythm: "in-context" },
+      { view: "GRP-P-ROLL", question: "Has the roll grown or shrunk?", answer: "grp-pupils-roll", rhythm: "over-time" },
+      { view: "GRP-P-GROWING", question: "Which schools are growing, and which are shrinking?", answer: "grp-pupils-growing", rhythm: "over-time" },
+      { view: "GRP-P-PROJECTION", question: "How many children live around the schools?", answer: "grp-pupils-projection", rhythm: "wider" },
     ],
   },
 ];
@@ -305,7 +319,7 @@ export const GROUP_VIEW_META: Record<string, { label: string; icon: string }> = 
   "GRP-O-AGAINST": { label: "Against others", icon: "TableIcon" },
   "GRP-O-MAP": { label: "Map", icon: "MapPinIcon" },
   "GRP-O-ROLL": { label: "Combined roll, indexed", icon: "IndexedLineIcon" },
-  "GRP-O-RESULTS": { label: "Results by phase", icon: "TrendLineIcon" },
+  "GRP-O-RESULTS": { label: "Results trend", icon: "TrendLineIcon" },
   "GRP-O-SHARE": { label: "Share of places", icon: "HorizontalBarsIcon" },
   "GRP-S-NOW": { label: "The group now", icon: "TilesIcon" },
   "GRP-S-TABLE": { label: "Schools", icon: "TableIcon" },
@@ -319,12 +333,58 @@ export const GROUP_VIEW_META: Record<string, { label: string; icon: string }> = 
   "GRP-A-IMPROVING": { label: "Improving and declining", icon: "VerticalBarsIcon" },
   "GRP-P-NOW": { label: "Pupils now", icon: "TilesIcon" },
   "GRP-P-SHAPE": { label: "The group's shape", icon: "AdmShapeIcon" },
-  "GRP-P-ROLL": { label: "Roll, indexed", icon: "IndexedLineIcon" },
+  "GRP-P-ROLL": { label: "Combined roll, indexed", icon: "IndexedLineIcon" },
   "GRP-P-GROWING": { label: "Growing and shrinking", icon: "VerticalBarsIcon" },
   "GRP-P-PROJECTION": { label: "Children around the schools", icon: "AdmPopulationIcon" },
 };
 
-export const WALKS: Walk[] = [...teacherWalks("gcse"), ...teacherWalks("post16"), ...smtWalks(false), ...smtWalks(true), ...admissionsWalks, ...groupWalks];
+/** The dashboard a Teacher walk screen lives on: Results for a Results view or a screen set on points. */
+export function teacherModeOf(s: { view: string; options?: { measure?: string } }): "candidates" | "results" {
+  return s.view.startsWith("DV-C1-RES") || s.view.startsWith("DV-C1-CNT") || s.options?.measure === "points" ? "results" : "candidates";
+}
+
+/** The dashboard config a walk screen draws from (Teacher, SMT, Admissions); null for head office. */
+export function walkDashboardConfig(walk: Pick<Walk, "product" | "dashboard">, s: { view: string; options?: { measure?: string } }): DashboardConfig | null {
+  if (walk.product === "gcse" || walk.product === "post16") return teacherDashboardFor(walk.product === "gcse" ? "ks4" : "ks5", teacherModeOf(s));
+  if (walk.product === "smt" || walk.product === "smt_primary") {
+    const part = walk.dashboard.split("/")[3] ?? "overview";
+    return SMT_DASHBOARDS.find((d) => d.id === `vicdata.smt.${part}`) ?? null;
+  }
+  if (walk.product === "admissions") return ADMISSIONS_DASHBOARDS[walk.dashboard.includes("market-share") ? 1 : 0] ?? null;
+  return null;
+}
+
+/** Where a screen's view sits on its dashboard, from the dashboard's own config (or the group layout). */
+export function spotOf(walk: Pick<Walk, "product" | "dashboard">, s: { view: string; options?: { measure?: string } }): GridSpot | null {
+  const COL = { c1: 0, c2: 1, c3: 2 } as const;
+  if (walk.product === "group") {
+    const L = GROUP_LAYOUT_IDS[groupWalkDash(s.view)];
+    for (const [ri, cells] of [L.now, L.trends].entries()) {
+      let col = 0;
+      for (const c of cells) {
+        // A panel holding several views is named by the view itself, not its first (review fixes, M2).
+        if (c.views.includes(s.view)) return { col: col as 0 | 1 | 2, row: ri as 0 | 1, span: c.span, panel: c.views.length > 1 ? "" : GROUP_VIEW_META[c.views[0]]?.label ?? c.id };
+        col += c.span;
+      }
+    }
+    return null;
+  }
+  const cfg = walkDashboardConfig(walk, s);
+  const panel = cfg?.panels.find((p) => p.dataviews.some((v) => v.kind === "view" && v.dataview === s.view));
+  if (!panel) return null;
+  return { col: COL[panel.column as "c1" | "c2" | "c3"] ?? 0, row: panel.row === "current" || panel.row === "now" ? 0 : 1, span: (panel.span?.cols ?? 1) === 2 ? 2 : 1, panel: panel.name ?? cfg?.columns.find((c) => c.id === panel.column)?.title ?? panel.column };
+}
+
+const withSpots = (w: AuthoredWalk): Walk => ({
+  ...w,
+  screens: w.screens.map((s) => {
+    const spot = spotOf(w, s);
+    if (!spot) throw new Error(`walks.ts: ${w.id}'s screen ${s.view} isn't on its dashboard (${w.dashboard})`);
+    return { ...s, spot };
+  }),
+});
+
+export const WALKS: Walk[] = [...teacherWalks("gcse"), ...teacherWalks("post16"), ...smtWalks(false), ...smtWalks(true), ...admissionsWalks, ...groupWalks].map(withSpots);
 
 export function walkById(id: string): Walk | undefined {
   return WALKS.find((w) => w.id === id);

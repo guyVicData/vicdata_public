@@ -40,7 +40,16 @@ export function peerShade(p: Palette, k: number): string {
   return p.dark ? mixHex(p.peer, "#000000", steps[k % 5] * 0.6) : mixHex(p.peer, "#ffffff", steps[k % 5]);
 }
 
-export function roleColour(p: Palette, role: Role, shade?: number): string {
+export function roleColour(p: Palette, role: Role, shade?: number, family?: string | null): string {
+  // Review fixes (14 Nov, M7, R-SUBJECT-COLOUR): a subject that names its family takes the family's colour
+  // (a peer's shade of it), never a colour by rank; the focus keeps the accent.
+  if (family && (role === "peer" || role === "other")) {
+    const fam = SUBJECT_FAMILY_COLOURS[family];
+    if (fam) {
+      const c = p.dark ? fam.dark[1] : fam.light[1];
+      return shade === undefined || role !== "peer" ? c : p.dark ? mixHex(c, "#000000", [0, 0.22, 0.42, 0.58, 0.7][shade % 5] * 0.6) : mixHex(c, "#ffffff", [0, 0.3, 0.5, 0.15, 0.4][shade % 5]);
+    }
+  }
   switch (role) {
     case "focus":
       return p.focus;
@@ -76,7 +85,7 @@ export function ChartKey({ keys, p }: { keys: KeyEntry[]; p: Palette }) {
   return (
     <ul data-chart-key="" className="flex flex-wrap gap-x-4 gap-y-1.5 text-[12.5px]" style={{ color: p.muted }}>
       {keys.map((k, i) => {
-        const c = roleColour(p, k.role, k.shade);
+        const c = roleColour(p, k.role, k.shade, k.family);
         const mark =
           k.mark === "swatch" ? <span className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: c }} />
           : k.mark === "line" ? <span className="inline-flex items-center gap-0.5"><span className="inline-block h-[2.5px] w-4 rounded" style={{ background: c }} />{k.marker && <MarkerShape marker={k.marker} colour={c} size={7} />}</span>
@@ -103,6 +112,27 @@ export const ordinalWord = (n: number) => {
 };
 
 // ------------------------------------------------------------------------------------------------ lines
+
+/** Runs of consecutive indexes: [1, 2, 5] -> [[1, 2], [5, 5]]. */
+export function gapRuns(ks: number[]): [number, number][] {
+  const out: [number, number][] = [];
+  for (const k of [...ks].sort((a, b) => a - b)) {
+    const last = out[out.length - 1];
+    if (last && k === last[1] + 1) last[1] = k;
+    else out.push([k, k]);
+  }
+  return out;
+}
+
+/** Map labels: right of the dot, unless that would sit on an earlier label (within ~7% of the plot). */
+export function labelSides(pts: { x: number; y: number }[]): ("left" | "right")[] {
+  const sides: ("left" | "right")[] = [];
+  pts.forEach((q, i) => {
+    const clash = pts.slice(0, i).some((o, j) => sides[j] === "right" && Math.abs(o.y - q.y) < 5 && q.x - o.x > -2 && q.x - o.x < 9);
+    sides.push(clash ? "left" : "right");
+  });
+  return sides;
+}
 
 function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette }) {
   const vals = c.series.flatMap((s) => s.values).filter((v): v is number => v !== null);
@@ -139,15 +169,16 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
             <span data-html-label="tick" className="absolute -left-10 -translate-y-1/2 text-[11px] tabular-nums" style={{ color: p.muted }}>{flip ? ordinalWord(t) : fmt(t, axis.digits)}</span>
           </div>
         ))}
-        {/* Unpublished years: dotted and labelled. */}
+        {/* Unpublished years: dotted, and one label per run of them (review fixes, G4: two adjacent labels ran together). */}
         {c.unpublished.map((k) => (
-          <div key={`u${k}`} className="absolute inset-y-0" style={{ left: `${x(k)}%`, borderLeft: `1.5px dotted ${p.muted}` }}>
-            <span data-html-label="gap" className="absolute top-1 -translate-x-1/2 whitespace-nowrap rounded px-1 text-[10.5px]" style={{ background: p.plate, color: p.muted }}>{c.years[k]}: not published</span>
-          </div>
+          <div key={`u${k}`} className="absolute inset-y-0" style={{ left: `${x(k)}%`, borderLeft: `1.5px dotted ${p.muted}` }} />
+        ))}
+        {gapRuns(c.unpublished).map(([a, b]) => (
+          <span key={`g${a}`} data-html-label="gap" className="absolute top-1 -translate-x-1/2 whitespace-nowrap rounded px-1 text-[10.5px]" style={{ left: `${(x(a) + x(b)) / 2}%`, background: p.plate, color: p.muted }}>{a === b ? c.years[a] : `${c.years[a]}–${c.years[b]}`}: not published</span>
         ))}
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
           {c.series.map((s, si) => {
-            const col = roleColour(p, s.role, s.shade);
+            const col = roleColour(p, s.role, s.shade, s.family);
             const segs: string[][] = [];
             let cur: string[] = [];
             s.values.forEach((v, i) => {
@@ -165,7 +196,8 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
             }
             return (
               <g key={si}>
-                {segs.map((pts, k) => (pts.length > 1 ? <polyline key={k} points={pts.join(" ")} fill="none" stroke={col} strokeWidth={s.role === "focus" ? 3 : 2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" strokeDasharray={s.role === "average" ? "5 4" : undefined} /> : null))}
+                {/* Review fixes (G5): a one-year segment is a short round-capped stroke, so it shows as a dot. */}
+                {segs.map((pts, k) => <polyline key={k} points={pts.length > 1 ? pts.join(" ") : `${pts[0]} ${pts[0]}`} fill="none" stroke={col} strokeWidth={pts.length > 1 ? (s.role === "focus" ? 3 : 2) : 7} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" strokeDasharray={s.role === "average" && pts.length > 1 ? "5 4" : undefined} />)}
                 {bridges.map((b, k) => <polyline key={`b${k}`} points={b} fill="none" stroke={col} strokeWidth={2} strokeDasharray="1 5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />)}
               </g>
             );
@@ -176,7 +208,7 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
           s.values.map((v, i) =>
             v === null || (!s.marker && s.role !== "focus") ? null : (
               <span key={`${si}-${i}`} className="absolute -translate-x-1/2 -translate-y-1/2 leading-none" style={{ left: `${x(i)}%`, top: `${y(v)}%` }}>
-                <MarkerShape marker={s.marker ?? "circle"} colour={roleColour(p, s.role, s.shade)} size={s.role === "focus" ? 8 : 7} />
+                <MarkerShape marker={s.marker ?? "circle"} colour={roleColour(p, s.role, s.shade, s.family)} size={s.role === "focus" ? 8 : 7} />
               </span>
             ),
           ),
@@ -185,8 +217,9 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
         {ends.map((e) => {
           const s = c.series[e.si];
           return (
-            <span key={e.si} data-html-label="end" className="absolute left-[calc(100%+8px)] -translate-y-1/2 whitespace-nowrap text-[11.5px] font-semibold" style={{ top: `${e.top}%`, color: roleColour(p, s.role, s.shade) }}>
-              {e.label} {flip ? ordinalWord(e.v) : fmt(e.v, c.digits)}
+            <span key={e.si} data-html-label="end" title={`${e.label} ${flip ? ordinalWord(e.v) : fmt(e.v, c.digits)}`} className="absolute left-[calc(100%+8px)] flex max-w-[142px] -translate-y-1/2 whitespace-nowrap text-[11.5px] font-semibold" style={{ top: `${e.top}%`, color: roleColour(p, s.role, s.shade, s.family) }}>
+              {/* Review fixes (G6): a long name is cut with an ellipsis inside the gutter; the figure always shows. */}
+              <span className="min-w-0 truncate">{e.label}</span>&nbsp;<span className="shrink-0">{flip ? ordinalWord(e.v) : fmt(e.v, c.digits)}</span>
             </span>
           );
         })}
@@ -194,7 +227,8 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
         <div className="absolute inset-x-0 top-[calc(100%+6px)]">
           {c.years.map((yr, i) =>
             n <= 7 || i === 0 || i === n - 1 || i % 2 === 0 ? (
-              <span key={i} data-html-label="year" className="absolute -translate-x-1/2 text-[11px]" style={{ left: `${x(i)}%`, color: p.muted }}>{yr}</span>
+              // Review fixes (M2): on a phone only the first and last years and every other one between, so the labels never run together.
+              <span key={i} data-html-label="year" className={`absolute -translate-x-1/2 text-[11px] ${i !== 0 && i !== n - 1 && (n > 3 && i % 2 === 1) ? "hidden sm:inline" : ""}`} style={{ left: `${x(i)}%`, color: p.muted }}>{yr}</span>
             ) : null,
           )}
         </div>
@@ -216,7 +250,7 @@ function VBars({ c, p }: { c: Extract<Chart, { kind: "vbars" }>; p: Palette }) {
           <div key={r.label} className="grid grid-cols-[minmax(0,9rem)_1fr_3rem] items-center gap-2 text-[12px]">
             <span className="truncate" title={r.label} style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400 }}>{r.label}</span>
             <span className="relative h-3.5">
-              <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.value / max) * 100}%`, background: roleColour(p, r.role) }} />
+              <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.value / max) * 100}%`, background: roleColour(p, r.role, undefined, r.family) }} />
               {c.average && <span className="absolute -inset-y-0.5 border-l-2 border-dashed" style={{ left: `${(c.average.value / max) * 100}%`, borderColor: p.average }} />}
             </span>
             <span className="text-right tabular-nums" style={{ color: p.text }}>{fmt(r.value, digits)}</span>
@@ -234,8 +268,9 @@ function VBars({ c, p }: { c: Extract<Chart, { kind: "vbars" }>; p: Palette }) {
         )}
         {c.rows.map((r) => (
           <div key={r.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
-            <span className="text-[11.5px] font-semibold tabular-nums" style={{ color: r.role === "focus" ? p.focus : p.text }}>{fmt(r.value, digits)}</span>
-            <span className="w-full max-w-[56px] rounded-t-[4px]" style={{ height: `${(r.value / max) * 100}%`, background: roleColour(p, r.role) }} />
+            {/* Review fixes (G3): the value sits on a plate above the dashed average line. */}
+            <span data-html-label="value" className="relative z-10 rounded px-0.5 text-[11.5px] font-semibold tabular-nums" style={{ color: r.role === "focus" ? p.focus : p.text, background: p.plate }}>{fmt(r.value, digits)}</span>
+            <span className="w-full max-w-[56px] rounded-t-[4px]" style={{ height: `${(r.value / max) * 100}%`, background: roleColour(p, r.role, undefined, r.family) }} />
           </div>
         ))}
       </div>
@@ -254,15 +289,15 @@ function HBars({ c, p }: { c: Extract<Chart, { kind: "hbars" }>; p: Palette }) {
   return (
     <div data-bars="horizontal" className="flex flex-col gap-1.5">
       {c.rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[minmax(0,16rem)_1fr_3.5rem] items-center gap-2 text-[12.5px]">
+        <div key={i} className="grid grid-cols-[minmax(0,38%)_minmax(0,1fr)_3rem] items-center gap-2 text-[12.5px] sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_3.5rem]">
           <span className="truncate" title={r.label} style={{ color: r.role === "focus" ? p.text : p.muted, fontWeight: r.role === "focus" ? 700 : 400 }}>{r.label}</span>
           <span className="relative h-4">
             <span className="absolute inset-y-0 left-0 rounded-r-[3px]" style={{ width: `${(r.value / max) * 100}%`, background: roleColour(p, r.role) }} />
           </span>
-          <span className="text-right tabular-nums" style={{ color: p.text }}>{fmt(r.value, c.digits)}</span>
+          <span className="text-right tabular-nums" style={{ color: p.text }} title={r.n != null ? `${r.n} entries` : undefined}>{fmt(r.value, c.digits)}</span>
         </div>
       ))}
-      <p className="mt-1 text-[11.5px]" style={{ color: p.muted }}>{c.unit === "entries" ? "Entries" : "Average points per entry"}</p>
+      <p className="mt-1 text-[11.5px]" style={{ color: p.muted }}>{c.caption ?? (c.unit === "entries" ? "Entries" : "Average points per entry")}</p>
     </div>
   );
 }
@@ -296,7 +331,7 @@ export function DumbbellChart({ c, p }: { c: Extract<Chart, { kind: "dumbbell" }
           </span>
         </div>
         {c.rows.map((r, i) => {
-          const col = r.role === "average" ? p.average : roleColour(p, r.role);
+          const col = r.role === "average" ? p.average : roleColour(p, r.role, undefined, r.family);
           const a = at(Math.min(r.first, r.latest));
           const b = at(Math.max(r.first, r.latest));
           const ch = Math.round(r.latest - r.first);
@@ -327,7 +362,8 @@ export function DumbbellChart({ c, p }: { c: Extract<Chart, { kind: "dumbbell" }
 // ------------------------------------------------------------------------------------------------ the rest
 
 function Grades({ c, p }: { c: Extract<Chart, { kind: "grades" }>; p: Palette }) {
-  const max = Math.max(...c.rows.flatMap((r) => [r.share, r.england ?? 0])) * 1.1 || 1;
+  // Review fixes (G8): never past 100% (one grade holding every pupil drew a "110%" tick).
+  const max = Math.min(1, Math.max(...c.rows.flatMap((r) => [r.share, r.england ?? 0])) * 1.1) || 1;
   return (
     <div data-grades="" className="flex flex-col gap-1">
       {c.rows.map((r) => (
@@ -372,7 +408,8 @@ function Ranking({ c, p }: { c: Extract<Chart, { kind: "ranking" }>; p: Palette 
         <tr style={{ color: p.muted }} className="text-left">
           <th className="py-1 pr-2 font-medium">Rank</th>
           <th className="py-1 pr-2 font-medium">School</th>
-          <th className="py-1 pr-2 text-right font-medium">Average points</th>
+          <th className="py-1 pr-2 text-right font-medium">Average points{c.year ? `, ${c.year}` : ""}</th>
+          <th className="py-1 pr-2 text-right font-medium">Entries</th>
           <th className="py-1 text-right font-medium">Distance</th>
         </tr>
       </thead>
@@ -382,10 +419,14 @@ function Ranking({ c, p }: { c: Extract<Chart, { kind: "ranking" }>; p: Palette 
             <td className="py-1.5 pr-2 tabular-nums">{ordinalWord(r.rank)}</td>
             <td className="py-1.5 pr-2">{r.label}</td>
             <td className="py-1.5 pr-2 text-right tabular-nums">{fmt(r.value, c.digits)}</td>
+            <td className="py-1.5 pr-2 text-right tabular-nums" style={{ color: p.muted }}>{r.n == null ? "—" : r.n < 10 ? `${r.n} (few)` : r.n}</td>
             <td className="py-1.5 text-right tabular-nums" style={{ color: p.muted }}>{r.role === "focus" ? "—" : r.distanceKm === null ? "" : `${r.distanceKm.toFixed(1)} km`}</td>
           </tr>
         ))}
       </tbody>
+      {c.caption && (
+        <caption className="caption-bottom pt-2 text-left text-[11.5px]" style={{ color: p.muted }}>{c.caption}</caption>
+      )}
     </table>
   );
 }
@@ -406,6 +447,8 @@ function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) 
   const X = (e: number) => 50 + ((e - me.easting) / half) * 50;
   const Y = (nn: number) => 50 - ((nn - me.northing) / half) * 50;
   const others = c.points.filter((q) => q.role !== "focus");
+  // Review fixes (G9): a number whose label would sit on a nearer neighbour's goes on the dot's left.
+  const sides = labelSides(others.map((q) => ({ x: X(q.easting), y: Y(q.northing) })));
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="relative aspect-square w-full max-w-[340px] overflow-hidden rounded-[10px]" style={{ background: p.dark ? "#121216" : "#f4f4f7" }}>
@@ -419,16 +462,17 @@ function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) 
         })}
         {c.points.map((q, i) => (
           <span key={i} title={q.label} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${X(q.easting)}%`, top: `${Y(q.northing)}%`, width: q.role === "focus" ? 14 : 10, height: q.role === "focus" ? 14 : 10, background: roleColour(p, q.role), border: `2px solid ${p.plate}` }}>
-            {q.role !== "focus" && <span data-html-label="map" className="absolute left-3 top-[-3px] text-[10px] font-semibold" style={{ color: p.muted }}>{others.indexOf(q) + 1}</span>}
+            {q.role !== "focus" && <span data-html-label="map" className={`absolute top-[-3px] text-[10px] font-semibold ${sides[others.indexOf(q)] === "left" ? "right-3" : "left-3"}`} style={{ color: p.muted }}>{others.indexOf(q) + 1}</span>}
           </span>
         ))}
       </div>
       <ol className="flex flex-col gap-0.5 text-[12.5px]" style={{ color: p.text }}>
+        {c.year && <li className="text-[11.5px]" style={{ color: p.muted }}>Distance and entries, {c.year}</li>}
         {others.map((q, i) => (
           <li key={i} className="flex gap-2">
             <span className="w-5 shrink-0 text-right tabular-nums" style={{ color: p.muted }}>{i + 1}</span>
             <span className="min-w-0 flex-grow">{q.label}{q.distanceKm != null && <span style={{ color: p.muted }}> · {q.distanceKm.toFixed(1)} km</span>}</span>
-            <span className="tabular-nums" style={{ color: p.muted }}>{q.value === null ? "no entries" : `${q.value} entries`}</span>
+            <span className="shrink-0 whitespace-nowrap tabular-nums" style={{ color: p.muted }}>{q.value === null ? "no figure" : `${q.value} entries`}</span>
           </li>
         ))}
       </ol>
@@ -465,26 +509,27 @@ export function ChartTable({ c, p }: { c: Chart; p: Palette }) {
   let head: string[] = [];
   let rows: (string | number)[][] = [];
   if (c.kind === "lines") {
-    head = ["", ...c.years];
+    head = [c.yCaption, ...c.years];
     rows = [...c.series.map((s) => [s.label, ...s.values.map((v) => (v === null ? "–" : fmt(v, c.digits)))]), ...(c.extraRows ?? []).map((s) => [s.label, ...s.values.map((v) => (v === null ? "–" : fmt(v, c.digits)))])];
   } else if (c.kind === "vbars" || c.kind === "hbars") {
-    head = ["", c.unit];
+    // Review fixes (T3): the header says the measure and year (the caption carries them).
+    head = ["", c.kind === "vbars" ? c.yCaption : (c.caption?.split(";")[0] ?? c.unit)];
     rows = c.rows.map((r) => [r.label, fmt(r.value, c.unit === "entries" ? 0 : 1)]);
   } else if (c.kind === "dumbbell") {
     head = ["", c.firstYear, c.latestYear, "Change"];
     rows = c.rows.map((r) => [r.label, fmt(r.first, 0), fmt(r.latest, 0), Math.round(r.latest - r.first)]);
   } else if (c.kind === "grades") {
-    head = ["Grade", "Pupils", "Share", "England"];
+    head = ["Grade", c.noun[1].charAt(0).toUpperCase() + c.noun[1].slice(1), "Share", "England"];
     rows = c.rows.map((r) => [r.grade, r.count, `${Math.round(r.share * 100)}%`, r.england === null ? "–" : `${Math.round(r.england * 100)}%`]);
   } else if (c.kind === "ranking") {
-    head = ["Rank", "School", c.unit];
-    rows = c.rows.map((r) => [ordinalWord(r.rank), r.label, fmt(r.value, c.digits)]);
+    head = ["Rank", "School", `${c.unit}${c.year ? `, ${c.year}` : ""}`, "Entries"];
+    rows = c.rows.map((r) => [`${ordinalWord(r.rank)} of ${c.rows.length}`, r.label, fmt(r.value, c.digits), r.n ?? "–"]);
   } else if (c.kind === "tiles") {
-    head = ["", ""];
+    head = ["Figure", "Value"];
     rows = [[c.main.label, c.main.figure], ...c.tiles.map((t) => [t.scope, t.figure])];
   } else if (c.kind === "map") {
-    head = ["School", "Entries"];
-    rows = c.points.map((q) => [q.label, q.value ?? "–"]);
+    head = ["School", "Distance", "Entries, latest year"];
+    rows = c.points.map((q) => [q.label, q.role === "focus" ? "—" : q.distanceKm != null ? `${q.distanceKm.toFixed(1)} km` : "–", q.value ?? "no figure"]);
   }
   return (
     <div className="overflow-x-auto">

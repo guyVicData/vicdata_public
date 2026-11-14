@@ -180,7 +180,7 @@ test("addViewToMeeting: next free slot, the slide re-arranges", () => {
 test("pinned views: resolved title, pin line, citation, moving on to the latest data", () => {
   const s = slot("a", "DV-C3-CUR-MAP");
   (s.view!.pinned as Record<string, unknown>).compare = { kind: "schools", name: "10 nearest schools" };
-  assert.match(slotTitle(s), /^Mathematics .* by school, on the map$/);
+  assert.match(slotTitle(s), /^Mathematics .* by school, on the map, \d{4}\/\d{2}$/);
   assert.equal(pinLine(s), "Pinned · as of 2024/25");
   assert.equal(citationOf(s), "DfE Key stage 4 performance");
   assert.equal(pinLine({ ...s, view: { ...s.view!, keepLive: true } }), "Live · latest data");

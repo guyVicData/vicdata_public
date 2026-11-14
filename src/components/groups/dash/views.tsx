@@ -330,7 +330,9 @@ export function ResultsTrend({ o, average, fullscreen, room }: { o: GroupOvervie
   return (
     <>
       {(() => {
-        const title = `Results against ${p.lines.slice(1).map((l) => l.label).join(" and ") || "the comparison set"}`;
+        // Review fixes (dashboards.md titles): the measure and span in the title ("Attainment 8 against …, 2021/22 to 2025/26").
+        const yrs = p.lines[0]?.pts.filter((x) => x.value !== null).map((x) => x.year) ?? [];
+        const title = `${MEASURE_LABEL[p.measure] ?? "Results"} against ${p.lines.slice(1).map((l) => l.label).join(" and ") || "the comparison set"}${yrs.length > 1 ? `, ${periodLabel(yrs[0])} to ${periodLabel(yrs[yrs.length - 1])}` : ""}`;
         return <div title={title} className="truncate text-[13px] font-bold text-[var(--fg)]">{title}</div>;
       })()}
       {parts.length > 1 && (
@@ -445,16 +447,41 @@ export function SchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; h
   return <MainSchoolsTable s={s} highlight={highlight} onHighlight={onHighlight} />;
 }
 
-function MainSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highlight: string | null; onHighlight: (urn: string) => void }) {
-  const [sort, setSort] = useState<SortKey>("roll");
-  const rows = [...s.rows].sort((a, b) => {
-    const nul = (x: number | null | undefined) => (x === null || x === undefined ? -Infinity : x);
+/** Review fixes (14 Nov, tables.md H2): under All phases a headline is Attainment 8 for one school, KS2 RWM
+ * for the next; the sort never runs across unlike measures -- the rows sort within each measure, measures
+ * in phase order -- and a column named for one measure and year only when every row shares it. */
+const MEASURE_ORDER = ["ks2_rwm", "ks4_a8", "ks4_em5", "ks4_em4", "ks5_aps_alevel", "ks5_aps_all"];
+export function schoolsSort(rows: SchoolRow[], sort: SortKey): SchoolRow[] {
+  const nul = (x: number | null | undefined) => (x === null || x === undefined ? -Infinity : x);
+  const byMeasure = (a: SchoolRow, b: SchoolRow) => {
+    const ia = a.headline ? MEASURE_ORDER.indexOf(a.headline.measure) : 99;
+    const ib = b.headline ? MEASURE_ORDER.indexOf(b.headline.measure) : 99;
+    return (ia < 0 ? 98 : ia) - (ib < 0 ? 98 : ib);
+  };
+  return [...rows].sort((a, b) => {
     if (sort === "name") return a.name.localeCompare(b.name);
-    if (sort === "headline") return nul(b.headline?.value) - nul(a.headline?.value) || a.name.localeCompare(b.name);
-    if (sort === "national") return (a.national?.rank ?? Infinity) - (b.national?.rank ?? Infinity) || a.name.localeCompare(b.name);
+    if (sort === "headline") return byMeasure(a, b) || nul(b.headline?.value) - nul(a.headline?.value) || a.name.localeCompare(b.name);
+    if (sort === "national") return byMeasure(a, b) || (a.national?.rank ?? Infinity) - (b.national?.rank ?? Infinity) || a.name.localeCompare(b.name);
     if (sort === "trend") return nul(b.trend) - nul(a.trend) || a.name.localeCompare(b.name);
     return nul(b.roll) - nul(a.roll) || a.name.localeCompare(b.name);
   });
+}
+/** A school that joined after its headline's results were taken (the summer after the year's start). */
+export const joinedAfterResults = (r: SchoolRow) => !!r.headline && !r.inGroup && !!r.joined && r.joined > `${r.headline.year + 1}-07-31`;
+
+/** The headline column's name: its measure and year when every row with a headline shares them. */
+export function headlineHeader(rows: SchoolRow[]): { headline: string; inGroup: string; national: string; mixed: boolean } {
+  const hs = rows.filter((r) => r.headline).map((r) => r.headline!);
+  const one = hs.length > 0 && hs.every((h) => h.measure === hs[0].measure && h.year === hs[0].year);
+  if (!one) return { headline: "Headline (each school's phase)", inGroup: "Rank in group", national: "Rank in England", mixed: true };
+  const m = `${MEASURE_SHORT[hs[0].measure] ?? hs[0].measure}, ${periodLabel(hs[0].year)}`;
+  return { headline: m, inGroup: "Rank in group", national: "Rank in England", mixed: false };
+}
+
+function MainSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highlight: string | null; onHighlight: (urn: string) => void }) {
+  const [sort, setSort] = useState<SortKey>("roll");
+  const head = headlineHeader(s.rows);
+  const rows = schoolsSort(s.rows, sort);
   const sortBtn = (k: SortKey, label: string) => (
     <button type="button" onClick={() => setSort(k)} aria-pressed={sort === k} className={`uppercase ${sort === k ? "text-[var(--fg)]" : ""}`}>
       {label}
@@ -472,11 +499,11 @@ function MainSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; high
               <Th>{sortBtn("roll", "Roll")}</Th>
               <Th>Size</Th>
               <Th>Shape</Th>
-              <Th>{sortBtn("headline", "Headline")}</Th>
-              <Th>In group</Th>
-              <Th>{sortBtn("national", "National")}</Th>
-              <Th>VA</Th>
-              <Th>{sortBtn("trend", "Trend")}</Th>
+              <Th>{sortBtn("headline", head.headline)}</Th>
+              <Th>{head.inGroup}</Th>
+              <Th>{sortBtn("national", head.national)}</Th>
+              <Th>VA (P8 / A-level)</Th>
+              <Th>{sortBtn("trend", `Roll, ${GROWING_SPAN} yrs`)}</Th>
               <Th>Joined</Th>
             </tr>
           </thead>
@@ -488,7 +515,7 @@ function MainSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; high
         </table>
       </div>
       <div className="text-[11.5px] text-[var(--muted2)]">
-        Showing {s.counts.shown} of {s.counts.listed} · {s.counts.withHeadline} with a {s.focus === "all" ? "headline" : `${FOCUS_LABEL[s.focus]} headline`}, {s.counts.withoutHeadline} with the reason instead · each name opens the school&rsquo;s SMT view where head office has access, otherwise its public page
+        Showing {s.counts.shown} of {s.counts.listed} · {s.counts.withHeadline} with a {s.focus === "all" ? "headline" : `${FOCUS_LABEL[s.focus]} headline`}, {s.counts.withoutHeadline} with the reason instead{head.mixed ? " · each headline is its school's phase's measure, so Headline and Rank in England sort within each measure" : ""} · Rank in group: among the group&rsquo;s schools with that headline · Roll, {GROWING_SPAN} yrs: the change in each school&rsquo;s roll over the last {GROWING_SPAN} censuses · each name opens the school&rsquo;s SMT view where head office has access, otherwise its public page
       </div>
     </div>
   );
@@ -512,10 +539,10 @@ function SchoolTr({ r, on, onHighlight }: { r: SchoolRow; on: boolean; onHighlig
       <Td>{r.roll === null ? "—" : r.roll.toLocaleString("en-GB")}</Td>
       <Td>{r.size ? <span className="rounded-[4px] bg-[var(--adm-tint)] px-1.5 text-[10.5px] font-bold text-[var(--adm-accent-text)]">{r.size}</span> : "—"}</Td>
       <Td className="text-[var(--muted2)]">{r.shape ?? "—"}</Td>
-      <Td className="min-w-[132px]">{r.headline ? `${r.headline.label} ${fmt(r.headline.value, unitOf(r.headline.measure), r.headline.measure === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}` : <i className="text-[var(--muted2)]" data-placing={r.placing ? r.placing.kind : undefined}>{r.placingText ?? r.reason}</i>}</Td>
-      <Td>{r.inGroup ? `${ordinal(r.inGroup.rank, r.inGroup.tied)} of ${r.inGroup.of}` : "—"}</Td>
+      <Td className="min-w-[132px]" title={r.headline ? `${MEASURE_LABEL[r.headline.measure] ?? r.headline.label}, ${periodLabel(r.headline.year)}` : undefined}>{r.headline ? `${r.headline.label} ${fmt(r.headline.value, unitOf(r.headline.measure), r.headline.measure === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}` : <i className="text-[var(--muted2)]" data-placing={r.placing ? r.placing.kind : undefined}>{r.placingText ?? r.reason}</i>}</Td>
+      <Td>{r.inGroup ? `${ordinal(r.inGroup.rank, r.inGroup.tied)} of ${r.inGroup.of}` : joinedAfterResults(r) ? <i className="text-[var(--muted2)]" title="Not a member when these results were taken">joined after results</i> : "—"}</Td>
       <Td>{r.national ? `${ordinal(r.national.rank, r.national.tied)} of ${r.national.of.toLocaleString("en-GB")}` : "—"}</Td>
-      <Td>{r.va ? fmt(r.va.value, "va") : <span className="text-[var(--muted2)]" title={r.vaNote ?? undefined}>{r.vaNote ? "not published" : "—"}</span>}</Td>
+      <Td title={r.va ? `${MEASURE_LABEL[r.va.measure] ?? r.va.measure}, ${periodLabel(r.va.year)}` : undefined}>{r.va ? `${fmt(r.va.value, "va")} ${MEASURE_SHORT[r.va.measure] ?? ""}`.trim() : <span className="text-[var(--muted2)]" title={r.vaNote ?? undefined}>{r.vaNote ? "not published" : "—"}</span>}</Td>
       <Td className={`whitespace-nowrap ${dirClass(r.trend, 0.5, 1)}`}>{r.trend === null ? "—" : arrowed(r.trend, (x) => `${x.toFixed(1)}%`, 1, 0.5)}</Td>
       <Td className="text-[var(--muted2)]">{r.joined ? dateText(r.joined) : r.basis === "assumed" ? "undated" : "—"}</Td>
     </tr>
@@ -565,7 +592,7 @@ function NmSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highli
                   <Td>{r.kindTag ?? "—"}</Td>
                   <Td>{r.ages ?? "—"}</Td>
                   <Td>{r.roll === null ? "—" : r.roll.toLocaleString("en-GB")}</Td>
-                  <Td className="whitespace-nowrap">{r.fsm === null || r.fsm === undefined ? "—" : `${r.fsm.toFixed(1)}%`}<span className="text-[var(--muted2)]">{p ? region(p.fsm.pool) : ""}</span></Td>
+                  <Td className="whitespace-nowrap">{r.fsmFewPupils != null ? <i className="text-[var(--muted2)]">too few pupils ({r.fsmFewPupils})</i> : r.fsm === null || r.fsm === undefined ? "—" : `${r.fsm.toFixed(1)}%`}<span className="text-[var(--muted2)]">{p ? region(p.fsm.pool) : ""}</span></Td>
                   <Td className={`whitespace-nowrap ${dirClass(r.trend, 0.5, 1)}`}>{r.trend === null ? "—" : arrowed(r.trend, (x) => `${x.toFixed(1)}%`, 1, 0.5)}<span className="text-[var(--muted2)]">{p ? region(p.change.pool, true) : ""}</span></Td>
                   <Td className="text-[var(--muted2)]">{p?.pool ? (p.pool.tooFew ? tooFewWords(p.pool.n) : (p.pool.label.split(", ").slice(1).join(", ") || p.pool.label)) : r.reason ? <i>{r.reason}</i> : "—"}</Td>
                   <Td className="text-[var(--muted2)]">{r.joined ? dateText(r.joined) : r.basis === "assumed" ? "undated" : "—"}</Td>

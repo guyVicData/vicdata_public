@@ -163,7 +163,8 @@ test("every line / table / bar preset is covered below (or left to its host)", (
   // The geography views draw from the host's fetch in the frame (S3c, below): without it
   // (these fixtures carry none) the host draws. Grade counts' table draws from a grades frame
   // only (src/lib/view-series-grades.test.ts).
-  const hosts = new Set(["DV-C1-CAND-TR-GEO-CHART", "DV-C1-CAND-TR-GEO-TABLE", "DV-C1-RES-TR-GEO-CHART", "DV-C1-RES-TR-GEO-TABLE", "DV-C1-CNT-TR-CHANGETABLE"]);
+  // Review fixes (14 Nov, Q6): Rank over time draws in Comparisons' host (rankOverTime), from its trend table.
+  const hosts = new Set(["DV-C3-TR-RANK", "DV-C1-CAND-TR-GEO-CHART", "DV-C1-CAND-TR-GEO-TABLE", "DV-C1-RES-TR-GEO-CHART", "DV-C1-RES-TR-GEO-TABLE", "DV-C1-CNT-TR-CHANGETABLE"]);
   for (const id of LTB) assert.ok(covered.has(id) || hosts.has(id), id);
   for (const id of hosts) for (const { frame } of FRAMES) assert.equal(id === "DV-C1-CNT-TR-CHANGETABLE" ? null : build(id, frame), null, `${id} stays with its host without a geography fetch`);
 });

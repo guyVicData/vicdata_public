@@ -37,6 +37,9 @@ const NEUTRAL: Record<string, string> = {
   "change-word": "change",
   "change-of-measure": "change",
   "Entries|Results": "entries",
+  "Entries|measure": "entries",
+  Measure: "the measure",
+  latest: "the latest year",
   range: "the range",
 };
 

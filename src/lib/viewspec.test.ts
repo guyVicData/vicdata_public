@@ -36,9 +36,9 @@ function asV1<T extends { schema_version: number }>(c: T): StoredConfig {
 test("every dataview has exactly one preset, made from it, following the page (D1a)", () => {
   assert.deepEqual(PRESET_IDS, DATAVIEWS.map((d) => d.id));
   // 0.7 admissions r2: Teacher's 40, then the Admissions presets after them (0.8: then SMT's). 0.8 front
-  // door (B17): Teacher's 41 with the dumbbell (draft, the walk's).
-  assert.equal(PRESET_IDS.filter((id) => !id.startsWith("DV-ADM-") && !id.startsWith("DV-SMT-")).length, 41);
-  assert.deepEqual(PRESET_IDS.slice(0, 41).filter((id) => id.startsWith("DV-ADM-")), []);
+  // door (B17): Teacher's 41 with the dumbbell (draft, the walk's). Review fixes (14 Nov, Q6): 42 with Rank over time.
+  assert.equal(PRESET_IDS.filter((id) => !id.startsWith("DV-ADM-") && !id.startsWith("DV-SMT-")).length, 42);
+  assert.deepEqual(PRESET_IDS.slice(0, 42).filter((id) => id.startsWith("DV-ADM-")), []);
   for (const dv of DATAVIEWS) {
     const s = VIEW_PRESETS.get(dv.id)!;
     assert.equal(s.preset, dv.id);
@@ -221,7 +221,8 @@ test('Guy\'s meeting "Autumn department meeting" (v1, with a text-box slide) sti
   }
   // The model renders as before: titles from the pins, and the 1+text layout places both slots.
   assert.equal(slotTitle(slides[0].slots[0]), slotTitle(asV1Slot(meeting, 0, 0)));
-  assert.equal(slotTitle(slides[0].slots[0]), "Entries by subject in Humanities");
+  // Review fixes (14 Nov, M5): the title names its year.
+  assert.match(slotTitle(slides[0].slots[0]), /^Entries by subject in Humanities, \d{4}\/\d{2}$/);
   const arranged = arrangeSlide(slides[1]);
   assert.equal(JSON.stringify(arranged), JSON.stringify(arrangeSlide((meeting as unknown as DashboardConfig).presentation!.slides[1])));
 });

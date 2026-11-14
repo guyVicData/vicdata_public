@@ -8,7 +8,9 @@ import type { GradeRange } from "@/lib/subject-grades";
 import type { FrameMap, SortState } from "./frames";
 import type { TeacherMapSpec } from "@/lib/teacher-map";
 
-export type ChangeRowData = { key: string; label: string; colour: string; value: number | null; pos?: number; rank?: number };
+/** `from`/`to`: the entries the % change runs between; `small`: a first year under MINIMUM_SUBJECT_N (review
+ * fixes, tables.md M5: a 2-to-6 subject's +200% no longer tops the list). */
+export type ChangeRowData = { key: string; label: string; colour: string; value: number | null; pos?: number; rank?: number; from?: number | null; to?: number | null; small?: boolean };
 export type AverageLine = { value: number; label: string };
 
 // A ViewChart "row" bar (ComputedView's row, the fields the row layout reads).

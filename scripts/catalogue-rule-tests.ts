@@ -3191,7 +3191,7 @@ const RUNNERS: Record<string, Runner> = {
     const region = (await englandSchools()).get("110110")?.regionName;
     const sc = await smtRender("110110", "DV-SMT-O-SCORECARD");
     const ks4 = (o: typeof lp.overview) => o.rows.filter((r) => r.stage === "ks4").map((r) => r.key);
-    const pass = ks4(lp.overview).length === 0 && !!b && !!b.set && b.region?.name === region && region === "South East" && b.england?.rank === eng.rank && b.england?.of === eng.of && /<th[^>]*title="10 nearest with a sixth form or 16\+ provision"[^>]*>10 nearest<\/th>|<th[^>]*>10 nearest<\/th>/.test(sc.replace(/10 nearest schools/, "")) &&
+    const pass = ks4(lp.overview).length === 0 && !!b && !!b.set && b.region?.name === region && region === "South East" && b.england?.rank === eng.rank && b.england?.of === eng.of && /<th[^>]*title="10 nearest[^"]*"[^>]*>10 nearest( rank)?<\/th>|<th[^>]*>10 nearest( rank)?<\/th>/.test(sc.replace(/10 nearest schools/, "")) &&
       ["Attainment 8", "Grade 5+ in English and maths", "Progress 8"].every((l) => chase.overview.rows.some((r) => r.label === l && r.stage === "ks4")) && !chase.overview.rows.some((r) => r.key === "boarders");
     return { pass, detail: fmt({ leightonGcseRows: ks4(lp.overview).length, boarders: b && `${b.value}: set ${b.set?.rank}/${b.set?.of}, ${b.region?.name} ${b.region?.rank}/${b.region?.of}, England ${b.england?.rank}/${b.england?.of}`, recomputedEngland: `${eng.rank}/${eng.of}`, header: lp.overview.set.short, chaseRows: chase.overview.rows.map((r) => r.label).join("/") }) };
   },
@@ -3225,7 +3225,9 @@ const RUNNERS: Record<string, Runner> = {
     const k11 = kw.overview.now.entry?.find((x) => x.key === "net11");
     const chaseHtml = await smtRender("137625", "DV-SMT-O-NOW");
     const pass = j?.value === cohortAt(t, 11, P) && n16?.value === cohortAt(t, 16, P)! - cohortAt(t, 15, P - 1)! && n16.value === -(leaving.leaving ?? NaN) && leaving.year === P &&
-      k11?.value === cohortAt(tk, 11, Pk)! - cohortAt(tk, 10, Pk - 1)! && ch.overview.now.entry === null && !/data-entry-tile/.test(chaseHtml) && /Attainment 8/.test(chaseHtml) && /Progress 8/.test(chaseHtml);
+      k11?.value === cohortAt(tk, 11, Pk)! - cohortAt(tk, 10, Pk - 1)! && ch.overview.now.entry === null && !/data-entry-tile/.test(chaseHtml) && /Roll/.test(chaseHtml) && ch.overview.rows.some((r) => r.label === "Attainment 8") && ch.overview.rows.some((r) => /Progress 8/.test(r.label));
+    // Review fixes (14 Nov, Q5): a state school's Current no longer repeats Attainment 8 and Progress 8 beside the
+    // Scorecard (which holds them); it still draws no entry tiles.
     return { pass, detail: fmt({ leighton: e.map((x) => `${x.label} ${x.value} (${round(x.since?.pct ?? null, 0)}% since ${x.since?.base})`).join("; "), leavingAt16: leaving.leaving, kings: (kw.overview.now.entry ?? []).map((x) => `${x.label} ${x.value}`).join("; "), chase: ch.overview.now.entry === null ? "state, unchanged" : "tiles!" }) };
   },
   async railHidesEmpty() {
@@ -3695,6 +3697,29 @@ const RUNNERS: Record<string, Runner> = {
       dashAgrees = !!dd && dd.rows.length === walkRows.length && dd.rows.every((r, i) => r.latest === walkRows[i].latest && r.change === walkRows[i].latest - walkRows[i].first) && dd.rows.find((r) => r.focus)?.label === focus?.label;
     }
     return { pass: !problems.length && !!focus && unit.pass && dashAgrees, detail: fmt({ rows: d?.rows.length ?? 0, first: d?.rows[0]?.label ?? "none", focus: focus ? `${focus.label} ${focus.first}→${focus.latest}` : "none", last: d?.rows[d.rows.length - 1]?.label ?? "none", problems: problems.join("; ") || "none", dashboard: unit.detail, dashboardRowsAsWalk: dashAgrees }) };
+  },
+  // 0.8 review fixes (14 Nov): the new rules' tests, each in its own process on the real fixtures.
+  async walkWords(_L, rule) {
+    const a = unitByRule("src/lib/front-door/walk-words.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    const b = unitByRule("src/lib/front-door/review-fixes.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    const g = groupTests(["src/lib/front-door/group-walks.test.tsx"], rule.id);
+    return { pass: a.pass && b.pass && g.pass, detail: fmt({ walks: a.detail, fixes: b.detail, headOffice: g.detail }) };
+  },
+  async walkPanelLink(_L, rule) {
+    const r = unitByRule("src/lib/front-door/review-fixes.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async rankOfN(_L, rule) {
+    const r = groupTests(["src/lib/front-door/rank-of-n-groups.test.ts"], rule.id);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async chartTitles(_L, rule) {
+    const r = unitByRule("src/lib/front-door/chart-titles.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async subjectColour(_L, rule) {
+    const r = unitByRule("src/lib/subject-colour.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
   },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");

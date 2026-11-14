@@ -1,0 +1,19 @@
+// Harness only (read-only): every route sees a fixed member of the school with the service-role reader.
+// Routes are called for GETs (and SMT's read-only POSTs); nothing here writes.
+import { NextResponse, type NextRequest } from "next/server";
+import { createServiceRoleSupabaseClient } from "@/lib/supabase";
+export type ResolvedCaller = Record<string, unknown>;
+export type ResolveOptions<H> = Record<string, unknown> & { headOffice?: H };
+const USER = "00000000-0000-0000-0000-0000000000aa";
+export async function callerClient(): Promise<{ supabase: ReturnType<typeof createServiceRoleSupabaseClient>; userId: string }> {
+  return { supabase: createServiceRoleSupabaseClient(), userId: USER };
+}
+export async function resolveCaller(request: NextRequest, urn: string | null) {
+  if (!urn) return NextResponse.json({ error: "urn" }, { status: 400 });
+  const sb = createServiceRoleSupabaseClient();
+  return { supabase: sb, reader: sb, userId: USER, urn, roles: ["teacher", "smt", "admissions"], isAdmin: true, isAccountHolder: false, lead: true, membershipId: null, access: "member", readOnly: false, viewAsRole: null, platformAdmin: false, headOffice: null };
+}
+export async function schoolAccountIdOf(caller: { reader: ReturnType<typeof createServiceRoleSupabaseClient> }, urn: string): Promise<string | null> {
+  const { data } = await caller.reader.from("school_accounts").select("id").eq("school_urn", urn).maybeSingle<{ id: string }>();
+  return data?.id ?? null;
+}

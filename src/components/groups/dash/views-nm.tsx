@@ -65,24 +65,27 @@ export function NmNow({ o, compact }: { o: GroupOverview; compact: boolean }) {
   );
 }
 
-function NmTable({ rows, first, compact = false }: { rows: NmRow[]; first: string; compact?: boolean }) {
+// Review fixes (tables.md L8): compact keeps the schools count (a figure's base), and the roll and FSM
+// headers say their census.
+function NmTable({ rows, first, compact = false, census = null }: { rows: NmRow[]; first: string; compact?: boolean; census?: number | null }) {
+  const c = census !== null ? `, ${periodLabel(census)}` : "";
   return (
     <div className="min-h-0 overflow-auto rounded-[10px] border border-[var(--panel-border)]">
       <table className="w-full border-collapse text-[12px]">
         <thead className="sticky top-0 bg-[var(--panel-bg)]">
           <tr className="border-b border-[var(--panel-border)] text-left">
             <Th>{first}</Th>
-            {!compact && <Th>Schools</Th>}
+            <Th>Schools</Th>
             {!compact && <Th>Pupils</Th>}
-            <Th>Roll, 1 year</Th>
-            <Th>FSM</Th>
+            <Th>Roll, 1 year{c}</Th>
+            <Th>FSM{c}</Th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.key} data-nm-row={r.key} className="border-b border-[var(--panel-border)] last:border-0" style={r.ours ? { background: "var(--adm-tint)" } : undefined}>
               <Td className={r.ours ? "font-bold text-[var(--adm-accent-text)]" : ""}>{r.label}</Td>
-              {!compact && <Td>{n(r.schools)}</Td>}
+              <Td>{n(r.schools)}</Td>
               {!compact && <Td>{n(r.pupils)}</Td>}
               {r.tooFew ? (
                 <td colSpan={2} title={POOL_MIN_NOTE} className="px-2 py-[7px] text-[12.5px] text-[var(--muted2)]">
@@ -112,7 +115,7 @@ export function NmAgainst({ o, compact = false }: { o: GroupOverview; compact?: 
     rows.push({ key: "median", label: t.median.label, kind: "median", schools: t.median.schools, pupils: t.median.pupils, change1: t.median.nm?.change1 ?? null, change3: null, fsm: t.median.nm?.fsm ?? null, fsmN: null, tooFew: false, ours: false });
     return (
       <div className="flex min-h-0 flex-col gap-2" data-nm-side-by-side="">
-        <NmTable rows={rows} first="Group" compact={compact} />
+        <NmTable rows={rows} first="Group" compact={compact} census={o.years.census} />
         {o.picker.set?.refused ? <div className="text-[11.5px] font-semibold" data-set-refused="">{o.picker.set.refused} group{o.picker.set.refused === 1 ? "" : "s"} in this set {o.picker.set.refused === 1 ? "is" : "are"} left out: {nm.family === "nursery" ? "nursery federations are compared only with nursery federations" : "special and AP trusts are compared only with special and AP trusts"}.</div> : null}
         <div className="text-[11px] text-[var(--muted2)]">Each row is a group&rsquo;s own figures over its special, AP and nursery schools; the median is one vote per group with a figure.</div>
       </div>
@@ -120,7 +123,7 @@ export function NmAgainst({ o, compact = false }: { o: GroupOverview; compact?: 
   }
   return (
     <div className="flex min-h-0 flex-col gap-2" data-nm-against="">
-      <NmTable rows={nm.against} first="Set" compact={compact} />
+      <NmTable rows={nm.against} first="Set" compact={compact} census={o.years.census} />
       <div className="text-[11px] text-[var(--muted2)]">{nm.notes.stateFunded} {POOL_MIN_NOTE}</div>
     </div>
   );
@@ -134,7 +137,7 @@ export function NmLine({ o, compact = false }: { o: GroupOverview; compact?: boo
   return (
     <div className="flex min-h-0 flex-col gap-2" data-nm-line="">
       <div className="text-[13px] font-bold text-[var(--fg)]">Its mainstream line: {line.schools} school{line.schools === 1 ? "" : "s"}, {n(line.pupils)} pupils</div>
-      <NmTable rows={line.rows} first="Set" compact={compact} />
+      <NmTable rows={line.rows} first="Set" compact={compact} census={o.years.census} />
       <div className="text-[11px] text-[var(--muted2)]">{line.note}</div>
     </div>
   );

@@ -15,6 +15,7 @@
 // leading rank), the school, a small sector icon beside the name (state / independent), the figure, and the distance from the school itself. The
 // school's own row is picked out in the phase's featured-row tint (F-17) and carries `data-highlight`, so a
 // CentredOnTarget around it scrolls it into the middle, as the old table's row did.
+import { MINIMUM_SUBJECT_N } from "@/lib/academic-data-view";
 import { useState, type CSSProperties } from "react";
 import { SECTOR, sectorOf } from "@/lib/school-sector";
 import { TAG_COLOURS } from "@/lib/tag-colours";
@@ -61,8 +62,11 @@ export function SchoolRankingTable({
   targetName,
   fullscreen = false,
   columns,
+  average,
 }: {
   rows: SchoolRankingRow[];
+  /** Review fixes (tables.md L7): the set's average, as a muted last row ("Set average 5.2"). */
+  average?: { label: string; value: string } | null;
   // "Entries" for a candidate count, "Result" otherwise.
   valueHeading: string;
   // For the distance column's own heading: distance from which school.
@@ -166,7 +170,7 @@ export function SchoolRankingTable({
                   )}
                 </span>
               </td>
-              {has("value") && <td className={`w-14 px-1 text-right font-semibold ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`}>{r.valueLabel}</td>}
+              {has("value") && <td className={`w-14 px-1 text-right font-semibold ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`} title={r.value === null ? `No figure: fewer than ${MINIMUM_SUBJECT_N} entries, or none published` : undefined}>{r.valueLabel}</td>}
               {has("change") && <td className="w-14 px-1 text-right text-[var(--muted2)]">{r.change ?? "—"}</td>}
               {has("n") && <td className="w-12 px-1 text-right text-[var(--muted2)]">{r.n === null || r.n === undefined ? "—" : Math.round(r.n).toLocaleString()}</td>}
               {has("bar") && (
@@ -182,6 +186,14 @@ export function SchoolRankingTable({
             </tr>
           );
         })}
+        {average && (
+          <tr data-set-average="" className="border-t border-dashed border-[var(--panel-border2)] italic text-[var(--muted2)]">
+            {has("rank") && <td />}
+            <td className="px-1 py-[6px]">{average.label}</td>
+            {has("value") && <td className="w-14 px-1 text-right">{average.value}</td>}
+            {(["change", "n", "bar", "distance"] as const).filter((c) => has(c)).map((c) => <td key={c} />)}
+          </tr>
+        )}
       </tbody>
     </table>
   );

@@ -107,6 +107,10 @@ export function RivalsTable({ m, rivals, fullscreen, sort = "latest" }: { m: Mar
   const r = rivals.status === "ready" ? rivals.data : null;
   const km = (urn: string) => (urn === m.urn ? -1 : (m.extras.find((x) => x.urn === urn)?.distanceKm ?? 1e9));
   const rows = m.entryAge.rows.filter((x) => x.period === y).sort(sort === "listed" ? (a, b) => km(a.urn) - km(b.urn) : (a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  // Review fixes (tables.md M4): every column says what it is -- the rank's measure, the share's whole, the
+  // results' measure and year with "of N" -- and a real 0.0 km prints as 0.0 km.
+  const measure = r?.overall?.measure ?? (m.entry.age >= 16 ? "A-level points per entry" : m.entry.age >= 11 ? "Attainment 8" : "KS2");
+  const resultsHead = r?.resultsPeriod != null ? `Results: England rank, ${measure.replace("A-level points per entry", "A-level points")} ${yearLabel(r.resultsPeriod)}` : "Results: England rank";
   return (
     <>
       <ViewTitle>Your rivals at {m.entry.label.replace(/ \(.*\)$/, "")}</ViewTitle>
@@ -114,14 +118,14 @@ export function RivalsTable({ m, rivals, fullscreen, sort = "latest" }: { m: Mar
         <table className="w-full tabular-nums">
           <thead className="sticky top-0 bg-[var(--panel-bg)]">
             <tr className="text-left">
-              <th className={TH}>#</th>
+              <th className={TH} title={`Rank by pupils aged ${m.entry.age}, ${yearLabel(y)}: 1 = most`}>Rank by aged {m.entry.age}</th>
               <th className={TH}>School</th>
-              <th className={cx(TH, "text-right")}>Aged {m.entry.age}</th>
-              <th className={cx(TH, "text-right")}>Share</th>
+              <th className={cx(TH, "text-right")}>Aged {m.entry.age}, {yearLabel(y)}</th>
+              <th className={cx(TH, "text-right")} title={`Each school's share of all the ${m.entry.age}-year-olds at you and your rivals`}>Share of all aged {m.entry.age}</th>
               <th className={cx(TH, "text-right")}>Roll</th>
-              <th className={TH}>Size</th>
+              <th className={TH} title="Size against the school's own phase in England: XS, S, M, L, XL (fifths, smallest to largest)">Size</th>
               <th className={cx(TH, "text-right")}>km</th>
-              <th className={cx(TH, "text-right")}>Results</th>
+              <th className={cx(TH, "text-right")}>{resultsHead}</th>
             </tr>
           </thead>
           <tbody>
@@ -136,8 +140,8 @@ export function RivalsTable({ m, rivals, fullscreen, sort = "latest" }: { m: Mar
                   <td className={cx(TD, "text-right")}>{fmtPct(row.share)}</td>
                   <td className={cx(TD, "text-right")}>{fmtN(e?.roll)}</td>
                   <td className={TD}>{rr?.size?.badge ?? "—"}</td>
-                  <td className={cx(TD, "text-right")}>{e?.distanceKm ? e.distanceKm.toFixed(1) : "—"}</td>
-                  <td className={cx(TD, "text-right")}>{rr ? (rr.results.note === "igcse_not_ranked" ? "IGCSE" : rr.results.note === "no_published_results" ? "none" : `${ordinal(rr.results.national?.rank)} in England`) : "…"}</td>
+                  <td className={cx(TD, "text-right")}>{row.urn === m.urn ? "—" : e?.distanceKm != null ? e.distanceKm.toFixed(1) : "—"}</td>
+                  <td className={cx(TD, "text-right")}>{rr ? (rr.results.note === "igcse_not_ranked" ? "IGCSE" : rr.results.note === "no_published_results" ? "none" : rr.results.national ? `${ordinal(rr.results.national.rank)} of ${rr.results.national.of.toLocaleString("en-GB")}` : "—") : "…"}</td>
                 </tr>
               );
             })}
@@ -191,33 +195,38 @@ export function EntryTable({ p, years = "down" }: { p: PipelineOk; years?: "down
   );
 }
 
-export function ShareTable({ m, ranks = false, years = "down" }: { m: MarketView; ranks?: boolean; years?: "down" | "across" }) {
+// Review fixes (Q5, dashboards.md): Share numbers and Share ranks were one table with a switch; it now always
+// shows both, the share and the rank as "X of N" by share (`ranks` is kept for old saved views; ignored).
+export function ShareTable({ m, years = "down" }: { m: MarketView; ranks?: boolean; years?: "down" | "across" }) {
   const mine = m.entryAge.rows.filter((r) => r.urn === m.urn).sort((a, b) => a.period - b.period);
-  const last = (r: (typeof mine)[number]) => (ranks ? (r.rank ? `${r.rank} of ${m.entryAge.rows.filter((x) => x.period === r.period && x.count !== null).length}` : "—") : fmtPct(r.share));
+  const rankOf = (r: (typeof mine)[number]) => (r.rank ? `${ordinal(r.rank)} of ${m.entryAge.rows.filter((x) => x.period === r.period && x.count !== null).length}` : "—");
+  const title = `Your market share and rank at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year`;
   if (years === "across")
     return (
       <>
-        <ViewTitle>{ranks ? `Your rank at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year` : `Your market share at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year`}</ViewTitle>
+        <ViewTitle>{title}</ViewTitle>
         <Across
           years={mine.map((r) => r.period)}
           rows={[
             { label: "You", at: (y) => fmtN(mine.find((r) => r.period === y)?.count) },
-            { label: "Group", at: (y) => fmtN(m.entryAge.totals[y]) },
-            { label: ranks ? "Rank" : "Share", strong: true, at: (y) => { const r = mine.find((x) => x.period === y); return r ? last(r) : "—"; } },
+            { label: "You and your rivals", at: (y) => fmtN(m.entryAge.totals[y]) },
+            { label: "Share", strong: true, at: (y) => fmtPct(mine.find((x) => x.period === y)?.share ?? null) },
+            { label: "Rank by share", at: (y) => { const r = mine.find((x) => x.period === y); return r ? rankOf(r) : "—"; } },
           ]}
         />
       </>
     );
   return (
     <>
-      <ViewTitle>{ranks ? `Your rank at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year` : `Your market share at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year`}</ViewTitle>
+      <ViewTitle>{title}</ViewTitle>
       <table className="w-full tabular-nums">
         <thead>
           <tr className="text-left">
             <th className={TH}>Year</th>
             <th className={cx(TH, "text-right")}>You</th>
-            <th className={cx(TH, "text-right")}>Group</th>
-            <th className={cx(TH, "text-right")}>{ranks ? "Rank" : "Share"}</th>
+            <th className={cx(TH, "text-right")}>You and your rivals</th>
+            <th className={cx(TH, "text-right")}>Share</th>
+            <th className={cx(TH, "text-right")}>Rank by share</th>
           </tr>
         </thead>
         <tbody>
@@ -226,7 +235,8 @@ export function ShareTable({ m, ranks = false, years = "down" }: { m: MarketView
               <td className={TD}>{yearLabel(r.period)}</td>
               <td className={cx(TD, "text-right")}>{fmtN(r.count)}</td>
               <td className={cx(TD, "text-right")}>{fmtN(m.entryAge.totals[r.period])}</td>
-              <td className={cx(TD, "text-right font-semibold text-[var(--fg)]")}>{ranks ? (r.rank ? `${r.rank} of ${m.entryAge.rows.filter((x) => x.period === r.period && x.count !== null).length}` : "—") : fmtPct(r.share)}</td>
+              <td className={cx(TD, "text-right font-semibold text-[var(--fg)]")}>{fmtPct(r.share)}</td>
+              <td className={cx(TD, "text-right")}>{rankOf(r)}</td>
             </tr>
           ))}
         </tbody>

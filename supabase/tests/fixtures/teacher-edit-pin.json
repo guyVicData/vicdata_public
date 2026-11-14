@@ -14,15 +14,15 @@
   },
   {
    "step": "copy view to next panel",
-   "out": "80d11021b7b79246170cb8a394c30200c1fd715c2c5c7c028404403a53c03d0a | Added *This subject Candidates: 2024/25* to Context · Current."
+   "out": "80d11021b7b79246170cb8a394c30200c1fd715c2c5c7c028404403a53c03d0a | Added *This subject entries, 2024/25* to Context · Current."
   },
   {
    "step": "move view back",
-   "out": "d86102cd797c8102044ef3b03bd196b33d5a8a62f63f2ffddeb9c299ed71de8d | Added *This subject Candidates: 2024/25* to Candidates · Current; removed *This subject Candidates: 2024/25* from Context · Current."
+   "out": "d86102cd797c8102044ef3b03bd196b33d5a8a62f63f2ffddeb9c299ed71de8d | Added *This subject entries, 2024/25* to Candidates · Current; removed *This subject entries, 2024/25* from Context · Current."
   },
   {
    "step": "remove that view",
-   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Removed *This subject Candidates: 2024/25* from Candidates · Current."
+   "out": "04900c6d72d15e81e18acc8728f610243bf5d5348722046487a2e775efdb36cc | Removed *This subject entries, 2024/25* from Candidates · Current."
   },
   {
    "step": "swap two panels (move)",
@@ -50,7 +50,7 @@
   },
   {
    "step": "copy a row",
-   "out": "4fe5f40a26178f0299b2f2b3b547e2691b5f16e2e1e243faaf5429f40a2b547f | Added *This subject Candidates: 2024/25* to Candidates · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: candidates* to Comparisons · Current (copy); added *This subject candidates by school, on the map* to Comparisons · Current (copy); added *Entries by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject candidates in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+   "out": "4fe5f40a26178f0299b2f2b3b547e2691b5f16e2e1e243faaf5429f40a2b547f | Added *This subject entries, 2024/25* to Candidates · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Entries by subject in its category, 2024/25* to Context · Current (copy); added *Entries by subject in its category, 2024/25, ranked list* to Context · Current (copy); added *Entries by subject in its category, 2024/25, as a table* to Context · Current (copy); added *This school's rank in the 10 nearest: candidates* to Comparisons · Current (copy); added *This subject candidates by school, on the map, 2024/25* to Comparisons · Current (copy); added *Entries by school in the 10 nearest, 2024/25* to Comparisons · Current (copy); added *Schools ranked by This subject candidates in the 10 nearest, 2024/25* to Comparisons · Current (copy); added row “Current (copy)”."
   },
   {
    "step": "delete the copy",
@@ -104,7 +104,7 @@
   },
   {
    "step": "set default view",
-   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | *This subject: grade distribution* is now the default view in Results · Current."
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | *This subject grades, 2024/25: share at each grade, against England* is now the default view in Results · Current."
   },
   {
    "step": "reorder views",
@@ -116,15 +116,15 @@
   },
   {
    "step": "copy view to next panel",
-   "out": "4a0cbe1ac42a9585163d6e45655fc389b22a992714f76c5b91305de3d7ef7657 | Average points, Grade 4+ rate, Grade bands: added *This subject: number tiles* to Context · Current."
+   "out": "4a0cbe1ac42a9585163d6e45655fc389b22a992714f76c5b91305de3d7ef7657 | Average points, Grade 4+ rate, Grade bands: added *This subject results, 2024/25: average points against England* to Context · Current."
   },
   {
    "step": "move view back",
-   "out": "c0239573df1692a13aa6a8a14e14522e8794b79a8be6fe33e106a80d93e54bb8 | Average points, Grade 4+ rate, Grade bands: added *This subject: number tiles* to Results · Current; Average points, Grade 4+ rate, Grade bands: removed *This subject: number tiles* from Context · Current."
+   "out": "c0239573df1692a13aa6a8a14e14522e8794b79a8be6fe33e106a80d93e54bb8 | Average points, Grade 4+ rate, Grade bands: added *This subject results, 2024/25: average points against England* to Results · Current; Average points, Grade 4+ rate, Grade bands: removed *This subject results, 2024/25: average points against England* from Context · Current."
   },
   {
    "step": "remove that view",
-   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Average points, Grade 4+ rate, Grade bands: removed *This subject: number tiles* from Results · Current."
+   "out": "dc799aa02aaf02d9aa33c7b64a6c263a3d0406752dc5541eded5d40c2ffe8151 | Average points, Grade 4+ rate, Grade bands: removed *This subject results, 2024/25: average points against England* from Results · Current."
   },
   {
    "step": "swap two panels (move)",
@@ -152,7 +152,7 @@
   },
   {
    "step": "copy a row",
-   "out": "657fc32ece17ac4ef0caaf6e979db03211b7d6cf6669beddb73a6f16ca21a7e0 | Average points, Grade 4+ rate, Grade bands: added *This subject: number tiles* to Results · Current (copy); Grade bands: added *This subject: grade distribution* to Results · Current (copy); Average points, Grade 4+ rate, Grade bands: added *Results in its category* to Results · Current (copy); Average points, Grade 4+ rate, Grade bands: added *Results in its category* to Results · Current (copy); Grade counts: added *This subject: grade distribution* to Results · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: average points* to Comparisons · Current (copy); added *This subject average points by school, on the map* to Comparisons · Current (copy); added *Results by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject average points in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+   "out": "657fc32ece17ac4ef0caaf6e979db03211b7d6cf6669beddb73a6f16ca21a7e0 | Average points, Grade 4+ rate, Grade bands: added *This subject results, 2024/25: average points against England* to Results · Current (copy); Grade bands: added *This subject grades, 2024/25: share at each grade, against England* to Results · Current (copy); Average points, Grade 4+ rate, Grade bands: added *Average points by subject in its category, 2024/25* to Results · Current (copy); Average points, Grade 4+ rate, Grade bands: added *Average points by subject in its category, 2024/25, as a table* to Results · Current (copy); Grade counts: added *This subject: pupils at each grade, 2024/25* to Results · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Average points by subject in its category, 2024/25* to Context · Current (copy); added *Average points by subject in its category, 2024/25, ranked list* to Context · Current (copy); added *Average points by subject in its category, 2024/25, as a table* to Context · Current (copy); added *This school's rank in the 10 nearest: average points* to Comparisons · Current (copy); added *This subject average points by school, on the map, 2024/25* to Comparisons · Current (copy); added *Average points by school in the 10 nearest, 2024/25* to Comparisons · Current (copy); added *Schools ranked by This subject average points in the 10 nearest, 2024/25* to Comparisons · Current (copy); added row “Current (copy)”."
   },
   {
    "step": "delete the copy",
@@ -188,7 +188,7 @@
   },
   {
    "step": "summary vs start",
-   "out": "*This subject: grade distribution* is now the default view in Results · Current."
+   "out": "*This subject grades, 2024/25: share at each grade, against England* is now the default view in Results · Current."
   }
  ],
  "vicdata.ks5.candidates": [
@@ -206,15 +206,15 @@
   },
   {
    "step": "copy view to next panel",
-   "out": "e4c6f9b0ecd312ffc2667ed3af18513e105da7d35fd95199e4a2c492cc0713dc | Added *This subject Candidates: 2024/25* to Context · Current."
+   "out": "e4c6f9b0ecd312ffc2667ed3af18513e105da7d35fd95199e4a2c492cc0713dc | Added *This subject entries, 2024/25* to Context · Current."
   },
   {
    "step": "move view back",
-   "out": "7c567645fe2b55284f521ae22275fbb9d61a4dd32a54203424d994631dd9a154 | Added *This subject Candidates: 2024/25* to Candidates · Current; removed *This subject Candidates: 2024/25* from Context · Current."
+   "out": "7c567645fe2b55284f521ae22275fbb9d61a4dd32a54203424d994631dd9a154 | Added *This subject entries, 2024/25* to Candidates · Current; removed *This subject entries, 2024/25* from Context · Current."
   },
   {
    "step": "remove that view",
-   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Removed *This subject Candidates: 2024/25* from Candidates · Current."
+   "out": "2b5081707d280aa77fb0585d4d35a15687a2771a74fbedff2f03def50ddd2645 | Removed *This subject entries, 2024/25* from Candidates · Current."
   },
   {
    "step": "swap two panels (move)",
@@ -242,7 +242,7 @@
   },
   {
    "step": "copy a row",
-   "out": "265c1b14ff352795363edfe0c3dcbce0b5dc300c5d53a1e9f750a876992eacc3 | Added *This subject Candidates: 2024/25* to Candidates · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *Entries by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: candidates* to Comparisons · Current (copy); added *This subject candidates by school, on the map* to Comparisons · Current (copy); added *Entries by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject candidates in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+   "out": "265c1b14ff352795363edfe0c3dcbce0b5dc300c5d53a1e9f750a876992eacc3 | Added *This subject entries, 2024/25* to Candidates · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Entries by subject in its category, 2024/25* to Context · Current (copy); added *Entries by subject in its category, 2024/25, ranked list* to Context · Current (copy); added *Entries by subject in its category, 2024/25, as a table* to Context · Current (copy); added *This school's rank in the 10 nearest: candidates* to Comparisons · Current (copy); added *This subject candidates by school, on the map, 2024/25* to Comparisons · Current (copy); added *Entries by school in the 10 nearest, 2024/25* to Comparisons · Current (copy); added *Schools ranked by This subject candidates in the 10 nearest, 2024/25* to Comparisons · Current (copy); added row “Current (copy)”."
   },
   {
    "step": "delete the copy",
@@ -296,7 +296,7 @@
   },
   {
    "step": "set default view",
-   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | *This subject: grade distribution* is now the default view in Results · Current."
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | *This subject grades, 2024/25: share at each grade, against England* is now the default view in Results · Current."
   },
   {
    "step": "reorder views",
@@ -308,15 +308,15 @@
   },
   {
    "step": "copy view to next panel",
-   "out": "e945abe5d510342f10d318325161c55d54c9032c5197136dd8bab54010979d44 | Average points, A*–E rate, Grade bands: added *This subject: number tiles* to Context · Current."
+   "out": "e945abe5d510342f10d318325161c55d54c9032c5197136dd8bab54010979d44 | Average points, A*–E rate, Grade bands: added *This subject results, 2024/25: average points against England* to Context · Current."
   },
   {
    "step": "move view back",
-   "out": "789313f1ffef230b0737be82eeadb28d870b7c681c1f0691b802d0ab430bf202 | Average points, A*–E rate, Grade bands: added *This subject: number tiles* to Results · Current; Average points, A*–E rate, Grade bands: removed *This subject: number tiles* from Context · Current."
+   "out": "789313f1ffef230b0737be82eeadb28d870b7c681c1f0691b802d0ab430bf202 | Average points, A*–E rate, Grade bands: added *This subject results, 2024/25: average points against England* to Results · Current; Average points, A*–E rate, Grade bands: removed *This subject results, 2024/25: average points against England* from Context · Current."
   },
   {
    "step": "remove that view",
-   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Average points, A*–E rate, Grade bands: removed *This subject: number tiles* from Results · Current."
+   "out": "18478c341a8d6058a984a20f3ace80e5a2804f7f4e36e81ac4c36ae497b5237f | Average points, A*–E rate, Grade bands: removed *This subject results, 2024/25: average points against England* from Results · Current."
   },
   {
    "step": "swap two panels (move)",
@@ -344,7 +344,7 @@
   },
   {
    "step": "copy a row",
-   "out": "2b60910026326c2e0c6aadc8ac4354f656caae638caf555d07d30dd3c476d87d | Average points, A*–E rate, Grade bands: added *This subject: number tiles* to Results · Current (copy); Grade bands: added *This subject: grade distribution* to Results · Current (copy); Average points, A*–E rate, Grade bands: added *Results in its category* to Results · Current (copy); Average points, A*–E rate, Grade bands: added *Results in its category* to Results · Current (copy); Grade counts: added *This subject: grade distribution* to Results · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *Results by subject in its category* to Context · Current (copy); added *This school's rank in the 10 nearest: average points* to Comparisons · Current (copy); added *This subject average points by school, on the map* to Comparisons · Current (copy); added *Results by school in the 10 nearest* to Comparisons · Current (copy); added *Schools ranked by This subject average points in the 10 nearest* to Comparisons · Current (copy); added row “Current (copy)”."
+   "out": "2b60910026326c2e0c6aadc8ac4354f656caae638caf555d07d30dd3c476d87d | Average points, A*–E rate, Grade bands: added *This subject results, 2024/25: average points against England* to Results · Current (copy); Grade bands: added *This subject grades, 2024/25: share at each grade, against England* to Results · Current (copy); Average points, A*–E rate, Grade bands: added *Average points by subject in its category, 2024/25* to Results · Current (copy); Average points, A*–E rate, Grade bands: added *Average points by subject in its category, 2024/25, as a table* to Results · Current (copy); Grade counts: added *This subject: pupils at each grade, 2024/25* to Results · Current (copy); added *Entries in This subject as a proportion of its category* to Context · Current (copy); added *Average points by subject in its category, 2024/25* to Context · Current (copy); added *Average points by subject in its category, 2024/25, ranked list* to Context · Current (copy); added *Average points by subject in its category, 2024/25, as a table* to Context · Current (copy); added *This school's rank in the 10 nearest: average points* to Comparisons · Current (copy); added *This subject average points by school, on the map, 2024/25* to Comparisons · Current (copy); added *Average points by school in the 10 nearest, 2024/25* to Comparisons · Current (copy); added *Schools ranked by This subject average points in the 10 nearest, 2024/25* to Comparisons · Current (copy); added row “Current (copy)”."
   },
   {
    "step": "delete the copy",
@@ -380,7 +380,7 @@
   },
   {
    "step": "summary vs start",
-   "out": "*This subject: grade distribution* is now the default view in Results · Current."
+   "out": "*This subject grades, 2024/25: share at each grade, against England* is now the default view in Results · Current."
   }
  ]
 }

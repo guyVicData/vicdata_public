@@ -27,31 +27,31 @@ type Cell = { column: "c1" | "c2" | "c3"; row: "now" | "trends"; span?: 2; name:
 const OVERVIEW: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-O-NOW"], defaultView: "DV-SMT-O-NOW" },
   { column: "c2", row: "now", span: 2, name: "Scorecard", views: ["DV-SMT-O-SCORECARD", "DV-SMT-O-MAP", "DV-SMT-O-FLAGS"], defaultView: "DV-SMT-O-SCORECARD" },
-  { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-O-ROLL-LINE", "DV-SMT-O-ROLL-TABLE"], defaultView: "DV-SMT-O-ROLL-LINE" },
-  { column: "c2", row: "trends", name: "Trends", views: ["DV-SMT-O-RESULTS-LINE", "DV-SMT-O-RESULTS-TABLE"], defaultView: "DV-SMT-O-RESULTS-LINE" },
+  { column: "c1", row: "trends", name: "Roll", views: ["DV-SMT-O-ROLL-LINE", "DV-SMT-O-ROLL-TABLE"], defaultView: "DV-SMT-O-ROLL-LINE" },
+  { column: "c2", row: "trends", name: "Results", views: ["DV-SMT-O-RESULTS-LINE", "DV-SMT-O-RESULTS-TABLE"], defaultView: "DV-SMT-O-RESULTS-LINE" },
   { column: "c3", row: "trends", name: "From Admissions", views: ["DV-SMT-O-MARKET-LINE", "DV-SMT-O-MARKET-TABLE"], defaultView: "DV-SMT-O-MARKET-LINE" },
 ];
 
 const ACADEMIC: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-A-NOW"], defaultView: "DV-SMT-A-NOW" },
   { column: "c2", row: "now", span: 2, name: "The set", views: ["DV-SMT-A-CHART", "DV-SMT-A-TABLE", "DV-SMT-A-MAP", "DV-SMT-A-AREAS", "DV-SMT-A-GRADES"], defaultView: "DV-SMT-A-CHART" },
-  { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-A-TREND-LINE", "DV-SMT-A-TREND-TABLE"], defaultView: "DV-SMT-A-TREND-LINE" },
-  { column: "c2", row: "trends", name: "Trends", views: ["DV-SMT-A-LINES", "DV-SMT-A-MOVES"], defaultView: "DV-SMT-A-LINES" },
-  { column: "c3", row: "trends", name: "Trends", views: ["DV-SMT-A-MIX", "DV-SMT-A-MIX-TABLE", "DV-SMT-A-AGAINST", "DV-SMT-A-SETMOVES"], defaultView: "DV-SMT-A-MIX" },
+  { column: "c1", row: "trends", name: "Results", views: ["DV-SMT-A-TREND-LINE", "DV-SMT-A-TREND-TABLE"], defaultView: "DV-SMT-A-TREND-LINE" },
+  { column: "c2", row: "trends", name: "Every line", views: ["DV-SMT-A-LINES", "DV-SMT-A-MOVES"], defaultView: "DV-SMT-A-LINES" },
+  { column: "c3", row: "trends", name: "Entries mix", views: ["DV-SMT-A-MIX", "DV-SMT-A-AGAINST", "DV-SMT-A-SETMOVES"], defaultView: "DV-SMT-A-MIX" },
 ];
 
 const PUPILS: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-P-NOW"], defaultView: "DV-SMT-P-NOW" },
   { column: "c2", row: "now", span: 2, name: "Shape and size", views: ["DV-SMT-P-SHAPE", "DV-SMT-P-GIRLS-BOYS", "DV-SMT-P-DAY-BOARDING", "DV-SMT-P-ENTRIES", "DV-SMT-P-LEAVING", "DV-SMT-P-MARKET"], defaultView: "DV-SMT-P-SHAPE" },
-  { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-P-PHASES", "DV-SMT-P-PHASES-TABLE"], defaultView: "DV-SMT-P-PHASES" },
+  { column: "c1", row: "trends", name: "Roll by phase", views: ["DV-SMT-P-PHASES", "DV-SMT-P-PHASES-TABLE"], defaultView: "DV-SMT-P-PHASES" },
   { column: "c2", row: "trends", name: "From Admissions", views: ["DV-SMT-P-POOL"], defaultView: "DV-SMT-P-POOL" },
   { column: "c3", row: "trends", name: "Area", views: ["DV-SMT-P-AREA"], defaultView: "DV-SMT-P-AREA" },
 ];
 
 const CONTEXT: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-C-NOW"], defaultView: "DV-SMT-C-NOW" },
-  { column: "c2", row: "now", span: 2, name: "Map", views: ["DV-SMT-C-MAP", "DV-SMT-C-BYAGE", "DV-SMT-C-BIRTHS", "DV-SMT-C-NEARBY"], defaultView: "DV-SMT-C-MAP" },
-  { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-C-BIRTHS-INDEXED", "DV-SMT-C-BIRTHS-TABLE"], defaultView: "DV-SMT-C-BIRTHS-INDEXED" },
+  { column: "c2", row: "now", span: 2, name: "Where the children live", views: ["DV-SMT-C-MAP", "DV-SMT-C-BYAGE", "DV-SMT-C-BIRTHS", "DV-SMT-C-NEARBY"], defaultView: "DV-SMT-C-MAP" },
+  { column: "c1", row: "trends", name: "Births", views: ["DV-SMT-C-BIRTHS-INDEXED", "DV-SMT-C-BIRTHS-TABLE"], defaultView: "DV-SMT-C-BIRTHS-INDEXED" },
   { column: "c2", row: "trends", name: "Forward", views: ["DV-SMT-C-PROJECTION"], defaultView: "DV-SMT-C-PROJECTION" },
   { column: "c3", row: "trends", name: "Area", views: ["DV-SMT-C-AGES"], defaultView: "DV-SMT-C-AGES" },
 ];

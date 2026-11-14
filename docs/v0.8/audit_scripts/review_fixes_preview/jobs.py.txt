@@ -1,0 +1,26 @@
+import json, sys
+J=[]
+def add(name,q,w,wait=2500):
+    J.append({"name":name,"q":q,"w":w,"wait":wait,**({"measure":"main"} if w<600 else {})})
+walks={"smt-overview":6,"smt-academic":6,"smt-pupils":6,"smt-context":5,"admissions-pipeline":5,"admissions-market":6,"post16-many":6,"post16-well":6,"post16-nearby":5,"group-overview":6,"group-schools":5,"group-academic":5,"group-pupils":5}
+dark={"smt-overview","admissions-market","post16-well","group-schools"}
+for wk,n in walks.items():
+    extra="&urn=110110" if not wk.startswith("group") else "&g=harris"
+    for st in range(1,n+2):  # n+1 = the end screen
+        for w in (1440,390):
+            add(f"{wk}_{st}_mid_{w}",f"walk={wk}&step={st}{extra}&theme=mid",w)
+            if wk in dark: add(f"{wk}_{st}_dark_{w}",f"walk={wk}&step={st}{extra}&theme=dark",w)
+for st in (2,3,4):
+    add(f"gcse-nearby_{st}_mid_390",f"walk=gcse-nearby&step={st}&urn=137625&theme=mid",390)
+    add(f"gcse-nearby_{st}_dark_390",f"walk=gcse-nearby&step={st}&urn=137625&theme=dark",390)
+# the empty states: a GCSE subject with one pupil and no results (Chinese, The Chase); Nexus (no results)
+for st in range(1,7):
+    add(f"empty_gcse-well_{st}_mid_1440",f"walk=gcse-well&step={st}&urn=137625&fx=teacher_137625_ks4_small&theme=mid",1440)
+for st in (1,2,5):
+    add(f"empty_gcse-many_{st}_mid_390",f"walk=gcse-many&step={st}&urn=137625&fx=teacher_137625_ks4_small&theme=mid",390)
+for st in range(1,6):
+    add(f"empty_group-academic_{st}_mid_1440",f"walk=group-academic&step={st}&g=nexus&theme=mid",1440)
+add("adm16_pipeline_1_mid_1440","walk=admissions-pipeline&step=1&urn=110110&entry=16%2B&theme=mid",1440)
+add("adm16_market_1_mid_1440","walk=admissions-market&step=1&urn=110110&entry=16%2B&theme=mid",1440)
+json.dump(J,open(sys.argv[1],"w"))
+print(len(J))

@@ -24,6 +24,8 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
             <div key={r.key} className="flex items-center justify-between border-b border-[var(--panel-border)] py-[7px] text-[12.5px]">
               <span className="text-[var(--chip-fg)]">{r.label}</span>
               <span className="font-bold text-[var(--fg)]">
+                {/* Review fixes (tables.md M6): the figure itself on a phone too, beside the rank. */}
+                <span className="font-normal text-[var(--muted2)]">{fmt(r.value, r.unit === "share" ? "share" : r.unit, r.key)} · </span>
                 {r.set ? `${r.set.rank} of ${r.set.of}` : "—"} <span className={r.since ? dirClass(r.since.change, 0, changeDp(r.since)) : dirClass(null)}>{r.since ? arrowOf(r.since.change, 0, changeDp(r.since)) : ""}</span>
               </span>
             </div>
@@ -41,9 +43,9 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
             <tr>
               <Th>Measure</Th>
               <Th>You</Th>
-              <Th title={o.set.label}>{o.set.short}</Th>
-              <Th>{region ?? "Region"}</Th>
-              <Th>England</Th>
+              <Th title={`${o.set.label}: your rank, 1 = highest`}>{o.set.short} rank</Th>
+              <Th title="Your rank in the region, 1 = highest">{region ?? "Region"} rank</Th>
+              <Th title="Your rank in England, 1 = highest">England rank</Th>
               <Th>Trends</Th>
             </tr>
           </thead>
@@ -55,8 +57,8 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
                   <Td className="text-[var(--fg)]">{r.label}</Td>
                   <Td className="font-bold text-[var(--fg)]">{fmt(r.value, r.unit === "share" ? "share" : r.unit, r.key)}</Td>
                   <Td title={r.set ? `${rankText(r.set)} ${r.set.label}` : undefined}>{r.set ? `${r.set.rank} of ${r.set.of}` : "—"}</Td>
-                  <Td>{r.region ? `${r.region.rank.toLocaleString("en-GB")} of ${r.region.of.toLocaleString("en-GB")}` : "—"}</Td>
-                  <Td>{r.england ? `${r.england.rank.toLocaleString("en-GB")} of ${r.england.of.toLocaleString("en-GB")}` : "—"}</Td>
+                  <Td title={!r.region && r.key === "market11" ? "n/a: market share is among your rivals only" : undefined}>{r.region ? `${r.region.rank.toLocaleString("en-GB")} of ${r.region.of.toLocaleString("en-GB")}` : r.key === "market11" ? "n/a" : "—"}</Td>
+                  <Td title={!r.england && r.key === "market11" ? "n/a: market share is among your rivals only" : undefined}>{r.england ? `${r.england.rank.toLocaleString("en-GB")} of ${r.england.of.toLocaleString("en-GB")}` : r.key === "market11" ? "n/a" : "—"}</Td>
                   <Td className="whitespace-nowrap" title={since ? undefined : r.unit === "va" ? "One published year so far: no change is measured" : undefined}>
                     <span className={`font-bold ${since ? dirClass(since.change, 0, changeDp(since)) : dirClass(null)}`} data-trend={since?.period ?? ""}>
                       {fmtChange(since)}
@@ -69,6 +71,8 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
           </tbody>
         </table>
       </div>
+      {/* Review fixes (tables.md M6): the ranks' note under the table, where it belongs (it read as part of Flags). */}
+      <div className="text-[11px] text-[var(--muted)]">Ranks: 1 = highest (for Roll, the largest); each &ldquo;of&rdquo; is how many schools in that set have the result. Market share is ranked among your rivals only.</div>
       <div className="flex flex-wrap items-center gap-2 border-t border-[var(--panel-border)] pt-2">
         <span className="text-[11.5px] font-bold text-[var(--muted2)]">Flags</span>
         {o.flags.length ? (
@@ -80,7 +84,6 @@ export function Scorecard({ o, school, phone = false }: { o: Overview; school: S
         ) : (
           <span className="text-[11.5px] text-[var(--muted2)]">{o.flagsLoaded ? "None" : "Not available yet"}</span>
         )}
-        <span className="text-[11px] text-[var(--muted)]">counts show how many schools in each set have that result</span>
       </div>
     </>
   );

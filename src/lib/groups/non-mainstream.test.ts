@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { groupAggregate, groupComparisons, groupLibraryIndex, groupSchoolsYear, NM_COMPARISON_KINDS } from "./aggregates";
-import { buildOverview, buildSchools, kindsFor } from "./dash";
+import { buildOverview, buildSchools, fsmCell, kindsFor } from "./dash";
 import { DEFAULT_FILTER, filterFromQuery, filterToQuery, libraryCards } from "./library";
 import { cardFsmWords, familyOf, placeSchool, schoolsByKindWords, setRefusal } from "./non-mainstream";
 import { resolveCompare } from "./group-sets";
@@ -226,4 +226,22 @@ test("R-NM-OWN-SCHOOLS: a mainstream group's special, AP and nursery schools are
   const ms = schools.find((x) => x.years.some((y) => y.figures?.kind === "mainstream"))!;
   assert.equal(placeSchool(ms.years.find((y) => y.figures)!.figures, "E12000005", pools, 2025, "at_time"), null);
   assert.deepEqual(kindsFor("peer_band"), ["peer_band", "non_group", "sat", "areas", "england", "mix_matched"]);
+});
+
+// Review fixes (14 Nov, M1, tables.md H1): the Schools table's FSM column withholds a school's % under
+// FSM_MIN_PUPILS, as the placing does (45bfe9f). Production's own small figures: Harris Aspire Academy
+// (2 pupils, DfE 0.0%) and Nexus's small special and PRU years (9, 6, 5 and 1 pupils) -- each reads
+// "too few pupils (n)", with fsm null so the FSM sort doesn't place it as 0. Nexus's current rows keep theirs.
+test("R-NM-OWN-SCHOOLS: the Schools table's FSM cell is withheld under 10 pupils (Aspire, Nexus)", async () => {
+  const figs = [...(await groupSchoolsYear("3320")), ...(await groupSchoolsYear("16125"))].flatMap((x) => x.years.map((y) => ({ name: x.name, f: y.figures })));
+  const small = figs.filter((x) => x.f && typeof x.f.roll === "number" && x.f.roll < 10 && x.f.roll > 0 && x.f.fsm?.pct != null);
+  assert.ok(small.length >= 2, "production holds school-years under 10 pupils with an FSM %");
+  assert.ok(small.some((x) => x.name === "Harris Aspire Academy"));
+  for (const x of small) assert.deepEqual(fsmCell(x.f), { fsm: null, fsmFewPupils: x.f!.roll }, `${x.name} (${x.f!.roll} pupils)`);
+  const big = figs.find((x) => x.f && typeof x.f.roll === "number" && x.f.roll >= 10 && x.f.fsm?.pct != null)!;
+  assert.deepEqual(fsmCell(big.f), { fsm: big.f!.fsm!.pct, fsmFewPupils: null });
+  const agg = (await groupAggregate("16125", "at_time"))!;
+  const s = buildSchools({ agg, schools: await groupSchoolsYear("16125"), focus: "all", pools: await groupComparisons("16125", ["pools"]) });
+  assert.ok(s.rows.some((r) => typeof r.fsm === "number"), "Nexus's schools keep their FSM");
+  assert.ok(s.rows.every((r) => r.fsm === null || r.fsmFewPupils === null || r.fsmFewPupils === undefined));
 });

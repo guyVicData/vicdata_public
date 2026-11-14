@@ -1,0 +1,39 @@
+// Review fixes (14 Nov, M2): the walk harness's extra answers, read-only: the chooser set and the context map
+// for SMT, and the group walks' dash payloads (the route's own body over the group fixtures) and projections.
+import { NextRequest } from "next/server";
+import { writeFileSync } from "node:fs";
+import { POST as chooserSet } from "@/app/api/teacher/chooser-set/route";
+import { GET as smtContextMap } from "@/app/api/smt/context/map/route";
+import * as A from "@/lib/groups/aggregates";
+import * as P from "@/lib/groups/dash-payload";
+import { groupMembers } from "@/lib/groups/production";
+import { schoolProjections } from "@/lib/groups/projections";
+import { groupWalkCompare } from "@/lib/front-door/tile-figures";
+
+const H = { authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` };
+(async () => {
+  const out: Record<string, unknown> = {};
+  for (const urn of ["110110", "137625"]) {
+    for (const phase of ["ks4", "ks5"]) {
+      const r = await chooserSet(new NextRequest("http://h/api/teacher/chooser-set", { method: "POST", headers: { ...H, "content-type": "application/json" }, body: JSON.stringify({ urn, phase, set: { kind: "nearest" } }) }));
+      out[`chooser:${urn}:${phase}`] = await r.json();
+    }
+    const m = await smtContextMap(new NextRequest(`http://h/api/smt/context/map?urn=${urn}&level=whole`, { headers: H }));
+    out[`cmap:${urn}`] = await m.json().catch(() => null);
+    console.log("smt extra", urn, m.status);
+  }
+  if (A.groupDataSource() !== "fixtures") throw new Error("fixture switch off");
+  const index = await A.groupLibraryIndex();
+  for (const [key, id, account, name] of [["harris", "3320", "a0000000-0000-4000-8000-000000003320", "Harris Federation"], ["nexus", "16125", "a0000000-0000-4000-8000-000000016125", "Nexus Multi Academy Trust"]]) {
+    const members = await groupMembers(id).catch(() => []);
+    const agg = await A.groupAggregate(id, "at_time");
+    const read = { sets: [], notSetUp: false, personalActive: 0 };
+    for (const dash of ["overview", "schools", "academic", "pupils"] as const) {
+      const raw = groupWalkCompare(dash);
+      out[`grp:${key}:${dash}`] = await P.dashPayload({ dash, reading: "at_time", focus: "all", compareRaw: raw || null, viewer: { as: "head_office", account: { id: account, name }, groupId: id }, agg, members, index, read, admin: true, canKeep: true, source: "fixtures", comparisons: (kinds: string[]) => A.groupComparisons(id, kinds), schoolsYear: () => A.groupSchoolsYear(id), vicdataSchools: async () => new Set<string>() } as never);
+    }
+    out[`proj:${key}`] = { rows: await schoolProjections(await A.groupSchoolsYear(id)).catch((e) => (console.log("proj", String(e)), [])) };
+    console.log("group", key);
+  }
+  writeFileSync(process.argv[2], JSON.stringify(out));
+})();

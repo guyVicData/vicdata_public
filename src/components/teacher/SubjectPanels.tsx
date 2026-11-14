@@ -887,7 +887,7 @@ export function SubjectPanels({
         <>
           {/* The indexed and actual charts keep TrendScaleTitle's own sentence; the scope
               line above it names what the lines are (a points chart has only this line). */}
-          <ViewTitle>{scope ? (indexedTrend ? scope : `${scope}: each subject's line`) : !indexedTrend ? `${focusedSubject?.label ?? scopeNoun}, each year` : null}</ViewTitle>
+          <ViewTitle>{scope ? (indexedTrend ? scope : `${measure.label} in ${scope}: each subject's line`) : !indexedTrend ? `${focusedSubject?.label ?? scopeNoun}, each year` : null}</ViewTitle>
           {indexedTrend && multiTrendHasLine(trendData) && (
             <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}

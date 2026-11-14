@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="app.css"><link rel="stylesheet" href="leaflet.css">
+<style>body{margin:0} [data-walk-footer]{position:static !important} .leaflet-tile-pane{display:none} .leaflet-container{background:#eef1f4}</style>
+<script>
+window.process = { env: { NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "http://x", NEXT_PUBLIC_SUPABASE_ANON_KEY: "x" } };
+const P = new URLSearchParams(location.search);
+const THEME = P.get("theme") || "mid";
+try { localStorage.clear(); localStorage.setItem("vicdata.teacher.theme", THEME); sessionStorage.clear(); } catch {}
+window.__MISSES = [];
+window.onerror = (m) => { document.title = "ERR " + m; };
+</script>
+<script src="fx.js"></script>
+<script>
+const URN = P.get("urn") || "110110";
+const NAME = URN === "137625" ? "The Chase" : "Leighton Park School";
+const ME = "00000000-0000-0000-0000-000000000001";
+window.__DB = {
+  school_memberships: [{ id: "m1", profile_id: ME, status: "approved", is_admin: true, roles: ["teacher", "smt", "admissions"], role: null, admissions_lead: true, approved_at: "2026-09-07", school_account_id: "acc", school_accounts: { id: "acc", school_urn: URN, account_holder_membership_id: null, schools: { current_name: NAME } } }],
+  profiles: [{ id: ME, full_name: "Sam Morgan", email: "sam@school.example" }],
+  teacher_view_preferences: [], front_door_state: [{ profile_id: ME, welcome_seen_at: "2026-11-01", last_visit_at: "2026-11-12", whats_new_seen_at: "2026-11-12" }],
+  schools: [{ urn: URN, statutory_low_age: 11, statutory_high_age: 18, current_name: NAME }],
+  meetings: [], dashboards: [], teacher_view_onboarding: [],
+};
+window.__RPC = { is_platform_admin: false, changelog_for_me: [] };
+const realFetch = window.fetch;
+window.fetch = async (input, init) => {
+  const u = new URL(typeof input === "string" ? input : input.url, location.href);
+  const json = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
+  if (!u.pathname.startsWith("/api/")) return realFetch(input, init);
+  const q = u.searchParams, F = window.__FX, body = init && init.body ? JSON.parse(init.body) : {};
+  const urn = q.get("urn") || body.urn || URN;
+  const G = P.get("g") || "harris";
+  const hit = (k) => (F[k] !== undefined ? json(F[k]) : (window.__MISSES.push(k), json({ error: "miss" }, 404)));
+  if (u.pathname === "/api/usage") return new Response(null, { status: 204 });
+  if (u.pathname === "/api/front-door/teacher") {
+    const f = q.get("focus") || P.get("subject") || "";
+    const k = urn === "137625" ? (P.get("fx") || "teacher_137625_ks4_geography") : (P.get("fx") || "teacher_110110_ks5");
+    return hit(k);
+  }
+  if (u.pathname === "/api/smt/school") return json(F["smt_" + urn].school);
+  if (u.pathname === "/api/smt/overview") return json(F["smt_" + urn].overview);
+  if (u.pathname === "/api/smt/academic") return json(F["smt_" + urn].academic);
+  if (u.pathname === "/api/smt/pupils") return json(F["smt_" + urn].pupils);
+  if (u.pathname === "/api/smt/context/map") return hit("cmap:" + urn);
+  if (u.pathname === "/api/smt/context") return json(F["smt_" + urn].context);
+  if (u.pathname === "/api/teacher/chooser-set") return hit(`chooser:${urn}:${body.phase || "ks4"}`);
+  if (u.pathname === "/api/teacher/saved-comparator-sets") return json({ sets: [], school: [], mine: [] });
+  if (u.pathname.startsWith("/api/admissions/")) {
+    const e = (q.get("entry") || "11+").replace("+", "");
+    const d = F[`adm_${urn}_${e}`]; if (!d) return hit(`adm_${urn}_${e}`);
+    const part = u.pathname.split("/")[3];
+    return json(part === "pipeline" ? d.p : part === "market-share" ? d.m : part === "rivals" ? d.r : (window.__MISSES.push(u.pathname), {}));
+  }
+  if (u.pathname === "/api/group/dash") return hit(`grp:${G}:${q.get("dash")}`);
+  if (u.pathname === "/api/group/projection") return hit(`proj:${G}`);
+  window.__MISSES.push((init && init.method || "GET") + " " + u.pathname + u.search);
+  return json({ error: "miss" }, 404);
+};
+</script>
+</head><body><div id="root"></div><script src="bundle.js"></script></body></html>

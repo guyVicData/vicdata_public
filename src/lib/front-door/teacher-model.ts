@@ -13,7 +13,7 @@ import { qualificationFamilyOf, qualificationShortLabel } from "@/lib/teacher-vi
 export type TeacherPhaseId = "ks4" | "ks5";
 type Series = (number | null)[];
 
-export type SubjectRow = { key: string; label: string; subject: string; qualificationType: string; focus: boolean; entries: Series; points: Series };
+export type SubjectRow = { key: string; label: string; subject: string; qualificationType: string; focus: boolean; entries: Series; points: Series; /** Its subject family (review fixes, M7: colour by family). */ familyId?: string | null };
 export type SchoolRow = { urn: string; name: string; distanceKm: number | null; isTarget: boolean; entries: Series; points: Series; easting: number | null; northing: number | null };
 export type AreaLine = { name: string; entries: Series; points: Series } | null;
 
@@ -79,7 +79,7 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
       points: periods.map((p) => subjectPointsAt(phase, item, rowsAt(own, p))),
     };
   };
-  const rowOf = (i: SubjectItem): SubjectRow => ({ key: i.key, label: i.label, subject: i.subject, qualificationType: i.qualificationType, focus: i.key === key, ...seriesFor(i, input.headline, input.qualificationHeadline) });
+  const rowOf = (i: SubjectItem): SubjectRow => ({ key: i.key, label: i.label, subject: i.subject, qualificationType: i.qualificationType, focus: i.key === key, familyId: familyFor(input.headline, i.subject)?.id ?? null, ...seriesFor(i, input.headline, input.qualificationHeadline) });
 
   const { inFocusQualFamily } = focusQualificationFamily(phase, focusItem);
   const categoryItems = candidateItemsOf(categoryItemsOf(focusItem, items, input.headline, inFocusQualFamily), phase);
@@ -103,7 +103,8 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
     if (gp !== null) {
       const byGrade = new Map<string, number>();
       for (const g of own.filter((x) => x.period === gp)) byGrade.set(g.grade, (byGrade.get(g.grade) ?? 0) + g.entries);
-      grades = { period: gp, rows: Array.from(byGrade, ([grade, count]) => ({ grade, count })).sort((a, b) => gradeOrder(a.grade) - gradeOrder(b.grade)), englandShare: input.englandGradeShare ?? null };
+      const btec = isBtecGrades(Array.from(byGrade.keys()));
+      grades = { period: gp, rows: Array.from(byGrade, ([grade, count]) => ({ grade, count })).sort((a, b) => gradeOrder(a.grade, btec) - gradeOrder(b.grade, btec)), englandShare: input.englandGradeShare ?? null };
     }
   }
 
@@ -126,12 +127,16 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
 
 const coordOf = (input: TeacherModelInput, urn: string) => ({ easting: input.coords?.[urn]?.easting ?? null, northing: input.coords?.[urn]?.northing ?? null });
 
-// Best grade first: 9..1 at GCSE, A*..E at A level, then the rest (U, X) last.
-const GRADE_RANK = ["9", "8", "7", "6", "5", "4", "3", "2", "1", "A*", "A", "B", "C", "D", "E", "D*", "D", "M", "P", "U"];
-function gradeOrder(g: string): number {
-  const i = GRADE_RANK.indexOf(g.trim());
+// Best grade first: 9..1 at GCSE, A*..E at A level, D*, D, M, P for BTEC-style grades, then U last.
+// Review fixes (29): "D" was listed twice, so a BTEC Distinction sorted with A level's D, before D*.
+const GRADE_RANK = ["9", "8", "7", "6", "5", "4", "3", "2", "1", "A*", "A", "B", "C", "D", "E", "U"];
+const BTEC_RANK = ["D*", "D", "M", "P", "U"];
+export function gradeOrder(g: string, btec = false): number {
+  const i = (btec ? BTEC_RANK : GRADE_RANK).indexOf(g.trim());
   return i < 0 ? 999 : i;
 }
+/** A grade set is BTEC-style when it holds D*, M or P (and no A level letter but D). */
+export const isBtecGrades = (gs: string[]) => gs.some((g) => ["D*", "M", "P"].includes(g.trim())) && !gs.some((g) => ["A*", "A", "B", "C", "E"].includes(g.trim()));
 
 // ------------------------------------------------------------------------------------------- figures
 

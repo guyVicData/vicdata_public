@@ -48,6 +48,7 @@ import { AgainstOthers, dateText, MAIN_ROWS, GroupMap, GroupNow, JoinedLeft, Res
 import { arrowOf, dirClass } from "@/components/smt/ui";
 import { NmAgainst, NmFsmTrend, NmLine, NmNoResults, NmNow } from "./views-nm";
 import { ARROW, arrowed } from "@/lib/signed-delta";
+import { GROUP_LAYOUT_IDS, type GroupLayoutCell } from "@/lib/groups/dash-layout";
 
 export type GroupDash = "overview" | "schools" | "academic" | "pupils";
 export const GROUP_DASHES: { key: GroupDash; label: string; live: boolean }[] = [
@@ -422,7 +423,7 @@ export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-O-MAP": { label: "Map", icon: "MapPinIcon" },
   "GRP-O-JOINED": { label: "Joined and left", icon: "RankListIcon" },
   "GRP-O-ROLL": { label: "Combined roll, indexed", icon: "IndexedLineIcon" },
-  "GRP-O-RESULTS": { label: "Results by phase", icon: "TrendLineIcon" },
+  "GRP-O-RESULTS": { label: "Results trend", icon: "TrendLineIcon" },
   "GRP-O-SHARE": { label: "Share of places", icon: "HorizontalBarsIcon" },
   "GRP-S-NOW": { label: "The group now", icon: "TilesIcon" },
   "GRP-S-TABLE": { label: "Schools", icon: "TableIcon" },
@@ -442,7 +443,7 @@ export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-P-ENTRIES": { label: "Entry cohorts", icon: "AdmPipelineIcon" },
   "GRP-P-LEAVING": { label: "Leaving at 16", icon: "TableIcon" },
   "GRP-P-MARKET": { label: "Market share", icon: "HorizontalBarsIcon" },
-  "GRP-P-ROLL": { label: "Roll, indexed", icon: "IndexedLineIcon" },
+  "GRP-P-ROLL": { label: "Combined roll, indexed", icon: "IndexedLineIcon" },
   "GRP-P-PROJECTION": { label: "Children around the schools", icon: "AdmPopulationIcon" },
   "GRP-P-GROWING": { label: "Growing and shrinking", icon: "VerticalBarsIcon" },
   "GRP-N-NOW": { label: "The group now", icon: "TilesIcon" },
@@ -452,52 +453,11 @@ export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-N-RESULTS": { label: "Results", icon: "GradesIcon" },
 };
 const v = (id: ViewId) => ({ id, ...GROUP_VIEWS[id] });
-const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = {
-  academic: {
-    now: [
-      { id: "a-now", span: 1, views: [v("GRP-A-NOW")] },
-      { id: "a-large", span: 2, views: [v("GRP-A-RANKED"), v("GRP-A-AREAS"), v("GRP-A-VA")] },
-    ],
-    trends: [
-      { id: "a-trend", span: 1, views: [v("GRP-A-TREND")] },
-      { id: "a-post16", span: 1, views: [v("GRP-A-POST16")] },
-      { id: "a-improving", span: 1, views: [v("GRP-A-IMPROVING"), v("GRP-A-BANDS")] },
-    ],
-  },
-  pupils: {
-    now: [
-      { id: "p-now", span: 1, views: [v("GRP-P-NOW")] },
-      { id: "p-large", span: 2, views: [v("GRP-P-SHAPE"), v("GRP-P-ENTRIES"), v("GRP-P-LEAVING"), v("GRP-P-MARKET")] },
-    ],
-    trends: [
-      { id: "p-roll", span: 1, views: [v("GRP-P-ROLL")] },
-      { id: "p-projection", span: 1, views: [v("GRP-P-PROJECTION")] },
-      { id: "p-growing", span: 1, views: [v("GRP-P-GROWING")] },
-    ],
-  },
-  overview: {
-    now: [
-      { id: "o-now", span: 1, views: [v("GRP-O-NOW")] },
-      { id: "o-large", span: 2, views: [v("GRP-O-AGAINST"), v("GRP-O-MAP"), v("GRP-O-JOINED")] },
-    ],
-    trends: [
-      { id: "o-roll", span: 1, views: [v("GRP-O-ROLL")] },
-      { id: "o-results", span: 1, views: [v("GRP-O-RESULTS")] },
-      { id: "o-share", span: 1, views: [v("GRP-O-SHARE")] },
-    ],
-  },
-  schools: {
-    now: [
-      { id: "s-now", span: 1, views: [v("GRP-S-NOW")] },
-      { id: "s-large", span: 2, views: [v("GRP-S-TABLE"), v("GRP-O-MAP")] },
-    ],
-    trends: [
-      { id: "s-growing", span: 1, views: [v("GRP-S-GROWING")] },
-      { id: "s-scatter", span: 1, views: [v("GRP-S-SCATTER")] },
-      { id: "s-shapes", span: 1, views: [v("GRP-S-SHAPES")] },
-    ],
-  },
-};
+// The mainstream layout is plain data (src/lib/groups/dash-layout.ts), read here and by the walks' mini-maps.
+const cellsOf = (cells: GroupLayoutCell[]): CellDef[] => cells.map((c) => ({ id: c.id, span: c.span, views: c.views.map((id) => v(id as ViewId)) }));
+const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = Object.fromEntries(
+  (Object.keys(GROUP_LAYOUT_IDS) as GroupDash[]).map((d) => [d, { now: cellsOf(GROUP_LAYOUT_IDS[d].now), trends: cellsOf(GROUP_LAYOUT_IDS[d].trends) }]),
+) as Record<GroupDash, { now: CellDef[]; trends: CellDef[] }>;
 
 // 0.8 non-mainstream groups (M6): a special and AP trust's or nursery federation's pages. Roll, its
 // same-schools change and FSM against its peer set and its kinds' pools; its mainstream line where it has
@@ -611,16 +571,16 @@ function headerOf(id: ViewId, c: Ctx): { tag: string; context: ReactNode } {
       return { tag: "Joined and left", context: "as the source dates it" };
     case "GRP-O-ROLL": {
       const { base } = indexTo(c.o.trends.roll.lines.map((l) => l.pts));
-      return { tag: "Trends", context: `${indexBaseWords(base)} = 100` };
+      return { tag: "Roll", context: `${indexBaseWords(base)} = 100` };
     }
     case "GRP-O-RESULTS":
-      return { tag: "Trends", context: "by phase" };
+      return { tag: "Results", context: "by phase" };
     case "GRP-O-SHARE":
       return { tag: "Share", context: "of places in its areas" };
     case "GRP-S-TABLE":
       return { tag: "Schools", context: "every member school · sortable" };
     case "GRP-S-GROWING":
-      return { tag: "Trends", context: "each school's roll, indexed" };
+      return { tag: "Roll by school", context: "each school's roll, indexed" };
     case "GRP-S-SCATTER":
       return { tag: "Size and results", context: FOCUS_LABEL[c.params.focus] };
     case "GRP-S-SHAPES":
@@ -634,13 +594,13 @@ function headerOf(id: ViewId, c: Ctx): { tag: string; context: ReactNode } {
     case "GRP-A-VA":
       return { tag: "Value added", context: "DfE, where published" };
     case "GRP-A-TREND":
-      return { tag: "Trends", context: "pupil-weighted, by phase" };
+      return { tag: "Results", context: "pupil-weighted, by phase" };
     case "GRP-A-POST16":
-      return { tag: "Trends", context: "Post-16" };
+      return { tag: "Post-16 results", context: "A-level points per entry" };
     case "GRP-A-IMPROVING":
       return { tag: "Change by school", context: `since ${periodLabel(c.d.academic?.improving.from ?? 2022)}` };
     case "GRP-A-BANDS":
-      return { tag: "Trends", context: "results by band" };
+      return { tag: "Results by band", context: "each band's share" };
     case "GRP-P-NOW":
       return { tag: "Current", context: f };
     case "GRP-P-SHAPE":
@@ -653,12 +613,12 @@ function headerOf(id: ViewId, c: Ctx): { tag: string; context: ReactNode } {
       return { tag: "Market share", context: "each school in its own area" };
     case "GRP-P-ROLL": {
       const { base } = indexTo(c.o.trends.roll.lines.map((l) => l.pts));
-      return { tag: "Trends", context: `${indexBaseWords(base)} = 100` };
+      return { tag: "Roll", context: `${indexBaseWords(base)} = 100` };
     }
     case "GRP-P-PROJECTION":
       return { tag: "Forward", context: "each school's area, not a forecast" };
     case "GRP-P-GROWING":
-      return { tag: "Trends", context: "schools growing and shrinking" };
+      return { tag: "Growing and shrinking", context: "each school, census to census" };
     case "GRP-N-NOW":
       return { tag: "Current", context: c.o.nm ? c.o.nm.byKind : f };
     case "GRP-N-AGAINST":
@@ -666,7 +626,7 @@ function headerOf(id: ViewId, c: Ctx): { tag: string; context: ReactNode } {
     case "GRP-N-LINE":
       return { tag: "Mainstream line", context: "its mainstream schools, against mainstream schools" };
     case "GRP-N-FSM":
-      return { tag: "Trends", context: "free school meals, pupil-weighted" };
+      return { tag: "FSM", context: "free school meals, pupil-weighted" };
     case "GRP-N-RESULTS":
       return { tag: "Results", context: "not compared" };
   }
@@ -814,8 +774,13 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
       return a ? <SubjectAreasAcross a={a} /> : <Skeleton />;
     case "GRP-A-VA":
       return a ? <ValueAddedPanel a={a} fullscreen={fullscreen} highlight={hl} /> : <Skeleton />;
-    case "GRP-A-TREND":
-      return <ResultsTrend o={c.o} average={c.average} fullscreen={fullscreen} room={room} />;
+    case "GRP-A-TREND": {
+      // Review fixes (14 Nov, Q5): the A-level chip repeated the Post-16 panel beside it; Academic's results
+      // trend keeps GCSE and KS2 when that panel draws the A-level line (Overview's keeps every phase).
+      const post16 = !!(a && a.post16 && a.post16.length);
+      const results = post16 ? c.o.trends.results.filter((r) => !r.measure.startsWith("ks5_")) : c.o.trends.results;
+      return <ResultsTrend o={results.length ? { ...c.o, trends: { ...c.o.trends, results } } : c.o} average={c.average} fullscreen={fullscreen} room={room} />;
+    }
     case "GRP-A-POST16":
       return a && a.post16 ? <ResultsTrend o={{ ...c.o, trends: { ...c.o.trends, results: a.post16 } }} average={c.average} fullscreen={fullscreen} room={room} /> : <Empty>No sixth-form results in the group.</Empty>;
     case "GRP-A-IMPROVING":
@@ -858,6 +823,11 @@ export function groupWalkView(d: DashResponse, dash: GroupDash, id: ViewId, proj
   const L = o.nm ? NM_LAYOUT[dash] : LAYOUT[dash];
   const cell = [...L.now, ...L.trends].find((x) => x.views.some((y) => y.id === id)) ?? null;
   const rail = cell ? visibleRail(cell.views.map((x) => ({ id: x.id, label: x.label, icon: x.icon })), (x) => groupHasContent(x, c)) : [];
+  // Review fixes (14 Nov, M2): a special and AP trust's or nursery federation's dashboard has no results
+  // views (R-NM-NO-RESULTS), so a results screen of the walk draws the dashboard's own reason, not a blank.
+  if (o.nm && !cell) {
+    return { header: headerOf(id, c), caption: "", flag: null, rail: [{ id, label: GROUP_VIEWS[id].label, icon: GROUP_VIEWS[id].icon }], has: false, body: <NmNoResults o={o} /> };
+  }
   return {
     header: headerOf(id, c),
     caption: captionOf(id, c),

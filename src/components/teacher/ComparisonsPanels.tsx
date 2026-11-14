@@ -20,6 +20,7 @@
 // history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
+import { WalkChart, type Palette } from "@/components/front-door/charts";
 import { SetSelector, type SetSelectorProps } from "@/components/sets/SetSelector";
 import { igcseTargetLine } from "@/lib/igcse-words";
 import { useEffect, useState, type ReactNode } from "react";
@@ -110,6 +111,23 @@ const AVERAGE = "average";
 
 // The subject chip row's own "no subject" value -- compare on the phase headline instead.
 export const WHOLE_SCHOOL = "whole-school";
+
+/** The school's place ("own") among the set each year, highest first (ties share), and how many had a figure. */
+export function rankOverTime(t: { periods: number[]; series: { key: string; values: (number | null)[] }[] }): { years: string[]; ranks: (number | null)[]; of: (number | null)[]; ofRange: string } {
+  const own = t.series.find((x) => x.key === "own");
+  const ranks = t.periods.map((_, k) => {
+    const v = own?.values[k] ?? null;
+    if (v === null) return null;
+    return 1 + t.series.filter((x) => x.values[k] !== null && (x.values[k] as number) > v).length;
+  });
+  const of = t.periods.map((_, k) => t.series.filter((x) => x.values[k] !== null).length || null);
+  const real = of.filter((v): v is number => v !== null);
+  const ofRange = !real.length ? "the" : Math.min(...real) === Math.max(...real) ? String(real[0]) : `${Math.min(...real)}–${Math.max(...real)}`;
+  return { years: t.periods.map(academicYearLabel), ranks, of, ofRange };
+}
+
+// The walk's line chart drawn in the dashboard's own colours (CSS variables, so every theme reads right).
+const CSS_PALETTE: Palette = { focus: "var(--accent, var(--fg))", peer: "var(--muted2)", other: "var(--muted3)", average: "var(--fg)", grid: "var(--panel-border)", text: "var(--fg)", muted: "var(--muted2)", plate: "var(--box-bg)", dark: false };
 
 export function ComparisonsPanels({
   phase,
@@ -343,10 +361,10 @@ export function ComparisonsPanels({
   // Trends row merge round: Trend's and % change's views share one Trends panel, so one view
   // state spans both halves -- Trend's (chart, table, map) then % change's (ranked bars,
   // table, map).
-  const [trendsView, setTrendsView] = useState<"chart" | "table" | "map" | "changeChart" | "changeTable" | "changeMap">("chart");
+  const [trendsView, setTrendsView] = useState<"chart" | "table" | "map" | "rank" | "changeChart" | "changeTable" | "changeMap">("chart");
   const isChange = trendsView === "changeChart" || trendsView === "changeTable" || trendsView === "changeMap";
-  const trendView: "chart" | "table" | "map" = isChange ? "chart" : (trendsView as "chart" | "table" | "map");
-  const setTrendView = (v: "chart" | "table" | "map") => setTrendsView(v);
+  const trendView: "chart" | "table" | "map" | "rank" = isChange ? "chart" : (trendsView as "chart" | "table" | "map" | "rank");
+  const setTrendView = (v: "chart" | "table" | "map" | "rank") => setTrendsView(v);
   // Part 4: and one beside % change's bars.
   const changeView: "chart" | "table" | "map" = trendsView === "changeTable" ? "table" : trendsView === "changeMap" ? "map" : "chart";
   const setChangeView = (v: "chart" | "table" | "map") => setTrendsView(v === "table" ? "changeTable" : v === "map" ? "changeMap" : "changeChart");
@@ -630,9 +648,15 @@ export function ComparisonsPanels({
         <CentredOnTarget watch={rankingRows.map((r) => r.key).join(",")}>
           <SchoolRankingTable
             rows={rankingRows}
-            valueHeading={measure.id === "entries" ? "Entries" : "Result"}
+            valueHeading={measure.id === "entries" ? "Entries" : measure.label}
             targetName={targetName}
             fullscreen={fullscreen}
+            average={(() => {
+              // A windowed national ranking draws a slice: no average of a slice.
+              if (rankingRows.some((r) => r.pos !== undefined)) return null;
+              const vs = rankingRows.map((r) => r.value).filter((v): v is number => v !== null);
+              return vs.length > 1 ? { label: `Average of the ${vs.length} schools with a figure`, value: measure.format(vs.reduce((a, b) => a + b, 0) / vs.length) } : null;
+            })()}
           />
         </CentredOnTarget>
         </>
@@ -805,7 +829,10 @@ export function ComparisonsPanels({
   // is not a trend line: the panel is the table alone until the span supports a line.
   const hasTrendLine = trendChartKind(trendData) === "line";
   const trendMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && trendTable.periods.length >= 2;
-  const trendShows = trendView === "map" && trendMapOk ? "map" : trendView === "table" || !hasTrendLine ? "table" : "chart";
+  // Review fixes (14 Nov, Q6): the school's rank in the set, year by year (the walk's "Has our position changed?").
+  const rankRows = rankOverTime(trendTable);
+  const rankOk = rankRows.ranks.filter((v) => v !== null).length >= 2;
+  const trendShows = trendView === "rank" && rankOk ? "rank" : trendView === "map" && trendMapOk ? "map" : trendView === "table" || !hasTrendLine ? "table" : "chart";
 
   // The one title line over every view (ViewTitle): what is compared, over which schools,
   // in which shape -- so a screenshot of the body alone says which view it is.
@@ -841,6 +868,7 @@ export function ComparisonsPanels({
     actions: (
       <>
         {hasTrendLine && <IconButton label="Chart" active={!isChange && trendShows === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>}
+        {rankOk && <IconButton label="Rank over time" active={!isChange && trendShows === "rank"} onClick={() => setTrendView("rank")}>{PodiumIcon}</IconButton>}
         <IconButton label="Trend table" active={!isChange && trendShows === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
         {trendMapOk && <IconButton label="Trend map" active={!isChange && trendShows === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
       </>
@@ -861,6 +889,14 @@ export function ComparisonsPanels({
             format: measure.formatDelta,
             label: `change since ${trendFrom}`,
           }, changeMapFrom(mapSeries, trendMapSpan.periods, "absolute", (v) => changeOver(v)?.delta ?? null))}
+        </>
+      ) : trendShows === "rank" ? (
+        <>
+          <ViewTitle>This school&rsquo;s rank among the {setNoun} on {comparedOn}, year by year</ViewTitle>
+          <WalkChart
+            chart={{ kind: "lines", years: rankRows.years, series: [{ label: "Our place", values: rankRows.ranks, role: "focus" }], unpublished: [], yCaption: `Place (1st = highest), of ${rankRows.ofRange} schools with a figure`, extraRows: [{ label: "Schools with a figure", values: rankRows.of }], keys: [{ label: "Our place", role: "focus", mark: "line" }], digits: 0 }}
+            p={CSS_PALETTE}
+          />
         </>
       ) : trendShows === "table" ? (
         // Every school in the set, ranked on the latest year (sortable), the school's own

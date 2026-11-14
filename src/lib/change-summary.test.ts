@@ -49,7 +49,7 @@ test("a measure taken off reads with the view's title, not its rail name", () =>
   const id = "vicdata.ks4.results.c1.trends/DV-C1-RES-TR-GEO-CHART";
   const s = ops.changeSummary(g, ops.setViewResults(g, id, ["points"]));
   memberFacing(s, "geo chart");
-  assert.match(s, /^Grade 4\+ rate, Grade bands: removed \*This subject against its LA and England, year by year\* from Results · Trends/);
+  assert.match(s, /^Grade 4\+ rate, Grade bands: removed \*This subject Grade 4\+ rate against its LA and England, year by year\* from Results · Trends/);
 });
 
 test("a summary published before the fix is made member-facing at display", () => {
@@ -58,7 +58,7 @@ test("a summary published before the fix is made member-facing at display", () =
     "Grade bands: removed *Area chart* from Results · Trends; Grade counts: added *Trend table* to Context · Trends; retitled *Bar chart* “[subject] results from [from-year]” in Context · Current; added *[subject] beside [category]* to Comparisons · Trends.";
   const s = memberSummary(old, g);
   memberFacing(s, "stored summary");
-  assert.match(s, /removed \*This subject against its LA and England, year by year\* from Results · Trends/);
+  assert.match(s, /removed \*This subject Grade bands against its LA and England, year by year\* from Results · Trends/);
   assert.match(s, /“This subject results from the first year”/);
   assert.match(s, /added \*This subject beside its category\* to/);
   // With no config: plain words still, never the internal name.

@@ -2,7 +2,9 @@
 // (CandidatesPanels' data: each subject's entries per period). Line, table and bar.
 import type { BarLook, CompareSeries, LineLook, TableLook, ViewSpec } from "@/catalogue/viewspec";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
+import { MINIMUM_SUBJECT_N } from "@/lib/academic-data-view";
 import {
+  endpoints,
   ENTRIES_MEASURE,
   percentChange,
   periodsWithData,
@@ -155,7 +157,11 @@ function changeBars(look: BarLook, f: CandidatesFrame, compare: CompareSeries[],
   const { data, changeSince } = changeData(f, b, allRows);
   // S3c: a spec of its own reads its dashed reference from its own compare.
   const ownRef = explicit ? compareLinesFor(f, compare, { focusedKey: b.focused?.key ?? null, span: true, as: ["reference", "line"] })[0] : undefined;
-  const rows = data.series.filter((s) => s.key !== "group").map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: percentChange(s.values) }));
+  // Review fixes (tables.md M5): each row carries its two counts; one on a base under MINIMUM_SUBJECT_N is flagged.
+  const rows = data.series.filter((s) => s.key !== "group").map((s) => {
+    const ends = endpoints(s.values);
+    return { key: s.key, label: s.label, colour: s.colour, value: percentChange(s.values), from: ends?.first ?? null, to: ends?.last ?? null, small: !!ends && ends.first < MINIMUM_SUBJECT_N };
+  });
   const shown = look.top10 ? topTen(orderRows(rows, "highest"), b.focused?.key ?? null) : rows;
   const reference = b.group && compare.some((c) => c.kind === "category" && c.as === "reference");
   const average = averageOfShown(look.average, shown.map((r) => r.value), null, "subjects") ?? undefined;

@@ -154,7 +154,7 @@ export function MarketLine({ o, market, schoolName, fullscreen, room }: { o?: Ov
   if (m.status === "empty")
     return (
       <>
-        <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+, against your rivals</div>
+        <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+: you and your largest rival</div>
         <Empty>{m.reason}</Empty>
         <Link href="/teacher/admissions" className="text-[11.5px] font-bold text-[var(--adm-accent-text)]">
           Open in Admissions &rarr;
@@ -164,7 +164,8 @@ export function MarketLine({ o, market, schoolName, fullscreen, room }: { o?: Ov
   const years = m.school.map((p) => p.year);
   return (
     <>
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+, against {m.setRivals ?? (m.defaultRivals ? "the 10 nearest schools (default rivals)" : "your rivals")}</div>
+      {/* Review fixes (dashboards.md #4): the grey line is the largest rival only, so the title says so. */}
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+: you and your largest rival{m.rivalName ? ` (${m.rivalName})` : ""}{years.length > 1 ? `, ${yr(years[0])} to ${yr(years[years.length - 1])}` : ""}<span className="font-normal text-[var(--muted2)]"> · against {m.setRivals ?? (m.defaultRivals ? "the 10 nearest schools (default rivals)" : "your rivals")}</span></div>
       <LineChart
         height={fullscreen ? fillHeight(room, 150, 300) : 130}
         yFormat={(v) => `${v.toFixed(1)}%`}

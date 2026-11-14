@@ -223,9 +223,10 @@ describe("Table A: the Teacher dashboard as it is, Candidates", () => {
     const o = offered({ ...KS4_CAND, focus: "school", compare: ["schools"] });
     for (const id of ["DV-C3-CUR-MAP", "DV-C3-CUR-TILES", "DV-C3-CUR-BAR", "DV-C3-CUR-RANKING"] as const) assert.ok(o.includes(id), id);
   });
-  it("Col 3 × Trends offers chart, trend table, trend map, ranked bars, change table, change map", () => {
+  it("Col 3 × Trends offers chart, rank over time, trend table, trend map, ranked bars, change table, change map", () => {
     const o = offered({ ...KS4_CAND, compare: ["schools"], time: "over_time" });
-    assert.deepEqual(o, ["DV-C3-TR-CHART", "DV-C3-TR-TABLE", "DV-C3-TR-MAP", "DV-C3-TR-CHANGELIST", "DV-C3-TR-CHANGETABLE", "DV-C3-TR-CHANGEMAP"]);
+    // Review fixes (14 Nov, Q6): Rank over time joins Comparisons > Trends.
+    assert.deepEqual(o, ["DV-C3-TR-CHART", "DV-C3-TR-RANK", "DV-C3-TR-TABLE", "DV-C3-TR-MAP", "DV-C3-TR-CHANGELIST", "DV-C3-TR-CHANGETABLE", "DV-C3-TR-CHANGEMAP"]);
   });
   it("draft dead branches are hidden from users but shown to super-admin", () => {
     const ctx: PickContext = { ...KS4_CAND, time: "over_time" };

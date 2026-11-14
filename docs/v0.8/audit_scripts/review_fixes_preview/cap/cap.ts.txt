@@ -1,0 +1,62 @@
+// Review fixes (14 Nov): read-only capture of real answers for the walk tests (fixtures).
+import { NextRequest } from "next/server";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { GET as admPipeline } from "@/app/api/admissions/pipeline/route";
+import { GET as admMarket } from "@/app/api/admissions/market-share/route";
+import { GET as admRivals } from "@/app/api/admissions/rivals/route";
+import { GET as smtSchool } from "@/app/api/smt/school/route";
+import { POST as smtOverview } from "@/app/api/smt/overview/route";
+import { POST as smtAcademic } from "@/app/api/smt/academic/route";
+import { POST as smtPupils } from "@/app/api/smt/pupils/route";
+import { GET as smtContext } from "@/app/api/smt/context/route";
+import { POST as chooserSet } from "@/app/api/teacher/chooser-set/route";
+import { loadTeacherModel } from "@/lib/front-door/teacher-data";
+import { createClient } from "@supabase/supabase-js";
+
+const H = { authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` };
+const get = async (fn: (r: NextRequest) => Promise<Response>, url: string) => {
+  const r = await fn(new NextRequest(`http://h${url}`, { headers: H }));
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+const post = async (fn: (r: NextRequest) => Promise<Response>, url: string, body: unknown) => {
+  const r = await fn(new NextRequest(`http://h${url}`, { method: "POST", headers: { ...H, "content-type": "application/json" }, body: JSON.stringify(body) }));
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+(async () => {
+  const dir = process.argv[2];
+  mkdirSync(dir, { recursive: true });
+  const save = (name: string, v: unknown) => writeFileSync(`${dir}/${name}.json`, JSON.stringify(v));
+  for (const urn of ["110110", "137625"]) {
+    for (const entry of urn === "110110" ? ["11+", "16+"] : ["11+"]) {
+      const q = `urn=${urn}&entry=${encodeURIComponent(entry)}`;
+      const p = await get(admPipeline, `/api/admissions/pipeline?${q}`);
+      const m = await get(admMarket, `/api/admissions/market-share?${q}`);
+      const r = await get(admRivals, `/api/admissions/rivals?${q}`);
+      console.log("adm", urn, entry, p.status, m.status, r.status);
+      save(`adm_${urn}_${entry.replace("+", "")}`, { p: p.body, m: m.body, r: r.body });
+    }
+    const school = await get(smtSchool, `/api/smt/school?urn=${urn}`);
+    const cs = await post(chooserSet, "/api/teacher/chooser-set", { urn, phase: "ks4", set: { kind: "nearest" } });
+    const urns = ((cs.body as { rows?: { urn: string }[] })?.rows ?? []).map((x) => x.urn);
+    const set = { kind: "nearest", label: "10 nearest", urns };
+    const o = await post(smtOverview, "/api/smt/overview", { urn, set });
+    const a = await post(smtAcademic, "/api/smt/academic", { urn, set });
+    const pu = await post(smtPupils, "/api/smt/pupils", { urn, set, level: "whole" });
+    const c = await get(smtContext, `/api/smt/context?urn=${urn}&area=around&level=whole`);
+    console.log("smt", urn, school.status, o.status, a.status, pu.status, c.status);
+    save(`smt_${urn}`, { school: school.body, overview: o.body, academic: a.body, pupils: pu.body, context: c.body });
+  }
+  const anon = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  const geo = await loadTeacherModel(anon, "137625", "ks4", { focusKey: "Geography::GCSE (9-1) Full Course", ticked: [], full: true });
+  save("teacher_137625_ks4_geography", geo);
+  // The school's smallest GCSE subject (a small cohort), and Leighton Park's Post-16 largest and smallest.
+  const small = [...geo.subjects].filter((s) => s.entries > 0).sort((x, y) => x.entries - y.entries)[0];
+  save("teacher_137625_ks4_small", await loadTeacherModel(anon, "137625", "ks4", { focusKey: small.key, ticked: [], full: true }));
+  const lp = await loadTeacherModel(anon, "110110", "ks5", { focusKey: null, ticked: [], full: true });
+  save("teacher_110110_ks5", lp);
+  const lpSmall = [...lp.subjects].filter((s) => s.entries > 0).sort((x, y) => x.entries - y.entries)[0];
+  save("teacher_110110_ks5_small", await loadTeacherModel(anon, "110110", "ks5", { focusKey: lpSmall.key, ticked: [], full: true }));
+  const ph = lp.subjects.find((s) => /Physics/.test(s.subject));
+  if (ph) save("teacher_110110_ks5_physics", await loadTeacherModel(anon, "110110", "ks5", { focusKey: ph.key, ticked: [], full: true }));
+  console.log("teacher", small.label, lpSmall.label, ph?.label);
+})();

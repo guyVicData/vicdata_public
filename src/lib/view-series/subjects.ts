@@ -251,7 +251,7 @@ function line(spec: ViewSpec, look: LineLook, f: SubjectsFrame, compare: Compare
   return {
     kind: "line",
     heading: null,
-    title: scope ? (indexedTrend ? scope : `${scope}: each subject's line`) : !indexedTrend ? `${c.focusedSubject?.label ?? c.scopeNoun}, each year` : null,
+    title: scope ? (indexedTrend ? scope : `${f.measure.label} in ${scope}: each subject's line`) : !indexedTrend ? `${c.focusedSubject?.label ?? c.scopeNoun}, each year` : null,
     leaf: {
       leaf: "multiTrend",
       data: focusVsGroup ?? shown,

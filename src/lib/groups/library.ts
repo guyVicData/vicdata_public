@@ -16,6 +16,7 @@
 //   headline    roll and its 3-year change, and one results headline for the phase in view against
 //               England (the group's sector's England); on All phases the group's main phase, labelled.
 //               An independent group with none published reads "Results not published".
+import { periodLabel } from "@/catalogue/years";
 import { displayName, PEER_PLURAL, REGION_NAMES, type Focus } from "./dash";
 import { familyOf, NM_BANDS, nmBandOf } from "./non-mainstream";
 
@@ -119,7 +120,10 @@ export function headlineWords(c: Pick<IndexCard, "type" | "headline" | "main_pha
   const h = c.headline?.[ph];
   if (!h || h.weighted === null) return none;
   const eng = h.england !== null ? `, England ${fmtMeasure(h.measure, h.england)}` : "";
-  return { text: `${PHASE_WORD[ph]} · ${MEASURE_WORD[h.measure] ?? h.measure} ${fmtMeasure(h.measure, h.weighted)}${eng}`, value: h.weighted, england: h.england, measure: h.measure, phase: ph };
+  // Review fixes (tables.md L3): the year and how many of the phase's schools the figure rests on.
+  const inPhase = c.schools_by_phase?.[ph] ?? null;
+  const n = h.n_with_figure ? ` · ${h.n_with_figure}${inPhase && inPhase !== h.n_with_figure ? ` of ${inPhase}` : ""} school${h.n_with_figure === 1 && !(inPhase && inPhase !== 1) ? "" : "s"}` : "";
+  return { text: `${PHASE_WORD[ph]} · ${MEASURE_WORD[h.measure] ?? h.measure} ${fmtMeasure(h.measure, h.weighted)}${eng}${h.period !== null ? ` · ${periodLabel(h.period)}` : ""}${n}`, value: h.weighted, england: h.england, measure: h.measure, phase: ph };
 }
 
 // ---------------------------------------------------------------------------------- the filters

@@ -350,6 +350,13 @@ export function resolveTitle(template: string, dv: Dataview | null, ctx: PickPan
         return changeOfMeasure(changeKind(ctx.data, ctx.results), measureLabel(ctx).toLowerCase().replace(/^grade/, "Grade"));
       case "Entries|Results":
         return ctx.data === "academic.candidates" ? "Entries" : ctx.data === "academic.results" ? "Results" : DATA_LABEL[ctx.data];
+      // Review fixes (14 Nov, M5): a title names its measure ("Average points by subject …") and its span.
+      case "Entries|measure":
+        return ctx.data === "academic.candidates" ? "Entries" : measureLabel(ctx);
+      case "Measure":
+        return measureLabel(ctx);
+      case "latest":
+        return latest;
       default:
         return token;
     }
