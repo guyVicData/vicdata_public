@@ -12,6 +12,7 @@
 // Teacher's three columns are DashboardGrid + DashboardColumn, beside these.
 // Moved here from src/components/admissions (AdmissionsDashboard.tsx, controls.tsx).
 import type { ReactNode, Ref } from "react";
+import { useMidPart } from "./MidDash";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -25,6 +26,8 @@ export function ShellPage({ phone, rootRef, children }: { phone: boolean; rootRe
 }
 
 export function RowHead({ title, context, open, onToggle }: { title: string; context: string; open: boolean; onToggle: () => void }) {
+  // 0.8 front door 2b (M3): an open row's head sits on the bare field in Mid, so it takes the field's ink.
+  const onField = useMidPart() !== null && open;
   return (
     // 0.8 front door (C19): a shut row's head is the ladder's raised bar (it reads as a button).
     <button
@@ -32,6 +35,7 @@ export function RowHead({ title, context, open, onToggle }: { title: string; con
       onClick={onToggle}
       aria-expanded={open}
       data-shut-panel={open ? undefined : ""}
+      data-on-field={onField ? "" : undefined}
       className={cx(
         "flex items-center gap-2 text-left text-[12.5px] font-bold text-[var(--fg)]",
         open ? "px-[2px] py-1" : "rounded-[10px] border border-[var(--shut-border)] bg-[var(--shut-bg)] px-3 py-1.5",

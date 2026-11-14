@@ -9,7 +9,8 @@
 // Each card opens the group's page (GroupLibraryPage); Add to set… (M4) adds it to a set of groups.
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useTeacherTheme } from "@/components/shell/TeacherChrome";
+import { useDashboardTheme, useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { MidBand, MidDashProvider, midRootProps, useMidPart } from "@/components/shell/MidDash";
 import { AdmissionsTeacherNav } from "@/components/admissions/controls";
 import { EntryChip } from "@/components/admissions/ui";
 import { useWidth } from "@/components/admissions/views/charts";
@@ -88,14 +89,22 @@ const accountQuery = () => {
 };
 
 export function GroupLibrary() {
-  const [theme, setTheme] = useTeacherTheme();
+  // 0.8 front door 2b (M3): the library follows Mid with the Group pages (its body the orange field);
+  // loading and errors draw Dark under Mid, as before.
+  const [plainTheme, setTheme] = useTeacherTheme();
+  const dashTheme = useDashboardTheme();
   const acc = accountQuery();
   const load = useSmt<LibraryResponse>(`/api/group/library${acc ? `?${acc}` : ""}`, null);
+  const mid = dashTheme.mid && load.status === "ready";
+  const theme: Theme = mid ? dashTheme.theme : plainTheme;
   return (
-    <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
+    <MidDashProvider mid={mid} part="group" theme={theme}>
+    <main id="teacher-root" data-theme={theme} {...midRootProps(mid, "group")} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-5 sm:px-7">
+        <MidBand className="flex flex-col gap-4" style={groupDashVars("dark")}>
         <GroupViewAsBanner />
-        <AdmissionsTeacherNav schoolUrn={null} theme={theme} onTheme={setTheme} />
+        <AdmissionsTeacherNav schoolUrn={null} theme={mid ? "dark" : theme} onTheme={setTheme} />
+        </MidBand>
         {load.status === "ready" ? (
           <Library d={load.data} acc={acc} />
         ) : (
@@ -105,6 +114,7 @@ export function GroupLibrary() {
         )}
       </div>
     </main>
+    </MidDashProvider>
   );
 }
 
@@ -130,9 +140,11 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [sheet]);
+  // 0.8 front door 2b (M3): in Mid the library's body is the orange field, its header line on the colour.
+  const mid = useMidPart() !== null;
   return (
-    <div ref={rootRef} className="flex flex-col gap-3" data-library="">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+    <div ref={rootRef} className="flex flex-col gap-3" data-library="" data-mid-field={mid ? "" : undefined}>
+      <div className="flex flex-wrap items-end justify-between gap-2" data-on-field={mid ? "" : undefined}>
         <div className="flex flex-col gap-0.5">
           <Link href={back} className="text-[12px] font-bold text-[var(--group-accent-text)]">← Back to {usName} · Overview</Link>
           <h1 className="text-[20px] font-extrabold tracking-tight">Groups library</h1>
@@ -152,7 +164,7 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
           className="h-[38px] min-w-0 flex-1 rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-4 text-[13px] text-[var(--fg)] placeholder:text-[var(--muted2)] sm:max-w-[360px]"
         />
         <EntryChip label="Groups like us" active={f.likeUs} onClick={() => set({ likeUs: !f.likeUs, sort: !f.likeUs ? "like_us" : f.sort === "like_us" ? "size" : f.sort })} />
-        <label className="flex items-center gap-1.5 text-[12px] text-[var(--muted2)]">
+        <label className="flex items-center gap-1.5 text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>
           Sort
           <select value={f.sort} onChange={(e) => set({ sort: e.target.value as LibrarySort })} className="h-[34px] rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 text-[12.5px] font-semibold text-[var(--fg)]">
             {(Object.keys(SORT_WORD) as LibrarySort[]).filter((s) => s !== "like_us" || d.us).map((s) => <option key={s} value={s}>{SORT_WORD[s]}</option>)}
@@ -161,8 +173,8 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
         {phone && <button type="button" onClick={() => setSheet(true)} className="h-[38px] rounded-full border border-[var(--panel-border2)] px-4 text-[13px] font-bold">Filters{activeCount(f) ? ` (${activeCount(f)})` : ""}</button>}
       </div>
       {!phone && filters}
-      {f.likeUs && d.us && <div className="text-[12px] text-[var(--muted2)]">{likeUsWords(d.us)}.</div>}
-      <div className="text-[12px] text-[var(--muted)]" aria-live="polite">{cards.length.toLocaleString("en-GB")} group{cards.length === 1 ? "" : "s"}</div>
+      {f.likeUs && d.us && <div className="text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>{likeUsWords(d.us)}.</div>}
+      <div className="text-[12px] text-[var(--muted)]" aria-live="polite" data-on-field={mid ? "" : undefined}>{cards.length.toLocaleString("en-GB")} group{cards.length === 1 ? "" : "s"}</div>
       {cards.length === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[var(--panel-border2)] p-6 text-center text-[13px] text-[var(--muted2)]">No groups match. Clear a filter, or turn off Groups like us.</div>
       ) : (
@@ -175,7 +187,7 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
           Show more ({(cards.length - shown).toLocaleString("en-GB")} more)
         </button>
       )}
-      <div className="text-[11px] text-[var(--muted2)]">
+      <div className="text-[11px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>
         Figures: VicData&rsquo;s group aggregates{d.build ? `, build ${d.build.build_id} (${new Date(d.build.computed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })})` : ""}{d.source === "fixtures" ? " · test fixtures" : ""}. Members at the time; England is the group&rsquo;s sector&rsquo;s (mainstream state-funded, or independent mainstream). Groups mostly of special schools, alternative provision or nursery schools get their own comparison later and aren&rsquo;t listed yet.
       </div>
       {phone && sheet && (

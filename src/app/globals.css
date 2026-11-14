@@ -184,6 +184,48 @@ body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #080
   --field-ink: #062436; --field-ink-soft: #062436; --tile-accent: #0b6fa6; --tile-tint: #dcf1fc; --tile-accent-text: #0b6fa6;
 }
 
+/* 0.8 front door 2b (M3; Guy, 13 Nov): Mid on the dashboards (MidDash.tsx). The root draws Light under Mid
+   (data-mid-dash="<part>"): every token, `dark:` utility and JS colour on the field is Light's, so the
+   columns and open panels are near-white plates and a shut panel is Light's raised bar (the ladder: a
+   clear step from its column, border, soft shadow, solid chevron, its figure in the accent). The page
+   and the header band (data-mid-band, data-theme="dark") stay dark. The field is the dashboard's own
+   ladder element (DashboardGrid; ShellPage, whose band bleeds to its edges) or the library's body
+   ([data-mid-field]), painted with its part's gradient, as the homes draw it. Text that sits on the bare
+   colour takes --field-ink (charcoal, a deep tint of the hue; R-THEME-CONTRAST's Mid dashboard rows).
+   In Dark and Light none of these selectors match. */
+body:has(#teacher-root[data-mid-dash]) { background: #0a0a0b; }
+#teacher-root[data-mid-dash] { background-color: #0a0a0b; }
+#teacher-root[data-mid-dash] [data-mid-band] { background-color: #0a0a0b; color: var(--fg); }
+#teacher-root[data-mid-dash] [data-dash-ladder], #teacher-root[data-mid-dash] [data-mid-field] {
+  --divider: transparent;
+  border-radius: 22px;
+}
+#teacher-root[data-mid-dash] .grid[data-dash-ladder], #teacher-root[data-mid-dash] [data-mid-field] { padding: 18px; }
+#teacher-root[data-mid-dash="gcse"] :is([data-dash-ladder], [data-mid-field]) {
+  background: radial-gradient(90% 80% at 12% 0%, #4CD98Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #86E3AE, #1E9E5E);
+  --field-ink: #07200f;
+}
+#teacher-root[data-mid-dash="post16"] :is([data-dash-ladder], [data-mid-field]) {
+  background: radial-gradient(90% 80% at 12% 0%, #A48CFFcc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #C1B0FF, #7A5BEF);
+  --field-ink: #1a1240;
+}
+#teacher-root[data-mid-dash="top"] :is([data-dash-ladder], [data-mid-field]) {
+  background: radial-gradient(90% 80% at 12% 0%, #FF9F0Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #FFB74D, #F57C00);
+  --field-ink: #3a1c02;
+}
+#teacher-root[data-mid-dash="group"] :is([data-dash-ladder], [data-mid-field]) {
+  background: radial-gradient(90% 80% at 12% 0%, #FF9F0Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #FFB74D, #F57C00);
+  --field-ink: #3a1c02;
+}
+#teacher-root[data-mid-dash="admissions"] :is([data-dash-ladder], [data-mid-field]) {
+  background: radial-gradient(90% 80% at 12% 0%, #5AC8FAcc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #8BD8FB, #1596DB);
+  --field-ink: #062436;
+}
+/* Text on the bare field (a row's head, its context line): the field's ink, never the plates' greys. */
+#teacher-root[data-mid-dash] [data-on-field], #teacher-root[data-mid-dash] [data-on-field] * { color: var(--field-ink); }
+/* The band's ShellPage bleed takes the field's top corners with it (the field reads as starting below it). */
+#teacher-root[data-mid-dash] [data-dash-ladder] > [data-mid-band]:first-child { border-radius: 0; }
+
 /* 0.8 front door (Guy, 13 Nov): the walk's header band, its own tokens on the band itself (WalkHeader), so
    nothing inherits the page's text colour: in Mid the band is dark over a Light page and read dark grey
    on black before. "dark" in Dark and Mid, "light" in Light. --wh-accent is the part's colour as text
@@ -212,6 +254,10 @@ body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #080
 .fd-tile { background: var(--tile-bg, var(--panel-bg)); box-shadow: var(--tile-shadow, none); transition: transform .18s ease, box-shadow .18s ease; }
 .fd-tile:hover { transform: translateY(-3px); box-shadow: var(--tile-shadow-hover, none); }
 @media (prefers-reduced-motion: reduce) { .fd-tile, .fd-tile:hover { transition: none; transform: none; } }
+/* 0.8 front door 2b: a tile's late figure (late-figure.ts) fades in when it arrives; the question was there first. */
+@keyframes fd-late-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.fd-late-figure { animation: fd-late-in .45s ease both; }
+@media (prefers-reduced-motion: reduce) { .fd-late-figure { animation: none; } }
 
 /* 0.8 sets round 1 (B21): who made a set, by colour -- Default grey, Admissions cyan, SMT orange (0.8 front
    door C20; violet before), the school's group (head office) deep bronze (orange before), Victoria Consultancy rose; Me is an outline in --fg. -fg is the text and icon,

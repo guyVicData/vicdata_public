@@ -42,6 +42,7 @@ import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/
 import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
 import type { ProjectionRow } from "@/components/groups/dash/views-r3";
 import { groupAnswer } from "@/lib/front-door/group-answers";
+import { groupWalkCompare, groupWalkDashUrl, smtContextUrl } from "@/lib/front-door/tile-figures";
 import { RailGlyph } from "./home";
 
 type Load<T> = { status: "loading" } | { status: "error"; message?: string } | { status: "ready"; data: T };
@@ -118,7 +119,8 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   const o = useSmt<Overview>(s && body && kind === "overview" ? "/api/smt/overview" : null, body);
   const a = useSmt<Academic>(s && body && kind === "academic" && walk.screens.length ? "/api/smt/academic" : null, body);
   const p = useSmt<Pupils>(s && body && kind === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: "whole" } : null);
-  const c = useSmt<Context>(s && kind === "context" ? `/api/smt/context?urn=${member.schoolUrn}&area=around&level=whole` : null, null);
+  // The home's Context tile reads this same address (tile-figures.ts, front door 2b), so the two agree.
+  const c = useSmt<Context>(s && kind === "context" ? smtContextUrl(member.schoolUrn) : null, null);
   const [step, setStep] = useStep(walk.screens.length);
   const loads = { overview: o, academic: a, pupils: p, context: c } as Record<string, Load<unknown>>;
   const load = loads[kind ?? ""];
@@ -343,11 +345,9 @@ function GroupWalk({ walk }: { walk: Walk }) {
   const [step, setStep] = useStep(walk.screens.length);
   const dash = groupWalkDash(walk.screens[0]?.view ?? "GRP-O-NOW");
   const [account] = useState(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("account") : null));
-  const [compare, setCompare] = useState<string | null>(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("compare") : null) ?? (dash === "schools" ? null : "nearest"));
-  const q = new URLSearchParams({ dash, reading: "at_time", focus: "all" });
-  if (account) q.set("account", account);
-  if (compare) q.set("compare", compare);
-  const load = useSmt<DashResponse>(`/api/group/dash?${q.toString()}`, null);
+  const [compare, setCompare] = useState<string | null>(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("compare") : null) ?? groupWalkCompare(dash));
+  // The home's Academic tile reads this same address for its first screen (tile-figures.ts, front door 2b).
+  const load = useSmt<DashResponse>(groupWalkDashUrl(dash, account, compare), null);
   const projQ = new URLSearchParams(account ? { account } : {});
   const proj = useSmt<{ rows: ProjectionRow[] }>(walk.screens.some((s) => s.view === "GRP-P-PROJECTION") ? `/api/group/projection?${projQ.toString()}` : null, null);
   const dashHref = account ? `${walk.dashboard}?account=${account}` : walk.dashboard;

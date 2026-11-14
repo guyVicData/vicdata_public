@@ -12,7 +12,8 @@ import { activeWithContent, visibleRail } from "@/lib/rail-content";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { useDashboardTheme, useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { MidBand, MidDashProvider, midRootProps, useMidPart } from "@/components/shell/MidDash";
 import { ControlBar, type FocusSubject } from "@/components/shell/ControlBar";
 import { PillMenu } from "@/components/shell/PillMenu";
 import { MenuDivider, MenuRow } from "@/components/shell/PanelMenu";
@@ -110,7 +111,10 @@ function writeParams(p: Params) {
 // ------------------------------------------------------------------------------------- page
 
 export function GroupDashboard({ dash }: { dash: GroupDash }) {
-  const [theme, setTheme] = useTeacherTheme();
+  // 0.8 front door 2b (M3): the Group pages follow Mid (the orange field with head office's bronze;
+  // MidDash.tsx) once the group has loaded; loading and errors draw Dark under Mid, as before.
+  const [plainTheme, setTheme] = useTeacherTheme();
+  const dashTheme = useDashboardTheme();
   const [params, setParamsState] = useState<Params>(readParams);
   const setParams = (p: Partial<Params>) => {
     const next = { ...params, ...p };
@@ -134,8 +138,11 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
     if (s && s.kind === "group_peers" && params.compare !== `set:${s.id}`) setParams({ compare: `set:${s.id}` });
     if (s && s.kind === "group_schools" && params.showing !== `set:${s.id}`) setParams({ showing: `set:${s.id}` });
   }
+  const mid = dashTheme.mid && load.status === "ready";
+  const theme: Theme = mid ? dashTheme.theme : plainTheme;
   return (
-    <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
+    <MidDashProvider mid={mid} part="group" theme={theme}>
+    <main id="teacher-root" data-theme={theme} {...midRootProps(mid, "group")} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
       {load.status === "ready" ? (
         <Dashboard d={load.data} dash={dash} params={params} setParams={setParams} theme={theme} onTheme={setTheme} onSetsChanged={() => setVersion((n) => n + 1)} />
       ) : (
@@ -161,6 +168,7 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
         </div>
       )}
     </main>
+    </MidDashProvider>
   );
 }
 
@@ -169,6 +177,8 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
 type Ctx = { d: DashResponse; o: GroupOverview; s: GroupSchools | null; dash: GroupDash; params: Params; average: boolean; phone: boolean; focusBar: ReactNode; highlight: (urn: string | null) => void; projection: ProjectionRow[] | null };
 
 function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsChanged }: { d: DashResponse; dash: GroupDash; params: Params; setParams: (p: Partial<Params>) => void; theme: Theme; onTheme: (t: Theme) => void; onSetsChanged: () => void }) {
+  // 0.8 front door 2b (M3): the nav draws in the header's own theme (Dark in Mid's band).
+  const navTheme: Theme = useMidPart() ? "dark" : theme;
   // 0.8 group sets (M5): a subset filters every list of schools on the page; the group's figures stay whole.
   const subsetSet = params.showing ? (whole.sets?.sets.find((x) => x.kind === "group_schools" && `set:${x.id}` === params.showing) ?? null) : null;
   const total = (whole.now ?? whole.overview)!.group.confirmed + (whole.now ?? whole.overview)!.group.likely;
@@ -330,11 +340,33 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
     <UsageScopeContext.Provider value={quiet ? null : usage}>
       <ViewSurfaceProvider surface={surface}>
       <ShellPage phone={phone} rootRef={rootRef}>
+        {/* 0.8 front door 2b (M3): in Mid the header -- the banner, the nav, the control bar -- is a dark band
+            and the rows below sit on the orange field. A fragment in Dark and Light (the same elements, in order). */}
+        <MidBand bleed={!phone} className={phone ? "pb-3" : "flex flex-col gap-[14px]"} style={groupDashVars("dark")}>
         <GroupViewAsBanner />
         <div className={phone ? "px-4 pt-4" : undefined}>
-          <AdmissionsTeacherNav schoolUrn={d.viewer.urn} theme={theme} onTheme={onTheme} />
+          <AdmissionsTeacherNav schoolUrn={d.viewer.urn} theme={navTheme} onTheme={onTheme} />
         </div>
         {d.source === "fixtures" && <div className="mx-auto mt-2 rounded-[8px] border border-dashed border-[var(--group-chip-border)] px-3 py-1 text-[11.5px] text-[var(--group-chip-fg)]">Fixture data: the ingest&rsquo;s dry run, not yet promoted.</div>}
+        {!phone && (
+            <ControlBar
+              phase="ks4"
+              phaseLabel={o.group.name}
+              schoolName={`${o.group.typeLabel} · ${o.group.confirmed + o.group.likely} schools`}
+              measure="candidates"
+              onMeasure={() => undefined}
+              badge={GROUP_BADGE}
+              switcher={switcher}
+              subjectsLabel="Phase"
+              subjects={chips}
+              focusKey={params.focus}
+              onFocus={onFocus}
+              onEditSubjects={() => undefined}
+              noEdit
+              chrome={pills}
+            />
+        )}
+        </MidBand>
         {phone ? (
           <PhoneStack>
             <div className="text-[16px] font-bold">{o.group.name}</div>
@@ -353,22 +385,6 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
           </PhoneStack>
         ) : (
           <>
-            <ControlBar
-              phase="ks4"
-              phaseLabel={o.group.name}
-              schoolName={`${o.group.typeLabel} · ${o.group.confirmed + o.group.likely} schools`}
-              measure="candidates"
-              onMeasure={() => undefined}
-              badge={GROUP_BADGE}
-              switcher={switcher}
-              subjectsLabel="Phase"
-              subjects={chips}
-              focusKey={params.focus}
-              onFocus={onFocus}
-              onEditSubjects={() => undefined}
-              noEdit
-              chrome={pills}
-            />
             {subsetLine}
             {(["now", "trends"] as const).map((row) => (
               <ShellRow key={row} title={row === "now" ? "Now" : "Trends"} context={rowContext(row)} open={open[row] !== false} onToggle={() => setOpen((x) => ({ ...x, [row]: x[row] === false }))}>

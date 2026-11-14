@@ -36,6 +36,8 @@ import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, hasNewData, markPeriodSeen, NAV_LABELS_KEY, saveNavLabels, againstKey, chosenKey, measureKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { useDashboardTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { MidBand, MidDashProvider, midRootProps } from "@/components/shell/MidDash";
 import { PhoneNav, TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
@@ -270,7 +272,14 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   } | null>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   const [columns, setColumns] = useState<ColumnState>({});
-  const [theme, setTheme] = useTeacherTheme();
+  // 0.8 front door 2b (M3): the page follows Mid (Light on the coloured field, the header band Dark); an
+  // embed (a meeting slot, the editor's preview) draws as its host page does, Dark under Mid.
+  const [plainTheme, setPlainTheme] = useTeacherTheme();
+  const dashTheme = useDashboardTheme();
+  const mid = !embed && dashTheme.mid;
+  const theme: Theme = embed ? plainTheme : dashTheme.theme;
+  const setTheme = embed ? setPlainTheme : dashTheme.setTheme;
+  const navTheme: Theme = mid ? "dark" : theme;
   // §13: captured once at load. Marking the period seen immediately afterwards would make
   // the banner vanish on the very next render, so what was new at load stays visible for
   // this visit and simply does not reappear on the next one.
@@ -2558,10 +2567,12 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         TeacherChrome.tsx for why, and Q15. */}
     {/* 0.6.3 S4: each year table's years across / down, remembered for the member. */}
     <TableLayoutContext.Provider value={tableLayoutStore}>
+    <MidDashProvider mid={mid} part={phase === "ks4" ? "gcse" : phase === "ks5" ? "post16" : "top"} theme={theme}>
     <main
       id={editing ? undefined : "teacher-root"}
       hidden={editing}
       data-theme={theme}
+      {...midRootProps(mid, phase === "ks4" ? "gcse" : phase === "ks5" ? "post16" : "top")}
       // The phase accent reaches every card and box as a custom property, so the shared
       // components never carry a phase-specific hex of their own. So does the one change
       // palette (--dir-up/--dir-down/--dir-flat, trend-colours.ts), in this theme.
@@ -2569,6 +2580,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto w-full max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
+      {/* 0.8 front door 2b (M3): in Mid the header -- the banners, the nav and the control bar -- is a dark
+          band (MidBand); the grid below is the coloured field. A fragment in Dark and Light. */}
+      <MidBand style={directionCssVars("dark")}>
       {!embed && <ViewAsBanner />}
       {/* Top-nav completion part 3: below `sm` the phone nav (NavPhone.dc.html) replaces
           TeacherNav + ControlBar. A CSS swap, so there is no viewport check to hydrate
@@ -2578,7 +2592,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <PhoneNav
         phase={phase}
         phases={navPhases}
-        theme={theme}
+        theme={navTheme}
         onTheme={setTheme}
         measure={sharedMeasure}
         onMeasure={onSharedMeasure}
@@ -2595,7 +2609,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           phases={navPhases}
           labelsOn={readSetting(columns, NAV_LABELS_KEY) !== "off"}
           onLabelsOn={setNavLabels}
-          theme={theme}
+          theme={navTheme}
           onTheme={setTheme}
         />
 
@@ -2650,6 +2664,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <p className="mt-1 hidden text-xs text-neutral-600 print:block">
         {PHASE_LABELS[phase]} · {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"} selected · exported {new Date().toLocaleDateString("en-GB")}
       </p>
+      </MidBand>
 
       {/* The laptop board's four-column row, with its dividers -- see DashboardGrid. */}
       {(() => {
@@ -2799,6 +2814,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         </Suspense>
       )}
     </main>
+    </MidDashProvider>
     </TableLayoutContext.Provider>
     </UsageReporter>
   );

@@ -50,7 +50,8 @@ type ViewSpec = {
                                  memberSpan?: "highlight" | "page-range" } }      // [ext]
     | { kind: "slope";   look: {} }
     | { kind: "donut";   look: {} }
-    | { kind: "map";     look: { colour: "value" | "change" | "member" } };
+    | { kind: "map";     look: { colour: "value" | "change" | "member" } }
+    | { kind: "dumbbell"; look: {} };                    // 0.8 front door 2b: drawn by its host (Context)
   resultsMeasures?: ResultsMeasure[];                   // absent = all four (or not a Results view)
   variants?: { compareAgainst?: …[]; comparator?: …[] };  // [ext] round 4's other axes
   icon: string;                                         // a PanelIcons glyph name
@@ -124,7 +125,7 @@ Read the columns as:
 | 27 | `DV-C2-TR-ACTUAL` | Actual | **line** · trendLine: member; shortSpan: change-bars; memberLegend: true; cardFocusVsAverage: on-all-subjects | academic.candidates · follows · year · follows-page · actual · from first, rolls on (members pick) | all | all | TrendLineIcon | Entries in [comparison-group] | GCSE C, Post-16 C |
 | 28 | `DV-C2-TR-TABLE` | Trend table | **table** · yearColumns: first-latest; extra: change; sort: latest; highlight: true; colourChange: true; memberSort: true | follows-page · follows · year · follows-page · actual · from first, rolls on (members pick) | all | all | TableIcon | [Entries\|Results] in [comparison-group], year by year | GCSE C, GCSE R, Post-16 C, Post-16 R |
 | 29 | `DV-C2-TR-CHANGELIST` | Ranked change | **bar** · orientation: horizontal; order: highest; highlight: true; values: true; diverging: true | follows-page · follows · subject · follows-page · change · from first, rolls on (members pick) | all | all | HorizontalBarsIcon | [Entries\|Results] in [comparison-group]: [change-word] since [year], ranked | GCSE C, GCSE R, Post-16 C, Post-16 R |
-| 30 | `DV-C2-TR-DUMBBELL` | Change (dumbbell) | **bar** · orientation: horizontal; order: highest; highlight: true; values: true; diverging: true | follows-page · follows · subject · follows-page · change · from first, rolls on (members pick) | all | all | DumbbellIcon | Entries by subject in [comparison-group], [first-year] and [year], largest first | none (draft) |
+| 30 | `DV-C2-TR-DUMBBELL` | Change (dumbbell) | **dumbbell** · — | academic.candidates · follows · subject · follows-page · change · from first, rolls on (members pick) | all | all | DumbbellIcon | Entries by subject in [comparison-group], [first-year] and [year], largest first | GCSE C, Post-16 C |
 | 31 | `DV-C2-TR-CHANGETABLE` | Change table | **table** · yearColumns: first-latest; extra: change; sort: change; highlight: true; colourChange: true; leadingRank: true | follows-page · follows · year · follows-page · actual · from first, rolls on (members pick) | all | all | TableIcon | [Entries\|Results] in [comparison-group]: [year] against the latest year, ranked by change | GCSE C, GCSE R, Post-16 C, Post-16 R |
 | 32 | `DV-C3-CUR-TILES` | Number tiles | **numbers** · — | follows-page · whole-school · school · follows-page · actual · latest | all | comparator: ranking | TilesIcon | [school]'s rank in the [set]: [measure] | GCSE C, GCSE R, Post-16 C, Post-16 R |
 | 33 | `DV-C3-CUR-MAP` | Map | **map** · colour: value | follows-page · follows-or-whole-school · school · follows-page · actual · latest | all | comparator: schools | MapPinIcon | [subject] [measure] by school, on the map | GCSE C, GCSE R, Post-16 C, Post-16 R |
@@ -260,7 +261,7 @@ Read the columns as:
 | `DV-C2-TR-ACTUAL` | As Indexed, at real values. |
 | `DV-C2-TR-TABLE` | The rows are the group. |
 | `DV-C2-TR-CHANGELIST` | The group's average (reference, mean): its change as a dashed line through the ranked rows. |
-| `DV-C2-TR-DUMBBELL` | 0.8 front door (draft, the walk's): every comparable subject's first-year and latest entries, largest first; the school average a dashed row last. Its preset draws Ranked change's bars until ViewSpec has a dumbbell kind. |
+| `DV-C2-TR-DUMBBELL` | The rows are the group (the Compared against pill), from the year Ranked change measures from (the "From" menu) to the latest: each subject's first-year and latest entries, largest first, in the panel's own colours (focus in the accent); the group's per-subject average (row, mean) dashed last. Drawn by its host (the "dumbbell" kind has no builder: 0.8 front door 2b). On the GCSE and Post-16 Candidates dashboards, after Ranked change. |
 | `DV-C2-TR-CHANGETABLE` | The rows are the group. |
 | `DV-C3-CUR-TILES` | **Ranking only:** the school's rank in the ranking's **whole population**, and that population's average (same year), on the ranking's own measure (the phase headline). |
 | `DV-C3-CUR-MAP` | The set's schools, coloured by value (the accent scale); the rank is the map's own. |

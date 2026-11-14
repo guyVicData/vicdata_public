@@ -58,7 +58,8 @@ const VIEWS: Record<string, { current: DataviewId[]; trends: DataviewId[]; defau
   },
   "c2.candidates": {
     current: ["DV-C2-CUR-DONUT", "DV-C2-CUR-BARS", "DV-C2-CUR-LIST", "DV-C2-CUR-TABLE"],
-    trends: ["DV-C2-TR-INDEXED", "DV-C2-TR-ACTUAL", "DV-C2-TR-TABLE", "DV-C2-TR-CHANGELIST", "DV-C2-TR-CHANGETABLE"],
+    // 0.8 front door 2b (M2): the dumbbell after Ranked change (Candidates only: it draws entries).
+    trends: ["DV-C2-TR-INDEXED", "DV-C2-TR-ACTUAL", "DV-C2-TR-TABLE", "DV-C2-TR-CHANGELIST", "DV-C2-TR-DUMBBELL", "DV-C2-TR-CHANGETABLE"],
     defaults: { current: "DV-C2-CUR-BARS", trends: "DV-C2-TR-INDEXED" },
   },
   "c2.results": {

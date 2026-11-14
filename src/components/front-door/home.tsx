@@ -69,7 +69,11 @@ export function walkHref(walk: Walk, params: Record<string, string | null | unde
   return `/teacher/walk/${walk.id}${s ? `?${s}` : ""}`;
 }
 
-export function QuestionTile({ walk, figure, ctx, href, loading }: { walk: Walk; figure: TileFigure; ctx: { subject?: string | null; category?: string | null; entry?: string | null }; href: string | null; loading?: boolean }) {
+/**
+ * `late` (front door 2b): the figure is fetched after the home has drawn (late-figure.ts), so the tile shows
+ * its question at once, keeps no placeholder while it waits, and the figure fades in when it arrives.
+ */
+export function QuestionTile({ walk, figure, ctx, href, loading, late }: { walk: Walk; figure: TileFigure; ctx: { subject?: string | null; category?: string | null; entry?: string | null }; href: string | null; loading?: boolean; late?: boolean }) {
   const question = fillTemplate(walk.question, ctx);
   return (
     <article data-home-tile={walk.id} className="fd-tile flex min-h-[200px] min-w-0 flex-col justify-between gap-4 rounded-[20px] border border-[var(--tile-border)] p-5 sm:px-[26px] sm:py-6">
@@ -84,11 +88,11 @@ export function QuestionTile({ walk, figure, ctx, href, loading }: { walk: Walk;
       </div>
       <div className="flex min-w-0 flex-col gap-3">
         {figure ? (
-          <p data-tile-figure="" className="flex flex-wrap items-baseline gap-x-2.5 text-[var(--fg)]">
+          <p data-tile-figure="" data-late-figure={late ? "" : undefined} className={`flex flex-wrap items-baseline gap-x-2.5 text-[var(--fg)]${late ? " fd-late-figure" : ""}`}>
             <span className="text-[40px] font-semibold leading-none tracking-[-0.02em] sm:text-[44px]">{figure.figure}</span>
             <span className="text-[14px] text-[var(--muted2)]">{figure.unit}</span>
           </p>
-        ) : loading ? (
+        ) : loading && !late ? (
           <p aria-hidden="true" className="h-[44px] w-24 rounded-md bg-[var(--box-bg)] opacity-60" />
         ) : null}
         <h3 className="text-[19px] font-medium leading-snug text-[var(--fg)]">{question}</h3>

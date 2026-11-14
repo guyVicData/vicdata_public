@@ -25,6 +25,9 @@ import { groupSurface } from "@/components/feedback/surface";
 import { membersOf } from "@/lib/groups/access-rules";
 import { useGroupOffices, type OfficesState } from "./useGroupOffices";
 import { arrowed } from "@/lib/signed-delta";
+import type { GroupAcademic } from "@/lib/groups/dash-r3";
+import { groupAcademicFigure, groupWalkCompare, groupWalkDashUrl } from "@/lib/front-door/tile-figures";
+import { useLateTileFigure } from "@/components/front-door/late-figure";
 
 const ACCESS_TILE: TileColour = { hex: "#fbbf24", rgb: "251,191,36" };
 const DASHBOARDS_TILE: TileColour = { hex: "#c4b5fd", rgb: "167,139,250" };
@@ -128,6 +131,14 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
   const [data, setData] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: GroupHomeData }>({ status: "loading" });
   const [nextMeeting, setNextMeeting] = useState<{ name: string; date: string | null } | null>(null);
   const office = offices.status === "ready" ? offices.office : null;
+  // Front door 2b (M1): Academic's figure, fetched late through its walk's first screen's own read (the group
+  // dashboard route's academic build, with the walk's parameters), once the home's own read has settled;
+  // cached for the session. No figure until it arrives, and none on an error.
+  const academicFigure = useLateTileFigure<{ academic?: GroupAcademic }>(
+    office ? groupWalkDashUrl("academic", office.id, groupWalkCompare("academic")) : null,
+    data.status !== "loading",
+    (r) => groupAcademicFigure(r.academic),
+  );
   useEffect(() => {
     if (!office || offices.status !== "ready") return;
     let live = true;
@@ -171,6 +182,7 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
   const d = data.status === "ready" ? data.data : null;
   const walks = walksFor("group");
   const figures = groupFigures(d);
+  const academic = academicFigure;
   const params = { account: o.id };
   const heading = <HomeHeading sub="How the group is doing, and how its schools compare. Each question walks you through a few screens." onField />;
   const also: AlsoItem[] = [
@@ -208,7 +220,11 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
             cols={2}
             links={walks.map((w) => ({ label: w.question, href: walkHref(w, params) }))}
             tiles={walks.map((w) => (
-              <QuestionTile key={w.id} walk={w} figure={figures[w.id] ?? null} ctx={{}} href={walkHref(w, params)} loading={data.status === "loading"} />
+              w.id === "group-academic" ? (
+                <QuestionTile key={w.id} walk={w} figure={academic} ctx={{}} href={walkHref(w, params)} late />
+              ) : (
+                <QuestionTile key={w.id} walk={w} figure={figures[w.id] ?? null} ctx={{}} href={walkHref(w, params)} loading={data.status === "loading"} />
+              )
             ))}
             note={
               <>

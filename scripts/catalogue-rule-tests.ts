@@ -228,9 +228,9 @@ async function frontDoorModels() {
   return frontDoorModelCache;
 }
 // 0.8 front door part 2: the tests in one unit file whose names carry the rule's id, in their own process.
-function unitByRule(file: string, ruleId: string, env: Record<string, string> = {}): { pass: boolean; detail: string } {
+function unitByRule(file: string, ruleId: string, env: Record<string, string> = {}, envFiles: string[] = [".env.local"]): { pass: boolean; detail: string } {
   const root = new URL("..", import.meta.url).pathname;
-  const r = spawnSync("npx", ["-y", "tsx", "--env-file=.env.local", "--test", "--test-force-exit", "--test-name-pattern", ruleId, file], { cwd: root, encoding: "utf8", env: { ...process.env, ...env } });
+  const r = spawnSync("npx", ["-y", "tsx", ...envFiles.map((f) => `--env-file=${f}`), "--test", "--test-force-exit", "--test-name-pattern", ruleId, file], { cwd: root, encoding: "utf8", env: { ...process.env, ...env } });
   const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
   const lines = out.split("\n").filter((l) => /^(ok|not ok) \d+ - /.test(l) && l.includes(ruleId));
   const failed = lines.filter((l) => l.startsWith("not ok"));
@@ -3504,8 +3504,12 @@ const RUNNERS: Record<string, Runner> = {
       const t = fd.files.find((x) => x.file === p)?.text ?? "";
       return !(t.includes("useTeacherTheme()") && t.includes('id="teacher-root" data-theme={theme}') && !t.includes("useThemePref"));
     });
-    const pass = effectiveTheme("mid") === "dark" && !f.unlisted.length && !f.stale.length && !newPages.length;
-    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none", newPagesDark: newPages.length ? `not Dark under Mid: ${newPages.join(", ")}` : `${NEW_PAGES.length} ok` }) };
+    // Front door 2b (M3, rewritten): dashboards follow Mid through the plumbing; sets and admin pages don't.
+    const { midDashFindings, MID_DASH_ROOTS, DARK_UNDER_MID } = await import("../src/lib/front-door/theme-scope");
+    const { dashThemeOf } = await import("../src/components/shell/TeacherChrome");
+    const dashProblems = midDashFindings(fd.files);
+    const pass = effectiveTheme("mid") === "dark" && dashThemeOf("mid") === "light" && !f.unlisted.length && !f.stale.length && !newPages.length && !dashProblems.length;
+    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none", newPagesDark: newPages.length ? `not Dark under Mid: ${newPages.join(", ")}` : `${NEW_PAGES.length} ok`, dashboardsFollowMid: `${MID_DASH_ROOTS.length} roots`, darkUnderMid: `${DARK_UNDER_MID.length} pages`, problems: dashProblems.join("; ") || "none" }) };
   },
   // 0.8 front door part 2: a unit test file's tests named for the rule, run in their own process.
   async guidedSets(_L, rule) {
@@ -3569,8 +3573,10 @@ const RUNNERS: Record<string, Runner> = {
     const { ladderShellFindings } = await import("../src/lib/front-door/theme-scope");
     const s = ladderSteps(fd.css);
     const shell = ladderShellFindings(fd.files);
-    const pass = s.darkFill >= LADDER_STEP.darkFill && s.darkBorder >= LADDER_STEP.darkBorder && s.lightBorder >= LADDER_STEP.lightBorder && !shell.length;
-    return { pass, detail: fmt({ darkFill: s.darkFill.toFixed(2), darkBorder: s.darkBorder.toFixed(2), lightFill: s.lightFill.toFixed(2), lightBorder: s.lightBorder.toFixed(2), shell: shell.join("; ") || "ok" }) };
+    // Front door 2b (M3): Mid draws Light's ladder on the field; no Mid rule overrides a ladder token.
+    const midOverrides = [...fd.css.matchAll(/#teacher-root\[data-mid-dash[^{]*\{([^}]*)\}/g)].filter((m) => /--(shut-|panel-bg|box-bg|well-border)/.test(m[1])).length;
+    const pass = s.darkFill >= LADDER_STEP.darkFill && s.darkBorder >= LADDER_STEP.darkBorder && s.lightBorder >= LADDER_STEP.lightBorder && s.midBorder >= LADDER_STEP.midBorder && s.midColumnOnField >= LADDER_STEP.midColumnOnField && !midOverrides && !shell.length;
+    return { pass, detail: fmt({ darkFill: s.darkFill.toFixed(2), darkBorder: s.darkBorder.toFixed(2), lightFill: s.lightFill.toFixed(2), lightBorder: s.lightBorder.toFixed(2), midBorder: s.midBorder.toFixed(2), midColumnOnField: s.midColumnOnField.toFixed(2), midOverrides, shell: shell.join("; ") || "ok" }) };
   },
   async roleColours() {
     const fd = await frontDoorSources();
@@ -3601,7 +3607,11 @@ const RUNNERS: Record<string, Runner> = {
     const f = teacherTileFigures(m);
     const focus = m.whole.rows.find((r) => r.focus);
     const agree = !!focus && f.many?.figure === String(lastOf(focus.entries)) && (f.well === null || f.well.figure === lastOf(focus.points)?.toFixed(1));
-    return { pass: !unresolved.length && agree && !!f.many, detail: fmt({ walks: WALKS.length, unresolved: unresolved.join(", ") || "none", focus: m.focus?.label ?? "none", many: f.many?.figure ?? "none", well: f.well?.figure ?? "none", nearby: f.nearby ? `${f.nearby.figure} ${f.nearby.unit}` : "none" }) };
+    // Front door 2b (M1): SMT Context's tile against its walk's first screen (Leighton Park, The Chase: live,
+    // both env files), head office Academic's against its (Harris, Dukes: the fixtures).
+    const smt = unitByRule("src/lib/front-door/tile-figures.test.tsx", "R-HOME-TILES", {}, [".env", ".env.local"]);
+    const grp = groupTests(["src/lib/front-door/group-walks.test.tsx"], "R-HOME-TILES");
+    return { pass: !unresolved.length && agree && !!f.many && smt.pass && grp.pass, detail: fmt({ walks: WALKS.length, unresolved: unresolved.join(", ") || "none", focus: m.focus?.label ?? "none", many: f.many?.figure ?? "none", well: f.well?.figure ?? "none", nearby: f.nearby ? `${f.nearby.figure} ${f.nearby.unit}` : "none", smtContext: smt.detail, headOfficeAcademic: grp.detail }) };
   },
   // 0.8 front door (A5-A7): the first visit -- the decisions' unit tests (one test per rule) and the tables'
   // RLS in PGlite. Offline.
@@ -3665,7 +3675,7 @@ const RUNNERS: Record<string, Runner> = {
     const usesNice = /niceAxis\(/.test(charts_src);
     return { pass: !problems.length && !svgText && usesNice, detail: fmt({ charts, lineAxes: ticks, problems: problems.join("; ") || "none", svgTextInCharts: svgText, roundTicks: usesNice }) };
   },
-  async dumbbell() {
+  async dumbbell(_L, rule) {
     const { dumbbellProblems } = await import("../src/lib/front-door/walks-check");
     const { dumbbellRows } = await import("../src/lib/front-door/teacher-screens");
     const ms = await frontDoorModels();
@@ -3673,7 +3683,18 @@ const RUNNERS: Record<string, Runner> = {
     const chase = ms[0];
     const d = dumbbellRows(chase);
     const focus = d?.rows.find((r) => r.role === "focus");
-    return { pass: !problems.length && !!focus, detail: fmt({ rows: d?.rows.length ?? 0, first: d?.rows[0]?.label ?? "none", focus: focus ? `${focus.label} ${focus.first}→${focus.latest}` : "none", last: d?.rows[d.rows.length - 1]?.label ?? "none", problems: problems.join("; ") || "none" }) };
+    // Front door 2b (M2): the dashboard's dumbbell -- its unit tests (config, catalogue, rows, view), and its
+    // rows over The Chase's whole school from the walk's first year order as the walk's (real data).
+    const unit = unitByRule("src/lib/teacher-dumbbell.test.tsx", rule.id);
+    const { dashboardDumbbell } = await import("../src/lib/teacher-dumbbell");
+    let dashAgrees = false;
+    if (d) {
+      const span = { periods: chase.periods.slice(d.firstIdx), series: chase.whole.rows.map((r) => ({ key: r.key, label: r.label, colour: "#888", values: r.entries.slice(d.firstIdx) })) };
+      const dd = dashboardDumbbell(span, { focusKey: chase.whole.rows.find((r) => r.focus)?.key ?? null });
+      const walkRows = d.rows.filter((r) => r.role !== "average");
+      dashAgrees = !!dd && dd.rows.length === walkRows.length && dd.rows.every((r, i) => r.latest === walkRows[i].latest && r.change === walkRows[i].latest - walkRows[i].first) && dd.rows.find((r) => r.focus)?.label === focus?.label;
+    }
+    return { pass: !problems.length && !!focus && unit.pass && dashAgrees, detail: fmt({ rows: d?.rows.length ?? 0, first: d?.rows[0]?.label ?? "none", focus: focus ? `${focus.label} ${focus.first}→${focus.latest}` : "none", last: d?.rows[d.rows.length - 1]?.label ?? "none", problems: problems.join("; ") || "none", dashboard: unit.detail, dashboardRowsAsWalk: dashAgrees }) };
   },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");

@@ -17,6 +17,7 @@ import { nearestInSize } from "../groups/group-sets";
 import { groupWalkView, GROUP_VIEWS, type DashResponse, type ViewId } from "../../components/groups/dash/GroupDashboard";
 import { groupAnswer } from "./group-answers";
 import { groupWalkDash, walksFor } from "./walks";
+import { groupAcademicFigure, groupAcademicHeadline, groupWalkCompare, groupWalkDashUrl } from "./tile-figures";
 
 const FX = path.join(__dirname, "../../../docs/v0.8/groups_fixtures");
 const read = <T,>(f: string) => JSON.parse(readFileSync(path.join(FX, f), "utf8")) as T;
@@ -97,3 +98,29 @@ test("the answers' figures are the views' own (Harris)", () => {
   const i = dash.academic.academic!.improving;
   assert.ok(groupAnswer("GRP-A-IMPROVING", dash.academic, null).startsWith(`${i.improved} of ${i.of}`));
 });
+
+// 0.8 front door 2b (M1): head office's Academic tile, fetched late through the walk's own read, equals the
+// walk's first screen (GRP-A-NOW: Results now and its answer) on the real fixtures.
+for (const g of GROUPS) {
+  test(`R-HOME-TILES: head office Academic's tile equals its walk's first screen (${g.tag})`, () => {
+    const dash = dashOf(g.tag, g.id);
+    const walk = walksFor("group").find((w) => w.id === "group-academic")!;
+    assert.equal(walk.screens[0].view, "GRP-A-NOW");
+    // The tile asks the very address the walk asks (one request, one cache entry).
+    assert.equal(groupWalkDashUrl("academic", "acc-1", groupWalkCompare("academic")), "/api/group/dash?dash=academic&reading=at_time&focus=all&account=acc-1&compare=nearest");
+    const fig = groupAcademicFigure(dash.academic.academic);
+    assert.ok(fig, "a figure");
+    const h = groupAcademicHeadline(dash.academic.academic)!;
+    assert.equal(fig.figure, h.group.toFixed(1));
+    // The walk's first screen draws the same figure, and its answer says it, with England's.
+    const html = renderToStaticMarkup(groupWalkView(dash.academic, "academic", "GRP-A-NOW", null, 420).body);
+    assert.ok(html.includes(fig.figure), `Results now draws ${fig.figure}`);
+    const answer = groupAnswer("GRP-A-NOW", dash.academic, null);
+    assert.ok(answer.includes(`${h.measure.label}: ${fig.figure}`), answer);
+    console.log(`  ${g.tag}: ${fig.figure} ${fig.unit}`);
+    if (h.england !== null) {
+      assert.ok(fig.unit.endsWith(`England ${h.england.toFixed(1)}`), fig.unit);
+      assert.ok(answer.includes(`England ${h.england.toFixed(1)}`), answer);
+    }
+  });
+}

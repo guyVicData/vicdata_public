@@ -1,19 +1,22 @@
 // Run: npx -y tsx --test --test-force-exit src/lib/front-door/theme-scope.test.ts
-// VicData 0.8 front door: R-THEME-MID-SCOPE (Mid on the homes and walks only) and R-PANEL-LADDER's shell
-// half, by source scan. No database.
+// VicData 0.8 front door: R-THEME-MID-SCOPE (Mid on the homes, walks and -- since front door 2b -- the dashboards;
+// the sets and admin pages draw Dark under Mid) and R-PANEL-LADDER's shell half, by source scan. No database.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { effectiveTheme } from "../../components/shell/TeacherChrome";
-import { ladderShellFindings, midScopeFindings } from "./theme-scope";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { dashThemeOf, effectiveTheme } from "../../components/shell/TeacherChrome";
+import { MidBand, midRootProps } from "../../components/shell/MidDash";
+import { ladderShellFindings, midDashFindings, midScopeFindings } from "./theme-scope";
 
 const src = path.join(__dirname, "../..");
 const files = (readdirSync(src, { recursive: true }) as string[])
   .filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(".test."))
   .map((f) => ({ file: `src/${f}`, text: readFileSync(path.join(src, f), "utf8") }));
 
-test("R-THEME-MID-SCOPE: Mid draws Dark everywhere but the homes and walks", () => {
+test("R-THEME-MID-SCOPE: Mid draws Dark on the sets and admin pages; the homes, walks and dashboards read it", () => {
   assert.equal(effectiveTheme("mid"), "dark");
   assert.equal(effectiveTheme("dark"), "dark");
   assert.equal(effectiveTheme("light"), "light");
@@ -22,7 +25,16 @@ test("R-THEME-MID-SCOPE: Mid draws Dark everywhere but the homes and walks", () 
   assert.deepEqual(stale, [], "MID_PAGES lists a missing file");
 });
 
-test("R-THEME-MID-SCOPE: dashboards, sets and admin pages take their theme from useTeacherTheme", () => {
+test("R-THEME-MID-SCOPE: dashboards follow Mid (Light on the field, the header band Dark); sets and admin pages draw Dark", () => {
+  // Front door 2b (M3, rewritten): a dashboard draws Light under Mid, Dark and Light as before.
+  assert.equal(dashThemeOf("mid"), "light");
+  assert.equal(dashThemeOf("dark"), "dark");
+  assert.equal(dashThemeOf("light"), "light");
+  assert.deepEqual(midDashFindings(files), []);
+  // Outside Mid nothing is added: no attribute on the root, no band element (Dark and Light unchanged).
+  assert.deepEqual(midRootProps(false, "gcse"), {});
+  assert.deepEqual(midRootProps(true, "gcse"), { "data-pref": "mid", "data-mid-dash": "gcse" });
+  assert.equal(renderToStaticMarkup(createElement(MidBand, { bleed: true, className: "x" } as never, createElement("i", null, "nav"))), "<i>nav</i>");
   for (const f of [
     "src/components/smt/SmtDashboard.tsx",
     "src/components/groups/dash/GroupDashboard.tsx",

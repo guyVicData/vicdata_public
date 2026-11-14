@@ -833,8 +833,8 @@ export const DATAVIEWS: Dataview[] = [
     note: "S3b: % change on entries; change in points on average point score; change in percentage points on rates (R-NUMBER-TYPE-HONESTY).",
   },
   {
-    // 0.8 front door (B17): proposed for the dashboard's Context > Trends rail, not on it this round (draft,
-    // no rail): walk 1 step 5 draws it. Ready to add (rail "Change (dumbbell)") once Guy says.
+    // 0.8 front door (B17): walk 1 step 5 draws it. Front door 2b (M2; Guy, 13 Nov): on the GCSE and
+    // Post-16 Candidates dashboards' Context > Trends rail, after Ranked change ("Change (dumbbell)").
     id: "DV-C2-TR-DUMBBELL",
     label: "Change (dumbbell)",
     railIcon: "DumbbellIcon",
@@ -851,13 +851,12 @@ export const DATAVIEWS: Dataview[] = [
     params: ["against:context"],
     titleTemplate: "Entries by subject in [comparison-group], [first-year] and [year], largest first",
     renderer: "RD-DUMBBELL",
-    host: c2("trend", null),
+    host: c2("trend", "Change (dumbbell)"),
     audience: SUBJECT_ACADEMIC,
-    status: "draft",
-    verifiedAt: [],
-    origin: "0.8 front door part 1, B17 (docs/v0.8/front_door_design/png/dumbbell.png)",
+    ...live,
+    origin: "0.8 front door part 1, B17 (docs/v0.8/front_door_design/png/dumbbell.png); on the rail in front door 2b (M2)",
     rules: ["R-DUMBBELL", "R-KS5-ASAEA-EXCL"],
-    note: "One row per subject ordered by this year's entries; ring = first year, dot = latest; focus row tinted in the accent; same-category subjects in the category colour, others grey; a dashed school-average row last; change in pupils with up/down triangles (no green/red).",
+    note: "One row per subject ordered by this year's entries; ring = first year, dot = latest; focus row tinted in the accent; a dashed average row last; change in entries with up/down triangles (no green/red). On the dashboard: the subjects the Compared against pill holds, from the year Ranked change measures from (the From menu), in the panel's own colours, the comparison group's per-subject average as the dashed row. In the walk: the whole school from the first year with entries, same-category subjects in the category colour, the school average last.",
   },
   {
     id: "DV-C2-TR-CHANGETABLE",

@@ -19,6 +19,7 @@ export {
   TransposeIcon,
   DonutIcon,
   SlopeIcon,
+  DumbbellIcon,
   MapPinIcon,
   AdmPipelineIcon,
   AdmFunnelIcon,

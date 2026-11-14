@@ -15,7 +15,8 @@ import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "re
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { useDashboardTheme, useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { MidBand, MidDashProvider, midRootProps, useMidPart } from "@/components/shell/MidDash";
 import { ControlBar, type FocusSubject } from "@/components/shell/ControlBar";
 import { GroupSwitcher } from "@/components/shell/GroupSwitcher";
 import { MenuChip } from "@/components/shell/FilterPills";
@@ -85,7 +86,10 @@ export const SMT_BADGE = <span className="text-[19px] font-extrabold leading-non
 // ------------------------------------------------------------------------------------- page
 
 export function SmtDashboard({ dash }: { dash: SmtDash }) {
-  const [theme, setTheme] = useTeacherTheme();
+  // 0.8 front door 2b (M3): the SMT dashboards follow Mid (the top level's orange field; MidDash.tsx); a
+  // page that isn't the dashboard (loading, signed out, no SMT here) draws Dark under Mid, as before.
+  const dashTheme = useDashboardTheme();
+  const [plainTheme, setTheme] = useTeacherTheme();
   const [state, setState] = useState<SmtMemberState>({ status: "loading" });
   useEffect(() => {
     loadSmtMember().then(setState);
@@ -98,6 +102,8 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
   // the View as banner's) opens the shared editor in place, with this school as the live preview.
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const shows = state.status === "ready" && state.member.access !== "none";
+  const mid = dashTheme.mid && shows;
+  const theme: Theme = mid ? dashTheme.theme : plainTheme;
   const inPlace = useInPlaceEdit(supabase, shows ? DASH_ID[dash] : null);
   const editing = inPlace.editing && state.status === "ready";
   return (
@@ -107,7 +113,8 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
           <SmtEditor slug={DASH_ID[dash]} school={{ urn: state.member.schoolUrn, name: state.member.schoolName }} />
         </Suspense>
       )}
-      <main id={editing ? undefined : "teacher-root"} hidden={editing} data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={dash === "academic" ? { ...smtVars(theme), ...acVars(theme) } : smtVars(theme)}>
+      <MidDashProvider mid={mid} part="top" theme={theme}>
+      <main id={editing ? undefined : "teacher-root"} hidden={editing} data-theme={theme} {...midRootProps(mid, "top")} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={dash === "academic" ? { ...smtVars(theme), ...acVars(theme) } : smtVars(theme)}>
         {state.status === "ready" && state.member.access !== "none" ? (
           <Dashboard member={state.member} dash={dash} theme={theme} onTheme={setTheme} reloadTick={inPlace.reloadTick} />
         ) : (
@@ -140,6 +147,7 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
           </div>
         )}
       </main>
+      </MidDashProvider>
     </>
   );
 }
@@ -212,6 +220,8 @@ export type Ctx = {
 };
 
 function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMember; dash: SmtDash; theme: Theme; onTheme: (t: Theme) => void; reloadTick: number }) {
+  // 0.8 front door 2b (M3): the nav draws in the header's own theme (Dark in Mid's band).
+  const navTheme: Theme = useMidPart() ? "dark" : theme;
   const [rootRef, width] = useWidth<HTMLDivElement>();
   const phone = width > 0 && width < PHONE;
   const school = useSmt<SmtSchool>(`/api/smt/school?urn=${member.schoolUrn}`, null);
@@ -285,8 +295,10 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   if (school.status === "error")
     return (
       <ShellPage phone={phone} rootRef={rootRef}>
-        <ViewAsBanner />
-        <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
+        <MidBand bleed={!phone} className="flex flex-col gap-[14px]" style={smtVars("dark")}>
+          <ViewAsBanner />
+          <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={navTheme} onTheme={onTheme} />
+        </MidBand>
         <Empty>{school.code === 403 ? SMT_ONLY_MESSAGE : school.message}</Empty>
       </ShellPage>
     );
@@ -438,11 +450,34 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     <UsageScopeContext.Provider value={quiet ? null : usage}>
       <ViewSurfaceProvider surface={surface} config={config}>
       <ShellPage phone={phone} rootRef={rootRef}>
+        {/* 0.8 front door 2b (M3): in Mid the header -- banners, nav, the control bar -- is a dark band and
+            the rows below sit on the orange field. A fragment in Dark and Light (the same elements, in order). */}
+        <MidBand bleed={!phone} className={phone ? "pb-3" : "flex flex-col gap-[14px]"} style={dash === "academic" ? { ...smtVars("dark"), ...acVars("dark") } : smtVars("dark")}>
         <ViewAsBanner />
         <div className={phone ? "px-4 pt-4" : undefined}>
-          <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
+          <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={navTheme} onTheme={onTheme} />
         </div>
         {member.headOffice && <HeadOfficeBanner note={member.headOffice.note} className={phone ? "mx-4" : undefined} />}
+        {!phone && (
+            <ControlBar
+              phase="ks4"
+              phaseLabel="SMT"
+              schoolName={member.schoolName}
+              measure="candidates"
+              onMeasure={() => undefined}
+              badge={SMT_BADGE}
+              switcher={switcher}
+              subjectsLabel="Level"
+              subjects={chips}
+              focusKey={levelNow}
+              onFocus={onLevel}
+              onEditSubjects={() => undefined}
+              noEdit
+              subRow={subRow}
+              chrome={pills}
+            />
+        )}
+        </MidBand>
         {phone ? (
           <PhoneStack>
             <div className="self-start">{switcher}</div>
@@ -469,27 +504,10 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
             {dash === "context" && <div className="flex flex-wrap gap-[6px]">{areaPill}</div>}
             {ctx ? <PhoneBody config={config} c={ctx} /> : <Skeleton />}
           </PhoneStack>
+        ) : ctx ? (
+          <DesktopGrid config={config} c={ctx} />
         ) : (
-          <>
-            <ControlBar
-              phase="ks4"
-              phaseLabel="SMT"
-              schoolName={member.schoolName}
-              measure="candidates"
-              onMeasure={() => undefined}
-              badge={SMT_BADGE}
-              switcher={switcher}
-              subjectsLabel="Level"
-              subjects={chips}
-              focusKey={levelNow}
-              onFocus={onLevel}
-              onEditSubjects={() => undefined}
-              noEdit
-              subRow={subRow}
-              chrome={pills}
-            />
-            {ctx ? <DesktopGrid config={config} c={ctx} /> : <div className="grid grid-cols-3 gap-6" style={{ height: ROW_NOW }}><Skeleton /><div className="col-span-2 flex"><Skeleton /></div></div>}
-          </>
+          <div className="grid grid-cols-3 gap-6" style={{ height: ROW_NOW }}><Skeleton /><div className="col-span-2 flex"><Skeleton /></div></div>
         )}
         {chooser && sets.savedSets && phase && (
           <Suspense fallback={null}>

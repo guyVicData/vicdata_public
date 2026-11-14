@@ -28,7 +28,9 @@ import { SelectionPrompt, withSelectionChip, type SelectionChipValue } from "./S
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { DumbbellView } from "./DumbbellView";
+import { dashboardDumbbell, dumbbellSentence } from "@/lib/teacher-dumbbell";
+import { AverageIcon, DonutIcon, DumbbellIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { GradeDistribution } from "./GradeDistribution";
 import { bandDistribution } from "@/lib/grade-spread";
 import { bandRate, inlineRangeLabel, type GradeRange } from "@/lib/subject-grades";
@@ -289,8 +291,9 @@ export function SubjectPanels({
   // Trends row merge round: Trend's and % change's views share one Trends panel, so one view
   // state spans both halves -- Trend's (chart, actual, table, map) then % change's
   // (ranked change or the geography chart, and its table).
-  const [trendsView, setTrendsView] = useState<"chart" | "actual" | "table" | "map" | "changeChart" | "changeTable">("chart");
-  const isChange = trendsView === "changeChart" || trendsView === "changeTable";
+  // 0.8 front door 2b (M2): Context on Candidates adds "Change (dumbbell)" after Ranked change.
+  const [trendsView, setTrendsView] = useState<"chart" | "actual" | "table" | "map" | "changeChart" | "changeDumbbell" | "changeTable">("chart");
+  const isChange = trendsView === "changeChart" || trendsView === "changeTable" || trendsView === "changeDumbbell";
   const trendViewChosen = isChange ? null : trendsView;
   const setTrendView = (v: "chart" | "actual" | "table" | "map") => setTrendsView(v);
   // A Map choice falls back to the chart when the focus moves to a subject with no map.
@@ -298,8 +301,8 @@ export function SubjectPanels({
   // Trend map/legend round Part 1: the subjects the fullscreen legend has switched off,
   // stamped with the focus and scope they were chosen under (hiddenKeys, below, reads it).
   const [hidden, setHidden] = useState<{ scope: string; keys: Set<string> }>({ scope: "", keys: new Set() });
-  const changeView: "chart" | "table" = trendsView === "changeTable" ? "table" : "chart";
-  const setChangeView = (v: "chart" | "table") => setTrendsView(v === "table" ? "changeTable" : "changeChart");
+  const changeViewChosen: "chart" | "table" | "dumbbell" = trendsView === "changeTable" ? "table" : trendsView === "changeDumbbell" ? "dumbbell" : "chart";
+  const setChangeView = (v: "chart" | "table" | "dumbbell") => setTrendsView(v === "table" ? "changeTable" : v === "dumbbell" ? "changeDumbbell" : "changeChart");
   const geo = useSubjectGeography(geography);
   const runtime = useDashboardRuntime();
   // Grade bands: England's per-grade rows for the focused subject, every year, one fetch.
@@ -313,6 +316,10 @@ export function SubjectPanels({
     ? withEnglandBandBenchmark(subjectsIn, focus, periods, englandGradeRows, gradeBand.range)
     : subjectsIn;
   const redesigned = changeScope !== "all";
+  // 0.8 front door 2b (M2): the dumbbell is Context's, on a headcount (Candidates' entries) -- every subject's
+  // first year and latest; never Results' points or rates, and never the geography comparison.
+  const dumbbellOffered = redesigned && !geography && columnId === "context" && measure.id === "entries";
+  const changeView: "chart" | "table" | "dumbbell" = changeViewChosen === "dumbbell" && !dumbbellOffered ? "chart" : changeViewChosen;
 
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
   // the panel on a view it can no longer draw. (R-DONUT-COUNTS-ONLY is decided by the
@@ -949,6 +956,12 @@ export function SubjectPanels({
   const bestChange = rankedChange[0];
   const worstChange = rankedChange[rankedChange.length - 1];
   const changeSince = changeSpan.periods.length ? academicYearLabel(changeSpan.periods[0]) : "";
+  // 0.8 front door 2b (M2): the dumbbell over the same span and subjects as Ranked change (teacher-dumbbell.ts).
+  const dumbbell = dumbbellOffered
+    ? dashboardDumbbell(changeSpan, { focusKey: focusedKey, shortLabels: new Map(subjects.map((x) => [x.key, x.shortLabel])), group: groups[0] ? { label: groups[0].label } : null })
+    : null;
+  const dumbbellSince = dumbbell ? academicYearLabel(dumbbell.firstPeriod) : changeSince;
+  const dumbbellSaid = dumbbell ? dumbbellSentence(dumbbell, dumbbellSince) : null;
 
   const changeHalf: PanelRender = {
     tag: changeTitle(measure),
@@ -960,6 +973,11 @@ export function SubjectPanels({
         <IconButton label={geography ? "Area chart" : "Ranked change"} active={isChange && changeView === "chart"} onClick={() => setChangeView("chart")}>
           {geography ? TrendLineIcon : HorizontalBarsIcon}
         </IconButton>
+        {dumbbellOffered && (
+          <IconButton label="Change (dumbbell)" active={isChange && changeView === "dumbbell"} disabled={!dumbbell} onClick={() => setChangeView("dumbbell")}>
+            {DumbbellIcon}
+          </IconButton>
+        )}
         <IconButton label="Change table" active={isChange && changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
       </>
     ) : (
@@ -982,9 +1000,20 @@ export function SubjectPanels({
           measure={measure}
           theme={theme}
           accentHex={accentHex}
-          view={changeView}
+          view={changeView === "dumbbell" ? "chart" : changeView}
           fullscreen={fullscreen}
         />
+      ) : changeView === "dumbbell" ? (
+        dumbbell ? (
+          <>
+            <ViewTitle>{`${scope ?? scopeNoun}, ${dumbbellSince} and ${academicYearLabel(dumbbell.latestPeriod)}, largest first`}</ViewTitle>
+            <CentredOnTarget watch={`dumbbell:${focusedKey}:${changeData.periods.join(",")}`}>
+              <DumbbellView d={dumbbell} fullscreen={fullscreen} firstLabel={dumbbellSince} latestLabel={academicYearLabel(dumbbell.latestPeriod)} />
+            </CentredOnTarget>
+          </>
+        ) : (
+          <p className="text-xs text-[var(--muted)]">No two years of published entries to compare yet.</p>
+        )
       ) : changeView === "table" ? (
         <>
           <ViewTitle>
@@ -1020,7 +1049,9 @@ export function SubjectPanels({
         </>
       ),
     summary:
-      bestChange && worstChange && bestChange.key !== worstChange.key ? (
+      changeView === "dumbbell" ? (
+        <PanelSummary>{dumbbellSaid ?? "Not enough published years yet to compare first and latest."}</PanelSummary>
+      ) : bestChange && worstChange && bestChange.key !== worstChange.key ? (
         <PanelSummary>
           {moversSentence({ label: bestChange.label, printed: fmtChange(bestChange.value!) }, { label: worstChange.label, printed: fmtChange(worstChange.value!) }, changeSince)}
         </PanelSummary>

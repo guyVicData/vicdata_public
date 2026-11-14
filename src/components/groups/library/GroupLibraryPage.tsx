@@ -8,7 +8,8 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
-import { useTeacherTheme } from "@/components/shell/TeacherChrome";
+import { useDashboardTheme, useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { MidBand, MidDashProvider, midRootProps } from "@/components/shell/MidDash";
 import { AdmissionsTeacherNav } from "@/components/admissions/controls";
 import { GroupViewAsBanner } from "@/components/groups/GroupViewAsBanner";
 import { groupDashVars } from "@/components/groups/dash/GroupDashboard";
@@ -26,7 +27,8 @@ const MEASURE_SHORT: Record<string, string> = { ks4_a8: "A8", ks5_aps_alevel: "A
 const yr = (p: number) => `${p}/${String((p + 1) % 100).padStart(2, "0")}`;
 
 export function GroupLibraryPage({ id }: { id: string }) {
-  const [theme, setTheme] = useTeacherTheme();
+  const [plainTheme, setTheme] = useTeacherTheme();
+  const dashTheme = useDashboardTheme();
   const search = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
   const acc = new URLSearchParams();
   for (const k of ["account", "lookAs", "as", "peek"]) {
@@ -38,29 +40,36 @@ export function GroupLibraryPage({ id }: { id: string }) {
   q.set("id", id);
   const load = useSmt<LibraryGroupPage & { source: string; viewer?: { as: string; accountId: string } }>(`/api/group/library/group?${q.toString()}`, null);
   const libraryHref = `/teacher/group/groups${back ? `?${back}` : acc.toString() ? `?${acc}` : ""}`;
+  // 0.8 front door 2b (M3): a group's library page follows Mid with the library (its body the orange field).
+  const mid = dashTheme.mid && load.status === "ready";
+  const theme: Theme = mid ? dashTheme.theme : plainTheme;
   return (
-    <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
+    <MidDashProvider mid={mid} part="group" theme={theme}>
+    <main id="teacher-root" data-theme={theme} {...midRootProps(mid, "group")} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={groupDashVars(theme)}>
       <div className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-5 sm:px-7">
+        <MidBand className="flex flex-col gap-4" style={groupDashVars("dark")}>
         <GroupViewAsBanner />
-        <AdmissionsTeacherNav schoolUrn={null} theme={theme} onTheme={setTheme} />
+        <AdmissionsTeacherNav schoolUrn={null} theme={mid ? "dark" : theme} onTheme={setTheme} />
         <Link href={libraryHref} className="text-[12px] font-bold text-[var(--group-accent-text)]">← Back to the groups library</Link>
+        </MidBand>
         {load.status === "ready" ? (
-          <Page p={load.data} query={acc.toString()} />
+          <Page p={load.data} query={acc.toString()} mid={mid} />
         ) : (
           <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">{load.status === "loading" ? "Loading the group…" : load.code === 404 ? "Not found." : load.message}</div>
         )}
       </div>
     </main>
+    </MidDashProvider>
   );
 }
 
-function Page({ p, query }: { p: LibraryGroupPage & { source: string; viewer?: { as: string; accountId: string } }; query: string }) {
+function Page({ p, query, mid = false }: { p: LibraryGroupPage & { source: string; viewer?: { as: string; accountId: string } }; query: string; mid?: boolean }) {
   const c = p.card;
   const ts = typeAndSize(c);
   const members: ConsortiumMapMember[] = useMemo(() => p.schools.filter((s) => s.easting !== null && s.northing !== null).map((s) => ({ urn: s.urn, name: s.name, easting: s.easting!, northing: s.northing!, roll: s.roll })), [p.schools]);
   const phases = (["secondary", "post16", "primary"] as const).filter((ph) => c.schools_by_phase?.[ph] > 0);
   return (
-    <div className="flex flex-col gap-4" data-library-group={c.group_id}>
+    <div className="flex flex-col gap-4" data-library-group={c.group_id} data-mid-field={mid ? "" : undefined}>
       <header className="flex flex-wrap gap-4 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
         <RegionArtwork regions={c.regions} size={120} label={`Where ${c.displayName}'s schools are: ${regionWords(c)}`} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">

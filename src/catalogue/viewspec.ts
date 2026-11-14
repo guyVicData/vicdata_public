@@ -106,7 +106,10 @@ export type ViewCompare = "follows-page" | CompareSeries[];
 
 // ------------------------------------------------------------------------------------ view
 
-export type ViewKind = "line" | "bar" | "table" | "ranking" | "numbers" | "spread" | "slope" | "donut" | "map" | AdmissionsViewKind;
+export type ViewKind = "line" | "bar" | "table" | "ranking" | "numbers" | "spread" | "slope" | "donut" | "map" | "dumbbell" | AdmissionsViewKind;
+// 0.8 front door 2b (M2): the dumbbell (DV-C2-TR-DUMBBELL), drawn by its host (Context's SubjectPanels,
+// RD-DUMBBELL) as the Admissions kinds are: no builder registered, so renderView hands it back. Look-only.
+export type DumbbellLook = Record<string, never>;
 // 0.7 admissions r2 (D7): the Admissions kinds of view. Their looks are look-only; the
 // certainty styling, honesty wording, flag thresholds and "shapes not ranked" are catalogue
 // rules (R-ADM-*), read at draw time, and have no look option to edit.
@@ -216,7 +219,8 @@ export type ViewView =
   | { kind: "spread"; look: SpreadLook }
   | { kind: "slope"; look: SlopeLook }
   | { kind: "donut"; look: DonutLook }
-  | { kind: "map"; look: MapLook };
+  | { kind: "map"; look: MapLook }
+  | { kind: "dumbbell"; look: DumbbellLook };
 
 // ------------------------------------------------------------------------------- the spec
 
@@ -316,10 +320,10 @@ const BODIES: Record<string, Body> = {
   "DV-C2-TR-TABLE": C2("follows-page", "year", "actual", TRENDS, table(YEAR_TABLE)),
   "DV-C2-TR-CHANGELIST": C2("follows-page", "subject", "change", TRENDS, bar(CHANGE_BARS)),
   "DV-C2-TR-CHANGETABLE": C2("follows-page", "year", "actual", TRENDS, table(CHANGE_TABLE)),
-  // 0.8 front door (B17): the dumbbell (draft, walk 1 step 5). ViewSpec has no dumbbell kind, so its preset
-  // is the nearest it has -- the subjects' change from the first year, as change bars; the walk draws it
-  // with its own renderer (RD-DUMBBELL). Logged: a "dumbbell" view kind comes with its rail place.
-  "DV-C2-TR-DUMBBELL": C2("follows-page", "subject", "change", TRENDS, bar(CHANGE_BARS)),
+  // 0.8 front door (B17): the dumbbell, walk 1 step 5; front door 2b (M2): on Context › Trends after Ranked
+  // change, with its own "dumbbell" kind (drawn by the host, RD-DUMBBELL): each subject's first year and
+  // latest, on Candidates' entries.
+  "DV-C2-TR-DUMBBELL": C2("academic.candidates", "subject", "change", TRENDS, { kind: "dumbbell", look: {} }),
 
   // --------------------------------------------------------- Column 3, Comparisons
   "DV-C3-CUR-TILES": {

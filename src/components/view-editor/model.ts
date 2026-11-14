@@ -174,6 +174,8 @@ export const ICONS_FOR: Record<ViewKind, string[]> = {
   strengths: ["AdmStrengthsIcon", "HorizontalBarsIcon"],
   shapes: ["AdmShapeIcon"],
   flags: ["FlagIcon"],
+  // 0.8 front door 2b
+  dumbbell: ["DumbbellIcon"],
 };
 
 const DEFAULT_LOOK: { [K in ViewKind]: Extract<ViewSpec["view"], { kind: K }>["look"] } = {
@@ -192,6 +194,7 @@ const DEFAULT_LOOK: { [K in ViewKind]: Extract<ViewSpec["view"], { kind: K }>["l
   strengths: { order: "gap", showFlags: true },
   shapes: { columns: 2 },
   flags: { show: "flagged" },
+  dumbbell: {},
 };
 
 export function startDraft(env: EditorEnv, instance?: ViewInstance): Draft {
