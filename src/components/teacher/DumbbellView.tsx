@@ -49,7 +49,7 @@ export function DumbbellView({ d, fullscreen = false, firstLabel, latestLabel }:
         ))}
         {d.average && (
           <div data-dumbbell-row="average" className={`mt-1 grid ${grid} ${rowH} items-center border-t border-[var(--panel-border)] px-1 pt-1`}>
-            <span className="truncate text-right italic text-[var(--muted2)]">{d.average.label}</span>
+            <span className="truncate text-right italic text-[var(--muted2)]" title={d.average.label}>{fullscreen ? d.average.label : "Average"}</span>
             {track(d.average.first, d.average.latest, "var(--muted2)", true)}
             <span className="text-right tabular-nums text-[var(--muted2)]">{change(d.average.change)}</span>
           </div>

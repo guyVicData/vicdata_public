@@ -960,7 +960,8 @@ export function SubjectPanels({
   const dumbbell = dumbbellOffered
     ? dashboardDumbbell(changeSpan, { focusKey: focusedKey, shortLabels: new Map(subjects.map((x) => [x.key, x.shortLabel])), group: groups[0] ? { label: groups[0].label } : null })
     : null;
-  const dumbbellSaid = dumbbell ? dumbbellSentence(dumbbell, changeSince) : null;
+  const dumbbellSince = dumbbell ? academicYearLabel(dumbbell.firstPeriod) : changeSince;
+  const dumbbellSaid = dumbbell ? dumbbellSentence(dumbbell, dumbbellSince) : null;
 
   const changeHalf: PanelRender = {
     tag: changeTitle(measure),
@@ -1005,9 +1006,9 @@ export function SubjectPanels({
       ) : changeView === "dumbbell" ? (
         dumbbell ? (
           <>
-            <ViewTitle>{`${scope ?? scopeNoun}, ${changeSince} and ${academicYearLabel(dumbbell.latestPeriod)}, largest first`}</ViewTitle>
+            <ViewTitle>{`${scope ?? scopeNoun}, ${dumbbellSince} and ${academicYearLabel(dumbbell.latestPeriod)}, largest first`}</ViewTitle>
             <CentredOnTarget watch={`dumbbell:${focusedKey}:${changeData.periods.join(",")}`}>
-              <DumbbellView d={dumbbell} fullscreen={fullscreen} firstLabel={changeSince} latestLabel={academicYearLabel(dumbbell.latestPeriod)} />
+              <DumbbellView d={dumbbell} fullscreen={fullscreen} firstLabel={dumbbellSince} latestLabel={academicYearLabel(dumbbell.latestPeriod)} />
             </CentredOnTarget>
           </>
         ) : (

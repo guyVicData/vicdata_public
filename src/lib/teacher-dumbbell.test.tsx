@@ -74,6 +74,11 @@ test("R-DUMBBELL: largest this year first, the focus marked, the group's average
   const plain = dashboardDumbbell({ ...span, series: span.series.filter((s) => s.key !== "group-0") }, { focusKey: "geog" })!;
   assert.equal(plain.average?.label, "Average of these subjects");
   assert.equal(plain.average?.latest, (92 + 84 + 64 + 61) / 4);
+  // A span opening on a year only the group line holds starts at the first year a subject holds.
+  const late = dashboardDumbbell({ periods: [2021, ...span.periods], series: span.series.map((s) => ({ ...s, values: [s.key === "group-0" ? 69 : null, ...s.values] })) }, { focusKey: "geog", group: { label: "Humanities" } })!;
+  assert.equal(late.firstPeriod, 2022);
+  assert.deepEqual(late.rows.map((r) => r.change), [-3, 22, -16, 11]);
+  assert.equal(late.average?.first, 70);
   // One year only, or nobody with both years: no view (the panel says so), never an invented row.
   assert.equal(dashboardDumbbell({ periods: [2024], series: span.series }, { focusKey: "geog" }), null);
   assert.equal(dashboardDumbbell({ periods: [2022, 2024], series: [{ key: "x", label: "X", colour: "#000", values: [null, 3] }] }, { focusKey: null }), null);

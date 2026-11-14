@@ -3,7 +3,8 @@
 // Compared against pill holds, over the span its "From" menu sets -- measured from the same first year as
 // Ranked change (the statement span, R-TREND-FROM-2223), so the two agree on every subject's change.
 //
-// One row per subject with a figure in both years, largest this year first (ties by name); the focus
+// The two years are the first and the latest in that span that any subject holds. One row per subject
+// with a figure in both, largest this year first (ties by name); the focus
 // marked; the comparison group's own per-subject average (the panel's group line) as the dashed row last,
 // else the plain average of the rows drawn. Change is in entries (latest less first). Pure, so the rule
 // test runs it on fixtures and the walk's ordering rule (dumbbellRows) is the same.
@@ -25,11 +26,13 @@ export function dashboardDumbbell(
   span: { periods: number[]; series: DumbbellSeries[] },
   opts: { focusKey: string | null; shortLabels?: Map<string, string>; group?: { label: string } | null },
 ): DashboardDumbbell | null {
-  const n = span.periods.length;
-  if (n < 2) return null;
-  const fi = 0;
-  const li = n - 1;
   const subjects = span.series.filter((s) => !s.key.startsWith("group-"));
+  // The first and the latest year any subject holds (the span can open on a year only the group line has).
+  const has = (k: number) => subjects.some((s) => s.values[k] !== null && s.values[k] !== undefined);
+  const fi = span.periods.findIndex((_, k) => has(k));
+  let li = span.periods.length - 1;
+  while (li > fi && !has(li)) li--;
+  if (fi < 0 || li <= fi) return null;
   const rows: DashboardDumbbellRow[] = [];
   let leftOut = 0;
   for (const s of subjects) {
