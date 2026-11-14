@@ -4032,6 +4032,22 @@ const RUNNERS: Record<string, Runner> = {
     const words = /not a single-academy trust/.test(NON_GROUP_STATE_NOTE) && /no listed group/.test(NON_GROUP_STATE_NOTE);
     return { pass: distinct && !dukesSat && words && unit.pass, detail: fmt({ harrisNonGroup: ng?.figures.n_schools ?? "none", harrisSat: sat?.figures.n_schools ?? "none", distinct, dukesHasNoSat: !dukesSat, note: words, unit: unit.detail }) };
   },
+  // 0.8 non-mainstream groups: the R-NM rules through their own unit tests (the fixtures, build 7).
+  async nmLine() {
+    return groupTests(["src/lib/groups/non-mainstream.test.ts"], "R-NM-LINE|library");
+  },
+  async nmCounting() {
+    return groupTests(["src/lib/groups/non-mainstream.test.ts"], "R-NM-NO-RESULTS and R-NM-COUNTING|library page");
+  },
+  async nmPools() {
+    return groupTests(["src/lib/groups/non-mainstream.test.ts"], "R-NM-POOLS");
+  },
+  async nmSets() {
+    return groupTests(["src/lib/groups/non-mainstream.test.ts"], "R-NM-SETS");
+  },
+  async nmOwnSchools() {
+    return groupTests(["src/lib/groups/non-mainstream.test.ts"], "R-NM-OWN-SCHOOLS");
+  },
   async groupRankSameType() {
     return groupTests(["src/lib/groups/group-sets.test.ts"], "R-GROUP-RANK-SAME-TYPE");
   },

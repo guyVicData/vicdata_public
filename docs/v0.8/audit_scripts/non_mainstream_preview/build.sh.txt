@@ -1,0 +1,11 @@
+#!/bin/zsh
+# build.sh <tree> <site dir> <fx file>: Tailwind over the tree, the esbuild bundle (stubs for supabase, next/*), the fixtures.
+H=${0:A:h}; REPO=$1; OUT=$2; FX=$3
+mkdir -p $OUT/fx
+cp ${HIDX:-$H/index.html} $OUT/index.html
+cp $REPO/node_modules/leaflet/dist/leaflet.css $OUT/leaflet.css 2>/dev/null
+cp $FX $OUT/fx/gs.js
+node $H/css.mjs $OUT/app.css $REPO >/dev/null && echo "[build] css"
+cp ${HTSX:-$H/harness.tsx} $REPO/src/__nm_harness.tsx
+(cd $REPO && npx -y esbuild@0.24.0 src/__nm_harness.tsx --bundle --outfile=$OUT/bundle.js --jsx=automatic --tsconfig=$REPO/tsconfig.json --alias:@/lib/supabase=$H/stubs/supabase.ts --alias:next/navigation=$H/stubs/navigation.ts --alias:next/link=$H/stubs/link.tsx --alias:next/dynamic=$H/stubs/dynamic.tsx --alias:react=$REPO/node_modules/react --alias:react-dom=$REPO/node_modules/react-dom --define:process.env.NODE_ENV=\"production\" --loader:.css=empty --log-level=error) && echo "[build] bundle"
+rm -f $REPO/src/__nm_harness.tsx

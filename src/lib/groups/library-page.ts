@@ -62,7 +62,7 @@ export function libraryGroupPage(card: IndexCard, agg: GroupAggregate | null, sc
       const kind = withFig?.kind;
       // A non-mainstream group counts its special, AP, PRU and nursery schools (production's `counted` is
       // "counts in a mainstream group"); its mainstream schools are its mainstream line.
-      const note = nm ? (kind === "mainstream" ? "Mainstream · in the mainstream line" : `${kind && NOT_COUNTED_WORDS[kind] ? NOT_COUNTED_WORDS[kind][0] : "School"}${withFig?.fsm?.pct !== null && withFig?.fsm?.pct !== undefined ? ` · FSM ${withFig.fsm.pct.toFixed(1)}%` : ""}`) : withFig?.counted === false && kind && NOT_COUNTED_WORDS[kind] ? `${NOT_COUNTED_WORDS[kind][0]} · not in group figures` : s.outside_england ? "Outside England" : headline ? null : m && withFig?.igcse && m.startsWith("ks4") ? "IGCSE: not ranked at GCSE" : null;
+      const note = nm ? (!withFig ? "not yet open" : kind === "mainstream" ? "Mainstream · in the mainstream line" : `${kind && NOT_COUNTED_WORDS[kind] ? NOT_COUNTED_WORDS[kind][0] : "School"}${withFig?.fsm?.pct !== null && withFig?.fsm?.pct !== undefined ? ` · FSM ${withFig.fsm.pct.toFixed(1)}%` : ""}`) : withFig?.counted === false && kind && NOT_COUNTED_WORDS[kind] ? `${NOT_COUNTED_WORDS[kind][0]} · not in group figures` : s.outside_england ? "Outside England" : headline ? null : m && withFig?.igcse && m.startsWith("ks4") ? "IGCSE: not ranked at GCSE" : null;
       return { urn: s.urn, name: s.name ?? s.urn, la: s.la_name, phases: (latest?.phases ?? []).map((p) => PHASE_SHORT[p] ?? p), roll: latest?.roll ?? null, headline, note, likely: s.confidence === "likely", easting: s.easting, northing: s.northing };
     })
     .sort((a, b) => (b.roll ?? -1) - (a.roll ?? -1) || a.name.localeCompare(b.name));

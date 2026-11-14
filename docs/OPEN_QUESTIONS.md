@@ -3258,3 +3258,8 @@ Built straight through from `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_
 25. **The placing is against the school's region's pool, its region from its LA** (`src/lib/region-crosswalk.ts`, the app's LA-to-region table), since the school rows carry no region code. The change shown is 3-year (the Schools table's Trend column, R-ROLL-WORDS-3YR) beside the pool's like-for-like 3-year change.
 26. **The pooled kind line sits in The group now on Schools**, beside England's state-funded pool of the kind (FSM and 3-year same-schools change), only where production writes one (5+ current schools of one kind). Shaw shows its 12 special schools; Harris and Dukes show none, so their pages are unchanged.
 27. **A school with a tiny roll shows DfE's own FSM**, even 0.0% (Harris Aspire Academy, roll 2), as the census publishes it. It is a single school, not a pool, so R-MIN-SCHOOLS doesn't apply.
+
+### M9: rules, screenshots, the report
+
+28. **"Like us" lives only in a group's own section.** A special trust's head office browsing the mainstream groups gets no "Groups like us" chip, type highlight or like-us sort, and a mainstream head office gets none in the special, AP and nursery section. This was found in the screenshots and fixed.
+29. **A non-mainstream group's school that isn't open yet reads "not yet open"** on its library page (it read "School"). This was found in the screenshots and fixed.

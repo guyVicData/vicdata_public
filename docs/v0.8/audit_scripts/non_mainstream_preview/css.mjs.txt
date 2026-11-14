@@ -1,0 +1,9 @@
+// Tailwind v4 over the repo's globals.css, scanning the repo's src (as next build does).
+import postcss from "/Users/guy/.t3/worktrees/vicdata_public/t3-688218c0/node_modules/postcss/lib/postcss.js";
+import tw from "/Users/guy/.t3/worktrees/vicdata_public/t3-688218c0/node_modules/@tailwindcss/postcss/dist/index.mjs";
+import { readFileSync, writeFileSync } from "node:fs";
+const [out, root] = process.argv.slice(2);
+const from = `${root}/src/app/globals.css`;
+const res = await postcss([(tw.default ?? tw)({ base: root })]).process(readFileSync(from, "utf8"), { from });
+writeFileSync(out, res.css);
+console.log("css", res.css.length);

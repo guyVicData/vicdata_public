@@ -1,0 +1,43 @@
+// node domtext.mjs <out.json>: every Harris and Dukes page, base (3192) and branch (3191), 1440 and 390; innerText of the page.
+import { chromium } from "$SCRATCH/pw/node_modules/playwright-core/index.mjs";
+import { readFileSync, writeFileSync } from "node:fs";
+const H = new URL(".", import.meta.url).pathname;
+const fx = JSON.parse(readFileSync(`${H}fx/base.js`, "utf8").replace(/^window.__GS = /, "").replace(/;\s*$/, ""));
+const ACC = { harris: "a0000000-0000-4000-8000-000000003320", dukes: "a0000000-0000-4000-8000-0000000d0e55" };
+const RT = "returnTo=%2Fteacher%2Fgroup%2Foverview";
+const urls = [];
+for (const g of ["harris", "dukes"]) {
+  for (const k of Object.keys(fx[g].dash)) {
+    const [page, reading, focus, compare] = k.split("|");
+    const q = new URLSearchParams({ page, g, account: ACC[g], reading, focus });
+    if (compare) q.set("compare", compare);
+    urls.push(q.toString());
+  }
+  for (const s of fx[g].sets.sets) urls.push(`page=edit&g=${g}&account=${ACC[g]}&kind=${s.kind}&set=${s.id}&${RT}`);
+  urls.push(`page=sets&g=${g}&account=${ACC[g]}&${RT}`);
+}
+const browser = await chromium.launch({ executablePath: `${H}../pw/browsers/chromium_headless_shell-1148/chrome-mac/headless_shell` });
+const out = {};
+async function grab(ctx, url) {
+  const p = await ctx.newPage();
+  await p.goto(url);
+  await p.waitForFunction(() => !document.body.innerText.includes("Loading"), null, { timeout: 15000 }).catch(() => {});
+  await p.waitForTimeout(900);
+  const t = await p.evaluate(() => document.getElementById("root").innerText + "\nERR:" + (document.getElementById("err")?.textContent || ""));
+  await p.close();
+  return t;
+}
+for (const w of [1440, 390]) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: 1000 }, isMobile: w < 500, hasTouch: w < 500 });
+  const jobs = urls.map((q) => async () => {
+    const [a, b] = await Promise.all([grab(ctx, `http://127.0.0.1:3192/index.html?${q}&theme=dark`), grab(ctx, `http://127.0.0.1:3191/index.html?${q}&theme=dark`)]);
+    out[`${w}|${q}`] = a === b ? "same" : { base: a, br: b };
+  });
+  let i = 0;
+  await Promise.all(Array.from({ length: 4 }, async () => { while (i < jobs.length) await jobs[i++](); }));
+  await ctx.close();
+}
+await browser.close();
+const diff = Object.entries(out).filter(([, v]) => v !== "same");
+writeFileSync(process.argv[2], JSON.stringify({ pages: Object.keys(out).length, differing: diff.length, diff: Object.fromEntries(diff) }, null, 1));
+console.log("pages", Object.keys(out).length, "differing", diff.length);

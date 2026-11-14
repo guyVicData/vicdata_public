@@ -144,11 +144,14 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
   };
   const nm = f.section === "nm";
   const nmAll = useMemo(() => d.nmCards ?? [], [d.nmCards]);
-  const cards = useMemo(() => libraryCards(nm ? nmAll : d.cards, d.us, f), [nm, nmAll, d.cards, d.us, f]);
   const usNm = familyOf(d.us?.kind) !== "mainstream";
+  // "Like us" lives only in our own section (a special trust's head office has none among mainstream groups).
+  const ownSection = !!d.us && nm === usNm;
+  const fx = useMemo<LibraryFilter>(() => (ownSection ? f : { ...f, likeUs: false, sort: f.sort === "like_us" ? "size" : f.sort }), [f, ownSection]);
+  const cards = useMemo(() => libraryCards(nm ? nmAll : d.cards, d.us, fx), [nm, nmAll, d.cards, d.us, fx]);
   const usName = d.us ? displayName(d.us.name) : d.viewer.name;
   const back = `/teacher/group/overview${acc ? `?${acc}` : ""}`;
-  const filters = nm ? <NmFilters f={f} set={set} /> : <Filters f={f} set={set} us={d.us} />;
+  const filters = nm ? <NmFilters f={fx} set={set} /> : <Filters f={fx} set={set} us={d.us} />;
   const sectionSwitch = nmAll.length > 0 && (
     <span role="group" aria-label="Section" className="flex flex-wrap items-center gap-2" data-library-section={f.section}>
       <EntryChip label={`Mainstream groups · ${d.cards.length.toLocaleString("en-GB")}`} active={!nm} onClick={() => set({ section: "mainstream", bands: [], families: [], likeUs: !usNm, sort: usNm ? "size" : "like_us" })} />
@@ -192,17 +195,17 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
           aria-label="Search groups by name"
           className="h-[38px] min-w-0 flex-1 rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-4 text-[13px] text-[var(--fg)] placeholder:text-[var(--muted2)] sm:max-w-[360px]"
         />
-        {(!nm || usNm) && <EntryChip label={nm ? `${FAMILY_PLURAL[familyOf(d.us?.kind)]} like us` : "Groups like us"} active={f.likeUs} onClick={() => set({ likeUs: !f.likeUs, sort: !f.likeUs ? "like_us" : f.sort === "like_us" ? "size" : f.sort })} />}
+        {(ownSection || (!d.us && !nm)) && <EntryChip label={nm ? `${FAMILY_PLURAL[familyOf(d.us?.kind)]} like us` : "Groups like us"} active={f.likeUs} onClick={() => set({ likeUs: !f.likeUs, sort: !f.likeUs ? "like_us" : f.sort === "like_us" ? "size" : f.sort })} />}
         <label className="flex items-center gap-1.5 text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>
           Sort
-          <select value={f.sort} onChange={(e) => set({ sort: e.target.value as LibrarySort })} className="h-[34px] rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 text-[12.5px] font-semibold text-[var(--fg)]">
-            {(Object.keys(SORT_WORD) as LibrarySort[]).filter((s) => (s !== "like_us" || (d.us && (!nm || usNm))) && (s !== "headline" || !nm)).map((s) => <option key={s} value={s}>{SORT_WORD[s]}</option>)}
+          <select value={fx.sort} onChange={(e) => set({ sort: e.target.value as LibrarySort })} className="h-[34px] rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 text-[12.5px] font-semibold text-[var(--fg)]">
+            {(Object.keys(SORT_WORD) as LibrarySort[]).filter((s) => (s !== "like_us" || ownSection) && (s !== "headline" || !nm)).map((s) => <option key={s} value={s}>{SORT_WORD[s]}</option>)}
           </select>
         </label>
         {phone && <button type="button" onClick={() => setSheet(true)} className="h-[38px] rounded-full border border-[var(--panel-border2)] px-4 text-[13px] font-bold">Filters{activeCount(f) ? ` (${activeCount(f)})` : ""}</button>}
       </div>
       {!phone && filters}
-      {f.likeUs && d.us && (!nm || usNm) && (nm || !usNm) && <div className="text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>{likeUsWords(d.us)}.</div>}
+      {fx.likeUs && ownSection && <div className="text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>{likeUsWords(d.us)}.</div>}
       <div className="text-[12px] text-[var(--muted)]" aria-live="polite" data-on-field={mid ? "" : undefined}>{cards.length.toLocaleString("en-GB")} group{cards.length === 1 ? "" : "s"}</div>
       {cards.length === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[var(--panel-border2)] p-6 text-center text-[13px] text-[var(--muted2)]">No groups match. Clear a filter, or turn off Groups like us.</div>
