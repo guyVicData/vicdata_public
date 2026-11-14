@@ -18,6 +18,11 @@ const fig = (v: number | null | undefined, unit: string, key?: string) => fmt(v 
 const trendWord = (a: number, b: number, flat: number) => (b - a > flat ? "up" : b - a < -flat ? "down" : "level");
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** "the 10 nearest" for a set named by a count; a set's own name as it is. */
+const theSet = (label: string) => (/^\d/.test(label) ? `the ${label}` : label);
+/** A measure in mid-sentence: "points per entry", but "Attainment 8" keeps its capital. */
+const measureWord = (m: string) => (/^(Points|Share|Value|Average|Entries|Grade)/.test(m) ? m.charAt(0).toLowerCase() + m.slice(1) : m);
+
 /** The headline row SMT ranks best against the set: the lowest rank as a share of the set. */
 export function strongestRow(o: Overview): ScoreRow | null {
   const ranked = o.rows.filter((r) => r.set && r.value !== null);
@@ -42,7 +47,7 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const ranked = o.rows.filter((r) => r.set && r.value !== null);
       const best = strongestRow(o);
       if (!best) return `No headline is ranked against ${o.set.label} yet.`;
-      return `Strongest against ${o.set.label}: ${best.label}, ${placeOf(best.set!.rank, best.set!.of)}. ${plural(ranked.length, "headline is", "headlines are")} ranked.`.replace(/^(\d+) headline is/, "$1 headline is");
+      return `Strongest against ${theSet(o.set.label)}: ${best.label}, ${placeOf(best.set!.rank, best.set!.of)}. ${plural(ranked.length, "headline is", "headlines are")} ranked.`;
     }
     case "DV-SMT-O-ROLL-LINE": {
       const o = data as Overview;
@@ -83,7 +88,12 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
     }
     case "DV-SMT-A-NOW": {
       const a = data as Academic;
-      if (!a.col1.summary.length) return a.col1.note ?? `${a.col1.title}: ${a.col1.sub}.`;
+      if (!a.col1.summary.length) {
+        // No summary row (Post-16): the view's own lines, the first three with a figure.
+        const ls = a.lines.filter((x) => x.value !== null).slice(0, 3);
+        if (!ls.length) return a.col1.note ?? `No ${a.col1.sub.split(" · ")[0]} results are published for the school yet.`;
+        return `${a.col1.sub.split(" · ").slice(0, 2).join(", ")}: ${listJoin(ls.map((x) => `${x.label} ${fig(x.value, x.unit)}`))}.`;
+      }
       return `${a.col1.title} (${a.col1.sub}): ${listJoin(a.col1.summary.slice(0, 3).map((x) => `${x.label} ${x.value}`))}.`;
     }
     case "DV-SMT-A-CHART": {
@@ -91,8 +101,8 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const b = a.board;
       const me = b.rows.find((r) => r.you);
       const ranked = b.rows.filter((r) => r.value !== null);
-      if (b.empty || !me || me.value === null || !b.place.set) return b.empty ?? `The school has no ${b.measure.toLowerCase()} to rank against ${a.set.pill} yet.`;
-      return `${placeOf(b.place.set.rank, b.place.set.of)} against ${a.set.pill} on ${b.measure.toLowerCase()} (${fig(me.value, b.unit)}${b.period ? `, ${periodLabel(b.period)}` : ""})${b.median !== null ? `; the set's median is ${fig(b.median, b.unit)}` : ""}.`.replace(/ of (\d+) against/, ` of ${ranked.length} against`);
+      if (b.empty || !me || me.value === null || !b.place.set) return b.empty ?? `The school has no ${measureWord(b.measure)} to rank against ${theSet(a.set.pill)} yet.`;
+      return `${placeOf(b.place.set.rank, b.place.set.of)} against ${theSet(a.set.pill)} on ${measureWord(b.measure)} (${fig(me.value, b.unit)}${b.period ? `, ${periodLabel(b.period)}` : ""})${b.median !== null ? `; the set's median is ${fig(b.median, b.unit)}` : ""}.`.replace(/ of (\d+) against/, ` of ${ranked.length} against`);
     }
     case "DV-SMT-A-AREAS": {
       const a = data as Academic;
@@ -149,7 +159,7 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const p = data as Pupils;
       const l = p.leaving[p.leaving.length - 1];
       if (!l || l.stayingPct === null) return "No Year 11 to Year 12 figures yet.";
-      return `${Math.round(l.stayingPct)}% stayed on into Year 12 in ${periodLabel(l.year)}${l.leaving !== null ? `; ${n(l.leaving)} left at 16 (net)` : ""}.`;
+      return `${Math.round(l.stayingPct)}% stayed on into Year 12 in ${periodLabel(l.year)}${l.leaving !== null ? (l.leaving >= 0 ? `; ${n(l.leaving)} left at 16 (net)` : `; ${n(-l.leaving)} more joined at 16 than left (net)`) : ""}.`;
     }
     case "DV-SMT-P-PHASES": {
       const p = data as Pupils;
@@ -171,7 +181,7 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const c = data as Context;
       const ch = c.now.children;
       if (ch.value === null) return "No residents' figure for the area yet.";
-      return `${n(ch.value)} children aged ${c.agesWord} live ${ch.scope}${ch.since ? `, ${pctWords(ch.since.changePct)} since ${ch.since.from}` : ""}.`;
+      return `${n(ch.value)} children aged ${c.agesWord} ${/^(living|in|within)\b/.test(ch.scope) ? "" : "live "}${ch.scope}${ch.since ? `, ${pctWords(ch.since.changePct)} since ${ch.since.from}` : ""}.`;
     }
     case "DV-SMT-C-MAP": {
       const c = data as Context;

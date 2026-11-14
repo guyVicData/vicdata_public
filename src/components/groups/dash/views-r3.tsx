@@ -3,6 +3,7 @@
 // VicData 0.8 groups r3 (A, P): the Academic and Pupils views (docs/wireframes/groups/Academic.dc.html,
 // Phone.dc.html), on the same kit as round 2's (./views.tsx). Every figure and n arrives from
 // /api/group/dash (the group lookups, worded by src/lib/groups/dash-r3.ts).
+import { windowCut } from "@/lib/subject-ranking-view";
 import { useState, type ReactNode } from "react";
 import { Empty, Key, LineSwatch, Lbl, PairTile, Tile, fillHeight } from "@/components/admissions/ui";
 import { LineChart } from "@/components/admissions/views/charts";
@@ -104,11 +105,23 @@ export function AcademicNow({ a, average }: { a: GroupAcademic; average: boolean
   );
 }
 
+// ------------------------------------------------------------------------------ the cut lists
+
+/** Review fixes (14 Nov, tables.md M2): a card that cuts a list keeps the highlighted school in view --
+ * Teacher's windowCut (the top rows, a "⋯" break, the school and its neighbours) -- and says "Showing x of N". */
+export function cutRows<T extends { urn: string }>(rows: T[], highlight: string | null, fullscreen: boolean): (T | null)[] {
+  return windowCut(rows.map((r, i) => ({ pos: i + 1, isTarget: r.urn === highlight, r })), fullscreen).map((x) => (x ? x.r : null));
+}
+const shownOf = <T,>(cut: (T | null)[], all: number) => `Showing ${cut.filter((x) => x !== null).length} of ${all}`;
+const Break = ({ cols }: { cols: number }) => (
+  <tr aria-hidden="true"><td colSpan={cols} className="py-0.5 text-center text-[11px] text-[var(--muted2)]">⋯</td></tr>
+);
+
 // ------------------------------------------------------------------------------ Schools ranked
 
 export function SchoolsRanked({ a, highlight, fullscreen }: { a: GroupAcademic; highlight: string | null; fullscreen: boolean }) {
   const r = a.ranked;
-  const rows = fullscreen ? r.rows : r.rows.slice(0, 12);
+  const rows = cutRows(r.rows, highlight, fullscreen);
   const vals = r.rows.map((x) => x.value).filter((v): v is number => v !== null);
   const lo = Math.min(...vals, r.england ?? Infinity, r.set?.value ?? Infinity);
   const hi = Math.max(...vals, r.england ?? -Infinity, r.set?.value ?? -Infinity);
@@ -120,8 +133,10 @@ export function SchoolsRanked({ a, highlight, fullscreen }: { a: GroupAcademic; 
         {MEASURE_LABEL[r.measure]}, each school against the group, {r.set?.label ?? "the comparison set"} and England <span className="font-normal text-[var(--muted2)]">· {yr(r.year)}</span>
       </div>
       <div className="flex min-h-0 flex-col overflow-y-auto text-[12.5px]">
-        {rows.map((x) => (
-          <div key={x.urn} {...featuredRow(x.urn === highlight)} className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_56px_170px] items-center gap-2 border-b border-[var(--panel-border)] py-1">
+        {rows.map((x, i) => x === null ? (
+          <div key={`b${i}`} aria-hidden="true" className="py-0.5 text-center text-[11px] text-[var(--muted2)]">⋯</div>
+        ) : (
+          <div key={x.urn} {...featuredRow(x.urn === highlight)} className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_56px_190px] items-center gap-2 border-b border-[var(--panel-border)] py-1">
             <span className="truncate">
               {x.name}
               {x.likely && <span className="ml-1 rounded-[5px] bg-[var(--group-likely-bg)] px-[6px] text-[10px] font-bold text-[var(--group-likely-fg)]">likely</span>}
@@ -134,7 +149,7 @@ export function SchoolsRanked({ a, highlight, fullscreen }: { a: GroupAcademic; 
               <i className="text-[11.5px] text-[var(--muted2)]">{x.reason}</i>
             )}
             <span className="text-right font-semibold">{x.value !== null ? f(x.value, r.measure) : "—"}</span>
-            <span className="text-right text-[11.5px] text-[var(--muted2)]">{x.inGroup ? `${ordinal(x.inGroup.rank, x.inGroup.tied)} in group` : "—"}{x.national ? ` · ${ordinal(x.national.rank, x.national.tied)} nat.` : ""}</span>
+            <span className="text-right text-[11.5px] text-[var(--muted2)]">{x.inGroup ? `${ordinal(x.inGroup.rank, x.inGroup.tied)} of ${x.inGroup.of} in group` : "—"}{x.national ? ` · ${ordinal(x.national.rank, x.national.tied)} of ${x.national.of.toLocaleString("en-GB")} in England` : ""}</span>
           </div>
         ))}
       </div>
@@ -145,7 +160,7 @@ export function SchoolsRanked({ a, highlight, fullscreen }: { a: GroupAcademic; 
         <span>England {f(r.england, r.measure)}</span>
       </div>
       <div className="text-[11px] text-[var(--muted2)]">
-        Showing {rows.length} of {r.rows.length}. Ranks share ties; IGCSE schools are listed as &ldquo;not ranked at GCSE&rdquo;, never ranked. National ranks among every school in England with the figure.
+        {shownOf(rows, r.rows.length)}, highest first. Ranks share ties; IGCSE schools are listed as &ldquo;not ranked at GCSE&rdquo;, never ranked. National ranks among every school in England with the figure.
       </div>
     </div>
   );
@@ -193,7 +208,17 @@ export function SubjectAreasAcross({ a }: { a: GroupAcademic }) {
 export function ValueAddedPanel({ a, fullscreen, highlight = null }: { a: GroupAcademic; fullscreen: boolean; highlight?: string | null }) {
   const al = a.va.alevel;
   const p8 = a.va.p8;
-  const show = (rows: typeof al.rows) => (fullscreen ? rows : rows.slice(0, 8));
+  // Review fixes (tables.md M3): highest first, said; headed; cut with the highlighted school kept.
+  const order = (rows: typeof al.rows) => [...rows].sort((x, y) => (y.value ?? -Infinity) - (x.value ?? -Infinity) || x.name.localeCompare(y.name));
+  const show = (rows: typeof al.rows) => cutRows(order(rows), highlight, fullscreen);
+  const vaHead = (
+    <thead>
+      <tr className="border-b border-[var(--panel-border)] text-left">
+        <Th>School</Th>
+        <Th className="text-right">Value added</Th>
+      </tr>
+    </thead>
+  );
   return (
     <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
       <div className="text-[13px] font-bold text-[var(--fg)]">Value added, as DfE publishes it</div>
@@ -203,8 +228,9 @@ export function ValueAddedPanel({ a, fullscreen, highlight = null }: { a: GroupA
           Group {fmt(al.group?.weighted ?? null, "va")} (pupil-weighted, {al.group?.n_with_figure ?? 0} schools) · England {fmt(al.england, "va")}
         </div>
         <table className="mt-1 w-full border-collapse text-[12px]">
+          {vaHead}
           <tbody>
-            {show(al.rows).map((r) => (
+            {show(al.rows).map((r, i) => r === null ? <Break key={`b${i}`} cols={2} /> : (
               <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
                 <Td>{r.name}</Td>
                 <Td className={`text-right ${dirClass(r.value, 0.05)}`}>{r.value !== null ? fmt(r.value, "va") : <span className="text-[var(--muted2)]">{r.note}</span>}</Td>
@@ -220,8 +246,9 @@ export function ValueAddedPanel({ a, fullscreen, highlight = null }: { a: GroupA
             Group {fmt(p8.group?.weighted ?? null, "va")} ({p8.group?.n_with_figure ?? 0} state schools){p8.notPublished ? ` · ${p8.notPublished} independent schools: not published` : ""}
           </div>
           <table className="mt-1 w-full border-collapse text-[12px]">
+            {vaHead}
             <tbody>
-              {show(p8.rows).map((r) => (
+              {show(p8.rows).map((r, i) => r === null ? <Break key={`b${i}`} cols={2} /> : (
                 <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
                   <Td>{r.name}</Td>
                   <Td className={`text-right ${dirClass(r.value, 0.05)}`}>{r.value !== null ? fmt(r.value, "va") : <span className="text-[var(--muted2)]">{r.note}</span>}</Td>
@@ -231,7 +258,7 @@ export function ValueAddedPanel({ a, fullscreen, highlight = null }: { a: GroupA
           </table>
         </section>
       )}
-      <div className="text-[11px] text-[var(--muted2)]">Value added is never drawn in a results chart (R-GROUP-VA-SEPARATE). Independent schools have no Progress 8: not published.</div>
+      <div className="text-[11px] text-[var(--muted2)]">Each list highest first; {shownOf(show(al.rows), al.rows.length).toLowerCase()} with A-level value added{p8.rows.length ? `, ${shownOf(show(p8.rows), p8.rows.length).replace("Showing ", "")} with Progress 8` : ""}. Value added is never drawn in a results chart (R-GROUP-VA-SEPARATE). Independent schools have no Progress 8: not published.</div>
     </div>
   );
 }
@@ -258,7 +285,7 @@ export function ImprovingDeclining({ a }: { a: GroupAcademic }) {
         {bar(i.fell, "var(--adm-down-fg)", "Fell")}
       </div>
       <div className="text-[11px] text-[var(--muted2)]">
-        {MEASURE_LABEL[i.measure]}, {yr(i.from)} to {yr(i.to)}, {i.of} schools with both years. Steady: within {i.threshold} {MEASURE_UNIT[i.measure] === "pct" ? "percentage points" : "points"} either way.
+        {MEASURE_LABEL[i.measure]}, {yr(i.from)} to {yr(i.to)}, {i.of} schools with both years. Steady: within {i.threshold} {MEASURE_UNIT[i.measure] === "pct" ? (i.threshold === 1 ? "percentage point" : "percentage points") : i.threshold === 1 ? "point" : "points"} either way.
       </div>
     </>
   );
@@ -368,7 +395,7 @@ export function EntryCohorts({ p, highlight, fullscreen, room }: { p: GroupPupil
 }
 
 export function LeavingAt16({ p, fullscreen, highlight = null }: { p: GroupPupils; fullscreen: boolean; highlight?: string | null }) {
-  const rows = fullscreen ? p.leaving : p.leaving.slice(0, 10);
+  const rows = cutRows(p.leaving, highlight, fullscreen);
   if (!rows.length) return <Empty>No school in the group has a sixth form with both years.</Empty>;
   return (
     <div className="flex min-h-0 flex-col gap-2">
@@ -385,7 +412,7 @@ export function LeavingAt16({ p, fullscreen, highlight = null }: { p: GroupPupil
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {rows.map((r, i) => r === null ? <Break key={`b${i}`} cols={4} /> : (
             <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
               <Td>{r.name}</Td>
               <Td>{fmt(r.y11, "pupils")}</Td>
@@ -395,20 +422,20 @@ export function LeavingAt16({ p, fullscreen, highlight = null }: { p: GroupPupil
           ))}
         </tbody>
       </table>
-      <div className="text-[11px] text-[var(--muted2)]">Over 100%: the sixth form takes more pupils in than its own Year 11 had. Sixth-form-only colleges (no Year 11) are left out. Group: {p.stayingOn.pct === null ? "—" : `${p.stayingOn.pct.toFixed(1)}%`} across {p.stayingOn.schools} schools.</div>
+      <div className="text-[11px] text-[var(--muted2)]">{shownOf(rows, p.leaving.length)}. Over 100%: the sixth form takes more pupils in than its own Year 11 had. Sixth-form-only colleges (no Year 11) are left out. Group: {p.stayingOn.pct === null ? "—" : `${p.stayingOn.pct.toFixed(1)}%`} across {p.stayingOn.schools} schools.</div>
     </div>
   );
 }
 
 export function MarketShare({ p, fullscreen, highlight = null }: { p: GroupPupils; fullscreen: boolean; highlight?: string | null }) {
-  const rows = fullscreen ? p.market.rows : p.market.rows.slice(0, 10);
+  const rows = cutRows(p.market.rows, highlight, fullscreen);
   if (!rows.length) return <Empty>No school with an LA total to measure.</Empty>;
-  const max = Math.max(1, ...rows.map((r) => r.pct ?? 0));
+  const max = Math.max(1, ...rows.map((r) => r?.pct ?? 0));
   return (
     <div className="flex min-h-0 flex-col gap-2">
-      <div className="text-[13px] font-bold text-[var(--fg)]">Each school&rsquo;s share of its own area</div>
+      <div className="text-[13px] font-bold text-[var(--fg)]">Each school&rsquo;s share of its own area<span className="font-normal text-[var(--muted2)]"> · {periodLabel(p.shape.year)} census</span></div>
       <div className="flex flex-col gap-1 text-[12.5px]">
-        {rows.map((r) => (
+        {rows.map((r, i) => r === null ? <div key={`b${i}`} aria-hidden="true" className="text-center text-[11px] text-[var(--muted2)]">⋯</div> : (
           <div key={r.urn} {...featuredRow(r.urn === highlight)} className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_52px] items-center gap-2" title={`${r.pupils.toLocaleString("en-GB")} of ${r.laPupils?.toLocaleString("en-GB") ?? "—"} ${PHASE_NOUN[r.phase][0]} pupils in ${r.la ?? "its LA"}`}>
             <span className="truncate">{r.name}</span>
             <span className="h-[9px] rounded-[3px] bg-[var(--box-bg)]">
@@ -418,7 +445,7 @@ export function MarketShare({ p, fullscreen, highlight = null }: { p: GroupPupil
           </div>
         ))}
       </div>
-      <div className="text-[11px] text-[var(--muted2)]">{p.market.label} (the default, labelled): a school&rsquo;s pupils in its main phase against all its LA&rsquo;s pupils of that phase. Admissions&rsquo; rivals-based share is per school, in that school&rsquo;s own Admissions.</div>
+      <div className="text-[11px] text-[var(--muted2)]">{shownOf(rows, p.market.rows.length)}, largest share first. {p.market.label} (the default, labelled): a school&rsquo;s pupils in its main phase against all its LA&rsquo;s pupils of that phase. Admissions&rsquo; rivals-based share is per school, in that school&rsquo;s own Admissions.</div>
     </div>
   );
 }
@@ -428,7 +455,8 @@ export type ProjectionRow = { urn: string; name: string; km: number; from: "save
 export function ProjectionPerSchool({ rows, fullscreen, highlight = null }: { rows: ProjectionRow[] | null; fullscreen: boolean; highlight?: string | null }) {
   if (!rows) return <Empty>Reading each school&rsquo;s area…</Empty>;
   if (!rows.length) return <Empty>No located schools in England to project around.</Empty>;
-  const shown = fullscreen ? rows : rows.slice(0, 8);
+  const shown = cutRows(rows, highlight, fullscreen);
+  const nowYear = rows.find((r) => r.latestYear !== null)?.latestYear ?? null;
   return (
     <div className="flex min-h-0 flex-col gap-2">
       <div className="text-[13px] font-bold text-[var(--fg)]">Children around each school, projected</div>
@@ -437,12 +465,12 @@ export function ProjectionPerSchool({ rows, fullscreen, highlight = null }: { ro
           <tr className="border-b border-[var(--panel-border)] text-left">
             <Th>School</Th>
             <Th>Area</Th>
-            <Th>Now</Th>
+            <Th>Now{nowYear ? ` (${nowYear})` : ""}</Th>
             <Th>Projected</Th>
           </tr>
         </thead>
         <tbody>
-          {shown.map((r) => (
+          {shown.map((r, i) => r === null ? <Break key={`b${i}`} cols={4} /> : (
             <tr key={r.urn} {...featuredRow(r.urn === highlight)} className="border-b border-[var(--panel-border)] last:border-0">
               <Td className="max-w-[160px] truncate">{r.name}</Td>
               <Td className="text-[var(--muted2)]">{r.km} km{r.from === "saved" ? " (saved)" : ""}, ages {r.ages}</Td>
@@ -452,7 +480,7 @@ export function ProjectionPerSchool({ rows, fullscreen, highlight = null }: { ro
           ))}
         </tbody>
       </table>
-      <div className="text-[10.5px] leading-snug text-[var(--muted)]">Shown per school: catchments overlap, and the projection functions give each area&rsquo;s total, so adding them would count a neighbourhood near two schools twice. Each at the school&rsquo;s saved catchment, else its default. Not a forecast of any school&rsquo;s roll.</div>
+      <div className="text-[10.5px] leading-snug text-[var(--muted)]">{shownOf(shown, rows.length)}. Shown per school: catchments overlap, and the projection functions give each area&rsquo;s total, so adding them would count a neighbourhood near two schools twice. Each at the school&rsquo;s saved catchment, else its default. Not a forecast of any school&rsquo;s roll.</div>
     </div>
   );
 }

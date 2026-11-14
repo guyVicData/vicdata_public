@@ -74,7 +74,7 @@ const teacherWalks = (product: "gcse" | "post16"): AuthoredWalk[] => {
       label: "Candidates · Context",
       dashboard: dash,
       screens: [
-        { view: "DV-C1-CAND-CUR-TILES", question: p16 ? "How many took [subject] this year?" : "How many took [subject] this year?", answer: "entries-tiles", rhythm: "this-year" },
+        { view: "DV-C1-CAND-CUR-TILES", question: "How many took [subject] this year?", answer: "entries-tiles", rhythm: "this-year" },
         { view: "DV-C2-CUR-BARS", question: "How does it compare with the other subjects in [category]?", answer: "entries-category", rhythm: "in-context", options: { measure: "entries", against: "category" } },
         { view: "DV-C2-CUR-BARS", question: "And across the whole school?", answer: "entries-whole", rhythm: "in-context", options: { measure: "entries", against: "whole" } },
         { view: "DV-C1-CAND-TR-ACTUAL", question: "Has that gone up or down?", answer: "entries-trend", rhythm: "over-time", options: { measure: "entries", against: "category" } },
@@ -85,7 +85,7 @@ const teacherWalks = (product: "gcse" | "post16"): AuthoredWalk[] => {
     {
       id: `${product}-well`,
       product,
-      question: "How well did they do?",
+      question: "How well did they do in [subject]?",
       icon: "results",
       label: "Results",
       dashboard: dash,
@@ -107,10 +107,10 @@ const teacherWalks = (product: "gcse" | "post16"): AuthoredWalk[] => {
       dashboard: dash,
       screens: [
         { view: "DV-C3-CUR-MAP", question: p16 ? "Which sixth forms are nearby?" : "Which schools are nearby?", answer: "nearby-map", rhythm: "this-year", options: { against: "nearest" } },
-        { view: "DV-C3-CUR-BAR", question: "How many take it at each?", answer: "nearby-entries", rhythm: "in-context", options: { measure: "entries", against: "nearest" } },
-        { view: "DV-C3-CUR-BAR", question: "How did they do at each?", answer: "nearby-points", rhythm: "in-context", options: { measure: "points", against: "nearest" } },
+        { view: "DV-C3-CUR-BAR", question: "How many take it at each school?", answer: "nearby-entries", rhythm: "in-context", options: { measure: "entries", against: "nearest" } },
+        { view: "DV-C3-CUR-BAR", question: "How did they do at each school?", answer: "nearby-points", rhythm: "in-context", options: { measure: "points", against: "nearest" } },
         { view: "DV-C3-CUR-RANKING", question: "Where do we rank?", answer: "nearby-rank", rhythm: "in-context", options: { measure: "points", against: "nearest" } },
-        { view: "DV-C3-TR-CHART", question: "Has our position changed?", answer: "nearby-trend", rhythm: "over-time", options: { measure: "points", against: "nearest" } },
+        { view: "DV-C3-TR-RANK", question: "Has our position changed?", answer: "nearby-trend", rhythm: "over-time", options: { measure: "points", against: "nearest" } },
       ],
     },
   ];
@@ -136,7 +136,7 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
         { view: "DV-SMT-O-ROLL-LINE", question: "Has the roll grown or shrunk?", answer: "smt-roll-trend", rhythm: "over-time" },
         { view: "DV-SMT-O-RESULTS-LINE", question: "Are headline results going up or down?", answer: "smt-results-trend", rhythm: "over-time" },
         { view: "DV-SMT-O-MARKET-LINE", question: "Are we winning more of the pupils around us?", answer: "smt-market", rhythm: "wider" },
-        { view: "DV-SMT-O-FLAGS", question: "What has changed a lot, and stayed changed?", answer: "smt-flags", rhythm: "wider" },
+        { view: "DV-SMT-O-FLAGS", question: "What has changed a lot, and for good?", answer: "smt-flags", rhythm: "wider" },
       ],
     },
     {
@@ -162,7 +162,9 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
     {
       id: `${product}-pupils`,
       product,
-      question: primary ? "Are we filling our Reception places?" : "Who are our pupils, and are numbers holding up?",
+      // Review fixes (24): no screen answers "Are we filling our Reception places?" (no view holds places
+      // or offers), so the primary walk asks what its screens answer.
+      question: primary ? "Who are our pupils, and are numbers holding up from Reception?" : "Who are our pupils, and are numbers holding up?",
       // Crosscheck (14 Nov, home_smt.png / home_group.png): the Pupils badge is the year-groups stack.
       icon: "AdmShapeIcon",
       label: "Pupils",
@@ -299,7 +301,7 @@ const groupWalks: AuthoredWalk[] = [
       { view: "GRP-P-NOW", question: "How many pupils does the group have?", answer: "grp-pupils-now", rhythm: "this-year" },
       { view: "GRP-P-SHAPE", question: "What shape is the group?", answer: "grp-pupils-shape", rhythm: "in-context" },
       { view: "GRP-P-ROLL", question: "Has the roll grown or shrunk?", answer: "grp-pupils-roll", rhythm: "over-time" },
-      { view: "GRP-P-GROWING", question: "Which schools are growing and shrinking?", answer: "grp-pupils-growing", rhythm: "over-time" },
+      { view: "GRP-P-GROWING", question: "Which schools are growing, and which are shrinking?", answer: "grp-pupils-growing", rhythm: "over-time" },
       { view: "GRP-P-PROJECTION", question: "How many children live around the schools?", answer: "grp-pupils-projection", rhythm: "wider" },
     ],
   },
@@ -317,7 +319,7 @@ export const GROUP_VIEW_META: Record<string, { label: string; icon: string }> = 
   "GRP-O-AGAINST": { label: "Against others", icon: "TableIcon" },
   "GRP-O-MAP": { label: "Map", icon: "MapPinIcon" },
   "GRP-O-ROLL": { label: "Combined roll, indexed", icon: "IndexedLineIcon" },
-  "GRP-O-RESULTS": { label: "Results by phase", icon: "TrendLineIcon" },
+  "GRP-O-RESULTS": { label: "Results trend", icon: "TrendLineIcon" },
   "GRP-O-SHARE": { label: "Share of places", icon: "HorizontalBarsIcon" },
   "GRP-S-NOW": { label: "The group now", icon: "TilesIcon" },
   "GRP-S-TABLE": { label: "Schools", icon: "TableIcon" },
@@ -331,7 +333,7 @@ export const GROUP_VIEW_META: Record<string, { label: string; icon: string }> = 
   "GRP-A-IMPROVING": { label: "Improving and declining", icon: "VerticalBarsIcon" },
   "GRP-P-NOW": { label: "Pupils now", icon: "TilesIcon" },
   "GRP-P-SHAPE": { label: "The group's shape", icon: "AdmShapeIcon" },
-  "GRP-P-ROLL": { label: "Roll, indexed", icon: "IndexedLineIcon" },
+  "GRP-P-ROLL": { label: "Combined roll, indexed", icon: "IndexedLineIcon" },
   "GRP-P-GROWING": { label: "Growing and shrinking", icon: "VerticalBarsIcon" },
   "GRP-P-PROJECTION": { label: "Children around the schools", icon: "AdmPopulationIcon" },
 };
@@ -360,7 +362,8 @@ export function spotOf(walk: Pick<Walk, "product" | "dashboard">, s: { view: str
     for (const [ri, cells] of [L.now, L.trends].entries()) {
       let col = 0;
       for (const c of cells) {
-        if (c.views.includes(s.view)) return { col: col as 0 | 1 | 2, row: ri as 0 | 1, span: c.span, panel: GROUP_VIEW_META[c.views[0]]?.label ?? c.id };
+        // A panel holding several views is named by the view itself, not its first (review fixes, M2).
+        if (c.views.includes(s.view)) return { col: col as 0 | 1 | 2, row: ri as 0 | 1, span: c.span, panel: c.views.length > 1 ? "" : GROUP_VIEW_META[c.views[0]]?.label ?? c.id };
         col += c.span;
       }
     }

@@ -17,6 +17,7 @@ import { nearestInSize } from "../groups/group-sets";
 import { groupWalkView, GROUP_VIEWS, type DashResponse, type ViewId } from "../../components/groups/dash/GroupDashboard";
 import { groupAnswer } from "./group-answers";
 import { groupWalkDash, walksFor } from "./walks";
+import { sentenceProblems } from "./words";
 import { groupAcademicFigure, groupAcademicHeadline, groupWalkCompare, groupWalkDashUrl } from "./tile-figures";
 
 const FX = path.join(__dirname, "../../../docs/v0.8/groups_fixtures");
@@ -93,10 +94,10 @@ test("the answers' figures are the views' own (Harris)", () => {
   const o = dash.overview.overview!;
   assert.ok(groupAnswer("GRP-O-NOW", dash.overview, null).includes(o.now.roll.toLocaleString("en-GB")));
   const ch = o.now.change["3"];
-  assert.ok(groupAnswer("GRP-S-GROWING", dash.schools, null).startsWith(`${dash.schools.now!.now.change["3"].growing} of ${dash.schools.now!.now.change["3"].of}`));
+  assert.ok(groupAnswer("GRP-S-GROWING", dash.schools, null).startsWith(`${dash.schools.now!.now.change["3"].growing} of the ${dash.schools.now!.now.change["3"].of} schools`));
   assert.ok(ch.of > 0);
   const i = dash.academic.academic!.improving;
-  assert.ok(groupAnswer("GRP-A-IMPROVING", dash.academic, null).startsWith(`${i.improved} of ${i.of}`));
+  assert.ok(groupAnswer("GRP-A-IMPROVING", dash.academic, null).startsWith(`${i.improved} of the ${i.of} schools`));
 });
 
 // 0.8 front door 2b (M1): head office's Academic tile, fetched late through the walk's own read, equals the
@@ -120,7 +121,42 @@ for (const g of GROUPS) {
     console.log(`  ${g.tag}: ${fig.figure} ${fig.unit}`);
     if (h.england !== null) {
       assert.ok(fig.unit.endsWith(`England ${h.england.toFixed(1)}`), fig.unit);
-      assert.ok(answer.includes(`England ${h.england.toFixed(1)}`), answer);
+      // Review fixes (18): an independent group's England is England's independent schools, and says so.
+      assert.ok(answer.includes(`England ${h.england.toFixed(1)}`) || answer.includes(`England's independent schools ${h.england.toFixed(1)}`), answer);
     }
+  });
+}
+
+// Review fixes (14 Nov, M3): R-WALK-WORDS on head office's walks -- every answer a whole sentence with no
+// doubled spaces or punctuation, places "Nth of N", one school count per walk (a different count says why),
+// the phase named where it narrows the count, results trends say up or down.
+for (const g of GROUPS) {
+  test(`R-WALK-WORDS: head office's answers (${g.tag})`, () => {
+    const dash = dashOf(g.tag, g.id);
+    const bad: string[] = [];
+    for (const w of walksFor("group")) {
+      for (const p of sentenceProblems(w.question, "question")) bad.push(`${w.id} Q: ${p}`);
+      for (const s of w.screens) {
+        for (const p of sentenceProblems(s.question, "question")) bad.push(`${s.view} Q: ${p}`);
+        const a = groupAnswer(s.view, dash[groupWalkDash(s.view)], []);
+        for (const p of sentenceProblems(a, "answer")) bad.push(`${s.view}: ${p}: "${a}"`);
+      }
+    }
+    assert.deepEqual(bad, []);
+    const o = dash.overview.overview!;
+    const counted = o.now.schools;
+    // One school count: any other count of schools in the Overview walk says how it relates to the counted ones.
+    for (const v of ["GRP-O-MAP"]) {
+      const a = groupAnswer(v, dash.overview, null);
+      const k = Number(/^(\d+) member schools/.exec(a)?.[1] ?? counted);
+      if (k > counted) assert.match(a, new RegExp(`${counted} of them are counted`), a);
+      if (k < counted) assert.match(a, new RegExp(`${counted - k} of the ${counted} schools counted .* no position to map`), a);
+    }
+    assert.match(groupAnswer("GRP-O-NOW", dash.overview, null), new RegExp(`${counted} schools counted`));
+    // The phase is named where it narrows the count.
+    const now = groupAnswer("GRP-A-NOW", dash.academic, null);
+    if (/across the group's \d+/.test(now)) assert.match(now, /across the group's \d+ (primary|secondary|sixth-form) schools?/, now);
+    // A results trend says up, down or level.
+    assert.match(groupAnswer("GRP-O-RESULTS", dash.overview, null), / is (up|down|level), from |only year|No results/);
   });
 }

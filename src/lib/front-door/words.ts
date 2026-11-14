@@ -88,6 +88,6 @@ export function sentenceProblems(s: string, kind: "question" | "answer"): string
   if (/\b1 (schools|pupils|students|subjects|headlines|entries|groups|feeder schools|nearest schools)\b/.test(s)) out.push("plural after 1");
   if (/\b0 (of|schools|held)\b/.test(s)) out.push("bare zero");
   if (/s's\b/.test(s)) out.push("s's possessive");
-  if (/\bthe most\b/.test(s) && /average|points/.test(s)) out.push("'the most' for an average");
+  if (/\bthe most\b/.test(s) && /\baverage\b|points per entry/.test(s)) out.push("'the most' for an average");
   return out;
 }
