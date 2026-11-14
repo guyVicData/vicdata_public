@@ -109,6 +109,7 @@ export const KIND_GLYPH: Record<ViewKind, string> = {
   strengths: "AdmStrengthsIcon",
   shapes: "AdmShapeIcon",
   flags: "FlagIcon",
+  dumbbell: "DumbbellIcon",
 };
 
 export const CloseGlyph = ({ size = 16, width = 2 }: { size?: number; width?: number }) => (

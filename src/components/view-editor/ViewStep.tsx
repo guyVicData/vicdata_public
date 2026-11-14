@@ -38,6 +38,8 @@ const NOTE: Record<ViewKind, ReactNode> = {
   strengths: <>The rivals and the subject areas come from <b>1 &middot; Data</b>. Strength and weakness flags are catalogue rules.</>,
   shapes: <>The schools come from <b>1 &middot; Data</b>. Shapes are described, never ranked.</>,
   flags: <>The rivals come from <b>1 &middot; Data</b>. Each flag&rsquo;s threshold is fixed, and its figures show on hover.</>,
+  // 0.8 front door 2b
+  dumbbell: <>The subjects, the first year and the latest come from <b>1 &middot; Data</b>; Context draws it.</>,
 };
 
 export function ViewTiles({ draft, set, env, wide }: Pick<StepProps, "draft" | "set" | "env" | "wide">) {

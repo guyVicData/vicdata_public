@@ -245,6 +245,8 @@ export const VIEW_LABEL: Record<ViewKind, string> = {
   strengths: "Strengths bars",
   shapes: "Shape small multiples",
   flags: "Flag list",
+  // 0.8 front door 2b: Context's dumbbell, drawn by its host; not offered as a free choice (not in VIEW_KINDS).
+  dumbbell: "Dumbbell",
 };
 
 // Whether a View can draw this data at all. A View never changes a figure, so one that
@@ -278,6 +280,9 @@ export function viewHonest(ctx: HonestContext, kind: ViewKind, data: Pick<ViewSp
     case "shapes":
     case "flags":
       return no("An Admissions view: it draws on an Admissions dashboard.");
+    // 0.8 front door 2b: the dumbbell is Context's own view (first year and latest, per subject).
+    case "dumbbell":
+      return per === "subject" && span ? yes() : no("A dumbbell joins each subject's first year to its latest: one value per subject, from a first year (1 · Data).");
   }
 }
 

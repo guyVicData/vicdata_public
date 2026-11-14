@@ -3669,7 +3669,7 @@ const RUNNERS: Record<string, Runner> = {
     const usesNice = /niceAxis\(/.test(charts_src);
     return { pass: !problems.length && !svgText && usesNice, detail: fmt({ charts, lineAxes: ticks, problems: problems.join("; ") || "none", svgTextInCharts: svgText, roundTicks: usesNice }) };
   },
-  async dumbbell() {
+  async dumbbell(_L, rule) {
     const { dumbbellProblems } = await import("../src/lib/front-door/walks-check");
     const { dumbbellRows } = await import("../src/lib/front-door/teacher-screens");
     const ms = await frontDoorModels();
@@ -3677,7 +3677,18 @@ const RUNNERS: Record<string, Runner> = {
     const chase = ms[0];
     const d = dumbbellRows(chase);
     const focus = d?.rows.find((r) => r.role === "focus");
-    return { pass: !problems.length && !!focus, detail: fmt({ rows: d?.rows.length ?? 0, first: d?.rows[0]?.label ?? "none", focus: focus ? `${focus.label} ${focus.first}→${focus.latest}` : "none", last: d?.rows[d.rows.length - 1]?.label ?? "none", problems: problems.join("; ") || "none" }) };
+    // Front door 2b (M2): the dashboard's dumbbell -- its unit tests (config, catalogue, rows, view), and its
+    // rows over The Chase's whole school from the walk's first year order as the walk's (real data).
+    const unit = unitByRule("src/lib/teacher-dumbbell.test.tsx", rule.id);
+    const { dashboardDumbbell } = await import("../src/lib/teacher-dumbbell");
+    let dashAgrees = false;
+    if (d) {
+      const span = { periods: chase.periods.slice(d.firstIdx), series: chase.whole.rows.map((r) => ({ key: r.key, label: r.label, colour: "#888", values: r.entries.slice(d.firstIdx) })) };
+      const dd = dashboardDumbbell(span, { focusKey: chase.whole.rows.find((r) => r.focus)?.key ?? null });
+      const walkRows = d.rows.filter((r) => r.role !== "average");
+      dashAgrees = !!dd && dd.rows.length === walkRows.length && dd.rows.every((r, i) => r.latest === walkRows[i].latest && r.change === walkRows[i].latest - walkRows[i].first) && dd.rows.find((r) => r.focus)?.label === focus?.label;
+    }
+    return { pass: !problems.length && !!focus && unit.pass && dashAgrees, detail: fmt({ rows: d?.rows.length ?? 0, first: d?.rows[0]?.label ?? "none", focus: focus ? `${focus.label} ${focus.first}→${focus.latest}` : "none", last: d?.rows[d.rows.length - 1]?.label ?? "none", problems: problems.join("; ") || "none", dashboard: unit.detail, dashboardRowsAsWalk: dashAgrees }) };
   },
   async featuredRowEverywhere() {
     const { readdirSync, readFileSync } = await import("node:fs");
