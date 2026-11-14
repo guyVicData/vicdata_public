@@ -46,6 +46,7 @@ import { AcademicNow, BandsReserved, EntryCohorts, GroupShape, GrowingShrinking,
 import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { AgainstOthers, dateText, MAIN_ROWS, GroupMap, GroupNow, JoinedLeft, ResultsTrend, RollTrend, SchoolsNow, SchoolsTable, ShareOfPlaces, Shapes, SizeAndResults, WhoIsGrowing, shareFlag, sourcesWord, type MapSchool, type MembershipRow } from "./views";
 import { arrowOf, dirClass } from "@/components/smt/ui";
+import { NmAgainst, NmFsmTrend, NmLine, NmNoResults, NmNow } from "./views-nm";
 import { ARROW, arrowed } from "@/lib/signed-delta";
 
 export type GroupDash = "overview" | "schools" | "academic" | "pupils";
@@ -200,7 +201,9 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
   );
   useUsagePageView(quiet ? null : usage);
 
-  const phasesPresent = FOCI.filter((f) => f === "all" || (o.now.byPhase as Record<string, number>)[f] > 0);
+  // 0.8 non-mainstream groups: pools and FSM are whole-school, so a special, AP or nursery group's pages
+  // show all phases only.
+  const phasesPresent = FOCI.filter((f) => f === "all" || (!o.nm && (o.now.byPhase as Record<string, number>)[f] > 0));
   const chips: FocusSubject[] = phasesPresent.map((f) => ({ key: f, label: FOCUS_LABEL[f] }));
   const onFocus = (k: string) => setParams({ focus: k as Focus });
   const focusBar = (
@@ -314,7 +317,7 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
   );
 
   const ctx: Ctx = { d, o, s, dash, params, average, phone, focusBar, highlight: (urn) => setParams({ school: urn }), projection: proj.status === "ready" ? (subset ? proj.data.rows.filter((r) => subset.kept.has(r.urn)) : proj.data.rows) : proj.status === "error" ? [] : null };
-  const layout = LAYOUT[dash];
+  const layout = o.nm ? NM_LAYOUT[dash] : LAYOUT[dash];
   const [open, setOpen] = useState<Record<string, boolean>>({ now: true, trends: true });
   const census = o.years.census;
   const rowContext = (row: "now" | "trends") =>
@@ -324,7 +327,9 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
         ? `${periodLabel(o.years.first)} to ${periodLabel(census)}${dash === "pupils" ? `, against ${cmp.label}` : ""}`
         : dash === "academic"
           ? `pupil-weighted, by phase, against ${cmp.label}`
-          : `indexed, like for like, against ${cmp.label}`;
+          : o.nm
+            ? `like for like, against ${cmp.label}`
+            : `indexed, like for like, against ${cmp.label}`;
 
   // 0.8 notes and feedback: each view's private note and feedback icon, with what the page is showing.
   const surface = groupSurface({
@@ -386,7 +391,7 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
         ) : (
           <>
             {subsetLine}
-            {(["now", "trends"] as const).map((row) => (
+            {(["now", "trends"] as const).filter((row) => layout[row].length > 0).map((row) => (
               <ShellRow key={row} title={row === "now" ? "Now" : "Trends"} context={rowContext(row)} open={open[row] !== false} onToggle={() => setOpen((x) => ({ ...x, [row]: x[row] === false }))}>
                 {layout[row].map((cell) => (
                   <Cell key={cell.id} cell={cell} c={ctx} height={row === "now" ? ROW_NOW : ROW_TRENDS} onAverage={setAverage} />
@@ -407,7 +412,9 @@ export type ViewId =
   | "GRP-O-NOW" | "GRP-O-AGAINST" | "GRP-O-MAP" | "GRP-O-JOINED" | "GRP-O-ROLL" | "GRP-O-RESULTS" | "GRP-O-SHARE"
   | "GRP-S-NOW" | "GRP-S-TABLE" | "GRP-S-GROWING" | "GRP-S-SCATTER" | "GRP-S-SHAPES"
   | "GRP-A-NOW" | "GRP-A-RANKED" | "GRP-A-AREAS" | "GRP-A-VA" | "GRP-A-TREND" | "GRP-A-POST16" | "GRP-A-IMPROVING" | "GRP-A-BANDS"
-  | "GRP-P-NOW" | "GRP-P-SHAPE" | "GRP-P-ENTRIES" | "GRP-P-LEAVING" | "GRP-P-MARKET" | "GRP-P-ROLL" | "GRP-P-PROJECTION" | "GRP-P-GROWING";
+  | "GRP-P-NOW" | "GRP-P-SHAPE" | "GRP-P-ENTRIES" | "GRP-P-LEAVING" | "GRP-P-MARKET" | "GRP-P-ROLL" | "GRP-P-PROJECTION" | "GRP-P-GROWING"
+  // 0.8 non-mainstream groups: a special and AP trust's or nursery federation's own views.
+  | "GRP-N-NOW" | "GRP-N-AGAINST" | "GRP-N-LINE" | "GRP-N-FSM" | "GRP-N-RESULTS";
 type CellDef = { id: string; span: 1 | 2; views: { id: ViewId; label: string; icon: string }[] };
 export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-O-NOW": { label: "The group now", icon: "TilesIcon" },
@@ -438,6 +445,11 @@ export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-P-ROLL": { label: "Roll, indexed", icon: "IndexedLineIcon" },
   "GRP-P-PROJECTION": { label: "Children around the schools", icon: "AdmPopulationIcon" },
   "GRP-P-GROWING": { label: "Growing and shrinking", icon: "VerticalBarsIcon" },
+  "GRP-N-NOW": { label: "The group now", icon: "TilesIcon" },
+  "GRP-N-AGAINST": { label: "Against others", icon: "TableIcon" },
+  "GRP-N-LINE": { label: "Mainstream line", icon: "RankListIcon" },
+  "GRP-N-FSM": { label: "FSM over time", icon: "TrendLineIcon" },
+  "GRP-N-RESULTS": { label: "Results", icon: "GradesIcon" },
 };
 const v = (id: ViewId) => ({ id, ...GROUP_VIEWS[id] });
 const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = {
@@ -487,6 +499,39 @@ const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = {
   },
 };
 
+// 0.8 non-mainstream groups (M6): a special and AP trust's or nursery federation's pages. Roll, its
+// same-schools change and FSM against its peer set and its kinds' pools; its mainstream line where it has
+// one; no results anywhere, the reason in their place (R-NM-NO-RESULTS). Pupils keeps its own views (none
+// is a result); Schools drops Size and results.
+const NM_LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = {
+  overview: {
+    now: [
+      { id: "o-now", span: 1, views: [v("GRP-N-NOW")] },
+      { id: "o-large", span: 2, views: [v("GRP-N-AGAINST"), v("GRP-N-LINE"), v("GRP-O-MAP"), v("GRP-O-JOINED")] },
+    ],
+    trends: [
+      { id: "o-roll", span: 1, views: [v("GRP-O-ROLL")] },
+      { id: "o-fsm", span: 1, views: [v("GRP-N-FSM")] },
+      { id: "o-results", span: 1, views: [v("GRP-N-RESULTS"), v("GRP-O-SHARE")] },
+    ],
+  },
+  academic: {
+    now: [
+      { id: "a-now", span: 1, views: [v("GRP-N-RESULTS")] },
+      { id: "a-large", span: 2, views: [v("GRP-N-AGAINST"), v("GRP-N-LINE")] },
+    ],
+    trends: [],
+  },
+  pupils: LAYOUT.pupils,
+  schools: {
+    now: LAYOUT.schools.now,
+    trends: [
+      { id: "s-growing", span: 1, views: [v("GRP-S-GROWING")] },
+      { id: "s-shapes", span: 2, views: [v("GRP-S-SHAPES")] },
+    ],
+  },
+};
+
 // 0.8 SMT feedback round 1 (F-6, R-RAIL-HIDES-EMPTY): which group views have something to show. Data
 // still loading has content; the reserved bands and "the map is on Overview" say something, and stay.
 function groupHasContent(id: string, c: Ctx): boolean {
@@ -497,6 +542,8 @@ function groupHasContent(id: string, c: Ctx): boolean {
       return !c.d.map || c.d.map.some((s) => !s.outside && s.easting !== null && s.northing !== null);
     case "GRP-O-JOINED":
       return c.d.membership.length > 0;
+    case "GRP-N-LINE":
+      return !!c.o.nm?.line;
     case "GRP-A-RANKED":
       return !a || a.ranked.rows.length > 0;
     case "GRP-A-AREAS":
@@ -612,6 +659,16 @@ function headerOf(id: ViewId, c: Ctx): { tag: string; context: ReactNode } {
       return { tag: "Forward", context: "each school's area, not a forecast" };
     case "GRP-P-GROWING":
       return { tag: "Trends", context: "schools growing and shrinking" };
+    case "GRP-N-NOW":
+      return { tag: "Current", context: c.o.nm ? c.o.nm.byKind : f };
+    case "GRP-N-AGAINST":
+      return { tag: "Against others", context: c.o.sideBySide ? `side by side with ${c.o.picker.name}` : `its peers and ${c.o.nm?.family === "nursery" ? "state-funded nursery schools" : "state-funded schools of its kinds"}` };
+    case "GRP-N-LINE":
+      return { tag: "Mainstream line", context: "its mainstream schools, against mainstream schools" };
+    case "GRP-N-FSM":
+      return { tag: "Trends", context: "free school meals, pupil-weighted" };
+    case "GRP-N-RESULTS":
+      return { tag: "Results", context: "not compared" };
   }
 }
 
@@ -692,6 +749,15 @@ function flagOf(id: ViewId, c: Ctx): ReactNode {
     const d = rollDirectionOfPct(g3, 0);
     return <span className={`text-[12px] font-bold ${dirClass(g3, 0, 0)}`}>{ARROW[d]} {ROLL_WORD[d]}</span>;
   }
+  if (id === "GRP-N-AGAINST" && c.o.nm) {
+    // Its roll against its peer set (or the set's median), like for like over 1 year.
+    const g = c.o.nm.against[0]?.change1;
+    const peer = c.o.sideBySide ? (c.o.sideBySide.median.nm?.change1 ?? null) : (c.o.nm.against.find((r) => r.kind === "peer_band")?.change1 ?? null);
+    const who = c.o.sideBySide ? "the set" : "peers";
+    if (g === null || g === undefined || peer === null) return null;
+    const dd = g - peer;
+    return <span className={`text-[12px] font-bold ${dirClass(dd, 0.5, 1)}`}>{arrowOf(dd, 0.5, 1)} {dd > 0.5 ? `Growing faster than ${who}` : dd < -0.5 ? `Growing slower than ${who}` : `In line with ${who}`}</span>;
+  }
   if (id === "GRP-S-GROWING") {
     const ch = c.o.now.change[GROWING_SPAN];
     return <span className="text-[12px] font-bold text-[var(--muted2)]">▲ {ch.growing} of {ch.of} growing</span>;
@@ -726,6 +792,16 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
       return c.s ? <SizeAndResults s={c.s} highlight={hl} fullscreen={fullscreen} room={room} /> : <Skeleton />;
     case "GRP-S-SHAPES":
       return c.s ? <Shapes s={c.s} highlight={hl} fullscreen={fullscreen} /> : <Skeleton />;
+    case "GRP-N-NOW":
+      return <NmNow o={c.o} compact={c.phone && !fullscreen} />;
+    case "GRP-N-AGAINST":
+      return <NmAgainst o={c.o} compact={c.phone && !fullscreen} />;
+    case "GRP-N-LINE":
+      return <NmLine o={c.o} compact={c.phone && !fullscreen} />;
+    case "GRP-N-FSM":
+      return <NmFsmTrend o={c.o} fullscreen={fullscreen} room={room} />;
+    case "GRP-N-RESULTS":
+      return <NmNoResults o={c.o} />;
   }
   const a = c.d.academic;
   const p = c.d.pupils;
@@ -779,7 +855,8 @@ export function groupWalkView(d: DashResponse, dash: GroupDash, id: ViewId, proj
   const params: Params = { account: d.viewer.accountId, reading: "at_time", compare: null, focus: "all", school: null, showing: null };
   const o = (dash === "schools" ? d.now : d.overview)!;
   const c: Ctx = { d, o, s: d.schools ?? null, dash, params, average: false, phone: false, focusBar: null, highlight: () => {}, projection };
-  const cell = [...LAYOUT[dash].now, ...LAYOUT[dash].trends].find((x) => x.views.some((y) => y.id === id)) ?? null;
+  const L = o.nm ? NM_LAYOUT[dash] : LAYOUT[dash];
+  const cell = [...L.now, ...L.trends].find((x) => x.views.some((y) => y.id === id)) ?? null;
   const rail = cell ? visibleRail(cell.views.map((x) => ({ id: x.id, label: x.label, icon: x.icon })), (x) => groupHasContent(x, c)) : [];
   return {
     header: headerOf(id, c),
@@ -798,8 +875,8 @@ function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: Ce
   const large = layout.now[1];
   const [tabPicked, setTab] = useState<ViewId>(large.views[0].id);
   const tab = activeWithContent(large.views, tabPicked, (id) => groupHasContent(id, c)) as ViewId;
-  const [trendTab, setTrendTab] = useState<ViewId>(layout.trends[0].views[0].id);
-  const SHORT: Partial<Record<ViewId, string>> = { "GRP-O-ROLL": "Roll", "GRP-O-RESULTS": "Results", "GRP-O-SHARE": "Share", "GRP-S-GROWING": "Growing", "GRP-S-SCATTER": "Size and results", "GRP-S-SHAPES": "Shapes", "GRP-A-TREND": "Results", "GRP-A-POST16": "Post-16", "GRP-A-IMPROVING": "By school", "GRP-P-ROLL": "Roll", "GRP-P-PROJECTION": "Forward", "GRP-P-GROWING": "Growing" };
+  const [trendTab, setTrendTab] = useState<ViewId>((layout.trends[0] ?? layout.now[0]).views[0].id);
+  const SHORT: Partial<Record<ViewId, string>> = { "GRP-N-FSM": "FSM", "GRP-N-RESULTS": "Results", "GRP-O-ROLL": "Roll", "GRP-O-RESULTS": "Results", "GRP-O-SHARE": "Share", "GRP-S-GROWING": "Growing", "GRP-S-SCATTER": "Size and results", "GRP-S-SHAPES": "Shapes", "GRP-A-TREND": "Results", "GRP-A-POST16": "Post-16", "GRP-A-IMPROVING": "By school", "GRP-P-ROLL": "Roll", "GRP-P-PROJECTION": "Forward", "GRP-P-GROWING": "Growing" };
   const trendItems: RailItem[] = layout.trends.map((t) => ({ id: t.views[0].id, label: SHORT[t.views[0].id] ?? t.views[0].label, icon: "" }));
   return (
     <>
@@ -813,13 +890,13 @@ function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: Ce
           </div>
         )}
       </RailPanel>
-      <RailPanel tag={GROUP_VIEWS[trendTab].label} title={GROUP_VIEWS[trendTab].label} height="auto" source={sourceOf(trendTab, c)} caption={captionOf(trendTab, c)} controls={<Tabs items={trendItems} active={trendTab} onPick={(x) => setTrendTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(trendTab, c)} view={{ panelId: layout.trends.find((t) => t.views[0].id === trendTab)?.id ?? trendTab, panelName: null, instanceId: trendTab, dataview: trendTab }}>
+      {trendItems.length > 0 && <RailPanel tag={GROUP_VIEWS[trendTab].label} title={GROUP_VIEWS[trendTab].label} height="auto" source={sourceOf(trendTab, c)} caption={captionOf(trendTab, c)} controls={<Tabs items={trendItems} active={trendTab} onPick={(x) => setTrendTab(x as ViewId)} />} focusBar={c.focusBar} flag={flagOf(trendTab, c)} view={{ panelId: layout.trends.find((t) => t.views[0].id === trendTab)?.id ?? trendTab, panelName: null, instanceId: trendTab, dataview: trendTab }}>
         {({ fullscreen, height }) => (
           <div className="flex min-h-[160px] flex-col gap-2">
             <ViewBody id={trendTab} c={c} fullscreen={fullscreen} room={height} />
           </div>
         )}
-      </RailPanel>
+      </RailPanel>}
     </>
   );
 }

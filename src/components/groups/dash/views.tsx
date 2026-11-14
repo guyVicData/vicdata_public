@@ -367,7 +367,7 @@ export function ShareOfPlaces({ o, fullscreen }: { o: GroupOverview; fullscreen:
   return (
     <>
       <div className="text-[13px] font-bold text-[var(--fg)]">
-        Share of {s.sector === "independent" ? "independent " : ""}
+        Share of {s.sector === "independent" ? "independent " : s.sector === "special_ap" ? "state-funded special and AP " : s.sector === "nursery" ? "state-funded nursery " : ""}
         {phase}places, by LA
       </div>
       <div className="flex flex-col gap-1.5 text-[12.5px]">
@@ -432,6 +432,11 @@ export function SchoolsNow({ o, membership, schools }: { o: GroupOverview; membe
 type SortKey = "roll" | "name" | "headline" | "national" | "trend";
 
 export function SchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highlight: string | null; onHighlight: (urn: string) => void }) {
+  if (s.nm) return <NmSchoolsTable s={s} highlight={highlight} onHighlight={onHighlight} />;
+  return <MainSchoolsTable s={s} highlight={highlight} onHighlight={onHighlight} />;
+}
+
+function MainSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highlight: string | null; onHighlight: (urn: string) => void }) {
   const [sort, setSort] = useState<SortKey>("roll");
   const rows = [...s.rows].sort((a, b) => {
     const nul = (x: number | null | undefined) => (x === null || x === undefined ? -Infinity : x);
@@ -498,13 +503,73 @@ function SchoolTr({ r, on, onHighlight }: { r: SchoolRow; on: boolean; onHighlig
       <Td>{r.roll === null ? "—" : r.roll.toLocaleString("en-GB")}</Td>
       <Td>{r.size ? <span className="rounded-[4px] bg-[var(--adm-tint)] px-1.5 text-[10.5px] font-bold text-[var(--adm-accent-text)]">{r.size}</span> : "—"}</Td>
       <Td className="text-[var(--muted2)]">{r.shape ?? "—"}</Td>
-      <Td className="min-w-[132px]">{r.headline ? `${r.headline.label} ${fmt(r.headline.value, unitOf(r.headline.measure), r.headline.measure === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}` : <i className="text-[var(--muted2)]">{r.reason}</i>}</Td>
+      <Td className="min-w-[132px]">{r.headline ? `${r.headline.label} ${fmt(r.headline.value, unitOf(r.headline.measure), r.headline.measure === "ks5_aps_alevel" ? "aps_per_entry" : undefined)}` : <i className="text-[var(--muted2)]" data-placing={r.placing ? r.placing.kind : undefined}>{r.placingText ?? r.reason}</i>}</Td>
       <Td>{r.inGroup ? `${ordinal(r.inGroup.rank, r.inGroup.tied)} of ${r.inGroup.of}` : "—"}</Td>
       <Td>{r.national ? `${ordinal(r.national.rank, r.national.tied)} of ${r.national.of.toLocaleString("en-GB")}` : "—"}</Td>
       <Td>{r.va ? fmt(r.va.value, "va") : <span className="text-[var(--muted2)]" title={r.vaNote ?? undefined}>{r.vaNote ? "not published" : "—"}</span>}</Td>
       <Td className={`whitespace-nowrap ${dirClass(r.trend, 0.5, 1)}`}>{r.trend === null ? "—" : arrowed(r.trend, (x) => `${x.toFixed(1)}%`, 1, 0.5)}</Td>
       <Td className="text-[var(--muted2)]">{r.joined ? dateText(r.joined) : r.basis === "assumed" ? "undated" : "—"}</Td>
     </tr>
+  );
+}
+
+/** 0.8 non-mainstream groups: a special and AP trust's or nursery federation's schools -- its special,
+ * AP, PRU and nursery schools each placed against its region's state-funded pool of its kind (FSM and
+ * roll change), its mainstream schools as its mainstream line; no results (R-NM-NO-RESULTS). */
+function NmSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highlight: string | null; onHighlight: (urn: string) => void }) {
+  const [sort, setSort] = useState<"roll" | "name" | "fsm" | "trend">("roll");
+  const nul = (x: number | null | undefined) => (x === null || x === undefined ? -Infinity : x);
+  const rows = [...s.rows].sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name) : sort === "fsm" ? nul(b.fsm) - nul(a.fsm) : sort === "trend" ? nul(b.trend) - nul(a.trend) : nul(b.roll) - nul(a.roll)) || a.name.localeCompare(b.name));
+  const sortBtn = (k: typeof sort, label: string) => (
+    <button type="button" onClick={() => setSort(k)} aria-pressed={sort === k} className={`uppercase ${sort === k ? "text-[var(--fg)]" : ""}`}>
+      {label}
+      {sort === k ? " ↓" : ""}
+    </button>
+  );
+  const region = (v: number | null | undefined, signed = false) => (v === null || v === undefined ? "" : ` (region ${signed ? `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%` : `${v.toFixed(1)}%`})`);
+  return (
+    <div className="flex min-h-0 flex-col gap-2" data-nm-schools="">
+      <div className="min-h-0 overflow-auto rounded-[10px] border border-[var(--panel-border)]">
+        <table className="w-full border-collapse text-[12px]">
+          <thead className="sticky top-0 bg-[var(--panel-bg)]">
+            <tr className="border-b border-[var(--panel-border)] text-left">
+              <Th>{sortBtn("name", "School")}</Th>
+              <Th>Kind</Th>
+              <Th>Ages</Th>
+              <Th>{sortBtn("roll", "Roll")}</Th>
+              <Th>{sortBtn("fsm", "FSM")}</Th>
+              <Th>{sortBtn("trend", "Roll, 3 years")}</Th>
+              <Th>Its region&rsquo;s pool</Th>
+              <Th>Joined</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const on = r.urn === highlight;
+              const p = r.placing;
+              return (
+                <tr key={r.urn} data-featured-row={on ? "" : undefined} className="border-b border-[var(--panel-border)] last:border-0" style={on ? { background: FEATURED_ROW_BG } : undefined} onClick={() => onHighlight(r.urn)}>
+                  <Td>
+                    <Link href={r.link.href} className="font-semibold text-[var(--adm-accent-text)] hover:underline" title={r.link.kind === "smt" ? "Its SMT dashboards, read-only" : "Its public page"}>{r.name}</Link>
+                    {r.confidence === "likely" && <span className="ml-1 rounded-[5px] bg-[var(--group-likely-bg)] px-[6px] text-[10px] font-bold text-[var(--group-likely-fg)]">likely</span>}
+                  </Td>
+                  <Td>{r.kindTag ?? "—"}</Td>
+                  <Td>{r.ages ?? "—"}</Td>
+                  <Td>{r.roll === null ? "—" : r.roll.toLocaleString("en-GB")}</Td>
+                  <Td className="whitespace-nowrap">{r.fsm === null || r.fsm === undefined ? "—" : `${r.fsm.toFixed(1)}%`}<span className="text-[var(--muted2)]">{p ? region(p.fsm.pool) : ""}</span></Td>
+                  <Td className={`whitespace-nowrap ${dirClass(r.trend, 0.5, 1)}`}>{r.trend === null ? "—" : arrowed(r.trend, (x) => `${x.toFixed(1)}%`, 1, 0.5)}<span className="text-[var(--muted2)]">{p ? region(p.change.pool, true) : ""}</span></Td>
+                  <Td className="text-[var(--muted2)]">{p?.pool ? (p.pool.tooFew ? tooFewWords(p.pool.n) : (p.pool.label.split(", ").slice(1).join(", ") || p.pool.label)) : r.reason ? <i>{r.reason}</i> : "—"}</Td>
+                  <Td className="text-[var(--muted2)]">{r.joined ? dateText(r.joined) : r.basis === "assumed" ? "undated" : "—"}</Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="text-[11.5px] text-[var(--muted2)]">
+        Showing {s.counts.shown} of {s.counts.listed} · each special, AP and nursery school beside its region&rsquo;s state-funded pool of its kind (FSM pupil-weighted; roll like for like){s.nm!.line ? ` · ${s.nm!.line} mainstream school${s.nm!.line === 1 ? " is" : "s are"} its mainstream line` : ""} · results aren&rsquo;t compared
+      </div>
+    </div>
   );
 }
 

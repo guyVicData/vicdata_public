@@ -83,8 +83,10 @@ export function buildNmParts(input: { agg: GroupAggregate; sets: SetRef[]; censu
   if (peer) defaults.push({ key: peer.set_id, name: peerName!, countText: groupsWord(peer.n_groups), title: `${peer.n_groups} ${peerPlural}${peer.band === "all" ? "" : ` with ${peer.band.replace("-", "–")} schools`}, ${name} included; their special, AP and nursery schools pupil-weighted, each counted once.` });
   const ka = sets.find((s) => s.key === "kind_areas:region");
   if (ka) defaults.push({ key: "kind_areas:region", name: "Same kinds of school in its regions", countText: schoolsText(nOf(ka)), title: `State-funded schools of the same kinds as ${name}'s in its regions, weighted to its mix of kinds and regions.` });
-  const pools = sets.filter((s) => s.kind === "pools").sort((a, b) => nmSetRank(a.key) - nmSetRank(b.key) || a.label.localeCompare(b.label));
-  for (const s of pools) defaults.push({ key: s.key, name: s.label, countText: schoolsText(nOf(s)), title: NM_NOTES.stateFunded });
+  // England, then region, then LA; within each, its main kind first.
+  const kindRank = (key: string) => (key.includes(`:${mainKind}`) ? 0 : 1);
+  const pools = sets.filter((s) => s.kind === "pools").sort((a, b) => nmSetRank(a.key) - nmSetRank(b.key) || kindRank(a.key) - kindRank(b.key) || a.label.localeCompare(b.label));
+  for (const s of pools) defaults.push({ key: s.key, name: s.label, countText: schoolsText(nOf(s)), title: family === "nursery" ? NM_NOTES.stateFundedNursery : NM_NOTES.stateFunded });
   if (input.nearest.length) defaults.push({ key: "nearest", name: `Nearest in size, ${peerPlural}`, countText: groupsWord(input.nearest.length), title: `The ${input.nearest.length} ${peerPlural} nearest ${name} in size, side by side, with their median.` });
 
   // Against others: the group, its peer set, the same kinds in its regions, its pools.
@@ -134,7 +136,7 @@ export function buildNmParts(input: { agg: GroupAggregate; sets: SetRef[]; censu
       notes: {
         line: NM_NOTES.line,
         families: NM_NOTES.families,
-        stateFunded: NM_NOTES.stateFunded,
+        stateFunded: family === "nursery" ? NM_NOTES.stateFundedNursery : NM_NOTES.stateFunded,
         nurseryFsm: family === "nursery" || (k.nursery ?? 0) > 0 ? NM_NOTES.nurseryFsm : null,
         fsm: NM_NOTES.fsm,
         roll: NM_NOTES.roll,

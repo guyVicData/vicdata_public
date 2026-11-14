@@ -86,7 +86,7 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     geography: "Every current member school",
     years: "Roll: {census}. Results: each measure's latest published year ({resultsYear})",
     leftOut: ["None: a school without a figure shows the reason (IGCSE: not ranked at GCSE; prep: no KS2 published; outside England; no results published)"],
-    steps: ["One row per current member school: its roll, size, shape by age, headline result for the phase in view, its rank within the group and nationally (ties share a place; IGCSE schools out at GCSE), value added where published, and its roll change over the last year.", "Each name opens the school's SMT dashboards, read-only, where head office has access and the school has its own VicData membership; otherwise its public page.", "A special school, alternative provision, pupil referral unit or nursery school shows its own roll and a tag (\"AP · not in group figures\") in place of results: it is a member, not counted in group figures."],
+    steps: ["One row per current member school: its roll, size, shape by age, headline result for the phase in view, its rank within the group and nationally (ties share a place; IGCSE schools out at GCSE), value added where published, and its roll change over the last year.", "Each name opens the school's SMT dashboards, read-only, where head office has access and the school has its own VicData membership; otherwise its public page.", "A special school, alternative provision, pupil referral unit or nursery school is a member, not counted in group figures: in place of results it is placed against its region's state-funded pool of its kind (\"Special · FSM 47.5% (region 53.8%) · roll +16.8% (region +14.9%) over 3 years\"): its FSM, DfE's own, beside the pool's pupil-weighted FSM, and its roll change beside the pool's like-for-like change. A pool under 5 schools is withheld (R-MIN-SCHOOLS).", "In a special and AP trust or nursery federation the other way round: its special, AP, PRU and nursery schools count, each placed the same way, with no results; its mainstream schools are its mainstream line."],
     rounding: ["As published"],
   },
   "GRP-S-GROWING": {
@@ -242,6 +242,57 @@ export const METHODS_GROUPS: Record<string, ViewMethod> = {
     rounding: ["None"],
   },
 };
+
+// 0.8 non-mainstream groups (NM1-NM7): a special and AP trust's or nursery federation's views.
+const NM_LINE = "A special and AP trust or nursery federation is a group more than half of whose current schools are special schools, alternative provision, pupil referral units or nursery schools (a group at exactly half stays mainstream). Its family is its majority kind: special and AP trusts, or nursery federations (a tie is a special and AP trust).";
+const NM_COUNTED = "Its own figures count its special, AP, PRU and nursery schools; its mainstream schools are in its mainstream line, compared with mainstream schools as any mainstream group is.";
+const NM_POOLS = "Pools are state-funded schools only, of the same kind: special schools (not non-maintained or independent special schools, or special post-16 institutions), alternative provision academies and free schools and PRUs, and LA nursery schools; England and each region for every kind, and each LA for special schools only.";
+const NM_FSM = "FSM is pupil-weighted: pupils eligible for free school meals over the pupils counted (DfE's eligible count over the headcount it implies), across the schools, whole-school only.";
+const NM_NURSERY = "Nursery FSM is compared only with nurseries: an under-5 qualifies only on a full-day place, so a nursery school's share (about 10% in England) measures something different from a school's (about 50% in special schools).";
+const NM_PEERS = "Peer sets are its family's: special and AP trusts with 2–5, 6–10 or 11+ current schools, or all nursery federations; MATs, federations and foundation trusts together. Peer places rank the highest first (1st is the highest FSM, the fastest growth).";
+const FSM_SOURCE = "DfE school census: pupils eligible for free school meals, by school (Schools, pupils and their characteristics)";
+Object.assign(METHODS_GROUPS, {
+  "GRP-N-NOW": {
+    sources: [MEMBERSHIP, CENSUS, FSM_SOURCE],
+    geography: "The group's member schools in England",
+    years: "The latest census, {census}; change over 1, 3 and 5 years",
+    leftOut: ["Its mainstream schools from its own figures: they are its mainstream line", "Schools not yet open in a year"],
+    steps: [NM_LINE, NM_COUNTED, READING, "Roll is the census roll of its special, AP, PRU and nursery schools, all ages.", "Change is like for like: only schools with a roll in both years. Special and AP rolls follow the places LAs commission, so growth means places commissioned, not parents' choice.", NM_FSM, NM_PEERS, NM_NURSERY],
+    rounding: ["Rolls to whole pupils", "Percentages to one decimal place"],
+  },
+  "GRP-N-AGAINST": {
+    sources: [MEMBERSHIP, CENSUS, FSM_SOURCE, "Comparison sets: its family's peer set, the same kinds of school in its regions, and state-funded pools of its kinds (group_comparison_lookup)"],
+    geography: "The group against {setLabel} and the other sets in the table",
+    years: "The latest census, {census}: roll, its change over 1 year (same schools) and FSM",
+    leftOut: ["Mainstream pools (non-group schools, single-academy trusts, its areas, England): its mainstream line's only", "Results: not compared for special, AP and nursery schools"],
+    steps: [NM_LINE, NM_PEERS, "The same kinds of school in its regions: state-funded schools of its kinds in its regions, weighted to its own mix of kinds and regions, so the gap isn't the mix.", NM_POOLS, NM_FSM, NM_NURSERY, "A set of groups (its family's only: a mainstream group, or the other family's, is left out of a set and the set says so) is shown side by side, with the set's median, one vote per group with a figure.", POOL_MIN],
+    rounding: ["Percentages to one decimal place"],
+  },
+  "GRP-N-LINE": {
+    sources: [MEMBERSHIP, CENSUS, FSM_SOURCE, "Comparison sets: all schools and non-group schools in its mainstream schools' LAs and regions, non-group schools matched to their mix, single-academy trusts and England (group_comparison_lookup, mainstream_line)"],
+    geography: "Its mainstream schools, against mainstream schools",
+    years: "The latest census, {census}",
+    leftOut: ["Results, in this version"],
+    steps: [NM_COUNTED, "The line is figured as a mainstream group's figures are, over its mainstream schools only, and compared with mainstream pools only.", "Its area sets are weighted to the line's own pupils in each LA and region.", NM_FSM, POOL_MIN],
+    rounding: ["Percentages to one decimal place"],
+  },
+  "GRP-N-FSM": {
+    sources: [MEMBERSHIP, FSM_SOURCE, "The comparison set: {setLabel}"],
+    geography: "The group, {setLabel} and England's state-funded schools of its main kind",
+    years: "{from} to {census}",
+    leftOut: ["Schools without an FSM figure that year"],
+    steps: [READING, NM_FSM, "England's line is its main kind's pool: special schools, alternative provision and PRUs, or nursery schools.", NM_NURSERY],
+    rounding: ["Percentages to one decimal place"],
+  },
+  "GRP-N-RESULTS": {
+    sources: ["DfE performance tables (KS2, KS4) as held for special schools; DfE's published coverage for alternative provision"],
+    geography: "Special, AP, PRU and nursery schools",
+    years: "None compared",
+    leftOut: ["Every result, for this version"],
+    steps: ["KS2 reading, writing and maths is 0% at 630 of the 652 special schools with a figure: most pupils work below the test standard, so 0% is the expected result, not a measure.", "DfE publishes no school-level KS4 results for alternative provision or PRUs, only figures by LA.", "Progress 8 ends with 2023/24 (no KS2 baseline after it). Nursery schools take no key stage tests.", "Later: Attainment 8 school by school within the same need type, once primary need is in VicData."],
+    rounding: ["None"],
+  },
+} satisfies Record<string, ViewMethod>);
 
 /** The group methods' fallbacks: what a placeholder reads when the host doesn't know it. */
 export const GROUP_METHOD_FALLBACK: Record<string, string> = {
