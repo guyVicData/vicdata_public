@@ -4,8 +4,12 @@
 // module words them, filters them and puts them in order. R-GROUP-LIBRARY.
 //
 //   listed      production lists MATs, federations, foundation trusts and independent groups with 2+
-//               current schools, each body once; non-mainstream groups (more than half special, AP, PRU
-//               or nursery) are held out until their own milestone; our own group is never a card.
+//               current schools, each body once; our own group is never a card.
+//   section     0.8 non-mainstream groups (NM10): groups more than half special, AP, PRU or nursery are
+//               a separate section, "Special, AP and nursery groups" (production's non_mainstream list),
+//               filtered by family (special and AP trusts, nursery federations) and their own size bands;
+//               their cards show schools by kind, roll and same-schools change, and FSM against their
+//               kind's England figure, never a result. R-GROUP-LIBRARY, R-NM-LINE.
 //   groups like us   (the default) same type, our own peer set first, then nearest in size.
 //   region      "Most schools in" by default (a tie counts in each tied region); "Has a school in" as a
 //               toggle. Cards name the main region first: "London · also South East, East".
@@ -13,6 +17,7 @@
 //               England (the group's sector's England); on All phases the group's main phase, labelled.
 //               An independent group with none published reads "Results not published".
 import { displayName, PEER_PLURAL, REGION_NAMES, type Focus } from "./dash";
+import { familyOf, NM_BANDS, nmBandOf } from "./non-mainstream";
 
 export type IndexHeadline = { measure: string; period: number | null; weighted: number | null; average_school?: number | null; n_with_figure: number; england: number | null };
 export type IndexCard = {
@@ -31,8 +36,15 @@ export type IndexCard = {
   change_3: { from_period: number | null; combined_pct: number | null; same_schools_pct: number | null; same_schools: number | null };
   headline: Partial<Record<"primary" | "secondary" | "post16", IndexHeadline>>;
   peer: { set_id: string; type: string; band: string; n_groups: number } | null;
+  /** 0.8 non-mainstream groups (build 7). A mainstream card's fsm.england is one number; a non-mainstream
+   * card's is by kind, for each kind it has (a nursery federation's only ever the nursery figure). */
+  kind?: "mainstream" | "special_ap" | "nursery";
+  schools_by_kind?: Partial<Record<"mainstream" | "special" | "ap" | "pru" | "nursery", number>>;
+  fsm?: { pct: number | null; n_with_figure: number; main_kind?: "special" | "ap" | "nursery"; england: number | Partial<Record<"special" | "ap" | "nursery", number>> | null } | null;
+  has_mainstream_line?: boolean;
 };
-export type GroupIndex = { build: { build_id: number; computed_at: string } | null; groups: IndexCard[] };
+/** groups: the mainstream cards, as before; non_mainstream: the special, AP and nursery groups (build 7). */
+export type GroupIndex = { build: { build_id: number; computed_at: string } | null; groups: IndexCard[]; non_mainstream?: IndexCard[] };
 
 export const LIBRARY_TYPES = ["mat", "federation", "foundation_trust", "independent_company", "independent_charity", "independent_other"] as const;
 export const TYPE_WORD: Record<string, string> = {
@@ -113,7 +125,12 @@ export function headlineWords(c: Pick<IndexCard, "type" | "headline" | "main_pha
 // ---------------------------------------------------------------------------------- the filters
 
 export type LibrarySort = "like_us" | "size" | "name" | "headline";
+export type LibrarySection = "mainstream" | "nm";
 export type LibraryFilter = {
+  /** 0.8 non-mainstream groups: which section is in view (mainstream groups, or special, AP and nursery). */
+  section: LibrarySection;
+  /** The non-mainstream section's family filter (special_ap, nursery). */
+  families: ("special_ap" | "nursery")[];
   likeUs: boolean;
   types: string[];
   bands: string[];
@@ -124,7 +141,7 @@ export type LibraryFilter = {
   sort: LibrarySort;
   focus: Focus;
 };
-export const DEFAULT_FILTER: LibraryFilter = { likeUs: true, types: [], bands: [], regions: [], regionMode: "most", phases: [], search: "", sort: "like_us", focus: "all" };
+export const DEFAULT_FILTER: LibraryFilter = { section: "mainstream", families: [], likeUs: true, types: [], bands: [], regions: [], regionMode: "most", phases: [], search: "", sort: "like_us", focus: "all" };
 
 const fold = (s: string) => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
@@ -132,13 +149,18 @@ const fold = (s: string) => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerC
 export function libraryCards(all: IndexCard[], us: IndexCard | null, f: LibraryFilter): IndexCard[] {
   const q = fold(f.search);
   let out = all.filter((c) => c.group_id !== us?.group_id);
-  if (f.likeUs && us) out = out.filter((c) => c.type === us.type);
+  const nm = f.section === "nm";
+  // "Like us" is our type among mainstream groups, our family among special, AP and nursery groups; it
+  // applies only in our own section.
+  const usHere = !!us && (familyOf(us.kind) === "mainstream") === !nm;
+  if (f.likeUs && us && usHere) out = out.filter((c) => (nm ? familyOf(c.kind) === familyOf(us.kind) : c.type === us.type));
+  if (nm && f.families.length) out = out.filter((c) => f.families.includes(familyOf(c.kind) as "special_ap" | "nursery"));
   if (f.types.length) out = out.filter((c) => f.types.includes(c.type));
-  if (f.bands.length) out = out.filter((c) => f.bands.includes(sizeBandOf(c.schools) ?? ""));
+  if (f.bands.length) out = out.filter((c) => f.bands.includes((nm ? nmBandOf(c.schools) : sizeBandOf(c.schools)) ?? ""));
   if (f.regions.length) out = out.filter((c) => (f.regionMode === "most" ? mainRegions(c) : regionsOf(c).map((r) => r.code)).some((r) => f.regions.includes(r)));
   if (f.phases.length) out = out.filter((c) => f.phases.every((p) => (c.schools_by_phase?.[p] ?? 0) > 0));
   if (q) out = out.filter((c) => fold(displayName(c.name)).includes(q) || fold(c.name).includes(q));
-  const near = (c: IndexCard) => (us ? Math.abs(c.schools - us.schools) : 0);
+  const near = (c: IndexCard) => (us && (usHere || !nm) ? Math.abs(c.schools - us.schools) : 0);
   const samePeer = (c: IndexCard) => (us?.peer && c.peer?.set_id === us.peer.set_id ? 0 : 1);
   const head = (c: IndexCard) => headlineWords(c, f.focus).value;
   const byName = (a: IndexCard, b: IndexCard) => displayName(a.name).localeCompare(displayName(b.name));
@@ -154,6 +176,8 @@ export function libraryCards(all: IndexCard[], us: IndexCard | null, f: LibraryF
 /** The filter's state in the address (shareable, and the way back from a group's page). */
 export function filterToQuery(f: LibraryFilter): URLSearchParams {
   const q = new URLSearchParams();
+  if (f.section === "nm") q.set("section", "nm");
+  if (f.section === "nm" && f.families.length) q.set("fam", f.families.join(","));
   if (!f.likeUs) q.set("all", "1");
   if (f.types.length) q.set("type", f.types.join(","));
   if (f.bands.length) q.set("band", f.bands.join(","));
@@ -169,10 +193,13 @@ export function filterFromQuery(q: URLSearchParams): LibraryFilter {
   const list = (k: string) => (q.get(k) ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const sorts: LibrarySort[] = ["like_us", "size", "name", "headline"];
   const foci: Focus[] = ["all", "primary", "secondary", "post16"];
+  const section: LibrarySection = q.get("section") === "nm" ? "nm" : "mainstream";
   return {
+    section,
+    families: list("fam").filter((x): x is "special_ap" | "nursery" => x === "special_ap" || x === "nursery"),
     likeUs: q.get("all") !== "1",
     types: list("type").filter((t) => (LIBRARY_TYPES as readonly string[]).includes(t)),
-    bands: list("band").filter((b) => SIZE_BAND_WORDS.includes(b)),
+    bands: list("band").filter((b) => (section === "nm" ? (NM_BANDS as readonly string[]) : SIZE_BAND_WORDS).includes(b)),
     regions: list("region").filter((r) => !!REGION_NAMES[r]),
     regionMode: q.get("rmode") === "has" ? "has" : "most",
     phases: list("phase").filter((p): p is "primary" | "secondary" | "post16" => p === "primary" || p === "secondary" || p === "post16"),
@@ -185,6 +212,10 @@ export function filterFromQuery(q: URLSearchParams): LibraryFilter {
 /** Our group's peer set, in words, for the "like us" line: "MATs with 41+ schools", "All foundation trusts". */
 export function likeUsWords(us: IndexCard | null): string | null {
   if (!us) return null;
+  if (familyOf(us.kind) !== "mainstream") {
+    const fam = familyOf(us.kind) === "nursery" ? "Nursery federations" : "Special and AP trusts";
+    return !us.peer || us.peer.band === "all" ? `${fam} like us: nearest in size first` : `${fam} like us: those with ${us.peer.band.replace("-", "–")} schools first, then nearest in size`;
+  }
   const plural = TYPE_PLURAL_WORD[us.type] ?? "groups";
   if (!us.peer || us.peer.band === "all") return `${plural} like us: nearest in size first`;
   return `${plural} like us: ${PEER_PLURAL[us.type] ?? "groups"} with ${us.peer.band.replace("-", "–")} schools first, then nearest in size`;

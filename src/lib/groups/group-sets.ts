@@ -65,8 +65,17 @@ export function groupSaveMode(set: Pick<GroupSetRow, "scope" | "ownerProfileId">
 // ------------------------------------------------------------------------------- address keys
 
 /** The address's ?compare= as a key of today (old links mapped), or null for the page's default. */
-export function normaliseCompare(raw: string | null | undefined, ctx: { bandKey: string | null; sector: Sector }): string | null {
+export function normaliseCompare(raw: string | null | undefined, ctx: { bandKey: string | null; sector: Sector; nm?: boolean }): string | null {
   if (!raw) return null;
+  // 0.8 non-mainstream groups: its kinds' pools and the same kinds in its regions; the mainstream pools
+  // (non-group, single-academy trusts, its areas, England) are its mainstream line's only, so they open on
+  // the peer set. A mainstream group never takes a pool key.
+  if (ctx.nm) {
+    if (/^pools:(england|region|la):[\w:]{1,40}$/.test(raw) || raw === "kind_areas:region") return raw;
+    if (raw === "nearest" || raw.startsWith("set:") || raw.startsWith("peer_named:")) {
+      /* below */
+    } else return ctx.bandKey ?? null;
+  } else if (raw.startsWith("pools:") || raw === "kind_areas:region") return null;
   const band = ctx.bandKey ?? `non_group:${ctx.sector}`;
   const ng = `non_group:${ctx.sector}`;
   switch (raw) {
@@ -139,24 +148,37 @@ export function resolveCompare(raw: string | null | undefined, ctx: {
   defaultId: string | null;
   nearest: GroupSetInput["groups"];
   meta: (id: string) => GroupSetInput["groups"][number];
+  /** 0.8 non-mainstream groups: a non-mainstream group's page (its kinds' pools are keys too). */
+  nm?: boolean;
+  /** R-NM-SETS: may this group sit in a set beside ours? (Another family's group is left out of a stored
+   * or unsaved set, and the set says how many were.) Absent: every group may. */
+  allowed?: (id: string) => boolean;
+  /** "Nearest in size, special and AP trusts" (default "Nearest in size, same type"). */
+  nearestName?: string;
 }): { key: string; compare: CompareKey; groupSet: GroupSetInput | null } {
   const fallback = pageDefault(null, ctx.bandKey, ctx.sector);
   let key = normaliseCompare(raw, ctx) ?? pageDefault(ctx.defaultId ? { id: ctx.defaultId } : null, ctx.bandKey, ctx.sector);
   let groupSet: GroupSetInput | null = null;
   if (key === "nearest") {
-    if (ctx.nearest.length) groupSet = { key, name: "Nearest in size, same type", source: "nearest", setId: null, scope: null, groups: ctx.nearest };
+    if (ctx.nearest.length) groupSet = { key, name: ctx.nearestName ?? "Nearest in size, same type", source: "nearest", setId: null, scope: null, groups: ctx.nearest };
     else key = fallback;
   } else if (key.startsWith("set:")) {
     const s = ctx.sets.find((x) => x.kind === "group_peers" && !x.archived && x.id === key.slice(4));
-    if (s) groupSet = { key, name: s.name, source: "set", setId: s.id, scope: s.scope, groups: s.members.filter((id) => id !== ctx.ourId).slice(0, GROUP_SET_CAP).map(ctx.meta) };
+    if (s) {
+      const ids = s.members.filter((id) => id !== ctx.ourId);
+      const ok = ctx.allowed ? ids.filter(ctx.allowed) : ids;
+      groupSet = { key, name: s.name, source: "set", setId: s.id, scope: s.scope, groups: ok.slice(0, GROUP_SET_CAP).map(ctx.meta), ...(ok.length < ids.length ? { refused: ids.length - ok.length } : {}) };
+    }
     else key = fallback;
   } else if (key.startsWith("peer_named:")) {
-    const ids = namedList(key.slice(11)).filter((id) => id !== ctx.ourId);
-    if (ids.length) groupSet = { key: `peer_named:${ids.join(",")}`, name: "Unsaved set", source: "unsaved", setId: null, scope: null, groups: ids.map(ctx.meta) };
+    const all = namedList(key.slice(11)).filter((id) => id !== ctx.ourId);
+    const ids = ctx.allowed ? all.filter(ctx.allowed) : all;
+    if (ids.length) groupSet = { key: `peer_named:${ids.join(",")}`, name: "Unsaved set", source: "unsaved", setId: null, scope: null, groups: ids.map(ctx.meta), ...(ids.length < all.length ? { refused: all.length - ids.length } : {}) };
     else key = fallback;
   }
   if (groupSet) key = groupSet.key;
-  const compare: CompareKey = groupSet ? (groupSet.groups.length ? (`peer_named:${groupSet.groups.map((g) => g.id).join(",")}` as CompareKey) : "england") : (pooledKind(key) ?? "peer_band");
+  const nmKey: CompareKey | null = ctx.nm && key.startsWith("pools:") ? (key as CompareKey) : ctx.nm && key === "kind_areas:region" ? "kind_areas" : null;
+  const compare: CompareKey = groupSet ? (groupSet.groups.length ? (`peer_named:${groupSet.groups.map((g) => g.id).join(",")}` as CompareKey) : "england") : (nmKey ?? pooledKind(key) ?? "peer_band");
   return { key, compare, groupSet };
 }
 
@@ -164,10 +186,11 @@ export function resolveCompare(raw: string | null | undefined, ctx: {
 
 /** The groups of our type nearest us in size (D4's same type; the index already holds out sponsor
  * records, single-academy trusts, self-declared and non-mainstream groups). Ties: the larger first. */
-export function nearestInSize(cards: IndexCard[], us: Pick<IndexCard, "group_id" | "type" | "schools"> | null, n = NEAREST_IN_SIZE): IndexCard[] {
+export function nearestInSize(cards: IndexCard[], us: Pick<IndexCard, "group_id" | "type" | "schools"> | null, n = NEAREST_IN_SIZE, same?: (c: IndexCard) => boolean): IndexCard[] {
   if (!us) return [];
+  // 0.8 non-mainstream groups: a special and AP trust's nearest are its own family's, of any type.
   return cards
-    .filter((c) => c.group_id !== us.group_id && c.type === us.type)
+    .filter((c) => c.group_id !== us.group_id && (same ? same(c) : c.type === us.type))
     .sort((a, b) => Math.abs(a.schools - us.schools) - Math.abs(b.schools - us.schools) || b.schools - a.schools || a.name.localeCompare(b.name))
     .slice(0, n);
 }

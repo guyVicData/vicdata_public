@@ -4,6 +4,7 @@ import { groupDataSource, groupLibraryIndex, groupSchoolsYear } from "@/lib/grou
 import { displayName } from "@/lib/groups/dash";
 import { GROUP_SET_CAP, groupDefaultOf } from "@/lib/groups/group-sets";
 import { canKeepSets, isGroupAdmin, readGroupSets } from "@/lib/groups/group-sets-server";
+import { isNonMainstream } from "@/lib/groups/non-mainstream";
 
 // VicData 0.8 group sets (M4, M5): a head office's sets, for the set editor in group mode, Manage sets
 // (/sets?account=) and the library's Add to set…. GET ?account=&with=cards|schools
@@ -20,8 +21,11 @@ export async function GET(request: NextRequest) {
     const { viewer } = who;
     if (viewer.as === "school") return NextResponse.json({ error: "Not found." }, { status: 404 });
     const want = request.nextUrl.searchParams.get("with");
-    const [read, index] = await Promise.all([readGroupSets(who, { includeArchived: true }), groupLibraryIndex().catch(() => ({ build: null, groups: [] }))]);
-    const us = index.groups.find((c) => c.group_id === viewer.groupId) ?? null;
+    const [read, index] = await Promise.all([readGroupSets(who, { includeArchived: true }), groupLibraryIndex().catch(() => ({ build: null, groups: [], non_mainstream: [] }))]);
+    // 0.8 non-mainstream groups: every card, both sections (the editor offers only our family's, R-NM-SETS).
+    const all = [...index.groups, ...(index.non_mainstream ?? [])];
+    const us = all.find((c) => c.group_id === viewer.groupId) ?? null;
+    const nm = isNonMainstream(us?.kind);
     const live = read.sets.filter((s) => !s.archived);
     let schools: { urn: string; name: string; la: string | null; phases: string[]; roll: number | null; likely: boolean; current: boolean; counted: boolean }[] | undefined;
     if (want === "schools") {
@@ -30,7 +34,7 @@ export async function GET(request: NextRequest) {
         .filter((s) => s.role === "member")
         .map((s) => {
           const latest = [...s.years].reverse().find((y) => y.figures)?.figures ?? null;
-          return { urn: s.urn, name: s.name ?? s.urn, la: s.la_name, phases: latest?.phases ?? [], roll: latest?.roll ?? null, likely: s.confidence === "likely", current: s.years.some((y) => y.listed_now), counted: latest?.counted !== false };
+          return { urn: s.urn, name: s.name ?? s.urn, la: s.la_name, phases: latest?.phases ?? [], roll: latest?.roll ?? null, likely: s.confidence === "likely", current: s.years.some((y) => y.listed_now), counted: nm ? latest?.kind !== "mainstream" : latest?.counted !== false };
         })
         .sort((a, b) => Number(b.current) - Number(a.current) || a.name.localeCompare(b.name));
     }
@@ -44,7 +48,7 @@ export async function GET(request: NextRequest) {
       cap: GROUP_SET_CAP,
       defaults: { group_peers: groupDefaultOf(live, "group_peers")?.id ?? null, group_schools: groupDefaultOf(live, "group_schools")?.id ?? null },
       us,
-      ...(want === "cards" ? { cards: index.groups.filter((c) => c.group_id !== viewer.groupId) } : {}),
+      ...(want === "cards" ? { cards: all.filter((c) => c.group_id !== viewer.groupId) } : {}),
       ...(schools ? { schools } : {}),
     });
   } catch (err) {

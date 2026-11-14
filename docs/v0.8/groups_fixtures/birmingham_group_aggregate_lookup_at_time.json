@@ -1,0 +1,1680 @@
+{
+ "peer": {
+  "band": "all",
+  "type": "nursery",
+  "set_id": "peer:nursery:all",
+  "n_groups": 34
+ },
+ "rows": [
+  {
+   "phase": "all",
+   "period": 2019,
+   "figures": {
+    "fsm": {
+     "pct": 17.22,
+     "eligible": 219,
+     "headcount": 1272,
+     "n_with_figure": 9
+    },
+    "las": {
+     "330|Birmingham": 9
+    },
+    "peer": {
+     "band": "all",
+     "type": "nursery",
+     "places": {
+      "fsm": {
+       "of": 21,
+       "rank": 4,
+       "tied": false
+      }
+     },
+     "set_id": "peer:nursery:all",
+     "n_groups": 34
+    },
+    "roll": 1269,
+    "share": {
+     "las": [
+      {
+       "pct": 37.02,
+       "la_code": "330",
+       "la_name": "Birmingham",
+       "la_pupils": 3428,
+       "group_pupils": 1269
+      }
+     ],
+     "pct": 19.56,
+     "sector": "nursery",
+     "regions": [
+      {
+       "pct": 19.56,
+       "region_code": "E12000005",
+       "group_pupils": 1269,
+       "region_pupils": 6488
+      }
+     ],
+     "area_pupils": 6488,
+     "group_pupils": 1269
+    },
+    "regions": {
+     "E12000005": 9
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 9
+    },
+    "group_kind": "nursery",
+    "size_bands": {
+     "XS": 9
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     95,
+     476,
+     688,
+     10,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_kind": {
+     "nursery": 9
+    },
+    "schools_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2020,
+   "figures": {
+    "fsm": {
+     "pct": 22.08,
+     "eligible": 231,
+     "headcount": 1046,
+     "n_with_figure": 9
+    },
+    "las": {
+     "330|Birmingham": 9
+    },
+    "peer": {
+     "band": "all",
+     "type": "nursery",
+     "places": {
+      "fsm": {
+       "of": 22,
+       "rank": 5,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 21,
+       "rank": 16,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 21,
+       "rank": 16,
+       "tied": false
+      }
+     },
+     "set_id": "peer:nursery:all",
+     "n_groups": 34
+    },
+    "roll": 1046,
+    "share": {
+     "las": [
+      {
+       "pct": 35.58,
+       "la_code": "330",
+       "la_name": "Birmingham",
+       "la_pupils": 2940,
+       "group_pupils": 1046
+      }
+     ],
+     "pct": 17.86,
+     "sector": "nursery",
+     "regions": [
+      {
+       "pct": 17.86,
+       "region_code": "E12000005",
+       "group_pupils": 1046,
+       "region_pupils": 5856
+      }
+     ],
+     "area_pupils": 5856,
+     "group_pupils": 1046
+    },
+    "change": {
+     "1": {
+      "growing": 0,
+      "shrinking": 9,
+      "from_period": 2019,
+      "combined_pct": -17.57,
+      "same_schools": 9,
+      "combined_base": 1269,
+      "same_schools_pct": -17.57
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000005": 9
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 9
+    },
+    "group_kind": "nursery",
+    "size_bands": {
+     "XS": 9
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     67,
+     390,
+     581,
+     8,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_kind": {
+     "nursery": 9
+    },
+    "schools_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2021,
+   "figures": {
+    "fsm": {
+     "pct": 24.13,
+     "eligible": 266,
+     "headcount": 1102,
+     "n_with_figure": 9
+    },
+    "las": {
+     "330|Birmingham": 9
+    },
+    "peer": {
+     "band": "all",
+     "type": "nursery",
+     "places": {
+      "fsm": {
+       "of": 24,
+       "rank": 4,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 22,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 22,
+       "rank": 8,
+       "tied": false
+      }
+     },
+     "set_id": "peer:nursery:all",
+     "n_groups": 34
+    },
+    "roll": 1102,
+    "share": {
+     "las": [
+      {
+       "pct": 36.45,
+       "la_code": "330",
+       "la_name": "Birmingham",
+       "la_pupils": 3023,
+       "group_pupils": 1102
+      }
+     ],
+     "pct": 18.37,
+     "sector": "nursery",
+     "regions": [
+      {
+       "pct": 18.37,
+       "region_code": "E12000005",
+       "group_pupils": 1102,
+       "region_pupils": 5998
+      }
+     ],
+     "area_pupils": 5998,
+     "group_pupils": 1102
+    },
+    "change": {
+     "1": {
+      "growing": 5,
+      "shrinking": 4,
+      "from_period": 2020,
+      "combined_pct": 5.35,
+      "same_schools": 9,
+      "combined_base": 1046,
+      "same_schools_pct": 5.35
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000005": 9
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 9
+    },
+    "group_kind": "nursery",
+    "size_bands": {
+     "XS": 9
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     82,
+     420,
+     586,
+     14,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_kind": {
+     "nursery": 9
+    },
+    "schools_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2022,
+   "figures": {
+    "fsm": {
+     "pct": 18.07,
+     "eligible": 195,
+     "headcount": 1079,
+     "n_with_figure": 9
+    },
+    "las": {
+     "330|Birmingham": 9
+    },
+    "peer": {
+     "band": "all",
+     "type": "nursery",
+     "places": {
+      "fsm": {
+       "of": 27,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 24,
+       "rank": 14,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 24,
+       "rank": 13,
+       "tied": false
+      }
+     },
+     "set_id": "peer:nursery:all",
+     "n_groups": 34
+    },
+    "roll": 1077,
+    "share": {
+     "las": [
+      {
+       "pct": 35.66,
+       "la_code": "330",
+       "la_name": "Birmingham",
+       "la_pupils": 3020,
+       "group_pupils": 1077
+      }
+     ],
+     "pct": 18.38,
+     "sector": "nursery",
+     "regions": [
+      {
+       "pct": 18.38,
+       "region_code": "E12000005",
+       "group_pupils": 1077,
+       "region_pupils": 5860
+      }
+     ],
+     "area_pupils": 5860,
+     "group_pupils": 1077
+    },
+    "change": {
+     "1": {
+      "growing": 5,
+      "shrinking": 4,
+      "from_period": 2021,
+      "combined_pct": -2.27,
+      "same_schools": 9,
+      "combined_base": 1102,
+      "same_schools_pct": -2.27
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 9,
+      "from_period": 2019,
+      "combined_pct": -15.13,
+      "same_schools": 9,
+      "combined_base": 1269,
+      "same_schools_pct": -15.13
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000005": 9
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 9
+    },
+    "group_kind": "nursery",
+    "size_bands": {
+     "XS": 9
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     83,
+     412,
+     571,
+     11,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_kind": {
+     "nursery": 9
+    },
+    "schools_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2023,
+   "figures": {
+    "fsm": {
+     "pct": 21.38,
+     "eligible": 211,
+     "headcount": 987,
+     "n_with_figure": 9
+    },
+    "las": {
+     "330|Birmingham": 9
+    },
+    "peer": {
+     "band": "all",
+     "type": "nursery",
+     "places": {
+      "fsm": {
+       "of": 31,
+       "rank": 7,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 27,
+       "rank": 20,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 27,
+       "rank": 20,
+       "tied": false
+      }
+     },
+     "set_id": "peer:nursery:all",
+     "n_groups": 34
+    },
+    "roll": 987,
+    "share": {
+     "las": [
+      {
+       "pct": 33.64,
+       "la_code": "330",
+       "la_name": "Birmingham",
+       "la_pupils": 2934,
+       "group_pupils": 987
+      }
+     ],
+     "pct": 17.11,
+     "sector": "nursery",
+     "regions": [
+      {
+       "pct": 17.11,
+       "region_code": "E12000005",
+       "group_pupils": 987,
+       "region_pupils": 5768
+      }
+     ],
+     "area_pupils": 5768,
+     "group_pupils": 987
+    },
+    "change": {
+     "1": {
+      "growing": 2,
+      "shrinking": 7,
+      "from_period": 2022,
+      "combined_pct": -8.36,
+      "same_schools": 9,
+      "combined_base": 1077,
+      "same_schools_pct": -8.36
+     },
+     "3": {
+      "growing": 3,
+      "shrinking": 6,
+      "from_period": 2020,
+      "combined_pct": -5.64,
+      "same_schools": 9,
+      "combined_base": 1046,
+      "same_schools_pct": -5.64
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000005": 9
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 9
+    },
+    "group_kind": "nursery",
+    "size_bands": {
+     "XS": 9
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     85,
+     370,
+     530,
+     2,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_kind": {
+     "nursery": 9
+    },
+    "schools_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2024,
+   "figures": {
+    "fsm": {
+     "pct": 33.78,
+     "eligible": 338,
+     "headcount": 1001,
+     "n_with_figure": 9
+    },
+    "las": {
+     "330|Birmingham": 9
+    },
+    "peer": {
+     "band": "all",
+     "type": "nursery",
+     "places": {
+      "fsm": {
+       "of": 31,
+       "rank": 4,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 31,
+       "rank": 13,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 31,
+       "rank": 13,
+       "tied": false
+      }
+     },
+     "set_id": "peer:nursery:all",
+     "n_groups": 34
+    },
+    "roll": 1001,
+    "share": {
+     "las": [
+      {
+       "pct": 33.66,
+       "la_code": "330",
+       "la_name": "Birmingham",
+       "la_pupils": 2974,
+       "group_pupils": 1001
+      }
+     ],
+     "pct": 16.89,
+     "sector": "nursery",
+     "regions": [
+      {
+       "pct": 16.89,
+       "region_code": "E12000005",
+       "group_pupils": 1001,
+       "region_pupils": 5925
+      }
+     ],
+     "area_pupils": 5925,
+     "group_pupils": 1001
+    },
+    "change": {
+     "1": {
+      "growing": 6,
+      "shrinking": 3,
+      "from_period": 2023,
+      "combined_pct": 1.42,
+      "same_schools": 9,
+      "combined_base": 987,
+      "same_schools_pct": 1.42
+     },
+     "3": {
+      "growing": 2,
+      "shrinking": 7,
+      "from_period": 2021,
+      "combined_pct": -9.17,
+      "same_schools": 9,
+      "combined_base": 1102,
+      "same_schools_pct": -9.17
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 9,
+      "from_period": 2019,
+      "combined_pct": -21.12,
+      "same_schools": 9,
+      "combined_base": 1269,
+      "same_schools_pct": -21.12
+     }
+    },
+    "regions": {
+     "E12000005": 9
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 9
+    },
+    "group_kind": "nursery",
+    "size_bands": {
+     "XS": 9
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     85,
+     422,
+     492,
+     2,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_kind": {
+     "nursery": 9
+    },
+    "schools_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2025,
+   "figures": {
+    "fsm": {
+     "pct": 31.51,
+     "eligible": 291,
+     "headcount": 924,
+     "n_with_figure": 9
+    },
+    "las": {
+     "330|Birmingham": 9
+    },
+    "peer": {
+     "band": "all",
+     "type": "nursery",
+     "places": {
+      "fsm": {
+       "of": 34,
+       "rank": 7,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 31,
+       "rank": 25,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 31,
+       "rank": 24,
+       "tied": false
+      }
+     },
+     "set_id": "peer:nursery:all",
+     "n_groups": 34
+    },
+    "roll": 924,
+    "share": {
+     "las": [
+      {
+       "pct": 33.61,
+       "la_code": "330",
+       "la_name": "Birmingham",
+       "la_pupils": 2749,
+       "group_pupils": 924
+      }
+     ],
+     "pct": 16.69,
+     "sector": "nursery",
+     "regions": [
+      {
+       "pct": 16.69,
+       "region_code": "E12000005",
+       "group_pupils": 924,
+       "region_pupils": 5535
+      }
+     ],
+     "area_pupils": 5535,
+     "group_pupils": 924
+    },
+    "change": {
+     "1": {
+      "growing": 2,
+      "shrinking": 7,
+      "from_period": 2024,
+      "combined_pct": -7.69,
+      "same_schools": 9,
+      "combined_base": 1001,
+      "same_schools_pct": -7.69
+     },
+     "3": {
+      "growing": 2,
+      "shrinking": 7,
+      "from_period": 2022,
+      "combined_pct": -14.21,
+      "same_schools": 9,
+      "combined_base": 1077,
+      "same_schools_pct": -14.21
+     },
+     "5": {
+      "growing": 1,
+      "shrinking": 8,
+      "from_period": 2020,
+      "combined_pct": -11.66,
+      "same_schools": 9,
+      "combined_base": 1046,
+      "same_schools_pct": -11.66
+     }
+    },
+    "regions": {
+     "E12000005": 9
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 9
+    },
+    "group_kind": "nursery",
+    "size_bands": {
+     "XS": 9
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     65,
+     375,
+     483,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_kind": {
+     "nursery": 9
+    },
+    "schools_by_phase": {
+     "post16": 0,
+     "primary": 0,
+     "secondary": 0
+    }
+   }
+  }
+ ],
+ "build": {
+  "meta": {
+   "bands": [
+    "peer:foundation_trust:all",
+    "peer:independent_company:21-40",
+    "peer:mat:21-40",
+    "peer:mat:41+",
+    "peer:nursery:all",
+    "peer:special_ap:11+"
+   ],
+   "focus": [
+    "3320",
+    "club_iss:dukes-education",
+    "16125",
+    "17126",
+    "4499"
+   ],
+   "commit": "847e02e",
+   "periods": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "reasons": {
+    "ap": "alternative provision: not counted in group figures",
+    "pru": "pupil referral unit: not counted in group figures",
+    "igcse": "IGCSE: not ranked at GCSE",
+    "closed": "closed",
+    "nursery": "nursery school: not counted in group figures",
+    "special": "special school: not counted in group figures",
+    "no_census": "no census return",
+    "prep_no_ks2": "prep: no KS2 published",
+    "not_yet_open": "not yet open",
+    "not_published": "not published (independent)",
+    "mainstream_line": "mainstream school: in the group's mainstream line",
+    "outside_england": "outside England",
+    "no_results_published": "no results published"
+   },
+   "sat_set": "sat:all",
+   "measures": {
+    "ks4_a8": "GCSE Attainment 8",
+    "ks4_p8": "Progress 8",
+    "ks2_rwm": "KS2 reading, writing and maths at the expected standard (%)",
+    "ks4_em4": "GCSE grade 4+ in English and maths (%)",
+    "ks4_em5": "GCSE grade 5+ in English and maths (%)",
+    "ks5_aps_all": "Post-16 average points per entry, all qualifications",
+    "ks5_va_alevel": "A level value added",
+    "ks5_aps_alevel": "A level average points per entry"
+   },
+   "available": {
+    "roll": [
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_a8": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_p8": [
+     2021,
+     2022,
+     2023
+    ],
+    "ks2_rwm": [
+     2022,
+     2023,
+     2024
+    ],
+    "ks4_em4": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_em5": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks5_aps_all": [
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "ks5_va_alevel": [
+     2023,
+     2024
+    ],
+    "ks5_aps_alevel": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "census_day": "15 January of the academic year's second calendar year",
+   "peer_types": {
+    "mat": "MATs",
+    "federation": "federations",
+    "foundation_trust": "foundation trusts",
+    "independent_other": "other independent groups",
+    "independent_charity": "independent charities",
+    "independent_company": "independent companies"
+   },
+   "phase_ages": {
+    "post16": [
+     16,
+     18
+    ],
+    "primary": [
+     5,
+     10
+    ],
+    "secondary": [
+     11,
+     15
+    ]
+   },
+   "size_bands": [
+    "2-5",
+    "6-10",
+    "11-20",
+    "21-40",
+    "41+"
+   ],
+   "group_kinds": {
+    "nursery": 34,
+    "mainstream": 2420,
+    "special_ap": 156
+   },
+   "nm_fixtures": {
+    "shaw": "4499",
+    "nexus": "16125",
+    "birmingham": "17126"
+   },
+   "not_counted": [
+    "ap",
+    "nursery",
+    "pru",
+    "special"
+   ],
+   "subject_min": {
+    "entries": 10,
+    "schools": 2
+   },
+   "listed_types": [
+    "federation",
+    "foundation_trust",
+    "independent_charity",
+    "independent_company",
+    "independent_other",
+    "mat"
+   ],
+   "non_mainstream": {
+    "fsm": "pupil-weighted: eligible over headcount (the headcount implied by DfE's eligible count and %)",
+    "line": "more than half of the group's current schools special, AP, PRU or nursery (NM1)",
+    "ties": [
+     "1768"
+    ],
+    "counting": "a non-mainstream group's figures are over its special, AP, PRU and nursery schools; its mainstream schools are figures.mainstream_line (NM2)",
+    "families": {
+     "nursery": "nursery federations",
+     "special_ap": "special and AP trusts"
+    },
+    "family_tie": "special_ap",
+    "pool_kinds": {
+     "ap": "state-funded alternative provision and PRUs",
+     "nursery": "state-funded nursery schools",
+     "special": "state-funded special schools"
+    },
+    "size_bands": {
+     "nursery": [],
+     "special_ap": [
+      "2-5",
+      "6-10",
+      "11+"
+     ]
+    },
+    "state_funded": "GIAS special schools less non-maintained special schools, special post-16 institutions and independent special schools; the special and AP academies and free schools, PRUs and LA nursery schools",
+    "kind_line_min": 5,
+    "la_pool_kinds": [
+     "special"
+    ]
+   },
+   "whole_type_band": "all",
+   "foundation_trust": "1337",
+   "phase_min_pupils": 10,
+   "subject_families": [
+    {
+     "sort": 0,
+     "label": "Sciences & Maths",
+     "family_id": "sciences_maths"
+    },
+    {
+     "sort": 1,
+     "label": "Humanities & Social Sciences",
+     "family_id": "humanities_social"
+    },
+    {
+     "sort": 2,
+     "label": "Languages & Literature",
+     "family_id": "languages_literature"
+    },
+    {
+     "sort": 3,
+     "label": "Arts, Media & Design",
+     "family_id": "arts_media_design"
+    },
+    {
+     "sort": 4,
+     "label": "Business & Law",
+     "family_id": "business_law"
+    },
+    {
+     "sort": 5,
+     "label": "Technology, Engineering & Construction",
+     "family_id": "technology_eng_construction"
+    },
+    {
+     "sort": 6,
+     "label": "Health & Care",
+     "family_id": "health_care"
+    },
+    {
+     "sort": 7,
+     "label": "Enterprise & Applied Studies",
+     "family_id": "enterprise_applied"
+    }
+   ],
+   "inputs_fetched_at": "2026-11-13 23:27:28",
+   "min_group_schools": 2,
+   "non_mainstream_groups": 190,
+   "state_funded_overrides": {
+    "101849": "City technology college (BRIT School): state-funded; GIAS types it independent",
+    "108420": "City technology college (Emmanuel College): state-funded; GIAS types it independent",
+    "123627": "City technology college (Thomas Telford School): state-funded; GIAS types it independent"
+   }
+  },
+  "build_id": 1,
+  "computed_at": "2026-11-13T23:33:17.074+00:00"
+ },
+ "group": {
+  "kind": "nursery",
+  "name": "The Birmingham Federation of Maintained Nursery Schools",
+  "type": "federation",
+  "source": "gias_groups",
+  "group_id": "17126",
+  "schools_by_kind": {
+   "ap": 0,
+   "pru": 0,
+   "nursery": 9,
+   "special": 0,
+   "mainstream": 0
+  }
+ },
+ "reading": "at_time",
+ "membership": {
+  "as_of": "2026-10-16",
+  "likely": 0,
+  "sources": [
+   "gias_groups"
+  ],
+  "confirmed": 9,
+  "outside_england": 0
+ }
+}

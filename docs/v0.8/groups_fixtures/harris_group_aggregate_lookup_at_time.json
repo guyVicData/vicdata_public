@@ -10,6 +10,12 @@
    "phase": "all",
    "period": 2019,
    "figures": {
+    "fsm": {
+     "pct": 21.45,
+     "eligible": 7170,
+     "headcount": 33424,
+     "n_with_figure": 45
+    },
     "las": {
      "303|Bexley": 2,
      "315|Merton": 4,
@@ -27,7 +33,13 @@
     "peer": {
      "band": "41+",
      "type": "mat",
-     "places": {},
+     "places": {
+      "fsm": {
+       "of": 16,
+       "rank": 9,
+       "tied": false
+      }
+     },
      "set_id": "peer:mat:41+",
      "n_groups": 16
     },
@@ -200,6 +212,7 @@
     "confidence": {
      "confirmed": 46
     },
+    "group_kind": "mainstream",
     "size_bands": {
      "L": 28,
      "M": 5,
@@ -253,6 +266,10 @@
     "subject_areas": {
      "ks4": [],
      "ks5": []
+    },
+    "schools_by_kind": {
+     "ap": 1,
+     "mainstream": 45
     },
     "schools_by_phase": {
      "post16": 23,
@@ -391,6 +408,7 @@
      ]
     },
     "n_schools": 23,
+    "group_kind": "mainstream",
     "n_with_roll": 23,
     "value_added": {
      "ks5_va_alevel": {
@@ -507,6 +525,7 @@
     },
     "excluded": {},
     "n_schools": 20,
+    "group_kind": "mainstream",
     "n_with_roll": 20,
     "value_added": {}
    }
@@ -662,6 +681,7 @@
      ]
     },
     "n_schools": 25,
+    "group_kind": "mainstream",
     "n_with_roll": 25,
     "value_added": {
      "ks4_p8": {
@@ -681,6 +701,12 @@
    "phase": "all",
    "period": 2020,
    "figures": {
+    "fsm": {
+     "pct": 25.56,
+     "eligible": 9118,
+     "headcount": 35673,
+     "n_with_figure": 47
+    },
     "las": {
      "303|Bexley": 2,
      "315|Merton": 4,
@@ -700,9 +726,19 @@
      "band": "41+",
      "type": "mat",
      "places": {
+      "fsm": {
+       "of": 16,
+       "rank": 9,
+       "tied": false
+      },
       "roll_change_1": {
        "of": 16,
        "rank": 5,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 1,
        "tied": false
       }
      },
@@ -914,6 +950,7 @@
     "confidence": {
      "confirmed": 48
     },
+    "group_kind": "mainstream",
     "size_bands": {
      "L": 27,
      "M": 5,
@@ -968,6 +1005,10 @@
      "ks4": [],
      "ks5": []
     },
+    "schools_by_kind": {
+     "ap": 1,
+     "mainstream": 47
+    },
     "schools_by_phase": {
      "post16": 22,
      "primary": 21,
@@ -986,6 +1027,11 @@
       "roll_change_1": {
        "of": 12,
        "rank": 7,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 12,
+       "rank": 4,
        "tied": false
       }
      },
@@ -1140,6 +1186,7 @@
      ]
     },
     "n_schools": 22,
+    "group_kind": "mainstream",
     "n_with_roll": 22,
     "value_added": {
      "ks5_va_alevel": {
@@ -1166,6 +1213,11 @@
       "roll_change_1": {
        "of": 16,
        "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 1,
        "tied": false
       }
      },
@@ -1291,6 +1343,7 @@
     },
     "excluded": {},
     "n_schools": 21,
+    "group_kind": "mainstream",
     "n_with_roll": 21,
     "value_added": {}
    }
@@ -1306,6 +1359,11 @@
       "roll_change_1": {
        "of": 14,
        "rank": 6,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 14,
+       "rank": 1,
        "tied": false
       }
      },
@@ -1488,6 +1546,7 @@
      ]
     },
     "n_schools": 26,
+    "group_kind": "mainstream",
     "n_with_roll": 26,
     "value_added": {
      "ks4_p8": {
@@ -1507,6 +1566,12 @@
    "phase": "all",
    "period": 2021,
    "figures": {
+    "fsm": {
+     "pct": 28.19,
+     "eligible": 10916,
+     "headcount": 38718,
+     "n_with_figure": 49
+    },
     "las": {
      "303|Bexley": 2,
      "315|Merton": 4,
@@ -1527,6 +1592,11 @@
      "band": "41+",
      "type": "mat",
      "places": {
+      "fsm": {
+       "of": 16,
+       "rank": 9,
+       "tied": false
+      },
       "ks4_a8": {
        "of": 13,
        "rank": 4,
@@ -1560,6 +1630,11 @@
       "ks5_aps_alevel": {
        "of": 12,
        "rank": 8,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 4,
        "tied": false
       }
      },
@@ -1910,6 +1985,7 @@
     "confidence": {
      "confirmed": 50
     },
+    "group_kind": "mainstream",
     "size_bands": {
      "L": 27,
      "M": 6,
@@ -2078,6 +2154,10 @@
       }
      ]
     },
+    "schools_by_kind": {
+     "ap": 1,
+     "mainstream": 49
+    },
     "schools_by_phase": {
      "post16": 24,
      "primary": 22,
@@ -2106,6 +2186,11 @@
       "ks5_aps_alevel": {
        "of": 12,
        "rank": 8,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 12,
+       "rank": 5,
        "tied": false
       }
      },
@@ -2318,6 +2403,7 @@
      ]
     },
     "n_schools": 24,
+    "group_kind": "mainstream",
     "n_with_roll": 24,
     "value_added": {
      "ks5_va_alevel": {
@@ -2401,6 +2487,11 @@
       "roll_change_1": {
        "of": 16,
        "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 8,
        "tied": false
       }
      },
@@ -2533,6 +2624,7 @@
     },
     "excluded": {},
     "n_schools": 22,
+    "group_kind": "mainstream",
     "n_with_roll": 22,
     "value_added": {}
    }
@@ -2568,6 +2660,11 @@
       "roll_change_1": {
        "of": 14,
        "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 14,
+       "rank": 4,
        "tied": false
       }
      },
@@ -2845,6 +2942,7 @@
      ]
     },
     "n_schools": 27,
+    "group_kind": "mainstream",
     "n_with_roll": 27,
     "value_added": {
      "ks4_p8": {
@@ -2921,6 +3019,12 @@
    "phase": "all",
    "period": 2022,
    "figures": {
+    "fsm": {
+     "pct": 29.68,
+     "eligible": 12000,
+     "headcount": 40430,
+     "n_with_figure": 50
+    },
     "las": {
      "303|Bexley": 2,
      "315|Merton": 4,
@@ -2941,6 +3045,11 @@
      "band": "41+",
      "type": "mat",
      "places": {
+      "fsm": {
+       "of": 16,
+       "rank": 9,
+       "tied": false
+      },
       "ks4_a8": {
        "of": 13,
        "rank": 4,
@@ -2979,6 +3088,11 @@
       "ks5_aps_alevel": {
        "of": 13,
        "rank": 9,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 2,
        "tied": false
       }
      },
@@ -3264,6 +3378,7 @@
     "confidence": {
      "confirmed": 51
     },
+    "group_kind": "mainstream",
     "size_bands": {
      "L": 24,
      "M": 6,
@@ -3432,6 +3547,10 @@
       }
      ]
     },
+    "schools_by_kind": {
+     "ap": 1,
+     "mainstream": 50
+    },
     "schools_by_phase": {
      "post16": 25,
      "primary": 22,
@@ -3460,6 +3579,11 @@
       "ks5_aps_alevel": {
        "of": 13,
        "rank": 9,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 12,
+       "rank": 1,
        "tied": false
       }
      },
@@ -3647,6 +3771,7 @@
      ]
     },
     "n_schools": 25,
+    "group_kind": "mainstream",
     "n_with_roll": 25,
     "value_added": {
      "ks5_va_alevel": {
@@ -3735,6 +3860,11 @@
       "roll_change_1": {
        "of": 16,
        "rank": 11,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 6,
        "tied": false
       }
      },
@@ -3867,6 +3997,7 @@
     },
     "excluded": {},
     "n_schools": 22,
+    "group_kind": "mainstream",
     "n_with_roll": 22,
     "value_added": {}
    }
@@ -3902,6 +4033,11 @@
       "roll_change_1": {
        "of": 14,
        "rank": 7,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 14,
+       "rank": 8,
        "tied": false
       }
      },
@@ -4139,6 +4275,7 @@
      ]
     },
     "n_schools": 28,
+    "group_kind": "mainstream",
     "n_with_roll": 28,
     "value_added": {
      "ks4_p8": {
@@ -4215,6 +4352,12 @@
    "phase": "all",
    "period": 2023,
    "figures": {
+    "fsm": {
+     "pct": 31.39,
+     "eligible": 13183,
+     "headcount": 41995,
+     "n_with_figure": 53
+    },
     "las": {
      "304|Brent": 1,
      "303|Bexley": 2,
@@ -4236,6 +4379,11 @@
      "band": "41+",
      "type": "mat",
      "places": {
+      "fsm": {
+       "of": 16,
+       "rank": 8,
+       "tied": false
+      },
       "ks4_a8": {
        "of": 13,
        "rank": 3,
@@ -4279,6 +4427,11 @@
       "ks5_aps_alevel": {
        "of": 13,
        "rank": 7,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 13,
        "tied": false
       }
      },
@@ -4628,6 +4781,7 @@
     "confidence": {
      "confirmed": 54
     },
+    "group_kind": "mainstream",
     "size_bands": {
      "L": 29,
      "M": 5,
@@ -4795,6 +4949,10 @@
       }
      ]
     },
+    "schools_by_kind": {
+     "ap": 1,
+     "mainstream": 53
+    },
     "schools_by_phase": {
      "post16": 29,
      "primary": 22,
@@ -4826,6 +4984,11 @@
        "tied": false
       },
       "ks5_aps_alevel": {
+       "of": 13,
+       "rank": 7,
+       "tied": false
+      },
+      "roll_same_schools_1": {
        "of": 13,
        "rank": 7,
        "tied": false
@@ -5093,6 +5256,7 @@
      ]
     },
     "n_schools": 29,
+    "group_kind": "mainstream",
     "n_with_roll": 29,
     "value_added": {
      "ks5_va_alevel": {
@@ -5181,6 +5345,11 @@
       "roll_change_1": {
        "of": 16,
        "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 1,
        "tied": false
       }
      },
@@ -5313,6 +5482,7 @@
     },
     "excluded": {},
     "n_schools": 22,
+    "group_kind": "mainstream",
     "n_with_roll": 22,
     "value_added": {}
    }
@@ -5348,6 +5518,11 @@
       "roll_change_1": {
        "of": 14,
        "rank": 5,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 14,
+       "rank": 14,
        "tied": false
       }
      },
@@ -5592,6 +5767,7 @@
      ]
     },
     "n_schools": 30,
+    "group_kind": "mainstream",
     "n_with_roll": 30,
     "value_added": {
      "ks4_p8": {
@@ -5668,6 +5844,12 @@
    "phase": "all",
    "period": 2024,
    "figures": {
+    "fsm": {
+     "pct": 32.39,
+     "eligible": 13930,
+     "headcount": 43001,
+     "n_with_figure": 54
+    },
     "las": {
      "304|Brent": 2,
      "303|Bexley": 2,
@@ -5689,6 +5871,11 @@
      "band": "41+",
      "type": "mat",
      "places": {
+      "fsm": {
+       "of": 16,
+       "rank": 8,
+       "tied": false
+      },
       "ks4_a8": {
        "of": 13,
        "rank": 3,
@@ -5727,6 +5914,11 @@
       "ks5_aps_alevel": {
        "of": 13,
        "rank": 5,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 4,
        "tied": false
       }
      },
@@ -6019,6 +6211,7 @@
     "confidence": {
      "confirmed": 55
     },
+    "group_kind": "mainstream",
     "size_bands": {
      "L": 28,
      "M": 5,
@@ -6186,6 +6379,10 @@
       }
      ]
     },
+    "schools_by_kind": {
+     "ap": 1,
+     "mainstream": 54
+    },
     "schools_by_phase": {
      "post16": 30,
      "primary": 23,
@@ -6219,6 +6416,11 @@
       "ks5_aps_alevel": {
        "of": 13,
        "rank": 5,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 13,
+       "rank": 2,
        "tied": false
       }
      },
@@ -6454,6 +6656,7 @@
      ]
     },
     "n_schools": 30,
+    "group_kind": "mainstream",
     "n_with_roll": 30,
     "value_added": {
      "ks5_va_alevel": {
@@ -6542,6 +6745,11 @@
       "roll_change_1": {
        "of": 16,
        "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 3,
        "tied": false
       }
      },
@@ -6681,6 +6889,7 @@
     },
     "excluded": {},
     "n_schools": 23,
+    "group_kind": "mainstream",
     "n_with_roll": 23,
     "value_added": {}
    }
@@ -6711,6 +6920,11 @@
       "roll_change_1": {
        "of": 14,
        "rank": 10,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 14,
+       "rank": 9,
        "tied": false
       }
      },
@@ -6928,6 +7142,7 @@
      ]
     },
     "n_schools": 30,
+    "group_kind": "mainstream",
     "n_with_roll": 30,
     "value_added": {
      "ks4_p8": {
@@ -7004,6 +7219,12 @@
    "phase": "all",
    "period": 2025,
    "figures": {
+    "fsm": {
+     "pct": 34.16,
+     "eligible": 14669,
+     "headcount": 42939,
+     "n_with_figure": 54
+    },
     "las": {
      "304|Brent": 2,
      "303|Bexley": 2,
@@ -7025,6 +7246,11 @@
      "band": "41+",
      "type": "mat",
      "places": {
+      "fsm": {
+       "of": 16,
+       "rank": 8,
+       "tied": false
+      },
       "ks4_a8": {
        "of": 13,
        "rank": 1,
@@ -7043,6 +7269,11 @@
       "roll_change_1": {
        "of": 16,
        "rank": 7,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 4,
        "tied": false
       }
      },
@@ -7268,6 +7499,7 @@
     "confidence": {
      "confirmed": 55
     },
+    "group_kind": "mainstream",
     "size_bands": {
      "L": 26,
      "M": 5,
@@ -7379,6 +7611,10 @@
      ],
      "ks5": []
     },
+    "schools_by_kind": {
+     "ap": 1,
+     "mainstream": 54
+    },
     "schools_by_phase": {
      "post16": 30,
      "primary": 23,
@@ -7395,6 +7631,11 @@
      "type": "mat",
      "places": {
       "roll_change_1": {
+       "of": 13,
+       "rank": 6,
+       "tied": false
+      },
+      "roll_same_schools_1": {
        "of": 13,
        "rank": 6,
        "tied": false
@@ -7578,6 +7819,7 @@
     },
     "excluded": {},
     "n_schools": 30,
+    "group_kind": "mainstream",
     "n_with_roll": 30,
     "value_added": {
      "ks5_va_alevel": {
@@ -7604,6 +7846,11 @@
       "roll_change_1": {
        "of": 16,
        "rank": 7,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 16,
+       "rank": 4,
        "tied": false
       }
      },
@@ -7743,6 +7990,7 @@
     },
     "excluded": {},
     "n_schools": 23,
+    "group_kind": "mainstream",
     "n_with_roll": 23,
     "value_added": {}
    }
@@ -7773,6 +8021,11 @@
       "roll_change_1": {
        "of": 14,
        "rank": 9,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 14,
+       "rank": 8,
        "tied": false
       }
      },
@@ -7961,6 +8214,7 @@
     },
     "excluded": {},
     "n_schools": 30,
+    "group_kind": "mainstream",
     "n_with_roll": 30,
     "value_added": {
      "ks4_p8": {
@@ -8039,13 +8293,19 @@
    "bands": [
     "peer:foundation_trust:all",
     "peer:independent_company:21-40",
-    "peer:mat:41+"
+    "peer:mat:21-40",
+    "peer:mat:41+",
+    "peer:nursery:all",
+    "peer:special_ap:11+"
    ],
    "focus": [
     "3320",
-    "club_iss:dukes-education"
+    "club_iss:dukes-education",
+    "16125",
+    "17126",
+    "4499"
    ],
-   "commit": "db7a27b",
+   "commit": "847e02e",
    "periods": [
     2019,
     2020,
@@ -8066,6 +8326,7 @@
     "prep_no_ks2": "prep: no KS2 published",
     "not_yet_open": "not yet open",
     "not_published": "not published (independent)",
+    "mainstream_line": "mainstream school: in the group's mainstream line",
     "outside_england": "outside England",
     "no_results_published": "no results published"
    },
@@ -8168,6 +8429,16 @@
     "21-40",
     "41+"
    ],
+   "group_kinds": {
+    "nursery": 34,
+    "mainstream": 2420,
+    "special_ap": 156
+   },
+   "nm_fixtures": {
+    "shaw": "4499",
+    "nexus": "16125",
+    "birmingham": "17126"
+   },
    "not_counted": [
     "ap",
     "nursery",
@@ -8186,6 +8457,37 @@
     "independent_other",
     "mat"
    ],
+   "non_mainstream": {
+    "fsm": "pupil-weighted: eligible over headcount (the headcount implied by DfE's eligible count and %)",
+    "line": "more than half of the group's current schools special, AP, PRU or nursery (NM1)",
+    "ties": [
+     "1768"
+    ],
+    "counting": "a non-mainstream group's figures are over its special, AP, PRU and nursery schools; its mainstream schools are figures.mainstream_line (NM2)",
+    "families": {
+     "nursery": "nursery federations",
+     "special_ap": "special and AP trusts"
+    },
+    "family_tie": "special_ap",
+    "pool_kinds": {
+     "ap": "state-funded alternative provision and PRUs",
+     "nursery": "state-funded nursery schools",
+     "special": "state-funded special schools"
+    },
+    "size_bands": {
+     "nursery": [],
+     "special_ap": [
+      "2-5",
+      "6-10",
+      "11+"
+     ]
+    },
+    "state_funded": "GIAS special schools less non-maintained special schools, special post-16 institutions and independent special schools; the special and AP academies and free schools, PRUs and LA nursery schools",
+    "kind_line_min": 5,
+    "la_pool_kinds": [
+     "special"
+    ]
+   },
    "whole_type_band": "all",
    "foundation_trust": "1337",
    "phase_min_pupils": 10,
@@ -8231,7 +8533,7 @@
      "family_id": "enterprise_applied"
     }
    ],
-   "inputs_fetched_at": "2026-11-08 17:20:04",
+   "inputs_fetched_at": "2026-11-13 23:27:28",
    "min_group_schools": 2,
    "non_mainstream_groups": 190,
    "state_funded_overrides": {
@@ -8241,13 +8543,21 @@
    }
   },
   "build_id": 1,
-  "computed_at": "2026-11-08T18:09:40.212+00:00"
+  "computed_at": "2026-11-13T23:33:17.074+00:00"
  },
  "group": {
+  "kind": "mainstream",
   "name": "HARRIS FEDERATION",
   "type": "mat",
   "source": "gias_groups",
-  "group_id": "3320"
+  "group_id": "3320",
+  "schools_by_kind": {
+   "ap": 1,
+   "pru": 0,
+   "nursery": 0,
+   "special": 0,
+   "mainstream": 58
+  }
  },
  "reading": "at_time",
  "membership": {

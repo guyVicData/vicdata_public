@@ -21,6 +21,12 @@ export type Excluded = { urn: string; name: string; reason: string };
 export type Place = { rank: number; of: number; tied: boolean };
 export type SubjectArea = { family_id: string; points_per_entry: number | null; entries: number; n_schools: number; shown: boolean };
 export type ShareRow = { pct: number | null; group_pupils: number };
+/** 0.8 non-mainstream groups (production build 7): pupil-weighted FSM, eligible over headcount. Pools and
+ * groups to 2 dp; a reweighted comparison carries only pct and n. */
+export type Fsm = { pct: number | null; eligible?: number; headcount?: number; n_with_figure: number };
+/** A school's kind (production's school_kind), and a group's (more than half special, AP, PRU or nursery). */
+export type SchoolKind = "mainstream" | "special" | "ap" | "pru" | "nursery";
+export type GroupKind = "mainstream" | "special_ap" | "nursery";
 
 export type Figures = {
   n_schools: number;
@@ -39,7 +45,8 @@ export type Figures = {
   value_added: Record<string, MeasureFig>;
   excluded?: Record<string, Excluded[]>;
   share?: {
-    sector: "all" | "independent";
+    /** "special_ap" | "nursery": a non-mainstream group's share is of its family's state-funded pupils. */
+    sector: "all" | "independent" | "special_ap" | "nursery";
     pct: number | null;
     group_pupils: number;
     area_pupils: number;
@@ -50,6 +57,16 @@ export type Figures = {
   subject_areas?: Partial<Record<"ks4" | "ks5", SubjectArea[]>>;
   cells?: number;
   change_basis?: string;
+  /** 0.8 non-mainstream groups (build 7): additions only. */
+  fsm?: Fsm;
+  schools_by_kind?: Partial<Record<SchoolKind, number>>;
+  group_kind?: GroupKind;
+  /** A non-mainstream group's own mainstream schools, in their own line (NM2); same shape as a figure. */
+  mainstream_line?: Figures | null;
+  /** A year with only mainstream schools: the row holds only its line. */
+  no_own_figures?: boolean | null;
+  /** A mainstream group with 5+ current schools of one kind: that kind pooled (NM11). */
+  kind_lines?: Partial<Record<"special" | "ap" | "nursery", Figures>> | null;
 };
 
 export type FigRow = { period: number; phase: Phase; figures: Figures };
@@ -69,7 +86,7 @@ export type BuildMeta = {
 };
 
 export type GroupAggregate = {
-  group: { group_id: string; name: string; type: string; source: string };
+  group: { group_id: string; name: string; type: string; source: string; kind?: GroupKind; schools_by_kind?: Partial<Record<SchoolKind, number>> };
   reading: Reading;
   membership: { as_of: string | null; sources: string[]; confirmed: number; likely: number; outside_england: number };
   peer: { set_id: string; type: string; band: string; n_groups: number } | null;
@@ -80,7 +97,12 @@ export type GroupAggregate = {
 // 0.8 group sets (M1, M4): "sat" is production's single-academy trust pool (sat:all), state groups only.
 export type ComparisonKind = "peer_band" | "non_group" | "sat" | "areas" | "england" | "mix_matched";
 export const COMPARISON_KINDS: ComparisonKind[] = ["peer_band", "non_group", "sat", "areas", "england", "mix_matched"];
-export type ComparisonRow = { kind: ComparisonKind | "peer_named"; variant: string; set_id: string | null; label: string; reading: Reading; period: number; phase: Phase; figures: Figures };
+/** 0.8 non-mainstream groups: the new kinds. pools (england:{kind} | region:{kind} | la:special; phase
+ * "all"), kind_areas (region: the group's own schools against same-kind pools, weighted to its mix) and
+ * mainstream_line (areas_la | areas_region | non_group_areas | mix_matched). */
+export type NmComparisonKind = "pools" | "kind_areas" | "mainstream_line";
+export const NM_COMPARISON_KINDS = ["peer_band", "pools", "kind_areas", "mainstream_line", "england", "non_group", "sat"] as const;
+export type ComparisonRow = { kind: ComparisonKind | NmComparisonKind | "peer_named"; variant: string; set_id: string | null; label: string; reading: Reading; period: number; phase: Phase; figures: Figures };
 
 export type SchoolYearFigures = {
   roll: number;
@@ -97,8 +119,13 @@ export type SchoolYearFigures = {
   ks4_pupils: number | null;
   /** 0.8 group pools (LF4): the school's kind, and whether it counts in group figures (special, AP, PRU
    * and nursery schools are members but don't). Absent in builds before the like-for-like rule. */
-  kind?: "mainstream" | "special" | "ap" | "pru" | "nursery";
+  kind?: SchoolKind;
   counted?: boolean;
+  /** 0.8 non-mainstream groups (build 7): DfE's own FSM % (1 dp); the pool a special, AP, PRU or nursery
+   * school is placed in, and whether it is state-funded. */
+  fsm?: { pct: number | null; eligible: number | null } | null;
+  pool_kind?: "special" | "ap" | "nursery" | null;
+  state_funded?: boolean | null;
 };
 export type SchoolYearRow = {
   urn: string;
@@ -138,7 +165,9 @@ async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
 // ------------------------------------------------------------------------- the fixtures (tests only)
 
 // The fixtures name each group's calls by a short tag (manifest.json).
-const FIXTURE_TAG: Record<string, string> = { "3320": "harris", "club_iss:dukes-education": "dukes" };
+// 0.8 non-mainstream groups: Nexus (a special trust), the Birmingham nursery federation and Shaw (a
+// mainstream MAT with 12 special schools).
+const FIXTURE_TAG: Record<string, string> = { "3320": "harris", "club_iss:dukes-education": "dukes", "16125": "nexus", "17126": "birmingham", "4499": "shaw" };
 
 function fixture<T>(dir: string, file: string): T | null {
   try {
@@ -188,7 +217,7 @@ export function groupComparisons(groupId: string, kinds: string[]): Promise<Comp
 /** 0.8 group sets (M3): the groups library's cards, every listed group (group_index_lookup, one call). */
 export function groupLibraryIndex(): Promise<GroupIndex> {
   const dir = groupFixturesDir(process.env);
-  if (dir) return Promise.resolve(fixture<GroupIndex>(dir, "group_index_lookup.json") ?? { build: null, groups: [] });
+  if (dir) return Promise.resolve(fixture<GroupIndex>(dir, "group_index_lookup.json") ?? { build: null, groups: [], non_mainstream: [] });
   return cachedReference("groups:index", () => rpc<GroupIndex>("group_index_lookup", {}), TTL_MS);
 }
 

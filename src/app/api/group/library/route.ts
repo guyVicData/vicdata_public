@@ -5,7 +5,8 @@ import { groupDataSource, groupLibraryIndex } from "@/lib/groups/aggregates";
 // VicData 0.8 group sets, M3 (brief v2 §4): the groups library's cards. GET ?account=
 // Head office only (D2): its own office, or a platform admin through View as or a head-office peek; a
 // member school's SMT reads "not found" here, as anyone else does. The cards are production's
-// (group_index_lookup); our own group is returned apart, as `us`, and never listed.
+// (group_index_lookup); our own group is returned apart, as `us`, and never listed. nmCards: the special,
+// AP and nursery groups (its non_mainstream list), the library's own section.
 export async function GET(request: NextRequest) {
   try {
     const who = await dashViewer(request);
@@ -13,13 +14,17 @@ export async function GET(request: NextRequest) {
     const { viewer } = who;
     if (viewer.as === "school") return NextResponse.json({ error: "Not found." }, { status: 404 });
     const index = await groupLibraryIndex();
-    const us = index.groups.find((c) => c.group_id === viewer.groupId) ?? null;
+    // 0.8 non-mainstream groups (NM10): the special, AP and nursery groups are their own section.
+    const nm = index.non_mainstream ?? [];
+    const us = index.groups.find((c) => c.group_id === viewer.groupId) ?? nm.find((c) => c.group_id === viewer.groupId) ?? null;
     return NextResponse.json({
       viewer: { as: viewer.as, accountId: viewer.account.id, groupId: viewer.groupId, name: viewer.account.name, admin: viewer.as === "head_office" && (viewer.account as { role?: string }).role === "head_office_admin" },
       source: groupDataSource(),
       build: index.build,
       us,
       cards: index.groups.filter((c) => c.group_id !== viewer.groupId),
+      nmCards: nm.filter((c) => c.group_id !== viewer.groupId),
+      nmCounts: { two: nm.filter((c) => c.schools === 2).length, of: nm.length },
     });
   } catch (err) {
     console.error("[group/library] failed:", err);

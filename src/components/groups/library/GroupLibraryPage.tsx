@@ -78,18 +78,20 @@ function Page({ p, query, mid = false }: { p: LibraryGroupPage & { source: strin
             {ts.line}
             {ts.likely && <span className="ml-2 rounded-full bg-[var(--group-likely-bg)] px-2 py-[1px] text-[11px] font-bold text-[var(--group-likely-fg)]">{ts.likely}</span>}
           </div>
-          <div className="text-[12.5px] text-[var(--muted2)]">{regionWords(c)} · {phaseWords(c)}</div>
-          <div className="text-[12.5px] text-[var(--fg)]">{rollWords(c)}</div>
+          <div className="text-[12.5px] text-[var(--muted2)]">{regionWords(c)} · {p.nm ? p.nm.byKind : phaseWords(c)}</div>
+          <div className="text-[12.5px] text-[var(--fg)]">{p.nm ? p.nm.roll : rollWords(c)}</div>
+          {p.nm && <div className="text-[12.5px] font-semibold text-[var(--fg)]">{p.nm.fsm}</div>}
+          {p.nm?.places.map((t) => <div key={t} className="text-[12.5px] font-bold text-[var(--group-strong)]">{t}</div>)}
           {p.rank && <div className="text-[12.5px] font-bold text-[var(--group-strong)]">{p.rank.text} on {MEASURE_SHORT[p.rank.measure] ?? p.rank.measure} ({yr(p.rank.period)})</div>}
           <div className="text-[11.5px] text-[var(--muted2)]">Source: {SOURCE_WORD[c.source] ?? c.source}{p.isUs ? " · this is your own group" : ""}</div>
         </div>
         <div className="flex min-w-[220px] flex-col gap-1 text-[12.5px]">
-          {phases.length ? phases.map((ph) => {
+          {p.nm ? <div className="italic text-[var(--muted2)]" data-nm-no-results="">{p.nm.noResults}</div> : phases.length ? phases.map((ph) => {
             const h = headlineWords(c, ph);
             return <div key={ph} className={h.value === null ? "italic text-[var(--muted2)]" : "font-semibold"}>{h.text}{h.value !== null && c.headline[ph]?.period ? <span className="font-normal text-[var(--muted2)]"> · {yr(c.headline[ph]!.period!)}</span> : null}</div>;
           }) : <div className="italic text-[var(--muted2)]">{headlineWords(c, "all").text}</div>}
           <div className="mt-1">
-            {!p.isUs && <AddToSet groupId={c.group_id} account={p.viewer?.accountId ?? ""} query={query} readOnly={p.viewer?.as !== "head_office"} />}
+            {!p.isUs && <AddToSet groupId={c.group_id} account={p.viewer?.accountId ?? ""} query={query} readOnly={p.viewer?.as !== "head_office"} ourKind={p.ourKind ?? null} groupKind={c.kind ?? null} groupName={c.displayName} />}
           </div>
         </div>
       </header>
@@ -104,7 +106,7 @@ function Page({ p, query, mid = false }: { p: LibraryGroupPage & { source: strin
                   <th className="py-1 pr-2">LA</th>
                   <th className="py-1 pr-2">Phase</th>
                   <th className="py-1 pr-2 text-right">Roll</th>
-                  <th className="py-1">Headline</th>
+                  <th className="py-1">{p.nm ? "Kind" : "Headline"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,7 +125,7 @@ function Page({ p, query, mid = false }: { p: LibraryGroupPage & { source: strin
               </tbody>
             </table>
           ) : (
-            <div className="text-[12.5px] text-[var(--muted2)]">The school list isn&rsquo;t available{p.source === "fixtures" ? " in the test fixtures (Harris and Dukes only)" : " right now"}.</div>
+            <div className="text-[12.5px] text-[var(--muted2)]">The school list isn&rsquo;t available{p.source === "fixtures" ? " in the test fixtures (Harris, Dukes, Nexus, the Birmingham nursery federation and Shaw only)" : " right now"}.</div>
           )}
         </div>
         <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3">
