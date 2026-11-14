@@ -245,3 +245,21 @@ Copying them into the app's `docs/v0.8/groups_fixtures` is the app half's job. I
 - The scratch worktree of main used for the "before" run is detached, in the session scratchpad. It can be removed with `git -C ~/dev/vicdata worktree prune` once the scratchpad goes.
 - **Guy:** merge `feat/non-mainstream-groups` into `main` in `~/dev/vicdata`. Production already runs build 7 from it, along with migration `20261113120000`.
 - **Rollback, if ever needed:** run `supabase/ops/non_mainstream_groups/rollback.sql`, then re-promote from main.
+
+## Guy's commands
+
+The production half needed no app migration and no app deploy. Its production steps are done (13–14 Nov), so this records them in the template's order.
+
+**1. Migrations** — done: production `20261113120000_non_mainstream_groups.sql` was applied on `hrqrbvrrhlidpoybezhs` with its history row in one transaction, as part of the promote (aggregates build 7). No app migration this round.
+
+**2. Merge and push** — done: `feat/non-mainstream-groups` merged into `main` in `~/dev/vicdata` and pushed (`b03bb0f`, 74 tests pass), so a promote from `main` keeps build 7's rules. Nothing to merge in the app repo this round.
+
+**3. Render deploys main on its own** — none this round (no app code changed; the app half is a separate build).
+
+**4. Wait until /api/version shows the merge** — none this round.
+
+**5. Republish** — none this round.
+
+**6. Set fixed** — none this round.
+
+**7. Live check** — none in the app yet: the live library looks the same until the app half reads the new data. Production can be checked through its lookups (verify is clean; all 23 fixture lookups match build 7).
