@@ -1357,7 +1357,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // subject category) is the default -- nothing saved, or a saved "area" from before S8
   // (which was this same comparison), reads as it. An explicit All or Selected choice stays.
   const savedAgainst = readSetting(columns, againstKey("context"));
-  const contextAgainst: CompareAgainstId = savedAgainst === "selected" ? "selected" : savedAgainst === "whole" ? "whole" : "category";
+  // Review fixes (14 Nov, Q7): "?against=whole" (the walk's Show me on the dumbbell screen) opens Context on the
+  // whole school for this visit, without saving; a saved choice applies otherwise.
+  const urlAgainst = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("against") : null;
+  const againstChoice = urlAgainst === "whole" || urlAgainst === "category" || urlAgainst === "selected" ? urlAgainst : savedAgainst;
+  const contextAgainst: CompareAgainstId = againstChoice === "selected" ? "selected" : againstChoice === "whole" ? "whole" : "category";
   const contextSelected = readList(columns, chosenKey("context"));
 
 

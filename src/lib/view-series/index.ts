@@ -47,6 +47,8 @@ export { compareColour } from "./colours";
 export function buildSeries(spec: ViewSpec, frame: ViewFrame, ctx: BuildContext): ViewSeries | null {
   // Grade counts' own panels draw per grade only.
   if (frame.kind === "grades") return buildGrades(spec, frame);
+  // Review fixes (14 Nov, Q6): Rank over time draws in Comparisons' own host (rankOverTime), not here.
+  if (spec.preset === "DV-C3-TR-RANK") return null;
   // The geography views, as their presets draw them (a spec of its own with LA / region /
   // England lines is an ordinary line or table, below).
   if (needsGeography(spec) && spec.compare === "follows-page") return buildGeography(spec, frame);

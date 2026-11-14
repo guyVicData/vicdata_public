@@ -25,17 +25,19 @@ type Cell = { column: "c1" | "c2" | "c3"; row: "now" | "trends"; span?: 2; name:
 const PIPELINES: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-ADM-P-NOW"], defaultView: "DV-ADM-P-NOW" },
   { column: "c2", row: "now", span: 2, name: "Pipeline", views: ["DV-ADM-P-PIPELINE", "DV-ADM-P-FUNNEL", "DV-ADM-P-BIRTHS", "DV-ADM-P-MAP", "DV-ADM-P-TABLE", "DV-ADM-P-SHAPE"], defaultView: "DV-ADM-P-PIPELINE" },
-  { column: "c1", row: "trends", name: "Trends", views: ["DV-ADM-P-ENTRY-LINE", "DV-ADM-P-ENTRY-BARS", "DV-ADM-P-ENTRY-TABLE", "DV-ADM-P-ENTRY-SEX"], defaultView: "DV-ADM-P-ENTRY-LINE" },
-  { column: "c2", row: "trends", name: "Trends", views: ["DV-ADM-P-POOL-INDEXED", "DV-ADM-P-POOL-TABLE", "DV-ADM-P-AREA-POP"], defaultView: "DV-ADM-P-POOL-INDEXED" },
+  { column: "c1", row: "trends", name: "Your cohort", views: ["DV-ADM-P-ENTRY-LINE", "DV-ADM-P-ENTRY-BARS", "DV-ADM-P-ENTRY-TABLE", "DV-ADM-P-ENTRY-SEX"], defaultView: "DV-ADM-P-ENTRY-LINE" },
+  { column: "c2", row: "trends", name: "The pool", views: ["DV-ADM-P-POOL-INDEXED", "DV-ADM-P-POOL-TABLE", "DV-ADM-P-AREA-POP"], defaultView: "DV-ADM-P-POOL-INDEXED" },
   { column: "c3", row: "trends", name: "Forward", views: ["DV-ADM-P-HOLD-LINE", "DV-ADM-P-HOLD-TABLE"], defaultView: "DV-ADM-P-HOLD-LINE" },
 ];
 
+// Review fixes (14 Nov, Q5): the standalone donut (the ranked bars draw one: withDonut) and Share ranks (the
+// share table now holds both share and rank) are dropped; both dataviews stay in the catalogue for old views.
 const MARKET: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-ADM-M-NOW"], defaultView: "DV-ADM-M-NOW" },
-  { column: "c2", row: "now", span: 2, name: "Rivals", views: ["DV-ADM-M-DONUT", "DV-ADM-M-BARS", "DV-ADM-M-MAP", "DV-ADM-M-TABLE", "DV-ADM-M-MOMENTUM", "DV-ADM-M-STRENGTHS", "DV-ADM-M-SHAPE"], defaultView: "DV-ADM-M-BARS" },
-  { column: "c1", row: "trends", name: "Trends", views: ["DV-ADM-M-VS-LINE", "DV-ADM-M-VS-BARS"], defaultView: "DV-ADM-M-VS-LINE" },
+  { column: "c2", row: "now", span: 2, name: "Rivals", views: ["DV-ADM-M-BARS", "DV-ADM-M-MAP", "DV-ADM-M-TABLE", "DV-ADM-M-MOMENTUM", "DV-ADM-M-STRENGTHS", "DV-ADM-M-SHAPE"], defaultView: "DV-ADM-M-BARS" },
+  { column: "c1", row: "trends", name: "You and your rivals", views: ["DV-ADM-M-VS-LINE", "DV-ADM-M-VS-BARS"], defaultView: "DV-ADM-M-VS-LINE" },
   { column: "c2", row: "trends", name: "Academic", views: ["DV-ADM-M-ACAD-RANK", "DV-ADM-M-ACAD-NUM", "DV-ADM-M-ACAD-CHANGE"], defaultView: "DV-ADM-M-ACAD-RANK" },
-  { column: "c3", row: "trends", name: "Trends", views: ["DV-ADM-M-SHARE-LINE", "DV-ADM-M-SHARE-NUM", "DV-ADM-M-SHARE-RANKS", "DV-ADM-M-SHARE-CHANGE", "DV-ADM-M-ROLL-LINE", "DV-ADM-M-SHARE-BAND"], defaultView: "DV-ADM-M-SHARE-LINE" },
+  { column: "c3", row: "trends", name: "Market share", views: ["DV-ADM-M-SHARE-LINE", "DV-ADM-M-SHARE-NUM", "DV-ADM-M-SHARE-CHANGE", "DV-ADM-M-ROLL-LINE", "DV-ADM-M-SHARE-BAND"], defaultView: "DV-ADM-M-SHARE-LINE" },
 ];
 
 // The column headers carry the family each column starts from; the phase is unused by Admissions

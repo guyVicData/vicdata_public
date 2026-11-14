@@ -8,11 +8,27 @@
 // On the card the short names and a tight row (15 px) fit about 14 subjects in a 300 px panel; a longer
 // list scrolls inside its box with the focus centred (CentredOnTarget). Full screen: full names, wider.
 import type { DashboardDumbbell } from "@/lib/teacher-dumbbell";
+import { niceAxis } from "@/lib/front-door/axis";
+
+/** The dumbbell's scale: round ticks, from a floor below the smallest value (never forced to 0). */
+export function dumbbellAxis(values: number[]): { lo: number; hi: number; ticks: number[] } {
+  const a = niceAxis(values.filter((v) => Number.isFinite(v)), {});
+  const min = Math.min(...values);
+  // niceAxis starts at 0 when the lowest value is under half the highest; the dumbbell never does.
+  if (a.lo === 0 && min > 0) {
+    const step = a.ticks.length > 1 ? a.ticks[1] - a.ticks[0] : 1;
+    const lo = Math.floor(min / step) * step;
+    return { lo, hi: a.hi, ticks: a.ticks.filter((t) => t >= lo) };
+  }
+  return { lo: a.lo, hi: a.hi, ticks: a.ticks };
+}
 
 export function DumbbellView({ d, fullscreen = false, firstLabel, latestLabel }: { d: DashboardDumbbell; fullscreen?: boolean; firstLabel: string; latestLabel: string }) {
   const values = [...d.rows.flatMap((r) => [r.first, r.latest]), ...(d.average ? [d.average.first, d.average.latest] : [])];
-  const max = Math.max(...values, 1) * 1.04;
-  const at = (v: number) => `${(Math.max(0, v) / max) * 100}%`;
+  // Review fixes (14 Nov, Q7): the scale starts at a round floor below the smallest value drawn, not at 0, so a
+  // ring and a dot 18 entries apart on ~240 no longer sit on top of each other; the axis says where it starts.
+  const ax = dumbbellAxis(values);
+  const at = (v: number) => `${(Math.max(0, v - ax.lo) / (ax.hi - ax.lo || 1)) * 100}%`;
   const grid = fullscreen ? "grid-cols-[minmax(0,11rem)_1fr_3.25rem] gap-3 text-[12.5px]" : "grid-cols-[6.5rem_1fr_2.75rem] gap-2 text-[11px]";
   const rowH = fullscreen ? "min-h-[24px]" : "min-h-[15px]";
   const mark = fullscreen ? "h-[9px] w-[9px]" : "h-[7px] w-[7px]";
@@ -33,6 +49,16 @@ export function DumbbellView({ d, fullscreen = false, firstLabel, latestLabel }:
   );
   return (
     <div data-view="dumbbell" className="flex min-h-0 flex-col gap-1">
+      {/* The axis: round ticks over the track column, from its floor. */}
+      <div data-dumbbell-axis="" className={`grid ${grid} px-1 text-[10px] text-[var(--muted3)]`}>
+        <span />
+        <span className="relative h-3">
+          {ax.ticks.map((t) => (
+            <span key={t} data-html-label="tick" className="absolute bottom-0 -translate-x-1/2 tabular-nums" style={{ left: at(t) }}>{t.toLocaleString("en-GB")}</span>
+          ))}
+        </span>
+        <span />
+      </div>
       <div className="flex flex-col">
         {d.rows.map((r) => (
           <div
@@ -56,7 +82,7 @@ export function DumbbellView({ d, fullscreen = false, firstLabel, latestLabel }:
         )}
       </div>
       <p className="text-[10.5px] text-[var(--muted3)]">
-        Entries: ring {firstLabel}, dot {latestLabel}; change in entries{d.average ? `; average of the ${d.rows.length} drawn` : ""}{d.leftOut ? ` · ${d.leftOut} ${d.leftOut === 1 ? "subject" : "subjects"} without both years left out` : ""}
+        Entries: ring {firstLabel}, dot {latestLabel}; the scale starts at {ax.lo.toLocaleString("en-GB")}; change in entries{d.average ? `; average of the ${d.rows.length} drawn` : ""}{d.leftOut ? ` · ${d.leftOut} ${d.leftOut === 1 ? "subject" : "subjects"} without both years left out` : ""}
       </p>
     </div>
   );

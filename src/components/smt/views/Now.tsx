@@ -117,10 +117,17 @@ export function SchoolNow({ o, school, compact = false }: { o: Overview; school:
       </>
     );
   }
+  // Review fixes (14 Nov, Q5): beside the Scorecard, the Current tiles keep only what the Scorecard doesn't
+  // show -- the roll and its change since the first census, day and boarding, girls and boys, the entry
+  // tiles -- and leave the results tiles (Attainment 8, A-level points, KS2, value added, Progress 8), whose
+  // figures and ranks the Scorecard's rows already give. Compact (phone, home) keeps them all.
+  const scored = new Set(o.rows.filter((r) => r.value !== null).map((r) => r.key));
+  const RESULT_TILES: Record<string, (k: Set<string>) => boolean> = { a8: (k) => [...k].some((x) => /a8|att/i.test(x)), aps: (k) => [...k].some((x) => /aps|ks5/i.test(x)), ks2: (k) => [...k].some((x) => /ks2|rwm/i.test(x)), va: (k) => [...k].some((x) => /value_added|::va/i.test(x)), p8: (k) => [...k].some((x) => /progress8|p8/i.test(x)) };
+  const shown = tiles.filter((t) => !(String(t.key) in RESULT_TILES && RESULT_TILES[String(t.key)](scored)));
   return (
     <>
       <div className="text-[12.5px] font-bold text-[var(--fg)]">The school now</div>
-      <div className="grid grid-cols-2 gap-2">{tiles}</div>
+      <div className="grid grid-cols-2 gap-2">{shown}</div>
       <SetSizeByPhase sizes={o.now.setSizes ?? []} setShort={o.set.short} />
     </>
   );

@@ -335,6 +335,7 @@ const BODIES: Record<string, Body> = {
   "DV-C3-CUR-RANKING": C3("school", "actual", LATEST, { kind: "ranking", look: { columns: ["rank", "sector", "value", "distance"], show: "all", alwaysSelf: true } }),
   "DV-C3-TR-CHART": C3("year", "actual", TRENDS, line({ trendLine: "member", shortSpan: "table" }), null),
   "DV-C3-TR-TABLE": C3("year", "actual", TRENDS, table(YEAR_TABLE)),
+  "DV-C3-TR-RANK": C3("year", "actual", TRENDS, line({ trendLine: "member", shortSpan: "table" }), null),
   "DV-C3-TR-MAP": C3("school", "change", TRENDS, { kind: "map", look: { colour: "change" } }, "follows-page", { change: "absolute" }),
   "DV-C3-TR-CHANGELIST": C3("school", "change", TRENDS, bar(CHANGE_BARS)),
   "DV-C3-TR-CHANGETABLE": C3("year", "actual", TRENDS, table(CHANGE_TABLE)),

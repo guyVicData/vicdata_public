@@ -71,7 +71,7 @@ const VIEWS: Record<string, { current: DataviewId[]; trends: DataviewId[]; defau
   },
   c3: {
     current: ["DV-C3-CUR-TILES", "DV-C3-CUR-MAP", "DV-C3-CUR-BAR", "DV-C3-CUR-RANKING"],
-    trends: ["DV-C3-TR-CHART", "DV-C3-TR-TABLE", "DV-C3-TR-MAP", "DV-C3-TR-CHANGELIST", "DV-C3-TR-CHANGETABLE", "DV-C3-TR-CHANGEMAP"],
+    trends: ["DV-C3-TR-CHART", "DV-C3-TR-RANK", "DV-C3-TR-TABLE", "DV-C3-TR-MAP", "DV-C3-TR-CHANGELIST", "DV-C3-TR-CHANGETABLE", "DV-C3-TR-CHANGEMAP"],
     defaults: { current: "DV-C3-CUR-MAP", trends: "DV-C3-TR-CHART" },
   },
 };
