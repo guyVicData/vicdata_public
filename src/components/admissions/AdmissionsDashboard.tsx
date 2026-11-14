@@ -17,6 +17,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNo
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { useDashboardTheme, type Theme } from "@/components/shell/TeacherChrome";
+import { MidBand, MidDashProvider, midRootProps, useMidPart } from "@/components/shell/MidDash";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { dataviewById } from "@/catalogue/dataviews";
@@ -142,7 +144,10 @@ function writeUrl(s: UrlState) {
 const EditorScreen = lazy(() => import("@/components/editor/EditorScreen").then((m) => ({ default: m.EditorScreen })));
 
 export function AdmissionsDashboard() {
-  const [theme, setTheme] = useTheme();
+  // 0.8 front door 2b (M3): the dashboards follow Mid (Admissions' sky field; MidDash.tsx); the pages that
+  // aren't the dashboard (loading, no access, the shared lists) draw Dark under Mid, as before.
+  const [plainTheme, setTheme] = useTheme();
+  const dashTheme = useDashboardTheme();
   const [state, setState] = useState<MemberState>({ status: "loading" });
   useEffect(() => {
     loadAdmissionsMember().then(setState);
@@ -158,6 +163,8 @@ export function AdmissionsDashboard() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [dash, setDash] = useState<DashKey>(() => readUrl().dash);
   const showsDashboard = state.status === "ready" && state.member.access !== "none" && state.member.access !== "listOnly";
+  const mid = dashTheme.mid && showsDashboard;
+  const theme: Theme = mid ? dashTheme.theme : plainTheme;
   const inPlace = useInPlaceEdit(supabase, showsDashboard ? DASH_ID[dash] : null);
   const editing = inPlace.editing && state.status === "ready";
   return (
@@ -167,7 +174,8 @@ export function AdmissionsDashboard() {
           <AdmissionsEditor slug={DASH_ID[dash]} school={{ urn: state.member.schoolUrn, name: state.member.schoolName }} />
         </Suspense>
       )}
-      <main id={editing ? undefined : "teacher-root"} hidden={editing} data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={admissionsVars(theme)}>
+      <MidDashProvider mid={mid} part="admissions" theme={theme}>
+      <main id={editing ? undefined : "teacher-root"} hidden={editing} data-theme={theme} {...midRootProps(mid, "admissions")} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={admissionsVars(theme)}>
         {state.status === "ready" ? (
           <Gate member={state.member} theme={theme} onTheme={setTheme} platformAdmin={platformAdmin} onDash={setDash} reloadTick={inPlace.reloadTick} />
         ) : (
@@ -192,6 +200,7 @@ export function AdmissionsDashboard() {
           </div>
         )}
       </main>
+      </MidDashProvider>
     </>
   );
 }
@@ -239,6 +248,8 @@ function inUseOf(l: Load<unknown>): { feeders?: SetChoice; rivals?: SetChoice } 
 
 // ---------------------------------------------------------------------------------------------
 function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: AdmissionsMember; theme: "dark" | "light"; onTheme: (t: "dark" | "light") => void; onDash: (d: DashKey) => void; reloadTick: number }) {
+  // 0.8 front door 2b (M3): the nav draws in the header's own theme (Dark in Mid's band).
+  const navTheme: "dark" | "light" = useMidPart() ? "dark" : theme;
   // Read once on mount: this component only mounts in the browser, after the member has loaded.
   const [url, setUrl] = useState<UrlState>(readUrl);
   useEditorReturnReload();
@@ -329,15 +340,17 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   const usageScope: UsageScope | null = member.viewAs ? null : { product: "admissions", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: entry, setKind: null, resolved: lists.status !== "loading" && ages !== null };
   useUsagePageView(usageScope);
 
+  // 0.8 front door 2b (M3): setup isn't the dashboard, so in Mid it draws Dark, as the sets pages do.
   if (url.setup && member.access !== "viewAs")
     return (
+      <MidBand style={admissionsVars("dark")} className="min-h-screen">
       <Setup
         member={member}
         step={url.setup}
         entry={entry}
         lists={lists.status === "ready" ? lists.data : null}
         ages={ages}
-        theme={theme}
+        theme={navTheme}
         onStep={(setup) => update({ setup })}
         onDone={(firstEntry) => {
           setListsKey((k) => k + 1);
@@ -348,6 +361,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
           update({ setup: null });
         }}
       />
+      </MidBand>
     );
 
   const config = configs[dash];
@@ -395,20 +409,15 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
     <UsageScopeContext.Provider value={usageScope}>
     <ViewSurfaceProvider surface={surface} config={config}>
     <ShellPage phone={phone} rootRef={rootRef}>
+      {/* 0.8 front door 2b (M3): in Mid the header -- the banner, the nav, the control bar -- is a dark band
+          and the rows below sit on the sky field. A fragment in Dark and Light (the same elements, in order). */}
+      <MidBand bleed={!phone} className={phone ? "pb-3" : "flex flex-col gap-[14px]"} style={admissionsVars("dark")}>
       <ViewAsBanner />
       {/* F4: Teacher's nav, then Teacher's control bar -- the same components and places. */}
       <div className={phone ? "px-4 pt-4" : undefined}>
-        <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
+        <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={navTheme} onTheme={onTheme} />
       </div>
-      {phone ? (
-        <PhoneStack>
-          <PhoneHeader dash={dash} onDash={(d) => update({ dash: d })} entries={entries.map((id) => ({ id, label: chipLabel(id) }))} entry={entry ?? ""} onEntry={(e) => update({ entry: e })} onEditEntries={editEntries} pupils={<PupilsChip filters={filters} onFilters={setFilters} />} />
-          {setBar}
-          <Notes member={member} notSetUp={notSetUp} listsMissing={listsMissing} />
-          {entry && <PhoneBody config={config} ctx={ctx} />}
-        </PhoneStack>
-      ) : (
-        <>
+      {!phone && (
           <ControlBar
             phase="ks4"
             phaseLabel="Admissions"
@@ -431,6 +440,17 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
               </>
             }
           />
+      )}
+      </MidBand>
+      {phone ? (
+        <PhoneStack>
+          <PhoneHeader dash={dash} onDash={(d) => update({ dash: d })} entries={entries.map((id) => ({ id, label: chipLabel(id) }))} entry={entry ?? ""} onEntry={(e) => update({ entry: e })} onEditEntries={editEntries} pupils={<PupilsChip filters={filters} onFilters={setFilters} />} />
+          {setBar}
+          <Notes member={member} notSetUp={notSetUp} listsMissing={listsMissing} />
+          {entry && <PhoneBody config={config} ctx={ctx} />}
+        </PhoneStack>
+      ) : (
+        <>
           <Notes member={member} notSetUp={notSetUp} listsMissing={listsMissing} />
           {entry ? <DesktopGrid config={config} c={ctx} actions={<Actions member={member} onSetup={() => update({ setup: "entry" })} />} /> : <Empty>Choose an entry point to see its pipeline.</Empty>}
         </>
@@ -444,10 +464,12 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
 /** The lead's and SMT's tools: setup and My team (the lead), sharing the lists (lead and SMT). */
 function Actions({ member, onSetup }: { member: AdmissionsMember; onSetup: () => void }) {
   const [share, setShare] = useState(false);
+  // 0.8 front door 2b (M3): beside the row's head, on the bare field in Mid: the field's ink.
+  const onField = useMidPart() !== null;
   if (!member.canEditLists && !member.canShare && !member.canManageTeam) return null;
   const B = "rounded-full border border-[var(--panel-border2)] px-[10px] py-[3px] text-[11px] font-semibold text-[var(--chip-fg)] hover:text-[var(--fg)]";
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--muted2)]">
+    <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--muted2)]" data-on-field={onField ? "" : undefined}>
       <span>{member.access === "lead" ? "Admissions lead" : "SMT"}</span>
       {member.canEditLists && (
         <button type="button" className={B} onClick={onSetup}>

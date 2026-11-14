@@ -3504,8 +3504,12 @@ const RUNNERS: Record<string, Runner> = {
       const t = fd.files.find((x) => x.file === p)?.text ?? "";
       return !(t.includes("useTeacherTheme()") && t.includes('id="teacher-root" data-theme={theme}') && !t.includes("useThemePref"));
     });
-    const pass = effectiveTheme("mid") === "dark" && !f.unlisted.length && !f.stale.length && !newPages.length;
-    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none", newPagesDark: newPages.length ? `not Dark under Mid: ${newPages.join(", ")}` : `${NEW_PAGES.length} ok` }) };
+    // Front door 2b (M3, rewritten): dashboards follow Mid through the plumbing; sets and admin pages don't.
+    const { midDashFindings, MID_DASH_ROOTS, DARK_UNDER_MID } = await import("../src/lib/front-door/theme-scope");
+    const { dashThemeOf } = await import("../src/components/shell/TeacherChrome");
+    const dashProblems = midDashFindings(fd.files);
+    const pass = effectiveTheme("mid") === "dark" && dashThemeOf("mid") === "light" && !f.unlisted.length && !f.stale.length && !newPages.length && !dashProblems.length;
+    return { pass, detail: fmt({ midReaders: f.readers.join(", "), unlisted: f.unlisted.join(", ") || "none", stale: f.stale.join(", ") || "none", newPagesDark: newPages.length ? `not Dark under Mid: ${newPages.join(", ")}` : `${NEW_PAGES.length} ok`, dashboardsFollowMid: `${MID_DASH_ROOTS.length} roots`, darkUnderMid: `${DARK_UNDER_MID.length} pages`, problems: dashProblems.join("; ") || "none" }) };
   },
   // 0.8 front door part 2: a unit test file's tests named for the rule, run in their own process.
   async guidedSets(_L, rule) {
@@ -3569,8 +3573,10 @@ const RUNNERS: Record<string, Runner> = {
     const { ladderShellFindings } = await import("../src/lib/front-door/theme-scope");
     const s = ladderSteps(fd.css);
     const shell = ladderShellFindings(fd.files);
-    const pass = s.darkFill >= LADDER_STEP.darkFill && s.darkBorder >= LADDER_STEP.darkBorder && s.lightBorder >= LADDER_STEP.lightBorder && !shell.length;
-    return { pass, detail: fmt({ darkFill: s.darkFill.toFixed(2), darkBorder: s.darkBorder.toFixed(2), lightFill: s.lightFill.toFixed(2), lightBorder: s.lightBorder.toFixed(2), shell: shell.join("; ") || "ok" }) };
+    // Front door 2b (M3): Mid draws Light's ladder on the field; no Mid rule overrides a ladder token.
+    const midOverrides = [...fd.css.matchAll(/#teacher-root\[data-mid-dash[^{]*\{([^}]*)\}/g)].filter((m) => /--(shut-|panel-bg|box-bg|well-border)/.test(m[1])).length;
+    const pass = s.darkFill >= LADDER_STEP.darkFill && s.darkBorder >= LADDER_STEP.darkBorder && s.lightBorder >= LADDER_STEP.lightBorder && s.midBorder >= LADDER_STEP.midBorder && s.midColumnOnField >= LADDER_STEP.midColumnOnField && !midOverrides && !shell.length;
+    return { pass, detail: fmt({ darkFill: s.darkFill.toFixed(2), darkBorder: s.darkBorder.toFixed(2), lightFill: s.lightFill.toFixed(2), lightBorder: s.lightBorder.toFixed(2), midBorder: s.midBorder.toFixed(2), midColumnOnField: s.midColumnOnField.toFixed(2), midOverrides, shell: shell.join("; ") || "ok" }) };
   },
   async roleColours() {
     const fd = await frontDoorSources();

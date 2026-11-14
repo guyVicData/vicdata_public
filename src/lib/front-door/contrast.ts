@@ -45,6 +45,9 @@ export const SEL = {
   field: (f: MidField) => `#teacher-root[data-pref="mid"] [data-field="${f}"]`,
   walkHead: (band: "dark" | "light") => `#teacher-root [data-walk-head="${band}"]`,
   walkHeadPart: (band: "dark" | "light", f: MidField) => `#teacher-root [data-walk-head="${band}"][data-part="${f}"]`,
+  // 0.8 front door 2b (M3): a Mid dashboard's field (MidDash.tsx) and its dark header band.
+  midDashField: (f: MidField) => `#teacher-root[data-mid-dash="${f}"] :is([data-dash-ladder], [data-mid-field])`,
+  band: '#teacher-root [data-theme="dark"]',
 } as const;
 
 /** The parts of the site with their own colour in Mid (C18), and their two gradient stops. */
@@ -98,7 +101,33 @@ export function contrastTable(css: string): Pair[] {
   pairs.push({ name: "Ladder Light: muted text on the page", fg: ll["--muted"] ?? light["--muted"], bg: ll["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: muted text on the page", fg: ld["--muted"] ?? dark["--muted"], bg: ld["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Light: muted2 text on the page", fg: light["--muted2"], bg: ll["--bg"], kind: "small" });
-  return [...pairs, ...walkHeadPairs(css), ...makerPairs(css), ...groupPairs(), ...adminPairs(css)];
+  return [...pairs, ...walkHeadPairs(css), ...makerPairs(css), ...groupPairs(), ...adminPairs(css), ...midDashPairs(css)];
+}
+
+/**
+ * 0.8 front door 2b (M3): Mid on the dashboards. Text on a bare field takes the field's ink: the open rows'
+ * heads and context lines (SMT, Admissions, the Group pages; small, both stops), Admissions' role line and
+ * buttons beside them, the library's lines. Teacher's field holds only its columns, so GCSE's and Post-16's
+ * ink is logged as large (Post-16's dark stop can't carry small text even in black). The plates on the
+ * field draw Light's tokens (Light's ladder rows above). A dashboard text button on the field without the
+ * ink ("Show more") is Light's --fg. The header band is Dark's text on the page's #0a0a0b.
+ */
+export const MID_DASH_SMALL: MidField[] = ["top", "group", "admissions"];
+export function midDashPairs(css: string): Pair[] {
+  const pairs: Pair[] = [];
+  const light = tokensOf(css, SEL.light);
+  for (const f of Object.keys(MID_FIELDS) as MidField[]) {
+    const t = tokensOf(css, SEL.midDashField(f));
+    const { from, to, label } = MID_FIELDS[f];
+    const kind: PairKind = MID_DASH_SMALL.includes(f) ? "small" : "large";
+    pairs.push({ name: `Mid dashboards ${label}: text on the field, light stop`, fg: t["--field-ink"], bg: from, kind });
+    pairs.push({ name: `Mid dashboards ${label}: text on the field, dark stop`, fg: t["--field-ink"], bg: to, kind });
+    if (MID_DASH_SMALL.includes(f)) pairs.push({ name: `Mid dashboards ${label}: a text button on the field (Light's text), dark stop`, fg: light["--fg"], bg: to, kind: "small" });
+  }
+  const band = tokensOf(css, SEL.band);
+  pairs.push({ name: "Mid dashboards: the header band's text", fg: band["--fg"], bg: "#0a0a0b", kind: "small" });
+  pairs.push({ name: "Mid dashboards: the header band's muted text", fg: band["--muted"], bg: "#0a0a0b", kind: "small" });
+  return pairs;
 }
 
 /**
@@ -177,7 +206,7 @@ export function mix(a: string, b: string, aShare: number): string {
  * (at least 1.2:1) and the border more (1.4:1). Light: the fill is white on a near-white column, so the
  * border carries the step (1.4:1) with the shadow.
  */
-export const LADDER_STEP = { darkFill: 1.2, darkBorder: 1.4, lightBorder: 1.4 } as const;
+export const LADDER_STEP = { darkFill: 1.2, darkBorder: 1.4, lightBorder: 1.4, midBorder: 1.4, midColumnOnField: 1.4 } as const;
 
 export function ladderSteps(css: string) {
   const ll = tokensOf(css, SEL.ladderLight);
@@ -189,6 +218,10 @@ export function ladderSteps(css: string) {
     darkBorder: contrast(sd["--shut-border"], ld["--panel-bg"]),
     lightFill: contrast(sl["--shut-bg"], ll["--panel-bg"]),
     lightBorder: contrast(sl["--shut-border"], ll["--panel-bg"]),
+    // 0.8 front door 2b (M3): a Mid dashboard draws Light's ladder on its field, so the shut bar's step from
+    // its column is Light's; and the column (a near-white plate) stands off every field's lighter stop.
+    midBorder: contrast(sl["--shut-border"], ll["--panel-bg"]),
+    midColumnOnField: Math.min(...(Object.keys(MID_FIELDS) as MidField[]).map((f) => contrast(ll["--panel-bg"], MID_FIELDS[f].from))),
     tokens: { ll, ld, sl, sd },
   };
 }

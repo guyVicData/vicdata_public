@@ -19,14 +19,15 @@
 //    honest lever. The existing Data View print stylesheet already forces a white body,
 //    so this completes the same job for themed subtrees rather than adding a second
 //    export mechanism.
-import { useEffect, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
 import { ExportIcon } from "./PanelFooter";
 
 // 0.8 front door (C18): three themes, Dark · Mid · Light, remembered per person as before (the same
 // localStorage key; an old "dark" or "light" reads unchanged). Mid belongs to the homes and the walks
 // only: everything else -- dashboards, the sets pages, admin pages -- asks for `useTeacherTheme()`,
 // which answers Dark under Mid. So no dashboard, set or group component needed to change, and Mid can
-// never reach them by accident (R-THEME-MID-SCOPE).
+// never reach them by accident (R-THEME-MID-SCOPE). Front door 2b (M3): dashboards follow Mid now
+// (useDashboardTheme, MidDash.tsx); the sets and admin pages still draw Dark under Mid.
 export type Theme = "dark" | "light";
 export type ThemePref = "dark" | "mid" | "light";
 const STORAGE_KEY = "vicdata.teacher.theme";
@@ -76,7 +77,28 @@ export function effectiveTheme(p: ThemePref): Theme {
 
 export function useTeacherTheme(): [Theme, (t: Theme) => void] {
   const [p] = useThemePref();
-  return [effectiveTheme(p), setThemePref];
+  // 0.8 front door 2b (M3): inside a dashboard drawn in Mid, the theme of the part being drawn (Light on
+  // the coloured field and its plates, Dark in the header band: DashThemeContext, MidDash.tsx). Everywhere
+  // else -- the sets and admin pages -- Dark under Mid, as before.
+  const inDash = useContext(DashThemeContext);
+  return [inDash ?? effectiveTheme(p), setThemePref];
+}
+
+// 0.8 front door 2b (M3; Guy, 13 Nov): dashboards follow Mid. A Mid dashboard keeps its page and header
+// dark and draws the area being worked in as its part's coloured field, with everything on it -- columns,
+// panels, charts, full screen -- as Light draws it. So its root draws Light, and its header band Dark.
+// The provider is set by the dashboard's root (MidDashRoot) and by the band (MidBand); null outside.
+export const DashThemeContext = createContext<Theme | null>(null);
+
+/** A dashboard's theme for a choice: Light under Mid (the field and its plates), else the choice. */
+export function dashThemeOf(p: ThemePref): Theme {
+  return p === "mid" ? "light" : effectiveTheme(p);
+}
+
+/** What a dashboard draws in (dashThemeOf), with `mid` to mark the root. */
+export function useDashboardTheme(): { theme: Theme; mid: boolean; setTheme: (t: Theme) => void } {
+  const [p] = useThemePref();
+  return { theme: dashThemeOf(p), mid: p === "mid", setTheme: setThemePref };
 }
 
 // Top-nav rounds: the toggle and Export used to be one inseparable pair. The toggle now
@@ -115,7 +137,7 @@ export function ThemeToggle({ theme }: { theme: Theme; onTheme?: (t: Theme) => v
           role="radio"
           aria-checked={p === value}
           onClick={() => setP(value)}
-          title={value === "mid" ? "Mid: the homes and walkthroughs in colour (dashboards stay dark)" : `${label} theme`}
+          title={value === "mid" ? "Mid: the homes, walkthroughs and dashboards in colour (the header stays dark)" : `${label} theme`}
           className={
             p === value
               ? "h-full rounded-full bg-[var(--fg)] px-2.5 text-[11.5px] font-semibold text-[var(--bg)]"
