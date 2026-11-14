@@ -1,0 +1,8397 @@
+{
+ "peer": {
+  "band": "11+",
+  "type": "special_ap",
+  "set_id": "peer:special_ap:11+",
+  "n_groups": 11
+ },
+ "rows": [
+  {
+   "phase": "all",
+   "period": 2019,
+   "figures": {
+    "fsm": {
+     "pct": 39.45,
+     "eligible": 289,
+     "headcount": 733,
+     "n_with_figure": 6
+    },
+    "las": {
+     "371|Doncaster": 3,
+     "372|Rotherham": 4
+    },
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "fsm": {
+       "of": 11,
+       "rank": 6,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 733,
+    "share": {
+     "las": [
+      {
+       "pct": 40.06,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 1031,
+       "group_pupils": 413
+      },
+      {
+       "pct": 52.81,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 606,
+       "group_pupils": 320
+      }
+     ],
+     "pct": 5.82,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 5.82,
+       "region_code": "E12000003",
+       "group_pupils": 733,
+       "region_pupils": 12589
+      }
+     ],
+     "area_pupils": 12589,
+     "group_pupils": 733
+    },
+    "regions": {
+     "E12000003": 7
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ]
+    },
+    "n_schools": 6,
+    "confidence": {
+     "confirmed": 7
+    },
+    "group_kind": "special_ap",
+    "size_bands": {
+     "L": 1,
+     "S": 2,
+     "XS": 4
+    },
+    "n_with_roll": 6,
+    "roll_by_age": [
+     0,
+     0,
+     2,
+     4,
+     19,
+     38,
+     43,
+     41,
+     49,
+     57,
+     55,
+     76,
+     61,
+     60,
+     70,
+     47,
+     46,
+     35,
+     30,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 111,
+     "primary": 283,
+     "secondary": 314
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "mainstream_line": {
+     "fsm": {
+      "pct": 36.2,
+      "eligible": 154,
+      "headcount": 425,
+      "n_with_figure": 1
+     },
+     "roll": 425,
+     "results": {
+      "ks4_a8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em4": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em5": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_all": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "boarders": 0,
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "roll_by_age": [
+      0,
+      0,
+      27,
+      40,
+      57,
+      50,
+      43,
+      49,
+      47,
+      55,
+      57,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks4_p8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_va_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 301,
+      "secondary": 0
+     }
+    },
+    "schools_by_kind": {
+     "special": 6,
+     "mainstream": 1
+    },
+    "schools_by_phase": {
+     "post16": 5,
+     "primary": 6,
+     "secondary": 6
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2019,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {},
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 111,
+    "share": {
+     "las": [
+      {
+       "pct": 56.8,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 125,
+       "group_pupils": 71
+      },
+      {
+       "pct": 58.82,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 68,
+       "group_pupils": 40
+      }
+     ],
+     "pct": 7.4,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 7.4,
+       "region_code": "E12000003",
+       "group_pupils": 111,
+       "region_pupils": 1499
+      }
+     ],
+     "area_pupils": 1499,
+     "group_pupils": 111
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 5,
+    "group_kind": "special_ap",
+    "n_with_roll": 5,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2019,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {},
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 283,
+    "share": {
+     "las": [
+      {
+       "pct": 50,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 338,
+       "group_pupils": 169
+      },
+      {
+       "pct": 52.05,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 219,
+       "group_pupils": 114
+      }
+     ],
+     "pct": 7.3,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 7.3,
+       "region_code": "E12000003",
+       "group_pupils": 283,
+       "region_pupils": 3879
+      }
+     ],
+     "area_pupils": 3879,
+     "group_pupils": 283
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ]
+    },
+    "n_schools": 6,
+    "group_kind": "special_ap",
+    "n_with_roll": 6,
+    "value_added": {},
+    "mainstream_line": {
+     "roll": 301,
+     "results": {
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "value_added": {}
+    }
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2019,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {},
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 314,
+    "share": {
+     "las": [
+      {
+       "pct": 52.1,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 309,
+       "group_pupils": 161
+      },
+      {
+       "pct": 28.23,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 542,
+       "group_pupils": 153
+      }
+     ],
+     "pct": 4.6,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 4.6,
+       "region_code": "E12000003",
+       "group_pupils": 314,
+       "region_pupils": 6829
+      }
+     ],
+     "area_pupils": 6829,
+     "group_pupils": 314
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 6,
+    "group_kind": "special_ap",
+    "n_with_roll": 6,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2020,
+   "figures": {
+    "fsm": {
+     "pct": 39.14,
+     "eligible": 393,
+     "headcount": 1004,
+     "n_with_figure": 9
+    },
+    "las": {
+     "371|Doncaster": 5,
+     "372|Rotherham": 4,
+     "373|Sheffield": 1
+    },
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "fsm": {
+       "of": 11,
+       "rank": 9,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 11,
+       "rank": 1,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 6,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 1004,
+    "share": {
+     "las": [
+      {
+       "pct": 76.3,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 654,
+       "group_pupils": 499
+      },
+      {
+       "pct": 40.09,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 1115,
+       "group_pupils": 447
+      },
+      {
+       "pct": 3.91,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1483,
+       "group_pupils": 58
+      }
+     ],
+     "pct": 7.79,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 7.79,
+       "region_code": "E12000003",
+       "group_pupils": 1004,
+       "region_pupils": 12890
+      }
+     ],
+     "area_pupils": 12890,
+     "group_pupils": 1004
+    },
+    "change": {
+     "1": {
+      "growing": 4,
+      "shrinking": 1,
+      "from_period": 2019,
+      "combined_pct": 36.97,
+      "same_schools": 6,
+      "combined_base": 733,
+      "same_schools_pct": 5.32
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000003": 10
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ]
+    },
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 10
+    },
+    "group_kind": "special_ap",
+    "size_bands": {
+     "L": 1,
+     "S": 5,
+     "XS": 4
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     0,
+     2,
+     14,
+     17,
+     32,
+     59,
+     65,
+     60,
+     78,
+     76,
+     118,
+     90,
+     82,
+     82,
+     95,
+     45,
+     54,
+     35,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 134,
+     "primary": 370,
+     "secondary": 467
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "mainstream_line": {
+     "fsm": {
+      "pct": 45.1,
+      "eligible": 192,
+      "headcount": 426,
+      "n_with_figure": 1
+     },
+     "roll": 426,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2019,
+       "combined_pct": 0.24,
+       "same_schools": 1,
+       "combined_base": 425,
+       "same_schools_pct": 0.24
+      },
+      "3": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2017,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2015,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks4_a8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em4": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em5": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_all": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "boarders": 0,
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "roll_by_age": [
+      0,
+      0,
+      27,
+      39,
+      57,
+      58,
+      50,
+      43,
+      48,
+      50,
+      54,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks4_p8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_va_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 303,
+      "secondary": 0
+     }
+    },
+    "schools_by_kind": {
+     "special": 9,
+     "mainstream": 1
+    },
+    "schools_by_phase": {
+     "post16": 6,
+     "primary": 8,
+     "secondary": 9
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2020,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 9,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 9,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 131,
+    "share": {
+     "las": [
+      {
+       "pct": 100,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 66,
+       "group_pupils": 66
+      },
+      {
+       "pct": 50.78,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 128,
+       "group_pupils": 65
+      }
+     ],
+     "pct": 8.24,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 8.24,
+       "region_code": "E12000003",
+       "group_pupils": 131,
+       "region_pupils": 1589
+      }
+     ],
+     "area_pupils": 1589,
+     "group_pupils": 131
+    },
+    "change": {
+     "1": {
+      "growing": 2,
+      "shrinking": 3,
+      "from_period": 2019,
+      "combined_pct": 18.02,
+      "same_schools": 5,
+      "combined_base": 111,
+      "same_schools_pct": 0.9
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 6,
+    "group_kind": "special_ap",
+    "n_with_roll": 6,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2020,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 9,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 369,
+    "share": {
+     "las": [
+      {
+       "pct": 81.97,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 233,
+       "group_pupils": 191
+      },
+      {
+       "pct": 49.58,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 359,
+       "group_pupils": 178
+      }
+     ],
+     "pct": 9.18,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 9.18,
+       "region_code": "E12000003",
+       "group_pupils": 369,
+       "region_pupils": 4018
+      }
+     ],
+     "area_pupils": 4018,
+     "group_pupils": 369
+    },
+    "change": {
+     "1": {
+      "growing": 3,
+      "shrinking": 3,
+      "from_period": 2019,
+      "combined_pct": 30.39,
+      "same_schools": 6,
+      "combined_base": 283,
+      "same_schools_pct": -0.71
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ]
+    },
+    "n_schools": 8,
+    "group_kind": "special_ap",
+    "n_with_roll": 8,
+    "value_added": {},
+    "mainstream_line": {
+     "roll": 303,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2019,
+       "combined_pct": 0.66,
+       "same_schools": 1,
+       "combined_base": 301,
+       "same_schools_pct": 0.66
+      },
+      "3": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2017,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2015,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "value_added": {}
+    }
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2020,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 467,
+    "share": {
+     "las": [
+      {
+       "pct": 66.57,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 338,
+       "group_pupils": 225
+      },
+      {
+       "pct": 31.44,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 598,
+       "group_pupils": 188
+      },
+      {
+       "pct": 6.2,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 871,
+       "group_pupils": 54
+      }
+     ],
+     "pct": 6.78,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 6.78,
+       "region_code": "E12000003",
+       "group_pupils": 467,
+       "region_pupils": 6892
+      }
+     ],
+     "area_pupils": 6892,
+     "group_pupils": 467
+    },
+    "change": {
+     "1": {
+      "growing": 5,
+      "shrinking": 1,
+      "from_period": 2019,
+      "combined_pct": 48.73,
+      "same_schools": 6,
+      "combined_base": 314,
+      "same_schools_pct": 12.74
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 9,
+    "group_kind": "special_ap",
+    "n_with_roll": 9,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2021,
+   "figures": {
+    "fsm": {
+     "pct": 42.58,
+     "eligible": 473,
+     "headcount": 1111,
+     "n_with_figure": 9
+    },
+    "las": {
+     "371|Doncaster": 5,
+     "372|Rotherham": 4,
+     "373|Sheffield": 1
+    },
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "fsm": {
+       "of": 11,
+       "rank": 9,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 11,
+       "rank": 5,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 1111,
+    "share": {
+     "las": [
+      {
+       "pct": 78.41,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 704,
+       "group_pupils": 552
+      },
+      {
+       "pct": 41.04,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 1150,
+       "group_pupils": 472
+      },
+      {
+       "pct": 5.42,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1605,
+       "group_pupils": 87
+      }
+     ],
+     "pct": 8.22,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 8.22,
+       "region_code": "E12000003",
+       "group_pupils": 1111,
+       "region_pupils": 13523
+      }
+     ],
+     "area_pupils": 13523,
+     "group_pupils": 1111
+    },
+    "change": {
+     "1": {
+      "growing": 8,
+      "shrinking": 1,
+      "from_period": 2020,
+      "combined_pct": 10.66,
+      "same_schools": 9,
+      "combined_base": 1004,
+      "same_schools_pct": 10.66
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000003": 10
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 28,
+      "weighted": 6.45,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 4.3
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 28,
+      "weighted": 0,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 0
+     },
+     "ks4_em5": {
+      "weight": 28,
+      "weighted": 0,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 0
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 9,
+    "confidence": {
+     "confirmed": 10
+    },
+    "group_kind": "special_ap",
+    "size_bands": {
+     "L": 1,
+     "S": 5,
+     "XS": 4
+    },
+    "n_with_roll": 9,
+    "roll_by_age": [
+     0,
+     0,
+     1,
+     6,
+     27,
+     33,
+     42,
+     66,
+     71,
+     75,
+     88,
+     127,
+     121,
+     98,
+     95,
+     88,
+     77,
+     44,
+     52,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 7,
+      "weighted": -1.91,
+      "n_weighted": 1,
+      "n_with_figure": 1,
+      "average_school": -1.91
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 173,
+     "primary": 375,
+     "secondary": 529
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "mainstream_line": {
+     "fsm": {
+      "pct": 46.3,
+      "eligible": 199,
+      "headcount": 430,
+      "n_with_figure": 1
+     },
+     "roll": 430,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2020,
+       "combined_pct": 0.94,
+       "same_schools": 1,
+       "combined_base": 426,
+       "same_schools_pct": 0.94
+      },
+      "3": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2018,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2016,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks4_a8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em4": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em5": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_all": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "boarders": 0,
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "roll_by_age": [
+      0,
+      1,
+      28,
+      41,
+      45,
+      59,
+      56,
+      50,
+      50,
+      47,
+      53,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks4_p8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_va_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 315,
+      "secondary": 0
+     }
+    },
+    "schools_by_kind": {
+     "special": 9,
+     "mainstream": 1
+    },
+    "schools_by_phase": {
+     "post16": 7,
+     "primary": 8,
+     "secondary": 9
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2021,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 9,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 8,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 173,
+    "share": {
+     "las": [
+      {
+       "pct": 56.16,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 146,
+       "group_pupils": 82
+      },
+      {
+       "pct": 100,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 78,
+       "group_pupils": 78
+      },
+      {
+       "pct": 8.02,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 162,
+       "group_pupils": 13
+      }
+     ],
+     "pct": 10.09,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 10.09,
+       "region_code": "E12000003",
+       "group_pupils": 173,
+       "region_pupils": 1714
+      }
+     ],
+     "area_pupils": 1714,
+     "group_pupils": 173
+    },
+    "change": {
+     "1": {
+      "growing": 4,
+      "shrinking": 0,
+      "from_period": 2020,
+      "combined_pct": 32.06,
+      "same_schools": 6,
+      "combined_base": 131,
+      "same_schools_pct": 22.14
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "ks5_aps_all": [
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 7,
+    "group_kind": "special_ap",
+    "n_with_roll": 7,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2021,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 10,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 9,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 374,
+    "share": {
+     "las": [
+      {
+       "pct": 83.4,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 241,
+       "group_pupils": 201
+      },
+      {
+       "pct": 47.79,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 362,
+       "group_pupils": 173
+      }
+     ],
+     "pct": 8.9,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 8.9,
+       "region_code": "E12000003",
+       "group_pupils": 374,
+       "region_pupils": 4200
+      }
+     ],
+     "area_pupils": 4200,
+     "group_pupils": 374
+    },
+    "change": {
+     "1": {
+      "growing": 5,
+      "shrinking": 3,
+      "from_period": 2020,
+      "combined_pct": 1.36,
+      "same_schools": 8,
+      "combined_base": 369,
+      "same_schools_pct": 1.36
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ]
+    },
+    "n_schools": 8,
+    "group_kind": "special_ap",
+    "n_with_roll": 8,
+    "value_added": {},
+    "mainstream_line": {
+     "roll": 315,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2020,
+       "combined_pct": 3.96,
+       "same_schools": 1,
+       "combined_base": 303,
+       "same_schools_pct": 3.96
+      },
+      "3": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2018,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2016,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "value_added": {}
+    }
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2021,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 5,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 529,
+    "share": {
+     "las": [
+      {
+       "pct": 69.32,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 365,
+       "group_pupils": 253
+      },
+      {
+       "pct": 32.74,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 620,
+       "group_pupils": 203
+      },
+      {
+       "pct": 7.87,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 927,
+       "group_pupils": 73
+      }
+     ],
+     "pct": 7.32,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 7.32,
+       "region_code": "E12000003",
+       "group_pupils": 529,
+       "region_pupils": 7227
+      }
+     ],
+     "area_pupils": 7227,
+     "group_pupils": 529
+    },
+    "change": {
+     "1": {
+      "growing": 6,
+      "shrinking": 2,
+      "from_period": 2020,
+      "combined_pct": 13.28,
+      "same_schools": 9,
+      "combined_base": 467,
+      "same_schools_pct": 13.28
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 28,
+      "weighted": 6.45,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 4.3
+     },
+     "ks4_em4": {
+      "weight": 28,
+      "weighted": 0,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 0
+     },
+     "ks4_em5": {
+      "weight": 28,
+      "weighted": 0,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 0
+     }
+    },
+    "excluded": {
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147136",
+       "name": "Kingfisher Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 9,
+    "group_kind": "special_ap",
+    "n_with_roll": 9,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 7,
+      "weighted": -1.91,
+      "n_weighted": 1,
+      "n_with_figure": 1,
+      "average_school": -1.91
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2022,
+   "figures": {
+    "fsm": {
+     "pct": 47.17,
+     "eligible": 667,
+     "headcount": 1414,
+     "n_with_figure": 13
+    },
+    "las": {
+     "371|Doncaster": 5,
+     "372|Rotherham": 4,
+     "373|Sheffield": 3,
+     "891|Nottinghamshire": 2
+    },
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "fsm": {
+       "of": 11,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 11,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 11,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 1414,
+    "share": {
+     "las": [
+      {
+       "pct": 77.99,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 736,
+       "group_pupils": 574
+      },
+      {
+       "pct": 40.9,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 1176,
+       "group_pupils": 481
+      },
+      {
+       "pct": 11.14,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1778,
+       "group_pupils": 198
+      },
+      {
+       "pct": 13.44,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 1198,
+       "group_pupils": 161
+      }
+     ],
+     "pct": 5.33,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 8.9,
+       "region_code": "E12000003",
+       "group_pupils": 1253,
+       "region_pupils": 14080
+      },
+      {
+       "pct": 1.29,
+       "region_code": "E12000004",
+       "group_pupils": 161,
+       "region_pupils": 12450
+      }
+     ],
+     "area_pupils": 26530,
+     "group_pupils": 1414
+    },
+    "change": {
+     "1": {
+      "growing": 5,
+      "shrinking": 2,
+      "from_period": 2021,
+      "combined_pct": 27.27,
+      "same_schools": 9,
+      "combined_base": 1111,
+      "same_schools_pct": -4.23
+     },
+     "3": {
+      "growing": 6,
+      "shrinking": 0,
+      "from_period": 2019,
+      "combined_pct": 92.91,
+      "same_schools": 6,
+      "combined_base": 733,
+      "same_schools_pct": 11.87
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000003": 12,
+     "E12000004": 2
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 37,
+      "weighted": 8.53,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 8.05
+     },
+     "ks2_rwm": {
+      "weight": 76,
+      "weighted": 0,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 0
+     },
+     "ks4_em4": {
+      "weight": 37,
+      "weighted": 2.68,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 2.25
+     },
+     "ks4_em5": {
+      "weight": 37,
+      "weighted": 2.68,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 2.25
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks2_rwm": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 13,
+    "confidence": {
+     "confirmed": 14
+    },
+    "group_kind": "special_ap",
+    "size_bands": {
+     "L": 1,
+     "M": 1,
+     "S": 7,
+     "XS": 5
+    },
+    "n_with_roll": 13,
+    "roll_by_age": [
+     0,
+     0,
+     0,
+     6,
+     22,
+     48,
+     54,
+     66,
+     77,
+     92,
+     88,
+     206,
+     163,
+     146,
+     125,
+     121,
+     71,
+     90,
+     39,
+     0
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 34,
+      "weighted": -1.13,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": -1.18
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 200,
+     "primary": 425,
+     "secondary": 761
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "mainstream_line": {
+     "fsm": {
+      "pct": 47.9,
+      "eligible": 207,
+      "headcount": 432,
+      "n_with_figure": 1
+     },
+     "roll": 432,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2021,
+       "combined_pct": 0.47,
+       "same_schools": 1,
+       "combined_base": 430,
+       "same_schools_pct": 0.47
+      },
+      "3": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2019,
+       "combined_pct": 1.65,
+       "same_schools": 1,
+       "combined_base": 425,
+       "same_schools_pct": 1.65
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2017,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks4_a8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks2_rwm": {
+       "weight": 51,
+       "weighted": 39,
+       "n_weighted": 1,
+       "n_with_figure": 1,
+       "average_school": 39
+      },
+      "ks4_em4": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em5": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_all": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "boarders": 0,
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "roll_by_age": [
+      0,
+      7,
+      22,
+      39,
+      48,
+      49,
+      60,
+      58,
+      49,
+      49,
+      51,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks4_p8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_va_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 316,
+      "secondary": 0
+     }
+    },
+    "schools_by_kind": {
+     "special": 13,
+     "mainstream": 1
+    },
+    "schools_by_phase": {
+     "post16": 9,
+     "primary": 10,
+     "secondary": 12
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2022,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 9,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 9,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 198,
+    "share": {
+     "las": [
+      {
+       "pct": 87.21,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 86,
+       "group_pupils": 75
+      },
+      {
+       "pct": 57.03,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 128,
+       "group_pupils": 73
+      },
+      {
+       "pct": 15.48,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 168,
+       "group_pupils": 26
+      },
+      {
+       "pct": 13.95,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 172,
+       "group_pupils": 24
+      }
+     ],
+     "pct": 6.11,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 10.06,
+       "region_code": "E12000003",
+       "group_pupils": 172,
+       "region_pupils": 1710
+      },
+      {
+       "pct": 1.7,
+       "region_code": "E12000004",
+       "group_pupils": 26,
+       "region_pupils": 1531
+      }
+     ],
+     "area_pupils": 3241,
+     "group_pupils": 198
+    },
+    "change": {
+     "1": {
+      "growing": 2,
+      "shrinking": 4,
+      "from_period": 2021,
+      "combined_pct": 14.45,
+      "same_schools": 6,
+      "combined_base": 173,
+      "same_schools_pct": -7.5
+     },
+     "3": {
+      "growing": 3,
+      "shrinking": 2,
+      "from_period": 2019,
+      "combined_pct": 78.38,
+      "same_schools": 5,
+      "combined_base": 111,
+      "same_schools_pct": 8.11
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "ks5_aps_all": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 9,
+    "group_kind": "special_ap",
+    "n_with_roll": 9,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2022,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 4,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 9,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 425,
+    "share": {
+     "las": [
+      {
+       "pct": 82.35,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 238,
+       "group_pupils": 196
+      },
+      {
+       "pct": 48.15,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 351,
+       "group_pupils": 169
+      },
+      {
+       "pct": 8.89,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 405,
+       "group_pupils": 36
+      },
+      {
+       "pct": 4.95,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 485,
+       "group_pupils": 24
+      }
+     ],
+     "pct": 5.2,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 9.02,
+       "region_code": "E12000003",
+       "group_pupils": 389,
+       "region_pupils": 4313
+      },
+      {
+       "pct": 0.93,
+       "region_code": "E12000004",
+       "group_pupils": 36,
+       "region_pupils": 3853
+      }
+     ],
+     "area_pupils": 8166,
+     "group_pupils": 425
+    },
+    "change": {
+     "1": {
+      "growing": 2,
+      "shrinking": 3,
+      "from_period": 2021,
+      "combined_pct": 13.64,
+      "same_schools": 8,
+      "combined_base": 374,
+      "same_schools_pct": -2.41
+     },
+     "3": {
+      "growing": 1,
+      "shrinking": 4,
+      "from_period": 2019,
+      "combined_pct": 50.18,
+      "same_schools": 6,
+      "combined_base": 283,
+      "same_schools_pct": -7.77
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 76,
+      "weighted": 0,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 0
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks2_rwm": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 10,
+    "group_kind": "special_ap",
+    "n_with_roll": 10,
+    "value_added": {},
+    "mainstream_line": {
+     "roll": 316,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2021,
+       "combined_pct": 0.32,
+       "same_schools": 1,
+       "combined_base": 315,
+       "same_schools_pct": 0.32
+      },
+      "3": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2019,
+       "combined_pct": 4.98,
+       "same_schools": 1,
+       "combined_base": 301,
+       "same_schools_pct": 4.98
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2017,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks2_rwm": {
+       "weight": 51,
+       "weighted": 39,
+       "n_weighted": 1,
+       "n_with_figure": 1,
+       "average_school": 39
+      }
+     },
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "value_added": {}
+    }
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2022,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 5,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 754,
+    "share": {
+     "las": [
+      {
+       "pct": 72.47,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 396,
+       "group_pupils": 287
+      },
+      {
+       "pct": 33.87,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 679,
+       "group_pupils": 230
+      },
+      {
+       "pct": 13.23,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1066,
+       "group_pupils": 141
+      },
+      {
+       "pct": 15.82,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 607,
+       "group_pupils": 96
+      }
+     ],
+     "pct": 5.22,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 8.52,
+       "region_code": "E12000003",
+       "group_pupils": 658,
+       "region_pupils": 7721
+      },
+      {
+       "pct": 1.43,
+       "region_code": "E12000004",
+       "group_pupils": 96,
+       "region_pupils": 6721
+      }
+     ],
+     "area_pupils": 14442,
+     "group_pupils": 754
+    },
+    "change": {
+     "1": {
+      "growing": 8,
+      "shrinking": 0,
+      "from_period": 2021,
+      "combined_pct": 42.53,
+      "same_schools": 8,
+      "combined_base": 529,
+      "same_schools_pct": 13.38
+     },
+     "3": {
+      "growing": 5,
+      "shrinking": 1,
+      "from_period": 2019,
+      "combined_pct": 140.13,
+      "same_schools": 6,
+      "combined_base": 314,
+      "same_schools_pct": 32.8
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 37,
+      "weighted": 8.53,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 8.05
+     },
+     "ks4_em4": {
+      "weight": 37,
+      "weighted": 2.68,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 2.25
+     },
+     "ks4_em5": {
+      "weight": 37,
+      "weighted": 2.68,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": 2.25
+     }
+    },
+    "excluded": {
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147864",
+       "name": "Bader Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 12,
+    "group_kind": "special_ap",
+    "n_with_roll": 12,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 34,
+      "weighted": -1.13,
+      "n_weighted": 2,
+      "n_with_figure": 2,
+      "average_school": -1.18
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2023,
+   "figures": {
+    "fsm": {
+     "pct": 48.74,
+     "eligible": 873,
+     "headcount": 1791,
+     "n_with_figure": 14
+    },
+    "las": {
+     "371|Doncaster": 5,
+     "372|Rotherham": 5,
+     "373|Sheffield": 3,
+     "891|Nottinghamshire": 2
+    },
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "fsm": {
+       "of": 11,
+       "rank": 9,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 3,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 1791,
+    "share": {
+     "las": [
+      {
+       "pct": 53.06,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 1308,
+       "group_pupils": 694
+      },
+      {
+       "pct": 76.96,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 816,
+       "group_pupils": 628
+      },
+      {
+       "pct": 14.45,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1931,
+       "group_pupils": 279
+      },
+      {
+       "pct": 15.1,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 1258,
+       "group_pupils": 190
+      }
+     ],
+     "pct": 6.31,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 10.58,
+       "region_code": "E12000003",
+       "group_pupils": 1601,
+       "region_pupils": 15127
+      },
+      {
+       "pct": 1.43,
+       "region_code": "E12000004",
+       "group_pupils": 190,
+       "region_pupils": 13241
+      }
+     ],
+     "area_pupils": 28368,
+     "group_pupils": 1791
+    },
+    "change": {
+     "1": {
+      "growing": 12,
+      "shrinking": 1,
+      "from_period": 2022,
+      "combined_pct": 26.66,
+      "same_schools": 13,
+      "combined_base": 1414,
+      "same_schools_pct": 13.58
+     },
+     "3": {
+      "growing": 8,
+      "shrinking": 1,
+      "from_period": 2020,
+      "combined_pct": 78.39,
+      "same_schools": 9,
+      "combined_base": 1004,
+      "same_schools_pct": 13.84
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000003": 13,
+     "E12000004": 2
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 67,
+      "weighted": 6.72,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": 6.67
+     },
+     "ks2_rwm": {
+      "weight": 120,
+      "weighted": 0,
+      "n_weighted": 10,
+      "n_with_figure": 10,
+      "average_school": 0
+     },
+     "ks4_em4": {
+      "weight": 67,
+      "weighted": 4.49,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": 6.05
+     },
+     "ks4_em5": {
+      "weight": 67,
+      "weighted": 3,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": 3.55
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks2_rwm": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 14,
+    "confidence": {
+     "confirmed": 15
+    },
+    "group_kind": "special_ap",
+    "size_bands": {
+     "L": 1,
+     "M": 7,
+     "S": 1,
+     "XS": 6
+    },
+    "n_with_roll": 14,
+    "roll_by_age": [
+     0,
+     0,
+     0,
+     5,
+     26,
+     43,
+     80,
+     78,
+     87,
+     96,
+     123,
+     215,
+     238,
+     203,
+     172,
+     155,
+     111,
+     81,
+     76,
+     2
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 60,
+      "weighted": -2.05,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": -2.08
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 268,
+     "primary": 507,
+     "secondary": 983
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "mainstream_line": {
+     "fsm": {
+      "pct": 50.3,
+      "eligible": 221,
+      "headcount": 439,
+      "n_with_figure": 1
+     },
+     "roll": 439,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2022,
+       "combined_pct": 1.62,
+       "same_schools": 1,
+       "combined_base": 432,
+       "same_schools_pct": 1.62
+      },
+      "3": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2020,
+       "combined_pct": 3.05,
+       "same_schools": 1,
+       "combined_base": 426,
+       "same_schools_pct": 3.05
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2018,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks4_a8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks2_rwm": {
+       "weight": 55,
+       "weighted": 51,
+       "n_weighted": 1,
+       "n_with_figure": 1,
+       "average_school": 51
+      },
+      "ks4_em4": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em5": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_all": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "boarders": 0,
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "roll_by_age": [
+      0,
+      6,
+      33,
+      30,
+      47,
+      51,
+      52,
+      59,
+      59,
+      47,
+      55,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks4_p8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_va_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 323,
+      "secondary": 0
+     }
+    },
+    "schools_by_kind": {
+     "special": 14,
+     "mainstream": 1
+    },
+    "schools_by_phase": {
+     "post16": 9,
+     "primary": 11,
+     "secondary": 13
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2023,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 9,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 9,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 262,
+    "share": {
+     "las": [
+      {
+       "pct": 79.86,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 139,
+       "group_pupils": 111
+      },
+      {
+       "pct": 81.32,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 91,
+       "group_pupils": 74
+      },
+      {
+       "pct": 27.78,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 198,
+       "group_pupils": 55
+      },
+      {
+       "pct": 12.02,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 183,
+       "group_pupils": 22
+      }
+     ],
+     "pct": 7.94,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 13.54,
+       "region_code": "E12000003",
+       "group_pupils": 240,
+       "region_pupils": 1773
+      },
+      {
+       "pct": 1.44,
+       "region_code": "E12000004",
+       "group_pupils": 22,
+       "region_pupils": 1528
+      }
+     ],
+     "area_pupils": 3301,
+     "group_pupils": 262
+    },
+    "change": {
+     "1": {
+      "growing": 6,
+      "shrinking": 2,
+      "from_period": 2022,
+      "combined_pct": 32.32,
+      "same_schools": 8,
+      "combined_base": 198,
+      "same_schools_pct": 22.58
+     },
+     "3": {
+      "growing": 4,
+      "shrinking": 2,
+      "from_period": 2020,
+      "combined_pct": 100,
+      "same_schools": 6,
+      "combined_base": 131,
+      "same_schools_pct": 15.27
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "ks5_aps_all": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 9,
+    "group_kind": "special_ap",
+    "n_with_roll": 9,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2023,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 506,
+    "share": {
+     "las": [
+      {
+       "pct": 83.58,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 274,
+       "group_pupils": 229
+      },
+      {
+       "pct": 55.93,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 354,
+       "group_pupils": 198
+      },
+      {
+       "pct": 10.96,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 429,
+       "group_pupils": 47
+      },
+      {
+       "pct": 6.26,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 511,
+       "group_pupils": 32
+      }
+     ],
+     "pct": 5.81,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 10,
+       "region_code": "E12000003",
+       "group_pupils": 459,
+       "region_pupils": 4591
+      },
+      {
+       "pct": 1.14,
+       "region_code": "E12000004",
+       "group_pupils": 47,
+       "region_pupils": 4113
+      }
+     ],
+     "area_pupils": 8704,
+     "group_pupils": 506
+    },
+    "change": {
+     "1": {
+      "growing": 7,
+      "shrinking": 2,
+      "from_period": 2022,
+      "combined_pct": 19.06,
+      "same_schools": 10,
+      "combined_base": 425,
+      "same_schools_pct": 11.29
+     },
+     "3": {
+      "growing": 4,
+      "shrinking": 4,
+      "from_period": 2020,
+      "combined_pct": 37.13,
+      "same_schools": 8,
+      "combined_base": 369,
+      "same_schools_pct": 6.78
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 120,
+      "weighted": 0,
+      "n_weighted": 10,
+      "n_with_figure": 10,
+      "average_school": 0
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks2_rwm": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 11,
+    "group_kind": "special_ap",
+    "n_with_roll": 11,
+    "value_added": {},
+    "mainstream_line": {
+     "roll": 323,
+     "change": {
+      "1": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2022,
+       "combined_pct": 2.22,
+       "same_schools": 1,
+       "combined_base": 316,
+       "same_schools_pct": 2.22
+      },
+      "3": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2020,
+       "combined_pct": 6.6,
+       "same_schools": 1,
+       "combined_base": 303,
+       "same_schools_pct": 6.6
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 0,
+       "from_period": 2018,
+       "combined_pct": null,
+       "same_schools": 0,
+       "combined_base": null,
+       "same_schools_pct": null
+      }
+     },
+     "results": {
+      "ks2_rwm": {
+       "weight": 55,
+       "weighted": 51,
+       "n_weighted": 1,
+       "n_with_figure": 1,
+       "average_school": 51
+      }
+     },
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "value_added": {}
+    }
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2023,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 3,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 977,
+    "share": {
+     "las": [
+      {
+       "pct": 47.32,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 784,
+       "group_pupils": 371
+      },
+      {
+       "pct": 71.36,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 440,
+       "group_pupils": 314
+      },
+      {
+       "pct": 15.73,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1170,
+       "group_pupils": 184
+      },
+      {
+       "pct": 17.31,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 624,
+       "group_pupils": 108
+      }
+     ],
+     "pct": 6.24,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 10.37,
+       "region_code": "E12000003",
+       "group_pupils": 869,
+       "region_pupils": 8380
+      },
+      {
+       "pct": 1.49,
+       "region_code": "E12000004",
+       "group_pupils": 108,
+       "region_pupils": 7265
+      }
+     ],
+     "area_pupils": 15645,
+     "group_pupils": 977
+    },
+    "change": {
+     "1": {
+      "growing": 11,
+      "shrinking": 1,
+      "from_period": 2022,
+      "combined_pct": 29.58,
+      "same_schools": 12,
+      "combined_base": 754,
+      "same_schools_pct": 13.93
+     },
+     "3": {
+      "growing": 7,
+      "shrinking": 1,
+      "from_period": 2020,
+      "combined_pct": 109.21,
+      "same_schools": 8,
+      "combined_base": 467,
+      "same_schools_pct": 37.29
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 67,
+      "weighted": 6.72,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": 6.67
+     },
+     "ks4_em4": {
+      "weight": 67,
+      "weighted": 4.49,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": 6.05
+     },
+     "ks4_em5": {
+      "weight": 67,
+      "weighted": 3,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": 3.55
+     }
+    },
+    "excluded": {
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 13,
+    "group_kind": "special_ap",
+    "n_with_roll": 13,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 60,
+      "weighted": -2.05,
+      "n_weighted": 4,
+      "n_with_figure": 4,
+      "average_school": -2.08
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2024,
+   "figures": {
+    "fsm": {
+     "pct": 51.35,
+     "eligible": 1139,
+     "headcount": 2218,
+     "n_with_figure": 16
+    },
+    "las": {
+     "371|Doncaster": 5,
+     "372|Rotherham": 5,
+     "373|Sheffield": 4,
+     "891|Nottinghamshire": 3
+    },
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "fsm": {
+       "of": 11,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 2218,
+    "share": {
+     "las": [
+      {
+       "pct": 54.45,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 1405,
+       "group_pupils": 765
+      },
+      {
+       "pct": 76.5,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 915,
+       "group_pupils": 700
+      },
+      {
+       "pct": 22.33,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 2038,
+       "group_pupils": 455
+      },
+      {
+       "pct": 22.58,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 1320,
+       "group_pupils": 298
+      }
+     ],
+     "pct": 7.41,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 11.99,
+       "region_code": "E12000003",
+       "group_pupils": 1920,
+       "region_pupils": 16013
+      },
+      {
+       "pct": 2.14,
+       "region_code": "E12000004",
+       "group_pupils": 298,
+       "region_pupils": 13914
+      }
+     ],
+     "area_pupils": 29927,
+     "group_pupils": 2218
+    },
+    "change": {
+     "1": {
+      "growing": 13,
+      "shrinking": 1,
+      "from_period": 2023,
+      "combined_pct": 23.84,
+      "same_schools": 14,
+      "combined_base": 1791,
+      "same_schools_pct": 13.68
+     },
+     "3": {
+      "growing": 8,
+      "shrinking": 1,
+      "from_period": 2021,
+      "combined_pct": 99.64,
+      "same_schools": 9,
+      "combined_base": 1111,
+      "same_schools_pct": 15.21
+     },
+     "5": {
+      "growing": 6,
+      "shrinking": 0,
+      "from_period": 2019,
+      "combined_pct": 202.59,
+      "same_schools": 6,
+      "combined_base": 733,
+      "same_schools_pct": 35.61
+     }
+    },
+    "regions": {
+     "E12000003": 14,
+     "E12000004": 3
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 118,
+      "weighted": 5.08,
+      "n_weighted": 6,
+      "n_with_figure": 6,
+      "average_school": 5.62
+     },
+     "ks2_rwm": {
+      "weight": 127,
+      "weighted": 0,
+      "n_weighted": 11,
+      "n_with_figure": 11,
+      "average_school": 0
+     },
+     "ks4_em4": {
+      "weight": 118,
+      "weighted": 4.25,
+      "n_weighted": 6,
+      "n_with_figure": 6,
+      "average_school": 6.48
+     },
+     "ks4_em5": {
+      "weight": 118,
+      "weighted": 0.85,
+      "n_weighted": 6,
+      "n_with_figure": 6,
+      "average_school": 0.98
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks2_rwm": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 16,
+    "confidence": {
+     "confirmed": 17
+    },
+    "group_kind": "special_ap",
+    "size_bands": {
+     "L": 1,
+     "M": 9,
+     "S": 1,
+     "XS": 6
+    },
+    "n_with_roll": 16,
+    "roll_by_age": [
+     0,
+     0,
+     2,
+     3,
+     40,
+     65,
+     72,
+     103,
+     112,
+     115,
+     131,
+     248,
+     264,
+     286,
+     245,
+     203,
+     144,
+     109,
+     66,
+     10
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 319,
+     "primary": 598,
+     "secondary": 1246
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "mainstream_line": {
+     "fsm": {
+      "pct": 49.9,
+      "eligible": 213,
+      "headcount": 427,
+      "n_with_figure": 1
+     },
+     "roll": 427,
+     "change": {
+      "1": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2023,
+       "combined_pct": -2.73,
+       "same_schools": 1,
+       "combined_base": 439,
+       "same_schools_pct": -2.73
+      },
+      "3": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2021,
+       "combined_pct": -0.7,
+       "same_schools": 1,
+       "combined_base": 430,
+       "same_schools_pct": -0.7
+      },
+      "5": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2019,
+       "combined_pct": 0.47,
+       "same_schools": 1,
+       "combined_base": 425,
+       "same_schools_pct": 0.47
+      }
+     },
+     "results": {
+      "ks4_a8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks2_rwm": {
+       "weight": 48,
+       "weighted": 46,
+       "n_weighted": 1,
+       "n_with_figure": 1,
+       "average_school": 46
+      },
+      "ks4_em4": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em5": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_all": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "boarders": 0,
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "roll_by_age": [
+      0,
+      5,
+      35,
+      38,
+      32,
+      46,
+      52,
+      51,
+      60,
+      60,
+      48,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks4_p8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_va_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 317,
+      "secondary": 0
+     }
+    },
+    "schools_by_kind": {
+     "special": 16,
+     "mainstream": 1
+    },
+    "schools_by_phase": {
+     "post16": 10,
+     "primary": 13,
+     "secondary": 15
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2024,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 9,
+       "rank": 4,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 9,
+       "rank": 3,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 301,
+    "share": {
+     "las": [
+      {
+       "pct": 81.29,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 155,
+       "group_pupils": 126
+      },
+      {
+       "pct": 33.74,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 246,
+       "group_pupils": 83
+      },
+      {
+       "pct": 70,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 100,
+       "group_pupils": 70
+      },
+      {
+       "pct": 12.22,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 180,
+       "group_pupils": 22
+      }
+     ],
+     "pct": 8.7,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 14.46,
+       "region_code": "E12000003",
+       "group_pupils": 279,
+       "region_pupils": 1929
+      },
+      {
+       "pct": 1.44,
+       "region_code": "E12000004",
+       "group_pupils": 22,
+       "region_pupils": 1532
+      }
+     ],
+     "area_pupils": 3461,
+     "group_pupils": 301
+    },
+    "change": {
+     "1": {
+      "growing": 5,
+      "shrinking": 3,
+      "from_period": 2023,
+      "combined_pct": 14.89,
+      "same_schools": 9,
+      "combined_base": 262,
+      "same_schools_pct": 14.89
+     },
+     "3": {
+      "growing": 3,
+      "shrinking": 2,
+      "from_period": 2021,
+      "combined_pct": 73.99,
+      "same_schools": 6,
+      "combined_base": 173,
+      "same_schools_pct": 3.12
+     },
+     "5": {
+      "growing": 4,
+      "shrinking": 1,
+      "from_period": 2019,
+      "combined_pct": 171.17,
+      "same_schools": 5,
+      "combined_base": 111,
+      "same_schools_pct": 33.33
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "ks5_aps_all": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "140854",
+       "name": "The Beech Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142768",
+       "name": "Abbey School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149427",
+       "name": "Kenwood Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 10,
+    "group_kind": "special_ap",
+    "n_with_roll": 9,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2024,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 5,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 4,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 598,
+    "share": {
+     "las": [
+      {
+       "pct": 85.61,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 285,
+       "group_pupils": 244
+      },
+      {
+       "pct": 57.35,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 408,
+       "group_pupils": 234
+      },
+      {
+       "pct": 15.45,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 440,
+       "group_pupils": 68
+      },
+      {
+       "pct": 9.79,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 531,
+       "group_pupils": 52
+      }
+     ],
+     "pct": 6.45,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 10.61,
+       "region_code": "E12000003",
+       "group_pupils": 530,
+       "region_pupils": 4993
+      },
+      {
+       "pct": 1.59,
+       "region_code": "E12000004",
+       "group_pupils": 68,
+       "region_pupils": 4277
+      }
+     ],
+     "area_pupils": 9270,
+     "group_pupils": 598
+    },
+    "change": {
+     "1": {
+      "growing": 9,
+      "shrinking": 2,
+      "from_period": 2023,
+      "combined_pct": 18.18,
+      "same_schools": 11,
+      "combined_base": 506,
+      "same_schools_pct": 10.87
+     },
+     "3": {
+      "growing": 6,
+      "shrinking": 2,
+      "from_period": 2021,
+      "combined_pct": 59.89,
+      "same_schools": 8,
+      "combined_base": 374,
+      "same_schools_pct": 17.38
+     },
+     "5": {
+      "growing": 4,
+      "shrinking": 2,
+      "from_period": 2019,
+      "combined_pct": 111.31,
+      "same_schools": 6,
+      "combined_base": 283,
+      "same_schools_pct": 14.49
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 127,
+      "weighted": 0,
+      "n_weighted": 11,
+      "n_with_figure": 11,
+      "average_school": 0
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks2_rwm": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 13,
+    "group_kind": "special_ap",
+    "n_with_roll": 13,
+    "value_added": {},
+    "mainstream_line": {
+     "roll": 317,
+     "change": {
+      "1": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2023,
+       "combined_pct": -1.86,
+       "same_schools": 1,
+       "combined_base": 323,
+       "same_schools_pct": -1.86
+      },
+      "3": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2021,
+       "combined_pct": 0.63,
+       "same_schools": 1,
+       "combined_base": 315,
+       "same_schools_pct": 0.63
+      },
+      "5": {
+       "growing": 1,
+       "shrinking": 0,
+       "from_period": 2019,
+       "combined_pct": 5.32,
+       "same_schools": 1,
+       "combined_base": 301,
+       "same_schools_pct": 5.32
+      }
+     },
+     "results": {
+      "ks2_rwm": {
+       "weight": 48,
+       "weighted": 46,
+       "n_weighted": 1,
+       "n_with_figure": 1,
+       "average_school": 46
+      }
+     },
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "value_added": {}
+    }
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2024,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 1,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 1243,
+    "share": {
+     "las": [
+      {
+       "pct": 47.5,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 819,
+       "group_pupils": 389
+      },
+      {
+       "pct": 71.54,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 506,
+       "group_pupils": 362
+      },
+      {
+       "pct": 25.06,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1217,
+       "group_pupils": 305
+      },
+      {
+       "pct": 27.74,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 674,
+       "group_pupils": 187
+      }
+     ],
+     "pct": 7.56,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 12.12,
+       "region_code": "E12000003",
+       "group_pupils": 1056,
+       "region_pupils": 8716
+      },
+      {
+       "pct": 2.42,
+       "region_code": "E12000004",
+       "group_pupils": 187,
+       "region_pupils": 7733
+      }
+     ],
+     "area_pupils": 16449,
+     "group_pupils": 1243
+    },
+    "change": {
+     "1": {
+      "growing": 12,
+      "shrinking": 1,
+      "from_period": 2023,
+      "combined_pct": 27.23,
+      "same_schools": 13,
+      "combined_base": 977,
+      "same_schools_pct": 13.31
+     },
+     "3": {
+      "growing": 7,
+      "shrinking": 1,
+      "from_period": 2021,
+      "combined_pct": 134.97,
+      "same_schools": 8,
+      "combined_base": 529,
+      "same_schools_pct": 38.38
+     },
+     "5": {
+      "growing": 6,
+      "shrinking": 0,
+      "from_period": 2019,
+      "combined_pct": 295.86,
+      "same_schools": 6,
+      "combined_base": 314,
+      "same_schools_pct": 57.64
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 118,
+      "weighted": 5.08,
+      "n_weighted": 6,
+      "n_with_figure": 6,
+      "average_school": 5.62
+     },
+     "ks4_em4": {
+      "weight": 118,
+      "weighted": 4.25,
+      "n_weighted": 6,
+      "n_with_figure": 6,
+      "average_school": 6.48
+     },
+     "ks4_em5": {
+      "weight": 118,
+      "weighted": 0.85,
+      "n_weighted": 6,
+      "n_with_figure": 6,
+      "average_school": 0.98
+     }
+    },
+    "excluded": {
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150758",
+       "name": "Endeavour Academy",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 15,
+    "group_kind": "special_ap",
+    "n_with_roll": 15,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2025,
+   "figures": {
+    "fsm": {
+     "pct": 53.39,
+     "eligible": 1499,
+     "headcount": 2808,
+     "n_with_figure": 18
+    },
+    "las": {
+     "371|Doncaster": 5,
+     "372|Rotherham": 5,
+     "373|Sheffield": 5,
+     "892|Nottingham": 1,
+     "891|Nottinghamshire": 3
+    },
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "fsm": {
+       "of": 11,
+       "rank": 9,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 11,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 4,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 2808,
+    "share": {
+     "las": [
+      {
+       "pct": 40.5,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 2148,
+       "group_pupils": 870
+      },
+      {
+       "pct": 55.54,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 1417,
+       "group_pupils": 787
+      },
+      {
+       "pct": 76.65,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 972,
+       "group_pupils": 745
+      },
+      {
+       "pct": 21.92,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 1419,
+       "group_pupils": 311
+      },
+      {
+       "pct": 8.74,
+       "la_code": "892",
+       "la_name": "Nottingham",
+       "la_pupils": 1087,
+       "group_pupils": 95
+      }
+     ],
+     "pct": 8.89,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 14.2,
+       "region_code": "E12000003",
+       "group_pupils": 2402,
+       "region_pupils": 16912
+      },
+      {
+       "pct": 2.76,
+       "region_code": "E12000004",
+       "group_pupils": 406,
+       "region_pupils": 14690
+      }
+     ],
+     "area_pupils": 31602,
+     "group_pupils": 2808
+    },
+    "change": {
+     "1": {
+      "growing": 14,
+      "shrinking": 2,
+      "from_period": 2024,
+      "combined_pct": 26.6,
+      "same_schools": 16,
+      "combined_base": 2218,
+      "same_schools_pct": 6.85
+     },
+     "3": {
+      "growing": 13,
+      "shrinking": 0,
+      "from_period": 2022,
+      "combined_pct": 98.59,
+      "same_schools": 13,
+      "combined_base": 1414,
+      "same_schools_pct": 38.61
+     },
+     "5": {
+      "growing": 8,
+      "shrinking": 1,
+      "from_period": 2020,
+      "combined_pct": 179.68,
+      "same_schools": 9,
+      "combined_base": 1004,
+      "same_schools_pct": 34.56
+     }
+    },
+    "regions": {
+     "E12000003": 15,
+     "E12000004": 4
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 204,
+      "weighted": 4.69,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 5.94
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 204,
+      "weighted": 2.44,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 3.33
+     },
+     "ks4_em5": {
+      "weight": 204,
+      "weighted": 0.99,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 1.6
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "151951",
+       "name": "Nottingham HOPE Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "151951",
+       "name": "Nottingham HOPE Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "151951",
+       "name": "Nottingham HOPE Academy",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 18,
+    "confidence": {
+     "confirmed": 19
+    },
+    "group_kind": "special_ap",
+    "size_bands": {
+     "L": 1,
+     "M": 11,
+     "S": 2,
+     "XS": 5
+    },
+    "n_with_roll": 18,
+    "roll_by_age": [
+     0,
+     0,
+     0,
+     5,
+     17,
+     61,
+     88,
+     99,
+     128,
+     128,
+     137,
+     330,
+     348,
+     314,
+     370,
+     345,
+     181,
+     154,
+     86,
+     17
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 421,
+     "primary": 641,
+     "secondary": 1707
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "mainstream_line": {
+     "fsm": {
+      "pct": 54.5,
+      "eligible": 223,
+      "headcount": 409,
+      "n_with_figure": 1
+     },
+     "roll": 409,
+     "change": {
+      "1": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2024,
+       "combined_pct": -4.22,
+       "same_schools": 1,
+       "combined_base": 427,
+       "same_schools_pct": -4.22
+      },
+      "3": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2022,
+       "combined_pct": -5.32,
+       "same_schools": 1,
+       "combined_base": 432,
+       "same_schools_pct": -5.32
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2020,
+       "combined_pct": -3.99,
+       "same_schools": 1,
+       "combined_base": 426,
+       "same_schools_pct": -3.99
+      }
+     },
+     "results": {
+      "ks4_a8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em4": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks4_em5": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_all": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_aps_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "boarders": 0,
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "roll_by_age": [
+      0,
+      4,
+      22,
+      42,
+      44,
+      32,
+      44,
+      49,
+      52,
+      61,
+      59,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "value_added": {
+      "ks4_p8": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      },
+      "ks5_va_alevel": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "roll_by_phase": {
+      "post16": 0,
+      "primary": 297,
+      "secondary": 0
+     }
+    },
+    "schools_by_kind": {
+     "ap": 1,
+     "special": 17,
+     "mainstream": 1
+    },
+    "schools_by_phase": {
+     "post16": 12,
+     "primary": 13,
+     "secondary": 17
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2025,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 9,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 9,
+       "rank": 5,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 404,
+    "share": {
+     "las": [
+      {
+       "pct": 49.01,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 304,
+       "group_pupils": 149
+      },
+      {
+       "pct": 79.14,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 163,
+       "group_pupils": 129
+      },
+      {
+       "pct": 72.32,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 112,
+       "group_pupils": 81
+      },
+      {
+       "pct": 21.88,
+       "la_code": "892",
+       "la_name": "Nottingham",
+       "la_pupils": 128,
+       "group_pupils": 28
+      },
+      {
+       "pct": 9.66,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 176,
+       "group_pupils": 17
+      }
+     ],
+     "pct": 10.87,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 17.05,
+       "region_code": "E12000003",
+       "group_pupils": 359,
+       "region_pupils": 2105
+      },
+      {
+       "pct": 2.79,
+       "region_code": "E12000004",
+       "group_pupils": 45,
+       "region_pupils": 1612
+      }
+     ],
+     "area_pupils": 3717,
+     "group_pupils": 404
+    },
+    "change": {
+     "1": {
+      "growing": 5,
+      "shrinking": 4,
+      "from_period": 2024,
+      "combined_pct": 34.22,
+      "same_schools": 9,
+      "combined_base": 301,
+      "same_schools_pct": 4.98
+     },
+     "3": {
+      "growing": 6,
+      "shrinking": 1,
+      "from_period": 2022,
+      "combined_pct": 104.04,
+      "same_schools": 8,
+      "combined_base": 198,
+      "same_schools_pct": 53.76
+     },
+     "5": {
+      "growing": 5,
+      "shrinking": 1,
+      "from_period": 2020,
+      "combined_pct": 208.4,
+      "same_schools": 6,
+      "combined_base": 131,
+      "same_schools_pct": 37.4
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 12,
+    "group_kind": "special_ap",
+    "n_with_roll": 12,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2025,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 7,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 5,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 637,
+    "share": {
+     "las": [
+      {
+       "pct": 86.08,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 309,
+       "group_pupils": 266
+      },
+      {
+       "pct": 57.85,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 427,
+       "group_pupils": 247
+      },
+      {
+       "pct": 13.79,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 515,
+       "group_pupils": 71
+      },
+      {
+       "pct": 10.54,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 503,
+       "group_pupils": 53
+      }
+     ],
+     "pct": 6.43,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 10.81,
+       "region_code": "E12000003",
+       "group_pupils": 566,
+       "region_pupils": 5235
+      },
+      {
+       "pct": 1.52,
+       "region_code": "E12000004",
+       "group_pupils": 71,
+       "region_pupils": 4676
+      }
+     ],
+     "area_pupils": 9911,
+     "group_pupils": 637
+    },
+    "change": {
+     "1": {
+      "growing": 7,
+      "shrinking": 6,
+      "from_period": 2024,
+      "combined_pct": 6.52,
+      "same_schools": 13,
+      "combined_base": 598,
+      "same_schools_pct": 6.52
+     },
+     "3": {
+      "growing": 7,
+      "shrinking": 2,
+      "from_period": 2022,
+      "combined_pct": 49.88,
+      "same_schools": 10,
+      "combined_base": 425,
+      "same_schools_pct": 28.94
+     },
+     "5": {
+      "growing": 6,
+      "shrinking": 2,
+      "from_period": 2020,
+      "combined_pct": 72.63,
+      "same_schools": 8,
+      "combined_base": 369,
+      "same_schools_pct": 28.18
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "143481",
+       "name": "Crags Community School",
+       "reason": "mainstream_line"
+      }
+     ]
+    },
+    "n_schools": 13,
+    "group_kind": "special_ap",
+    "n_with_roll": 13,
+    "value_added": {},
+    "mainstream_line": {
+     "roll": 297,
+     "change": {
+      "1": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2024,
+       "combined_pct": -6.31,
+       "same_schools": 1,
+       "combined_base": 317,
+       "same_schools_pct": -6.31
+      },
+      "3": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2022,
+       "combined_pct": -6.01,
+       "same_schools": 1,
+       "combined_base": 316,
+       "same_schools_pct": -6.01
+      },
+      "5": {
+       "growing": 0,
+       "shrinking": 1,
+       "from_period": 2020,
+       "combined_pct": -1.98,
+       "same_schools": 1,
+       "combined_base": 303,
+       "same_schools_pct": -1.98
+      }
+     },
+     "results": {
+      "ks2_rwm": {
+       "weight": 0,
+       "weighted": null,
+       "n_weighted": 0,
+       "n_with_figure": 0,
+       "average_school": null
+      }
+     },
+     "excluded": {},
+     "n_schools": 1,
+     "n_with_roll": 1,
+     "value_added": {}
+    }
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2025,
+   "figures": {
+    "peer": {
+     "band": "11+",
+     "type": "special_ap",
+     "places": {
+      "roll_change_1": {
+       "of": 11,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_same_schools_1": {
+       "of": 11,
+       "rank": 3,
+       "tied": false
+      }
+     },
+     "set_id": "peer:special_ap:11+",
+     "n_groups": 11
+    },
+    "roll": 1703,
+    "share": {
+     "las": [
+      {
+       "pct": 50.39,
+       "la_code": "373",
+       "la_name": "Sheffield",
+       "la_pupils": 1284,
+       "group_pupils": 647
+      },
+      {
+       "pct": 49.57,
+       "la_code": "372",
+       "la_name": "Rotherham",
+       "la_pupils": 819,
+       "group_pupils": 406
+      },
+      {
+       "pct": 71.56,
+       "la_code": "371",
+       "la_name": "Doncaster",
+       "la_pupils": 538,
+       "group_pupils": 385
+      },
+      {
+       "pct": 28.61,
+       "la_code": "891",
+       "la_name": "Nottinghamshire",
+       "la_pupils": 706,
+       "group_pupils": 202
+      },
+      {
+       "pct": 8.1,
+       "la_code": "892",
+       "la_name": "Nottingham",
+       "la_pupils": 778,
+       "group_pupils": 63
+      }
+     ],
+     "pct": 9.87,
+     "sector": "special_ap",
+     "regions": [
+      {
+       "pct": 15.65,
+       "region_code": "E12000003",
+       "group_pupils": 1438,
+       "region_pupils": 9189
+      },
+      {
+       "pct": 3.28,
+       "region_code": "E12000004",
+       "group_pupils": 265,
+       "region_pupils": 8070
+      }
+     ],
+     "area_pupils": 17259,
+     "group_pupils": 1703
+    },
+    "change": {
+     "1": {
+      "growing": 12,
+      "shrinking": 3,
+      "from_period": 2024,
+      "combined_pct": 37.01,
+      "same_schools": 15,
+      "combined_base": 1243,
+      "same_schools_pct": 8.21
+     },
+     "3": {
+      "growing": 11,
+      "shrinking": 1,
+      "from_period": 2022,
+      "combined_pct": 125.86,
+      "same_schools": 12,
+      "combined_base": 754,
+      "same_schools_pct": 40.98
+     },
+     "5": {
+      "growing": 7,
+      "shrinking": 1,
+      "from_period": 2020,
+      "combined_pct": 264.67,
+      "same_schools": 8,
+      "combined_base": 467,
+      "same_schools_pct": 60.77
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 204,
+      "weighted": 4.69,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 5.94
+     },
+     "ks4_em4": {
+      "weight": 204,
+      "weighted": 2.44,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 3.33
+     },
+     "ks4_em5": {
+      "weight": 204,
+      "weighted": 0.99,
+      "n_weighted": 7,
+      "n_with_figure": 7,
+      "average_school": 1.6
+     }
+    },
+    "excluded": {
+     "ks4_a8": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "151951",
+       "name": "Nottingham HOPE Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "151951",
+       "name": "Nottingham HOPE Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "142795",
+       "name": "Hilltop School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "142797",
+       "name": "Kelford School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "144346",
+       "name": "Pennine View School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147515",
+       "name": "Heatherwood School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147582",
+       "name": "Coppice School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147829",
+       "name": "North Ridge Community School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149087",
+       "name": "Discovery Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149430",
+       "name": "Fountaindale School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "149642",
+       "name": "The Willows School",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "151951",
+       "name": "Nottingham HOPE Academy",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 17,
+    "group_kind": "special_ap",
+    "n_with_roll": 17,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  }
+ ],
+ "build": {
+  "meta": {
+   "bands": [
+    "peer:foundation_trust:all",
+    "peer:independent_company:21-40",
+    "peer:mat:21-40",
+    "peer:mat:41+",
+    "peer:nursery:all",
+    "peer:special_ap:11+"
+   ],
+   "focus": [
+    "3320",
+    "club_iss:dukes-education",
+    "16125",
+    "17126",
+    "4499"
+   ],
+   "commit": "847e02e",
+   "periods": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "reasons": {
+    "ap": "alternative provision: not counted in group figures",
+    "pru": "pupil referral unit: not counted in group figures",
+    "igcse": "IGCSE: not ranked at GCSE",
+    "closed": "closed",
+    "nursery": "nursery school: not counted in group figures",
+    "special": "special school: not counted in group figures",
+    "no_census": "no census return",
+    "prep_no_ks2": "prep: no KS2 published",
+    "not_yet_open": "not yet open",
+    "not_published": "not published (independent)",
+    "mainstream_line": "mainstream school: in the group's mainstream line",
+    "outside_england": "outside England",
+    "no_results_published": "no results published"
+   },
+   "sat_set": "sat:all",
+   "measures": {
+    "ks4_a8": "GCSE Attainment 8",
+    "ks4_p8": "Progress 8",
+    "ks2_rwm": "KS2 reading, writing and maths at the expected standard (%)",
+    "ks4_em4": "GCSE grade 4+ in English and maths (%)",
+    "ks4_em5": "GCSE grade 5+ in English and maths (%)",
+    "ks5_aps_all": "Post-16 average points per entry, all qualifications",
+    "ks5_va_alevel": "A level value added",
+    "ks5_aps_alevel": "A level average points per entry"
+   },
+   "available": {
+    "roll": [
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_a8": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_p8": [
+     2021,
+     2022,
+     2023
+    ],
+    "ks2_rwm": [
+     2022,
+     2023,
+     2024
+    ],
+    "ks4_em4": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_em5": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks5_aps_all": [
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "ks5_va_alevel": [
+     2023,
+     2024
+    ],
+    "ks5_aps_alevel": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "census_day": "15 January of the academic year's second calendar year",
+   "peer_types": {
+    "mat": "MATs",
+    "federation": "federations",
+    "foundation_trust": "foundation trusts",
+    "independent_other": "other independent groups",
+    "independent_charity": "independent charities",
+    "independent_company": "independent companies"
+   },
+   "phase_ages": {
+    "post16": [
+     16,
+     18
+    ],
+    "primary": [
+     5,
+     10
+    ],
+    "secondary": [
+     11,
+     15
+    ]
+   },
+   "size_bands": [
+    "2-5",
+    "6-10",
+    "11-20",
+    "21-40",
+    "41+"
+   ],
+   "group_kinds": {
+    "nursery": 34,
+    "mainstream": 2420,
+    "special_ap": 156
+   },
+   "nm_fixtures": {
+    "shaw": "4499",
+    "nexus": "16125",
+    "birmingham": "17126"
+   },
+   "not_counted": [
+    "ap",
+    "nursery",
+    "pru",
+    "special"
+   ],
+   "subject_min": {
+    "entries": 10,
+    "schools": 2
+   },
+   "listed_types": [
+    "federation",
+    "foundation_trust",
+    "independent_charity",
+    "independent_company",
+    "independent_other",
+    "mat"
+   ],
+   "non_mainstream": {
+    "fsm": "pupil-weighted: eligible over headcount (the headcount implied by DfE's eligible count and %)",
+    "line": "more than half of the group's current schools special, AP, PRU or nursery (NM1)",
+    "ties": [
+     "1768"
+    ],
+    "counting": "a non-mainstream group's figures are over its special, AP, PRU and nursery schools; its mainstream schools are figures.mainstream_line (NM2)",
+    "families": {
+     "nursery": "nursery federations",
+     "special_ap": "special and AP trusts"
+    },
+    "family_tie": "special_ap",
+    "pool_kinds": {
+     "ap": "state-funded alternative provision and PRUs",
+     "nursery": "state-funded nursery schools",
+     "special": "state-funded special schools"
+    },
+    "size_bands": {
+     "nursery": [],
+     "special_ap": [
+      "2-5",
+      "6-10",
+      "11+"
+     ]
+    },
+    "state_funded": "GIAS special schools less non-maintained special schools, special post-16 institutions and independent special schools; the special and AP academies and free schools, PRUs and LA nursery schools",
+    "kind_line_min": 5,
+    "la_pool_kinds": [
+     "special"
+    ]
+   },
+   "whole_type_band": "all",
+   "foundation_trust": "1337",
+   "phase_min_pupils": 10,
+   "subject_families": [
+    {
+     "sort": 0,
+     "label": "Sciences & Maths",
+     "family_id": "sciences_maths"
+    },
+    {
+     "sort": 1,
+     "label": "Humanities & Social Sciences",
+     "family_id": "humanities_social"
+    },
+    {
+     "sort": 2,
+     "label": "Languages & Literature",
+     "family_id": "languages_literature"
+    },
+    {
+     "sort": 3,
+     "label": "Arts, Media & Design",
+     "family_id": "arts_media_design"
+    },
+    {
+     "sort": 4,
+     "label": "Business & Law",
+     "family_id": "business_law"
+    },
+    {
+     "sort": 5,
+     "label": "Technology, Engineering & Construction",
+     "family_id": "technology_eng_construction"
+    },
+    {
+     "sort": 6,
+     "label": "Health & Care",
+     "family_id": "health_care"
+    },
+    {
+     "sort": 7,
+     "label": "Enterprise & Applied Studies",
+     "family_id": "enterprise_applied"
+    }
+   ],
+   "inputs_fetched_at": "2026-11-13 23:27:28",
+   "min_group_schools": 2,
+   "non_mainstream_groups": 190,
+   "state_funded_overrides": {
+    "101849": "City technology college (BRIT School): state-funded; GIAS types it independent",
+    "108420": "City technology college (Emmanuel College): state-funded; GIAS types it independent",
+    "123627": "City technology college (Thomas Telford School): state-funded; GIAS types it independent"
+   }
+  },
+  "build_id": 1,
+  "computed_at": "2026-11-13T23:33:17.074+00:00"
+ },
+ "group": {
+  "kind": "special_ap",
+  "name": "NEXUS MULTI ACADEMY TRUST",
+  "type": "mat",
+  "source": "gias_groups",
+  "group_id": "16125",
+  "schools_by_kind": {
+   "ap": 1,
+   "pru": 0,
+   "nursery": 0,
+   "special": 21,
+   "mainstream": 1
+  }
+ },
+ "reading": "at_time",
+ "membership": {
+  "as_of": "2026-10-16",
+  "likely": 0,
+  "sources": [
+   "gias_groups"
+  ],
+  "confirmed": 23,
+  "outside_england": 0
+ }
+}

@@ -28,6 +28,7 @@ import { returnLabel, safeReturnTo } from "@/lib/sets/return-to";
 import { archiveGroupSet, deleteGroupSet, makeGroupDefault, ownerOf, saveGroupSet, shareGroupSet } from "@/lib/sets/group-store";
 import { CAP_WORDS, GROUP_SET_CAP, groupSaveMode, groupsWord, isUuid, namedList, type GroupSaveMode, type GroupSetKind, type GroupSetRow } from "@/lib/groups/group-sets";
 import { DEFAULT_FILTER, headlineWords, libraryCards, phaseWords, regionWords, typeAndSize, type IndexCard } from "@/lib/groups/library";
+import { cardFsmWords, familyOf, sameFamily, schoolsByKindWords, setRefusal } from "@/lib/groups/non-mainstream";
 import { displayName } from "@/lib/groups/dash";
 import { BackButton } from "./SetEditor";
 import { CreatorPill } from "./SetSelector";
@@ -94,13 +95,20 @@ export function GroupSetEditor(p: { d: GroupSetsResponse; kind: GroupSetKind; se
   const startName = set?.name ?? p.startName ?? (peers ? "New set of groups" : "New subset");
   const [name, setName] = useState(startName);
   const [description, setDescription] = useState(set?.description ?? "");
-  const [items, setItems] = useState<Item[]>(() => startMembers.filter((m) => m !== d.viewer.groupId).map((id) => ({ id, ticked: true })));
+  // R-NM-SETS: a group of another family than ours (mainstream, special and AP, nursery) never stays in
+  // the set: it starts unticked, and the note says why.
+  const otherFamily = (id: string) => peers && !!setRefusal(d.us?.kind, (d.cards ?? []).find((c) => c.group_id === id)?.kind);
+  const [items, setItems] = useState<Item[]>(() => startMembers.filter((m) => m !== d.viewer.groupId).map((id) => ({ id, ticked: !otherFamily(id) })));
   const [sheet, setSheet] = useState(false);
   const [search, setSearch] = useState("");
   const [likeUs, setLikeUs] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(() => {
+    const id = startMembers.find((m) => m !== d.viewer.groupId && otherFamily(m));
+    const c = id ? (d.cards ?? []).find((x) => x.group_id === id) : null;
+    return c ? setRefusal(d.us?.kind, c.kind, displayName(c.name)) : null;
+  });
   const [saveAs, setSaveAs] = useState<null | { name: string; owner: "personal" | "group" }>(null);
   const [menu, setMenu] = useState(false);
   const leaving = useRef(false);
@@ -135,6 +143,9 @@ export function GroupSetEditor(p: { d: GroupSetsResponse; kind: GroupSetKind; se
   // A tick means "in the set"; at the cap a further tick is refused (sets of groups).
   const toggle = (id: string) => {
     setNote(null);
+    const refusedCard = peers ? (d.cards ?? []).find((c) => c.group_id === id) : null;
+    const refused = refusedCard ? setRefusal(d.us?.kind, refusedCard.kind, displayName(refusedCard.name)) : null;
+    if (refused && !items.find((y) => y.id === id)?.ticked) return setNote(refused);
     setItems((it) => {
       const x = it.find((y) => y.id === id);
       const on = it.filter((y) => y.ticked).length;
@@ -188,6 +199,7 @@ export function GroupSetEditor(p: { d: GroupSetsResponse; kind: GroupSetKind; se
     const c = cards.get(id);
     if (!c) return { title: id, lines: ["Not a listed group now: it keeps its place, with no figures."] };
     const ts = typeAndSize(c);
+    if (familyOf(c.kind) !== "mainstream") return { title: displayName(c.name), lines: [`${ts.line} · ${schoolsByKindWords(c.schools_by_kind)} · ${regionWords(c)}`, cardFsmWords(c)] };
     return { title: displayName(c.name), lines: [`${ts.line}${ts.likely ? ` · ${ts.likely}` : ""} · ${regionWords(c)}`, headlineWords(c, "all").text] };
   };
   const schoolRow = (urn: string) => {
@@ -203,7 +215,7 @@ export function GroupSetEditor(p: { d: GroupSetsResponse; kind: GroupSetKind; se
   // The library as a sheet (groups like us first), or the group's schools not yet in the subset.
   const inSet = new Set(ticked.map((x) => x.id));
   const offered = peers
-    ? libraryCards(d.cards ?? [], d.us, { ...DEFAULT_FILTER, likeUs: likeUs && !!d.us, search, sort: likeUs && d.us ? "like_us" : "size" }).slice(0, 60)
+    ? libraryCards(sameFamily(d.us?.kind, d.cards ?? []), d.us, { ...DEFAULT_FILTER, section: familyOf(d.us?.kind) === "mainstream" ? "mainstream" : "nm", likeUs: likeUs && !!d.us, search, sort: likeUs && d.us ? "like_us" : "size" }).slice(0, 60)
     : (d.schools ?? []).filter((s) => s.current && (!search || s.name.toLowerCase().includes(search.toLowerCase())));
 
   const regionsOfSet: Record<string, number> = {};
@@ -317,6 +329,7 @@ export function GroupSetEditor(p: { d: GroupSetsResponse; kind: GroupSetKind; se
               {peers && <span className="text-[12px] text-[var(--muted2)]">{ticked.length} of {GROUP_SET_CAP}</span>}
             </div>
             {note && <div className="text-[12.5px] font-semibold" role="status">{note}</div>}
+            {familyOf(d.us?.kind) !== "mainstream" && <div className="text-[12px] text-[var(--muted2)]" data-set-family="">Only {familyOf(d.us?.kind) === "nursery" ? "nursery federations" : "special and AP trusts"} can be in a set with {d.viewer.name}: they are compared only with each other.</div>}
             <div className="min-h-0 overflow-y-auto">
               {peers
                 ? (offered as IndexCard[]).map((c) => (
@@ -324,8 +337,8 @@ export function GroupSetEditor(p: { d: GroupSetsResponse; kind: GroupSetKind; se
                       <RegionArtwork regions={c.regions} size={40} label={regionWords(c)} />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[13px] font-semibold">{displayName(c.name)}</div>
-                        <div className="truncate text-[11.5px] text-[var(--muted2)]">{typeAndSize(c).line} · {regionWords(c)} · {phaseWords(c)}</div>
-                        <div className="truncate text-[11.5px]">{headlineWords(c, "all").text}</div>
+                        <div className="truncate text-[11.5px] text-[var(--muted2)]">{typeAndSize(c).line} · {regionWords(c)} · {familyOf(c.kind) === "mainstream" ? phaseWords(c) : schoolsByKindWords(c.schools_by_kind)}</div>
+                        <div className="truncate text-[11.5px]">{familyOf(c.kind) === "mainstream" ? headlineWords(c, "all").text : cardFsmWords(c)}</div>
                       </div>
                       <button type="button" aria-pressed={inSet.has(c.group_id)} onClick={() => toggle(c.group_id)} className={`shrink-0 rounded-full border px-3 text-[12px] font-bold ${hit} ${inSet.has(c.group_id) ? "border-[var(--accent)]" : "border-[var(--panel-border2)]"}`}>{inSet.has(c.group_id) ? "✓ In the set" : "Add"}</button>
                     </div>

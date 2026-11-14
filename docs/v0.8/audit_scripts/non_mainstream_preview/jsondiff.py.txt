@@ -1,0 +1,28 @@
+import json,sys,re
+from collections import Counter
+def load(p):
+    s=open(p).read(); return json.loads(s[s.index('=')+1:].strip().rstrip(';'))
+A=load(sys.argv[1]); B=load(sys.argv[2])
+groups=sys.argv[3].split(',')
+def norm(p): return re.sub(r'\[\d+\]','[]',p)
+for g in groups:
+    moves=Counter(); adds=Counter(); ex={}
+    def cmp(a,b,p):
+        if isinstance(a,dict) and isinstance(b,dict):
+            for k in a:
+                if k not in b: moves[norm(p+'/'+k)+' GONE']+=1; ex.setdefault(norm(p+'/'+k)+' GONE',p)
+                else: cmp(a[k],b[k],p+'/'+k)
+            for k in b:
+                if k not in a: adds[norm(p+'/'+k)]+=1
+        elif isinstance(a,list) and isinstance(b,list):
+            if len(a)!=len(b): moves[norm(p)+' LEN']+=1; ex.setdefault(norm(p)+' LEN',f'{p} {len(a)}->{len(b)}'); 
+            for i,(x,y) in enumerate(zip(a,b)): cmp(x,y,f'{p}[{i}]')
+        elif a!=b:
+            moves[norm(p)]+=1; ex.setdefault(norm(p),f'{p}: {str(a)[:90]} -> {str(b)[:90]}')
+    ka=set(A[g]['dash']); kb=set(B[g]['dash'])
+    print(g,'keys only base',len(ka-kb),'only br',len(kb-ka))
+    for k in sorted(ka&kb): cmp(A[g]['dash'][k],B[g]['dash'][k],k.split('|')[0])
+    for part in ['sets','schools']: cmp(A[g][part],B[g][part],part)
+    print(' MOVES', len(moves))
+    for m,n in moves.most_common(40): print('  ',n,m,'|',ex[m])
+    print(' ADDS', dict(adds.most_common(25)))

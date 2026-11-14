@@ -2837,11 +2837,11 @@ export const RULES: Rule[] = [
   {
     id: "R-GROUP-LIBRARY",
     statement:
-      "The groups library (/teacher/group/groups, head office only: a member school's SMT reads \"not found\", D2) lists every MAT, federation, foundation trust and independent group with 2 or more current schools, each body once (sponsor records, single-academy trusts, self-declared groups and our own group are never cards; groups mostly of special, AP, PRU or nursery schools are held out until their own comparison, LF3 and N2). A card has the regions tile map as its artwork (shaded by where its schools are), its type and size (\"MAT · 41 schools\", \"+2 likely\"), its regions main first (\"London · also South East, East\"; a tie counts in each, D5), its phases, its roll and 3-year change, and one results headline for the phase in view against its sector's England (on All phases its main phase, labelled; \"Results not published\" for an independent group without them, D7). Groups like us is the default (same type, our own peer set first, then nearest in size); the filters (type, size band, region by most schools in or has a school in, phases, search) and the sort live in the address; a phone shows one column with the filters in a bottom sheet. Add to set… (M4) lists the sets of groups this person may change, ticks the ones already holding the group, and adds or takes it out through the editor's own save path (save_set), refusing a ninth group; New set with this group… opens the editor with it in. View as and a peek see it disabled.",
+      "The groups library (/teacher/group/groups, head office only: a member school's SMT reads \"not found\", D2) lists every MAT, federation, foundation trust and independent group with 2 or more current schools, each body once (sponsor records, single-academy trusts, self-declared groups and our own group are never cards; groups more than half special, AP, PRU or nursery are their own section, below). A card has the regions tile map as its artwork (shaded by where its schools are), its type and size (\"MAT · 41 schools\", \"+2 likely\"), its regions main first (\"London · also South East, East\"; a tie counts in each, D5), its phases, its roll and 3-year change, and one results headline for the phase in view against its sector's England (on All phases its main phase, labelled; \"Results not published\" for an independent group without them, D7). Groups like us is the default (same type, our own peer set first, then nearest in size); the filters (type, size band, region by most schools in or has a school in, phases, search) and the sort live in the address; a phone shows one column with the filters in a bottom sheet. Add to set… (M4) lists the sets of groups this person may change, ticks the ones already holding the group, and adds or takes it out through the editor's own save path (save_set), refusing a ninth group; New set with this group… opens the editor with it in. View as and a peek see it disabled. 0.8 non-mainstream groups (NM10): a second section, \"Special, AP and nursery groups\" (production's non_mainstream list, 140 groups), switched beside the mainstream groups, with its own filter (special and AP trusts or nursery federations, 2–5, 6–10 or 11+ schools, region), the majority rule's (i) (with the families, the state-funded pools, nursery FSM and \"57 of these 140 groups have two schools\"), and cards showing schools by kind, roll and same-schools 3-year change and FSM against the kind's England figure, never a result; a special, AP or nursery group's head office opens on that section, \"like us\" being its family. Add to set… refuses another family's group in one line (R-NM-SETS).",
     why: "Brief v2 §4 (Guy's D5, D7, LF3, N2): find the groups worth comparing with, then collect them like playlists.",
     appliesTo: "the groups library and a group's page; Add to set…",
     enforcedIn: ["src/lib/groups/library.ts:libraryCards", "src/lib/groups/library.ts:headlineWords", "src/lib/groups/library-page.ts:libraryGroupPage", "src/components/groups/library/GroupLibrary.tsx", "src/components/groups/library/GroupLibraryPage.tsx", "src/components/groups/library/AddToSet.tsx", "src/app/api/group/library/route.ts", "src/app/api/group/library/group/route.ts"],
-    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes Education (the group fixtures, docs/v0.8/groups_fixtures) (the index: 1,642 listed groups)", expect: "Harris's like-us list starts with the other MATs with 41+ schools, nearest in size; no sponsor, SAT, self-declared or non-mainstream group is a card; regions main first, ties in both; Dukes's headline reads \"Results not published\" where an independent group has none; the filters round-trip through the address.", check: "groupLibrary" },
+    testCase: { urn: "3320", school: "Harris Federation 3320 and Dukes Education (the group fixtures, docs/v0.8/groups_fixtures) (the index: 1,642 listed groups)", expect: "Harris's like-us list starts with the other MATs with 41+ schools, nearest in size; no sponsor, SAT or self-declared group is a card, and no non-mainstream group is a mainstream card (they are the second section's 140, R-NM-LINE); regions main first, ties in both; Dukes's headline reads \"Results not published\" where an independent group has none; the filters round-trip through the address.", check: "groupLibrary" },
     origin: "0.8 group sets M3 and M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §4)",
     status: "active",
   },
@@ -2914,7 +2914,7 @@ export const RULES: Rule[] = [
   {
     id: "R-GROUP-NON-GROUP",
     statement:
-      "Each state school counts in exactly one of: a listed group (MAT, federation or foundation trust of 2 or more current schools), the single-academy trust pool (sat:all), or non-group. Independents: a listed independent group, else non-group. Production computes the pools so (M1, ~/dev/vicdata, its verify); the app offers non-group and the single-academy trusts as separate rows and defaults, words non-group as \"State schools in England in no listed group … and not a single-academy trust\", offers no SAT pool to an independent group, and never sums them.",
+      "Each state school counts in exactly one of: a listed group (MAT, federation or foundation trust of 2 or more current schools), the single-academy trust pool (sat:all), or non-group. Independents: a listed independent group, else non-group. Production computes the pools so (M1, ~/dev/vicdata, its verify); the app offers non-group and the single-academy trusts as separate rows and defaults, words non-group as \"State schools in England in no listed group … and not a single-academy trust\", offers no SAT pool to an independent group, and never sums them. 0.8 non-mainstream groups: a special and AP trust or nursery federation is still a listed group (its schools are in no non-group or SAT pool), but its own figures meet only its family's peer set and state-funded pools of its kinds; non-group, the single-academy trusts, its areas and England are offered only for its mainstream line (R-NM-POOLS).",
     why: "Brief v2 §8.4 (Guy's D1): no school counted twice across a group, non-group and the SAT pool.",
     appliesTo: "Against others, the picker's Default block, every comparison against non-group or the SAT pool",
     enforcedIn: ["src/lib/groups/dash.ts:NON_GROUP_STATE_NOTE", "src/lib/groups/dash.ts:SAT_NOTE", "src/lib/groups/dash.ts:buildOverview", "src/lib/groups/group-sets.ts:normaliseCompare", "~/dev/vicdata ingest/group_aggregates.py (production, M1)"],
@@ -2931,6 +2931,83 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/groups/dash.ts:buildOverview", "src/lib/groups/dash.ts:peerWords", "src/lib/groups/library-page.ts:libraryGroupPage"],
     testCase: { urn: "3320", school: "Harris against Ark (MAT) and North Tyneside (foundation trust), the fixtures", expect: "Harris and Ark read \"… of N MATs with 41+ schools\"; North Tyneside reads \"… of N foundation trusts\".", check: "groupRankSameType" },
     origin: "0.8 group sets M4 (docs/v0.8/vicdata_0_8_group_sets_brief_v2.md §5; docs/v0.8/vicdata_0_8_group_sets_m4_m6_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-NM-LINE",
+    statement:
+      "A group is non-mainstream exactly when more than half of its current schools are special (any kind), AP, PRU or nursery schools (NM1; a group at exactly half stays mainstream), and its family follows its majority kind: nursery federations where its nursery schools outnumber its special, AP and PRU schools, otherwise special and AP trusts (the one tie, The Orchards, is special and AP). Production decides it (group.kind, the index card's kind); the app never recomputes it, and shows the rule in the library's (i) and the Group pages' (i)s.",
+    why: 'NM1, NM3: a fair comparison of their own, decided once.',
+    appliesTo: "the library's sections, every Group page, the set rule",
+    enforcedIn: ['src/lib/groups/non-mainstream.ts:isNonMainstream, familyOf', 'src/lib/groups/library.ts:libraryCards', '~/dev/vicdata ingest/group_aggregates.py (production)'],
+    testCase: { urn: "16125", school: 'Nexus (16125), the Birmingham nursery federation (17126), Shaw (4499), Harris and Dukes (the group fixtures, production build 7)', expect: 'Every one of the 140 non-mainstream cards has more than half special, AP, PRU or nursery schools and its family is its majority kind; none of the 1,642 mainstream cards has; The Orchards is special_ap; 57 have two schools.', check: "nmLine" },
+    origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
+    status: "active",
+  },
+  {
+    id: "R-NM-COUNTING",
+    statement:
+      'A non-mainstream group\'s own figures are over its special, AP, PRU and nursery schools; its mainstream schools are its mainstream line (figures.mainstream_line), compared only with mainstream pools. The app reads production\'s per-school counted flag the other way round for a non-mainstream group (special, AP, PRU and nursery schools count; a mainstream school reads "Mainstream · in the mainstream line"), and "18 of 19; 1 mainstream school in its mainstream line" in place of "not counted". Mainstream groups\' figures and pages are unchanged (production\'s before/after: every mainstream figure identical; the app\'s parity: Harris and Dukes identical in words).',
+    why: 'NM2.',
+    appliesTo: "The group now, Against others, the mainstream line, the Schools table, the library's group page",
+    enforcedIn: ['src/lib/groups/dash.ts:buildOverview, buildSchools', 'src/lib/groups/dash-nm.ts:buildNmParts', 'src/lib/groups/library-page.ts:libraryGroupPage'],
+    testCase: { urn: "16125", school: 'Nexus (16125), the Birmingham nursery federation (17126), Shaw (4499), Harris and Dukes (the group fixtures, production build 7)', expect: 'Nexus: 18 schools, roll 2,808, FSM 53.4%, its line 1 school (Crags, roll 409); its Schools table counts its special and AP schools and lists Crags as its mainstream line.', check: "nmCounting" },
+    origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
+    status: "active",
+  },
+  {
+    id: "R-NM-POOLS",
+    statement:
+      'Each comparison set a non-mainstream group meets holds only its kinds: its family\'s peer set (special and AP trusts with 2–5, 6–10 or 11+ schools; all nursery federations), the same kinds of school in its regions matched to its mix, and state-funded pools by kind (England and each region for special, AP and PRU, and nursery; LA pools for special schools only). R-MIN-SCHOOLS withholds any pool under 5 schools (roll change and FSM). The mainstream pools (non-group, single-academy trusts, its areas, England) appear only beside its mainstream line. The page says "state-funded".',
+    why: 'NM4, NM6, NM12.',
+    appliesTo: "Against others, the picker's Default block, FSM over time",
+    enforcedIn: ['src/lib/groups/dash-nm.ts:buildNmParts', 'src/lib/groups/dash.ts:setsFor, withheld', 'src/lib/groups/group-sets.ts:normaliseCompare'],
+    testCase: { urn: "16125", school: 'Nexus (16125), the Birmingham nursery federation (17126), Shaw (4499), Harris and Dukes (the group fixtures, production build 7)', expect: "Nexus's Against others holds only its peer set, its kinds in its regions and pools named State-funded special schools / alternative provision and PRUs; every LA pool is special; a pool under 5 is withheld.", check: "nmPools" },
+    origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
+    status: "active",
+  },
+  {
+    id: "R-NM-FSM-NURSERY",
+    statement:
+      "Nursery FSM is never compared with school FSM: a nursery federation's peer set, pools, same-kinds row, FSM trend and library card meet only nursery figures, and its pages carry the (i): an under-5 qualifies for free school meals only on a full-day place (about 10% against about 50% in special schools). Sets of groups keep the two families apart (R-NM-SETS).",
+    why: 'NM5.',
+    appliesTo: "a nursery federation's every page, the library's card",
+    enforcedIn: ['src/lib/groups/dash-nm.ts:buildNmParts', 'src/lib/groups/non-mainstream.ts:cardFsmWords, NM_NOTES'],
+    testCase: { urn: "16125", school: 'Nexus (16125), the Birmingham nursery federation (17126), Shaw (4499), Harris and Dukes (the group fixtures, production build 7)', expect: "Birmingham's Against others, FSM trend and picker are all nursery figures; its card's England figure is nursery's only; the (i) is shown.", check: "nmPools" },
+    origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
+    status: "active",
+  },
+  {
+    id: "R-NM-NO-RESULTS",
+    statement:
+      'A non-mainstream group\'s pages show no results tile, column, place or trend: Overview\'s Results panel and Academic say "Results aren\'t compared for special and AP schools" (or "for nursery schools") with the reason (KS2 is 0% at 630 of 652 special schools; no school-level KS4 for AP; Progress 8 ends with 2023/24), its Schools table has no headline, rank or value added, its library card and page none, and its pages show all phases only (pools and FSM are whole-school). Production keeps the figures; the app shows none.',
+    why: 'NM7.',
+    appliesTo: 'every Group page of a non-mainstream group; the library',
+    enforcedIn: ['src/lib/groups/dash.ts:buildOverview, buildSchools', 'src/components/groups/dash/views-nm.tsx:NmNoResults', 'src/components/groups/dash/GroupDashboard.tsx:NM_LAYOUT', 'src/lib/groups/library-page.ts'],
+    testCase: { urn: "16125", school: 'Nexus (16125), the Birmingham nursery federation (17126), Shaw (4499), Harris and Dukes (the group fixtures, production build 7)', expect: 'Nexus and Birmingham: no result columns, places or trends, the reason shown; their Schools tables have no headline.', check: "nmCounting" },
+    origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
+    status: "active",
+  },
+  {
+    id: "R-NM-SETS",
+    statement:
+      'A set of groups holds groups of one family, and our own group\'s: a non-mainstream group never shares a set with a mainstream group (and nursery federations never with special and AP trusts), by any route -- the library\'s Add to set… refuses in one line ("Ark is a mainstream group: special and AP trusts are compared only with special and AP trusts."), the editor\'s Add groups offers only our family and refuses the rest with the same line, a stored or unsaved set drops another family\'s groups and says how many, and Nearest in size is our family\'s.',
+    why: 'NM10.',
+    appliesTo: 'Add to set…, the set editor (group mode), the set picker, old peer_named links',
+    enforcedIn: ['src/lib/groups/non-mainstream.ts:setRefusal, sameFamily', 'src/lib/groups/group-sets.ts:resolveCompare, nearestInSize', 'src/components/groups/library/AddToSet.tsx', 'src/components/sets/GroupSetEditor.tsx', 'src/lib/groups/dash-payload.ts'],
+    testCase: { urn: "16125", school: 'Nexus (16125), the Birmingham nursery federation (17126), Shaw (4499), Harris and Dukes (the group fixtures, production build 7)', expect: "Ark is refused from Nexus's set with the line, and Nexus from Harris's; an old set of Wellspring, Esteem and Ark resolves to Wellspring and Esteem with 1 left out.", check: "nmSets" },
+    origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
+    status: "active",
+  },
+  {
+    id: "R-NM-OWN-SCHOOLS",
+    statement:
+      'A mainstream group\'s own special, AP, PRU and nursery schools stay out of its figures; in its Schools table each is placed against its region\'s state-funded pool of its kind (its FSM, DfE\'s own, beside the pool\'s; its 3-year roll change beside the pool\'s like-for-like change; R-MIN-SCHOOLS) in place of the bare "not in group figures" tag, and a pooled line (production\'s kind_lines) appears only where it has 5 or more current schools of one kind, beside England\'s pool of that kind.',
+    why: 'NM11.',
+    appliesTo: 'the Schools table and The group now on Schools, for a mainstream group',
+    enforcedIn: ['src/lib/groups/dash.ts:buildSchools', 'src/lib/groups/non-mainstream.ts:placeSchool, placingWords, kindLinesOf', 'src/components/groups/dash/views.tsx:SchoolsTable, SchoolsNow'],
+    testCase: { urn: "4499", school: 'Shaw (4499: 12 special, 1 AP) and Harris (3320: 1 AP), the group fixtures', expect: "Shaw's 13 schools are each placed against their region's pool (Walton Hall against State-funded special schools, West Midlands); its special schools are pooled (12), its AP school isn't; Harris's AP school is placed and it has no pooled line.", check: "nmOwnSchools" },
+    origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
     status: "active",
   },
 ];

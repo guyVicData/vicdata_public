@@ -19,6 +19,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.4,
+      "eligible": 284
+     },
      "kind": "mainstream",
      "roll": 851,
      "igcse": false,
@@ -72,6 +76,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 41.4,
+      "eligible": 371
+     },
      "kind": "mainstream",
      "roll": 897,
      "igcse": false,
@@ -125,6 +133,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 43,
+      "eligible": 385
+     },
      "kind": "mainstream",
      "roll": 896,
      "igcse": false,
@@ -212,6 +224,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.2,
+      "eligible": 389
+     },
      "kind": "mainstream",
      "roll": 880,
      "igcse": false,
@@ -299,6 +315,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 48.3,
+      "eligible": 419
+     },
      "kind": "mainstream",
      "roll": 868,
      "igcse": false,
@@ -387,6 +407,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 48.3,
+      "eligible": 403
+     },
      "kind": "mainstream",
      "roll": 835,
      "igcse": false,
@@ -474,6 +498,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 52,
+      "eligible": 406
+     },
      "kind": "mainstream",
      "roll": 781,
      "igcse": false,
@@ -565,6 +593,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.5,
+      "eligible": 276
+     },
      "kind": "mainstream",
      "roll": 1286,
      "igcse": false,
@@ -618,6 +650,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.4,
+      "eligible": 358
+     },
      "kind": "mainstream",
      "roll": 1354,
      "igcse": false,
@@ -671,6 +707,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.2,
+      "eligible": 405
+     },
      "kind": "mainstream",
      "roll": 1388,
      "igcse": false,
@@ -758,6 +798,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.9,
+      "eligible": 437
+     },
      "kind": "mainstream",
      "roll": 1368,
      "igcse": false,
@@ -845,6 +889,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.5,
+      "eligible": 442
+     },
      "kind": "mainstream",
      "roll": 1358,
      "igcse": false,
@@ -933,6 +981,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.3,
+      "eligible": 433
+     },
      "kind": "mainstream",
      "roll": 1341,
      "igcse": false,
@@ -1020,6 +1072,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.4,
+      "eligible": 513
+     },
      "kind": "mainstream",
      "roll": 1371,
      "igcse": false,
@@ -1111,6 +1167,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30,
+      "eligible": 258
+     },
      "kind": "mainstream",
      "roll": 861,
      "igcse": false,
@@ -1164,6 +1224,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.9,
+      "eligible": 288
+     },
      "kind": "mainstream",
      "roll": 875,
      "igcse": false,
@@ -1217,6 +1281,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34,
+      "eligible": 292
+     },
      "kind": "mainstream",
      "roll": 860,
      "igcse": false,
@@ -1304,6 +1372,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.8,
+      "eligible": 309
+     },
      "kind": "mainstream",
      "roll": 863,
      "igcse": false,
@@ -1391,6 +1463,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.7,
+      "eligible": 328
+     },
      "kind": "mainstream",
      "roll": 871,
      "igcse": false,
@@ -1479,6 +1555,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 42.5,
+      "eligible": 356
+     },
      "kind": "mainstream",
      "roll": 837,
      "igcse": false,
@@ -1566,6 +1646,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.1,
+      "eligible": 357
+     },
      "kind": "mainstream",
      "roll": 809,
      "igcse": false,
@@ -1657,6 +1741,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 41.1,
+      "eligible": 233
+     },
      "kind": "mainstream",
      "roll": 567,
      "igcse": false,
@@ -1709,6 +1797,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 47.9,
+      "eligible": 272
+     },
      "kind": "mainstream",
      "roll": 568,
      "igcse": false,
@@ -1761,6 +1853,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 47.5,
+      "eligible": 272
+     },
      "kind": "mainstream",
      "roll": 573,
      "igcse": false,
@@ -1835,6 +1931,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.5,
+      "eligible": 262
+     },
      "kind": "mainstream",
      "roll": 589,
      "igcse": false,
@@ -1909,6 +2009,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 50.1,
+      "eligible": 303
+     },
      "kind": "mainstream",
      "roll": 605,
      "igcse": false,
@@ -1983,6 +2087,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 51.2,
+      "eligible": 275
+     },
      "kind": "mainstream",
      "roll": 537,
      "igcse": false,
@@ -2055,6 +2163,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 53.5,
+      "eligible": 245
+     },
      "kind": "mainstream",
      "roll": 458,
      "igcse": false,
@@ -2145,6 +2257,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 18.6,
+      "eligible": 211
+     },
      "kind": "mainstream",
      "roll": 1135,
      "igcse": false,
@@ -2198,6 +2314,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 23.2,
+      "eligible": 271
+     },
      "kind": "mainstream",
      "roll": 1169,
      "igcse": false,
@@ -2251,6 +2371,10 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 27.6,
+      "eligible": 322
+     },
      "kind": "mainstream",
      "roll": 1167,
      "igcse": false,
@@ -2338,6 +2462,10 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 32.8,
+      "eligible": 379
+     },
      "kind": "mainstream",
      "roll": 1156,
      "igcse": false,
@@ -2425,6 +2553,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37,
+      "eligible": 415
+     },
      "kind": "mainstream",
      "roll": 1121,
      "igcse": false,
@@ -2513,6 +2645,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 43.4,
+      "eligible": 486
+     },
      "kind": "mainstream",
      "roll": 1120,
      "igcse": false,
@@ -2600,6 +2736,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 49.8,
+      "eligible": 572
+     },
      "kind": "mainstream",
      "roll": 1149,
      "igcse": false,
@@ -2691,6 +2831,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 19.1,
+      "eligible": 420
+     },
      "kind": "mainstream",
      "roll": 2200,
      "igcse": false,
@@ -2744,6 +2888,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.6,
+      "eligible": 503
+     },
      "kind": "mainstream",
      "roll": 2129,
      "igcse": false,
@@ -2797,6 +2945,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.1,
+      "eligible": 573
+     },
      "kind": "mainstream",
      "roll": 2116,
      "igcse": false,
@@ -2884,6 +3036,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.4,
+      "eligible": 676
+     },
      "kind": "mainstream",
      "roll": 2155,
      "igcse": false,
@@ -2971,6 +3127,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.5,
+      "eligible": 413
+     },
      "kind": "mainstream",
      "roll": 1269,
      "igcse": false,
@@ -3059,6 +3219,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.5,
+      "eligible": 361
+     },
      "kind": "mainstream",
      "roll": 1018,
      "igcse": false,
@@ -3146,6 +3310,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 38.5,
+      "eligible": 388
+     },
      "kind": "mainstream",
      "roll": 1008,
      "igcse": false,
@@ -3237,6 +3405,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14,
+      "eligible": 177
+     },
      "kind": "mainstream",
      "roll": 1261,
      "igcse": false,
@@ -3290,6 +3462,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 19.6,
+      "eligible": 253
+     },
      "kind": "mainstream",
      "roll": 1291,
      "igcse": false,
@@ -3343,6 +3519,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.2,
+      "eligible": 300
+     },
      "kind": "mainstream",
      "roll": 1294,
      "igcse": false,
@@ -3430,6 +3610,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.3,
+      "eligible": 322
+     },
      "kind": "mainstream",
      "roll": 1271,
      "igcse": false,
@@ -3517,6 +3701,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.1,
+      "eligible": 353
+     },
      "kind": "mainstream",
      "roll": 1258,
      "igcse": false,
@@ -3605,6 +3793,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.4,
+      "eligible": 377
+     },
      "kind": "mainstream",
      "roll": 1162,
      "igcse": false,
@@ -3692,6 +3884,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.9,
+      "eligible": 428
+     },
      "kind": "mainstream",
      "roll": 1191,
      "igcse": false,
@@ -3783,6 +3979,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 8,
+      "eligible": 95
+     },
      "kind": "mainstream",
      "roll": 1194,
      "igcse": false,
@@ -3836,6 +4036,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10,
+      "eligible": 119
+     },
      "kind": "mainstream",
      "roll": 1192,
      "igcse": false,
@@ -3889,6 +4093,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.4,
+      "eligible": 139
+     },
      "kind": "mainstream",
      "roll": 1218,
      "igcse": false,
@@ -3976,6 +4184,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.1,
+      "eligible": 182
+     },
      "kind": "mainstream",
      "roll": 1290,
      "igcse": false,
@@ -4063,6 +4275,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 16.2,
+      "eligible": 211
+     },
      "kind": "mainstream",
      "roll": 1301,
      "igcse": false,
@@ -4151,6 +4367,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 17.7,
+      "eligible": 227
+     },
      "kind": "mainstream",
      "roll": 1284,
      "igcse": false,
@@ -4238,6 +4458,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 20.5,
+      "eligible": 265
+     },
      "kind": "mainstream",
      "roll": 1295,
      "igcse": false,
@@ -4329,6 +4553,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.3,
+      "eligible": 218
+     },
      "kind": "mainstream",
      "roll": 829,
      "igcse": false,
@@ -4382,6 +4610,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.3,
+      "eligible": 239
+     },
      "kind": "mainstream",
      "roll": 846,
      "igcse": false,
@@ -4435,6 +4667,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.8,
+      "eligible": 274
+     },
      "kind": "mainstream",
      "roll": 861,
      "igcse": false,
@@ -4522,6 +4758,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.6,
+      "eligible": 295
+     },
      "kind": "mainstream",
      "roll": 878,
      "igcse": false,
@@ -4609,6 +4849,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.4,
+      "eligible": 293
+     },
      "kind": "mainstream",
      "roll": 877,
      "igcse": false,
@@ -4697,6 +4941,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.1,
+      "eligible": 318
+     },
      "kind": "mainstream",
      "roll": 907,
      "igcse": false,
@@ -4784,6 +5032,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.1,
+      "eligible": 338
+     },
      "kind": "mainstream",
      "roll": 912,
      "igcse": false,
@@ -4875,6 +5127,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 24,
+      "eligible": 290
+     },
      "kind": "mainstream",
      "roll": 1209,
      "igcse": false,
@@ -4928,6 +5184,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.9,
+      "eligible": 376
+     },
      "kind": "mainstream",
      "roll": 1303,
      "igcse": false,
@@ -4981,6 +5241,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.4,
+      "eligible": 409
+     },
      "kind": "mainstream",
      "roll": 1225,
      "igcse": false,
@@ -5068,6 +5332,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 36.6,
+      "eligible": 401
+     },
      "kind": "mainstream",
      "roll": 1097,
      "igcse": false,
@@ -5155,6 +5423,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.1,
+      "eligible": 383
+     },
      "kind": "mainstream",
      "roll": 1033,
      "igcse": false,
@@ -5243,6 +5515,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 38.6,
+      "eligible": 395
+     },
      "kind": "mainstream",
      "roll": 1022,
      "igcse": false,
@@ -5330,6 +5606,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 39,
+      "eligible": 395
+     },
      "kind": "mainstream",
      "roll": 1013,
      "igcse": false,
@@ -5421,6 +5701,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 7.5,
+      "eligible": 121
+     },
      "kind": "mainstream",
      "roll": 1606,
      "igcse": false,
@@ -5474,6 +5758,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 10.2,
+      "eligible": 163
+     },
      "kind": "mainstream",
      "roll": 1597,
      "igcse": false,
@@ -5527,6 +5815,10 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 12.1,
+      "eligible": 193
+     },
      "kind": "mainstream",
      "roll": 1598,
      "igcse": false,
@@ -5614,6 +5906,10 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 13.8,
+      "eligible": 221
+     },
      "kind": "mainstream",
      "roll": 1607,
      "igcse": false,
@@ -5701,6 +5997,10 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 13.7,
+      "eligible": 220
+     },
      "kind": "mainstream",
      "roll": 1602,
      "igcse": false,
@@ -5789,6 +6089,10 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 15,
+      "eligible": 234
+     },
      "kind": "mainstream",
      "roll": 1561,
      "igcse": false,
@@ -5876,6 +6180,10 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 17.3,
+      "eligible": 276
+     },
      "kind": "mainstream",
      "roll": 1597,
      "igcse": false,
@@ -5967,6 +6275,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 6.6,
+      "eligible": 109
+     },
      "kind": "mainstream",
      "roll": 1652,
      "igcse": false,
@@ -6020,6 +6332,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 7.7,
+      "eligible": 129
+     },
      "kind": "mainstream",
      "roll": 1681,
      "igcse": false,
@@ -6073,6 +6389,10 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 9.9,
+      "eligible": 169
+     },
      "kind": "mainstream",
      "roll": 1713,
      "igcse": false,
@@ -6160,6 +6480,10 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 11.5,
+      "eligible": 194
+     },
      "kind": "mainstream",
      "roll": 1693,
      "igcse": false,
@@ -6247,6 +6571,10 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 13.7,
+      "eligible": 232
+     },
      "kind": "mainstream",
      "roll": 1697,
      "igcse": false,
@@ -6335,6 +6663,10 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 15.4,
+      "eligible": 262
+     },
      "kind": "mainstream",
      "roll": 1702,
      "igcse": false,
@@ -6422,6 +6754,10 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 15.6,
+      "eligible": 269
+     },
      "kind": "mainstream",
      "roll": 1729,
      "igcse": false,
@@ -6513,6 +6849,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.9,
+      "eligible": 175
+     },
      "kind": "mainstream",
      "roll": 1174,
      "igcse": false,
@@ -6566,6 +6906,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.5,
+      "eligible": 212
+     },
      "kind": "mainstream",
      "roll": 1146,
      "igcse": false,
@@ -6619,6 +6963,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.8,
+      "eligible": 213
+     },
      "kind": "mainstream",
      "roll": 1135,
      "igcse": false,
@@ -6706,6 +7054,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 19,
+      "eligible": 221
+     },
      "kind": "mainstream",
      "roll": 1163,
      "igcse": false,
@@ -6793,6 +7145,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 19.5,
+      "eligible": 240
+     },
      "kind": "mainstream",
      "roll": 1228,
      "igcse": false,
@@ -6881,6 +7237,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.2,
+      "eligible": 230
+     },
      "kind": "mainstream",
      "roll": 1264,
      "igcse": false,
@@ -6968,6 +7328,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 17.4,
+      "eligible": 227
+     },
      "kind": "mainstream",
      "roll": 1302,
      "igcse": false,
@@ -7059,6 +7423,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.4,
+      "eligible": 180
+     },
      "kind": "mainstream",
      "roll": 978,
      "igcse": false,
@@ -7112,6 +7480,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.4,
+      "eligible": 218
+     },
      "kind": "mainstream",
      "roll": 1020,
      "igcse": false,
@@ -7165,6 +7537,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.6,
+      "eligible": 242
+     },
      "kind": "mainstream",
      "roll": 1027,
      "igcse": false,
@@ -7252,6 +7628,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25,
+      "eligible": 267
+     },
      "kind": "mainstream",
      "roll": 1068,
      "igcse": false,
@@ -7339,6 +7719,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.4,
+      "eligible": 275
+     },
      "kind": "mainstream",
      "roll": 1082,
      "igcse": false,
@@ -7427,6 +7811,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.5,
+      "eligible": 280
+     },
      "kind": "mainstream",
      "roll": 1096,
      "igcse": false,
@@ -7514,6 +7902,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.1,
+      "eligible": 292
+     },
      "kind": "mainstream",
      "roll": 1117,
      "igcse": false,
@@ -7605,6 +7997,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 38.5,
+      "eligible": 130
+     },
      "kind": "mainstream",
      "roll": 338,
      "igcse": false,
@@ -7657,6 +8053,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.9,
+      "eligible": 136
+     },
      "kind": "mainstream",
      "roll": 303,
      "igcse": false,
@@ -7709,6 +8109,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 45.7,
+      "eligible": 123
+     },
      "kind": "mainstream",
      "roll": 269,
      "igcse": false,
@@ -7761,6 +8165,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 45.3,
+      "eligible": 112
+     },
      "kind": "mainstream",
      "roll": 247,
      "igcse": false,
@@ -7821,6 +8229,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 54.6,
+      "eligible": 197
+     },
      "kind": "mainstream",
      "roll": 361,
      "igcse": false,
@@ -7881,6 +8293,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 52.9,
+      "eligible": 145
+     },
      "kind": "mainstream",
      "roll": 274,
      "igcse": false,
@@ -7941,6 +8357,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 59.9,
+      "eligible": 145
+     },
      "kind": "mainstream",
      "roll": 242,
      "igcse": false,
@@ -8011,6 +8431,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 6.6,
+      "eligible": 90
+     },
      "kind": "mainstream",
      "roll": 1354,
      "igcse": false,
@@ -8064,6 +8488,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 8.2,
+      "eligible": 117
+     },
      "kind": "mainstream",
      "roll": 1420,
      "igcse": false,
@@ -8117,6 +8545,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 8.5,
+      "eligible": 123
+     },
      "kind": "mainstream",
      "roll": 1454,
      "igcse": false,
@@ -8204,6 +8636,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.6,
+      "eligible": 158
+     },
      "kind": "mainstream",
      "roll": 1491,
      "igcse": false,
@@ -8291,6 +8727,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.9,
+      "eligible": 160
+     },
      "kind": "mainstream",
      "roll": 1466,
      "igcse": false,
@@ -8379,6 +8819,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 13.1,
+      "eligible": 181
+     },
      "kind": "mainstream",
      "roll": 1379,
      "igcse": false,
@@ -8466,6 +8910,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 17.4,
+      "eligible": 249
+     },
      "kind": "mainstream",
      "roll": 1435,
      "igcse": false,
@@ -8557,6 +9005,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 5.1,
+      "eligible": 34
+     },
      "kind": "mainstream",
      "roll": 670,
      "igcse": false,
@@ -8609,6 +9061,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 7,
+      "eligible": 47
+     },
      "kind": "mainstream",
      "roll": 671,
      "igcse": false,
@@ -8661,6 +9117,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.8,
+      "eligible": 72
+     },
      "kind": "mainstream",
      "roll": 664,
      "igcse": false,
@@ -8713,6 +9173,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.3,
+      "eligible": 76
+     },
      "kind": "mainstream",
      "roll": 670,
      "igcse": false,
@@ -8773,6 +9237,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.3,
+      "eligible": 82
+     },
      "kind": "mainstream",
      "roll": 666,
      "igcse": false,
@@ -8833,6 +9301,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.7,
+      "eligible": 78
+     },
      "kind": "mainstream",
      "roll": 665,
      "igcse": false,
@@ -8893,6 +9365,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.9,
+      "eligible": 74
+     },
      "kind": "mainstream",
      "roll": 679,
      "igcse": false,
@@ -8963,6 +9439,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.9,
+      "eligible": 114
+     },
      "kind": "mainstream",
      "roll": 440,
      "igcse": false,
@@ -9015,6 +9495,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.8,
+      "eligible": 133
+     },
      "kind": "mainstream",
      "roll": 446,
      "igcse": false,
@@ -9067,6 +9551,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.2,
+      "eligible": 148
+     },
      "kind": "mainstream",
      "roll": 446,
      "igcse": false,
@@ -9119,6 +9607,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32,
+      "eligible": 142
+     },
      "kind": "mainstream",
      "roll": 444,
      "igcse": false,
@@ -9179,6 +9671,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.1,
+      "eligible": 154
+     },
      "kind": "mainstream",
      "roll": 452,
      "igcse": false,
@@ -9239,6 +9735,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 38.2,
+      "eligible": 166
+     },
      "kind": "mainstream",
      "roll": 435,
      "igcse": false,
@@ -9299,6 +9799,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 41.4,
+      "eligible": 173
+     },
      "kind": "mainstream",
      "roll": 418,
      "igcse": false,
@@ -9369,6 +9873,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 15.4,
+      "eligible": 69
+     },
      "kind": "mainstream",
      "roll": 448,
      "igcse": false,
@@ -9421,6 +9929,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.1,
+      "eligible": 118
+     },
      "kind": "mainstream",
      "roll": 436,
      "igcse": false,
@@ -9473,6 +9985,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.3,
+      "eligible": 124
+     },
      "kind": "mainstream",
      "roll": 438,
      "igcse": false,
@@ -9525,6 +10041,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.8,
+      "eligible": 135
+     },
      "kind": "mainstream",
      "roll": 439,
      "igcse": false,
@@ -9585,6 +10105,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.8,
+      "eligible": 133
+     },
      "kind": "mainstream",
      "roll": 432,
      "igcse": false,
@@ -9645,6 +10169,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.6,
+      "eligible": 118
+     },
      "kind": "mainstream",
      "roll": 428,
      "igcse": false,
@@ -9705,6 +10233,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.8,
+      "eligible": 129
+     },
      "kind": "mainstream",
      "roll": 448,
      "igcse": false,
@@ -9775,6 +10307,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22.9,
+      "eligible": 262
+     },
      "kind": "mainstream",
      "roll": 1146,
      "igcse": false,
@@ -9828,6 +10364,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22.2,
+      "eligible": 263
+     },
      "kind": "mainstream",
      "roll": 1185,
      "igcse": false,
@@ -9881,6 +10421,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 24.7,
+      "eligible": 288
+     },
      "kind": "mainstream",
      "roll": 1165,
      "igcse": false,
@@ -9968,6 +10512,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.3,
+      "eligible": 317
+     },
      "kind": "mainstream",
      "roll": 1163,
      "igcse": false,
@@ -10055,6 +10603,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.9,
+      "eligible": 314
+     },
      "kind": "mainstream",
      "roll": 1167,
      "igcse": false,
@@ -10143,6 +10695,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.9,
+      "eligible": 327
+     },
      "kind": "mainstream",
      "roll": 1172,
      "igcse": false,
@@ -10230,6 +10786,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.6,
+      "eligible": 337
+     },
      "kind": "mainstream",
      "roll": 1138,
      "igcse": false,
@@ -10321,6 +10881,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34,
+      "eligible": 292
+     },
      "kind": "mainstream",
      "roll": 860,
      "igcse": false,
@@ -10374,6 +10938,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 39.4,
+      "eligible": 338
+     },
      "kind": "mainstream",
      "roll": 857,
      "igcse": false,
@@ -10426,6 +10994,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 41.2,
+      "eligible": 353
+     },
      "kind": "mainstream",
      "roll": 857,
      "igcse": false,
@@ -10500,6 +11072,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 41.2,
+      "eligible": 358
+     },
      "kind": "mainstream",
      "roll": 868,
      "igcse": false,
@@ -10574,6 +11150,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 43.7,
+      "eligible": 376
+     },
      "kind": "mainstream",
      "roll": 860,
      "igcse": false,
@@ -10648,6 +11228,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 45.1,
+      "eligible": 396
+     },
      "kind": "mainstream",
      "roll": 879,
      "igcse": false,
@@ -10720,6 +11304,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 46.8,
+      "eligible": 409
+     },
      "kind": "mainstream",
      "roll": 873,
      "igcse": false,
@@ -10810,6 +11398,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 12.3,
+      "eligible": 136
+     },
      "kind": "mainstream",
      "roll": 1102,
      "igcse": false,
@@ -10863,6 +11455,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 15.8,
+      "eligible": 175
+     },
      "kind": "mainstream",
      "roll": 1111,
      "igcse": false,
@@ -10916,6 +11512,10 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 17.8,
+      "eligible": 204
+     },
      "kind": "mainstream",
      "roll": 1149,
      "igcse": false,
@@ -11003,6 +11603,10 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 19.1,
+      "eligible": 222
+     },
      "kind": "mainstream",
      "roll": 1160,
      "igcse": false,
@@ -11090,6 +11694,10 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 20.7,
+      "eligible": 231
+     },
      "kind": "mainstream",
      "roll": 1118,
      "igcse": false,
@@ -11178,6 +11786,10 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 21.9,
+      "eligible": 248
+     },
      "kind": "mainstream",
      "roll": 1135,
      "igcse": false,
@@ -11265,6 +11877,10 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 23.7,
+      "eligible": 280
+     },
      "kind": "mainstream",
      "roll": 1181,
      "igcse": false,
@@ -11356,6 +11972,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 20.2,
+      "eligible": 86
+     },
      "kind": "mainstream",
      "roll": 426,
      "igcse": false,
@@ -11408,6 +12028,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.5,
+      "eligible": 81
+     },
      "kind": "mainstream",
      "roll": 438,
      "igcse": false,
@@ -11460,6 +12084,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 17.4,
+      "eligible": 75
+     },
      "kind": "mainstream",
      "roll": 430,
      "igcse": false,
@@ -11512,6 +12140,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.3,
+      "eligible": 110
+     },
      "kind": "mainstream",
      "roll": 434,
      "igcse": false,
@@ -11572,6 +12204,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.7,
+      "eligible": 102
+     },
      "kind": "mainstream",
      "roll": 430,
      "igcse": false,
@@ -11632,6 +12268,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.8,
+      "eligible": 81
+     },
      "kind": "mainstream",
      "roll": 430,
      "igcse": false,
@@ -11692,6 +12332,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.8,
+      "eligible": 64
+     },
      "kind": "mainstream",
      "roll": 433,
      "igcse": false,
@@ -11762,6 +12406,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.3,
+      "eligible": 90
+     },
      "kind": "mainstream",
      "roll": 422,
      "igcse": false,
@@ -11814,6 +12462,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 24.6,
+      "eligible": 97
+     },
      "kind": "mainstream",
      "roll": 395,
      "igcse": false,
@@ -11866,6 +12518,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.4,
+      "eligible": 110
+     },
      "kind": "mainstream",
      "roll": 388,
      "igcse": false,
@@ -11918,6 +12574,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.1,
+      "eligible": 123
+     },
      "kind": "mainstream",
      "roll": 396,
      "igcse": false,
@@ -11978,6 +12638,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.6,
+      "eligible": 123
+     },
      "kind": "mainstream",
      "roll": 415,
      "igcse": false,
@@ -12038,6 +12702,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.3,
+      "eligible": 120
+     },
      "kind": "mainstream",
      "roll": 410,
      "igcse": false,
@@ -12098,6 +12766,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.9,
+      "eligible": 114
+     },
      "kind": "mainstream",
      "roll": 394,
      "igcse": false,
@@ -12168,6 +12840,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 20.7,
+      "eligible": 393
+     },
      "kind": "mainstream",
      "roll": 1894,
      "igcse": false,
@@ -12222,6 +12898,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 27.7,
+      "eligible": 545
+     },
      "kind": "mainstream",
      "roll": 1965,
      "igcse": false,
@@ -12276,6 +12956,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.2,
+      "eligible": 637
+     },
      "kind": "mainstream",
      "roll": 2042,
      "igcse": false,
@@ -12364,6 +13048,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.6,
+      "eligible": 666
+     },
      "kind": "mainstream",
      "roll": 2041,
      "igcse": false,
@@ -12458,6 +13146,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.9,
+      "eligible": 717
+     },
      "kind": "mainstream",
      "roll": 2056,
      "igcse": false,
@@ -12553,6 +13245,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 40.7,
+      "eligible": 831
+     },
      "kind": "mainstream",
      "roll": 2044,
      "igcse": false,
@@ -12647,6 +13343,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 42,
+      "eligible": 860
+     },
      "kind": "mainstream",
      "roll": 2047,
      "igcse": false,
@@ -12775,6 +13475,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 0,
+      "eligible": 0
+     },
      "kind": "ap",
      "roll": 2,
      "igcse": false,
@@ -12787,6 +13491,7 @@
      "counted": false,
      "results": {},
      "boarders": 0,
+     "pool_kind": "ap",
      "size_band": "S",
      "ks4_pupils": null,
      "roll_by_age": [
@@ -12812,6 +13517,7 @@
       0
      ],
      "value_added": {},
+     "state_funded": true,
      "national_rank": {},
      "roll_by_phase": {
       "post16": 0,
@@ -12843,6 +13549,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25,
+      "eligible": 73
+     },
      "kind": "mainstream",
      "roll": 292,
      "igcse": false,
@@ -12895,6 +13605,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.8,
+      "eligible": 84
+     },
      "kind": "mainstream",
      "roll": 264,
      "igcse": false,
@@ -12947,6 +13661,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.7,
+      "eligible": 71
+     },
      "kind": "mainstream",
      "roll": 224,
      "igcse": false,
@@ -12999,6 +13717,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.7,
+      "eligible": 61
+     },
      "kind": "mainstream",
      "roll": 199,
      "igcse": false,
@@ -13059,6 +13781,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.2,
+      "eligible": 62
+     },
      "kind": "mainstream",
      "roll": 199,
      "igcse": false,
@@ -13119,6 +13845,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.4,
+      "eligible": 70
+     },
      "kind": "mainstream",
      "roll": 238,
      "igcse": false,
@@ -13179,6 +13909,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.3,
+      "eligible": 72
+     },
      "kind": "mainstream",
      "roll": 238,
      "igcse": false,
@@ -13249,6 +13983,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 16,
+      "eligible": 61
+     },
      "kind": "mainstream",
      "roll": 381,
      "igcse": false,
@@ -13301,6 +14039,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.6,
+      "eligible": 71
+     },
      "kind": "mainstream",
      "roll": 381,
      "igcse": false,
@@ -13353,6 +14095,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.1,
+      "eligible": 82
+     },
      "kind": "mainstream",
      "roll": 388,
      "igcse": false,
@@ -13405,6 +14151,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23,
+      "eligible": 82
+     },
      "kind": "mainstream",
      "roll": 357,
      "igcse": false,
@@ -13465,6 +14215,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.9,
+      "eligible": 79
+     },
      "kind": "mainstream",
      "roll": 360,
      "igcse": false,
@@ -13525,6 +14279,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.8,
+      "eligible": 77
+     },
      "kind": "mainstream",
      "roll": 354,
      "igcse": false,
@@ -13585,6 +14343,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 20.1,
+      "eligible": 72
+     },
      "kind": "mainstream",
      "roll": 358,
      "igcse": false,
@@ -13655,6 +14417,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 19.9,
+      "eligible": 85
+     },
      "kind": "mainstream",
      "roll": 428,
      "igcse": false,
@@ -13707,6 +14473,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.3,
+      "eligible": 109
+     },
      "kind": "mainstream",
      "roll": 414,
      "igcse": false,
@@ -13759,6 +14529,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.1,
+      "eligible": 127
+     },
      "kind": "mainstream",
      "roll": 409,
      "igcse": false,
@@ -13811,6 +14585,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.2,
+      "eligible": 107
+     },
      "kind": "mainstream",
      "roll": 379,
      "igcse": false,
@@ -13871,6 +14649,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.4,
+      "eligible": 120
+     },
      "kind": "mainstream",
      "roll": 382,
      "igcse": false,
@@ -13931,6 +14713,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.7,
+      "eligible": 131
+     },
      "kind": "mainstream",
      "roll": 378,
      "igcse": false,
@@ -13991,6 +14777,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.9,
+      "eligible": 140
+     },
      "kind": "mainstream",
      "roll": 369,
      "igcse": false,
@@ -14061,6 +14851,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.1,
+      "eligible": 94
+     },
      "kind": "mainstream",
      "roll": 323,
      "igcse": false,
@@ -14113,6 +14907,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.7,
+      "eligible": 113
+     },
      "kind": "mainstream",
      "roll": 356,
      "igcse": false,
@@ -14165,6 +14963,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.8,
+      "eligible": 98
+     },
      "kind": "mainstream",
      "roll": 353,
      "igcse": false,
@@ -14217,6 +15019,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.8,
+      "eligible": 105
+     },
      "kind": "mainstream",
      "roll": 365,
      "igcse": false,
@@ -14277,6 +15083,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.7,
+      "eligible": 104
+     },
      "kind": "mainstream",
      "roll": 376,
      "igcse": false,
@@ -14337,6 +15147,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.5,
+      "eligible": 112
+     },
      "kind": "mainstream",
      "roll": 423,
      "igcse": false,
@@ -14397,6 +15211,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.3,
+      "eligible": 109
+     },
      "kind": "mainstream",
      "roll": 414,
      "igcse": false,
@@ -14467,6 +15285,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 36.7,
+      "eligible": 58
+     },
      "kind": "mainstream",
      "roll": 158,
      "igcse": false,
@@ -14519,6 +15341,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.5,
+      "eligible": 91
+     },
      "kind": "mainstream",
      "roll": 256,
      "igcse": false,
@@ -14571,6 +15397,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 36.7,
+      "eligible": 128
+     },
      "kind": "mainstream",
      "roll": 349,
      "igcse": false,
@@ -14623,6 +15453,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 36.3,
+      "eligible": 159
+     },
      "kind": "mainstream",
      "roll": 438,
      "igcse": false,
@@ -14683,6 +15517,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.3,
+      "eligible": 167
+     },
      "kind": "mainstream",
      "roll": 487,
      "igcse": false,
@@ -14743,6 +15581,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.6,
+      "eligible": 195
+     },
      "kind": "mainstream",
      "roll": 547,
      "igcse": false,
@@ -14803,6 +15645,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.4,
+      "eligible": 204
+     },
      "kind": "mainstream",
      "roll": 577,
      "igcse": false,
@@ -14873,6 +15719,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.5,
+      "eligible": 32
+     },
      "kind": "mainstream",
      "roll": 279,
      "igcse": false,
@@ -14925,6 +15775,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.1,
+      "eligible": 41
+     },
      "kind": "mainstream",
      "roll": 340,
      "igcse": false,
@@ -14977,6 +15831,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.6,
+      "eligible": 51
+     },
      "kind": "mainstream",
      "roll": 404,
      "igcse": false,
@@ -15029,6 +15887,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.1,
+      "eligible": 49
+     },
      "kind": "mainstream",
      "roll": 406,
      "igcse": false,
@@ -15089,6 +15951,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.1,
+      "eligible": 46
+     },
      "kind": "mainstream",
      "roll": 413,
      "igcse": false,
@@ -15149,6 +16015,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 9.4,
+      "eligible": 39
+     },
      "kind": "mainstream",
      "roll": 417,
      "igcse": false,
@@ -15209,6 +16079,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 8.3,
+      "eligible": 36
+     },
      "kind": "mainstream",
      "roll": 434,
      "igcse": false,
@@ -15279,6 +16153,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.1,
+      "eligible": 275
+     },
      "kind": "mainstream",
      "roll": 1016,
      "igcse": false,
@@ -15333,6 +16211,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.7,
+      "eligible": 356
+     },
      "kind": "mainstream",
      "roll": 1200,
      "igcse": false,
@@ -15387,6 +16269,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.3,
+      "eligible": 399
+     },
      "kind": "mainstream",
      "roll": 1275,
      "igcse": false,
@@ -15475,6 +16361,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.2,
+      "eligible": 421
+     },
      "kind": "mainstream",
      "roll": 1309,
      "igcse": false,
@@ -15569,6 +16459,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.8,
+      "eligible": 416
+     },
      "kind": "mainstream",
      "roll": 1310,
      "igcse": false,
@@ -15664,6 +16558,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.2,
+      "eligible": 412
+     },
      "kind": "mainstream",
      "roll": 1320,
      "igcse": false,
@@ -15758,6 +16656,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 36,
+      "eligible": 470
+     },
      "kind": "mainstream",
      "roll": 1307,
      "igcse": false,
@@ -15850,6 +16752,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 8.3,
+      "eligible": 28
+     },
      "kind": "mainstream",
      "roll": 339,
      "igcse": false,
@@ -15902,6 +16808,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 9.9,
+      "eligible": 38
+     },
      "kind": "mainstream",
      "roll": 384,
      "igcse": false,
@@ -15954,6 +16864,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.7,
+      "eligible": 46
+     },
      "kind": "mainstream",
      "roll": 363,
      "igcse": false,
@@ -16006,6 +16920,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 13.1,
+      "eligible": 46
+     },
      "kind": "mainstream",
      "roll": 350,
      "igcse": false,
@@ -16066,6 +16984,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.9,
+      "eligible": 53
+     },
      "kind": "mainstream",
      "roll": 356,
      "igcse": false,
@@ -16126,6 +17048,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 16.1,
+      "eligible": 63
+     },
      "kind": "mainstream",
      "roll": 391,
      "igcse": false,
@@ -16186,6 +17112,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 15.7,
+      "eligible": 60
+     },
      "kind": "mainstream",
      "roll": 383,
      "igcse": false,
@@ -16256,6 +17186,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.2,
+      "eligible": 41
+     },
      "kind": "mainstream",
      "roll": 337,
      "igcse": false,
@@ -16308,6 +17242,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.9,
+      "eligible": 51
+     },
      "kind": "mainstream",
      "roll": 394,
      "igcse": false,
@@ -16360,6 +17298,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 15.5,
+      "eligible": 59
+     },
      "kind": "mainstream",
      "roll": 381,
      "igcse": false,
@@ -16412,6 +17354,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 15.9,
+      "eligible": 61
+     },
      "kind": "mainstream",
      "roll": 384,
      "igcse": false,
@@ -16472,6 +17418,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 17.3,
+      "eligible": 64
+     },
      "kind": "mainstream",
      "roll": 371,
      "igcse": false,
@@ -16532,6 +17482,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 15.7,
+      "eligible": 56
+     },
      "kind": "mainstream",
      "roll": 357,
      "igcse": false,
@@ -16592,6 +17546,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.5,
+      "eligible": 64
+     },
      "kind": "mainstream",
      "roll": 346,
      "igcse": false,
@@ -16662,6 +17620,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 9.1,
+      "eligible": 68
+     },
      "kind": "mainstream",
      "roll": 746,
      "igcse": false,
@@ -16714,6 +17676,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.8,
+      "eligible": 133
+     },
      "kind": "mainstream",
      "roll": 900,
      "igcse": false,
@@ -16766,6 +17732,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.9,
+      "eligible": 144
+     },
      "kind": "mainstream",
      "roll": 969,
      "igcse": false,
@@ -16818,6 +17788,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 13.9,
+      "eligible": 143
+     },
      "kind": "mainstream",
      "roll": 1028,
      "igcse": false,
@@ -16878,6 +17852,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 13.6,
+      "eligible": 139
+     },
      "kind": "mainstream",
      "roll": 1023,
      "igcse": false,
@@ -16938,6 +17916,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.9,
+      "eligible": 138
+     },
      "kind": "mainstream",
      "roll": 1068,
      "igcse": false,
@@ -16998,6 +17980,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.4,
+      "eligible": 124
+     },
      "kind": "mainstream",
      "roll": 1087,
      "igcse": false,
@@ -17068,6 +18054,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.5,
+      "eligible": 73
+     },
      "kind": "mainstream",
      "roll": 583,
      "igcse": false,
@@ -17120,6 +18110,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 12.9,
+      "eligible": 79
+     },
      "kind": "mainstream",
      "roll": 612,
      "igcse": false,
@@ -17172,6 +18166,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.7,
+      "eligible": 155
+     },
      "kind": "mainstream",
      "roll": 603,
      "igcse": false,
@@ -17238,6 +18236,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.1,
+      "eligible": 183
+     },
      "kind": "mainstream",
      "roll": 589,
      "igcse": false,
@@ -17304,6 +18306,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26.2,
+      "eligible": 157
+     },
      "kind": "mainstream",
      "roll": 600,
      "igcse": false,
@@ -17372,6 +18378,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.7,
+      "eligible": 221
+     },
      "kind": "mainstream",
      "roll": 619,
      "igcse": false,
@@ -17440,6 +18450,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 38.5,
+      "eligible": 235
+     },
      "kind": "mainstream",
      "roll": 610,
      "igcse": false,
@@ -17510,6 +18524,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.6,
+      "eligible": 246
+     },
      "kind": "mainstream",
      "roll": 892,
      "igcse": false,
@@ -17563,6 +18581,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.6,
+      "eligible": 295
+     },
      "kind": "mainstream",
      "roll": 905,
      "igcse": false,
@@ -17616,6 +18638,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.3,
+      "eligible": 342
+     },
      "kind": "mainstream",
      "roll": 916,
      "igcse": false,
@@ -17691,6 +18717,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 40.3,
+      "eligible": 400
+     },
      "kind": "mainstream",
      "roll": 992,
      "igcse": false,
@@ -17778,6 +18808,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 54.1,
+      "eligible": 548
+     },
      "kind": "mainstream",
      "roll": 1013,
      "igcse": false,
@@ -17866,6 +18900,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 50.4,
+      "eligible": 494
+     },
      "kind": "mainstream",
      "roll": 980,
      "igcse": false,
@@ -17953,6 +18991,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 49.8,
+      "eligible": 480
+     },
      "kind": "mainstream",
      "roll": 963,
      "igcse": false,
@@ -18044,6 +19086,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.2,
+      "eligible": 343
+     },
      "kind": "mainstream",
      "roll": 1003,
      "igcse": false,
@@ -18097,6 +19143,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 38.5,
+      "eligible": 412
+     },
      "kind": "mainstream",
      "roll": 1071,
      "igcse": false,
@@ -18150,6 +19200,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 40.6,
+      "eligible": 453
+     },
      "kind": "mainstream",
      "roll": 1117,
      "igcse": false,
@@ -18237,6 +19291,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 45.8,
+      "eligible": 472
+     },
      "kind": "mainstream",
      "roll": 1031,
      "igcse": false,
@@ -18324,6 +19382,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 48.9,
+      "eligible": 452
+     },
      "kind": "mainstream",
      "roll": 924,
      "igcse": false,
@@ -18412,6 +19474,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 54.1,
+      "eligible": 484
+     },
      "kind": "mainstream",
      "roll": 895,
      "igcse": false,
@@ -18499,6 +19565,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 57.5,
+      "eligible": 512
+     },
      "kind": "mainstream",
      "roll": 890,
      "igcse": false,
@@ -18590,6 +19660,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.4,
+      "eligible": 133
+     },
      "kind": "mainstream",
      "roll": 523,
      "igcse": false,
@@ -18642,6 +19716,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.1,
+      "eligible": 146
+     },
      "kind": "mainstream",
      "roll": 502,
      "igcse": false,
@@ -18694,6 +19772,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.5,
+      "eligible": 168
+     },
      "kind": "mainstream",
      "roll": 502,
      "igcse": false,
@@ -18746,6 +19828,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.8,
+      "eligible": 156
+     },
      "kind": "mainstream",
      "roll": 507,
      "igcse": false,
@@ -18806,6 +19892,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.2,
+      "eligible": 138
+     },
      "kind": "mainstream",
      "roll": 490,
      "igcse": false,
@@ -18866,6 +19956,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.9,
+      "eligible": 142
+     },
      "kind": "mainstream",
      "roll": 491,
      "igcse": false,
@@ -18926,6 +20020,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.6,
+      "eligible": 168
+     },
      "kind": "mainstream",
      "roll": 486,
      "igcse": false,
@@ -18996,6 +20094,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 20.9,
+      "eligible": 325
+     },
      "kind": "mainstream",
      "roll": 1552,
      "igcse": false,
@@ -19048,6 +20150,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 25.7,
+      "eligible": 400
+     },
      "kind": "mainstream",
      "roll": 1556,
      "igcse": false,
@@ -19100,6 +20206,10 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 27.5,
+      "eligible": 419
+     },
      "kind": "mainstream",
      "roll": 1523,
      "igcse": false,
@@ -19174,6 +20284,10 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 29.6,
+      "eligible": 443
+     },
      "kind": "mainstream",
      "roll": 1497,
      "igcse": false,
@@ -19248,6 +20362,10 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 30,
+      "eligible": 448
+     },
      "kind": "mainstream",
      "roll": 1494,
      "igcse": false,
@@ -19322,6 +20440,10 @@
     "period": 2024,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 30.2,
+      "eligible": 451
+     },
      "kind": "mainstream",
      "roll": 1492,
      "igcse": false,
@@ -19394,6 +20516,10 @@
     "period": 2025,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 29.8,
+      "eligible": 451
+     },
      "kind": "mainstream",
      "roll": 1513,
      "igcse": false,
@@ -19484,6 +20610,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.3,
+      "eligible": 104
+     },
      "kind": "mainstream",
      "roll": 367,
      "igcse": false,
@@ -19536,6 +20666,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.8,
+      "eligible": 120
+     },
      "kind": "mainstream",
      "roll": 345,
      "igcse": false,
@@ -19588,6 +20722,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 36.5,
+      "eligible": 119
+     },
      "kind": "mainstream",
      "roll": 326,
      "igcse": false,
@@ -19640,6 +20778,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 42.9,
+      "eligible": 135
+     },
      "kind": "mainstream",
      "roll": 315,
      "igcse": false,
@@ -19700,6 +20842,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 42.8,
+      "eligible": 128
+     },
      "kind": "mainstream",
      "roll": 299,
      "igcse": false,
@@ -19760,6 +20906,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 42.8,
+      "eligible": 118
+     },
      "kind": "mainstream",
      "roll": 276,
      "igcse": false,
@@ -19820,6 +20970,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 38.7,
+      "eligible": 104
+     },
      "kind": "mainstream",
      "roll": 269,
      "igcse": false,
@@ -19890,6 +21044,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.9,
+      "eligible": 255
+     },
      "kind": "mainstream",
      "roll": 800,
      "igcse": false,
@@ -19943,6 +21101,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 39.9,
+      "eligible": 276
+     },
      "kind": "mainstream",
      "roll": 691,
      "igcse": false,
@@ -19996,6 +21158,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.4,
+      "eligible": 275
+     },
      "kind": "mainstream",
      "roll": 619,
      "igcse": false,
@@ -20077,6 +21243,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.3,
+      "eligible": 270
+     },
      "kind": "mainstream",
      "roll": 609,
      "igcse": false,
@@ -20164,6 +21334,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 46,
+      "eligible": 256
+     },
      "kind": "mainstream",
      "roll": 556,
      "igcse": false,
@@ -20252,6 +21426,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.5,
+      "eligible": 223
+     },
      "kind": "mainstream",
      "roll": 501,
      "igcse": false,
@@ -20339,6 +21517,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 44.7,
+      "eligible": 223
+     },
      "kind": "mainstream",
      "roll": 499,
      "igcse": false,
@@ -20430,6 +21612,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.8,
+      "eligible": 176
+     },
      "kind": "mainstream",
      "roll": 937,
      "igcse": false,
@@ -20482,6 +21668,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22.1,
+      "eligible": 203
+     },
      "kind": "mainstream",
      "roll": 917,
      "igcse": false,
@@ -20534,6 +21724,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.8,
+      "eligible": 216
+     },
      "kind": "mainstream",
      "roll": 906,
      "igcse": false,
@@ -20608,6 +21802,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.5,
+      "eligible": 211
+     },
      "kind": "mainstream",
      "roll": 896,
      "igcse": false,
@@ -20682,6 +21880,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22.9,
+      "eligible": 205
+     },
      "kind": "mainstream",
      "roll": 896,
      "igcse": false,
@@ -20756,6 +21958,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.9,
+      "eligible": 215
+     },
      "kind": "mainstream",
      "roll": 901,
      "igcse": false,
@@ -20828,6 +22034,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.8,
+      "eligible": 236
+     },
      "kind": "mainstream",
      "roll": 913,
      "igcse": false,
@@ -20918,6 +22128,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 6.6,
+      "eligible": 29
+     },
      "kind": "mainstream",
      "roll": 439,
      "igcse": false,
@@ -20970,6 +22184,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.3,
+      "eligible": 67
+     },
      "kind": "mainstream",
      "roll": 648,
      "igcse": false,
@@ -21022,6 +22240,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.7,
+      "eligible": 92
+     },
      "kind": "mainstream",
      "roll": 861,
      "igcse": false,
@@ -21074,6 +22296,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.1,
+      "eligible": 115
+     },
      "kind": "mainstream",
      "roll": 1036,
      "igcse": false,
@@ -21148,6 +22374,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.9,
+      "eligible": 124
+     },
      "kind": "mainstream",
      "roll": 1142,
      "igcse": false,
@@ -21223,6 +22453,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.9,
+      "eligible": 141
+     },
      "kind": "mainstream",
      "roll": 1296,
      "igcse": false,
@@ -21310,6 +22544,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10.7,
+      "eligible": 138
+     },
      "kind": "mainstream",
      "roll": 1294,
      "igcse": false,
@@ -21425,6 +22663,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 6.3,
+      "eligible": 6
+     },
      "kind": "mainstream",
      "roll": 95,
      "igcse": false,
@@ -21477,6 +22719,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 10,
+      "eligible": 24
+     },
      "kind": "mainstream",
      "roll": 240,
      "igcse": false,
@@ -21545,6 +22791,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 11.5,
+      "eligible": 35
+     },
      "kind": "mainstream",
      "roll": 304,
      "igcse": false,
@@ -21615,6 +22865,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.9,
+      "eligible": 28
+     },
      "kind": "mainstream",
      "roll": 188,
      "igcse": false,
@@ -21667,6 +22921,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.7,
+      "eligible": 40
+     },
      "kind": "mainstream",
      "roll": 184,
      "igcse": false,
@@ -21719,6 +22977,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.7,
+      "eligible": 45
+     },
      "kind": "mainstream",
      "roll": 190,
      "igcse": false,
@@ -21771,6 +23033,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22.8,
+      "eligible": 44
+     },
      "kind": "mainstream",
      "roll": 193,
      "igcse": false,
@@ -21831,6 +23097,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23.6,
+      "eligible": 47
+     },
      "kind": "mainstream",
      "roll": 199,
      "igcse": false,
@@ -21891,6 +23161,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 24.8,
+      "eligible": 52
+     },
      "kind": "mainstream",
      "roll": 210,
      "igcse": false,
@@ -21951,6 +23225,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22.4,
+      "eligible": 46
+     },
      "kind": "mainstream",
      "roll": 205,
      "igcse": false,
@@ -22021,6 +23299,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 15.9,
+      "eligible": 85
+     },
      "kind": "mainstream",
      "roll": 534,
      "igcse": false,
@@ -22074,6 +23356,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 17.7,
+      "eligible": 136
+     },
      "kind": "mainstream",
      "roll": 768,
      "igcse": false,
@@ -22127,6 +23413,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 20.6,
+      "eligible": 196
+     },
      "kind": "mainstream",
      "roll": 951,
      "igcse": false,
@@ -22214,6 +23504,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22.8,
+      "eligible": 232
+     },
      "kind": "mainstream",
      "roll": 1016,
      "igcse": false,
@@ -22301,6 +23595,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 24.7,
+      "eligible": 266
+     },
      "kind": "mainstream",
      "roll": 1078,
      "igcse": false,
@@ -22389,6 +23687,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.9,
+      "eligible": 289
+     },
      "kind": "mainstream",
      "roll": 1117,
      "igcse": false,
@@ -22476,6 +23778,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 28.3,
+      "eligible": 314
+     },
      "kind": "mainstream",
      "roll": 1111,
      "igcse": false,
@@ -22567,6 +23873,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.7,
+      "eligible": 451
+     },
      "kind": "mainstream",
      "roll": 1301,
      "igcse": false,
@@ -22620,6 +23930,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 40.1,
+      "eligible": 533
+     },
      "kind": "mainstream",
      "roll": 1330,
      "igcse": false,
@@ -22673,6 +23987,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 46.4,
+      "eligible": 636
+     },
      "kind": "mainstream",
      "roll": 1372,
      "igcse": false,
@@ -22760,6 +24078,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 49.4,
+      "eligible": 683
+     },
      "kind": "mainstream",
      "roll": 1383,
      "igcse": false,
@@ -22847,6 +24169,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 51.2,
+      "eligible": 682
+     },
      "kind": "mainstream",
      "roll": 1332,
      "igcse": false,
@@ -22935,6 +24261,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 57.4,
+      "eligible": 757
+     },
      "kind": "mainstream",
      "roll": 1319,
      "igcse": false,
@@ -23022,6 +24352,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 64.8,
+      "eligible": 859
+     },
      "kind": "mainstream",
      "roll": 1326,
      "igcse": false,
@@ -23113,6 +24447,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 25.9,
+      "eligible": 336
+     },
      "kind": "mainstream",
      "roll": 1295,
      "igcse": false,
@@ -23167,6 +24505,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 32.1,
+      "eligible": 442
+     },
      "kind": "mainstream",
      "roll": 1378,
      "igcse": false,
@@ -23221,6 +24563,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.9,
+      "eligible": 499
+     },
      "kind": "mainstream",
      "roll": 1430,
      "igcse": false,
@@ -23309,6 +24655,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.4,
+      "eligible": 523
+     },
      "kind": "mainstream",
      "roll": 1477,
      "igcse": false,
@@ -23403,6 +24753,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.3,
+      "eligible": 554
+     },
      "kind": "mainstream",
      "roll": 1484,
      "igcse": false,
@@ -23498,6 +24852,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 40.2,
+      "eligible": 619
+     },
      "kind": "mainstream",
      "roll": 1538,
      "igcse": false,
@@ -23592,6 +24950,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 41.7,
+      "eligible": 628
+     },
      "kind": "mainstream",
      "roll": 1505,
      "igcse": false,
@@ -23684,6 +25046,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 18.7,
+      "eligible": 37
+     },
      "kind": "mainstream",
      "roll": 198,
      "igcse": false,
@@ -23736,6 +25102,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 36.6,
+      "eligible": 70
+     },
      "kind": "mainstream",
      "roll": 191,
      "igcse": false,
@@ -23788,6 +25158,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.1,
+      "eligible": 55
+     },
      "kind": "mainstream",
      "roll": 183,
      "igcse": false,
@@ -23848,6 +25222,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.6,
+      "eligible": 67
+     },
      "kind": "mainstream",
      "roll": 243,
      "igcse": false,
@@ -23908,6 +25286,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.5,
+      "eligible": 71
+     },
      "kind": "mainstream",
      "roll": 258,
      "igcse": false,
@@ -23968,6 +25350,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.6,
+      "eligible": 56
+     },
      "kind": "mainstream",
      "roll": 259,
      "igcse": false,
@@ -24028,6 +25414,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 17.9,
+      "eligible": 50
+     },
      "kind": "mainstream",
      "roll": 280,
      "igcse": false,
@@ -24098,6 +25488,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 24.1,
+      "eligible": 76
+     },
      "kind": "mainstream",
      "roll": 315,
      "igcse": false,
@@ -24150,6 +25544,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.9,
+      "eligible": 155
+     },
      "kind": "mainstream",
      "roll": 501,
      "igcse": false,
@@ -24202,6 +25600,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.5,
+      "eligible": 225
+     },
      "kind": "mainstream",
      "roll": 672,
      "igcse": false,
@@ -24254,6 +25656,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.2,
+      "eligible": 315
+     },
      "kind": "mainstream",
      "roll": 846,
      "igcse": false,
@@ -24328,6 +25734,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 39.1,
+      "eligible": 376
+     },
      "kind": "mainstream",
      "roll": 962,
      "igcse": false,
@@ -24403,6 +25813,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 37.5,
+      "eligible": 392
+     },
      "kind": "mainstream",
      "roll": 1045,
      "igcse": false,
@@ -24490,6 +25904,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 40.4,
+      "eligible": 434
+     },
      "kind": "mainstream",
      "roll": 1073,
      "igcse": false,
@@ -24581,6 +25999,10 @@
     "period": 2019,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 16.9,
+      "eligible": 210
+     },
      "kind": "mainstream",
      "roll": 1239,
      "igcse": false,
@@ -24634,6 +26056,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 19.6,
+      "eligible": 247
+     },
      "kind": "mainstream",
      "roll": 1260,
      "igcse": false,
@@ -24687,6 +26113,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 21.9,
+      "eligible": 291
+     },
      "kind": "mainstream",
      "roll": 1329,
      "igcse": false,
@@ -24774,6 +26204,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 22,
+      "eligible": 316
+     },
      "kind": "mainstream",
      "roll": 1438,
      "igcse": false,
@@ -24861,6 +26295,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 23,
+      "eligible": 330
+     },
      "kind": "mainstream",
      "roll": 1435,
      "igcse": false,
@@ -24949,6 +26387,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 24.8,
+      "eligible": 352
+     },
      "kind": "mainstream",
      "roll": 1420,
      "igcse": false,
@@ -25036,6 +26478,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 26,
+      "eligible": 375
+     },
      "kind": "mainstream",
      "roll": 1440,
      "igcse": false,
@@ -25133,6 +26579,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 52.3,
+      "eligible": 101
+     },
      "kind": "mainstream",
      "roll": 193,
      "igcse": false,
@@ -25185,6 +26635,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 53.8,
+      "eligible": 212
+     },
      "kind": "mainstream",
      "roll": 394,
      "igcse": false,
@@ -25237,6 +26691,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 53.8,
+      "eligible": 313
+     },
      "kind": "mainstream",
      "roll": 582,
      "igcse": false,
@@ -25289,6 +26747,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 59.2,
+      "eligible": 452
+     },
      "kind": "mainstream",
      "roll": 764,
      "igcse": false,
@@ -25341,6 +26803,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 61.3,
+      "eligible": 546
+     },
      "kind": "mainstream",
      "roll": 891,
      "igcse": false,
@@ -25413,6 +26879,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 64.8,
+      "eligible": 520
+     },
      "kind": "mainstream",
      "roll": 802,
      "igcse": false,
@@ -25509,6 +26979,10 @@
     "period": 2020,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.4,
+      "eligible": 170
+     },
      "kind": "mainstream",
      "roll": 509,
      "igcse": false,
@@ -25561,6 +27035,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.1,
+      "eligible": 140
+     },
      "kind": "mainstream",
      "roll": 399,
      "igcse": false,
@@ -25613,6 +27091,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 27.1,
+      "eligible": 110
+     },
      "kind": "mainstream",
      "roll": 406,
      "igcse": false,
@@ -25673,6 +27155,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.8,
+      "eligible": 145
+     },
      "kind": "mainstream",
      "roll": 417,
      "igcse": false,
@@ -25733,6 +27219,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 31.8,
+      "eligible": 129
+     },
      "kind": "mainstream",
      "roll": 406,
      "igcse": false,
@@ -25793,6 +27283,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.5,
+      "eligible": 143
+     },
      "kind": "mainstream",
      "roll": 414,
      "igcse": false,
@@ -25863,6 +27357,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 32.1,
+      "eligible": 211
+     },
      "kind": "mainstream",
      "roll": 657,
      "igcse": false,
@@ -25945,6 +27443,10 @@
     "period": 2021,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 33.7,
+      "eligible": 35
+     },
      "kind": "mainstream",
      "roll": 104,
      "igcse": false,
@@ -25997,6 +27499,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.8,
+      "eligible": 102
+     },
      "kind": "mainstream",
      "roll": 285,
      "igcse": false,
@@ -26063,6 +27569,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 30.9,
+      "eligible": 104
+     },
      "kind": "mainstream",
      "roll": 337,
      "igcse": false,
@@ -26131,6 +27641,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 35.8,
+      "eligible": 137
+     },
      "kind": "mainstream",
      "roll": 383,
      "igcse": false,
@@ -26199,6 +27713,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 39.1,
+      "eligible": 154
+     },
      "kind": "mainstream",
      "roll": 394,
      "igcse": false,
@@ -26287,6 +27805,10 @@
     "period": 2022,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 29.1,
+      "eligible": 161
+     },
      "kind": "mainstream",
      "roll": 554,
      "igcse": false,
@@ -26374,6 +27896,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 39.5,
+      "eligible": 177
+     },
      "kind": "mainstream",
      "roll": 448,
      "igcse": false,
@@ -26462,6 +27988,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 45.1,
+      "eligible": 199
+     },
      "kind": "mainstream",
      "roll": 441,
      "igcse": false,
@@ -26549,6 +28079,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 47.4,
+      "eligible": 243
+     },
      "kind": "mainstream",
      "roll": 513,
      "igcse": false,
@@ -26640,6 +28174,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 21,
+      "eligible": 119
+     },
      "kind": "mainstream",
      "roll": 568,
      "igcse": false,
@@ -26693,6 +28231,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 25.2,
+      "eligible": 161
+     },
      "kind": "mainstream",
      "roll": 638,
      "igcse": false,
@@ -26746,6 +28288,10 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 22.7,
+      "eligible": 143
+     },
      "kind": "mainstream",
      "roll": 630,
      "igcse": false,
@@ -26875,6 +28421,10 @@
     "period": 2023,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.6,
+      "eligible": 282
+     },
      "kind": "mainstream",
      "roll": 816,
      "igcse": false,
@@ -26949,6 +28499,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.7,
+      "eligible": 357
+     },
      "kind": "mainstream",
      "roll": 1029,
      "igcse": false,
@@ -27022,6 +28576,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 34.3,
+      "eligible": 347
+     },
      "kind": "mainstream",
      "roll": 1011,
      "igcse": false,
@@ -27143,6 +28701,10 @@
     "period": 2024,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 14.8,
+      "eligible": 106
+     },
      "kind": "mainstream",
      "roll": 718,
      "igcse": false,
@@ -27203,6 +28765,10 @@
     "period": 2025,
     "at_time": true,
     "figures": {
+     "fsm": {
+      "pct": 15.4,
+      "eligible": 94
+     },
      "kind": "mainstream",
      "roll": 610,
      "igcse": false,
@@ -27273,6 +28839,10 @@
     "period": 2019,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 6.5,
+      "eligible": 47
+     },
      "kind": "mainstream",
      "roll": 724,
      "igcse": false,
@@ -27325,6 +28895,10 @@
     "period": 2020,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 9.8,
+      "eligible": 75
+     },
      "kind": "mainstream",
      "roll": 763,
      "igcse": false,
@@ -27377,6 +28951,10 @@
     "period": 2021,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 10.1,
+      "eligible": 76
+     },
      "kind": "mainstream",
      "roll": 750,
      "igcse": false,
@@ -27429,6 +29007,10 @@
     "period": 2022,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 10.7,
+      "eligible": 90
+     },
      "kind": "mainstream",
      "roll": 841,
      "igcse": false,
@@ -27481,6 +29063,10 @@
     "period": 2023,
     "at_time": false,
     "figures": {
+     "fsm": {
+      "pct": 12.7,
+      "eligible": 110
+     },
      "kind": "mainstream",
      "roll": 868,
      "igcse": false,

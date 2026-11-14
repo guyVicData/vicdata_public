@@ -1,0 +1,85 @@
+// Branch harness fixtures: the dash route's own body (dashPayload) over the group fixtures, with the same
+// stored sets and keys as the group sets round's cap (Harris, Dukes), plus Nexus, Birmingham and Shaw.
+import { writeFileSync } from "node:fs";
+const R = process.env.REPO!;
+const A = await import(`${R}/src/lib/groups/aggregates.ts`);
+const D = await import(`${R}/src/lib/groups/dash.ts`);
+const P = await import(`${R}/src/lib/groups/dash-payload.ts`);
+const LP = await import(`${R}/src/lib/groups/library-page.ts`);
+const { groupMembers } = await import(`${R}/src/lib/groups/production.ts`);
+if (A.groupDataSource() !== "fixtures") throw new Error("the fixture switch is off");
+const USER = "00000000-0000-0000-0000-000000000001";
+const set = (id: string, name: string, kind: string, scope: string, members: string[], o: Record<string, unknown> = {}) => ({ id, name, description: null, kind, scope, isDefault: false, pinned: false, archived: false, ownerProfileId: scope === "personal" ? USER : null, members, updatedAt: "2026-11-12T10:00:00Z", ...o });
+const index = await A.groupLibraryIndex();
+const all = [...index.groups, ...(index.non_mainstream ?? [])];
+const G: { key: string; groupId: string; account: string; name: string; sets: any[]; extra?: string[]; named?: string }[] = [
+  { key: "harris", groupId: "3320", account: "a0000000-0000-4000-8000-000000003320", name: "Harris Federation", named: "peer_named:2157,5143", sets: [
+    set("a1111111-1111-4111-8111-111111111111", "London and the South: big MATs", "group_peers", "group", ["2157", "5143", "3586", "4124", "4076"]),
+    set("b2222222-2222-4222-8222-222222222222", "Ark, United Learning and a foundation trust", "group_peers", "group", ["2157", "5143", "1337"]),
+    set("c3333333-3333-4333-8333-333333333333", "Nearest five (mine)", "group_peers", "personal", ["4076", "2053", "4474", "4127", "4320"]),
+    set("e5555555-5555-4555-8555-555555555555", "Harris secondaries, first 18", "group_schools", "group", ["131747","131897","132711","134225","134226","135249","135311","135677","135816","135955","136579","136861","137121","137379","137549","138449","138495","139181"]),
+    set("f6666666-6666-4666-8666-666666666666", "My two Croydon primaries", "group_schools", "personal", ["131747","134225"]),
+  ] },
+  { key: "dukes", groupId: "club_iss:dukes-education", account: "a0000000-0000-4000-8000-0000000d0e55", name: "Dukes Education", named: "peer_named:ch:01550681", sets: [
+    set("d4444444-4444-4444-8444-444444444444", "Independent groups we watch", "group_peers", "group", ["ch:01550681", "ch:16134999", "club_iss:cognita", "club_iss:inspired-education", "club_iss:girls-day-school-trust"]),
+  ] },
+  { key: "nexus", groupId: "16125", account: "a0000000-0000-4000-8000-000000016125", name: "Nexus Multi Academy Trust", named: "peer_named:5252,2465", extra: ["kind_areas:region", "pools:england:special", "pools:region:special:E12000003", "pools:la:special:371"], sets: [
+    set("a7777777-7777-4777-8777-777777777777", "Large special trusts in the North and Midlands", "group_peers", "group", ["5252", "2465", "15716", "15786", "17050"]),
+    // R-NM-SETS: an old set with a mainstream group in it (Ark) -- left out, and said.
+    set("b8888888-8888-4888-8888-888888888888", "Wellspring, Esteem and Ark (an old set)", "group_peers", "personal", ["5252", "17050", "2157"]),
+  ] },
+  { key: "birmingham", groupId: "17126", account: "a0000000-0000-4000-8000-000000017126", name: "The Birmingham Federation of Maintained Nursery Schools", named: "peer_named:17181,17504", extra: ["kind_areas:region", "pools:england:nursery", "pools:region:nursery:E12000005"], sets: [
+    set("a9999999-9999-4999-8999-999999999999", "Nursery federations we talk to", "group_peers", "group", ["17181", "17504", "17716", "5603"]),
+  ] },
+  { key: "shaw", groupId: "4499", account: "a0000000-0000-4000-8000-000000004499", name: "The Shaw Education Trust", sets: [] },
+];
+const only = process.env.ONLY ? process.env.ONLY.split(",") : null;
+const out: Record<string, unknown> = {};
+for (const g of G) {
+  if (only && !only.includes(g.key)) continue;
+  const members = await groupMembers(g.groupId).catch(() => []);
+  const schools = await A.groupSchoolsYear(g.groupId);
+  const sets = { sets: g.sets, notSetUp: false, personalActive: g.sets.filter((s) => s.scope === "personal").length + 1 };
+  const resp: Record<string, unknown> = {};
+  for (const reading of ["at_time", "listed_now"]) {
+    const agg = await A.groupAggregate(g.groupId, reading);
+    const sector = agg.group.type.startsWith("independent") ? "independent" : "state";
+    const nm = agg.group.kind && agg.group.kind !== "mainstream";
+    const keys = nm
+      ? ["", agg.peer?.set_id, ...(g.extra ?? []), "nearest", ...g.sets.map((s) => `set:${s.id}`), g.named!]
+      : ["", agg.peer?.set_id, `non_group:${sector}`, "sat:all", "areas:la", "england:all", "nearest", ...g.sets.map((s) => `set:${s.id}`), ...(g.named ? [g.named] : [])];
+    const call = (dash: string, focus: string, raw: string) =>
+      P.dashPayload({
+        dash, reading, focus, compareRaw: raw || null,
+        viewer: { as: "head_office", account: { id: g.account, name: g.name }, groupId: g.groupId },
+        agg, members, index, read: sets, admin: true, canKeep: true, source: "fixtures",
+        comparisons: (kinds: string[]) => A.groupComparisons(g.groupId, kinds),
+        schoolsYear: () => A.groupSchoolsYear(g.groupId),
+        vicdataSchools: async () => new Set<string>(),
+      });
+    for (const focus of ["all", "primary", "secondary", "post16"]) {
+      if (focus !== "all" && !agg.rows.some((r: any) => r.phase === focus && r.figures.n_schools > 0)) continue;
+      for (const raw of keys) {
+        if (reading === "listed_now" && raw !== "") continue;
+        for (const dash of ["overview", "academic", "pupils"]) resp[`${dash}|${reading}|${focus}|${raw}`] = await call(dash, focus, raw);
+      }
+      resp[`schools|${reading}|${focus}|`] = await call("schools", focus, "");
+    }
+  }
+  // /api/group/sets and /api/group/library, as their routes answer.
+  const us = all.find((c: any) => c.group_id === g.groupId) ?? null;
+  const usNm = us?.kind && us.kind !== "mainstream";
+  const rows = schools.filter((s: any) => s.role === "member").map((s: any) => { const latest = [...s.years].reverse().find((y: any) => y.figures)?.figures ?? null; return { urn: s.urn, name: s.name ?? s.urn, la: s.la_name, phases: latest?.phases ?? [], roll: latest?.roll ?? null, likely: s.confidence === "likely", current: s.years.some((y: any) => y.listed_now), counted: usNm ? latest?.kind !== "mainstream" : latest?.counted !== false }; }).sort((a: any, b: any) => Number(b.current) - Number(a.current) || a.name.localeCompare(b.name));
+  const setsResp = { viewer: { as: "head_office", accountId: g.account, groupId: g.groupId, name: us ? D.displayName(us.name) : g.name, userId: USER }, source: "fixtures", can: { keep: true, admin: true }, sets: g.sets, notSetUp: false, personalActive: sets.personalActive, cap: 8, defaults: { group_peers: null, group_schools: null }, us };
+  const nmCards = index.non_mainstream ?? [];
+  out[g.key] = {
+    dash: resp,
+    sets: setsResp,
+    cards: all.filter((c: any) => c.group_id !== g.groupId),
+    schools: rows,
+    libpages: Object.fromEntries(await Promise.all(["16125", "17126", "4499"].filter((id) => id !== g.groupId).map(async (id) => [id, { source: "fixtures", viewer: { as: "head_office", accountId: g.account }, ...LP.libraryGroupPage(all.find((c: any) => c.group_id === id), await A.groupAggregate(id, "at_time"), await A.groupSchoolsYear(id), us) }]))),
+    library: { viewer: { as: "head_office", accountId: g.account, groupId: g.groupId, name: g.name, admin: true }, source: "fixtures", build: index.build, us, cards: index.groups.filter((c: any) => c.group_id !== g.groupId), nmCards: nmCards.filter((c: any) => c.group_id !== g.groupId), nmCounts: { two: nmCards.filter((c: any) => c.schools === 2).length, of: nmCards.length } },
+  };
+  console.log(g.key, Object.keys(resp).length, "dash responses");
+}
+writeFileSync(process.argv[2] ?? "fx/br.js", `window.__GS = ${JSON.stringify(out)};\n`);

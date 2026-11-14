@@ -6,6 +6,8 @@
 // same save path as the editor (save_set, under the member's own session), refusing a ninth group
 // ("8 is the most a set holds"). "New set with this group…" opens the editor with it in. View as, a peek
 // and a member school's SMT never see it enabled (D2). R-GROUP-LIBRARY.
+// 0.8 non-mainstream groups (R-NM-SETS): a group of another family than ours (a special and AP trust, a
+// nursery federation, or a mainstream group) can't join our sets: the menu says why in one line.
 import { useEffect, useRef, useState } from "react";
 import { useSmt } from "@/components/smt/api";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -13,8 +15,9 @@ import { saveGroupSet } from "@/lib/sets/group-store";
 import { CAP_WORDS, GROUP_SET_CAP, groupsWord } from "@/lib/groups/group-sets";
 import { groupEditorHref } from "@/components/groups/dash/GroupSetPicker";
 import type { GroupSetsResponse } from "@/components/sets/GroupSetEditor";
+import { setRefusal } from "@/lib/groups/non-mainstream";
 
-export function AddToSet({ groupId, account, query, readOnly }: { groupId: string; account: string; query: string; readOnly: boolean }) {
+export function AddToSet({ groupId, account, query, readOnly, ourKind = null, groupKind = null, groupName }: { groupId: string; account: string; query: string; readOnly: boolean; ourKind?: string | null; groupKind?: string | null; groupName?: string }) {
   const [open, setOpen] = useState(false);
   const [v, setV] = useState(0);
   const [msg, setMsg] = useState<string | null>(null);
@@ -39,11 +42,12 @@ export function AddToSet({ groupId, account, query, readOnly }: { groupId: strin
       </button>
     );
   }
+  const refused = setRefusal(ourKind, groupKind, groupName);
   const d = load.status === "ready" ? load.data : null;
   const writable = d ? d.sets.filter((s) => s.kind === "group_peers" && !s.archived && ((s.scope === "personal" && s.ownerProfileId === d.viewer.userId) || (s.scope === "group" && d.can.admin))) : [];
   const toggle = async (id: string) => {
     const s = writable.find((x) => x.id === id);
-    if (!s) return;
+    if (!s || refused) return;
     const has = s.members.includes(groupId);
     if (!has && s.members.length >= GROUP_SET_CAP) return setMsg(CAP_WORDS);
     setBusy(true);
@@ -64,7 +68,9 @@ export function AddToSet({ groupId, account, query, readOnly }: { groupId: strin
       </button>
       {open && (
         <div role="menu" className="absolute bottom-[calc(100%+6px)] right-0 z-40 w-[290px] max-w-[88vw] rounded-[12px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-1 text-[12.5px] shadow-xl">
-          {!d ? (
+          {refused ? (
+            <div className="px-3 py-2 text-[var(--muted)]" data-set-refused="" role="status">{refused}</div>
+          ) : !d ? (
             <div className="px-3 py-2 text-[var(--muted2)]">{load.status === "error" ? load.message : "Loading your sets…"}</div>
           ) : d.notSetUp ? (
             <div className="px-3 py-2 text-[var(--muted2)]">Sets of groups aren&rsquo;t switched on yet.</div>

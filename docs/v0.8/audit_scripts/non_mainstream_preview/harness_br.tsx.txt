@@ -1,0 +1,11 @@
+import { createRoot } from "react-dom/client";
+import { Suspense } from "react";
+import { GroupDashboard } from "@/components/groups/dash/GroupDashboard";
+import { GroupLibrary } from "@/components/groups/library/GroupLibrary";
+import { GroupLibraryPage } from "@/components/groups/library/GroupLibraryPage";
+import { GroupSetEditorLoader } from "@/components/sets/GroupSetEditor";
+import { GroupSetsLibraryPage } from "@/components/sets/GroupSetsLibrary";
+const P = new URLSearchParams(location.search);
+const page = P.get("page") ?? "overview";
+const el = page === "libgroup" ? <GroupLibraryPage id={P.get("id") ?? ""} /> : page === "library" ? <GroupLibrary /> : page === "edit" ? <GroupSetEditorLoader /> : page === "sets" ? <GroupSetsLibraryPage /> : <GroupDashboard dash={page as "overview" | "schools" | "academic" | "pupils"} />;
+createRoot(document.getElementById("root")!).render(<Suspense fallback={null}>{el}</Suspense>);

@@ -7,6 +7,9 @@
 // size band, region (most schools in / has a school in), phases, search; sort. On a phone the cards are
 // one column and the filters a bottom sheet. Head office only; the server decides (/api/group/library).
 // Each card opens the group's page (GroupLibraryPage); Add to set… (M4) adds it to a set of groups.
+// 0.8 non-mainstream groups (NM10): a second section, "Special, AP and nursery groups", with its own
+// filter (family, size, region), cards (schools by kind, roll and same-schools change, FSM against the
+// kind's England figure; never a result) and the majority rule's (i).
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useDashboardTheme, useTeacherTheme, type Theme } from "@/components/shell/TeacherChrome";
@@ -23,6 +26,7 @@ import {
   DEFAULT_FILTER, filterFromQuery, filterToQuery, headlineWords, LIBRARY_TYPES, libraryCards, likeUsWords, phaseWords, regionWords, rollWords,
   SIZE_BAND_WORDS, TYPE_PLURAL_WORD, typeAndSize, type IndexCard, type LibraryFilter, type LibrarySort,
 } from "@/lib/groups/library";
+import { cardFsmWords, cardRollWords, familyOf, FAMILY_PLURAL, NM_BANDS, NM_NOTES, schoolsByKindWords, smallGroupsWords } from "@/lib/groups/non-mainstream";
 
 type LibraryResponse = {
   viewer: { as: "head_office" | "view_as"; accountId: string; groupId: string; name: string; admin: boolean };
@@ -30,6 +34,9 @@ type LibraryResponse = {
   build: { build_id: number; computed_at: string } | null;
   us: IndexCard | null;
   cards: IndexCard[];
+  /** 0.8 non-mainstream groups: the special, AP and nursery groups, and how many have two schools. */
+  nmCards?: IndexCard[];
+  nmCounts?: { two: number; of: number };
 };
 
 const PHONE = 768;
@@ -121,7 +128,12 @@ export function GroupLibrary() {
 function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
   const [rootRef, width] = useWidth<HTMLDivElement>();
   const phone = width > 0 && width < PHONE;
-  const [f, setF] = useState<LibraryFilter>(readFilter);
+  // A special, AP or nursery group opens on its own section (unless the address names one).
+  const [f, setF] = useState<LibraryFilter>(() => {
+    const r = readFilter();
+    const named = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("section");
+    return !named && familyOf(d.us?.kind) !== "mainstream" ? { ...r, section: "nm" } : r;
+  });
   const [shown, setShown] = useState(PAGE);
   const [sheet, setSheet] = useState(false);
   const set = (p: Partial<LibraryFilter>) => {
@@ -130,10 +142,22 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
     setShown(PAGE);
     writeFilter(next);
   };
-  const cards = useMemo(() => libraryCards(d.cards, d.us, f), [d.cards, d.us, f]);
+  const nm = f.section === "nm";
+  const nmAll = useMemo(() => d.nmCards ?? [], [d.nmCards]);
+  const usNm = familyOf(d.us?.kind) !== "mainstream";
+  // "Like us" lives only in our own section (a special trust's head office has none among mainstream groups).
+  const ownSection = !!d.us && nm === usNm;
+  const fx = useMemo<LibraryFilter>(() => (ownSection ? f : { ...f, likeUs: false, sort: f.sort === "like_us" ? "size" : f.sort }), [f, ownSection]);
+  const cards = useMemo(() => libraryCards(nm ? nmAll : d.cards, d.us, fx), [nm, nmAll, d.cards, d.us, fx]);
   const usName = d.us ? displayName(d.us.name) : d.viewer.name;
   const back = `/teacher/group/overview${acc ? `?${acc}` : ""}`;
-  const filters = <Filters f={f} set={set} us={d.us} />;
+  const filters = nm ? <NmFilters f={fx} set={set} /> : <Filters f={fx} set={set} us={d.us} />;
+  const sectionSwitch = nmAll.length > 0 && (
+    <span role="group" aria-label="Section" className="flex flex-wrap items-center gap-2" data-library-section={f.section}>
+      <EntryChip label={`Mainstream groups · ${d.cards.length.toLocaleString("en-GB")}`} active={!nm} onClick={() => set({ section: "mainstream", bands: [], families: [], likeUs: !usNm, sort: usNm ? "size" : "like_us" })} />
+      <EntryChip label={`Special, AP and nursery groups · ${nmAll.length.toLocaleString("en-GB")}`} active={nm} onClick={() => set({ section: "nm", bands: [], types: [], phases: [], likeUs: usNm, sort: usNm ? "like_us" : "size", focus: "all" })} />
+    </span>
+  );
   useEffect(() => {
     if (!sheet) return;
     const k = (e: KeyboardEvent) => e.key === "Escape" && setSheet(false);
@@ -148,12 +172,20 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
         <div className="flex flex-col gap-0.5">
           <Link href={back} className="text-[12px] font-bold text-[var(--group-accent-text)]">← Back to {usName} · Overview</Link>
           <h1 className="text-[20px] font-extrabold tracking-tight">Groups library</h1>
-          <div className="text-[12.5px] text-[var(--muted2)]">{d.cards.length.toLocaleString("en-GB")} groups to compare {usName} with: multi-academy trusts, federations, foundation trusts and independent groups of 2 or more schools</div>
+          <div className="text-[12.5px] text-[var(--muted2)]">
+            {nm
+              ? `${nmAll.length.toLocaleString("en-GB")} special and AP trusts and nursery federations of 2 or more schools, compared only with each other and with state-funded schools of the same kinds`
+              : `${d.cards.length.toLocaleString("en-GB")} groups to compare ${usName} with: multi-academy trusts, federations, foundation trusts and independent groups of 2 or more schools`}
+          </div>
         </div>
-        <span role="group" aria-label="Phase" className="flex flex-wrap items-center gap-2">
-          {FOCI.map((p) => <EntryChip key={p} label={FOCUS_LABEL[p]} active={f.focus === p} onClick={() => set({ focus: p })} />)}
-        </span>
+        {!nm && (
+          <span role="group" aria-label="Phase" className="flex flex-wrap items-center gap-2">
+            {FOCI.map((p) => <EntryChip key={p} label={FOCUS_LABEL[p]} active={f.focus === p} onClick={() => set({ focus: p })} />)}
+          </span>
+        )}
       </div>
+      {sectionSwitch}
+      {nm && <NmIntro counts={d.nmCounts ?? null} />}
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="search"
@@ -163,23 +195,23 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
           aria-label="Search groups by name"
           className="h-[38px] min-w-0 flex-1 rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-4 text-[13px] text-[var(--fg)] placeholder:text-[var(--muted2)] sm:max-w-[360px]"
         />
-        <EntryChip label="Groups like us" active={f.likeUs} onClick={() => set({ likeUs: !f.likeUs, sort: !f.likeUs ? "like_us" : f.sort === "like_us" ? "size" : f.sort })} />
+        {(ownSection || (!d.us && !nm)) && <EntryChip label={nm ? `${FAMILY_PLURAL[familyOf(d.us?.kind)]} like us` : "Groups like us"} active={f.likeUs} onClick={() => set({ likeUs: !f.likeUs, sort: !f.likeUs ? "like_us" : f.sort === "like_us" ? "size" : f.sort })} />}
         <label className="flex items-center gap-1.5 text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>
           Sort
-          <select value={f.sort} onChange={(e) => set({ sort: e.target.value as LibrarySort })} className="h-[34px] rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 text-[12.5px] font-semibold text-[var(--fg)]">
-            {(Object.keys(SORT_WORD) as LibrarySort[]).filter((s) => s !== "like_us" || d.us).map((s) => <option key={s} value={s}>{SORT_WORD[s]}</option>)}
+          <select value={fx.sort} onChange={(e) => set({ sort: e.target.value as LibrarySort })} className="h-[34px] rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 text-[12.5px] font-semibold text-[var(--fg)]">
+            {(Object.keys(SORT_WORD) as LibrarySort[]).filter((s) => (s !== "like_us" || ownSection) && (s !== "headline" || !nm)).map((s) => <option key={s} value={s}>{SORT_WORD[s]}</option>)}
           </select>
         </label>
         {phone && <button type="button" onClick={() => setSheet(true)} className="h-[38px] rounded-full border border-[var(--panel-border2)] px-4 text-[13px] font-bold">Filters{activeCount(f) ? ` (${activeCount(f)})` : ""}</button>}
       </div>
       {!phone && filters}
-      {f.likeUs && d.us && <div className="text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>{likeUsWords(d.us)}.</div>}
+      {fx.likeUs && ownSection && <div className="text-[12px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>{likeUsWords(d.us)}.</div>}
       <div className="text-[12px] text-[var(--muted)]" aria-live="polite" data-on-field={mid ? "" : undefined}>{cards.length.toLocaleString("en-GB")} group{cards.length === 1 ? "" : "s"}</div>
       {cards.length === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[var(--panel-border2)] p-6 text-center text-[13px] text-[var(--muted2)]">No groups match. Clear a filter, or turn off Groups like us.</div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-          {cards.slice(0, shown).map((c) => <Card key={c.group_id} c={c} focus={f.focus} acc={acc} account={d.viewer.accountId} readOnly={d.viewer.as !== "head_office"} />)}
+          {cards.slice(0, shown).map((c) => (nm ? <NmCard key={c.group_id} c={c} acc={acc} account={d.viewer.accountId} readOnly={d.viewer.as !== "head_office"} ourKind={d.us?.kind ?? null} /> : <Card key={c.group_id} c={c} focus={f.focus} acc={acc} account={d.viewer.accountId} readOnly={d.viewer.as !== "head_office"} ourKind={d.us?.kind ?? null} />))}
         </div>
       )}
       {shown < cards.length && (
@@ -188,7 +220,7 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
         </button>
       )}
       <div className="text-[11px] text-[var(--muted2)]" data-on-field={mid ? "" : undefined}>
-        Figures: VicData&rsquo;s group aggregates{d.build ? `, build ${d.build.build_id} (${new Date(d.build.computed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })})` : ""}{d.source === "fixtures" ? " · test fixtures" : ""}. Members at the time; England is the group&rsquo;s sector&rsquo;s (mainstream state-funded, or independent mainstream). Groups mostly of special schools, alternative provision or nursery schools get their own comparison later and aren&rsquo;t listed yet.
+        Figures: VicData&rsquo;s group aggregates{d.build ? `, build ${d.build.build_id} (${new Date(d.build.computed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })})` : ""}{d.source === "fixtures" ? " · test fixtures" : ""}. Members at the time; {nm ? <>FSM against England is the state-funded schools of the group&rsquo;s main kind (special, AP and PRUs, or nursery). Results aren&rsquo;t compared for these groups.</> : <>England is the group&rsquo;s sector&rsquo;s (mainstream state-funded, or independent mainstream). Groups more than half special schools, alternative provision, PRUs or nursery schools are in their own section, Special, AP and nursery groups.</>}
       </div>
       {phone && sheet && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40" onClick={() => setSheet(false)} role="dialog" aria-modal="true" aria-label="Filters">
@@ -203,7 +235,7 @@ function Library({ d, acc }: { d: LibraryResponse; acc: string }) {
   );
 }
 
-const activeCount = (f: LibraryFilter) => f.types.length + f.bands.length + f.regions.length + f.phases.length;
+const activeCount = (f: LibraryFilter) => f.types.length + f.bands.length + f.regions.length + f.phases.length + f.families.length;
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -244,7 +276,7 @@ function Filters({ f, set, us }: { f: LibraryFilter; set: (p: Partial<LibraryFil
   );
 }
 
-export function Card({ c, focus, acc, account, readOnly }: { c: IndexCard; focus: Focus; acc: string; account: string; readOnly: boolean }) {
+export function Card({ c, focus, acc, account, readOnly, ourKind = null }: { c: IndexCard; focus: Focus; acc: string; account: string; readOnly: boolean; ourKind?: string | null }) {
   const ts = typeAndSize(c);
   const h = headlineWords(c, focus);
   const name = displayName(c.name);
@@ -269,7 +301,81 @@ export function Card({ c, focus, acc, account, readOnly }: { c: IndexCard; focus
       </div>
       <div className="mt-auto flex items-center justify-between gap-2 pt-1">
         <Link href={href} className="text-[12px] font-bold text-[var(--group-accent-text)]">Open →</Link>
-        <AddToSet groupId={c.group_id} account={account} query={acc} readOnly={readOnly} />
+        <AddToSet groupId={c.group_id} account={account} query={acc} readOnly={readOnly} ourKind={ourKind} groupKind={c.kind ?? null} groupName={name} />
+      </div>
+    </article>
+  );
+}
+
+/** The non-mainstream section's (i): the majority rule, the families, the pools, nursery FSM, small groups. */
+function NmIntro({ counts }: { counts: { two: number; of: number } | null }) {
+  return (
+    <details className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-3 py-2 text-[12px]" data-nm-intro="">
+      <summary className="cursor-pointer font-semibold text-[var(--fg)]">
+        <span aria-hidden className="mr-1.5 inline-flex h-[16px] w-[16px] items-center justify-center rounded-full border border-[var(--muted2)] text-[10px] font-bold">i</span>
+        More than half of each group&rsquo;s current schools are special, AP, PRU or nursery schools
+      </summary>
+      <div className="mt-2 flex flex-col gap-1.5 text-[var(--muted)]">
+        <p>{NM_NOTES.line}</p>
+        <p>{NM_NOTES.families}</p>
+        <p>{NM_NOTES.stateFunded}</p>
+        <p>{NM_NOTES.nurseryFsm}</p>
+        {counts && <p>{smallGroupsWords(counts.two, counts.of)}</p>}
+      </div>
+    </details>
+  );
+}
+
+function NmFilters({ f, set }: { f: LibraryFilter; set: (p: Partial<LibraryFilter>) => void }) {
+  const toggle = <T extends string>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+  return (
+    <div className="flex flex-col gap-2 rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3" data-nm-filters="">
+      <Row label="Kind">
+        {(["special_ap", "nursery"] as const).map((k) => <EntryChip key={k} label={FAMILY_PLURAL[k]} active={f.families.includes(k)} onClick={() => set({ families: toggle(f.families, k), likeUs: false })} />)}
+      </Row>
+      <Row label="Schools">
+        {NM_BANDS.map((b) => <EntryChip key={b} label={b} active={f.bands.includes(b)} onClick={() => set({ bands: toggle(f.bands, b) })} />)}
+      </Row>
+      <Row label="Region">
+        <select aria-label="Region" value={f.regions[0] ?? ""} onChange={(e) => set({ regions: e.target.value ? [e.target.value] : [] })} className="h-[34px] rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 text-[12.5px] font-semibold text-[var(--fg)]">
+          <option value="">Anywhere</option>
+          {Object.entries(REGION_NAMES).filter(([code]) => code !== "outside_england").map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+        </select>
+        <EntryChip label="Most schools in" active={f.regionMode === "most"} onClick={() => set({ regionMode: "most" })} />
+        <EntryChip label="Has a school in" active={f.regionMode === "has"} onClick={() => set({ regionMode: "has" })} />
+      </Row>
+    </div>
+  );
+}
+
+/** A special and AP trust's or nursery federation's card: schools by kind, roll and same-schools change,
+ * FSM against its kind's England figure. No results (R-NM-NO-RESULTS). */
+export function NmCard({ c, acc, account, readOnly, ourKind }: { c: IndexCard; acc: string; account: string; readOnly: boolean; ourKind: string | null }) {
+  const ts = typeAndSize(c);
+  const name = displayName(c.name);
+  const href = `/teacher/group/groups/${encodeURIComponent(c.group_id)}${acc ? `?${acc}` : ""}`;
+  const fam = familyOf(c.kind);
+  return (
+    <article className="flex flex-col gap-2 rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3" data-group-card={c.group_id} data-nm-card={fam}>
+      <Link href={href} className="flex gap-3 hover:opacity-90">
+        <RegionArtwork regions={c.regions} label={`Where ${name}'s schools are: ${regionWords(c)}`} />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="text-[14px] font-extrabold leading-tight text-[var(--fg)]">{name}</div>
+          <div className="text-[12px] font-semibold text-[var(--muted)]">
+            {ts.line}
+            <span className="ml-1.5 rounded-full bg-[var(--box-bg)] px-1.5 py-[1px] text-[10.5px] font-bold text-[var(--group-accent-text)]">{fam === "nursery" ? "Nursery federation" : "Special and AP trust"}</span>
+          </div>
+          <div className="text-[11.5px] text-[var(--muted2)]">{regionWords(c)}</div>
+        </div>
+      </Link>
+      <div className="flex flex-col gap-0.5 border-t border-[var(--panel-border)] pt-2 text-[12px]">
+        <div className="text-[var(--muted2)]">{schoolsByKindWords(c.schools_by_kind)}</div>
+        <div className="text-[var(--fg)]">{cardRollWords(c)}</div>
+        <div className="font-semibold text-[var(--fg)]">{cardFsmWords(c)}</div>
+      </div>
+      <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+        <Link href={href} className="text-[12px] font-bold text-[var(--group-accent-text)]">Open →</Link>
+        <AddToSet groupId={c.group_id} account={account} query={acc} readOnly={readOnly} ourKind={ourKind} groupKind={c.kind ?? null} groupName={name} />
       </div>
     </article>
   );

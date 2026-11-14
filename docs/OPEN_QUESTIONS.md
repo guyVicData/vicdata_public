@@ -3211,3 +3211,57 @@ Built straight through from `docs/v0.8/vicdata_0_8_front_door_design_crosscheck_
 - **Not fixed, Guy's calls (G1–G10, in the report):** the typeface; the school's name in the header; "Also here" extras per role; primary SMT's Context figure; the head office home's chips and "Our schools" line; more than 10 subjects as horizontal bars; well walk screen 5 (peers or England); the nearby bars' order and average line; the rivals editor's line naming the profile; the changelog seed's stale sentence.
 - **R-REPORT-COMMANDS-ORDER fails on `main` too:** `docs/v0.8/non_mainstream_groups_production_report_v1.md` has no "## Guy's commands" section. Not this branch's file; left for that round (the rule passes on this branch's own report).
 - **PGlite needs `npm i --no-save @electric-sql/pglite@0.2`** in a fresh worktree (the suites' headers say so); until then every suite fails to import.
+
+## 2026-11-14: Non-mainstream groups, the app half (M5–M9)
+
+Built straight through from `docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md` (milestones 5–9) on `v0.8-non-mainstream-groups` (from `main` 00ca9de). The production half is done (build 7; `docs/v0.8/non_mainstream_groups_production_report_v1.md`). The calls made along the way, numbered for the report (NMQ1…):
+
+### M5: the library and the fixtures
+
+1. **The fixtures are production's, copied as they are**, from `~/dev/vicdata_non_mainstream/docs/group_aggregates_fixtures/`. Harris and Dukes are regenerated: against the committed files they gain keys only, and only the build's metadata moves (its date, commit and focus lists), which no Group page prints (the library's footer does, and the library changes by design).
+2. **The named files are merged, not replaced.** Production regenerated `peer_named:2157`, `5143` and `ch:01550681` only. The group sets round's extra named groups (8 for Harris, 5 for Dukes, read on 13 Nov) keep their rows, which are identical in value and lack only the new `fsm` key. Replacing them would have dropped the side-by-side sets the parity harness and screenshots use.
+3. **Three more reads from production, anon and read-only, the app's own call** (manifest `app_additions`): named groups for Nexus (Wellspring, LSEAT, Manor Hall, Venn, Esteem) and for Birmingham (four nursery federations), for the side-by-side; and `pools` for Harris (its one AP school's region pool) and Dukes (none), for the Schools table's placing. Nexus's `group_aggregate_lookup` on production was checked equal to its fixture, row for row.
+4. **A viewer whose own group is special, AP or nursery opens the library on that section**, unless the address names a section. "Like us" is the family there (special and AP trusts, or nursery federations), and the mainstream section has no "like us" for them.
+5. **The section's cards show the same-schools 3-year change** (NM5: "its same-schools change"), labelled "over 3 years, same schools". Mainstream cards keep their combined change, unchanged.
+6. **The section's size bands are production's for the family** (2–5, 6–10, 11+). Nursery federations have no bands but are filtered by the same chips. The section has no phase chips and no "Headline result" sort.
+7. **The majority-rule (i) is a disclosure under the section switch** (the library had no (i) of its own). It also carries the families, the state-funded pools, nursery FSM and "57 of these 140 groups have two schools".
+8. **The library's footer is reworded.** "…aren't listed yet" becomes "…are in their own section, Special, AP and nursery groups". This is a deliberate library change.
+9. **R-NM-SETS keeps families apart too.** A set holds groups of one family: mainstream, special and AP, or nursery. NM10 says non-mainstream groups only with each other; holding nursery federations apart from special and AP trusts follows R-NM-FSM-NURSERY (a side-by-side would otherwise set nursery FSM beside school FSM). The refusal is one line: "Ark is a mainstream group: special and AP trusts are compared only with special and AP trusts."
+10. **The dash route's body is now one function, `src/lib/groups/dash-payload.ts`**, called by the route after its access check. The parity and screenshot harnesses call the same function, so they build exactly what the route answers.
+
+### M6: the group dashboard for a non-mainstream group
+
+11. **A non-mainstream group's pages show All phases only.** Pools and FSM are whole-school (phase "all" in production), and its phase rows would mostly repeat the same schools. The phase chips show "All phases" alone.
+12. **No results anywhere, its mainstream line included.** R-NM-NO-RESULTS says "no results tile or trend for a non-mainstream group". The line's results exist in production (1 school for Nexus, 16 for Wellspring) but stay unshown in this version. The line shows roll, its 1-year same-schools change and FSM against the mainstream pools. Logged as a later step beside A8 within need type.
+13. **"Results aren't compared for nursery schools"** is the nursery federations' wording (NM7's sentence is about special and AP schools). Its reason: nursery schools take no key stage tests.
+14. **The layout.**
+    - **Overview:** The group now (schools by kind, roll, same-schools change, FSM, places), Against others (its peer set, the same kinds in its regions, its kinds' pools by England, region and special LA; or a set of its family side by side), Mainstream line, Map and Joined. Trends: roll indexed, FSM over time, and Results (the no-results state) with Share of places.
+    - **Academic:** the no-results state beside Against others and the mainstream line. It has no trends row.
+    - **Pupils:** unchanged; none of its views is a result.
+    - **Schools:** Size and results is dropped.
+15. **Peer places read "9th highest FSM of 11 …" and "4th fastest-growing, same schools over 1 year of 11 …".** Production ranks every place highest first. The combined 1-year change place (`roll_change_1`) isn't shown, because joins move it.
+16. **The Against table's change column is 1 year, same schools** (production's peer places rank on it). The group now also gives 3 and 5 years.
+17. **FSM over time draws the group, the set compared against and England's pool of the group's main kind** (special, AP and PRUs, or nursery: the kind with most schools in its own figures, AP and PRUs together).
+18. **Within each level, pools list the group's main kind first** (England, then region, then special LAs).
+19. **On a phone, the non-mainstream tables drop the Schools and Pupils columns** so that roll change and FSM stay in view. Full screen shows every column.
+20. **A non-mainstream group's Schools table has its own columns:** kind, ages, roll, FSM (with the region pool's), 3-year roll change (with the pool's), the region's pool, and joined. A mainstream school reads "Mainstream · in the mainstream line".
+21. **Parity (mainstream):** 624 pages (Harris and Dukes: every dash response the harness serves, the editor and Manage sets, at 1440 and 390) were compared as page text, base 00ca9de against the branch. 620 are identical. The 4 that differ are Harris's Schools table at All phases (both readings, both widths), where its one AP school, Harris Aspire Academy, is placed against its region's pool (NM11, by design).
+
+### M7: group sets
+
+22. **Most of M7 went in with M5** (Add to set…, the editor's Add groups, the route's resolution), since the library's cards needed it. M7 adds the mainstream side-by-side's line when a set holds another family's groups (old sets and old links), and the tests for the editor's offer list and family-wise Nearest in size.
+23. **A set made before this round keeps its stored members.** Groups of another family are left out where the set is used (the picker's side-by-side says how many), and are unticked when the editor opens it (with the one-line reason). Saving then drops them. No stored set is rewritten in the database: no group uses the site yet (`group_accounts` 0 on 13 Nov), so none exists live.
+
+### M8: mainstream groups' own special, AP and nursery schools
+
+24. **The placing keeps "not in group figures" for a mainstream group** ("AP, not in group figures · FSM 0.0% (region 56.4%)"): the school is still out of the group's figures, and the line says so. A non-mainstream group's schools read without it ("Special · FSM …").
+25. **The placing is against the school's region's pool, its region from its LA** (`src/lib/region-crosswalk.ts`, the app's LA-to-region table), since the school rows carry no region code. The change shown is 3-year (the Schools table's Trend column, R-ROLL-WORDS-3YR) beside the pool's like-for-like 3-year change.
+26. **The pooled kind line sits in The group now on Schools**, beside England's state-funded pool of the kind (FSM and 3-year same-schools change), only where production writes one (5+ current schools of one kind). Shaw shows its 12 special schools; Harris and Dukes show none, so their pages are unchanged.
+27. **A school with a tiny roll shows DfE's own FSM**, even 0.0% (Harris Aspire Academy, roll 2), as the census publishes it. It is a single school, not a pool, so R-MIN-SCHOOLS doesn't apply.
+
+### M9: rules, screenshots, the report
+
+28. **"Like us" lives only in a group's own section.** A special trust's head office browsing the mainstream groups gets no "Groups like us" chip, type highlight or like-us sort, and a mainstream head office gets none in the special, AP and nursery section. This was found in the screenshots and fixed.
+29. **A non-mainstream group's school that isn't open yet reads "not yet open"** on its library page (it read "School"). This was found in the screenshots and fixed.
+
+- **14 Nov (review before merge): a school's own FSM % is withheld under 10 pupils on roll** (`FSM_MIN_PUPILS`, `src/lib/groups/non-mainstream.ts`). Harris Aspire Academy (AP, 2 pupils on the January census) read "FSM 0.0% (region 56.4%)": arithmetically true, misleading beside a regional pool. It now reads "FSM: too few pupils (2)". 10 is DfE's usual small-number threshold; a test pins it.

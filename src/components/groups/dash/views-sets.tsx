@@ -122,6 +122,8 @@ export function SideBySide({ o, average, compact = false }: { o: GroupOverview; 
           </tbody>
         </table>
       </div>
+      {/* 0.8 non-mainstream groups (R-NM-SETS): another family's groups are left out of the set, and said. */}
+      {o.picker.set?.refused ? <div className="text-[11.5px] font-semibold" data-set-refused="">{o.picker.set.refused} group{o.picker.set.refused === 1 ? "" : "s"} in this set {o.picker.set.refused === 1 ? "is" : "are"} left out: special and AP trusts and nursery federations are compared only with their own kind, never with mainstream groups.</div> : null}
       {!compact && (
         <div className="text-[11.5px] leading-snug text-[var(--muted2)]">
           Each group&rsquo;s own figures, {average ? "average school (each school counts once)" : "pupil-weighted"}; the median is of the groups&rsquo; figures, one vote per group with a figure. Ranks are within each group&rsquo;s own type. In brackets, the schools with that result.

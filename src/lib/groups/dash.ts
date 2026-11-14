@@ -10,6 +10,9 @@ import type { AgeGenderCounts } from "../roll-data";
 import type { ComparisonKind, ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, Reading, SchoolYearRow } from "./aggregates";
 import { competitionRanks } from "../rank";
 import { GROUP_SET_CAP, groupsWord, medianOf, notPublished, ofGroupsWords } from "./group-sets";
+import { isNonMainstream, kindLinesOf, placeSchool, placingWords, poolAt, POOL_WORDS, SCHOOL_KIND_WORDS, type Placing, type PoolKind } from "./non-mainstream";
+import { resolveRegionNation } from "../region-crosswalk";
+import { buildNmParts, nmSetRank, type NmParts } from "./dash-nm";
 
 export type Focus = Phase;
 export const FOCI: Focus[] = ["all", "primary", "secondary", "post16"];
@@ -38,7 +41,7 @@ export const GROUP_TYPE_LABEL: Record<string, string> = {
   foundation_trust: "foundation trust",
   umbrella_trust: "umbrella trust",
 };
-export const PEER_PLURAL: Record<string, string> = { mat: "MATs", federation: "federations", independent_company: "independent groups", independent_charity: "independent charities", foundation_trust: "foundation trusts", independent_other: "other independent groups" };
+export const PEER_PLURAL: Record<string, string> = { mat: "MATs", federation: "federations", independent_company: "independent groups", independent_charity: "independent charities", foundation_trust: "foundation trusts", independent_other: "other independent groups", special_ap: "special and AP trusts", nursery: "nursery federations" };
 
 /** 0.8 group sets (D4): a peer set of every group of the type (band "all": foundation trusts, other
  * independent groups, or a group alone in its band) reads "foundation trusts" in a place sentence
@@ -102,7 +105,10 @@ export function displayName(name: string): string {
 
 // ----------------------------------------------------------------------------- the comparison choice
 
-export type CompareKey = ComparisonKind | `peer_named:${string}`;
+// 0.8 non-mainstream groups: a special and AP trust or nursery federation is also compared against its
+// kinds' pools ("pools:england:special", "pools:region:special:E12000003", "pools:la:special:371") and
+// the same kinds in its regions, matched to its mix ("kind_areas").
+export type CompareKey = ComparisonKind | `peer_named:${string}` | `pools:${string}` | "kind_areas";
 export const DEFAULT_COMPARE: CompareKey = "peer_band";
 
 /** The non-group source note (0.8 group sets, D1): production's non-group state schools exclude the
@@ -209,7 +215,7 @@ export function chainedIndex(rows: { period: number; figures: Figures }[]): Pt[]
 
 // ------------------------------------------------------------------------------------ the sets
 
-export type SetRef = { key: string; label: string; kind: ComparisonKind | "peer_named" | "group"; variant: string; rows: { period: number; phase: Phase; figures: Figures }[] };
+export type SetRef = { key: string; label: string; kind: ComparisonRow["kind"] | "group"; variant: string; rows: { period: number; phase: Phase; figures: Figures }[] };
 
 /** Mix-matched means non-group schools only (Guy, 16 Oct): the ingest's `mix_matched:england` weights
  * the same region cells by the same weights as `areas:region`, so it duplicates that set and is never offered. */
@@ -230,6 +236,8 @@ function withheld(f: Figures): Figures {
   if (f.n_schools > 0 && f.n_schools < POOL_MIN_SCHOOLS && f.change) {
     out.change = Object.fromEntries(Object.entries(f.change).map(([k, c]) => [k, { ...c, combined_pct: null, same_schools_pct: null }])) as Figures["change"];
   }
+  // 0.8 non-mainstream groups: FSM follows the same rule (53 of the 150 LA special pools are under 5).
+  if (f.fsm && f.fsm.n_with_figure > 0 && f.fsm.n_with_figure < POOL_MIN_SCHOOLS) out.fsm = { ...f.fsm, pct: null };
   return out;
 }
 
@@ -239,7 +247,8 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
   const by = new Map<string, SetRef>();
   for (const r of comps) {
     if (r.reading !== reading) continue;
-    const key = r.kind === "peer_named" ? `peer_named:${r.variant}` : `${r.kind}:${r.variant}`;
+    // A pool's variant names its kind and level only ("region:special"); its set id names the area too.
+    const key = r.kind === "peer_named" ? `peer_named:${r.variant}` : r.kind === "pools" ? `pools:${r.set_id}` : `${r.kind}:${r.variant}`;
     if (NOT_OFFERED.has(key)) continue;
     const label = r.kind === "peer_named" ? displayName(r.label) : key === "mix_matched:non_group" ? mixMatchedLabel(groupLabel) : r.label;
     const s = by.get(key) ?? { key, label, kind: r.kind, variant: r.variant, rows: [] };
@@ -252,13 +261,17 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
   const sorted = Array.from(by.values()).sort((a, b) => {
     const ia = order.indexOf(a.key);
     const ib = order.indexOf(b.key);
-    return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib) || a.label.localeCompare(b.label) || a.key.localeCompare(b.key);
+    return (ia < 0 ? 100 + nmSetRank(a.key) : ia) - (ib < 0 ? 100 + nmSetRank(b.key) : ib) || a.label.localeCompare(b.label) || a.key.localeCompare(b.key);
   });
   return [...out, ...sorted];
 }
 
 /** The set the trends compare against, for a choice. */
 export function chosenSets(sets: SetRef[], k: CompareKey): SetRef[] {
+  if (k.startsWith("pools:") || k === "kind_areas") {
+    const s = sets.find((x) => x.key === (k === "kind_areas" ? "kind_areas:region" : k));
+    return s ? [s] : [];
+  }
   if (k.startsWith("peer_named:")) return namedIds(k).map((id) => sets.find((s) => s.key === `peer_named:${id}`)).filter((s): s is SetRef => !!s);
   const key = { peer_band: "peer_band:band", non_group: "non_group:england", sat: "sat:england", areas: "areas:la", england: "england:england", mix_matched: "mix_matched:non_group" }[k as ComparisonKind];
   const s = sets.find((x) => x.key === key);
@@ -268,12 +281,12 @@ export function chosenSets(sets: SetRef[], k: CompareKey): SetRef[] {
 // --------------------------------------------------------------------------------- the overview
 
 export type AgainstCell = { value: number | null; n: number | null; average: number | null; tooFew?: boolean };
-export type AgainstRow = { key: string; label: string; kind: SetRef["kind"]; schools: number | null; pupils: number | null; roll: { pct: number | null; years: number }; growing: { pct: number | null; n: number; of: number }; cells: Record<string, AgainstCell> };
+export type AgainstRow = { key: string; label: string; kind: SetRef["kind"]; schools: number | null; pupils: number | null; roll: { pct: number | null; years: number }; growing: { pct: number | null; n: number; of: number }; cells: Record<string, AgainstCell>; /** non-mainstream groups only */ nm?: { change1: number | null; fsm: number | null } };
 
 /** 0.8 group sets (M4): a set of groups as the page uses it -- the address key, its name, where it came
  * from (nearest in size, a stored set, or an unsaved one from an old link) and its groups, each with the
  * type and size the library knows (the index card). */
-export type GroupSetInput = { key: string; name: string; source: "nearest" | "set" | "unsaved"; setId: string | null; scope: "group" | "personal" | null; groups: { id: string; label: string; type: string; schools: number }[] };
+export type GroupSetInput = { key: string; name: string; source: "nearest" | "set" | "unsaved"; setId: string | null; scope: "group" | "personal" | null; groups: { id: string; label: string; type: string; schools: number }[]; /** R-NM-SETS: groups of another family left out */ refused?: number };
 
 /** One row of the side-by-side table: a group with its type and size, and its same-type rank. */
 export type SideRow = AgainstRow & { ours: boolean; type: string; typeSize: string; rank: string | null; missing: boolean; notPublished: string[] };
@@ -281,7 +294,7 @@ export type MedianCell = { value: number | null; average: number | null; n: numb
 export type SideBySide = {
   columns: string[];
   rows: SideRow[];
-  median: { label: string; mixed: boolean; n: number; schools: number | null; pupils: number | null; roll: number | null; growing: number | null; cells: Record<string, MedianCell> };
+  median: { label: string; mixed: boolean; n: number; schools: number | null; pupils: number | null; roll: number | null; growing: number | null; cells: Record<string, MedianCell>; /** non-mainstream groups only */ nm?: { change1: number | null; fsm: number | null } };
   england: AgainstRow | null;
 };
 /** The picker's Default block: computed, never stored (brief §5.2). */
@@ -318,15 +331,18 @@ export type GroupOverview = {
   picker: Picker;
   sideBySide: SideBySide | null;
   peerPlaces: Record<string, Place>;
+  /** 0.8 non-mainstream groups: a special and AP trust's or nursery federation's own parts (absent for a
+   * mainstream group). Its results are never shown (R-NM-NO-RESULTS): no columns, places or trends. */
+  nm?: NmParts;
   trends: {
     roll: { lines: { key: string; label: string; pts: Pt[] }[] };
     results: { measure: string; label: string; unit: "pct" | "points" | "va"; lines: { key: string; label: string; pts: Pt[]; average: Pt[]; n: (number | null)[] }[] }[];
-    share: { sector: "all" | "independent"; phase: Focus; pct: number | null; las: { code: string; name: string; pct: number | null; group: number; total: number | null }[]; regions: { code: string; name: string; pct: number | null }[]; series: Pt[] };
+    share: { sector: "all" | "independent" | "special_ap" | "nursery"; phase: Focus; pct: number | null; las: { code: string; name: string; pct: number | null; group: number; total: number | null }[]; regions: { code: string; name: string; pct: number | null }[]; series: Pt[] };
   };
 };
 
 /** Every set's headline cells in the focus phase, each measure in its own latest year. */
-function againstRows(sets: SetRef[], focus: Focus, measures: string[], latest: Record<string, number | null>, census: number): AgainstRow[] {
+function againstRows(sets: SetRef[], focus: Focus, measures: string[], latest: Record<string, number | null>, census: number, nm = false): AgainstRow[] {
   return sets.map((s) => {
     const at = (p: number, ph: Phase) => s.rows.find((r) => r.period === p && r.phase === ph)?.figures ?? null;
     const now = at(census, focus) ?? at(census, "all");
@@ -348,12 +364,16 @@ function againstRows(sets: SetRef[], focus: Focus, measures: string[], latest: R
       roll: { pct: ch5?.same_schools_pct ?? null, years: 5 },
       growing: { pct: ch3 && of ? Math.round((1000 * ch3.growing) / of) / 10 : null, n: ch3?.growing ?? 0, of },
       cells,
+      ...(nm ? { nm: { change1: now?.change?.["1"]?.same_schools_pct ?? null, fsm: now?.fsm?.pct ?? null } } : {}),
     };
   });
 }
 
-export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow[]; compare: CompareKey; focus: Focus; namedLabels?: Record<string, string>; name?: string; groupSet?: GroupSetInput | null; addressKey?: string; nearest?: { id: string }[] }): GroupOverview {
-  const { agg, comps, focus } = input;
+export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow[]; compare: CompareKey; focus: Focus; namedLabels?: Record<string, string>; name?: string; groupSet?: GroupSetInput | null; addressKey?: string; nearest?: { id: string }[]; nmCounts?: { two: number; of: number } }): GroupOverview {
+  const { agg, comps } = input;
+  // 0.8 non-mainstream groups: pools and FSM are whole-school (phase "all"), so their pages show all phases.
+  const isNm = isNonMainstream(agg.group.kind);
+  const focus: Focus = isNm ? "all" : input.focus;
   const reading = agg.reading;
   const name = input.name ?? displayName(agg.group.name);
   const census = latestCensus(agg);
@@ -361,9 +381,9 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
   const all = figOf(agg, census, "all");
   if (!all) throw new Error("no figures for the latest census year");
   const sets = setsFor(agg, comps, reading, name);
-  const measures = focus === "all" ? ["ks4_a8", "ks5_aps_alevel", "ks5_va_alevel"] : focus === "secondary" ? ["ks4_a8", "ks4_em5", "ks4_p8"] : focus === "post16" ? ["ks5_aps_alevel", "ks5_aps_all", "ks5_va_alevel"] : ["ks2_rwm"];
+  const measures = isNm ? [] : focus === "all" ? ["ks4_a8", "ks5_aps_alevel", "ks5_va_alevel"] : focus === "secondary" ? ["ks4_a8", "ks4_em5", "ks4_p8"] : focus === "post16" ? ["ks5_aps_alevel", "ks5_aps_all", "ks5_va_alevel"] : ["ks2_rwm"];
   const latest: Record<string, number | null> = {};
-  for (const m of [...new Set([...measures, "ks4_a8", "ks4_em5", "ks4_em4", "ks4_p8", "ks5_aps_alevel", "ks5_aps_all", "ks5_va_alevel", "ks2_rwm"])]) latest[m] = latestFor(agg, m);
+  for (const m of [...new Set([...measures, "ks4_a8", "ks4_em5", "ks4_em4", "ks4_p8", "ks5_aps_alevel", "ks5_aps_all", "ks5_va_alevel", "ks2_rwm"])]) latest[m] = isNm ? null : latestFor(agg, m);
   const ph = focus === "all" ? all : (figOf(agg, census, focus) ?? all);
   const firstAll = figOf(agg, first, focus) ?? figOf(agg, first, "all");
   const changes = {} as GroupOverview["now"]["change"];
@@ -376,19 +396,19 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
   const lasList = Object.entries(all.las ?? {}).map(([k, n]) => ({ code: k.split("|")[0], name: k.split("|")[1] || k, n })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
 
   // Against others: every set, plus the named groups picked.
-  const rows = againstRows(sets, focus, measures, latest, census);
+  const rows = againstRows(sets, focus, measures, latest, census, isNm);
   const peer = agg.peer;
   const peerLabel = peer ? peerWords(peer).place : null;
   const headline = focus === "all" ? (all.schools_by_phase?.secondary ? "ks4_a8" : all.schools_by_phase?.post16 ? "ks5_aps_alevel" : "ks2_rwm") : HEADLINE[focus];
   const hy = latest[headline];
   const places = (hy !== null ? figOf(agg, hy, MEASURE_PHASE[headline])?.peer?.places : undefined) ?? {};
-  const place = places[headline] && peerLabel ? `${ordinal(places[headline].rank, places[headline].tied)} of ${places[headline].of} ${peerLabel} on ${MEASURE_LABEL[headline]} (${periodLabel(hy!)})` : null;
+  const place = !isNm && places[headline] && peerLabel ? `${ordinal(places[headline].rank, places[headline].tied)} of ${places[headline].of} ${peerLabel} on ${MEASURE_LABEL[headline]} (${periodLabel(hy!)})` : null;
   const hf = hy !== null ? fig(figOf(agg, hy, MEASURE_PHASE[headline]), headline) : null;
   const ng = sets.find((s) => s.key === "non_group:england");
   const ngf = hy !== null && ng ? fig(ng.rows.find((r) => r.period === hy && r.phase === MEASURE_PHASE[headline])?.figures, headline) : null;
   const noun = PHASE_NOUN[MEASURE_PHASE[headline]];
   const countWord = (n: number) => n.toLocaleString("en-GB");
-  const counts = hf ? `${name}: ${countWord(hf.n_with_figure)} ${hf.n_with_figure === 1 ? noun[0] : noun[1]} with ${headline.startsWith("ks4") ? "GCSE" : headline.startsWith("ks5") ? "A-level" : "KS2"} results${ngf ? `; non-group: ${countWord(ngf.n_with_figure)}` : ""}` : "";
+  const counts = hf && !isNm ? `${name}: ${countWord(hf.n_with_figure)} ${hf.n_with_figure === 1 ? noun[0] : noun[1]} with ${headline.startsWith("ks4") ? "GCSE" : headline.startsWith("ks5") ? "A-level" : "KS2"} results${ngf ? `; non-group: ${countWord(ngf.n_with_figure)}` : ""}` : "";
 
   // Compare options (§3.6), each with its set and n.
   const nOf = (key: string) => {
@@ -417,6 +437,9 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
   defaults.push({ key: "areas:la", name: `All schools in ${name}’s areas`, countText: schoolsCount(nOf("areas:la")), title: `Every school in the LAs where ${name}’s schools sit, weighted to ${name}’s pupils in each.` });
   defaults.push({ key: "england:all", name: englandWords(sector).label, countText: schoolsCount(nOf("england:england")), title: englandWords(sector).info });
   if (input.nearest?.length) defaults.push({ key: "nearest", name: "Nearest in size, same type", countText: groupsWord(input.nearest.length), title: `The ${input.nearest.length} ${PEER_PLURAL[agg.group.type] ?? "groups"} nearest ${name} in size, side by side, with their median.` });
+  // 0.8 non-mainstream groups: the Default block is its own family's peer set and its kinds' pools.
+  const nmParts = isNm ? buildNmParts({ agg, sets, census, name, nearest: input.nearest ?? [], nmCounts: input.nmCounts ?? null, chosen: chosenSets(sets, input.compare) }) : null;
+  if (nmParts) defaults.splice(0, defaults.length, ...nmParts.defaults);
   const pickerKey = input.groupSet?.key ?? input.addressKey ?? (peer?.set_id ?? ngKey);
   const pooledRow = defaults.find((x) => x.key === pickerKey) ?? null;
   const cmpLabel = input.groupSet ? input.groupSet.name : input.compare.startsWith("peer_named:") ? chosen.map((s) => s.label).join(", ") || "named groups" : (pooledRow?.name ?? options.find((o) => o.key === input.compare)?.label ?? "Peer groups");
@@ -450,6 +473,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
       return { ...base, label: g.label, ours: false, type: g.type, typeSize: typeSizeWords(g.type, g.schools), rank: set ? rankIn(set.rows) : null, missing: !r, notPublished: measures.filter((m) => notPublished(g.type, m)) };
     });
     const have = groupRows.filter((r) => !r.missing);
+    const nmMedian = isNm ? { nm: { change1: medianOf(have.map((r) => r.nm?.change1 ?? null)), fsm: medianOf(have.map((r) => r.nm?.fsm ?? null)) } } : {};
     const cells: Record<string, MedianCell> = {};
     for (const m of measures) {
       const vals = have.map((r) => r.cells[m]?.value ?? null);
@@ -459,7 +483,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
     sideBySide = {
       columns: measures,
       rows: [ours, ...groupRows],
-      median: { label: `Median of the set · ${ofGroupsWords(have.length, groupRows.length)}`, mixed: types.size > 1, n: have.length, schools: medianOf(have.map((r) => r.schools)), pupils: medianOf(have.map((r) => r.pupils)), roll: medianOf(have.map((r) => r.roll.pct)), growing: medianOf(have.map((r) => r.growing.pct)), cells },
+      median: { label: `Median of the set · ${ofGroupsWords(have.length, groupRows.length)}`, mixed: types.size > 1, n: have.length, schools: medianOf(have.map((r) => r.schools)), pupils: medianOf(have.map((r) => r.pupils)), roll: medianOf(have.map((r) => r.roll.pct)), growing: medianOf(have.map((r) => r.growing.pct)), cells, ...nmMedian },
       england: byKey.get("england:england") ? { ...byKey.get("england:england")!, label: englandWords(sector).label } : null,
     };
   }
@@ -467,7 +491,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
   // Trends: like-for-like roll index, the group against the chosen set(s); results by phase; share.
   const lineOf = (s: SetRef, phase: Phase) => chainedIndex(s.rows.filter((r) => r.phase === phase).sort((a, b) => a.period - b.period));
   const rollLines = [sets[0], ...chosen].map((s) => ({ key: s.key, label: s.label, pts: lineOf(s, focus) }));
-  const resMeasures = focus === "all" ? ["ks4_a8", "ks5_aps_alevel", "ks2_rwm"] : [HEADLINE[focus]];
+  const resMeasures = isNm ? [] : focus === "all" ? ["ks4_a8", "ks5_aps_alevel", "ks2_rwm"] : [HEADLINE[focus]];
   const results = resMeasures
     .filter((m) => latest[m] !== null)
     .map((m) => ({
@@ -497,6 +521,11 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
       // LF4: "54 of 55 schools; 1 alternative provision not counted" (members of the kinds left out).
       notCounted: (() => {
         const by: Record<string, number> = {};
+        // A non-mainstream group's mainstream schools are in its mainstream line (NM2), not uncounted.
+        if (isNm) {
+          const n = excludedRoll.filter((e) => e.reason === "mainstream_line").length;
+          return n ? { n, total: all.n_schools + n, words: `${n} mainstream school${n === 1 ? "" : "s"} in its mainstream line` } : null;
+        }
         for (const e of excludedRoll) if (e.reason in NOT_COUNTED_WORDS) by[e.reason] = (by[e.reason] ?? 0) + 1;
         const n = Object.values(by).reduce((a, b) => a + b, 0);
         return n ? { n, total: all.n_schools + n, words: notCountedWords(by)! } : null;
@@ -515,7 +544,8 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
     against: { columns: measures, rows, counts, place, mixAvailable: sets.some((s) => s.kind === "mix_matched") },
     picker,
     sideBySide,
-    peerPlaces: places,
+    peerPlaces: isNm ? {} : places,
+    ...(nmParts ? { nm: nmParts.parts } : {}),
     trends: {
       roll: { lines: rollLines },
       results,
@@ -557,6 +587,14 @@ export type SchoolRow = {
   joined: string | null;
   lastSeen: string | null;
   link: { kind: "smt" | "public"; href: string };
+  /** 0.8 non-mainstream groups (NM11, R-NM-OWN-SCHOOLS): a special, AP, PRU or nursery school placed
+   * against its region's state-funded pool of its kind -- in a mainstream group in place of the bare
+   * "not in group figures" tag, and every counted school of a non-mainstream group. */
+  placing?: Placing | null;
+  placingText?: string | null;
+  /** The school's FSM (DfE's own %), on a non-mainstream group's table. */
+  fsm?: number | null;
+  kindTag?: string | null;
 };
 
 export type GroupSchools = {
@@ -567,7 +605,13 @@ export type GroupSchools = {
   years: { census: number; first: number; results: Record<string, number | null> };
   rows: SchoolRow[];
   counts: { listed: number; shown: number; withHeadline: number; withoutHeadline: number };
+  /** 0.8 non-mainstream groups: the group's family (absent for a mainstream group). */
+  nm?: { family: "special_ap" | "nursery"; placed: number; line: number };
+  /** NM11: a mainstream group's own special (AP, nursery) schools pooled, where it has 5 or more of one
+   * kind (production's kind_lines), beside England's state-funded pool of that kind. */
+  kindLines?: KindLine[];
 };
+export type KindLine = { kind: PoolKind; label: string; schools: number; roll: number; change1: number | null; change3: number | null; fsm: number | null; england: { label: string; change1: number | null; change3: number | null; fsm: number | null } | null };
 
 const REASON_WORDS: Record<string, string> = {
   outside_england: "outside England: no DfE data",
@@ -621,8 +665,12 @@ export function buildSchools(input: {
   // SMT opens the public page of every other school.
   headOffice?: boolean;
   name?: string;
+  /** 0.8 non-mainstream groups: production's `pools` rows, to place each special, AP and nursery school. */
+  pools?: ComparisonRow[];
 }): GroupSchools {
-  const { agg, focus } = input;
+  const { agg } = input;
+  const isNm = isNonMainstream(agg.group.kind);
+  const focus: Focus = isNm ? "all" : input.focus;
   const reading = agg.reading;
   const census = latestCensus(agg);
   const first = firstCensus(agg);
@@ -671,7 +719,14 @@ export function buildSchools(input: {
     let reason: string | null = null;
     let national: Place | null = null;
     const kindNow = (f ?? lastWith)?.kind;
-    if ((f ?? lastWith)?.counted === false && kindNow && kindNow in NOT_COUNTED_WORDS) {
+    // NM11: placed against its region's pool of its kind (production's own pools; R-MIN-SCHOOLS applies).
+    const placing = input.pools && (isNm || (f ?? lastWith)?.counted === false) ? placeSchool(f ?? lastWith, resolveRegionNation(s.la_name).regionCode, input.pools, census, reading) : null;
+    if (isNm) {
+      // NM2: a non-mainstream group counts its special, AP, PRU and nursery schools (production's
+      // `counted` means "counts in a mainstream group", so it is read the other way round here); its
+      // mainstream schools are its mainstream line. No results on its pages (R-NM-NO-RESULTS).
+      reason = kindNow === "mainstream" ? "Mainstream · in the mainstream line" : placing ? null : kindNow && kindNow in NOT_COUNTED_WORDS ? NOT_COUNTED_WORDS[kindNow][0] : null;
+    } else if ((f ?? lastWith)?.counted === false && kindNow && kindNow in NOT_COUNTED_WORDS) {
       // LF4: listed with its own roll; the tag in place of results.
       reason = `${NOT_COUNTED_WORDS[kindNow][0]} · not in group figures`;
     } else if (hm) {
@@ -707,8 +762,8 @@ export function buildSchools(input: {
       reason,
       inGroup: headline ? (inGroup.get(headline.measure)?.get(s.urn) ?? null) : null,
       national,
-      va: vaM && vv !== undefined && vv !== null && vy !== null ? { measure: vaM, value: vv, year: vy } : null,
-      vaNote: vaM && (vv === undefined || vv === null) ? (independent && vaM === "ks4_p8" ? "not published (independent)" : "not published") : null,
+      va: !isNm && vaM && vv !== undefined && vv !== null && vy !== null ? { measure: vaM, value: vv, year: vy } : null,
+      vaNote: !isNm && vaM && (vv === undefined || vv === null) ? (independent && vaM === "ks4_p8" ? "not published (independent)" : "not published") : null,
       // R-ROLL-WORDS-3YR: the 3-year roll change; a school without a census three years back (no
       // database figure) uses the longest span it has, from its own yearly rolls to this census.
       trend: f?.trend[GROWING_SPAN] ?? shorterSpan(s.years.map((y) => ({ year: y.period, value: y.figures ? y.figures.roll : null })), census),
@@ -718,8 +773,27 @@ export function buildSchools(input: {
       joined: m?.joined ?? null,
       lastSeen: m?.lastSeen ?? null,
       link,
+      ...(placing ? { placing, placingText: placingWords(placing, !isNm) } : {}),
+      ...(isNm ? { fsm: (f ?? lastWith)?.fsm?.pct ?? null, kindTag: kindNow ? (NOT_COUNTED_WORDS[kindNow]?.[0] ?? "Mainstream") : null } : {}),
     };
   });
+  // NM11: the pooled kind lines (a mainstream group with 5+ current schools of one kind).
+  const kindLines: KindLine[] = isNm
+    ? []
+    : kindLinesOf(figOf(agg, census, "all")).map(({ kind, figures: f }) => {
+        const eng = input.pools ? poolAt(input.pools, `england:${kind}`, census, reading) : null;
+        const [, , many] = SCHOOL_KIND_WORDS[kind === "ap" ? "ap" : kind];
+        return {
+          kind,
+          label: `Its ${f.n_schools} ${many}`,
+          schools: f.n_schools,
+          roll: f.roll,
+          change1: f.change?.["1"]?.same_schools_pct ?? null,
+          change3: f.change?.["3"]?.same_schools_pct ?? null,
+          fsm: f.fsm?.pct ?? null,
+          england: eng ? { label: `${POOL_WORDS[kind].plural.charAt(0).toUpperCase()}${POOL_WORDS[kind].plural.slice(1)}, England`, change1: eng.change?.["1"]?.same_schools_pct ?? null, change3: eng.change?.["3"]?.same_schools_pct ?? null, fsm: eng.fsm?.pct ?? null } : null,
+        };
+      });
   const shown = rows.filter((r) => r.current && (focus === "all" || r.phases.includes(focus as never) || (r.outsideEngland && focus === "post16")));
   shown.sort((a, b) => (b.roll ?? -1) - (a.roll ?? -1) || a.name.localeCompare(b.name));
   return {
@@ -730,5 +804,7 @@ export function buildSchools(input: {
     years: { census, first, results: latest },
     rows: shown,
     counts: { listed: rows.filter((r) => r.current).length, shown: shown.length, withHeadline: shown.filter((r) => r.headline).length, withoutHeadline: shown.filter((r) => !r.headline).length },
+    ...(isNm ? { nm: { family: agg.group.kind === "nursery" ? ("nursery" as const) : ("special_ap" as const), placed: shown.filter((r) => r.placing).length, line: shown.filter((r) => r.kindTag === "Mainstream").length } } : {}),
+    ...(kindLines.length ? { kindLines } : {}),
   };
 }

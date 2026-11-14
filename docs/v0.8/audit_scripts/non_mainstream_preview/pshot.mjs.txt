@@ -1,0 +1,24 @@
+// node pshot.mjs <out.png> <url> <width> [height] [waitMs]   env: CLICK (js;;js), CLICKWAIT, CLIP (css selector), NOFULL
+import { chromium } from "$SCRATCH/pw/node_modules/playwright-core/index.mjs";
+const S = new URL(".", import.meta.url).pathname;
+const [out, url, width, height = "1300", wait = "3000"] = process.argv.slice(2);
+const browser = await chromium.launch({ executablePath: `$SCRATCH/pw/browsers/chromium_headless_shell-1148/chrome-mac/headless_shell` });
+const w = Number(width);
+const ctx = await browser.newContext({ viewport: { width: w, height: Number(height) }, deviceScaleFactor: 1, isMobile: w < 500, hasTouch: w < 500 });
+const page = await ctx.newPage();
+const logs = [];
+page.on("pageerror", (e) => logs.push("EXC " + String(e.message).slice(0, 400)));
+page.on("console", (m) => ["error", "warning"].includes(m.type()) && logs.push(m.type() + " " + m.text().slice(0, 300)));
+await page.goto(url);
+await page.waitForTimeout(Number(wait));
+if (process.env.CLICK) for (const js of process.env.CLICK.split(";;")) { await page.evaluate(js).catch((e) => logs.push("CLICK " + e.message)); await page.waitForTimeout(Number(process.env.CLICKWAIT ?? 1200)); }
+const err = await page.evaluate(() => document.getElementById("err")?.textContent || document.title);
+let opts = { path: out, fullPage: !process.env.NOFULL };
+if (process.env.CLIP) {
+  const b = await page.locator(process.env.CLIP).first().boundingBox().catch(() => null);
+  if (b) opts = { path: out, clip: { x: Math.max(0, b.x - 16), y: Math.max(0, b.y - 16), width: b.width + 32, height: b.height + 32 }, fullPage: true };
+}
+await page.screenshot(opts);
+console.log(out, "|", err);
+if (process.env.LOGS) for (const l of logs) console.log("  " + l);
+await browser.close();

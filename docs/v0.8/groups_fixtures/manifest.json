@@ -1,23 +1,47 @@
 {
  "note": "Dry-run results in the exact shape the production lookups return (PostgREST: jsonb as is; table functions as json_agg of the rows). For the app's tests, parity harnesses and screenshots until the promote; the same tests then run against production unchanged.",
- "ingest_commit": "db7a27b",
- "inputs_fetched_at": "2026-11-08 17:20:04",
+ "ingest_commit": "847e02e",
+ "inputs_fetched_at": "2026-11-13 23:27:28",
  "migrations": [
   "20261017090000_group_aggregates.sql",
   "20261017100000_group_comparison_lookup_order.sql",
   "20261108130000_group_sets.sql",
-  "20261108140000_group_england_by_sector.sql"
+  "20261108140000_group_england_by_sector.sql",
+  "20261113120000_non_mainstream_groups.sql"
  ],
  "calls": {
   "group_index_lookup()": "group_index_lookup.json",
   "group_aggregate_lookup('3320', 'at_time' | 'listed_now')": "harris_group_aggregate_lookup_<reading>.json",
   "group_comparison_lookup('3320', [\"peer_band\",\"non_group\",\"sat\",\"areas\",\"england\",\"mix_matched\"])": "harris_group_comparison_lookup.json",
+  "group_comparison_lookup('3320', [\"peer_named:2157\",\"peer_named:5143\"])": "harris_group_comparison_lookup_named.json",
   "group_schools_year_lookup('3320')": "harris_group_schools_year_lookup.json",
   "group_aggregate_lookup('club_iss:dukes-education', 'at_time' | 'listed_now')": "dukes_group_aggregate_lookup_<reading>.json",
   "group_comparison_lookup('club_iss:dukes-education', [\"peer_band\",\"non_group\",\"sat\",\"areas\",\"england\",\"mix_matched\"])": "dukes_group_comparison_lookup.json",
+  "group_comparison_lookup('club_iss:dukes-education', [\"peer_named:ch:01550681\"])": "dukes_group_comparison_lookup_named.json",
   "group_schools_year_lookup('club_iss:dukes-education')": "dukes_group_schools_year_lookup.json",
+  "group_aggregate_lookup('16125', 'at_time' | 'listed_now')": "nexus_group_aggregate_lookup_<reading>.json",
+  "group_comparison_lookup('16125', [\"peer_band\",\"pools\",\"kind_areas\",\"mainstream_line\",\"england\",\"non_group\",\"sat\"])": "nexus_group_comparison_lookup.json",
+  "group_schools_year_lookup('16125')": "nexus_group_schools_year_lookup.json",
+  "group_aggregate_lookup('17126', 'at_time' | 'listed_now')": "birmingham_group_aggregate_lookup_<reading>.json",
+  "group_comparison_lookup('17126', [\"peer_band\",\"pools\",\"kind_areas\",\"mainstream_line\",\"england\",\"non_group\",\"sat\"])": "birmingham_group_comparison_lookup.json",
+  "group_schools_year_lookup('17126')": "birmingham_group_schools_year_lookup.json",
+  "group_aggregate_lookup('4499', 'at_time' | 'listed_now')": "shaw_group_aggregate_lookup_<reading>.json",
+  "group_comparison_lookup('4499', [\"peer_band\",\"non_group\",\"sat\",\"areas\",\"england\",\"mix_matched\",\"pools\"])": "shaw_group_comparison_lookup.json",
+  "group_schools_year_lookup('4499')": "shaw_group_schools_year_lookup.json",
   "group_comparison_lookup('3320', [\"peer_named:2157\",\"peer_named:5143\", + 8 more])": "harris_group_comparison_lookup_named.json",
-  "group_comparison_lookup('club_iss:dukes-education', [\"peer_named:ch:01550681\", + 5 more])": "dukes_group_comparison_lookup_named.json"
+  "group_comparison_lookup('club_iss:dukes-education', [\"peer_named:ch:01550681\", + 5 more])": "dukes_group_comparison_lookup_named.json",
+  "group_comparison_lookup('16125', [\"peer_named:5252\",\"peer_named:2465\",\"peer_named:15716\",\"peer_named:15786\",\"peer_named:17050\"])": "nexus_group_comparison_lookup_named.json",
+  "group_comparison_lookup('17126', [\"peer_named:17181\",\"peer_named:17504\",\"peer_named:17716\",\"peer_named:5603\"])": "birmingham_group_comparison_lookup_named.json"
+ },
+ "non_mainstream_fixtures": {
+  "nexus": "Nexus Multi Academy Trust (special trust)",
+  "birmingham": "The Birmingham Federation of Maintained Nursery Schools (nursery federation)",
+  "shaw": "The Shaw Education Trust (mainstream, with special schools)",
+  "ids": {
+   "nexus": "16125",
+   "birmingham": "17126",
+   "shaw": "4499"
+  }
  },
  "files": [
   "harris_group_aggregate_lookup_at_time.json",
@@ -30,7 +54,21 @@
   "dukes_group_schools_year_lookup.json",
   "harris_group_comparison_lookup_named.json",
   "dukes_group_comparison_lookup_named.json",
-  "group_index_lookup.json"
+  "group_index_lookup.json",
+  "nexus_group_aggregate_lookup_at_time.json",
+  "nexus_group_aggregate_lookup_listed_now.json",
+  "nexus_group_comparison_lookup.json",
+  "nexus_group_schools_year_lookup.json",
+  "birmingham_group_aggregate_lookup_at_time.json",
+  "birmingham_group_aggregate_lookup_listed_now.json",
+  "birmingham_group_comparison_lookup.json",
+  "birmingham_group_schools_year_lookup.json",
+  "shaw_group_aggregate_lookup_at_time.json",
+  "shaw_group_aggregate_lookup_listed_now.json",
+  "shaw_group_comparison_lookup.json",
+  "shaw_group_schools_year_lookup.json",
+  "nexus_group_comparison_lookup_named.json",
+  "birmingham_group_comparison_lookup_named.json"
  ],
  "named_m4": {
   "note": "0.8 group sets M4 (13 Nov 2026): the named files gained more groups for sets of groups (nearest in size, a mixed-type set), read from production's group_comparison_lookup (anon, read-only, the app's own call). The groups already here were re-read and are identical value for value, so production and these fixtures agree.",
@@ -51,6 +89,19 @@
    "ch:07391840",
    "club_iss:girls-day-school-trust"
   ],
-  "read_at": "2026-11-13"
+  "read_at": "2026-11-13",
+  "note_nm": "0.8 non-mainstream groups (14 Nov 2026): peer_named:2157, 5143 and ch:01550681 are production's regenerated rows (build 7, new keys only); the other named groups keep their 13 Nov rows (identical in value, without the new fsm key)."
+ },
+ "app_additions": {
+  "note": "0.8 non-mainstream groups, app half (14 Nov 2026): read from production (build 7) through group_comparison_lookup, anon and read-only, the app's own call. Nexus's group_aggregate_lookup on production was checked equal to its fixture row for row.",
+  "named": [
+   "nexus_group_comparison_lookup_named.json",
+   "birmingham_group_comparison_lookup_named.json"
+  ],
+  "pools_appended": {
+   "harris_group_comparison_lookup.json": "group_comparison_lookup('3320', ['pools']): 28 rows (england:ap, region:ap:E12000007), for its AP school's placing in the Schools table (NM11)",
+   "dukes_group_comparison_lookup.json": "group_comparison_lookup('club_iss:dukes-education', ['pools']): none (no state-funded special, AP or nursery school)"
+  },
+  "read_at": "2026-11-14"
  }
 }
