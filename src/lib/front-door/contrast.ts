@@ -123,6 +123,14 @@ export function midDashPairs(css: string): Pair[] {
     pairs.push({ name: `Mid dashboards ${label}: text on the field, light stop`, fg: t["--field-ink"], bg: from, kind });
     pairs.push({ name: `Mid dashboards ${label}: text on the field, dark stop`, fg: t["--field-ink"], bg: to, kind });
     if (MID_DASH_SMALL.includes(f)) pairs.push({ name: `Mid dashboards ${label}: a text button on the field (Light's text), dark stop`, fg: light["--fg"], bg: to, kind: "small" });
+    // 0.8 feedback C (C16): the plates on the part's tint -- text, muted and muted2 in the column, the well and
+    // the shut bar; the accent text on the shut bar's figure is the part's own (checked on the tile above).
+    const ll = tokensOf(css, SEL.ladderLight);
+    for (const [where, bg] of [["column", t["--panel-bg"]], ["well", t["--box-bg"]], ["shut bar", t["--shut-bg"]]] as const) {
+      pairs.push({ name: `Mid dashboards ${label}: text in the ${where} (tinted)`, fg: light["--fg"], bg, kind: "small" });
+      pairs.push({ name: `Mid dashboards ${label}: muted text in the ${where} (tinted)`, fg: ll["--muted"] ?? light["--muted"], bg, kind: "small" });
+      pairs.push({ name: `Mid dashboards ${label}: muted2 text in the ${where} (tinted)`, fg: light["--muted2"], bg, kind: "small" });
+    }
   }
   const band = tokensOf(css, SEL.band);
   pairs.push({ name: "Mid dashboards: the header band's text", fg: band["--fg"], bg: "#0a0a0b", kind: "small" });
@@ -220,8 +228,10 @@ export function ladderSteps(css: string) {
     lightBorder: contrast(sl["--shut-border"], ll["--panel-bg"]),
     // 0.8 front door 2b (M3): a Mid dashboard draws Light's ladder on its field, so the shut bar's step from
     // its column is Light's; and the column (a near-white plate) stands off every field's lighter stop.
-    midBorder: contrast(sl["--shut-border"], ll["--panel-bg"]),
-    midColumnOnField: Math.min(...(Object.keys(MID_FIELDS) as MidField[]).map((f) => contrast(ll["--panel-bg"], MID_FIELDS[f].from))),
+    // 0.8 feedback C (C16): each part's tinted column (its own --panel-bg) -- the shut bar's border against it,
+    // and the column against the field's lighter stop; the worst part counts.
+    midBorder: Math.min(...(Object.keys(MID_FIELDS) as MidField[]).map((f) => contrast(sl["--shut-border"], tokensOf(css, SEL.midDashField(f))["--panel-bg"] ?? ll["--panel-bg"]))),
+    midColumnOnField: Math.min(...(Object.keys(MID_FIELDS) as MidField[]).map((f) => contrast(tokensOf(css, SEL.midDashField(f))["--panel-bg"] ?? ll["--panel-bg"], MID_FIELDS[f].from))),
     tokens: { ll, ld, sl, sd },
   };
 }

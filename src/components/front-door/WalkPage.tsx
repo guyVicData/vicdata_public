@@ -151,11 +151,17 @@ function RowCells({ label, lit, span }: { label: string; lit: number; span: numb
 }
 
 /** The panel: the dashboard's own panel, enlarged. */
+/** C13: the walk's window -- a hairline edge, a large radius and a soft two-layer shadow (a close contact
+ * shadow and a wide, faint lift), the same in Light, Mid and Dark. */
+export const WALK_WINDOW = "overflow-hidden rounded-[16px] border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[0_1px_2px_rgba(15,23,42,0.06),0_18px_40px_-24px_rgba(15,23,42,0.35)]";
+
 export function WalkPanel({ icon, name, question, pills, tag, rail, title, note, controls, children }: { icon: string; name: string; question: string; pills: string[]; tag: string; rail: ReactNode; title: string; note: string; controls?: ReactNode; children: ReactNode }) {
   return (
-    <div data-walk-panel="" className="overflow-hidden rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
-      <div className="h-[3px] bg-[var(--accent,var(--tile-accent))]" />
-      <div className="flex flex-wrap items-center gap-2.5 border-b border-[var(--panel-border)] px-4 py-3">
+    // 0.8 feedback C (C13, Admissions 11): the window without the 3 px accent stripe, which the rounded corners
+    // clipped into what read as a clumsy shadow along its top edge. The section's colour is now a faint tint
+    // on the header, the edge a hairline, and the shadow two soft layers (WALK_WINDOW), the same in every theme.
+    <div data-walk-panel="" className={WALK_WINDOW}>
+      <div data-walk-panel-head="" className="flex flex-wrap items-center gap-2.5 border-b border-[var(--panel-border)] bg-[rgba(var(--accent-rgb,138,138,144),0.06)] px-4 py-3">
         <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[rgba(var(--accent-rgb,138,138,144),0.16)] text-[var(--accent,var(--fg))]"><WalkGlyph icon={icon} size={17} /></span>
         <p className="min-w-0 flex-grow text-[15px]"><strong>{name}</strong> <span className="text-[var(--muted)]">— {question}</span></p>
         {pills.map((p) => {
@@ -393,8 +399,7 @@ export function Found({ walk, screens, params, ctx, onBack, answer }: { walk: Wa
         <Link href={home} data-walk-home="" className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-4 py-2.5 text-[14.5px] font-semibold text-[var(--fg)]">{ARROW_L} Back to your home</Link>
       </div>
       {answer && (
-        <section data-walk-found-answer={walk.answer?.kind ?? ""} className="overflow-hidden rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
-          <div className="h-[3px] bg-[var(--accent,var(--tile-accent))]" />
+        <section data-walk-found-answer={walk.answer?.kind ?? ""} className={WALK_WINDOW}>
           <div className="flex flex-col gap-3 p-4 sm:p-5">
             <h2 className="text-[20px] font-semibold leading-snug text-[var(--fg)] sm:text-[24px]">{fillTemplate(walk.question, ctx)}</h2>
             <p className="text-[15.5px] leading-relaxed text-[var(--fg)]">{answer.sentence}</p>

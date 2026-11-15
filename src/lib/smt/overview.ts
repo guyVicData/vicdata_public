@@ -31,7 +31,7 @@ import { percentile } from "../admissions/stats";
 import { figure, placesOn, population, setPlace, SMT_MEASURES, type Population } from "./population";
 import { schoolCensus, type SmtSchool } from "./school";
 import { entryTiles, type EntryTile } from "./entry-net";
-import { entryShrinking, resultsAgainstSet, rollFalling, type SmtFlag } from "./flags";
+import { entryShrinking, resultsAgainstSet, rollFalling, SMT_FLAG_RULES, type SmtFlag } from "./flags";
 
 export type SmtSet = { kind: string; label: string; urns: string[] };
 
@@ -123,6 +123,10 @@ export type Overview = {
   va: { value: number; lo: number | null; hi: number | null; period: number } | null;
   flags: SmtFlag[];
   flagsLoaded: boolean;
+  // 0.8 feedback C (C9, SMT 5, D5): with no flag, the figures closest to one -- each results line's gap
+  // against the set's middle change (and the ±threshold a flag needs), and the roll's falls in the last
+  // three years (a flag needs three in a row).
+  flagWatch?: { results: { stage: Stage; what: string; change: number; setMiddle: number; gap: number; threshold: number; fromYear: number; toYear: number; schools: number }[]; roll: { falls: number; of: number; from: number | null; to: number | null; fromYear: number; toYear: number } | null };
   trends: {
     // pts indexed to `base` = 100; actual the pupils behind them (the table shows both, 0.8 audit fixes, 3).
     roll: { lines: { key: string; label: string; pts: Pt[]; actual: Pt[] }[]; base: number | null; laName: string | null };
@@ -131,7 +135,10 @@ export type Overview = {
     // nearest schools teaching Year 7 (defaultRivals, the same as Admissions' own Market share).
     // 0.8 SMT feedback round 2 (F-9, R-MARKET-FOLLOWS-SET): on Overview the rivals are the selected set;
     // `setRivals` is its name. Pupils keeps round 1's (Admissions' saved rivals, else its default).
-    market: { status: "ready"; school: Pt[]; rival: Pt[]; rivalName: string | null; rivals: number; defaultRivals: boolean; setRivals: string | null } | { status: "empty"; reason: string };
+    // 0.8 feedback C (C2, SMT 4): `middle` the rivals' middle share each year (the median of the set's
+    // schools with a share, the school left out) and `band` their middle half, so the chart draws what its
+    // title names.
+    market: { status: "ready"; school: Pt[]; rival: Pt[]; rivalName: string | null; rivals: number; defaultRivals: boolean; setRivals: string | null; middle?: Pt[]; band?: BandPt[] } | { status: "empty"; reason: string };
   };
   notes: { since: string; middleHalf: string; rollIndexed: string; trendYears: string };
 };
@@ -342,6 +349,8 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtA
 
   // ------------------------------------------------------------ flags on the school
   const flags: SmtFlag[] = [];
+  const watchResults: NonNullable<Overview["flagWatch"]>["results"] = [];
+  const round2 = (v: number) => Math.round(v * 100) / 100;
   const thresholds = await loadThresholds();
   if (P !== null) {
     const f1 = rollFalling([P - 3, P - 2, P - 1, P].map((y) => ({ year: y, roll: census.find((c) => c.period === y)?.totalRoll ?? null })));
@@ -366,7 +375,17 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtA
     const setChanges = setUrns.filter((u) => !(r.stage === "ks4" && igcse.has(u))).map(ch).filter((v): v is number => v !== null);
     const fl = resultsAgainstSet(r.stage, r.stage === "ks4" ? "GCSE results" : "Post-16 results", { from: figure(r.pop, urn, from, r.key), to: figure(r.pop, urn, period, r.key), fromYear: from, toYear: period }, setChanges);
     if (fl) flags.push(fl);
+    const a0 = figure(r.pop, urn, from, r.key);
+    const a1 = figure(r.pop, urn, period, r.key);
+    const mid = percentile(setChanges, 50);
+    if (a0 !== null && a1 !== null && mid !== null && setChanges.length >= SMT_FLAG_RULES.resultsMinSchools && r.stage !== "ks2") {
+      const change = a1 - a0;
+      watchResults.push({ stage: r.stage, what: r.stage === "ks4" ? "GCSE results" : "Post-16 results", change: round2(change), setMiddle: round2(mid), gap: round2(change - mid), threshold: SMT_FLAG_RULES.resultsGap[r.stage], fromYear: from, toYear: period, schools: setChanges.length });
+    }
   }
+  const rollYears = P !== null ? [P - 3, P - 2, P - 1, P].map((y) => ({ y, v: census.find((c) => c.period === y)?.totalRoll ?? null })) : [];
+  const rollWatch = rollYears.length === 4 && rollYears.every((x) => x.v !== null) ? { falls: rollYears.slice(1).filter((x, i) => x.v! < rollYears[i].v!).length, of: 3, from: rollYears[0].v, to: rollYears[3].v, fromYear: rollYears[0].y, toYear: rollYears[3].y } : null;
+  const flagWatch = { results: watchResults, roll: rollWatch };
 
   // ------------------------------------------------------------ row 2: trends
   const years = census.map((c) => c.period).filter((y) => y >= CENSUS_FIRST_PERIOD);
@@ -445,6 +464,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtA
     va,
     flags,
     flagsLoaded: !!thresholds,
+    flagWatch,
     trends: { roll: { lines: rollLines, base: ix.base, laName: school.laName }, results: resultTrends, market },
     notes: {
       since: smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) }),
@@ -506,7 +526,10 @@ export async function marketAt11(school: SmtSchool, caller: SmtAdmissionsReader 
       for (const r of m.entryAge.rows) (byUrn.get(r.urn) ?? byUrn.set(r.urn, []).get(r.urn)!).push({ year: r.period, value: r.share });
       const latest = m.entryAge.periods.at(-1);
       const largest = m.entryAge.rows.filter((r) => r.urn !== urn && r.period === latest && r.share !== null).sort((a, b) => (b.share ?? 0) - (a.share ?? 0))[0];
-      market = { status: "ready", school: byUrn.get(urn) ?? [], rival: largest ? (byUrn.get(largest.urn) ?? []) : [], rivalName: largest ? (m.schools[largest.urn]?.name ?? largest.urn) : null, rivals: m.rivals.length, defaultRivals: !rivals, setRivals: set ? set.label : null };
+      const others = (y: number) => m.entryAge.rows.filter((r) => r.urn !== urn && r.period === y && r.share !== null).map((r) => r.share as number);
+      const middle = m.entryAge.periods.map((y) => ({ year: y, value: percentile(others(y), 50) }));
+      const band = m.entryAge.periods.map((y) => ({ year: y, p25: percentile(others(y), 25), p75: percentile(others(y), 75), n: others(y).length }));
+      market = { status: "ready", school: byUrn.get(urn) ?? [], rival: largest ? (byUrn.get(largest.urn) ?? []) : [], rivalName: largest ? (m.schools[largest.urn]?.name ?? largest.urn) : null, rivals: m.rivals.length, defaultRivals: !rivals, setRivals: set ? set.label : null, middle, band };
       const mine = m.entryAge.rows.find((r) => r.urn === urn && r.period === latest);
       const first = m.entryAge.rows.find((r) => r.urn === urn && r.period === m.entryAge.periods[0]);
       // groupShare's shares are already per cent.

@@ -54,7 +54,9 @@ function MomentumScope({ r }: { r: RivalsView }) {
   const out = mr?.leftOut ?? [];
   return (
     <div data-momentum-scope="" className="-mt-1 text-[11px] text-[var(--muted2)]">
-      {momentumScope(r.stage)}
+      {/* 0.8 feedback C (C12): the momentum's own stage (an IGCSE school's rivals are ranked on Post-16, but
+          the momentum keeps its 11+ rule). */}
+      {momentumScope(mr?.stage ?? r.stage)}
       {out.length > 0 && (
         // Every school left out is named; past two, the line says how many more and the hover names them
         // all, so it stays one line in the panel's fixed height (sets round 1 parity: a long list

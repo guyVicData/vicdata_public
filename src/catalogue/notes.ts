@@ -199,7 +199,7 @@ export const SMT_NOTES = {
   y12Label: "Year 12 against Year 11",
   y12AgainstY11: "Year 12 this year against Year 11 last year: below 100% when pupils leave at 16, above 100% when more join than leave.",
   shapesAround: "Shapes are described, never ranked: a smaller sixth form isn't worse.",
-  rollByPhase: "Each phase's roll, and England's pupils aged 5 to 15 in every mainstream school (the census aggregates), indexed to 100 in {base}.",
+  rollByPhase: "Each phase's roll against the local authority's residents of that phase's ages (ONS mid-year estimates), every line indexed to 100 in {base}.",
   pool: "The pool for the main entry point, from Admissions: counted in the schools it draws from, then from births. A pool, not an intake.",
   levelAges: "The level picks the ages: GCSE Years 7 to 11, Post-16 Years 12 and 13, Primary Reception to Year 6.",
   // ---- 0.8 SMT Academic (R-SMT-NO-PILLS): girls and boys, and day and boarding, as views (the pills are gone).

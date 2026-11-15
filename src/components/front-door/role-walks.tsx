@@ -22,6 +22,7 @@ import { SchoolNow } from "@/components/smt/views/Now";
 import { Scorecard } from "@/components/smt/views/Scorecard";
 import { SchoolFlags } from "@/components/smt/views/Flags";
 import { MarketLine, ResultsBand, RollIndexed, IndexedLines, PlainLine } from "@/components/smt/views/Lines";
+import { periodLabel } from "@/catalogue/years";
 import { AcademicNow, AreasView, EveryLine, GradesView, RankChart, SubjectsRankedView, TrendBand, acVars } from "@/components/smt/views/Academic";
 import { subjectsRanked, subjectsRankedAnswer } from "@/lib/smt/subjects-ranked";
 import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "@/components/smt/views/Pupils";
@@ -193,7 +194,7 @@ function smtScreens(walk: Walk, school: SmtSchool, data: unknown, contextMap: Sm
           const t = o.trends.results[0];
           return t ? <ResultsBand trend={t} setLabel={o.set.label} fullscreen={false} room={260} title={t.label} schoolName={name} /> : <p className="text-[13px]">No headline results.</p>;
         }
-        case "DV-SMT-O-MARKET-LINE": return <MarketLine o={o} schoolName={name} fullscreen={false} room={260} />;
+        case "DV-SMT-O-MARKET-LINE": return <MarketLine o={o} schoolName={name} fullscreen={false} room={300} />;
         case "DV-SMT-O-FLAGS": return <SchoolFlags o={o} phases={school.phases} />;
         case "DV-SMT-A-NOW": return <AcademicNow a={a} />;
         case "DV-SMT-A-CHART": return <RankChart a={a} fullscreen={false} room={280} />;
@@ -205,7 +206,7 @@ function smtScreens(walk: Walk, school: SmtSchool, data: unknown, contextMap: Sm
         case "DV-SMT-P-SHAPE": return <ShapeAndSize p={p} />;
         case "DV-SMT-P-ENTRIES": return <EntryPoints p={p} />;
         case "DV-SMT-P-LEAVING": return <LeavingAt16 p={p} school={school} />;
-        case "DV-SMT-P-PHASES": return <IndexedLines title="Roll by phase" lines={p.trends.phases} fullscreen={false} room={260} />;
+        case "DV-SMT-P-PHASES": return <IndexedLines title={`Roll by phase against ${school.laName ?? "the LA"}'s children of the same ages, indexed (${p.trends.base !== null ? periodLabel(p.trends.base) : "the first shared year"} = 100)`} lines={p.trends.phases} fullscreen={false} room={320} />;
         case "DV-SMT-P-AREA": {
           const ar = p.trends.area;
           const label = `${possessive(ar.laName ?? "The LA")} residents aged ${ar.agesWord}`;

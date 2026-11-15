@@ -204,23 +204,32 @@ body:has(#teacher-root[data-mid-dash]) { background: #0a0a0b; }
 #teacher-root[data-mid-dash="gcse"] :is([data-dash-ladder], [data-mid-field]) {
   background: radial-gradient(90% 80% at 12% 0%, #4CD98Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #86E3AE, #1E9E5E);
   --field-ink: #07200f;
+  --panel-bg: #e8faf0; --box-bg: #f5fdf8; --shut-bg: #f5fdf8;
 }
 #teacher-root[data-mid-dash="post16"] :is([data-dash-ladder], [data-mid-field]) {
   background: radial-gradient(90% 80% at 12% 0%, #A48CFFcc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #C1B0FF, #7A5BEF);
   --field-ink: #1a1240;
+  --panel-bg: #f6f4ff; --box-bg: #fbfaff; --shut-bg: #fbfaff;
 }
 #teacher-root[data-mid-dash="top"] :is([data-dash-ladder], [data-mid-field]) {
   background: radial-gradient(90% 80% at 12% 0%, #FF9F0Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #FFB74D, #F57C00);
   --field-ink: #3a1c02;
+  --panel-bg: #fff4e4; --box-bg: #fffaf3; --shut-bg: #fffaf3;
 }
 #teacher-root[data-mid-dash="group"] :is([data-dash-ladder], [data-mid-field]) {
   background: radial-gradient(90% 80% at 12% 0%, #FF9F0Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #FFB74D, #F57C00);
   --field-ink: #3a1c02;
+  --panel-bg: #fbf4ec; --box-bg: #fdf9f5; --shut-bg: #fdf9f5;
 }
 #teacher-root[data-mid-dash="admissions"] :is([data-dash-ladder], [data-mid-field]) {
   background: radial-gradient(90% 80% at 12% 0%, #5AC8FAcc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #8BD8FB, #1596DB);
   --field-ink: #062436;
+  --panel-bg: #e9f8fe; --box-bg: #f5fcff; --shut-bg: #f5fcff;
 }
+/* 0.8 feedback C (C16, Admissions 5; Guy, 15 Nov): in Mid the dashboard's plates sit on the part's own tint
+   instead of white -- the columns (--panel-bg) a clear tint, the wells and shut bars (--box-bg, --shut-bg) a
+   paler one -- so the pages are less prominent. Every text pair on them is in the contrast table
+   (R-THEME-CONTRAST, contrast.ts midDashPairs). */
 /* Text on the bare field (a row's head, its context line): the field's ink, never the plates' greys. */
 #teacher-root[data-mid-dash] [data-on-field], #teacher-root[data-mid-dash] [data-on-field] * { color: var(--field-ink); }
 /* The band's ShellPage bleed takes the field's top corners with it (the field reads as starting below it). */
@@ -445,25 +454,26 @@ body:has(#teacher-root[data-theme="dark"]) {
   }
 }
 
-/* 0.8 review fixes (14 Nov, M7): the subject families' colours, by theme (src/lib/subject-family-colours.ts;
+/* 0.8 review fixes (14 Nov, M7): the subject families' colours, by theme (0.8 feedback C, C14: Languages &
+   Literature and Health & Care re-picked) (src/lib/subject-family-colours.ts;
    R-SUBJECT-COLOUR keeps the two in step). */
 :root, #teacher-root[data-theme="light"] {
   --subject-family-sciences-maths: #3e5698;
   --subject-family-humanities-social: #811f18;
-  --subject-family-languages-literature: #341881;
+  --subject-family-languages-literature: #605024;
   --subject-family-arts-media-design: #b422a1;
   --subject-family-business-law: #6d2c4a;
   --subject-family-technology-eng-construction: #188173;
-  --subject-family-health-care: #188118;
+  --subject-family-health-care: #4c3324;
   --subject-family-enterprise-applied: #818118;
 }
 :root[data-theme="dark"], #teacher-root[data-theme="dark"], [data-theme="dark"] {
   --subject-family-sciences-maths: #a1b0d9;
   --subject-family-humanities-social: #e0655c;
-  --subject-family-languages-literature: #7f5ce0;
+  --subject-family-languages-literature: #c4aa64;
   --subject-family-arts-media-design: #e05cce;
   --subject-family-business-law: #d9a1bb;
   --subject-family-technology-eng-construction: #76e5d6;
-  --subject-family-health-care: #5ce05c;
+  --subject-family-health-care: #c0957c;
   --subject-family-enterprise-applied: #e0e05c;
 }

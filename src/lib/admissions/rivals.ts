@@ -53,6 +53,10 @@ export type Rivals = {
   rows: RivalRow[];
   areas: AreaRow[];
   thresholds: "loaded" | "not_loaded";
+  // 0.8 feedback C (C12, Admissions 9-10, D3): at 11+ an IGCSE school has no ranked GCSE headline, so the
+  // school and its rivals are ranked on Post-16 (A level points per entry) instead, as the rivals' momentum
+  // already reads it; `stage` is then "ks5" and the view says why.
+  switchedFrom?: "ks4" | null;
 };
 
 // The latest results year for this key stage, from the data (academic_current_periods, one row
@@ -69,7 +73,17 @@ export async function latestResults(stage: KsStage): Promise<{ period: number | 
 export async function buildRivals(urn: string, entry: EntryPoint, opts: { rivals?: string[]; thresholds?: Thresholds } = {}): Promise<Rivals> {
   const rivals = (opts.rivals ?? defaultRivals(entry, await nearbyCandidates(urn))).filter((u) => u !== urn);
   const urns = [urn, ...rivals];
-  const stage = stageForEntry(entry.age);
+  let stage = stageForEntry(entry.age);
+  let switchedFrom: "ks4" | null = null;
+  if (stage === "ks4" && (await igcseAmong([urn])).has(urn)) {
+    // D3: the school's own Post-16 headline, where it has one, in the latest Post-16 year.
+    const k5 = await latestResults("ks5");
+    const pop5 = k5.period === null ? null : await headlinePopulation("ks5", k5.period);
+    if (k5.period !== null && (pop5?.get(urn)?.get(k5.period) ?? null) !== null) {
+      stage = "ks5";
+      switchedFrom = "ks4";
+    }
+  }
   const phase = phaseForEntryAge(entry.age);
   const [latest, census, info, thresholds] = await Promise.all([latestResults(stage), cachedCensus(urns), fetchSchoolInfo(urns), opts.thresholds !== undefined ? Promise.resolve(opts.thresholds) : (loadThresholds() as Promise<Thresholds>)]);
   const period = latest.period;
@@ -145,7 +159,7 @@ export async function buildRivals(urn: string, entry: EntryPoint, opts: { rivals
     areas.forEach((a, i) => (a.place = places[i].get(urn) ?? null));
   }
 
-  return { urn, entry, stage, resultsPeriod: period, ...(latest.provisional ? { resultsProvisional: true } : {}), censusPeriod: P, rows, areas, thresholds: thresholds ? "loaded" : "not_loaded" };
+  return { urn, entry, stage, resultsPeriod: period, ...(latest.provisional ? { resultsProvisional: true } : {}), censusPeriod: P, rows, areas, thresholds: thresholds ? "loaded" : "not_loaded", ...(switchedFrom ? { switchedFrom } : {}) };
 }
 
 /** With a subject in view: each school's national and regional rank on it, from 0.6.6's

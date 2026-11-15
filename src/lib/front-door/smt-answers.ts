@@ -82,7 +82,12 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
     }
     case "DV-SMT-O-FLAGS": {
       const o = data as Overview;
-      if (!o.flags.length) return "No large and lasting changes flagged.";
+      if (!o.flags.length) {
+        // 0.8 feedback C (C9, D5): the closest figure to a flag, said with what a flag needs.
+        const r = [...(o.flagWatch?.results ?? [])].sort((a, b) => Math.abs(b.gap) / b.threshold - Math.abs(a.gap) / a.threshold)[0];
+        const s1 = (v: number) => `${v < 0 ? "−" : "+"}${Math.abs(v).toFixed(1)}`;
+        return r ? `No large and lasting changes flagged. Closest: ${r.what} ${s1(r.change)} against the set's ${s1(r.setMiddle)}; a flag needs a gap of ±${r.threshold}.` : "No large and lasting changes flagged.";
+      }
       const first = o.flags[0] as { label?: string };
       return `${plural(o.flags.length, "large and lasting change")} flagged${first.label ? `, among them: ${first.label.charAt(0).toLowerCase()}${first.label.slice(1)}` : ""}.`;
     }
@@ -165,12 +170,12 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
     case "DV-SMT-P-PHASES": {
       const p = data as Pupils;
       const all = p.trends.phases.map((ph) => ({ ph, f: firstPt(ph.actual), l: lastPt(ph.actual) })).filter((x) => x.f && x.l && x.f.year !== x.l.year && x.f.value);
-      // England's line is a comparator, not a phase: said after the school's phases.
-      const parts = all.filter((x) => !/england/i.test(x.ph.label));
-      const eng = all.find((x) => /england/i.test(x.ph.label));
+      // 0.8 feedback C (C6): the LA's lines (`la-{phase}`) are comparators, not phases: said after them.
+      const parts = all.filter((x) => !x.ph.key.startsWith("la-") && x.ph.key !== "england");
+      const las = all.filter((x) => x.ph.key.startsWith("la-"));
       if (!parts.length) return "Not enough census years to compare the phases.";
       const word = (x: (typeof parts)[number]) => `${x.ph.label} ${pctWords(((x.l!.value! - x.f!.value!) / x.f!.value!) * 100)}`;
-      return `Since ${periodLabel(parts[0].f!.year)}: ${listJoin(parts.map(word))}${eng ? `; England ${word(eng).replace(/^England /, "")}` : ""}.`;
+      return `Since ${periodLabel(parts[0].f!.year)}: ${listJoin(parts.map(word))}${las.length ? `; ${listJoin(las.map(word))}` : ""}.`;
     }
     case "DV-SMT-P-AREA": {
       const p = data as Pupils;

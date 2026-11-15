@@ -16,12 +16,12 @@ type Series = (number | null)[];
 export type Role = "focus" | "peer" | "other" | "average" | "la" | "england" | "nearest" | "region";
 export type Marker = "square" | "triangle" | "diamond" | "circle";
 /** A key entry: one per colour and mark on the chart (B14, R-WALK-KEYS). */
-export type KeyEntry = { label: string; role: Role; mark: "swatch" | "line" | "dash" | "tick" | "ring" | "dot"; shade?: number; marker?: Marker; family?: string | null };
+export type KeyEntry = { label: string; role: Role; mark: "swatch" | "line" | "dash" | "tick" | "ring" | "dot" | "highlight" | "ringdot"; shade?: number; marker?: Marker; family?: string | null };
 
 export type Chart =
   | { kind: "tiles"; main: { figure: string; label: string }; tiles: { icon: string; figure: string; scope: string }[]; keys: KeyEntry[] }
   | { kind: "vbars"; rows: { label: string; value: number; role: Role; family?: string | null }[]; average: { value: number; label: string } | null; unit: string; yCaption: string; keys: KeyEntry[] }
-  | { kind: "lines"; years: string[]; series: { label: string; values: Series; role: Role; shade?: number; marker?: Marker; family?: string | null }[]; unpublished: number[]; /** A5: each unpublished year's reason, in the same order ("3 entries, too few to publish"). */ unpublishedWhy?: string[]; yCaption: string; extraRows?: { label: string; values: Series }[]; keys: KeyEntry[]; digits: number }
+  | { kind: "lines"; years: string[]; series: { label: string; values: Series; role: Role; shade?: number; marker?: Marker; family?: string | null }[]; unpublished: number[]; /** A5: each unpublished year's reason, in the same order ("3 entries, too few to publish"). */ unpublishedWhy?: string[]; /** C11 (Teacher 4): the focus line's years with a figure but fewer than SMALL_COHORT entries, marked on the chart. */ small?: { index: number; entries: number }[]; yCaption: string; extraRows?: { label: string; values: Series }[]; keys: KeyEntry[]; digits: number }
   | { kind: "dumbbell"; rows: { label: string; first: number; latest: number; role: Role; family?: string | null }[]; firstYear: string; latestYear: string; noun: string; keys: KeyEntry[] }
   | { kind: "grades"; rows: { grade: string; count: number; share: number; england: number | null }[]; total: number; noun: [string, string]; keys: KeyEntry[] }
   | { kind: "hbars"; rows: { label: string; value: number; role: Role; note?: string; n?: number | null }[]; unit: string; digits: number; keys: KeyEntry[]; caption?: string }
@@ -241,6 +241,8 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const unpublished = fs.map((v, k) => (v === null ? k : -1)).filter((k) => k >= 0);
       // A5 (Teacher 4): each unpublished year with its reason, where it's known ("3 entries, too few to publish").
       const unpublishedWhy = unpublished.map((k) => unpublishedReason(cut(f.entries)[k], pts));
+      // 0.8 feedback C (C11, Teacher 4): small cohorts marked on the chart, not only in the sentence.
+      const small = pts ? fs.map((v, k) => ({ index: k, entries: cut(f.entries)[k], v })).filter((x) => x.v !== null && x.entries !== null && x.entries > 0 && x.entries < SMALL_COHORT).map((x) => ({ index: x.index, entries: x.entries as number })) : [];
       const series: Extract<Chart, { kind: "lines" }>["series"] = [
         { label: subject, values: fs, role: "focus" },
         // Peers in their family's colour (one family here), each a fixed shade and marker by name, never by rank.
@@ -262,7 +264,7 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
         answer,
         title: pts ? `${subject} Results over time: average points` : `Entries in ${cat}`,
         note: pts
-          ? `Average points per entry each year; England's is the amber line.${peers.length ? ` The other ${m.category.label ? `${cat} subjects` : "subjects in its area"} with results are in shades of the ${cat} colour.` : ""} Years with no published results are dotted and labelled with the reason.`
+          ? `Average points per entry each year; England's is the amber line.${peers.length ? ` The other ${m.category.label ? `${cat} subjects` : "subjects in its area"} with results are in shades of the ${cat} colour.` : ""} A year with no published results is left as a gap, labelled with the reason; a ringed point had fewer than ${SMALL_COHORT} entries.`
           : `${m.phase === "ks5" ? "Students" : "Pupils"} entered each year. ${subject} is drawn in your colour; the other ${cat} subjects in shades of the ${cat} colour, each with its own marker shape.`,
         chart: {
           kind: "lines",
@@ -270,8 +272,9 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
           series,
           unpublished,
           unpublishedWhy,
+          small,
           yCaption: pts ? "Average points per entry" : `Entries (${m.phase === "ks5" ? "students" : "pupils"})`,
-          keys: [{ label: subject, role: "focus", mark: "line" }, ...peers.map((r) => ({ label: r.label, role: "peer" as Role, mark: "line" as const, shade: byName(peers).indexOf(r), marker: MARKERS[byName(peers).indexOf(r) % MARKERS.length], family: r.familyId ?? null })), ...(series.some((x) => x.role === "england") ? [{ label: "England", role: "england" as Role, mark: "line" as const }] : []), ...(unpublished.length ? [{ label: "No published figure", role: "focus" as Role, mark: "dash" as const }] : [])],
+          keys: [{ label: subject, role: "focus", mark: "line" }, ...peers.map((r) => ({ label: r.label, role: "peer" as Role, mark: "line" as const, shade: byName(peers).indexOf(r), marker: MARKERS[byName(peers).indexOf(r) % MARKERS.length], family: r.familyId ?? null })), ...(series.some((x) => x.role === "england") ? [{ label: "England", role: "england" as Role, mark: "line" as const }] : []), ...(small.length ? [{ label: `Fewer than ${SMALL_COHORT} entries`, role: "focus" as Role, mark: "ring" as const }] : [])],
           digits: pts ? pointsDigits(m) : 0,
         },
       };
@@ -500,6 +503,9 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
   return { ...base, answer: "", title: question, note: "", chart: { kind: "none", reason: "", keys: [] } };
 }
 
+/** C11: a cohort this small is marked on the Results chart (the answers' "only" and "a small group"). */
+export const SMALL_COHORT = 10;
+const DUMBBELL_QUAL = /\s\((GCE A level|A level|GCSE[^)]*)\)$/;
 /** The dumbbell (B17, R-DUMBBELL): every comparable subject, first year to latest, largest first; the school average last. */
 export function dumbbellRows(m: TeacherModel): { rows: Extract<Chart, { kind: "dumbbell" }>["rows"]; firstIdx: number; lastIdx: number } | null {
   const lastIdx = m.periods.length - 1;
@@ -511,6 +517,10 @@ export function dumbbellRows(m: TeacherModel): { rows: Extract<Chart, { kind: "d
     .map((r) => ({ label: r.label, first: r.entries[firstIdx] as number, latest: r.entries[lastIdx] as number, role: (r.focus ? "focus" : catKeys.has(r.key) ? "peer" : "other") as Role, family: r.focus ? null : (r.familyId ?? null) }))
     .sort((a, b) => b.latest - a.latest);
   if (!rows.length) return null;
+  // 0.8 feedback C (C10): "(GCE A level)" (or a GCSE's own) only where it tells two rows apart -- a subject
+  // the school also takes in another qualification; never repeated down the rows.
+  const bare = (l: string) => l.replace(DUMBBELL_QUAL, "");
+  for (const r of rows) if (DUMBBELL_QUAL.test(r.label) && rows.filter((x) => bare(x.label) === bare(r.label)).length === 1) r.label = bare(r.label);
   const avg = { label: "School average", first: mean(rows.map((r) => r.first))!, latest: mean(rows.map((r) => r.latest))!, role: "average" as Role };
   return { rows: [...rows, avg], firstIdx, lastIdx };
 }
@@ -539,12 +549,12 @@ function dumbbellScreen(m: TeacherModel, base: { question: string; tag: string }
       firstYear: fy,
       latestYear: ly,
       noun: m.phase === "ks5" ? "students" : "pupils",
+      // 0.8 feedback C (C10, Teacher 2): the focus subject is the highlighted row, not a ninth family; one
+      // entry spells the direction out; the families; the school average labels its own (dashed) row, last.
       keys: [
-        { label: subject, role: "focus", mark: "swatch" },
-        ...familyKeys(m.whole.rows.filter((r) => !r.focus && d.rows.some((x) => x.label === r.label)), m.category.label ? `Other ${cat} subjects` : "Other subjects in its area"),
-        { label: `${fy} (first year)`, role: "other", mark: "ring" },
-        { label: `${ly} (latest)`, role: "other", mark: "dot" },
-        { label: "School average", role: "average", mark: "dash" },
+        { label: `${subject} (highlighted)`, role: "focus", mark: "highlight" },
+        { label: `○ ${fy} (first year) → ● ${ly} (latest)`, role: "other", mark: "ringdot" },
+        ...familyKeys(m.whole.rows.filter((r) => !r.focus && d.rows.some((x) => x.label === r.label || x.label === r.label.replace(DUMBBELL_QUAL, ""))), m.category.label ? `Other ${cat} subjects` : "Other subjects in its area"),
       ],
     },
   };

@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import type { PipelineOk } from "../api";
 import { FlagPill, Key, LineSwatch, ViewTitle, Empty, fmtN, cx } from "../ui";
-import { extent, scale, useWidth } from "./charts";
+import { axisValues, extent, scale, useWidth } from "./charts";
 import { arrowed, signedDelta, UNSIGNED_ZERO, VALUE_SIGN } from "@/lib/signed-delta";
 
 type PoolPoint = PipelineOk["ladder"]["past"][number];
@@ -82,8 +82,11 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
   const x1 = Math.max(...years);
   const W = Math.max(w, 10);
   const H = height;
-  const sx = scale([x0 - 0.4, x1 + 0.4], [0, W]);
   const yd = extent([...past.map((x) => x.pool), ...future.flatMap((x) => [x.pool, x.low, x.high]), ...proj.flatMap((x) => [x.low, x.high])], 0.15);
+  // 0.8 feedback C (C1, R-CHART-AXES): a value axis (pupils), round values across the range.
+  const grid = axisValues(yd, H - 28, null, null);
+  const padL = grid.length ? Math.max(...grid.map((v) => fmtN(v).length)) * 6 + 10 : 0;
+  const sx = scale([x0 - 0.4, x1 + 0.4], [padL, W]);
   const sy = scale(yd, [H - 14, 14]);
   const nowYear = past.length ? past[past.length - 1].entryYear : allPast.length && !pastPools ? allPast[allPast.length - 1].entryYear : x0;
   const counted = future.filter((x) => x.source === "counted");
@@ -132,8 +135,13 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
             {cb && <rect x={cb[0]} y={14} width={cb[1] - cb[0]} height={H - 28} fill="var(--accent)" opacity={0.07} />}
             {bb && <rect x={bb[0]} y={14} width={bb[1] - bb[0]} height={H - 28} fill="var(--accent)" opacity={0.035} />}
             <line x1={0} x2={W} y1={H - 14} y2={H - 14} stroke="var(--adm-axis)" />
-            {[0.33, 0.66].map((f) => (
-              <line key={f} x1={0} x2={W} y1={14 + (H - 28) * f} y2={14 + (H - 28) * f} stroke="var(--adm-grid)" />
+            {grid.map((v) => (
+              <g key={v} data-y-grid={v}>
+                <line x1={padL} x2={W} y1={sy(v)} y2={sy(v)} stroke="var(--adm-grid)" />
+                <text x={padL - 6} y={sy(v) + 3.5} textAnchor="end" fontSize={10} fill="var(--muted)">
+                  {fmtN(v)}
+                </text>
+              </g>
             ))}
             {pastPath && <path d={pastPath} fill="none" stroke="var(--adm-grey-line)" strokeWidth={2.4} strokeLinejoin="round" />}
             {past.length > 0 && <line x1={(sx(nowYear) + sx(nowYear + 1)) / 2} x2={(sx(nowYear) + sx(nowYear + 1)) / 2} y1={14} y2={H - 14} stroke="var(--adm-grey-2)" strokeDasharray="3 4" />}
@@ -156,7 +164,7 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
           </svg>
         )}
       </div>
-      <div className="flex justify-between px-1 text-[10.5px] text-[var(--muted)]">
+      <div className="flex justify-between px-1 text-[10.5px] text-[var(--muted)]" style={padL ? { paddingLeft: padL } : undefined}>
         {labelYears.map((y) => (
           <span key={y}>{y === nowYear ? `${y} · now` : y}</span>
         ))}

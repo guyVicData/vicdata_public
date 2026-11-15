@@ -1,0 +1,53 @@
+// 0.8 feedback C: read-only capture of the SMT answers (both schools) through the routes' real handlers.
+import { NextRequest } from "next/server";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { GET as smtSchool } from "@/app/api/smt/school/route";
+import { POST as smtOverview } from "@/app/api/smt/overview/route";
+import { POST as smtAcademic } from "@/app/api/smt/academic/route";
+import { POST as smtPupils } from "@/app/api/smt/pupils/route";
+import { GET as smtContext } from "@/app/api/smt/context/route";
+import { POST as chooserSet } from "@/app/api/teacher/chooser-set/route";
+import { GET as admRivals } from "@/app/api/admissions/rivals/route";
+import { GET as admMarket } from "@/app/api/admissions/market-share/route";
+import { GET as admSets } from "@/app/api/admissions/sets/route";
+import { GET as admShape } from "@/app/api/admissions/shape/route";
+import { GET as admPipeline } from "@/app/api/admissions/pipeline/route";
+
+const H = { authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` };
+const get = async (fn: (r: NextRequest) => Promise<Response>, url: string) => {
+  const r = await fn(new NextRequest(`http://h${url}`, { headers: H }));
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+const post = async (fn: (r: NextRequest) => Promise<Response>, url: string, body: unknown) => {
+  const r = await fn(new NextRequest(`http://h${url}`, { method: "POST", headers: { ...H, "content-type": "application/json" }, body: JSON.stringify(body) }));
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+(async () => {
+  const dir = process.argv[2];
+  mkdirSync(dir, { recursive: true });
+  const save = (name: string, v: unknown) => writeFileSync(`${dir}/${name}.json`, JSON.stringify(v));
+  for (const urn of ["110110", "137625"]) {
+    const school = await get(smtSchool, `/api/smt/school?urn=${urn}`);
+    const cs = await post(chooserSet, "/api/teacher/chooser-set", { urn, phase: "ks4", set: { kind: "nearest" } });
+    const urns = ((cs.body as { rows?: { urn: string }[] })?.rows ?? []).map((x) => x.urn);
+    const set = { kind: "nearest", label: "10 nearest", urns };
+    const o = await post(smtOverview, "/api/smt/overview", { urn, set });
+    const a = await post(smtAcademic, "/api/smt/academic", { urn, set });
+    const a16 = await post(smtAcademic, "/api/smt/academic", { urn, set, level: "post16" });
+    const pu = await post(smtPupils, "/api/smt/pupils", { urn, set, level: "whole" });
+    const c = await get(smtContext, `/api/smt/context?urn=${urn}&area=around&level=whole`);
+    console.log("smt", urn, school.status, o.status, a.status, a16.status, pu.status, c.status);
+    save(`smt_${urn}_c`, { school: school.body, overview: o.body, academic: a.body, academic16: a16.body, pupils: pu.body, context: c.body });
+    const q = `urn=${urn}&entry=${encodeURIComponent("11+")}`;
+    const rv = await get(admRivals, `/api/admissions/rivals?${q}`);
+    const mk = await get(admMarket, `/api/admissions/market-share?${q}`);
+    console.log("adm", urn, rv.status, mk.status, (rv.body as { stage?: string; switchedFrom?: string })?.stage, (rv.body as { switchedFrom?: string })?.switchedFrom);
+    const st = await get(admSets, `/api/admissions/sets?${q}&kind=compared_against`);
+    const sf = await get(admSets, `/api/admissions/sets?${q}&kind=feeders`);
+    const sh = await get(admShape, `/api/admissions/shape?${q}`);
+    const pp = await get(admPipeline, `/api/admissions/pipeline?${q}`);
+    console.log("adm2", urn, st.status, sh.status, pp.status);
+    save(`adm_${urn}_11_c`, { r: rv.body, m: mk.body });
+    writeFileSync(`${process.argv[3]}/admx_${urn}_11.json`, JSON.stringify({ sets: st.body, setsF: sf.body, shape: sh.body, p: pp.body }));
+  }
+})();

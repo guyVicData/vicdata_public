@@ -88,6 +88,8 @@ export function smtHasContent(dv: string, c: Ctx): boolean {
       return a.state.phase === "post16" && m !== "va" && a.trends.mix.years.length > 0;
     case "DV-SMT-A-AGAINST":
       return m === "entries" && a.trends.against.length > 0;
+    case "DV-SMT-A-DUMBBELL":
+      return !!a.trends.dumbbell && a.trends.dumbbell.rows.length > 0;
     case "DV-SMT-A-MOVES":
       return m === "entries" && a.trends.movesKind === "subjects" && a.trends.moves.length > 0;
     case "DV-SMT-A-SETMOVES":

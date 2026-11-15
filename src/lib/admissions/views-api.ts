@@ -15,7 +15,8 @@ import { distanceKm, entryNow, feParticipation, feederTable, indexTo, poolTrends
 import { intakeChange, localBirths } from "./intake";
 import { buildMarketShare } from "./market";
 import { rivalSet } from "./rival-set";
-import { buildRivals, latestResults, stageForEntry, subjectPlaces, type Rivals } from "./rivals";
+import { buildRivals, latestResults, subjectPlaces, type Rivals } from "./rivals";
+import { igcseAmong } from "../igcse";
 import { resultsMeasureFor, type ResultsMeasure } from "../sets/results-coverage";
 import { englandSchools, headlinePopulation, sizePlaces } from "./ranks";
 import { pctChange, pointsChange } from "./flags";
@@ -197,7 +198,8 @@ const MEASURES = new Set(["points", "entries", "threshold"]);
 export async function rivalsView(urn: string, ep: EntryPoint, lists: SavedList[], o: { filters?: AdmissionsFilters; subject?: string | null; family?: string | null; qual?: string | null; measure?: string | null } = {}) {
   const { rivals } = await rivalSet(urn, ep, lists, o.filters ?? DEFAULT_FILTERS);
   const r = await buildRivals(urn, ep, { rivals });
-  const stage = stageForEntry(ep.age);
+  // 0.8 feedback C (C12, D3): the stage the rivals were ranked on (Post-16 for an IGCSE school at 11+).
+  const stage = r.stage;
   let subjects = null;
   if (o.subject && o.subject.length <= 200 && (stage === "ks4" || stage === "ks5")) {
     const measure = (MEASURES.has(o.measure ?? "") ? { kind: o.measure } : { kind: "points" }) as RankMeasure;
@@ -246,15 +248,34 @@ export type MomentumResults = Omit<ResultsMeasure, "leftOut"> & {
  * with an A-level points per entry headline in the latest KS5 year. Null away from 11+ (16+ already
  * reads post-16; 4+ KS2): nothing changes there. R-ADM-MOMENTUM-IGCSE. */
 async function momentumResults(r: Rivals, gcseChange: Record<string, ResultsChange>): Promise<MomentumResults | null> {
-  if (r.stage !== "ks4") return null;
+  // 0.8 feedback C (C12, D3): where the school sits IGCSE its rivals are ranked on Post-16 (r.stage "ks5",
+  // switchedFrom "ks4"), but the momentum keeps its own 11+ rule, so each rival's GCSE standing is read here.
+  if (r.stage !== "ks4" && r.switchedFrom !== "ks4") return null;
   const k5 = await latestResults("ks5");
   const pop5 = k5.period === null ? null : await headlinePopulation("ks5", k5.period);
   const has5 = (u: string) => k5.period !== null && (pop5?.get(u)?.get(k5.period) ?? null) !== null;
   const rivals = r.rows.filter((x) => !x.isSchool);
-  const rule = resultsMeasureFor(r.entry.age, rivals.map((x) => ({ urn: x.urn, hasGcse: x.results.note === null && x.results.value !== null, hasPost16: has5(x.urn), igcse: x.results.note === "igcse_not_ranked" })));
+  let gcseOf = (x: (typeof rivals)[number]) => ({ has: x.results.note === null && x.results.value !== null, igcse: x.results.note === "igcse_not_ranked" });
+  let gcsePeriod = r.resultsPeriod;
+  if (r.switchedFrom === "ks4") {
+    const k4 = await latestResults("ks4");
+    const pop4 = k4.period === null ? null : await headlinePopulation("ks4", k4.period);
+    const ig = await igcseAmong(r.rows.map((x) => x.urn));
+    gcsePeriod = k4.period;
+    gcseOf = (x) => ({ has: !ig.has(x.urn) && k4.period !== null && (pop4?.get(x.urn)?.get(k4.period) ?? null) !== null, igcse: ig.has(x.urn) });
+    gcseChange = Object.fromEntries(
+      r.rows.map((x) => {
+        const by = pop4?.get(x.urn);
+        const from = by?.get(TREND_BASE_PERIOD) ?? null;
+        const to = k4.period === null ? null : (by?.get(k4.period) ?? null);
+        return [x.urn, { from, to, fromYear: TREND_BASE_PERIOD, toYear: k4.period, points: ig.has(x.urn) ? null : pointsChange(from, to) }];
+      }),
+    );
+  }
+  const rule = resultsMeasureFor(r.entry.age, rivals.map((x) => ({ urn: x.urn, hasGcse: gcseOf(x).has, hasPost16: has5(x.urn), igcse: gcseOf(x).igcse })));
   const name = new Map(r.rows.map((x) => [x.urn, x]));
-  const leftOut = rule.leftOut.map((u) => ({ urn: u, name: name.get(u)?.name ?? u, igcse: rule.measure === "gcse" && name.get(u)?.results.note === "igcse_not_ranked" }));
-  if (rule.measure !== "post16") return { ...rule, stage: "ks4", resultsPeriod: r.resultsPeriod, resultsChange: gcseChange, leftOut };
+  const leftOut = rule.leftOut.map((u) => ({ urn: u, name: name.get(u)?.name ?? u, igcse: rule.measure === "gcse" && gcseOf(name.get(u)!).igcse }));
+  if (rule.measure !== "post16") return { ...rule, stage: "ks4", resultsPeriod: gcsePeriod, resultsChange: gcseChange, leftOut };
   const resultsChange = Object.fromEntries(
     r.rows.map((x) => {
       const by = pop5?.get(x.urn);

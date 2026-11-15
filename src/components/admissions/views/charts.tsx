@@ -83,6 +83,7 @@ export function LineChart({
   ticks,
   xLabels2,
   yGrid,
+  yAxis = true,
   children,
 }: {
   series: Series[];
@@ -99,7 +100,10 @@ export function LineChart({
   ticks?: { xs: number[]; middle: string | null } | null;
   xLabels2?: { caption: string; labels: [string, string, string | null] } | null;
   // 0.8 Admissions fb1 (F-20): faint labelled gridlines at these values (a full-screen indexed chart).
+  // 0.8 feedback C (C1, R-CHART-AXES): absent, the chart draws its own value axis (round values across
+  // its range, about one per 40 px); `yAxis={false}` is the one way to leave it off (a sparkline).
   yGrid?: number[] | null;
+  yAxis?: boolean;
   children?: ReactNode;
 }) {
   const [ref, w] = useWidth<HTMLDivElement>();
@@ -108,7 +112,9 @@ export function LineChart({
   const xd: [number, number] = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
   const yd = extent(ys, 0.12, fromZero);
   const W = Math.max(w, 10);
-  const pad = { l: yGrid?.length ? 34 : 10, r: endLabels ? 92 : 10, t: 8, b: 10 };
+  const grid = axisValues(yd, height, yGrid, yAxis ? reference?.y ?? null : null, yAxis);
+  const gridW = grid.length ? Math.max(...grid.map((v) => yFormat(v).length)) * 5.8 + 10 : 0;
+  const pad = { l: grid.length ? Math.max(24, gridW) : 10, r: endLabels ? 92 : 10, t: 8, b: 10 };
   const sx = scale(xd, [pad.l, W - pad.r]);
   const sy = scale(yd, [height - pad.b, pad.t]);
   return (
@@ -117,15 +123,20 @@ export function LineChart({
         <svg width={W} height={height} role="img" aria-label={series.map((s) => s.label).join(", ")}>
           <line x1={0} x2={W} y1={height - 1} y2={height - 1} stroke="var(--adm-axis)" />
           {ticks?.xs.map((x) => <line key={`t-${x}`} data-tick={x} x1={sx(x)} x2={sx(x)} y1={height - 1} y2={height - 6} stroke="var(--adm-grey-line)" />)}
-          {yGrid?.map((v) => (
+          {grid.map((v) => (
             <g key={`g-${v}`} data-y-grid={v}>
-              <line x1={pad.l} x2={W - pad.r} y1={sy(v)} y2={sy(v)} stroke="var(--adm-grid)" />
-              <text x={pad.l - 6} y={sy(v) + 3.5} textAnchor="end" fontSize={10} fill="var(--muted)">
+              {v !== reference?.y && <line x1={pad.l} x2={W - pad.r} y1={sy(v)} y2={sy(v)} stroke="var(--adm-grid)" />}
+              <text x={pad.l - 6} y={sy(v) + 3.5} textAnchor="end" fontSize={10} fill={v === reference?.y ? "var(--muted2)" : "var(--muted)"} fontWeight={v === reference?.y ? 700 : undefined}>
                 {yFormat(v)}
               </text>
             </g>
           ))}
-          {reference && <line x1={0} x2={W} y1={sy(reference.y)} y2={sy(reference.y)} stroke="var(--adm-grid)" strokeDasharray="2 4" />}
+          {reference && <line data-reference={reference.y} x1={grid.length ? pad.l : 0} x2={W} y1={sy(reference.y)} y2={sy(reference.y)} stroke="var(--adm-grey-line)" strokeDasharray="3 3" />}
+          {reference?.label && (
+            <text x={W - pad.r} y={sy(reference.y) - 4} textAnchor="end" fontSize={10} fill="var(--muted)">
+              {reference.label}
+            </text>
+          )}
           {bands.map((b) => {
             const pts = b.points.filter((p) => p.lo !== null && p.hi !== null) as { x: number; lo: number; hi: number }[];
             if (pts.length < 2) return null;
@@ -135,7 +146,8 @@ export function LineChart({
           {markers.map((m) => (
             <g key={`m-${m.x}`} data-marker={m.label}>
               <line x1={sx(m.x)} x2={sx(m.x)} y1={pad.t} y2={height - 1} stroke="var(--adm-grid)" strokeDasharray="3 3" />
-              <text x={sx(m.x) + 4} y={pad.t + 9} fontSize={10} fill="var(--muted)">
+              {/* 0.8 feedback C: a marker in the right third labels to its left, so the label is never cut off. */}
+              <text x={sx(m.x) > W * 0.66 ? sx(m.x) - 4 : sx(m.x) + 4} textAnchor={sx(m.x) > W * 0.66 ? "end" : "start"} y={pad.t + 9} fontSize={10} fill="var(--muted)">
                 {m.label}
               </text>
             </g>
@@ -165,7 +177,7 @@ export function LineChart({
         </svg>
       )}
       {xLabels && (
-        <div className={`${ticks?.middle && ticks.xs.length > 2 ? "relative " : ""}flex justify-between text-[10px] text-[var(--muted)]`}>
+        <div className={`${ticks?.middle && ticks.xs.length > 2 ? "relative " : ""}flex justify-between text-[10px] text-[var(--muted)]`} style={pad.l > 10 ? { paddingLeft: pad.l - 10 } : undefined}>
           <span>{xLabels[0]}</span>
           {ticks?.middle && ticks.xs.length > 2 && (
             <span data-tick-middle="" className="absolute -translate-x-1/2" style={{ left: sx(ticks.xs[Math.floor((ticks.xs.length - 1) / 2)]) }}>
@@ -176,7 +188,7 @@ export function LineChart({
         </div>
       )}
       {xLabels2 && (
-        <div data-x-labels2="" className="relative flex justify-between text-[10px] text-[var(--muted)]">
+        <div data-x-labels2="" className="relative flex justify-between text-[10px] text-[var(--muted)]" style={pad.l > 10 ? { paddingLeft: pad.l - 10 } : undefined}>
           <span>{xLabels2.labels[0]}</span>
           {xLabels2.labels[2] && ticks && ticks.xs.length > 2 && (
             <span className="absolute -translate-x-1/2" style={{ left: sx(ticks.xs[Math.floor((ticks.xs.length - 1) / 2)]) }}>
@@ -231,15 +243,36 @@ export function yearTicks(xs: number[], label: (x: number) => string): { xs: num
   return { xs: all, middle: all.length > 2 ? label(all[Math.floor((all.length - 1) / 2)]) : null };
 }
 
-/** F-20: round gridline values across [lo, hi] (about five), for a full-screen chart's y axis. */
-export function niceGrid(values: (number | null | undefined)[]): number[] {
+/** F-20: round gridline values across [lo, hi] (about `count`, five by default), for a chart's y axis. */
+export function niceGrid(values: (number | null | undefined)[], count = 5): number[] {
   const v = values.filter((x): x is number => x !== null && x !== undefined && Number.isFinite(x));
   if (!v.length) return [];
   const [lo, hi] = [Math.min(...v), Math.max(...v)];
-  const raw = (hi - lo) / 5 || 1;
+  const raw = (hi - lo) / count || 1;
   const mag = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw)!;
   const out: number[] = [];
   for (let x = Math.ceil(lo / step) * step; x <= hi + 1e-9; x += step) out.push(Math.round(x * 1e6) / 1e6);
   return out;
+}
+
+/** 0.8 feedback C (C1, R-CHART-AXES): the value axis a line chart draws. Given values (`yGrid`) are kept;
+ * otherwise round values inside the drawn range, about one per 40 px of height (at least three). An
+ * indexed chart's reference (100) is always one of them, and a value too close to it is dropped, so the
+ * base is labelled and never crowded. `on` false: none (a sparkline). */
+export function axisValues(domain: [number, number], height: number, given: number[] | null | undefined, reference: number | null, on = true): number[] {
+  if (given?.length) return given;
+  if (!on) return [];
+  // A strip under 70 px (Girls' share in the panel) has room for its reference value alone.
+  if (height < 70) return reference !== null && reference >= domain[0] && reference <= domain[1] ? [reference] : [];
+  const count = Math.max(3, Math.min(6, Math.round(height / 40)));
+  const inside = (n: number) => niceGrid([domain[0], domain[1]], n).filter((v) => v >= domain[0] && v <= domain[1]);
+  // At least three values: a range that rounds to two takes a finer step.
+  let vals = inside(count);
+  for (let n = count + 1; vals.length < 3 && n <= count + 4; n++) vals = inside(n);
+  if (reference !== null && reference >= domain[0] && reference <= domain[1]) {
+    const step = vals.length > 1 ? vals[1] - vals[0] : Math.abs(domain[1] - domain[0]) / count;
+    vals = [...vals.filter((v) => Math.abs(v - reference) >= step * 0.45), reference].sort((a, b) => a - b);
+  }
+  return vals;
 }

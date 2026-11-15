@@ -3590,3 +3590,118 @@ school's walk keeps them: its 4+ entry is how that walk answers "are numbers hol
   database write) and the questions follow it; "Set your subjects for good" opens Teacher setup.
 - **Rewritten test:** R-HOME-TILES's "the SMT Context tile and its walk ask one address" now expects both to ask
   at the level the pills picked (`smtContextUrl(urn, level)`), the whole school by default.
+
+## 2026-11-15: feedback build C
+
+Guy's live feedback of 15 Nov (`docs/v0.8/feedback_15nov/`), build C (charts), with the Build C additions
+(C16, C17), run unattended from `docs/v0.8/vicdata_0_8_feedback_15nov_claude_code_prompt_v1.md`. Each call
+below was taken without asking; the report (`docs/v0.8/feedback_c_report_v1.md`) lists every note by number.
+
+**C1 value axes.**
+- The shared `LineChart` draws its own value axis unless a caller passes `yAxis={false}` (none does): round
+  values across the drawn range, about one per 40 px and at least three (`axisValues`). An indexed chart's
+  reference (100) is always one of them, in bold, and a value closer than half a step to it is dropped. A
+  strip under 70 px (Admissions' girls' share in the panel) labels its reference alone. Axis labels use the
+  chart's own `yFormat`. The x labels shift right by the axis's width so the first year sits under the first
+  point.
+- SMT's results band (`BandChart`) draws the same axis; Academic's trend already had one.
+- The rule R-ADM-VS-EACH asserted the panel had *no* gridlines (`!panel.includes("data-y-grid")`); it now
+  asserts it has them (rewritten: C1 asks for them everywhere).
+
+**C2 and C17 (SMT 4) market share.** Read as "draw what the title names": the rivals' middle share each year
+(median of the set's schools with a share, the school left out) dashed, over their middle half (only where 3
+or more schools have a share), beside the school and its largest rival. The title is "you, your largest
+rival (X) and the middle of {set}". 170 px in the walk; in a dashboard panel the room left after the title
+and key (110 to 170). R-MARKET-FOLLOWS-SET's title check now looks for "the middle of {set}" (rewritten).
+
+**C3 every line.** Redrawn at its real width (the old row stretched a 260-wide drawing). One axis for every
+row from 0 (value added: 0 is England's average, labelled), ring last year and dot this year with both
+figures, the line's entries under its name, the change at the right. Not folded into the trend table.
+
+**C4 shapes.** "Nearest" is the nearest school in the set by distance that has a census; "the 10 nearest" is
+drawn as the set's middle school at each of the school's year groups (the median of the set's schools teaching
+that age), its shape the classifier's on the set's year groups added together. Shape words get the shared
+`ShapeIcon` and a one-line meaning (`SHAPE_MEANING`, written from the classifier's own tree). The LA line and
+Year 12 against Year 11 stay. With neither chart possible the counted words come back.
+
+**C5 leaving at 16.** The bar is Year 12 minus the Year 11 a year before (pupils), up when more joined than
+left. The reference is drawn on each bar as the change the set's middle rate (latest year) would have meant
+for that year's Year 11, since the middle is a percentage and the bars are pupils. "As a table" is a switch
+inside the view (the dashboard and the walk both have it); its last column is one signed figure, "Joined (+)
+or left (−)". Bars where more left are grey, not orange: SMT's accent is orange, so two oranges couldn't be
+told apart.
+
+**C6 roll by phase (D7).** England's 5–15 line is replaced by the LA's residents at each phase's ages: Senior
+11–15, 16+ 16–17, Primary 4–10 (ONS mid-year estimates, `laPopulation`, the area view's own read), labelled
+"{LA}, ages a–b", grey, dashed as its phase is. Everything is indexed to the first year every line shares.
+The walk's answer names them after the phases.
+
+**C7 births and children nearby.**
+- No births year is missing for Reading or Worcestershire: 2012 to 2025, every year. Births peak in the first
+  year held (2012, as Guy's note says nationally); the sentence uses the peak in the data.
+- "Births and projections" is two charts on their own axes: the children of the school's ages counted (solid,
+  ONS) running into the projection (dashed), then births with a second line of x labels (the year those
+  children reach the school's first age). The lag age is the school's lowest age at the level (11).
+- "Within 15 km ends a year early": the small-area estimates are published a year behind the LA's. The area
+  projection's first row is a count for the latest year (its base; `forwardFrom` says so), so the radius's
+  line now takes that year and ends with Reading and England. Where it would still be short, the projection
+  carries it on, dashed. **A figure change:** Leighton Park's within-15 km line gains 2025 (index 127.0), The
+  Chase's (103.0).
+
+**C9 flags (D5).** The ±3 threshold is unchanged. With no flag, "Closest to a flag" lists each results line's
+two-year change, the set's middle change, the gap and the threshold, and the roll's falls in the last three
+years (a flag needs three in a row), nearest first, with a small bar for how close. Results lines need the
+same 4 set schools a flag does.
+
+**C1, Admissions' pipeline.** Its chart is its own SVG, not LineChart; it now draws the same axis (pupils),
+in place of its two unlabelled gridlines. The rule test checks it.
+
+**C10 dumbbell.** On SMT Academic it is a new view, DV-SMT-A-DUMBBELL ("Entries by subject"), in the "Every
+line" panel at every level (the dashboard; the walk is unchanged). Its rows are the page's own
+subject-by-qualification rows, first year with entries from 2021/22 to the latest; the level's main
+qualification goes unnamed, others carry a short tag. In a dashboard panel the rows scroll under a one-line key ("Colour is the subject
+family", each family named on hover and full screen). On Teacher: the focus is keyed "{subject}
+(highlighted)" with the row's tint; one entry reads "○ {first} (first year) → ● {latest} (latest)"; "School
+average" is no longer keyed (its dashed row labels itself, last); "(GCE A level)" stays only where it tells
+two rows apart. R-WALK-KEYS' checker (`keyProblems`) accepts the ring-to-dot entry and exempts the average
+row (rewritten).
+
+**C11 Results chart.** No dotted bridge: a gap, labelled with its reason (build A's). A point with fewer than
+10 entries (`SMALL_COHORT`, the answers' own "small group") is ringed with its entries beside it, keyed "Fewer
+than 10 entries". The "No published figure" key entry went with the bridge; `keyProblems` no longer asks for
+it (rewritten).
+
+**C12 independent schools at 11+ (D3).** Where the school itself sits IGCSE and has a Post-16 headline, the
+11+ rivals view is built on Post-16 (`buildRivals`: `stage` "ks5", `switchedFrom` "ks4"): the ranking, the
+academic numbers and change, and the subject areas. The momentum keeps its own 11+ rule (GCSE unless 40% of
+the rivals have none), so it now reads each rival's GCSE standing itself, and its scope line follows its own
+stage. A GCSE school (The Chase) is unchanged. The stray "–" was the steady arrow on an area whose gap hadn't
+moved since 2022/23; a steady gap now prints nothing, with the change on hover. **Figures change:** Leighton
+Park at 11+ is now "7th of 10 on A-level points per entry, 424th of 2,536 in England" (was unranked), and its
+"where you lead / trail" areas are Post-16's.
+
+**C13 walk window.** The 3 px accent stripe is gone (the rounded corners clipped it into what read as a shadow
+along the top edge). The header carries a 6% tint of the part's accent; the window has a hairline edge, a
+16 px radius and a two-layer soft shadow (`WALK_WINDOW`), the same in Light, Mid and Dark; "Here's what you
+found" uses it too.
+
+**C14 palette (D8).** Re-picked under R-SUBJECT-COLOUR's floors (families 15+ apart, 12+ from every accent and
+fixed line, 4:1 on the plate), maximising the distance of both new colours from the three complaints
+(Sciences, the Post-16 violet, the GCSE green), each new colour clear of all three so neither moves into the
+other's complaint. Languages & Literature: khaki gold #605024 (Dark #c4aa64); Health & Care: cocoa #4c3324
+(Dark #c0957c); both 29+ from all three (the old: 18.5 / 14.9 and 13.4 / 12.9). Keeping six leaves only warm
+browns in the room left; their closest neighbours are each other (15.3) and the group bronze (12.8). Guy may
+prefer to re-pick all eight. Board: `docs/v0.8/feedback_c_screenshots/palette_board.png`.
+
+**C16 (Admissions 5) the Mid dashboards' pages.** Read as the plates on the field: in Mid each part's columns
+take a clear tint of the part (gcse #e8faf0, post16 #f6f4ff, top #fff4e4, group #fbf4ec, admissions #e9f8fe)
+and its wells and shut bars a paler one. The tints are as strong as the ladder allows: the shut bar's border
+keeps its 1.4:1 step from the column and the column 1.4:1 from the field's light stop (R-PANEL-LADDER, whose
+"no Mid rule overrides a ladder token" became "Mid overrides only the three plate tokens" -- rewritten in the
+unit test and the rule runner). Every text pair on the tints is in the contrast table (R-THEME-CONTRAST).
+Dark and Light are unchanged. Homes and walks aren't dashboards and keep white.
+
+**C8.** The set's size row is figure, then its place, then the median, with no spring between them.
+
+**Not done here:** C15's republish is SMT Academic only (the new view in its "Every line" panel); no other
+dashboard config changed.

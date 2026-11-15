@@ -1731,7 +1731,8 @@ const RUNNERS: Record<string, Runner> = {
     const lines = fs.readFileSync(path.join(ROOT, "src/components/admissions/views/Lines.tsx"), "utf8");
     const fn = (n: string) => lines.split(`export function ${n}(`)[1]?.split("\nexport function ")[0] ?? "";
     const shared = ["RollTrend", "VsRivals"].every((n) => fn(n).includes("<YouAndEachRival")) && (lines.match(/var\(--adm-series-\$\{/g) ?? []).length === 1;
-    const panelOk = panel.includes("Rivals’ average") && !panel.includes("data-vs-key") && !panel.includes("data-y-grid") && !panel.includes("--adm-series-");
+    // 0.8 feedback C (C1, R-CHART-AXES): the panel draws a value axis too (it had none).
+    const panelOk = panel.includes("Rivals’ average") && !panel.includes("data-vs-key") && panel.includes("data-y-grid") && !panel.includes("--adm-series-");
     const ok = keyed && rollAvg && named && titles && shared && panelOk && full.includes("data-y-grid");
     return { pass: ok, detail: fmt({ base: b, drawn: drawn.length, small: each.filter((x) => x.small).map((x) => x.name).join("; "), keyed, rollAvg, named, titles, shared, panelOk }) };
   },
@@ -3375,8 +3376,11 @@ const RUNNERS: Record<string, Runner> = {
     const y7 = (u: string) => (latest ? cohortAt(census.get(u)?.table ?? new Map(), 11, latest.year) ?? 0 : 0);
     const share = (y7("110110") / all.reduce((t, u) => t + y7(u), 0)) * 100;
     const html = textOf(await smtRender("110110", "DV-SMT-O-MARKET-LINE"));
-    const pass = m.status === "ready" && m.rivals === c.set.urns.length && m.setRivals === c.set.label && Math.abs((latest?.value ?? NaN) - share) < 1e-6 && html.includes(`against ${c.set.label}`);
-    return { pass, detail: fmt({ rivals: m.status === "ready" ? m.rivals : null, set: c.set.urns.length, share: round(latest?.value ?? null, 2), recomputed: round(share, 2), titled: html.includes(`against ${c.set.label}`) }) };
+    // 0.8 feedback C (C2, SMT 4): the title names the set as the line it draws -- "and the middle of {set}"
+    // (or "among {set}" where the set's middle can't be drawn).
+    const titled = html.includes(`the middle of ${c.set.label}`) || html.includes(`among ${c.set.label}`);
+    const pass = m.status === "ready" && m.rivals === c.set.urns.length && m.setRivals === c.set.label && Math.abs((latest?.value ?? NaN) - share) < 1e-6 && titled;
+    return { pass, detail: fmt({ rivals: m.status === "ready" ? m.rivals : null, set: c.set.urns.length, share: round(latest?.value ?? null, 2), recomputed: round(share, 2), titled }) };
   },
   async feedbackPage() {
     const { feedbackPayload } = await import("../src/components/feedback/FeedbackWindow");
@@ -3575,8 +3579,10 @@ const RUNNERS: Record<string, Runner> = {
     const { ladderShellFindings } = await import("../src/lib/front-door/theme-scope");
     const s = ladderSteps(fd.css);
     const shell = ladderShellFindings(fd.files);
-    // Front door 2b (M3): Mid draws Light's ladder on the field; no Mid rule overrides a ladder token.
-    const midOverrides = [...fd.css.matchAll(/#teacher-root\[data-mid-dash[^{]*\{([^}]*)\}/g)].filter((m) => /--(shut-|panel-bg|box-bg|well-border)/.test(m[1])).length;
+    // Front door 2b (M3): Mid draws Light's ladder on the field. 0.8 feedback C (C16): each part tints its own
+    // plates (--panel-bg, --box-bg, --shut-bg; the steps above are measured on the tint); the ladder's edges
+    // (--shut-border, --shut-shadow, --well-border) are never overridden.
+    const midOverrides = [...fd.css.matchAll(/#teacher-root\[data-mid-dash[^{]*\{([^}]*)\}/g)].filter((m) => /--(shut-border|shut-shadow|well-border)/.test(m[1])).length;
     const pass = s.darkFill >= LADDER_STEP.darkFill && s.darkBorder >= LADDER_STEP.darkBorder && s.lightBorder >= LADDER_STEP.lightBorder && s.midBorder >= LADDER_STEP.midBorder && s.midColumnOnField >= LADDER_STEP.midColumnOnField && !midOverrides && !shell.length;
     return { pass, detail: fmt({ darkFill: s.darkFill.toFixed(2), darkBorder: s.darkBorder.toFixed(2), lightFill: s.lightFill.toFixed(2), lightBorder: s.lightBorder.toFixed(2), midBorder: s.midBorder.toFixed(2), midColumnOnField: s.midColumnOnField.toFixed(2), midOverrides, shell: shell.join("; ") || "ok" }) };
   },
@@ -3748,6 +3754,45 @@ const RUNNERS: Record<string, Runner> = {
   async walkRail(_L, rule) {
     const r = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
+  },
+  // 0.8 feedback 15 Nov, build C: the new rules' tests, on the fixtures, in their own process.
+  async chartAxes(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async smtShapePictures(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async rollByPhaseLa(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async birthsStory(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async smtFlagsClosest(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async dumbbellKey(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async resultsGaps(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async igcsePost16At11(_L, rule) {
+    // The fixture's test, and the live build (production, read-only): Leighton Park switches, The Chase doesn't.
+    const r = unitByRule("src/lib/front-door/feedback-c.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    const { buildRivals } = await import("../src/lib/admissions/rivals");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const lp = await buildRivals("110110", entryPoint("11+")!);
+    const ch = await buildRivals("137625", entryPoint("11+")!);
+    const live = lp.stage === "ks5" && lp.switchedFrom === "ks4" && ch.stage === "ks4" && !ch.switchedFrom;
+    return { pass: r.pass && live, detail: fmt({ fixtures: r.detail, leightonPark: `${lp.stage} (from ${lp.switchedFrom ?? "-"})`, theChase: ch.stage }) };
   },
   async subjectColour(_L, rule) {
     const r = unitByRule("src/lib/subject-colour.test.tsx", rule.id, {}, [".env", ".env.local"]);

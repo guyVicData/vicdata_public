@@ -94,6 +94,7 @@ export function MarketTable({ o }: { o: Overview }) {
             <Th>Year</Th>
             <Th>You</Th>
             <Th>{m.rivalName ?? "Largest rival"}</Th>
+            {m.middle?.some((p) => p.value !== null) && <Th>Rivals&rsquo; middle</Th>}
           </tr>
         </thead>
         <tbody>
@@ -102,6 +103,7 @@ export function MarketTable({ o }: { o: Overview }) {
               <Td>{periodLabel(p.year)}</Td>
               <Td className="font-bold text-[var(--fg)]">{fmt(p.value, "share")}</Td>
               <Td>{fmt(m.rival.find((r) => r.year === p.year)?.value, "share")}</Td>
+              {m.middle?.some((x) => x.value !== null) && <Td>{fmt(m.middle.find((r) => r.year === p.year)?.value, "share")}</Td>}
             </tr>
           ))}
         </tbody>
