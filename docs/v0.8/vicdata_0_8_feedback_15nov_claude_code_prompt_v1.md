@@ -118,3 +118,8 @@ Guy's notes D-a, D-b and D-c in `docs/v0.8/feedback_15nov/notes.md`:
 - D-a: subject homes reached from the SMT home;
 - D-b: school homes reached from head office's "Our schools";
 - D-c: head office subject comparisons, inside the group and against other groups, the region and England.
+
+## Build C additions (15 Nov, after B)
+
+- **C16. Admissions 5, as Guy meant it:** in Mid, the dashboard pages sit on a tinted background (the section's own tint) instead of white, so they are less prominent. Build B read this as the home's button (done there too). This is the pages themselves, for every dashboard that follows Mid. Contrast stays AA; extend R-THEME-CONTRAST.
+- **C17. SMT 4's chart:** Build B fixed only the words. C2 covers the chart.
