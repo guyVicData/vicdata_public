@@ -68,7 +68,7 @@ test("R-SUBJECT-MATCH, Teacher 3: the 'nearby and nationally' chart bases on the
   assert.deepEqual(c.series.map((x) => x.role), ["focus", "nearest", "la", "england"]);
   for (const s of c.series) assert.equal(s.values[0], 100, `${s.label} is 100 at the base year`);
   assert.equal(c.years[0], "2021/22");
-  assert.match(sc.note, /starts at 100 in 2021\/22/);
+  assert.match(sc.note, /starts at 100 in 2021\/22, the first year The Chase and the most comparators have entries/);
   // Empty only under two school years.
   const one = chaseArt();
   for (const n of one.nearest) if (n.isTarget) n.entries = n.entries.map((v, k) => (k === 4 ? v : null));

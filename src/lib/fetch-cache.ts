@@ -57,7 +57,9 @@ export function cachedFetchJson<T = unknown>(
     const headers: Record<string, string> = { Authorization: `Bearer ${opts.token}` };
     if (opts.body !== undefined) headers["Content-Type"] = "application/json";
     const res = await fetch(url, { method, headers, body: opts.body });
-    return { ok: res.ok, status: res.status, body: res.ok ? ((await res.json()) as unknown) : null };
+    // 0.8 feedback A2: a failed answer keeps its JSON body (the route's own message, `{ error }`), so a walk
+    // can say what failed; null when the body isn't JSON. Failed answers are never cached (below).
+    return { ok: res.ok, status: res.status, body: res.ok ? ((await res.json()) as unknown) : ((await res.json().catch(() => null)) as unknown) };
   })();
   const entry: Entry = { at: now, promise };
   cache.set(key, entry);

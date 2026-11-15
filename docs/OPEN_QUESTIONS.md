@@ -3442,3 +3442,10 @@ the report (`docs/v0.8/feedback_a_report_v1.md`) lists every note by number.
   cache (`getJson`, 10 minutes, the same URLs); walk 2 draws as soon as market share is in, rivals loads
   alongside and only the screens that read it wait ("Working out your rivals' figures…"); the home and
   walk 1 warm rivals. Cost: one cold rivals build an hour per server for each Admissions home visit.
+
+**M3, from the screenshots.**
+- The client cache (`fetch-cache.ts`) now keeps a failed answer's JSON body (it kept none), so the walk's
+  error gives the route's own words ("The group figures aren't available yet. (error 503)"). Failed
+  answers still aren't cached; every caller checks `ok` before reading the body (checked).
+- The indexed chart's note names its base honestly: "2021/22, the first year The Chase and the most
+  comparators have entries" (The Chase's own first year is 2020/21, which England and the LA don't publish).

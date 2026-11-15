@@ -322,7 +322,8 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const noLatest = shown.slice(1).filter((l) => !others.some((o) => o.label === l.label));
       const missingWord = `${noLatest.length ? ` ${listJoin(noLatest.map((l) => nameOf(l)))} ${noLatest.length === 1 ? "has" : "have"} no figure for ${years[lastI]}.` : ""}${leftOut.length ? ` ${listJoin(leftOut.map((l) => nameOf(l)))} ${leftOut.length === 1 ? "has" : "have"} no figure${pts ? "" : ` for ${years[0]}`}, so ${leftOut.length === 1 ? "isn't" : "aren't"} drawn.` : ""}`;
       const base100 = years[0];
-      const groupWord = m.focus?.matchLabel ? ` Other schools are compared on every Art and Design title they publish (${cmp}).` : "";
+      const groupWord = m.focus?.matchLabel ? " Schools and areas are compared on every Art and Design title they publish (Fine Art, Photography…)." : "";
+      const baseWord = baseK === schoolYears[0] ? `${m.school.name}'s first year with entries` : `the first year ${m.school.name} and the most comparators have entries`;
       const answer =
         mine === null || !others.length
           ? `${subject} here has no comparator with a figure ${pts ? `for ${years[lastI]}` : `for ${base100}`}, so there's nothing nearby or national to compare it with yet.${missingWord}`
@@ -342,7 +343,7 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
         title: pts ? `${cmp} average points per entry, ${years[0]}–${years[lastI]}: this school against ${against || "no comparator"}` : `${cmp} entries, indexed (${years[0]} = 100): this school against ${against || "no comparator"}`,
         note: pts
           ? `Average points per entry. The nearest schools' line is the plain average of those with a figure. Region is in the table only: its line runs almost on top of England's, as on the dashboard.${groupWord}`
-          : `Every line starts at 100 in ${years[0]}, ${m.school.name}'s first year with entries${leftOut.length ? " that the comparators share" : ""}, so growth compares whatever the size. Region is in the table only: its line runs almost on top of England's, as on the dashboard.${groupWord}`,
+          : `Every line starts at 100 in ${years[0]}, ${baseWord}, so growth compares whatever the size. Region is in the table only: its line runs almost on top of England's, as on the dashboard.${groupWord}`,
         chart: {
           kind: "lines",
           years,
