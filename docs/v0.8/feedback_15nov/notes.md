@@ -85,3 +85,8 @@ D-b. In the same way, head office's "Our schools" cards go to each school's home
 D-c. Head office can compare subjects and subject areas across the group:
    - internally: which schools perform highest in each subject or area;
    - externally: the group against other groups, the region and England.
+
+### Phase D status (checked 15 Nov, after A–C)
+- D-a: mostly built in Build B. SMT "Our subjects" has a card per subject with its three walks and "Dashboard →". Missing: a subject home page (the Teacher home's tiles for that subject, read-only as SMT).
+- D-b: not built. "Our schools" cards open the school's SMT dashboard (/teacher/smt?headOffice=urn). Missing: the SMT home and its walks opened by a head office for a member school (read-only, the dashboards' head-office access).
+- D-c: scoped in docs/v0.8/group_subjects_scope_v1.md.
