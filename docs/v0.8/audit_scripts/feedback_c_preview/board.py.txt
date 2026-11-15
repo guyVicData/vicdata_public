@@ -1,0 +1,54 @@
+import sys, json, itertools
+sys.path.insert(0, sys.argv[1]); from palette import de2000, contrast, RES_LIGHT, RES_DARK
+from PIL import Image, ImageDraw, ImageFont
+P={"sciences_maths":("Sciences & Maths","#3e5698","#a1b0d9"),"humanities_social":("Humanities & Social Sciences","#811f18","#e0655c"),"languages_literature":("Languages & Literature","#605024","#c4aa64"),"arts_media_design":("Arts, Media & Design","#b422a1","#e05cce"),"business_law":("Business & Law","#6d2c4a","#d9a1bb"),"technology_eng_construction":("Technology, Engineering & Construction","#188173","#76e5d6"),"health_care":("Health & Care","#4c3324","#c0957c"),"enterprise_applied":("Enterprise & Applied Studies","#818118","#e0e05c")}
+OLD={"sciences_maths":("#3e5698","#a1b0d9"),"humanities_social":("#811f18","#e0655c"),"languages_literature":("#341881","#7f5ce0"),"arts_media_design":("#b422a1","#e05cce"),"business_law":("#6d2c4a","#d9a1bb"),"technology_eng_construction":("#188173","#76e5d6"),"health_care":("#188118","#5ce05c"),"enterprise_applied":("#818118","#e0e05c")}
+W,H=1600,1500
+im=Image.new("RGB",(W,H),"#f4f4f6"); d=ImageDraw.Draw(im)
+try: F=ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc",18); FB=ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc",26); FS=ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc",14)
+except: F=FB=FS=ImageFont.load_default()
+d.text((40,24),"Subject-family palette (feedback C, 15 Nov, D8): Languages & Literature and Health & Care re-picked; six kept",fill="#17171b",font=FB)
+L=[v[1] for v in P.values()]; D=[v[2] for v in P.values()]
+mp=min(min(de2000(a,b) for a,b in itertools.combinations(L,2)),min(de2000(a,b) for a,b in itertools.combinations(D,2)))
+mr=min(min(de2000(c,v) for c in L for v in RES_LIGHT.values()),min(de2000(c,v) for c in D for v in RES_DARK.values()))
+d.text((40,62),f"Closest family pair: dE2000 {mp:.1f}.  Closest to an accent or fixed line: dE2000 {mr:.1f}.  Languages and Health 29+ from Sciences, the Post-16 violet and the GCSE green.",fill="#3f3f46",font=F)
+# columns: family | Light (white plate) | Mid (white plate on the orange field) | Dark (dark plate) | old Light | old Dark
+x0=40; y=110
+cols=[("Light",420,"#ffffff"),("Mid",650,"#ffffff"),("Dark",880,"#0b0b0d"),("was (Light)",1130,"#ffffff"),("was (Dark)",1300,"#0b0b0d")]
+d.rectangle((640,100,860,y+8*58+10),fill="#f59e0b")
+for name,x,_ in cols: d.text((x,y),name,fill="#17171b",font=F)
+y+=34
+for k,(lab,l,dk) in P.items():
+    d.text((x0,y+12),lab,fill="#17171b",font=F)
+    for name,x,plate in cols:
+        c = l if name in("Light","Mid") else dk if name=="Dark" else OLD[k][0] if name=="was (Light)" else OLD[k][1]
+        d.rounded_rectangle((x,y,x+200 if name in ("Light","Mid","Dark") else x+150,y+48),8,fill=plate)
+        d.rounded_rectangle((x+10,y+10,x+70,y+38),5,fill=c)
+        cr=contrast(c,plate)
+        if name in ("Light","Mid","Dark"): d.text((x+80,y+8),c,fill="#888" if plate!="#ffffff" else "#3f3f46",font=FS); d.text((x+80,y+26),f"{cr:.1f}:1",fill="#888" if plate!="#ffffff" else "#3f3f46",font=FS)
+    y+=58
+y+=20
+d.text((x0,y),"Beside the product accents and the fixed lines (Light row on white, Dark row on the dark plate)",fill="#17171b",font=F); y+=32
+for theme,res,plate in (("Light",RES_LIGHT,"#ffffff"),("Dark",RES_DARK,"#0b0b0d")):
+    d.rounded_rectangle((x0,y,W-40,y+92),10,fill=plate)
+    xx=x0+16
+    for n,c in res.items():
+        d.rounded_rectangle((xx,y+12,xx+50,y+40),5,fill=c); d.text((xx,y+48),n.replace("Focus school red","Focus red"),fill="#999" if plate!="#ffffff" else "#3f3f46",font=FS); xx+=150
+    y+=104
+y+=16
+d.text((x0,y),"Sample: entries by subject in the whole school, each subject in its family's colour, the focus (Geography) in the GCSE accent",fill="#17171b",font=F); y+=32
+subs=[("Maths","sciences_maths",180),("English Lang.","languages_literature",176),("Biology","sciences_maths",120),("Geography","FOCUS",147),("History","humanities_social",92),("French","languages_literature",64),("Art","arts_media_design",58),("Business","business_law",40),("Comp. Sci.","technology_eng_construction",38),("Health & SC","health_care",30),("Enterprise","enterprise_applied",22)]
+for theme,plate,acc,ix,txt in (("Light","#ffffff","#12a05c",1,"#3f3f46"),("Dark","#0b0b0d","#34d399",2,"#aaa")):
+    w=(W-120)//2; bx=x0 if theme=="Light" else x0+w+40
+    d.rounded_rectangle((bx,y,bx+w,y+330),10,fill=plate)
+    d.text((bx+14,y+10),theme,fill=txt,font=F)
+    bw=(w-40)//len(subs)
+    for i,(n,f,v) in enumerate(subs):
+        c=acc if f=="FOCUS" else P[f][ix]
+        h=int(v/180*230); bx0=bx+20+i*bw
+        d.rectangle((bx0+6,y+280-h,bx0+bw-6,y+280),fill=c)
+        d.text((bx0+4,y+288),n[:11],fill=txt,font=FS)
+y+=350
+d.text((x0,y),"Key: " + "  ·  ".join(v[0] for v in P.values()),fill="#3f3f46",font=FS)
+im.save(sys.argv[2])
+print("board", mp, mr)

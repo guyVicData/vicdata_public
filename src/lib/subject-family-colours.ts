@@ -33,14 +33,21 @@
 // palette_board.png; the pick: docs/v0.8/audit_scripts/review_fixes_preview/palette2.py.txt. [pale, strong]
 // per theme; Mid draws on white plates, so its values are Light's (kept as their own entry so a later
 // change can part them). R-SUBJECT-COLOUR.
+// 0.8 feedback C (C14, D8, 15 Nov): Languages & Literature (indigo: 18.5 from Sciences in Light, 14.9 from the
+// Post-16 violet in Dark) and Health & Care (green: 13.4 / 12.9 from the GCSE green) re-picked, the other six
+// kept, under this rule's floors (families 15 or more apart, 12 or more from every accent and fixed line): each
+// new colour is 29 or more from Sciences, the Post-16 violet and the GCSE green in both themes. Keeping six
+// leaves little room: Languages is a khaki gold, Health a cocoa; their closest neighbours are each other (15.3)
+// and the group bronze (12.8). The pick: docs/v0.8/audit_scripts/feedback_c_preview/pick8.py.txt; the board:
+// docs/v0.8/feedback_c_screenshots/palette_board.png.
 export const SUBJECT_FAMILY_COLOURS: Record<string, { light: [string, string]; mid: [string, string]; dark: [string, string] }> = {
   sciences_maths: { light: ["#eceef5", "#3e5698"], mid: ["#eceef5", "#3e5698"], dark: ["#262b38", "#a1b0d9"] }, // slate blue
   humanities_social: { light: ["#f2e9e8", "#811f18"], mid: ["#f2e9e8", "#811f18"], dark: ["#382120", "#e0655c"] }, // brick
-  languages_literature: { light: ["#ebe8f2", "#341881"], mid: ["#ebe8f2", "#341881"], dark: ["#2b2440", "#7f5ce0"] }, // indigo
+  languages_literature: { light: ["#efeee9", "#605024"], mid: ["#efeee9", "#605024"], dark: ["#2c281d", "#c4aa64"] }, // khaki gold (C14)
   arts_media_design: { light: ["#f7e9f5", "#b422a1"], mid: ["#f7e9f5", "#b422a1"], dark: ["#3c2239", "#e05cce"] }, // magenta
   business_law: { light: ["#f0eaed", "#6d2c4a"], mid: ["#f0eaed", "#6d2c4a"], dark: ["#382c33", "#d9a1bb"] }, // plum
   technology_eng_construction: { light: ["#e8f2f1", "#188173"], mid: ["#e8f2f1", "#188173"], dark: ["#21383b", "#76e5d6"] }, // teal
-  health_care: { light: ["#e8f2e8", "#188118"], mid: ["#e8f2e8", "#188118"], dark: ["#1d3a1f", "#5ce05c"] }, // green
+  health_care: { light: ["#edebe9", "#4c3324"], mid: ["#edebe9", "#4c3324"], dark: ["#2c2421", "#c0957c"] }, // cocoa (C14)
   enterprise_applied: { light: ["#f2f2e8", "#818118"], mid: ["#f2f2e8", "#818118"], dark: ["#38381d", "#e0e05c"] }, // olive
 };
 /** The eight families in sort order (the subject_families table's sort_order 0-7), with their names. */

@@ -47,7 +47,9 @@ test("R-PANEL-LADDER: a shut panel differs from its column by the logged step, D
   // column stands off every field's lighter stop; no Mid rule overrides the ladder's tokens.
   assert.ok(s.midBorder >= LADDER_STEP.midBorder, `mid border ${s.midBorder}`);
   assert.ok(s.midColumnOnField >= LADDER_STEP.midColumnOnField, `mid column on the field ${s.midColumnOnField}`);
-  for (const m of css.matchAll(/#teacher-root\[data-mid-dash[^{]*\{([^}]*)\}/g)) assert.doesNotMatch(m[1], /--(shut-|panel-bg|box-bg|well-border)/, "a Mid rule overrides the ladder");
+  // 0.8 feedback C (C16): a Mid dashboard tints its own plates (--panel-bg, --box-bg, --shut-bg) and nothing
+  // else of the ladder; the steps above are measured on the tinted column.
+  for (const m of css.matchAll(/#teacher-root\[data-mid-dash[^{]*\{([^}]*)\}/g)) assert.doesNotMatch(m[1], /--(shut-border|shut-shadow|well-border)/, "a Mid rule overrides the ladder's edges");
   // The well is the chart's plate: in Light, white on a grey column; in Dark, darker than its column.
   assert.equal(s.tokens.ll["--box-bg"], "#ffffff");
   assert.ok(contrast(s.tokens.ld["--box-bg"], "#000000") < contrast(s.tokens.ld["--panel-bg"], "#000000"));

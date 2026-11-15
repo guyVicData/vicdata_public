@@ -1,0 +1,37 @@
+# 0.8 feedback C (C14, D8): the final pick. Under R-SUBJECT-COLOUR's floors (families >= 15 apart, >= 12 from every
+# accent and fixed line, >= 3:1 on the plate -- here 4:1), Languages as far as possible from Sciences and the
+# Post-16 violet, Health from the GCSE green (both themes) -- and each clear of all three, so neither moves into
+# the other's complaint: maximise the smallest of those distances.
+import sys, json, colorsys
+sys.path.insert(0, "."); from palette import de2000, contrast, rgb2hex, RES_LIGHT, RES_DARK, PLATE
+KEEP={"sciences_maths":("#3e5698","#a1b0d9"),"humanities_social":("#811f18","#e0655c"),"arts_media_design":("#b422a1","#e05cce"),"business_law":("#6d2c4a","#d9a1bb"),"technology_eng_construction":("#188173","#76e5d6"),"enterprise_applied":("#818118","#e0e05c")}
+def hx(h,s,l): r,g,b=colorsys.hls_to_rgb(h/360,l,s); return rgb2hex((r*255,g*255,b*255))
+cands=[]
+for hue in range(0,360,2):
+    for s in (0.35,0.45,0.55,0.65,0.75,0.85,0.95):
+        for ll in (0.22,0.26,0.30,0.34,0.38,0.42,0.46):
+            for ld in (0.58,0.62,0.66,0.70,0.74,0.78):
+                L,D=hx(hue,s,ll),hx(hue,s,ld)
+                if contrast(L,PLATE["light"])<4 or contrast(D,PLATE["dark"])<4: continue
+                if min(de2000(L,v[0]) for v in KEEP.values())<15 or min(de2000(D,v[1]) for v in KEEP.values())<15: continue
+                if min(de2000(L,v) for v in RES_LIGHT.values())<12 or min(de2000(D,v) for v in RES_DARK.values())<12: continue
+                cands.append((hue,s,L,D))
+both=lambda c,l,d: min(de2000(c[2],l),de2000(c[3],d))
+lang=lambda c: min(both(c,KEEP["sciences_maths"][0],KEEP["sciences_maths"][1]), both(c,RES_LIGHT["Post-16 violet"],RES_DARK["Post-16 violet"]))
+health=lambda c: both(c,RES_LIGHT["GCSE green"],RES_DARK["GCSE green"])
+clear=lambda c: min(lang(c),health(c))
+Ls=Hs=sorted(cands,key=lambda c:-clear(c))[:250]
+best=None
+for a in Ls:
+    for b in Hs:
+        if min(de2000(a[2],b[2]),de2000(a[3],b[3]))<15: continue
+        m=min(clear(a),clear(b))
+        if not best or m>best[0]: best=(m,a,b)
+m,a,b=best
+print("candidates",len(cands))
+for k,c in (("languages_literature",a),("health_care",b)):
+    nl=sorted([(round(de2000(c[2],v[0]),1),n) for n,v in KEEP.items()]+[(round(de2000(c[2],v),1),n) for n,v in RES_LIGHT.items()])[:2]
+    nd=sorted([(round(de2000(c[3],v[1]),1),n) for n,v in KEEP.items()]+[(round(de2000(c[3],v),1),n) for n,v in RES_DARK.items()])[:2]
+    print(k,c[2],c[3],"lang-score",round(lang(c),1),"green",round(health(c),1),"L near",nl,"D near",nd,"contrast",round(contrast(c[2],"#ffffff"),2),round(contrast(c[3],"#0b0b0d"),2))
+print("between",round(min(de2000(a[2],b[2]),de2000(a[3],b[3])),1))
+json.dump({"languages_literature":[a[2],a[3]],"health_care":[b[2],b[3]]},open("pick8.json","w"))
