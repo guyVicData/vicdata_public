@@ -798,12 +798,12 @@ export function EntriesDumbbell({ a, fullscreen = false }: { a: Academic; fullsc
   const level = a.state.phase === "gcse" ? "GCSE" : "Post-16";
   const GRID = fullscreen ? "grid grid-cols-[minmax(0,12rem)_1fr_3.5rem] items-center gap-2" : "grid grid-cols-[minmax(0,8.5rem)_1fr_3rem] items-center gap-2";
   const families = Array.from(new Set(d.rows.map((r) => r.familyId).filter((x): x is string => !!x)));
-  const row = (key: string, label: string, tag: string | null, first: number, latest: number, colour: string, avg = false) => {
+  const row = (key: string, label: string, tag: string | null, first: number, latest: number, colour: string, avg = false, fam: string | null = null) => {
     const lo = at(Math.min(first, latest));
     const up = latest >= first;
     const ch = Math.round(latest - first);
     return (
-      <div key={key} data-smt-dumbbell-row={avg ? "average" : "subject"} className={`${GRID} px-1 py-[2px] text-[11.5px] ${avg ? "mt-1 border-t border-[var(--panel-border)] pt-1.5" : ""}`} title={`${label}${tag ? ` (${tag})` : ""}: ${Math.round(first)} entries in ${fy}, ${Math.round(latest)} in ${ly}`}>
+      <div key={key} data-smt-dumbbell-row={avg ? "average" : "subject"} className={`${GRID} px-1 py-[2px] text-[11.5px] ${avg ? "mt-1 border-t border-[var(--panel-border)] pt-1.5" : ""}`} title={`${label}${tag ? ` (${tag})` : ""}${fam ? `, ${fam}` : ""}: ${Math.round(first)} entries in ${fy}, ${Math.round(latest)} in ${ly}`}>
         <span className={`truncate text-right ${avg ? "italic text-[var(--muted2)]" : "text-[var(--chip-fg)]"}`}>
           {label}
           {tag && <span className="ml-1 rounded-[4px] bg-[var(--box-bg)] px-1 text-[9.5px] text-[var(--muted2)] ring-1 ring-[var(--panel-border)]">{tag}</span>}
@@ -829,12 +829,17 @@ export function EntriesDumbbell({ a, fullscreen = false }: { a: Academic; fullsc
         <Key swatch={<span className="inline-flex items-center"><span className="h-2 w-2 rounded-full border-[1.6px] border-[var(--muted2)]" /><span className="h-[2px] w-2 bg-[var(--muted2)]" /><span className="h-2 w-2 rounded-full bg-[var(--muted2)]" /></span>}>
           ○ {fy} (first year) → ● {ly} (latest)
         </Key>
-        {families.map((f) => (
-          <Key key={f} swatch={<span className="h-[9px] w-[9px] rounded-[2px]" style={{ background: familyColourVar(f) }} />}>
-            {a.areas.blocks.find((b) => b.id === f)?.label ?? SUBJECT_FAMILY_NAMES[f] ?? f}
-          </Key>
-        ))}
-        {d.average && <Key swatch={<span className="w-4 border-t-2 border-dashed border-[var(--muted2)]" />}>Average of the {d.rows.length} subjects</Key>}
+        {/* In a panel one line (the rows scroll beneath it); full screen names every family. */}
+        {fullscreen ? (
+          families.map((f) => (
+            <Key key={f} swatch={<span className="h-[9px] w-[9px] rounded-[2px]" style={{ background: familyColourVar(f) }} />}>
+              {a.areas.blocks.find((b) => b.id === f)?.label ?? SUBJECT_FAMILY_NAMES[f] ?? f}
+            </Key>
+          ))
+        ) : (
+          <Tl>Colour is the subject family (named full screen and on hover).</Tl>
+        )}
+        {fullscreen && d.average && <Key swatch={<span className="w-4 border-t-2 border-dashed border-[var(--muted2)]" />}>Average of the {d.rows.length} subjects</Key>}
       </div>
       <div className={`${GRID} px-1 text-[10px] text-[var(--muted)]`}>
         <span />
@@ -858,7 +863,7 @@ export function EntriesDumbbell({ a, fullscreen = false }: { a: Academic; fullsc
             ))}
           </span>
         </div>
-        {d.rows.map((r) => row(r.key, r.label, r.qualification, r.first, r.latest, r.familyId ? familyColourVar(r.familyId) : "var(--muted2)"))}
+        {d.rows.map((r) => row(r.key, r.label, r.qualification, r.first, r.latest, r.familyId ? familyColourVar(r.familyId) : "var(--muted2)", false, r.familyId ? (a.areas.blocks.find((b) => b.id === r.familyId)?.label ?? SUBJECT_FAMILY_NAMES[r.familyId] ?? null) : null))}
         {d.average && row("average", "Average", null, d.average.first, d.average.latest, "var(--muted2)", true)}
       </div>
       </div>

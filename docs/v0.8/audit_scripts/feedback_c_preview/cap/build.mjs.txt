@@ -1,0 +1,5 @@
+import { build } from "/Users/guy/.t3/worktrees/vicdata_public/t3-9f729400/node_modules/esbuild/lib/main.js";
+const stub = "/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-9f729400/7d3fee23-fcbb-459d-863d-7b7a35cb6e40/scratchpad/cap/view-as-server.stub.ts";
+const swap = { name: "swap", setup(b) { b.onResolve({ filter: /(^|\/)view-as-server$/ }, () => ({ path: stub })); } };
+await build({ entryPoints: ["/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-9f729400/7d3fee23-fcbb-459d-863d-7b7a35cb6e40/scratchpad/cap/capc.ts"], bundle: true, platform: "node", format: "cjs", packages: "external", tsconfig: "/Users/guy/.t3/worktrees/vicdata_public/t3-9f729400/tsconfig.json", outfile: "/Users/guy/.t3/worktrees/vicdata_public/t3-9f729400/node_modules/.cache/h/capc.cjs", plugins: [swap], logLevel: "error" });
+console.log("bundled");

@@ -1,0 +1,15 @@
+#!/bin/zsh
+R=$1; O=$2; mkdir -p $O; cd $R
+: > $O/summary.txt
+for f in $(find src scripts -name "*.test.ts" -o -name "*.test.tsx" | sort); do
+  name=$(echo $f | tr '/' '_')
+  if [[ $f == src/lib/groups/* || $f == *group* ]]; then
+    VICDATA_GROUP_FIXTURES=true VICDATA_GROUP_FIXTURES_DIR=docs/v0.8/groups_fixtures NODE_ENV=test npx tsx --env-file=.env --env-file=.env.local --test --test-force-exit $f > $O/$name.log 2>&1
+  else
+    npx tsx --env-file=.env --env-file=.env.local --test --test-force-exit $f > $O/$name.log 2>&1
+  fi
+  st=$?
+  p=$(grep -E '^# pass' $O/$name.log | awk '{print $3}'); fl=$(grep -E '^# fail' $O/$name.log | awk '{print $3}')
+  echo "$st $p $fl $f" >> $O/summary.txt
+done
+awk '{p+=$2; f+=$3; if($1!=0) bad++} END {print "files", NR, "pass", p, "fail", f, "nonzero", bad+0}' $O/summary.txt

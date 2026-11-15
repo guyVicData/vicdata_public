@@ -1,0 +1,18 @@
+import { test } from "node:test";
+import { readFileSync, writeFileSync } from "node:fs";
+import { buildTeacherModel } from "@/lib/front-door/teacher-model";
+test("gen", () => {
+  const w: { __FX?: Record<string, unknown> } = {};
+  new Function("window", readFileSync("/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-9f729400/7d3fee23-fcbb-459d-863d-7b7a35cb6e40/scratchpad/h/fx.js", "utf8"))(w);
+  const F = w.__FX!;
+  const R = "/Users/guy/.t3/worktrees/vicdata_public/t3-9f729400/docs/v0.8/feedback_15nov/fixtures";
+  for (const u of ["110110", "137625"]) {
+    F["smt_" + u] = JSON.parse(readFileSync(`${R}/smt_${u}_c.json`, "utf8"));
+    const a = JSON.parse(readFileSync(`${R}/adm_${u}_11_c.json`, "utf8"));
+    const o = F["adm_" + u + "_11"] as { p: unknown; m: unknown; r: unknown };
+    F["adm_" + u + "_11"] = { ...o, r: a.r, m: a.m };
+    F["admx_" + u + "_11"] = JSON.parse(readFileSync(`/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-9f729400/7d3fee23-fcbb-459d-863d-7b7a35cb6e40/scratchpad/fxx/admx_${u}_11.json`, "utf8"));
+  }
+  F["teacher_137625_ks5_art"] = buildTeacherModel(JSON.parse(readFileSync(`${R}/teacher_137625_ks5_input.json`, "utf8")), "Art and Design::GCE A level");
+  writeFileSync("/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-9f729400/7d3fee23-fcbb-459d-863d-7b7a35cb6e40/scratchpad/h/fx.js", "window.__FX=" + JSON.stringify(F) + ";");
+});

@@ -1,0 +1,38 @@
+import json,sys
+J=[]
+def add(name,q,wait=3200,other="dark",click=None,h=None):
+    for wd in (1440,390):
+        j={"name":f"{name}_mid_{wd}","q":q+"&theme=mid","w":wd,"wait":wait}
+        if wd<600: j["measure"]="main"
+        if click: j["click"]=click
+        if h and wd>600: j["h"]=h
+        J.append(j)
+    if other:
+        j={"name":f"{name}_{other}_1440","q":q+f"&theme={other}","w":1440,"wait":wait}
+        if click: j["click"]=click
+        if h: j["h"]=h
+        J.append(j)
+pick=lambda label: f"(()=>{{const b=[...document.querySelectorAll('button,[role=tab],a')].find(x=>(x.textContent.trim()+' '+(x.getAttribute('title')||'')+' '+(x.getAttribute('aria-label')||'')).includes('{label}'));if(!b)throw new Error('no {label}');b.click();}})()"
+# Guy's screenshots
+add("Adm11_Adm9_s01_after_admissions-market_6","walk=admissions-market&step=6&urn=110110",other="light")
+add("SMT3_s03_after_smtdash_overview","page=smtdash&dash=overview&urn=110110",5000)
+add("SMT4_C2_s04_after_smt-overview_5","walk=smt-overview&step=5&urn=110110")
+add("SMT5_s05_after_smt-overview_6","walk=smt-overview&step=6&urn=137625")
+add("SMT6_s06_after_smt-academic_post16_6","walk=smt-academic&step=6&urn=110110&level=post16")
+add("SMT8_s07_after_smt-pupils_2","walk=smt-pupils&step=2&urn=110110")
+add("SMT10_s09_after_smt-pupils_3","walk=smt-pupils&step=3&urn=110110")
+add("SMT10_s09_after_smt-pupils_3_table","walk=smt-pupils&step=3&urn=110110",other=None,click=pick("As a table"))
+add("SMT11_s10_after_smt-pupils_4","walk=smt-pupils&step=4&urn=110110")
+add("SMT12_s11_after_smt-context_4","walk=smt-context&step=4&urn=110110")
+add("SMT13_s12_after_smt-context_5","walk=smt-context&step=5&urn=110110")
+add("T2_s14_after_post16-many_5","walk=post16-many&step=5&urn=137625&fx=teacher_137625_ks5_art")
+add("T4_s16_after_post16-well_5","walk=post16-well&step=5&urn=137625&fx=teacher_137625_ks5_art")
+# Build C's dashboards: C10 on SMT Academic (Post-16), C16 the tint, C1 the axes
+add("C10_after_smtdash_academic_dumbbell","page=smtdash&dash=academic&urn=110110&level=post16&smtlevel=post16",5000,click=pick("Entries by subject"))
+add("C16_after_smtdash_pupils","page=smtdash&dash=pupils&urn=110110",5000)
+add("C16_after_smtdash_context","page=smtdash&dash=context&urn=110110",6000)
+add("C16_after_admdash","page=admdash&urn=110110",6000,other="light")
+add("C13_after_smt-overview_1","walk=smt-overview&step=1&urn=110110",other="light")
+add("C1_after_admissions-pipeline_4","walk=admissions-pipeline&step=4&urn=110110",other=None)
+add("C1_after_group-overview_2","walk=group-overview&step=2&g=harris",other=None)
+json.dump(J,open(sys.argv[1],"w")); print(len(J))
