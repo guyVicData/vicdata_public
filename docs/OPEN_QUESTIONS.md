@@ -3482,3 +3482,44 @@ the report (`docs/v0.8/feedback_b_report_v1.md`) lists every note by number.
 - **GCSE families' area rows** read the area's every GCSE subject once and keep the family's titles (build A's
   grouped path read Post-16 only). England's figure for a GCSE family is added beside its titles' own, in the
   Teacher dashboard route and the walks' loader.
+
+**B1, every walk ends on its answer (G1, SMT 7; R-WALK-ENDS-ON-ANSWER).**
+- **"The final window" is "Here's what you found".** It now opens on the answer: the walk's question, its
+  sentence and a data view drawn large, then "How you got there" (the old summary), then the way on. The walk's
+  screens are unchanged, so R-WALK-NO-REPEAT still holds and no screen is added to any walk.
+- **Which view answers each walk** (walks.ts `answer`): Teacher, How many: the entries trend; How well: the
+  Results chart (points against England); Comparisons: the ranking (falling back to the nearby schools' points
+  bars where too few schools have a figure to rank). SMT Overview: the scorecard; Academic: the new subjects
+  ranking; Pupils: roll by phase; Context: children nearby over time. Admissions Pipelines: the pipeline;
+  Market share: the share bars against the rivals. Head office Overview: Against others; Schools: who is
+  growing; Academic: schools ranked; Pupils: growing and shrinking. A primary school's Academic walk has no
+  screens and so no answer (as before, its card says why).
+- **SMT 7, how the subjects are ranked.** Points, grades and value added aren't comparable across
+  qualifications, so each subject is ranked on its standing in the set: where the school places among the
+  set's schools teaching it, 1 at the top to 0 at the bottom. Top quarter: "Strong"; bottom quarter: "Needs
+  attention". Subjects the set can't place (too few entries, the only school, no figure) are listed after,
+  with why. Built from the Subject areas view's own figures (`src/lib/smt/subjects-ranked.ts`), so it agrees
+  with the dashboard. It is drawn only on the walk's last window, not added to the dashboard (a call: SMT
+  Academic's dashboard already ranks each subject in Subject areas; Guy may want it as a dashboard view too).
+- **A fix found on the way:** the SMT walk never set the Academic views' band colours (`acVars`), which the
+  dashboard sets on its root; the walk now sets them, so Academic's dots and bands draw in their colours.
+
+**B2, the rail and the way home (D4, Admissions 2, Admissions 12; R-WALK-RAIL, a new rule).**
+- The rail lists the walk's own screens in order; a click steps the walk; "More on the dashboard →" is the
+  one link out. A view the walk shows twice is told apart by its setting ("Bars · whole school").
+- **Dropped:** the SMT, Admissions and head office walks' "As a table" row, which did nothing (its handler was
+  empty). Teacher keeps "As a table" (it switches the chart in place). Head office's walk no longer draws the
+  group view's own rail (still built by `groupWalkView`, and still on the dashboard).
+- "Back to your home" sits beside the heading of "Here's what you found" and again at its foot.
+- **Rewritten:** R-WALK-RHYTHM's statement (the head office walk's rail is the walk's own; the school-first
+  walk); `walks-check.ts` skips the rhythm for a school-first walk's second screen; R-FRONT-DOOR-MOBILE's two
+  exceptions for the removed rail links are gone (`mobile-scan.ts`).
+
+**B4, Admissions 8 (the Pipeline walk starts with the school).** The cohort screen ("Your Year 7 cohort, year
+by year") is second, asking "How many have joined us at 11+, year by year?" (it asked "And our own cohort?" as
+the last screen). That breaks the rhythm (over time before in context), so the walk is marked `schoolFirst` and
+the rhythm check runs from its third screen.
+
+**D6 (SMT 9).** Entry points leave the secondary SMT Pupils walk and stay on the SMT Pupils dashboard. A primary
+school's walk keeps them: its 4+ entry is how that walk answers "are numbers holding up from Reception?"
+(logged in WALK_SCREENS_LEFT_OUT), and Admissions isn't a primary product.

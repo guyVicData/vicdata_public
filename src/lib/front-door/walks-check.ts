@@ -11,14 +11,17 @@ export function walkConfigProblems(walks: Walk[] = WALKS): string[] {
   const out: string[] = [];
   for (const w of walks) {
     let last = -1;
-    for (const s of w.screens) {
+    for (const [i, s] of w.screens.entries()) {
       if (!screenMeta(s.view)) out.push(`${w.id}: ${s.view} is not a view`);
+      // 0.8 feedback B4: a school-first walk's second screen is the school's own, outside the rhythm.
+      if (w.schoolFirst && i === 1) continue;
       const r = ORDER.indexOf(s.rhythm);
       if (r < last) out.push(`${w.id}: ${s.view} breaks the rhythm (${s.rhythm} after ${ORDER[last]})`);
       last = Math.max(last, r);
       if (!s.question.trim().endsWith("?")) out.push(`${w.id}: ${s.view} has no question`);
     }
     if (w.screens.length && w.screens[0].rhythm !== "this-year") out.push(`${w.id}: doesn't start with this year`);
+    for (const s of w.screens.slice(1, 2)) if (w.schoolFirst && !s.question.trim().endsWith("?")) out.push(`${w.id}: ${s.view} has no question`);
     if (/-well$/.test(w.id) && w.screens.some((s) => s.options?.measure !== "points")) out.push(`${w.id}: a Results screen not on Average points`);
   }
   return out;

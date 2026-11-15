@@ -22,7 +22,8 @@ import { SchoolNow } from "@/components/smt/views/Now";
 import { Scorecard } from "@/components/smt/views/Scorecard";
 import { SchoolFlags } from "@/components/smt/views/Flags";
 import { MarketLine, ResultsBand, RollIndexed, IndexedLines, PlainLine } from "@/components/smt/views/Lines";
-import { AcademicNow, AreasView, EveryLine, GradesView, RankChart, TrendBand } from "@/components/smt/views/Academic";
+import { AcademicNow, AreasView, EveryLine, GradesView, RankChart, SubjectsRankedView, TrendBand, acVars } from "@/components/smt/views/Academic";
+import { subjectsRanked, subjectsRankedAnswer } from "@/lib/smt/subjects-ranked";
 import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "@/components/smt/views/Pupils";
 import { AgeBars, AreaMap, BirthsAndProjections, ContextNow, NearbyOverTime } from "@/components/smt/views/Context";
 import { admissionsVars } from "@/components/admissions/ui";
@@ -34,17 +35,16 @@ import { admissionsTitleFill, fillTitle, smtTitleFill } from "@/lib/front-door/w
 import { smtAnswer } from "@/lib/front-door/smt-answers";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { dataviewById } from "@/catalogue/dataviews";
-import { fillTemplate, groupWalkDash, screenMeta, type Walk } from "@/lib/front-door/walks";
-import { Found, homeOf, MiniMap, Rail, RAIL_LIST, RAIL_ROW, useStep, WalkFooter, WalkFrame, WalkPanel, WalkScreen } from "./WalkPage";
+import { answerStep, fillTemplate, groupWalkDash, screenMeta, SMT_SUBJECTS_RANKED, type Walk } from "@/lib/front-door/walks";
+import { Found, homeOf, MiniMap, useStep, WalkFooter, WalkFrame, WalkPanel, WalkRail, WalkScreen, type FoundAnswer } from "./WalkPage";
 import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/components/groups/dash/GroupDashboard";
 import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
 import type { ProjectionRow } from "@/components/groups/dash/views-r3";
 import { groupAnswer } from "@/lib/front-door/group-answers";
 import { groupWalkCompare, groupWalkDashUrl, smtContextUrl } from "@/lib/front-door/tile-figures";
-import { RailGlyph } from "./home";
 
 type Load<T> = { status: "loading" } | { status: "error"; code: number; message: string } | { status: "ready"; data: T };
-type Screenish = { question: string; answer: string; title: string; body: ReactNode; note: string; rail?: ReactNode; tag?: string; controls?: ReactNode };
+type Screenish = { question: string; answer: string; title: string; body: ReactNode; note: string; tag?: string; controls?: ReactNode };
 
 
 /** A screen's title: its catalogue title with every placeholder filled, else the view's label (R-WALK-WORDS). */
@@ -54,7 +54,6 @@ function titleOf(view: string, fill: Record<string, string | number | null>): st
 }
 /** The walk's panel and its chrome, for any role. */
 function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }: { walk: Walk; step: number; screens: Screenish[]; cols: string[]; colName: string; colQuestion: string; onStep: (s: number) => void }) {
-  const [asTable] = useState(false);
   const router = useRouter();
   const s = walk.screens[step];
   const sc = screens[step];
@@ -79,7 +78,9 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
             tag={sc.tag ?? `${s.spot.row === 0 ? "Current" : "Trends"}`}
             title=""
             note={sc.note}
-            rail={sc.rail ?? <Rail view={s.view} asTable={asTable} onTable={() => {}} dashboard={walk.dashboard} />}
+            // 0.8 feedback B2 (D4): the walk's own views; a click steps the walk (the "As a table" these walks
+            // offered did nothing, so it is gone).
+            rail={<WalkRail walk={walk} step={step} onStep={onStep} dashboard={walk.dashboard} />}
           >
             <div className="min-w-0 overflow-x-auto">{sc.body}</div>
           </WalkPanel>
@@ -88,6 +89,12 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
       <WalkFooter onBack={() => (step === 0 ? router.push(walk.product === "group" ? "/teacher/group" : "/teacher") : onStep(step - 1))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => onStep(step + 1)} next={next} finish={step + 1 >= walk.screens.length} />
     </>
   );
+}
+
+/** 0.8 feedback B1 (R-WALK-ENDS-ON-ANSWER): the answer screen's own view and sentence, for the last window. */
+function answerOf(walk: Walk, screens: Screenish[]): FoundAnswer | null {
+  const i = answerStep(walk);
+  return i >= 0 && screens[i] ? { sentence: screens[i].answer, body: screens[i].body } : null;
 }
 
 /** 0.8 feedback A2 (R-GROUP-WALKS-LOAD): a walk that couldn't load says what failed -- the route's own message
@@ -141,16 +148,22 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   const screens = smtScreens(walk, s, load.data, kind === "context" ? cmap : null);
   const n2 = walk.screens.length;
   return (
-    <div style={smtVars(theme)}>
+    // The Academic views' band colours (acVars), as the dashboard sets them on its root.
+    <div style={kind === "academic" ? { ...smtVars(theme), ...acVars(theme) } : smtVars(theme)}>
       <WalkFrame walk={walk} step={step} steps={n2} chip={s.name}>
         {step >= n2 ? (
-          <Found walk={walk} screens={screens} params={{}} ctx={{}} onBack={() => setStep(n2 - 1)} />
+          <Found walk={walk} screens={screens} params={{}} ctx={{}} onBack={() => setStep(n2 - 1)} answer={walk.answer?.view === SMT_SUBJECTS_RANKED ? smtSubjectsAnswer(load.data as Academic) : answerOf(walk, screens)} />
         ) : (
           <RoleScreen walk={walk} step={step} screens={screens} cols={["TableIcon", "HorizontalBarsIcon", "AdmRollIcon"]} colName={walk.label} colQuestion={walk.question} onStep={setStep} />
         )}
       </WalkFrame>
     </div>
   );
+}
+
+/** SMT 7: the Academic walk's answer, every subject ranked against the set (subjects-ranked.ts). */
+function smtSubjectsAnswer(a: Academic): FoundAnswer {
+  return { sentence: subjectsRankedAnswer(subjectsRanked(a)), body: <SubjectsRankedView a={a} /> };
 }
 
 function smtScreens(walk: Walk, school: SmtSchool, data: unknown, contextMap: SmtLoad<ContextMap> | null): Screenish[] {
@@ -263,7 +276,7 @@ function AdmissionsWalk({ walk, urn, schoolName }: { walk: Walk; urn: string; sc
   return (
     <div style={admissionsVars(theme)}>
       <WalkFrame walk={walk} step={step} steps={n2} chip={`Admissions · ${label}`} ctx={{ entry: label }}>
-        {step >= n2 ? <Found walk={walk} screens={screens} params={{ entry }} ctx={{ entry: label }} onBack={() => setStep(n2 - 1)} /> : <RoleScreen walk={walk} step={step} screens={screens} cols={["AdmPipelineIcon", "DonutIcon", "TrendLineIcon"]} colName={walk.label} colQuestion={fillTemplate(walk.question, { entry: label })} onStep={setStep} />}
+        {step >= n2 ? <Found walk={walk} screens={screens} params={{ entry }} ctx={{ entry: label }} onBack={() => setStep(n2 - 1)} answer={answerOf(walk, screens)} /> : <RoleScreen walk={walk} step={step} screens={screens} cols={["AdmPipelineIcon", "DonutIcon", "TrendLineIcon"]} colName={walk.label} colQuestion={fillTemplate(walk.question, { entry: label })} onStep={setStep} />}
       </WalkFrame>
     </div>
   );
@@ -304,7 +317,7 @@ function GroupWalk({ walk }: { walk: Walk }) {
   const d = load.data;
   const projection = proj.status === "ready" ? proj.data.rows : null;
   const o = (dash === "schools" ? d.now : d.overview) ?? null;
-  const screens: (Screenish & { rail: ReactNode; tag: string; controls: ReactNode })[] = walk.screens.map((s) => {
+  const screens: (Screenish & { tag: string; controls: ReactNode })[] = walk.screens.map((s) => {
     const view = groupWalkView(d, dash, s.view as ViewId, projection, s.spot.row === 0 ? 420 : 320);
     const label = screenMeta(s.view)?.label ?? s.view;
     const picker =
@@ -330,7 +343,6 @@ function GroupWalk({ walk }: { walk: Walk }) {
           {view.flag}
         </>
       ),
-      rail: <GroupRail rail={view.rail} active={s.view} dashboard={dashHref} />,
       body: <div style={groupDashVars(theme)} data-group-walk-view={s.view}>{view.body}</div>,
     };
   });
@@ -338,31 +350,11 @@ function GroupWalk({ walk }: { walk: Walk }) {
   return (
     <WalkFrame walk={w} step={step} steps={n2} chip={d.viewer.name ?? o?.group.name ?? "Head office"}>
       {step >= n2 ? (
-        <Found walk={w} screens={screens} params={{ account }} ctx={{}} onBack={() => setStep(n2 - 1)} />
+        <Found walk={w} screens={screens} params={{ account }} ctx={{}} onBack={() => setStep(n2 - 1)} answer={answerOf(walk, screens)} />
       ) : (
         <RoleScreen walk={w} step={step} screens={screens} cols={GROUP_COLS[dash]} colName={walk.label} colQuestion={walk.question} onStep={setStep} />
       )}
     </WalkFrame>
-  );
-}
-
-/** The group view's own rail, names written out: lit = this screen's view; any other opens the dashboard. */
-function GroupRail({ rail, active, dashboard }: { rail: { id: string; label: string; icon: string }[]; active: string; dashboard: string }) {
-  return (
-    <ul className={RAIL_LIST} data-walk-rail="">
-      {rail.map((r) => {
-        const on = r.id === active;
-        const row = (
-          <span className={`${RAIL_ROW} ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
-            <span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}>
-              <RailGlyph name={r.icon} size={13} />
-            </span>
-            {r.label}
-          </span>
-        );
-        return <li key={r.id}>{on ? <span aria-current="true">{row}</span> : <Link href={dashboard} title={`Opens the dashboard: ${r.label}`}>{row}</Link>}</li>;
-      })}
-    </ul>
   );
 }
 

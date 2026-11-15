@@ -9,7 +9,7 @@ import { dataviewById } from "@/catalogue/dataviews";
 import { fillTitle } from "./walk-titles";
 import { SUBJECT_FAMILY_NAMES } from "@/lib/subject-family-colours";
 import { firstReal, lastOf, ordinal, prevOf, rankOf, type SubjectRow, type TeacherModel } from "./teacher-model";
-import type { Walk, WalkScreen } from "./walks";
+import { answerStep, type Walk, type WalkScreen } from "./walks";
 import { gradingCaveat, learners, listJoin, placeOf, plural, smallNote } from "./words";
 
 type Series = (number | null)[];
@@ -556,3 +556,16 @@ export function teacherScreens(m: TeacherModel, walk: Walk): Screen[] {
 }
 
 export type { WalkScreen };
+
+/**
+ * 0.8 feedback B1 (R-WALK-ENDS-ON-ANSWER): the screen a Teacher walk's last window draws to answer its question
+ * (walks.ts `answer`). Where that screen has nothing to draw (too few schools to rank), the nearest screen
+ * before it that draws a chart (the nearby schools' points) answers instead. -1: none.
+ */
+export function teacherAnswerStep(walk: Walk, screens: Screen[]): number {
+  const draws = (i: number) => !!screens[i] && screens[i].chart.kind !== "none" && screens[i].chart.kind !== "tiles";
+  const at = answerStep(walk);
+  if (at < 0) return -1;
+  for (let i = at; i >= 0; i--) if (draws(i)) return i;
+  return -1;
+}

@@ -57,7 +57,28 @@ export type Walk = {
   /** The full dashboard this walk teaches (Show me, the end screen). */
   dashboard: string;
   screens: WalkScreen[];
+  /**
+   * 0.8 feedback B1 (G1, R-WALK-ENDS-ON-ANSWER): what the walk's last window ("Here's what you found") draws to
+   * answer the walk's own question -- a ranking, chart or table, never the summary alone. `view`: a screen's
+   * view (drawn again, large, with its answer), or a view drawn only there (SMT Academic's subjects ranked).
+   * `kind` says which sort of data view it is. A walk with no screens has none.
+   */
+  answer?: WalkAnswer;
+  /** 0.8 feedback B4 (Admissions 8): the walk starts with the school -- its second screen is the school's own
+   * figures over time, outside the rhythm; the rhythm runs from the third. */
+  schoolFirst?: true;
 };
+
+export type WalkAnswer = { kind: "ranking" | "chart" | "table"; view: string };
+
+/** The screen a walk's answer draws again (its index), or -1 for a view drawn only on the last window. */
+export function answerStep(walk: Pick<Walk, "screens" | "answer">): number {
+  return walk.answer ? walk.screens.findIndex((s) => s.view === walk.answer!.view) : -1;
+}
+
+/** SMT Academic's answer: every subject the school teaches, strongest to weakest against the set, with those
+ * needing attention marked (SMT 7). Drawn from DV-SMT-A-AREAS's own figures (smt-subject-ranking.ts). */
+export const SMT_SUBJECTS_RANKED = "SMT-A-SUBJECTS-RANKED";
 
 // ------------------------------------------------------------------------------------------------ Teacher
 
@@ -73,6 +94,8 @@ const teacherWalks = (product: "gcse" | "post16"): AuthoredWalk[] => {
       icon: "candidates",
       label: "Candidates · Context",
       dashboard: dash,
+      // How many: the entries year by year, the subject against its area (a chart).
+      answer: { kind: "chart", view: "DV-C1-CAND-TR-ACTUAL" },
       screens: [
         { view: "DV-C1-CAND-CUR-TILES", question: "How many took [subject] this year?", answer: "entries-tiles", rhythm: "this-year" },
         { view: "DV-C2-CUR-BARS", question: "How does it compare with the other subjects in [category]?", answer: "entries-category", rhythm: "in-context", options: { measure: "entries", against: "category" } },
@@ -89,6 +112,8 @@ const teacherWalks = (product: "gcse" | "post16"): AuthoredWalk[] => {
       icon: "results",
       label: "Results",
       dashboard: dash,
+      // How well: average points year by year, against England (a chart).
+      answer: { kind: "chart", view: "DV-C1-RES-TR-CHART" },
       screens: [
         { view: "DV-C1-RES-CUR-TILES", question: "What did they get this year?", answer: "points-tiles", rhythm: "this-year", options: { measure: "points" } },
         { view: "DV-C1-RES-CUR-GRADES", question: "How were the grades spread?", answer: "grades-spread", rhythm: "this-year", options: { measure: "points" } },
@@ -105,6 +130,8 @@ const teacherWalks = (product: "gcse" | "post16"): AuthoredWalk[] => {
       icon: "rankings",
       label: "Comparisons",
       dashboard: dash,
+      // How we compare: the nearby schools ranked (a ranking; its counts where too few have a figure).
+      answer: { kind: "ranking", view: "DV-C3-CUR-RANKING" },
       screens: [
         { view: "DV-C3-CUR-MAP", question: p16 ? "Which sixth forms are nearby?" : "Which schools are nearby?", answer: "nearby-map", rhythm: "this-year", options: { against: "nearest" } },
         { view: "DV-C3-CUR-BAR", question: "How many take it at each school?", answer: "nearby-entries", rhythm: "in-context", options: { measure: "entries", against: "nearest" } },
@@ -130,6 +157,8 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
       label: "Overview",
       kind: "Dashboard",
       dashboard: SMT_O,
+      // How is the school doing: headline by headline against the set (a table).
+      answer: { kind: "table", view: "DV-SMT-O-SCORECARD" },
       screens: [
         { view: "DV-SMT-O-NOW", question: "Where does the school stand this year?", answer: "smt-now", rhythm: "this-year" },
         { view: "DV-SMT-O-SCORECARD", question: "How does it compare, headline by headline?", answer: "smt-scorecard", rhythm: "in-context" },
@@ -147,6 +176,8 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
       label: "Academic",
       kind: "Dashboard",
       dashboard: `${SMT_O}/academic`,
+      // SMT 7: every subject, strongest to weakest, those needing attention marked (a ranking).
+      ...(primary ? {} : { answer: { kind: "ranking" as const, view: SMT_SUBJECTS_RANKED } }),
       // A primary school's Academic walk needs KS2 views SMT Academic doesn't have yet: the card says so.
       screens: primary
         ? []
@@ -170,10 +201,14 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
       label: "Pupils",
       kind: "Dashboard",
       dashboard: `${SMT_O}/pupils`,
+      // Are numbers holding up: each phase's roll, year by year (a chart).
+      answer: { kind: "chart", view: "DV-SMT-P-PHASES" },
       screens: [
         { view: "DV-SMT-P-NOW", question: "How many pupils do we have this year?", answer: "smt-pupils-now", rhythm: "this-year" },
         { view: "DV-SMT-P-SHAPE", question: "How big is each year group?", answer: "smt-pupils-shape", rhythm: "in-context" },
-        { view: "DV-SMT-P-ENTRIES", question: "How many could join at each entry point?", answer: "smt-pupils-entries", rhythm: "in-context" },
+        // 0.8 feedback B5 (D6, SMT 9): Entry points leave the secondary walk ("who is the pool?" -- Admissions
+        // answers it); they stay on the SMT Pupils dashboard, and on a primary school's walk (its 4+ entry).
+        ...(primary ? [{ view: "DV-SMT-P-ENTRIES", question: "How many could join at each entry point?", answer: "smt-pupils-entries", rhythm: "in-context" as const }] : []),
         ...(primary ? [] : [{ view: "DV-SMT-P-LEAVING", question: "How many leave at 16?", answer: "smt-pupils-leaving", rhythm: "over-time" as const }]),
         { view: "DV-SMT-P-PHASES", question: "Has each phase grown or shrunk?", answer: "smt-pupils-phases", rhythm: "over-time" },
         { view: "DV-SMT-P-AREA", question: "Is the area's school-age population changing?", answer: "smt-pupils-area", rhythm: "wider" },
@@ -187,6 +222,8 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
       label: "Context",
       kind: "Dashboard",
       dashboard: `${SMT_O}/context`,
+      // What is happening around us: the children nearby, year by year and projected (a chart).
+      answer: { kind: "chart", view: "DV-SMT-C-NEARBY" },
       screens: [
         { view: "DV-SMT-C-NOW", question: "What is the area like now?", answer: "smt-context-now", rhythm: "this-year" },
         { view: "DV-SMT-C-MAP", question: "Where do the children live?", answer: "smt-context-map", rhythm: "in-context" },
@@ -209,12 +246,16 @@ const admissionsWalks: AuthoredWalk[] = [
     label: "Pipelines",
     kind: "Dashboard",
     dashboard: "/teacher/admissions",
+    // How many could join: the pool reaching the entry point, year by year (a chart).
+    answer: { kind: "chart", view: "DV-ADM-P-PIPELINE" },
+    // 0.8 feedback B4 (Admissions 8): the school first, then outwards -- its own cohort second, then the pool.
+    schoolFirst: true,
     screens: [
       { view: "DV-ADM-P-NOW", question: "How many children are in the [entry] pool this year?", answer: "adm-now", rhythm: "this-year" },
+      { view: "DV-ADM-P-ENTRY-LINE", question: "How many have joined us at [entry], year by year?", answer: "adm-cohort", rhythm: "over-time" },
       { view: "DV-ADM-P-PIPELINE", question: "How many will reach [entry], year by year?", answer: "adm-pipeline", rhythm: "in-context" },
       { view: "DV-ADM-P-MAP", question: "Where do they come from?", answer: "adm-feeders-map", rhythm: "in-context" },
       { view: "DV-ADM-P-POOL-INDEXED", question: "Is the pool growing or shrinking?", answer: "adm-pool-trend", rhythm: "over-time" },
-      { view: "DV-ADM-P-ENTRY-LINE", question: "And our own cohort?", answer: "adm-cohort", rhythm: "wider" },
     ],
   },
   {
@@ -225,6 +266,8 @@ const admissionsWalks: AuthoredWalk[] = [
     label: "Market share",
     kind: "Dashboard",
     dashboard: "/teacher/admissions?dash=market-share",
+    // What share, against whom: our share beside each rival's (a ranking).
+    answer: { kind: "ranking", view: "DV-ADM-M-BARS" },
     screens: [
       { view: "DV-ADM-M-NOW", question: "What share of the pool joined us this year?", answer: "adm-share-now", rhythm: "this-year" },
       { view: "DV-ADM-M-BARS", question: "How does that compare with our rivals?", answer: "adm-share-rivals", rhythm: "in-context" },
@@ -248,6 +291,8 @@ const groupWalks: AuthoredWalk[] = [
     label: "Overview",
     kind: "Group dashboard",
     dashboard: `${GRP}/overview`,
+    // How is the group doing, against whom: the group beside the comparison, measure by measure (a table).
+    answer: { kind: "table", view: "GRP-O-AGAINST" },
     screens: [
       { view: "GRP-O-NOW", question: "Where does the group stand this year?", answer: "grp-now", rhythm: "this-year" },
       { view: "GRP-O-AGAINST", question: "How does it compare with other groups?", answer: "grp-against", rhythm: "in-context" },
@@ -265,6 +310,8 @@ const groupWalks: AuthoredWalk[] = [
     label: "Schools",
     kind: "Group dashboard",
     dashboard: `${GRP}/schools`,
+    // Which schools are growing: each school's roll, year by year (a chart).
+    answer: { kind: "chart", view: "GRP-S-GROWING" },
     screens: [
       { view: "GRP-S-NOW", question: "How many schools, and how many pupils?", answer: "grp-schools-now", rhythm: "this-year" },
       { view: "GRP-S-TABLE", question: "How do the schools compare?", answer: "grp-schools-table", rhythm: "in-context" },
@@ -281,6 +328,8 @@ const groupWalks: AuthoredWalk[] = [
     label: "Academic",
     kind: "Group dashboard",
     dashboard: `${GRP}/academic`,
+    // How results compare: the schools ranked (a ranking).
+    answer: { kind: "ranking", view: "GRP-A-RANKED" },
     screens: [
       { view: "GRP-A-NOW", question: "What did the group get this year?", answer: "grp-academic-now", rhythm: "this-year" },
       { view: "GRP-A-RANKED", question: "How do our schools rank?", answer: "grp-academic-ranked", rhythm: "in-context" },
@@ -297,6 +346,8 @@ const groupWalks: AuthoredWalk[] = [
     label: "Pupils",
     kind: "Group dashboard",
     dashboard: `${GRP}/pupils`,
+    // Are numbers holding up: each school growing or shrinking (a chart).
+    answer: { kind: "chart", view: "GRP-P-GROWING" },
     screens: [
       { view: "GRP-P-NOW", question: "How many pupils does the group have?", answer: "grp-pupils-now", rhythm: "this-year" },
       { view: "GRP-P-SHAPE", question: "What shape is the group?", answer: "grp-pupils-shape", rhythm: "in-context" },
@@ -399,6 +450,20 @@ export function screenMeta(view: string): { label: string; icon: string } | null
   if (view.startsWith("GRP-")) return GROUP_VIEW_META[view] ?? null;
   const dv = dataviewById(view);
   return dv ? { label: dv.label, icon: dv.railIcon } : null;
+}
+
+/**
+ * 0.8 feedback B2 (D4): the walk rail's names, one per screen in the walk's order -- the view's own name, and
+ * where a walk shows one view twice, what each is set to ("Bars · whole school").
+ */
+export function walkRailLabels(walk: Pick<Walk, "screens">): string[] {
+  const names = walk.screens.map((s) => screenMeta(s.view)?.label ?? s.view);
+  return walk.screens.map((s, i) => {
+    if (names.filter((n) => n === names[i]).length < 2) return names[i];
+    const o = s.options ?? {};
+    const set = o.against === "whole" ? "whole school" : o.against === "category" ? "subject area" : o.measure === "points" ? "results" : o.measure === "entries" ? "entries" : null;
+    return set ? `${names[i]} · ${set}` : names[i];
+  });
 }
 
 /** Screens left out because their view doesn't exist yet (B12): logged in the report. */
