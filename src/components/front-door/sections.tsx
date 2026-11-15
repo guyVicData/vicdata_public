@@ -420,7 +420,7 @@ type SubjectsLite = { subjects: TeacherModel["subjects"] };
  */
 export function OurSubjects({ urn, phases }: { urn: string; phases: ("ks4" | "ks5")[] }) {
   const [by, setBy] = useState<Partial<Record<"ks4" | "ks5", SubjectsLite | "error">>>({});
-  const [all, setAll] = useState(false);
+  const [all, setAll] = useState<Partial<Record<"ks4" | "ks5", boolean>>>({});
   useEffect(() => {
     let live = true;
     for (const ph of phases)
@@ -452,7 +452,7 @@ export function OurSubjects({ urn, phases }: { urn: string; phases: ("ks4" | "ks
               <p className="text-[13px] text-[var(--field-ink)]">No {PHASE_LABELS[ph]} subject results are published for this school yet.</p>
             ) : (
               <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" aria-label={`Our ${PHASE_LABELS[ph]} subjects`}>
-                {subjects.slice(0, all ? undefined : SHOW).map((sub) => (
+                {subjects.slice(0, all[ph] ? undefined : SHOW).map((sub) => (
                   <li key={sub.key} data-our-subject={sub.key} className="fd-tile flex flex-col gap-2 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
                     <span className="min-w-0">
                       <span className="block truncate text-[15px] font-medium">{sub.subject}</span>
@@ -473,8 +473,8 @@ export function OurSubjects({ urn, phases }: { urn: string; phases: ("ks4" | "ks
               </ul>
             )}
             {subjects.length > SHOW && (
-              <button type="button" onClick={() => setAll(!all)} className="w-fit min-h-[44px] text-[13px] font-semibold text-[var(--field-ink)] underline sm:min-h-0">
-                {all ? "Show fewer" : `Show all ${subjects.length}`}
+              <button type="button" onClick={() => setAll((a) => ({ ...a, [ph]: !a[ph] }))} className="w-fit min-h-[44px] text-[13px] font-semibold text-[var(--field-ink)] underline sm:min-h-0">
+                {all[ph] ? "Show fewer" : `Show all ${subjects.length}`}
               </button>
             )}
           </div>

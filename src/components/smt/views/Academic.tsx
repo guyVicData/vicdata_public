@@ -737,7 +737,7 @@ export function SubjectsRankedView({ a }: { a: Academic }) {
     <div className="flex flex-col gap-2" data-ac-ranked="">
       <Vt>{level} subjects, strongest to weakest</Vt>
       <Tl>
-        Each subject&rsquo;s place among {a.set.label}&rsquo;s schools teaching it{r.mode === "va" ? ", on value added" : r.unit === "grade" ? ", on average grade" : ", on points per entry"}
+        Each subject&rsquo;s place among the schools in the set ({a.set.label}) teaching it{r.mode === "va" ? ", on value added" : r.unit === "grade" ? ", on average grade" : ", on points per entry"}
         {r.period !== null ? ` · ${periodLabel(r.period)}` : ""}. The bar runs from the bottom of the set to the top; the line is its middle.
       </Tl>
       <ol className="flex flex-col">
@@ -769,9 +769,15 @@ export function SubjectsRankedView({ a }: { a: Academic }) {
         <Key swatch={<span className="h-[9px] w-[14px] rounded-full" style={{ background: "var(--ac-below2)" }} />}>Needs attention: the bottom quarter</Key>
       </div>
       {r.unranked.length > 0 && (
-        <Tl>
-          Not placed: {r.unranked.map((u) => `${u.subject} (${u.short}: ${u.why})`).join("; ")}.
-        </Tl>
+        <div className="flex flex-col gap-0.5" data-ac-ranked-unplaced="">
+          <Tl className="font-bold">Not placed</Tl>
+          {/* One line per reason, its subjects listed once. */}
+          {Array.from(new Set(r.unranked.map((u) => u.why))).map((why) => (
+            <Tl key={why}>
+              {why.charAt(0).toUpperCase() + why.slice(1).replace(/\.$/, "")}: {r.unranked.filter((u) => u.why === why).map((u) => `${u.subject} (${u.short})`).join(", ")}.
+            </Tl>
+          ))}
+        </div>
       )}
     </div>
   );

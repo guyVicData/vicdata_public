@@ -151,7 +151,7 @@ test("R-WALK-ENDS-ON-ANSWER: SMT Academic ranks every subject strongest to weake
     assert.ok(r.rows.length >= 3, `${urn}: subjects ranked`);
     for (let i = 1; i < r.rows.length; i++) assert.ok(r.rows[i - 1].standing >= r.rows[i].standing, `${urn}: strongest first`);
     for (const x of r.rows) {
-      assert.ok(x.of >= 2 && x.rank >= 1 && x.rank <= x.of);
+      assert.ok(x.of >= 3 && x.rank >= 1 && x.rank <= x.of, "R-RANK-MIN: 3 schools to place a subject");
       assert.equal(x.mark, x.standing >= 0.75 ? "strong" : x.standing <= 0.25 ? "attention" : null);
     }
     const sentence = subjectsRankedAnswer(r);

@@ -1,0 +1,28 @@
+import json,sys
+J=[]
+def add(name,q,wait=3000,dark=False):
+    for wd in (1440,390):
+        J.append({"name":f"{name}_mid_{wd}","q":q+"&theme=mid","w":wd,"wait":wait,**({"measure":"main"} if wd<600 else {})})
+    if dark: J.append({"name":f"{name}_dark_1440","q":q+"&theme=dark","w":1440,"wait":wait})
+add("SMT7_after_smt-academic_end","walk=smt-academic&step=7&urn=110110",dark=True)
+add("G1_after_smt-overview_end","walk=smt-overview&step=7&urn=110110")
+add("G1_after_smt-pupils_end","walk=smt-pupils&step=6&urn=110110")
+add("G1_after_post16-nearby_end","walk=post16-nearby&step=6&urn=137625&fx=teacher_137625_ks5_art",dark=True)
+add("G1_after_gcse-well_end","walk=gcse-well&step=7&urn=137625")
+add("G1_after_admissions-market_end","walk=admissions-market&step=7&urn=110110")
+add("Adm12_after_admissions-pipeline_end","walk=admissions-pipeline&step=6&urn=110110")
+add("G1_after_group-academic_end","walk=group-academic&step=6&g=harris")
+add("SMT4_after_smt-overview_5","walk=smt-overview&step=5&urn=110110",dark=True)
+add("Adm2_after_admissions-market_3","walk=admissions-market&step=3&urn=110110")
+add("Adm7_after_admissions-pipeline_3","walk=admissions-pipeline&step=3&urn=110110")
+add("Adm8_after_admissions-pipeline_2","walk=admissions-pipeline&step=2&urn=110110")
+add("SMT9_after_smt-pupils_3","walk=smt-pupils&step=3&urn=110110")
+add("Adm1_after_home_admissions","page=home&s=admissions&urn=110110",4000,dark=True)
+add("SMT2_after_home_smt_whole","page=home&s=smt&urn=137625",4000,dark=True)
+add("SMT14_after_home_smt_post16","page=home&s=smt&urn=137625&smtlevel=post16",4000)
+add("SMT14_after_smt-academic_post16_1","walk=smt-academic&step=1&urn=137625&level=post16")
+add("T1_after_home_gcse_ask","page=home&s=ks4&urn=137625",dark=True)
+add("T1_after_home_gcse_failed","page=home&s=ks4&urn=137625&teacher=fail")
+for nm,q in [("SMT1_after_walk_loading","walk=smt-overview&step=1&urn=110110&delay=20000"),("SMT1_after_home_loading","page=home&s=smt,ks4&urn=137625&delay=20000")]:
+    for wd in (1440,390): J.append({"name":f"{nm}_mid_{wd}","q":q+"&theme=mid","w":wd,"wait":1500})
+json.dump(J,open(sys.argv[1],"w")); print(len(J))

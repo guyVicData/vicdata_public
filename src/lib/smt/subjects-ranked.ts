@@ -9,6 +9,7 @@
 // quarter needs attention. A subject the set can't place (too few entries, the only school teaching it, no
 // published figure) is listed after the ranking with its reason, never ranked.
 import type { Academic, AreaSubject, Unit } from "./academic";
+import { RANK_MIN } from "@/lib/front-door/teacher-screens";
 
 export type RankedSubject = {
   subject: string;
@@ -35,10 +36,11 @@ export function subjectsRanked(a: Academic): SubjectsRanked {
   const rows: RankedSubject[] = [];
   const unranked: SubjectsRanked["unranked"] = [];
   for (const { s, short } of all) {
-    if (s.value !== null && s.place && s.place.of >= 2 && s.ranked && !s.only) {
+    // R-RANK-MIN: a place needs at least 3 schools with a figure (1st or 2nd of 2 says nothing).
+    if (s.value !== null && s.place && s.place.of >= RANK_MIN && s.ranked && !s.only) {
       const standing = (s.place.of - s.place.rank) / (s.place.of - 1);
       rows.push({ subject: s.subject, qualification: s.qualification, short, value: s.value, unit, entries: s.entries, rank: s.place.rank, of: s.place.of, standing, mark: standing >= 1 - MARK_QUARTER ? "strong" : standing <= MARK_QUARTER ? "attention" : null });
-    } else unranked.push({ subject: s.subject, short, why: s.only ? "the only school in the set teaching it" : s.why ?? (s.value === null ? "no published figure" : "too few schools in the set to place it") });
+    } else unranked.push({ subject: s.subject, short, why: s.only ? "the only school in the set teaching it" : s.value !== null && s.place && s.place.of < RANK_MIN ? `fewer than ${RANK_MIN} schools in the set with a figure` : s.why ?? (s.value === null ? "no published figure" : "too few schools in the set to place it") });
   }
   // Strongest first; at the same standing, the larger set (a firmer place), then more entries.
   rows.sort((x, y) => y.standing - x.standing || y.of - x.of || y.entries - x.entries || x.subject.localeCompare(y.subject));
