@@ -2,7 +2,7 @@ import { resolveCaller } from "@/lib/view-as-server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
-import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
+import { subjectAreaRows } from "@/lib/subject-geography-rows";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
 import type { GeographyPayload } from "@/lib/teacher-view-geography";
@@ -62,31 +62,13 @@ export async function GET(request: NextRequest) {
 
   // One lookup per grouping, in series: these reference lookups contend, and the dashboard
   // route serialises its own for the same reason.
+  // 0.8 feedback A1 (R-SUBJECT-MATCH): one reader for the walk and this route; a grouped title reads the
+  // group's every title, merged per year.
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null) => {
     if (!key) return null;
-    // LA and region keep the backend's minimum of 5 schools; England takes every real row.
-    // R-MIN-SCHOOLS (England exempt), R-KS5-ENGLAND-EXACT (exact qualification at Post-16)
-    const minSchoolCount = groupingType === "national" ? 1 : undefined;
-    const query = { measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount };
-    // 0.6.4 C2: published area figures, the same for every member -- kept an hour.
-    const rows = await cachedReference(`geo:${phase}:${groupingType}:${key}:${subject}:${phase === "ks5" ? qualificationType : ""}`, () =>
-      phase === "ks5"
-        ? lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", ...query, qualificationType: qualificationType! })
-        : lookupAcademicSubjectGeography({ ksStage: "ks4", ...query }),
-    );
-    const out = rows
-      .map((r) => ({
-        period: r.period,
-        entries: r.entries_total === null ? null : Number(r.entries_total),
-        // The same rows' avg_value -- already fetched (measure avg_point_score), now kept
-        // for Results' comparison.
-        avgPointScore: r.avg_value === null ? null : Number(r.avg_value),
-        schoolCount: r.school_count,
-      }))
-      .sort((a, b) => a.period - b.period);
+    const out = await subjectAreaRows(phase, groupingType, key, subject, phase === "ks5" ? qualificationType : null);
     return out.length ? { name: key, rows: out } : null;
   };
-  // 0.6.4 C2: the three areas together (they were one after another).
   const [la, region, national] = await Promise.all([fetchRows("la", laName), fetchRows("region", regionName), fetchRows("national", NATIONAL_GROUPING_KEY)]);
   const payload: GeographyPayload = { la, region, national };
   return NextResponse.json(payload);

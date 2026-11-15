@@ -2832,6 +2832,40 @@ export const RULES: Rule[] = [
     origin: "0.8 review fixes (14 Nov), M7",
     status: "active",
   },
+  // ------------------------------------------------------------------ 0.8 feedback 15 Nov, build A
+  {
+    id: "R-SUBJECT-MATCH",
+    statement:
+      "A subject is matched across schools through an equivalence, never the exact published name (src/lib/subject-match.ts): the A level and AS Art and Design titles (Art and Design, Fine Art, Photography, Graphics, Textiles, 3D Studies, Critical Studies, under their latest names) are one subject, \"Art and Design (all titles)\", wherever schools or areas are compared -- the walks' nearest schools, LA, region and England; the Teacher dashboard's comparator figures, grade counts and England figure; SMT Academic's set figures -- with each school's figure merged across its titles (entries summed, points weighted by entries, over the titles that publish points) and its own title shown beside it; the school's own results keep its own title. Qualification labels are normalised across years (2020/21's \"A level\" is \"GCE A level\"). DfE's subject code would be the key, but the data holds none; only Art and Design is grouped (Guy, 15 Nov, D2) until Guy confirms the other title families.",
+    why: "Guy, 15 Nov (Teacher 3, 5-8): The Chase publishes \"Art and Design\", its nearest \"Fine Art\", so every comparison found nothing: \"1st of 1 schools\", empty charts, all 10 nearest \"no figure\".",
+    appliesTo: "Teacher walks and dashboard (Post-16), SMT Academic set comparisons, the Data View subject map",
+    enforcedIn: ["src/lib/subject-match.ts", "src/lib/teacher-view-measures.ts:matchedHeadlineRows", "src/lib/teacher-view-measures.ts:englandValueAt", "src/lib/subject-geography-rows.ts", "src/lib/academic-data-view.ts:subjectYearsFor", "src/app/api/teacher/comparator-qualifications/route.ts", "src/app/api/teacher/comparator-grades/route.ts", "src/lib/smt/academic.ts", "src/lib/front-door/teacher-model.ts", "src/lib/front-door/feedback-a.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, Post-16 Art and Design, against its 10 nearest (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "Hanley Castle (Fine Art, 32.5), Cleeve and Tewkesbury (38.3) have figures; The Chase ranks 4th of 7; 2020/21's 12 entries are kept.", check: "subjectMatch" },
+    origin: "0.8 feedback 15 Nov, build A (A1)",
+    status: "active",
+  },
+  {
+    id: "R-RANK-MIN",
+    statement:
+      "A rank needs at least 3 schools with a figure (RANK_MIN, src/lib/front-door/teacher-screens.ts); under that, the walk gives the counts (\"2 schools have a figure, too few to rank\") and never \"1st of 1\": the ranking screen and Rank over time give way to \"Not enough schools with a figure to rank\", a year with fewer than 3 has no place on the rank line, and the home's nearby tile shows no place.",
+    why: "Guy, 15 Nov (Teacher 6-8): \"1st of 1 schools\" and a 1st-2nd axis drawn for one school.",
+    appliesTo: "Teacher walks (nearby screens) and the Teacher home's tiles",
+    enforcedIn: ["src/lib/front-door/teacher-screens.ts:RANK_MIN", "src/lib/front-door/teacher-model.ts:teacherTileFigures", "src/lib/front-door/feedback-a.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase, Post-16 Art and Design, with all but one neighbour's figure removed; every Teacher fixture", phase: "ks5", expect: "No ranking, no rank line, no tile place; no \"Nth of 1\" or \"of 2 schools\" anywhere.", check: "rankMin" },
+    origin: "0.8 feedback 15 Nov, build A (A5)",
+    status: "active",
+  },
+  {
+    id: "R-WALK-NO-REPEAT",
+    statement:
+      "No two screens in a walk draw the same series: on every Teacher walk on every fixture, no two screens' charts draw the same lines, bars, ranking, map, dumbbell or grades (a line with no figure counts as not drawn); every SMT, Admissions and head office walk names each view (with its options) once.",
+    why: "Guy, 15 Nov (Teacher 5): the Results walk's \"Chart\" and \"Area chart\" drew the same picture, the school and England.",
+    appliesTo: "every walk",
+    enforcedIn: ["src/lib/front-door/teacher-screens.ts", "src/lib/front-door/walks.ts", "src/lib/front-door/feedback-a.test.tsx"],
+    testCase: { urn: "137625", school: "The Chase and Leighton Park (both fixture sets)", phase: "ks5", expect: "No repeated chart in any walk.", check: "walkNoRepeat" },
+    origin: "0.8 feedback 15 Nov, build A (A5)",
+    status: "active",
+  },
   // ------------------------------------------------------------------ 0.8 front door, part 2
   {
     id: "R-GUIDED-SETS",

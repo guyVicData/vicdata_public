@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { lookupAcademicSubjectQualificationHeadline } from "@/lib/vicdata-reference";
 import type { ComparatorQualificationRow } from "@/lib/teacher-view-comparator-quals";
 import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
+import { mergeByPeriod, qualificationAliases, sameSubject } from "@/lib/subject-match";
 
 // VicData 0.6.5 S3 (the 0.6.4 audit's change 5, R-POINTS-SAME-QUAL): Comparisons and the maps
 // at Post-16, on points and entries, read each comparator school's figure for the focus's
@@ -40,15 +41,15 @@ export async function GET(request: NextRequest) {
   const urns = Array.from(new Set(urnsParam.split(",").map((u) => u.trim()).filter((u) => /^\d{5,7}$/.test(u)))).slice(0, 200);
   if (!urns.includes(anchorUrn)) urns.push(anchorUrn);
   try {
-    const rows = await lookupAcademicSubjectQualificationHeadline({ entityIds: urns, ksStage: "ks5", qualificationType });
+    // 0.8 feedback A1 (R-SUBJECT-MATCH, D2): every title matched with the subject ("Fine Art" for "Art and
+    // Design") in the qualification and its older label (2020/21's "A level"), merged per school and year.
+    const quals = [qualificationType, ...qualificationAliases(qualificationType)];
+    const rows = (await Promise.all(quals.map((q) => lookupAcademicSubjectQualificationHeadline({ entityIds: urns, ksStage: "ks5", qualificationType: q })))).flat();
     const rowsByUrn: Record<string, ComparatorQualificationRow[]> = Object.fromEntries(urns.map((u) => [u, []]));
-    for (const r of rows) {
-      if (r.subject !== subject || r.qualification_type !== qualificationType) continue;
-      (rowsByUrn[r.entity_id] ??= []).push({
-        period: r.period,
-        entries: r.entries_total === null ? null : Number(r.entries_total),
-        avgPointScore: r.avg_point_score === null ? null : Number(r.avg_point_score),
-      });
+    const mine = rows.filter((r) => sameSubject("ks5", { subject, qualificationType }, { subject: r.subject, qualificationType: r.qualification_type }));
+    for (const urn of urns) {
+      const own = mine.filter((r) => r.entity_id === urn);
+      rowsByUrn[urn] = mergeByPeriod(own, (r) => ({ entries: r.entries_total === null ? null : Number(r.entries_total), points: r.avg_point_score === null ? null : Number(r.avg_point_score) }), (period, m) => ({ period, entries: m.entries, avgPointScore: m.points }));
     }
     for (const list of Object.values(rowsByUrn)) list.sort((a, b) => a.period - b.period);
     return NextResponse.json({ rowsByUrn });

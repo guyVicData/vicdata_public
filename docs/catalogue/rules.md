@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 235 rules: 227 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 238 rules: 230 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -222,6 +222,9 @@ What a number is allowed to be. 235 rules: 227 active, 8 superseded; 22 must lif
 | R-RANK-OF-N | active | Every rank in a table reads "X of N" with its measure and year (Group sets on Att 8, Group Academic in group and in England, Admissions' Rivals and Share tables, SMT's Scorecard and ranking table, Teacher's YearTable, the walk's nearby ranking); a comparator column says whether it is a rank or a value ("England rank", "1 = highest"); the Group Schools table never sorts across unlike measures; a card that cuts a list keeps the highlighted school (windowCut) and says "Showing x of N"; Teacher's ranked % change shows its counts and lists a base under MINIMUM_SUBJECT_N after the others (†). | no | auto: rankOfN | — |
 | R-CHART-TITLES | active | Every view on every seeded dashboard has a catalogue title that names its measure, phase or cohort, and comparator; no two views on one dashboard share a title; no title or panel name is a bare "Trends" or "Change"; one chart has one name on every dashboard; the walk's titles are the catalogue's, filled; SMT's market share title says what it draws (you and your largest rival). | no | auto: chartTitles | — |
 | R-SUBJECT-COLOUR | active | One subject family, one colour, everywhere: the eight families' colours (src/lib/subject-family-colours.ts, a Dark, Mid and Light value each, the same as globals.css's --subject-family-* variables) sit well apart (the closest pair CIEDE2000 15 or more) and away from the product accents and the fixed lines (12 or more), 3:1 or better on their plate; a subject takes its family's colour on Teacher's bars, dumbbell and trend lines and the walks' charts -- never a colour by rank, so it keeps its colour as its rank changes, several of one family told apart by a fixed shade by name -- the focus in the accent; SMT's and head office's subject areas carry their family's swatch; a chart with more than one family keys each one; qualification groups (SMT's entries mix) have eight colours of their own, never the above/below-the-set colours. | no | auto: subjectColour | — |
+| R-SUBJECT-MATCH | active | A subject is matched across schools through an equivalence, never the exact published name (src/lib/subject-match.ts): the A level and AS Art and Design titles (Art and Design, Fine Art, Photography, Graphics, Textiles, 3D Studies, Critical Studies, under their latest names) are one subject, "Art and Design (all titles)", wherever schools or areas are compared -- the walks' nearest schools, LA, region and England; the Teacher dashboard's comparator figures, grade counts and England figure; SMT Academic's set figures -- with each school's figure merged across its titles (entries summed, points weighted by entries, over the titles that publish points) and its own title shown beside it; the school's own results keep its own title. Qualification labels are normalised across years (2020/21's "A level" is "GCE A level"). DfE's subject code would be the key, but the data holds none; only Art and Design is grouped (Guy, 15 Nov, D2) until Guy confirms the other title families. | no | auto: subjectMatch | — |
+| R-RANK-MIN | active | A rank needs at least 3 schools with a figure (RANK_MIN, src/lib/front-door/teacher-screens.ts); under that, the walk gives the counts ("2 schools have a figure, too few to rank") and never "1st of 1": the ranking screen and Rank over time give way to "Not enough schools with a figure to rank", a year with fewer than 3 has no place on the rank line, and the home's nearby tile shows no place. | no | auto: rankMin | — |
+| R-WALK-NO-REPEAT | active | No two screens in a walk draw the same series: on every Teacher walk on every fixture, no two screens' charts draw the same lines, bars, ranking, map, dumbbell or grades (a line with no figure counts as not drawn); every SMT, Admissions and head office walk names each view (with its options) once. | no | auto: walkNoRepeat | — |
 | R-GUIDED-SETS | active | Admissions and SMT edit their feeders, rivals and comparison sets on one guided screen (/sets/guided), opened from the "Sets of schools" card on their home: the title is the question ("Who feeds us at 11+?", "Who do we compete with at 11+?", SMT's "Who do we measure ourselves against?"); a map centred on the school with 5, 10 and 15 km rings (the shared ConsortiumMap), set members solid, main feeders / close rivals larger and labelled, suggestions dashed with "+ name" to add from the map, and "Suggest within N km"; "In your set" then "Add schools" ("Add schools" first for a new, empty set): search any school in England, filter chips with counts (feeders: State, Independent, Primary, Junior, Prep, Has Year 6; rivals and SMT: Independent, State, Day, Boarding, Mixed, Girls, Boys, Similar size, a roll from two-thirds to one and a half times the school's), pre-filtered to the school's own profile, one tap to undo, the map drawing exactly the suggestions the list holds; and "This set now", live: schools, distance range and median, the sector or day/boarding mix, main feeders, or the set's average Attainment 8 against the school's with how many sit IGCSE, on the measure the shared IGCSE rule picks (IGCSE_SWITCH_SHARE, 40%). It saves through the round-1 library (store.ts saveSet, save_set) with round 1's permissions (can_curate_sets; a copy as your own for anyone who can't curate), Main / Close being the round-1 main tier. The round-1 library and editor stay for power users; a set menu's Edit still opens the round-1 editor. | no | auto: guidedSets | — |
 | R-SETS-MAKER-COLOURS | active | The sets library uses colour where it carries meaning: every set's icon tile is a solid gradient in its maker's colour, keeping the kind's icon (bars, streams); pinned sets are larger tiles with a top strip in the maker's colour; "Made by" is a solid gradient pill; the sidebar has coloured markers and a "Who made it" key; the kind filters carry the kind's icon and "+ New set" is the one solid button. Makers: Default graphite; School (a curated compared-against set, whoever curated it) orange; Head office bronze; Admissions (a curated feeder set) sky; Victoria Consultancy rose; Mine an outline in the person's phase colour. The pill text and icon read at 4.5:1 on both stops (R-THEME-CONTRAST). Round 1 coloured SMT violet and head office orange; the set menus keep their tinted creator pills. | no | auto: setsMakerColours | — |
 | R-MEMBERSHIP | active | The School-Admin's membership page (/teacher/school-account/membership) draws each state from the membership record alone (public.account_memberships, membershipView): a pilot ("Pilot · free for 6 months, until [date]", the price it will be, and from month 4 without a card "Add a card to keep VicData after [date]"), an active school (plan, price a month and a year, renewal date, "renews automatically", the amount and card it will charge, the reminder emails 14 and 3 days before), a primary school (£5 a month, £60 a year), a school covered by its group ("Covered by [group]", no billing, the group's billing contact) and a lapsed one; Who uses it, Billing (contact, "Visa ending 4417" style card summary, optional purchase order, invoice address) and Invoices. Prices: secondary £10 a month billed annually (£120), primary £5 (£60), a group rate unset and £10 a school before volume bands (rows, not code). No payments are built: Update card / Add a card, Cancel renewal and invoice PDFs are visible but disabled, saying "Coming before the pilot ends". No card number column exists: only brand, last four digits and expiry. The record is written by platform admins only and read by the school's School-Admin and account holder (a group's head-office admins for its own record) and platform admins; every current school account is seeded as a pilot from its join date. | no | auto: membershipRule | — |
@@ -318,7 +321,7 @@ What a number is allowed to be. 235 rules: 227 active, 8 superseded; 22 must lif
 | Why | A bucket average drawn beside an IB HL or VRQ bar compared the item with a figure for different qualifications. |
 | Applies to | M-KS5-POINTS, M-KS5-ENTRIES (geography); Column 1 Results markers and geography views |
 | Enforced in | - src/app/api/teacher/dashboard/route.ts:englandAverages (56-72)<br>- src/app/teacher/[phase]/page.tsx:englandValue keying (521-538)<br>- src/app/api/teacher/subject-geography/route.ts:61-64 (exact qualification at ks5) |
-| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series/geography.ts |
+| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series/geography.ts |
 | Test case | The Godolphin and Latymer School (100369), ks5, Chemistry, 2024/25: Own IB HL 58.29; England exact: IB HL 43.13, IB SL 37.84 (Part D report :65). [runner: englandExact] |
 | Origin | Post-16 Part C, Part D |
 | Status | active |
@@ -334,7 +337,7 @@ What a number is allowed to be. 235 rules: 227 active, 8 superseded; 22 must lif
 | Why | A figure from one or two schools identifies them and swings wildly; it is not a benchmark. |
 | Applies to | Every LA / region / England figure |
 | Enforced in | - vicdata:supabase/migrations/20260926140000_subject_geography_lookup_min_school_count.sql:35,66,90,123<br>- vicdata:supabase/migrations/20260927121000_academic_subject_grade_geography_aggregate.sql:50,82<br>- src/app/api/teacher/subject-geography/route.ts:59 (national passes 1)<br>- src/app/api/teacher/dashboard/route.ts:66,74 (national passes 1)<br>- src/lib/vicdata-reference.ts:lookupAcademicSubjectGradeGeography (633, passes null)<br>- src/lib/groups/dash.ts:setsFor / withheld (POOL_MIN_SCHOOLS; group pools) |
-| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/lib/groups/aggregates.ts<br>- src/lib/groups/dash-nm.ts<br>- src/lib/groups/dash.ts<br>- src/lib/groups/non-mainstream.test.ts<br>- src/lib/groups/non-mainstream.ts<br>- src/lib/groups/rules.test.ts<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/vicdata-reference.ts<br>- src/lib/view-series/geography.ts |
+| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/lib/groups/aggregates.ts<br>- src/lib/groups/dash-nm.ts<br>- src/lib/groups/dash.ts<br>- src/lib/groups/non-mainstream.test.ts<br>- src/lib/groups/non-mainstream.ts<br>- src/lib/groups/rules.test.ts<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/vicdata-reference.ts<br>- src/lib/view-series/geography.ts |
 | Test case | Acland Burghley School (100053), ks4, all years: Camden (the school's LA) GCSE points geography: every row returned by default has school_count >= 5, and asking for minimum 1 returns more rows. [runner: minSchools] |
 | Origin | Subject geography rounds (min school count migration) |
 | Status | active |
@@ -3665,6 +3668,54 @@ What a number is allowed to be. 235 rules: 227 active, 8 superseded; 22 must lif
 | Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/front-door/charts.tsx<br>- src/components/smt/views/Academic.tsx<br>- src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks-check.ts<br>- src/lib/subject-colour.test.tsx<br>- src/lib/subject-family-colours.ts<br>- src/lib/subject-family-registry.ts<br>- src/lib/teacher-view-trend-styles.ts |
 | Test case | the palette and the colour helpers (no database) (137625), ks4: Spacing, distance and contrast measured; the same colour for a subject in any order; keyed; qualification groups their own. [runner: subjectColour] |
 | Origin | 0.8 review fixes (14 Nov), M7 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SUBJECT-MATCH
+
+| Field | Content |
+| --- | --- |
+| Statement | A subject is matched across schools through an equivalence, never the exact published name (src/lib/subject-match.ts): the A level and AS Art and Design titles (Art and Design, Fine Art, Photography, Graphics, Textiles, 3D Studies, Critical Studies, under their latest names) are one subject, "Art and Design (all titles)", wherever schools or areas are compared -- the walks' nearest schools, LA, region and England; the Teacher dashboard's comparator figures, grade counts and England figure; SMT Academic's set figures -- with each school's figure merged across its titles (entries summed, points weighted by entries, over the titles that publish points) and its own title shown beside it; the school's own results keep its own title. Qualification labels are normalised across years (2020/21's "A level" is "GCE A level"). DfE's subject code would be the key, but the data holds none; only Art and Design is grouped (Guy, 15 Nov, D2) until Guy confirms the other title families. |
+| Why | Guy, 15 Nov (Teacher 3, 5-8): The Chase publishes "Art and Design", its nearest "Fine Art", so every comparison found nothing: "1st of 1 schools", empty charts, all 10 nearest "no figure". |
+| Applies to | Teacher walks and dashboard (Post-16), SMT Academic set comparisons, the Data View subject map |
+| Enforced in | - src/lib/subject-match.ts<br>- src/lib/teacher-view-measures.ts:matchedHeadlineRows<br>- src/lib/teacher-view-measures.ts:englandValueAt<br>- src/lib/subject-geography-rows.ts<br>- src/lib/academic-data-view.ts:subjectYearsFor<br>- src/app/api/teacher/comparator-qualifications/route.ts<br>- src/app/api/teacher/comparator-grades/route.ts<br>- src/lib/smt/academic.ts<br>- src/lib/front-door/teacher-model.ts<br>- src/lib/front-door/feedback-a.test.tsx |
+| Tagged at | - src/app/api/teacher/comparator-grades/route.ts<br>- src/app/api/teacher/comparator-qualifications/route.ts<br>- src/app/api/teacher/dashboard/route.ts<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/lib/academic-data-view.ts<br>- src/lib/front-door/feedback-a.test.tsx<br>- src/lib/front-door/teacher-data.ts<br>- src/lib/front-door/teacher-model.ts<br>- src/lib/front-door/teacher-screens.ts<br>- src/lib/smt/academic.ts<br>- src/lib/subject-geography-rows.ts<br>- src/lib/subject-match.ts<br>- src/lib/teacher-view-measures.ts |
+| Test case | The Chase, Post-16 Art and Design, against its 10 nearest (docs/v0.8/feedback_15nov/fixtures) (137625), ks5: Hanley Castle (Fine Art, 32.5), Cleeve and Tewkesbury (38.3) have figures; The Chase ranks 4th of 7; 2020/21's 12 entries are kept. [runner: subjectMatch] |
+| Origin | 0.8 feedback 15 Nov, build A (A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-RANK-MIN
+
+| Field | Content |
+| --- | --- |
+| Statement | A rank needs at least 3 schools with a figure (RANK_MIN, src/lib/front-door/teacher-screens.ts); under that, the walk gives the counts ("2 schools have a figure, too few to rank") and never "1st of 1": the ranking screen and Rank over time give way to "Not enough schools with a figure to rank", a year with fewer than 3 has no place on the rank line, and the home's nearby tile shows no place. |
+| Why | Guy, 15 Nov (Teacher 6-8): "1st of 1 schools" and a 1st-2nd axis drawn for one school. |
+| Applies to | Teacher walks (nearby screens) and the Teacher home's tiles |
+| Enforced in | - src/lib/front-door/teacher-screens.ts:RANK_MIN<br>- src/lib/front-door/teacher-model.ts:teacherTileFigures<br>- src/lib/front-door/feedback-a.test.tsx |
+| Tagged at | - src/lib/front-door/feedback-a.test.tsx<br>- src/lib/front-door/teacher-model.ts<br>- src/lib/front-door/teacher-screens.ts |
+| Test case | The Chase, Post-16 Art and Design, with all but one neighbour's figure removed; every Teacher fixture (137625), ks5: No ranking, no rank line, no tile place; no "Nth of 1" or "of 2 schools" anywhere. [runner: rankMin] |
+| Origin | 0.8 feedback 15 Nov, build A (A5) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-WALK-NO-REPEAT
+
+| Field | Content |
+| --- | --- |
+| Statement | No two screens in a walk draw the same series: on every Teacher walk on every fixture, no two screens' charts draw the same lines, bars, ranking, map, dumbbell or grades (a line with no figure counts as not drawn); every SMT, Admissions and head office walk names each view (with its options) once. |
+| Why | Guy, 15 Nov (Teacher 5): the Results walk's "Chart" and "Area chart" drew the same picture, the school and England. |
+| Applies to | every walk |
+| Enforced in | - src/lib/front-door/teacher-screens.ts<br>- src/lib/front-door/walks.ts<br>- src/lib/front-door/feedback-a.test.tsx |
+| Tagged at | - src/lib/front-door/feedback-a.test.tsx |
+| Test case | The Chase and Leighton Park (both fixture sets) (137625), ks5: No repeated chart in any walk. [runner: walkNoRepeat] |
+| Origin | 0.8 feedback 15 Nov, build A (A5) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

@@ -5,6 +5,7 @@ import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
 import { igcseAmong } from "@/lib/igcse";
+import { groupEnglandValues } from "@/lib/subject-match";
 import {
   fetchSubjectLevelDataForSchools,
   fetchSubjectHeadlineForSchools,
@@ -72,7 +73,8 @@ async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "qualific
     const values = exact
       .filter((r) => r.avg_value !== null)
       .map((r) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) }));
-    return { basis: "qualification", values };
+    // 0.8 feedback A1 (R-SUBJECT-MATCH): England's figure for each group of matched titles too.
+    return { basis: "qualification", values: [...values, ...groupEnglandValues(exact, "ks5")] };
   }
   // National only, so no minimum school count beyond 1: see minSchoolCount.
   const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], minSchoolCount: 1 });

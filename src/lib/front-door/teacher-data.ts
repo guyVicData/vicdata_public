@@ -8,6 +8,8 @@ import { resolveDefaultNearest } from "@/lib/chooser-sets";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
 import { cachedReference } from "@/lib/server-cache";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectGradeGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
+import { subjectAreaRows } from "@/lib/subject-geography-rows";
+import { groupEnglandValues } from "@/lib/subject-match";
 import type { EnglandAverages } from "@/lib/teacher-view-measures";
 import { buildTeacherModel, type AreaRows, type TeacherModel, type TeacherModelInput, type TeacherPhaseId } from "./teacher-model";
 
@@ -15,7 +17,8 @@ import { buildTeacherModel, type AreaRows, type TeacherModel, type TeacherModelI
 export async function englandSubjectAverages(phase: TeacherPhaseId): Promise<EnglandAverages> {
   if (phase === "ks5") {
     const exact = await lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
-    return { basis: "qualification", values: exact.filter((r) => r.avg_value !== null).map((r) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) })) };
+    // 0.8 feedback A1 (R-SUBJECT-MATCH): England's figure for each group of matched titles too.
+    return { basis: "qualification", values: [...exact.filter((r) => r.avg_value !== null).map((r) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) })), ...groupEnglandValues(exact, "ks5")] };
   }
   const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
   return { basis: "subject", values: rows.filter((r) => r.avg_value !== null).map((r) => ({ key: r.subject, period: r.period, value: Number(r.avg_value) })) };
@@ -31,14 +34,12 @@ async function areaRows(supabase: SupabaseClient, urn: string, phase: TeacherPha
     }).catch(() => null),
     cachedReference(`school:region:${urn}`, async () => (await resolveTargetRegionNation(urn))?.regionName ?? null).catch(() => null),
   ]);
+  // 0.8 feedback A1 (R-SUBJECT-MATCH): the subject-geography route's reader; a grouped title reads the
+  // group's every title, merged per year.
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null): Promise<AreaRows | null> => {
     if (!key) return null;
-    const minSchoolCount = groupingType === "national" ? 1 : undefined;
-    const query = { measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount };
-    const rows = await cachedReference(`geo:${phase}:${groupingType}:${key}:${subject}:${phase === "ks5" ? qualificationType : ""}`, () =>
-      phase === "ks5" ? lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", ...query, qualificationType }) : lookupAcademicSubjectGeography({ ksStage: "ks4", ...query }),
-    ).catch(() => []);
-    const out = rows.map((r) => ({ period: r.period, entries: r.entries_total === null ? null : Number(r.entries_total), avgPointScore: r.avg_value === null ? null : Number(r.avg_value) })).sort((a, b) => a.period - b.period);
+    const rows = await subjectAreaRows(phase, groupingType, key, subject, phase === "ks5" ? qualificationType : null).catch(() => []);
+    const out = rows.map((r) => ({ period: r.period, entries: r.entries, avgPointScore: r.avgPointScore }));
     return out.length ? { name: groupingType === "national" ? "England" : key, rows: out } : null;
   };
   const [la, region, england] = await Promise.all([fetchRows("la", laName), fetchRows("region", regionName), fetchRows("national", NATIONAL_GROUPING_KEY)]);

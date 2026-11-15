@@ -14,6 +14,7 @@
 import { createServerAnonSupabaseClient } from "./supabase";
 import { DATA_VIEW_TREND_BASELINE } from "../catalogue/years";
 import { DOUBLE_AWARD_QUALIFICATION, doubleAwardPoints } from "./subject-grades";
+import { normaliseQualification, subjectMatchKey, mergeByPeriod } from "./subject-match";
 import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectGradeRollup, gradeRollupRpcState, lookupAcademicSubjectHeadline, lookupAcademicSubjectQualificationHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import {
   ALL_SUBJECTS_PSEUDO_ROW,
@@ -167,7 +168,12 @@ export function subjectYearsFor(profile: AcademicSchoolProfile, stage: KsStage, 
     stage === "ks4" ? profile.ks4Subjects
       : stage === "ks5" ? (bucket && bucket !== "all" ? profile.ks5SubjectsByBucket[bucket] ?? [] : profile.ks5Subjects)
         : [];
-  return rows.filter((r) => r.subject === subject).sort((a, b) => a.period - b.period);
+  // 0.8 feedback A1 (R-SUBJECT-MATCH): a comparator school's figure for the subject is its figure for
+  // every title matched with it ("Fine Art" for "Art and Design"), merged per year.
+  const key = subjectMatchKey(stage, subject);
+  const mine = rows.filter((r) => subjectMatchKey(stage, r.subject) === key);
+  if (mine.every((r) => r.subject === subject)) return mine.sort((a, b) => a.period - b.period);
+  return mergeByPeriod(mine, (r) => ({ entries: r.entriesTotal, points: r.avgPointScore }), (period, m, parts) => ({ ...parts[0], subject, period, entriesTotal: m.entries ?? 0, avgPointScore: m.points }));
 }
 
 export function latestSubjectYear(profile: AcademicSchoolProfile, stage: KsStage, subject: string, bucket?: string | null): AcademicSubjectHeadlineEntry | null {
@@ -1432,7 +1438,9 @@ export async function fetchSubjectQualificationHeadlineForSchools(
       entriesShareOfFamilyPercent: r.entries_share_of_family_percent,
       avgPointScore: r.avg_point_score,
       pointsCoveragePercent: r.points_coverage_percent,
-      qualificationType: r.qualification_type,
+      // 0.8 feedback A1 (D2, R-SUBJECT-MATCH): 2020/21's "A level" as later years spell it, "GCE A level",
+      // so a subject's series doesn't lose its first year to the label.
+      qualificationType: normaliseQualification(r.qualification_type),
     };
     const list = byUrn.get(r.entity_id);
     if (list) list.push(entry);

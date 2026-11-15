@@ -21,7 +21,7 @@ export type KeyEntry = { label: string; role: Role; mark: "swatch" | "line" | "d
 export type Chart =
   | { kind: "tiles"; main: { figure: string; label: string }; tiles: { icon: string; figure: string; scope: string }[]; keys: KeyEntry[] }
   | { kind: "vbars"; rows: { label: string; value: number; role: Role; family?: string | null }[]; average: { value: number; label: string } | null; unit: string; yCaption: string; keys: KeyEntry[] }
-  | { kind: "lines"; years: string[]; series: { label: string; values: Series; role: Role; shade?: number; marker?: Marker; family?: string | null }[]; unpublished: number[]; yCaption: string; extraRows?: { label: string; values: Series }[]; keys: KeyEntry[]; digits: number }
+  | { kind: "lines"; years: string[]; series: { label: string; values: Series; role: Role; shade?: number; marker?: Marker; family?: string | null }[]; unpublished: number[]; /** A5: each unpublished year's reason, in the same order ("3 entries, too few to publish"). */ unpublishedWhy?: string[]; yCaption: string; extraRows?: { label: string; values: Series }[]; keys: KeyEntry[]; digits: number }
   | { kind: "dumbbell"; rows: { label: string; first: number; latest: number; role: Role; family?: string | null }[]; firstYear: string; latestYear: string; noun: string; keys: KeyEntry[] }
   | { kind: "grades"; rows: { grade: string; count: number; share: number; england: number | null }[]; total: number; noun: [string, string]; keys: KeyEntry[] }
   | { kind: "hbars"; rows: { label: string; value: number; role: Role; note?: string; n?: number | null }[]; unit: string; digits: number; keys: KeyEntry[]; caption?: string }
@@ -38,6 +38,27 @@ const signed = (v: number, d = 0) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.
 const mean = (vs: number[]) => (vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null);
 const real = (s: Series) => s.filter((v): v is number => v !== null);
 const pointsDigits = (m: TeacherModel) => (m.phase === "ks5" ? 1 : 1);
+
+/** DfE publishes no average points for a subject with fewer than this many entries in a year (seen across
+ * the data: 3, 4 and 5 entries have none; 6 and more do). */
+export const SUPPRESSED_UNDER = 6;
+
+/** Why a year has no published figure, where it's known (A5, Teacher 4). */
+export function unpublishedReason(entries: number | null | undefined, pts: boolean): string {
+  if (entries === null || entries === undefined || entries === 0) return pts ? "no entries" : "not published";
+  if (pts && entries < SUPPRESSED_UNDER) return `${entries} ${entries === 1 ? "entry" : "entries"}, too few to publish`;
+  return "not published";
+}
+
+/** A5 (R-RANK-MIN): a rank needs at least this many schools with a figure; under it, counts, never "1st of 1". */
+export const RANK_MIN = 3;
+
+/** The subject as a comparison across schools names it: "Art and Design (all titles)" for a grouped title. */
+const cmpSubject = (m: TeacherModel, subject: string) => m.focus?.matchLabel ?? subject;
+/** A school's row label: its name, with its own title(s) where they differ from the focus's (R-SUBJECT-MATCH). */
+const schoolLabel = (x: { name: string; titles?: string[] }) => (x.titles?.length ? `${x.name} (${x.titles.join(", ")})` : x.name);
+/** The note's line on a grouped subject. */
+const titlesNote = (m: TeacherModel) => (m.focus?.matchLabel ? ` Schools are compared on every Art and Design title they publish (Fine Art, Photography…), named beside each school where it isn't ${m.focus.subject}.` : "");
 
 /** The years a chart spans: from the first year any line has a figure. */
 function span(m: TeacherModel, series: Series[]): { from: number; years: string[] } {
@@ -109,7 +130,9 @@ export function teacherScreen(m: TeacherModel, walk: Walk, i: number): Screen {
   const first = sc.chart.kind === "lines" ? sc.chart.years[0] : sc.chart.kind === "dumbbell" ? sc.chart.firstYear : null;
   const latest = m.latest !== null ? periodLabel(m.latest) : "the latest year";
   const k = m.nearest.length - 1;
-  const title = walkTitle(s.view, { subject: m.focus?.subject ?? "your subject", category: m.category.label ?? "its area", points: s.options?.measure === "points" || s.view.startsWith("DV-C1-RES"), whole: s.options?.against === "whole", first: first ?? latest, latest, set: k === 1 ? "nearest school" : `${k} nearest ${m.phase === "ks5" ? "sixth forms" : "schools"}`, school: m.school.name }, sc.title);
+  // R-SUBJECT-MATCH: a screen comparing schools or areas names the matched subject ("Art and Design (all titles)").
+  const across = s.answer.startsWith("nearby-") || s.answer.endsWith("-area");
+  const title = walkTitle(s.view, { subject: (across ? m.focus?.matchLabel : null) ?? m.focus?.subject ?? "your subject", category: m.category.label ?? "its area", points: s.options?.measure === "points" || s.view.startsWith("DV-C1-RES"), whole: s.options?.against === "whole", first: first ?? latest, latest, set: k === 1 ? "nearest school" : `${k} nearest ${m.phase === "ks5" ? "sixth forms" : "schools"}`, school: m.school.name }, sc.title);
   return { ...sc, title };
 }
 
@@ -206,13 +229,18 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
     }
     case "entries-trend":
     case "points-trend": {
-      const peers = s.answer === "entries-trend" ? m.category.rows.filter((r) => !r.focus).slice(0, 4) : [];
+      // 0.8 feedback A1 (Teacher 5): the Results chart draws each subject's line, as its title says (it drew the
+      // focus and England only, the same picture as the area chart after it): the area's other subjects with
+      // points, up to four.
+      const peers = s.answer === "entries-trend" ? m.category.rows.filter((r) => !r.focus).slice(0, 4) : m.category.rows.filter((r) => !r.focus && real(r.points).length > 0).slice(0, 4);
       const sel = (r: SubjectRow) => (pts ? r.points : r.entries);
       const all = [sel(f), ...peers.map(sel), ...(pts ? [m.england.points] : [])];
       const { from, years } = span(m, all);
       const cut = (v: Series) => v.slice(from);
       const fs = cut(sel(f));
       const unpublished = fs.map((v, k) => (v === null ? k : -1)).filter((k) => k >= 0);
+      // A5 (Teacher 4): each unpublished year with its reason, where it's known ("3 entries, too few to publish").
+      const unpublishedWhy = unpublished.map((k) => unpublishedReason(cut(f.entries)[k], pts));
       const series: Extract<Chart, { kind: "lines" }>["series"] = [
         { label: subject, values: fs, role: "focus" },
         // Peers in their family's colour (one family here), each a fixed shade and marker by name, never by rank.
@@ -227,20 +255,21 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
         r.length < 2
           ? `There ${r.length === 1 ? "is only one year" : "are no years"} of ${pts ? "results" : "entries"} for ${subject} so far, so there's no trend yet.`
           : pts
-            ? `${trend! > 0.05 ? "Up" : trend! < -0.05 ? "Down" : "Level"} since ${years[fi]}: from ${fmtP(fs[fi]!)} to ${fmtP(fs[li]!)} average points.${unpublished.length ? ` ${listJoin(unpublished.map((k) => years[k]))} had no published results.` : ""}${gradingCaveat(m.periods[from + fi])}`
+            ? `${trend! > 0.05 ? "Up" : trend! < -0.05 ? "Down" : "Level"} since ${years[fi]}: from ${fmtP(fs[fi]!)} to ${fmtP(fs[li]!)} average points.${unpublished.length ? ` ${listJoin(unpublished.map((k, j) => `${years[k]} (${unpublishedWhy[j]})`))} had no published results.` : ""}${gradingCaveat(m.periods[from + fi])}`
             : `${trend! > 0 ? "Up" : trend! < 0 ? "Down" : "Level"} since ${years[fi]}, from ${fmtN(fs[fi]!)} to ${fmtN(fs[li]!)}.${peers.length ? ` The other ${m.category.label ? `${cat} subjects are` : "subjects in its area are"} drawn beside it.` : ""}`;
       return {
         ...base,
         answer,
         title: pts ? `${subject} Results over time: average points` : `Entries in ${cat}`,
         note: pts
-          ? `Average points per entry each year; England's is the amber line. Years with no published results are dotted and labelled.`
+          ? `Average points per entry each year; England's is the amber line.${peers.length ? ` The other ${m.category.label ? `${cat} subjects` : "subjects in its area"} with results are in shades of the ${cat} colour.` : ""} Years with no published results are dotted and labelled with the reason.`
           : `${m.phase === "ks5" ? "Students" : "Pupils"} entered each year. ${subject} is drawn in your colour; the other ${cat} subjects in shades of the ${cat} colour, each with its own marker shape.`,
         chart: {
           kind: "lines",
           years,
           series,
           unpublished,
+          unpublishedWhy,
           yCaption: pts ? "Average points per entry" : `Entries (${m.phase === "ks5" ? "students" : "pupils"})`,
           keys: [{ label: subject, role: "focus", mark: "line" }, ...peers.map((r) => ({ label: r.label, role: "peer" as Role, mark: "line" as const, shade: byName(peers).indexOf(r), marker: MARKERS[byName(peers).indexOf(r) % MARKERS.length], family: r.familyId ?? null })), ...(series.some((x) => x.role === "england") ? [{ label: "England", role: "england" as Role, mark: "line" as const }] : []), ...(unpublished.length ? [{ label: "No published figure", role: "focus" as Role, mark: "dash" as const }] : [])],
           digits: pts ? pointsDigits(m) : 0,
@@ -256,18 +285,31 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const nNear = m.nearest.length - 1;
       const lines: { label: string; v: Series; role: Role }[] = [
         { label: m.school.name, v: sel(f), role: "focus" },
-        { label: nNear === 1 ? "Nearest school" : `${nNear} nearest`, v: nearAvg, role: "nearest" },
+        ...(nNear > 0 ? [{ label: nNear === 1 ? "Nearest school" : `${nNear} nearest`, v: nearAvg, role: "nearest" as Role }] : []),
         ...(m.area.la ? [{ label: m.area.la.name, v: sel(m.area.la), role: "la" as Role }] : []),
         ...(m.area.england ? [{ label: "England", v: sel(m.area.england), role: "england" as Role }] : []),
       ];
-      // Entries are indexed (first shared year = 100) so growth compares whatever the size; points are actual.
-      // Review fixes (14 Nov, M1): an indexed chart starts at that base year, so every line is 100 at the
-      // year the caption names (it started at the first year any line had a figure, and crossed 100 later).
-      const shared = m.periods.findIndex((_, k) => lines.every((l) => l.v[k] !== null && l.v[k] !== 0));
-      const idx = (v: Series) => (shared < 0 ? v.map(() => null) : v.map((x) => (x === null ? null : (x / (v[shared] as number)) * 100)));
-      const shown = lines.map((l) => ({ ...l, v: pts ? l.v : idx(l.v) }));
+      const has = (v: Series, k: number) => v[k] !== null && v[k] !== 0;
+      // 0.8 feedback A1 (Teacher 3): the base is the school's own first year with a figure -- the earliest of
+      // its years that the most comparators share -- never a year every line must have (one missing line
+      // emptied the chart). Comparators with no figure that year are left out and named; the chart is empty
+      // only when the school has fewer than two years.
+      const schoolYears = m.periods.map((_, k) => k).filter((k) => has(lines[0].v, k));
+      const cover = (k: number) => lines.slice(1).filter((l) => has(l.v, k)).length;
+      const best = schoolYears.length ? Math.max(...schoolYears.map(cover)) : 0;
+      const baseK = schoolYears.find((k) => cover(k) === best) ?? -1;
+      const drawnLines = pts ? lines.filter((l, i) => i === 0 || real(l.v).length > 0) : lines.filter((l, i) => i === 0 || (baseK >= 0 && has(l.v, baseK)));
+      const leftOut = lines.slice(1).filter((l) => !drawnLines.includes(l));
+      const nameOf = (o: { label: string; role: Role }) => (o.role === "nearest" ? (nNear === 1 ? "the nearest school" : `the ${nNear} nearest ${p16 ? "sixth forms" : "schools"}`) : o.label);
+      const cmp = m.focus?.matchLabel ?? subject;
+      if (schoolYears.length < 2) {
+        const why = `${m.school.name} has ${schoolYears.length ? `only one year (${periodLabel(m.periods[schoolYears[0]])})` : "no years"} of ${pts ? "results" : "entries"} for ${subject}, so there's no trend to compare yet.`;
+        return { ...base, answer: why, title: pts ? `${cmp} average points per entry: this school against schools nearby and nationally` : `${cmp} entries, indexed: this school against schools nearby and nationally`, note: "", chart: { kind: "none", reason: why, keys: [] } };
+      }
+      const idx = (v: Series) => v.map((x) => (x === null || baseK < 0 || !has(v, baseK) ? null : (x / (v[baseK] as number)) * 100));
+      const shown = drawnLines.map((l) => ({ ...l, v: pts ? l.v : idx(l.v) }));
       const sp = span(m, shown.map((l) => l.v));
-      const from = pts || shared < 0 ? sp.from : shared;
+      const from = pts ? sp.from : baseK;
       const years = m.periods.slice(from).map(periodLabel);
       const cut = (v: Series) => v.slice(from);
       const fs = cut(shown[0].v);
@@ -276,14 +318,14 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const mine = growth(fs);
       const others = shown.slice(1).map((l) => ({ label: l.label, role: l.role, g: growth(cut(l.v)) })).filter((o) => o.g !== null) as { label: string; role: Role; g: number }[];
       // Each comparator by name and value, in a sentence; one with no figure is left out (and said so).
-      const nameOf = (o: { label: string; role: Role }) => (o.role === "nearest" ? (nNear === 1 ? "the nearest school" : `the ${nNear} nearest schools`) : o.label);
       const placeWord = (o: { label: string; role: Role }) => (o.role === "nearest" ? `at ${nameOf(o)}` : `in ${o.label}`);
-      const missing = shown.slice(1).filter((l) => !others.some((o) => o.label === l.label));
-      const missingWord = missing.length ? ` ${listJoin(missing.map((l) => nameOf(l)))} ${missing.length === 1 ? "has" : "have"} no figure for ${years[lastI]}.` : "";
+      const noLatest = shown.slice(1).filter((l) => !others.some((o) => o.label === l.label));
+      const missingWord = `${noLatest.length ? ` ${listJoin(noLatest.map((l) => nameOf(l)))} ${noLatest.length === 1 ? "has" : "have"} no figure for ${years[lastI]}.` : ""}${leftOut.length ? ` ${listJoin(leftOut.map((l) => nameOf(l)))} ${leftOut.length === 1 ? "has" : "have"} no figure${pts ? "" : ` for ${years[0]}`}, so ${leftOut.length === 1 ? "isn't" : "aren't"} drawn.` : ""}`;
       const base100 = years[0];
+      const groupWord = m.focus?.matchLabel ? ` Other schools are compared on every Art and Design title they publish (${cmp}).` : "";
       const answer =
         mine === null || !others.length
-          ? `Not enough published years to compare ${subject} here with schools nearby and nationally.`
+          ? `${subject} here has no comparator with a figure ${pts ? `for ${years[lastI]}` : `for ${base100}`}, so there's nothing nearby or national to compare it with yet.${missingWord}`
           : pts
             ? `${subject} here averaged ${fmtP(mine)} in ${years[lastI]}${smallNote(m.phase, lastOf(f.entries))}, against ${listJoin(others.map((o) => `${fmtP(o.g)} ${placeWord(o)}`))}.${missingWord}`
             : (() => {
@@ -293,19 +335,20 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
                 const verdict = same ? "Yes" : others.every((o) => Math.sign(Math.round(o.g - 100)) !== Math.sign(Math.round(ch))) ? "No" : "Partly";
                 return `${verdict}: ${lead} (index ${fmtP(mine, 0)}), against ${listJoin(others.map((o) => `${fmtP(o.g, 0)} ${placeWord(o)}`))}.${missingWord}`;
               })();
+      const against = listJoin(shown.slice(1).map((l) => (l.role === "nearest" ? nearestWords(m) : l.label)));
       return {
         ...base,
         answer,
-        title: pts ? `${subject} average points per entry, ${years[0]}–${years[lastI]}: this school against ${listJoin([nearestWords(m), ...(m.area.la ? [m.area.la.name] : []), ...(m.area.england ? ["England"] : [])])}` : `${subject} entries, indexed (${years[0]} = 100): this school against ${listJoin([nearestWords(m), ...(m.area.la ? [m.area.la.name] : []), ...(m.area.england ? ["England"] : [])])}`,
+        title: pts ? `${cmp} average points per entry, ${years[0]}–${years[lastI]}: this school against ${against || "no comparator"}` : `${cmp} entries, indexed (${years[0]} = 100): this school against ${against || "no comparator"}`,
         note: pts
-          ? `Average points per entry. The nearest schools' line is the plain average of those with a figure. Region is in the table only: its line runs almost on top of England's, as on the dashboard.`
-          : `Every line starts at 100 in ${years[0] ?? "its first year"}, so growth compares whatever the size. Region is in the table only: its line runs almost on top of England's, as on the dashboard.`,
+          ? `Average points per entry. The nearest schools' line is the plain average of those with a figure. Region is in the table only: its line runs almost on top of England's, as on the dashboard.${groupWord}`
+          : `Every line starts at 100 in ${years[0]}, ${m.school.name}'s first year with entries${leftOut.length ? " that the comparators share" : ""}, so growth compares whatever the size. Region is in the table only: its line runs almost on top of England's, as on the dashboard.${groupWord}`,
         chart: {
           kind: "lines",
           years,
           series: shown.map((l) => ({ label: l.label, values: cut(l.v), role: l.role })),
           unpublished: [],
-          yCaption: pts ? "Average points per entry" : `Entries, indexed (${years[0] ?? "first year"} = 100)`,
+          yCaption: pts ? "Average points per entry" : `Entries, indexed (${years[0]} = 100)`,
           // Region: in the table only, never a line (R-WALK-RHYTHM).
           extraRows: m.area.region ? [{ label: m.area.region.name, values: cut(pts ? m.area.region.points : idx(m.area.region.entries)) }] : [],
           // Crosscheck (14 Nov): the key names each line as its end label does (the school, its LA by name).
@@ -365,13 +408,14 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
     case "nearby-map": {
       const placed = m.nearest.filter((x) => x.easting !== null && x.northing !== null);
       const far = Math.max(0, ...m.nearest.map((x) => x.distanceKm ?? 0));
-      const offering = m.nearest.filter((x) => !x.isTarget && real(x.entries).length > 0).length;
+      const offering = m.nearest.filter((x) => !x.isTarget && lastOf(x.entries) !== null).length;
       return {
         ...base,
-        answer: `${nearestWords(m, true)}, all within ${Math.ceil(far)} km; ${offering === 0 ? "none of them published" : offering === m.nearest.length - 1 ? `all of them published` : `${offering} of them published`} ${subject} entries in ${latest}.`,
+        answer: `${nearestWords(m, true)}, all within ${Math.ceil(far)} km; ${offering === 0 ? "none of them published" : offering === m.nearest.length - 1 ? `all of them published` : `${offering} of them published`} ${cmpSubject(m, subject)} entries in ${latest}.`,
         title: `${m.school.name} and ${nearestWords(m)}, by distance`,
-        note: `The dashboard's default comparison: ${nearestWords(m)} by its own rules.${m.nearestNote ? ` ${m.nearestNote}` : ""} Positions on the national grid; no base map in the walk.`,
-        chart: placed.length ? { kind: "map", points: placed.map((x) => ({ label: x.name, easting: x.easting!, northing: x.northing!, role: x.isTarget ? "focus" : "nearest", value: lastOf(x.entries), distanceKm: x.distanceKm })), year: latest, keys: [{ label: m.school.name, role: "focus", mark: "dot" }, { label: "The nearest schools", role: "nearest", mark: "dot" }] } : { kind: "none", reason: "No positions published for these schools.", keys: [] },
+        note: `The dashboard's default comparison: ${nearestWords(m)} by its own rules.${m.nearestNote ? ` ${m.nearestNote}` : ""} Dots are sized by entries; a hollow dot publishes no figure.${titlesNote(m)} Positions on the national grid; no base map in the walk.`,
+        // 0.8 feedback A1 (Teacher 6): the school is row 0 of the list; each school's own title where it differs.
+        chart: placed.length ? { kind: "map", points: placed.map((x) => ({ label: schoolLabel(x), easting: x.easting!, northing: x.northing!, role: x.isTarget ? "focus" : "nearest", value: lastOf(x.entries), distanceKm: x.distanceKm })), year: latest, keys: [{ label: m.school.name, role: "focus", mark: "dot" }, { label: "The nearest schools", role: "nearest", mark: "dot" }, { label: "No figure", role: "nearest", mark: "ring" }] } : { kind: "none", reason: "No positions published for these schools.", keys: [] },
       };
     }
     case "nearby-entries":
@@ -381,37 +425,50 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const me = rows.find((r) => r.x.isTarget);
       const rank = me ? rows.indexOf(me) + 1 - rows.slice(0, rows.indexOf(me)).filter((r) => r.v === me.v).length : null;
       const missing = m.nearest.length - rows.length;
+      const cs = cmpSubject(m, subject);
+      // A5 (R-RANK-MIN): a place needs at least RANK_MIN schools with a figure; under that, the counts.
+      const where = me && rank !== null && rows.length >= RANK_MIN ? `${placeOf(rank, rows.length, "schools")}, ${pts ? "highest first" : "most first"}` : `${plural(rows.length, "school has", "schools have")} a figure, too few to rank`;
       const answer = !me
-        ? `${m.school.name} has no published ${pts ? "average points" : "entries"} for ${subject} in ${latest}.`
-        : `${pts ? `${fmtP(me.v)} average points here${smallNote(m.phase, lastOf(f.entries))}` : `${pupils(m, me.v)} here`}: ${placeOf(rank!, rows.length, "schools")}, ${pts ? "highest first" : "most first"}.${missing ? ` ${plural(missing, "school publishes", "schools publish")} no figure.` : ""}`;
+        ? `${m.school.name} has no published ${pts ? "average points" : "entries"} for ${subject} in ${latest}.${rows.length ? ` ${plural(rows.length, "nearby school publishes", "nearby schools publish")} ${cs}.` : ""}`
+        : `${pts ? `${fmtP(me.v)} average points here${smallNote(m.phase, lastOf(f.entries))}` : `${pupils(m, me.v)} here`}: ${where}.${missing ? ` ${plural(missing, "school publishes", "schools publish")} no figure.` : ""}`;
       return {
         ...base,
         answer,
-        title: `${subject} ${pts ? "average points" : "entries"} at each school, ${latest}`,
-        note: `The school and ${nearestWords(m)}; a school with no published figure is left out.${pts ? " Average points per entry, the same qualification only." : ""}`,
+        title: `${cs} ${pts ? "average points" : "entries"} at each school, ${latest}`,
+        note: `The school and ${nearestWords(m)}; a school with no published figure is left out.${pts ? " Average points per entry, the same qualification only." : ""}${titlesNote(m)}`,
         // Review fixes (walks.md T2): the year and how many schools on the axis caption; entries beside points.
-        chart: { kind: "hbars", rows: rows.map((r) => ({ label: r.x.name, value: r.v, role: r.x.isTarget ? "focus" : "nearest", n: pts ? lastOf(r.x.entries) : null })), unit: pts ? "average points" : "entries", digits: pts ? 1 : 0, caption: `${pts ? "Average points per entry" : `Entries (${learners(m.phase)})`}, ${latest}; ${plural(rows.length, "school")} with a figure${missing ? `, ${missing} without` : ""}`, keys: [{ label: m.school.name, role: "focus", mark: "swatch" }, { label: "The nearest schools", role: "nearest", mark: "swatch" }] },
+        chart: { kind: "hbars", rows: rows.map((r) => ({ label: schoolLabel(r.x), value: r.v, role: r.x.isTarget ? "focus" : "nearest", n: pts ? lastOf(r.x.entries) : null })), unit: pts ? "average points" : "entries", digits: pts ? 1 : 0, caption: `${pts ? "Average points per entry" : `Entries (${learners(m.phase)})`}, ${latest}; ${plural(rows.length, "school")} with a figure${missing ? `, ${missing} without` : ""}`, keys: [{ label: m.school.name, role: "focus", mark: "swatch" }, { label: "The nearest schools", role: "nearest", mark: "swatch" }] },
       };
     }
     case "nearby-rank": {
       const rows = m.nearest.map((x) => ({ x, v: lastOf(x.points) })).filter((r) => r.v !== null) as { x: (typeof m.nearest)[number]; v: number }[];
       const ranked = rows.map((r) => ({ ...r, rank: 1 + rows.filter((o) => o.v > r.v).length })).sort((a, b) => a.rank - b.rank);
       const me = ranked.find((r) => r.x.isTarget);
+      const cs = cmpSubject(m, subject);
+      const without = m.nearest.length - ranked.length;
+      // A5 (R-RANK-MIN): never "1st of 1": under RANK_MIN schools with a figure, the counts and no ranking.
+      if (ranked.length < RANK_MIN) {
+        const why = `Not enough schools with a figure to rank: ${plural(ranked.length, "school publishes", "schools publish")} average points in ${cs} for ${latest}${without ? `, ${without} ${without === 1 ? "doesn't" : "don't"}` : ""}.`;
+        return { ...base, answer: `${me ? `${fmtP(me.v)} average points here${smallNote(m.phase, lastOf(f.entries))}. ` : ""}${why}`, title: `${cs}: the school and its nearest ranked, ${latest}`, note: "", chart: { kind: "none", reason: why, keys: [] } };
+      }
       return {
         ...base,
-        answer: me ? `${placeOf(me.rank, ranked.length, "schools")} on average points in ${subject}, ${latest}${smallNote(m.phase, lastOf(f.entries))}.${ranked.length < m.nearest.length ? ` ${plural(m.nearest.length - ranked.length, "school publishes", "schools publish")} no figure.` : ""}` : `${m.school.name} has no published average points in ${subject} for ${latest}, so it isn't ranked.`,
-        title: `${subject}: the school and its nearest ranked, ${latest}`,
-        note: "Ranked on average points per entry, highest first, on the unrounded figure: two schools showing the same figure to one decimal can take different places; only an exact tie shares one.",
+        answer: me ? `${placeOf(me.rank, ranked.length, "schools")} on average points in ${cs}, ${latest}${smallNote(m.phase, lastOf(f.entries))}.${without ? ` ${plural(without, "school publishes", "schools publish")} no figure.` : ""}` : `${m.school.name} has no published average points in ${subject} for ${latest}, so it isn't ranked.`,
+        title: `${cs}: the school and its nearest ranked, ${latest}`,
+        note: `Ranked on average points per entry, highest first, on the unrounded figure: two schools showing the same figure to one decimal can take different places; only an exact tie shares one.${titlesNote(m)}`,
         // Review fixes (walks.md T1): each school's entries beside its average, and a caption with the year and N.
-        chart: { kind: "ranking", rows: ranked.map((r) => ({ rank: r.rank, label: r.x.name, value: r.v, role: r.x.isTarget ? "focus" : "nearest", distanceKm: r.x.distanceKm, n: lastOf(r.x.entries) })), unit: "average points", digits: 1, year: latest, caption: `Ranked highest first on average points per entry, ${latest}: ${plural(ranked.length, "school")} with a figure${ranked.length < m.nearest.length ? `, ${m.nearest.length - ranked.length} without` : ""}. Ranked on the unrounded figure, so two schools showing the same one decimal can take different places.`, keys: [{ label: m.school.name, role: "focus", mark: "swatch" }] },
+        chart: { kind: "ranking", rows: ranked.map((r) => ({ rank: r.rank, label: schoolLabel(r.x), value: r.v, role: r.x.isTarget ? "focus" : "nearest", distanceKm: r.x.distanceKm, n: lastOf(r.x.entries) })), unit: "average points", digits: 1, year: latest, caption: `Ranked highest first on average points per entry, ${latest}: ${plural(ranked.length, "school")} with a figure${without ? `, ${without} without` : ""}. Ranked on the unrounded figure, so two schools showing the same one decimal can take different places.`, keys: [{ label: m.school.name, role: "focus", mark: "swatch" }] },
       };
     }
     case "nearby-trend": {
+      // A5 (R-RANK-MIN): a year has a place only with RANK_MIN or more schools with a figure; no line for one school.
+      const of: Series = m.periods.map((_, k) => m.nearest.filter((x) => x.points[k] !== null).length || null);
       const ranks: Series = m.periods.map((_, k) => {
+        if ((of[k] ?? 0) < RANK_MIN) return null;
         const vals = m.nearest.map((x) => ({ key: x.urn, value: x.points[k] }));
         return rankOf(vals, m.school.urn)?.rank ?? null;
       });
-      const of: Series = m.periods.map((_, k) => m.nearest.filter((x) => x.points[k] !== null).length || null);
+      const cs = cmpSubject(m, subject);
       const { from, years } = span(m, [ranks]);
       const rs = ranks.slice(from);
       const ofs = of.slice(from);
@@ -420,16 +477,21 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const fi = rs.findIndex((v) => v !== null);
       const li = rs.length - 1 - [...rs].reverse().findIndex((v) => v !== null);
       const placed = rs.filter((v) => v !== null).length;
+      if (placed === 0) {
+        const most = Math.max(0, ...of.map((v) => v ?? 0));
+        const why = `Not enough schools with a figure to rank: in no year do ${RANK_MIN} or more of the school and its nearest publish average points in ${cs} (at most ${most}).`;
+        return { ...base, answer: why, title: `${cs}: the school's place among its nearest, year by year`, note: "", chart: { kind: "none", reason: why, keys: [] } };
+      }
       const at = (k: number) => `${placeOf(rs[k]!, ofs[k] ?? rs[k]!)} in ${years[k]}`;
       const answer =
         fi < 0 || placed < 2
-          ? `Not enough years with results to see the place of ${subject} change.`
+          ? `Not enough years with ${RANK_MIN} or more schools with results to see the place of ${subject} change${placed === 1 ? `: ${at(fi)}` : ""}.`
           : `${rs[li]! < rs[fi]! ? "Up" : rs[li]! > rs[fi]! ? "Down" : "The same"}: ${at(fi)}, ${at(li)}.${li < rs.length - 1 ? ` The school has no place for ${years[rs.length - 1]}.` : ""}`;
       return {
         ...base,
         answer,
-        title: `${subject}: the school's place among its nearest, year by year`,
-        note: "1st is the highest average points among the school and its nearest that year; the table has how many had a figure each year.",
+        title: `${cs}: the school's place among its nearest, year by year`,
+        note: `1st is the highest average points among the school and its nearest that year; the table has how many had a figure each year. A year with fewer than ${RANK_MIN} schools with a figure has no place.`,
         chart: { kind: "lines", years, series: [{ label: "Our place", values: rs, role: "focus" }], unpublished: [], yCaption: `Place (1st = highest), of ${ofRange(ofs)} schools with a figure`, extraRows: [{ label: "Schools with a figure", values: of.slice(from) }], keys: [{ label: "Our place", role: "focus", mark: "line" }], digits: 0 },
       };
     }
