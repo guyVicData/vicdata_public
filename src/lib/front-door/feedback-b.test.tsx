@@ -249,3 +249,74 @@ test("R-NO-BUILD-NOTES: the walks' own words on real fixtures (Teacher, SMT, Adm
   assert.equal(sourceFindings("x.tsx", 'const a = <p title="ranked (R-IGCSE-EXCL)">The same views, in the same order, as this panel&rsquo;s rail on the dashboard.</p>; // R-FOO-BAR in Foo.tsx').length, 3);
   assert.equal(sourceFindings("x.tsx", "/* an empty state, R-FOO-BAR */ const a = 1; {/* harness.tsx */}").length, 0);
 });
+
+// ------------------------------------------------------------------------------------------------ B4, B5, B6
+
+import type { Overview } from "@/lib/smt/overview";
+import type { Pupils } from "@/lib/smt/pupils";
+
+test("B4 (Admissions 1, 4, 5): the sets lead the Admissions home; every home's dashboard button is a tint of its colour", async () => {
+  const { AdmissionsSection } = await import("@/components/front-door/sections");
+  const html = renderToStaticMarkup(createElement(AdmissionsSection, { urn: "110110" }));
+  const sets = html.indexOf("data-sets-card");
+  assert.ok(sets > 0, "the sets card is drawn");
+  assert.ok(sets < html.indexOf("data-home-tile"), "above the questions");
+  const button = /<a[^>]*data-home-dashboard=""[^>]*>/.exec(html)?.[0] ?? "";
+  assert.match(button, /bg-\[var\(--tile-tint\)\]/);
+  assert.match(button, /text-\[var\(--tile-accent-text\)\]/);
+  assert.doesNotMatch(button, /field-chip-bg/);
+});
+
+test("B5 (SMT 1): a view waiting on its figures shows the loading graphic, not a bare box", async () => {
+  const { Skeleton } = await import("@/components/admissions/ui");
+  const html = renderToStaticMarkup(createElement(Skeleton));
+  assert.match(html, /role="status"/);
+  assert.match(html, /data-spinner=""/);
+  assert.match(html, /Loading the figures…/);
+});
+
+test("B5 (SMT 2, 14): the phase pills re-scope the tiles and walks as the dashboards' level does", async () => {
+  const { smtFigures, smtWalkHref } = await import("@/components/front-door/sections");
+  const lp = fx<{ overview: Overview; pupils: Pupils }>("smt_110110");
+  const whole = smtFigures(lp.overview, false, "whole", lp.pupils);
+  const p16 = smtFigures(lp.overview, false, "post16", lp.pupils);
+  // Leighton Park sits IGCSEs: no ranked GCSE headline, so Academic at GCSE has no figure; Post-16 has A level points.
+  assert.equal(p16["smt-academic"]?.unit, "A level: points per entry");
+  assert.equal(smtFigures(lp.overview, false, "gcse", lp.pupils)["smt-academic"], undefined);
+  // Overview is the whole school at any level; Pupils follows the level's own phase line.
+  assert.deepEqual(p16["smt-overview"], whole["smt-overview"]);
+  assert.match(p16["smt-pupils"]?.unit ?? "", /^Post-16 pupils on last year$/);
+  assert.match(smtFigures(lp.overview, false, "gcse", lp.pupils)["smt-pupils"]?.unit ?? "", /^GCSE pupils on last year$/);
+  const w = (id: string) => walkById(id)!;
+  assert.equal(smtWalkHref(w("smt-overview"), "post16"), "/teacher/walk/smt-overview");
+  assert.equal(smtWalkHref(w("smt-academic"), "post16"), "/teacher/walk/smt-academic?level=post16");
+  assert.equal(smtWalkHref(w("smt-pupils"), "whole"), "/teacher/walk/smt-pupils");
+});
+
+test("B5 (SMT 15): Our subjects draws a block per phase, each subject opening its three Teacher walks and its dashboard", async () => {
+  const { OurSubjects } = await import("@/components/front-door/sections");
+  const html = renderToStaticMarkup(createElement(OurSubjects, { urn: "110110", phases: ["ks4", "ks5"] }));
+  assert.match(html, /Our subjects/);
+  assert.match(html, /data-our-subjects-phase="ks4"/);
+  assert.match(html, /data-our-subjects-phase="ks5"/);
+  assert.match(html, /Loading the subjects…/);
+  // The dashboard honours the subject it is opened on (shown, not saved) and skips Teacher setup for SMT.
+  const dash = readFileSync("src/components/dashboard-config/TeacherDashboard.tsx", "utf8");
+  assert.match(dash, /search\.get\("from"\) === "smt"\) setOnboarded\(true\)/);
+});
+
+test("B6 (Teacher 1): a Teacher tile always starts its walk -- never 'Coming' -- and the home asks for a subject when none is set", async () => {
+  const { TeacherPhaseSection } = await import("@/components/front-door/sections");
+  const { QuestionTile } = await import("@/components/front-door/home");
+  // While the figures load, the tiles already start their walks.
+  const html = renderToStaticMarkup(createElement(TeacherPhaseSection, { urn: "137625", phase: "ks4" }));
+  assert.equal((html.match(/data-tile-action=""/g) ?? []).length, 3);
+  assert.doesNotMatch(html, />Coming</);
+  assert.match(html, /Loading your subjects…/);
+  // No link, no "Coming" either.
+  const tile = renderToStaticMarkup(createElement(QuestionTile, { walk: walkById("gcse-many")!, figure: null, ctx: {}, href: null }));
+  assert.doesNotMatch(tile, /Coming/);
+  const src = readFileSync("src/components/front-door/sections.tsx", "utf8");
+  assert.match(src, /Which subject do you teach\?/);
+  assert.match(src, /didn&rsquo;t load\{current\?\.code \? ` \(error \$\{current\.code\}\)` : ""\}/);
+});

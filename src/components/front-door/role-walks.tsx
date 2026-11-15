@@ -13,7 +13,7 @@ import { useSmt, type Overview, type SmtSchool, type Academic, type Load as SmtL
 import { loadSmtMember, type SmtMember } from "@/components/smt/member";
 import { useSmtSet } from "@/components/smt/useSmtSet";
 import { smtVars } from "@/components/smt/ui";
-import { setPhaseOf } from "@/lib/smt/levels";
+import { LEVEL_LABEL, setPhaseOf } from "@/lib/smt/levels";
 import type { Pupils } from "@/lib/smt/pupils";
 import type { Context } from "@/lib/smt/context";
 import type { ContextMap } from "@/lib/smt/context-map";
@@ -41,6 +41,7 @@ import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/
 import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
 import type { ProjectionRow } from "@/components/groups/dash/views-r3";
 import { groupAnswer } from "@/lib/front-door/group-answers";
+import { LoadingGraphic } from "@/components/shell/LoadingGraphic";
 import { groupWalkCompare, groupWalkDashUrl, smtContextUrl } from "@/lib/front-door/tile-figures";
 
 type Load<T> = { status: "loading" } | { status: "error"; code: number; message: string } | { status: "ready"; data: T };
@@ -116,10 +117,11 @@ function WalkError({ walk, what, code, message, home, ctx }: { walk: Walk; what:
   );
 }
 
-function Loading({ walk, text = "Loading…", ctx }: { walk: Walk; text?: string; ctx?: { entry?: string | null } }) {
+/** A walk waiting on its figures: the loading graphic (B5, SMT 1); `still` for a walk that can't start. */
+function Loading({ walk, text = "Loading the figures…", ctx, still = false }: { walk: Walk; text?: string; ctx?: { entry?: string | null }; still?: boolean }) {
   return (
     <WalkFrame walk={walk} step={0} steps={walk.screens.length} chip={null} ctx={ctx}>
-      <p className="text-[15px] text-[var(--field-ink)]">{text}</p>
+      {still ? <p className="text-[15px] text-[var(--field-ink)]">{text}</p> : <div className="fd-tile flex min-h-[220px] rounded-[14px]"><LoadingGraphic label={text} /></div>}
     </WalkFrame>
   );
 }
@@ -134,12 +136,17 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   const sets = useSmtSet(member.schoolUrn, s ? setPhaseOf(s.phases) : null);
   const body = sets.set ? { urn: member.schoolUrn, set: sets.set } : null;
   const kind = walk.id.split("-").pop();
+  // 0.8 feedback B5 (SMT 2, 14): the level the home's pills picked (?level=), as the dashboards read it; the
+  // Overview walk is the whole school at any level, as its dashboard is.
+  const sp = useSearchParams();
+  const asked = sp.get("level");
+  const level = s && kind !== "overview" && ((asked === "gcse" && s.phases.gcse) || (asked === "post16" && s.phases.post16)) ? asked : null;
   const o = useSmt<Overview>(s && body && kind === "overview" ? "/api/smt/overview" : null, body);
-  const a = useSmt<Academic>(s && body && kind === "academic" && walk.screens.length ? "/api/smt/academic" : null, body);
-  const p = useSmt<Pupils>(s && body && kind === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: "whole" } : null);
+  const a = useSmt<Academic>(s && body && kind === "academic" && walk.screens.length ? "/api/smt/academic" : null, body ? { ...body, ...(level ? { level } : {}) } : null);
+  const p = useSmt<Pupils>(s && body && kind === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level ?? "whole" } : null);
   // The home's Context tile reads this same address (tile-figures.ts, front door 2b), so the two agree.
-  const c = useSmt<Context>(s && kind === "context" ? smtContextUrl(member.schoolUrn) : null, null);
-  const cmap = useSmt<ContextMap>(s && kind === "context" ? `/api/smt/context/map?urn=${member.schoolUrn}&level=whole` : null, null);
+  const c = useSmt<Context>(s && kind === "context" ? smtContextUrl(member.schoolUrn, level ?? "whole") : null, null);
+  const cmap = useSmt<ContextMap>(s && kind === "context" ? `/api/smt/context/map?urn=${member.schoolUrn}&level=${level ?? "whole"}` : null, null);
   const [step, setStep] = useStep(walk.screens.length);
   const loads = { overview: o, academic: a, pupils: p, context: c } as Record<string, Load<unknown>>;
   const load = loads[kind ?? ""];
@@ -150,7 +157,7 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   return (
     // The Academic views' band colours (acVars), as the dashboard sets them on its root.
     <div style={kind === "academic" ? { ...smtVars(theme), ...acVars(theme) } : smtVars(theme)}>
-      <WalkFrame walk={walk} step={step} steps={n2} chip={s.name}>
+      <WalkFrame walk={walk} step={step} steps={n2} chip={level ? `${s.name} · ${LEVEL_LABEL[level]}` : s.name}>
         {step >= n2 ? (
           <Found walk={walk} screens={screens} params={{}} ctx={{}} onBack={() => setStep(n2 - 1)} answer={walk.answer?.view === SMT_SUBJECTS_RANKED ? smtSubjectsAnswer(load.data as Academic) : answerOf(walk, screens)} />
         ) : (
@@ -367,9 +374,9 @@ export function RoleWalk({ walk }: { walk: Walk }) {
     loadSmtMember().then((m) => setMember(m.status === "ready" ? m.member : "none"));
   }, [walk.product]);
   if (walk.product === "group") return <GroupWalk walk={walk} />;
-  if (!walk.screens.length) return <Loading walk={walk} text="This walk needs views that aren't on the dashboards yet." />;
+  if (!walk.screens.length) return <Loading walk={walk} still text="This walk needs views that aren't on the dashboards yet." />;
   if (member === null) return <Loading walk={walk} />;
-  if (member === "none") return <Loading walk={walk} text="Sign in as a member of the school to take this walk." />;
+  if (member === "none") return <Loading walk={walk} still text="Sign in as a member of the school to take this walk." />;
   if (walk.product === "admissions") return <AdmissionsWalk walk={walk} urn={member.schoolUrn} schoolName={member.schoolName ?? ""} />;
   return <SmtWalk walk={walk} member={member} />;
 }

@@ -3543,3 +3543,50 @@ school's walk keeps them: its 4+ entry is how that walk answers "are numbers hol
   state)" → "(the view says so / why)"; a method's document path; the Admissions editor's "(0.7 r3, F7)";
   Admissions' Shape and size captions ("as the school page's Shape card", "the shared classifier"); the area
   lines' "until more years are synced".
+
+**B4, the Admissions home (Admissions 1, 4, 5).**
+- **Admissions 1:** the sets card ("Who feeds us? · Who do we compete with?") moves above the two questions
+  (HomeSection's new `lead` slot); it was below them.
+- **Admissions 4 and 5, one reading (a call).** Note 4 asks for the "Open the full Admissions dashboard" button
+  to be a tint of the blue; note 5 ("Dashboard in Mid: use a tinted background rather than white, so it's
+  less prominent") is read as the same button in Mid, where it was a white chip. The prompt's wording ("Dashboards
+  in Mid get a tinted background") could mean the dashboard pages' plates; that wasn't done: the Mid dashboard
+  plates are Light's near-white by design (front door 2b, R-THEME-CONTRAST's Mid rows), and the note's own
+  words ("less prominent") fit the button. If Guy meant the plates, it is a stylesheet change for build C.
+- **Every home's dashboard button, not only Admissions'**: HomeSection draws the button for every role, so each
+  takes a tint of its own colour (its tile tint, with the tile's accent text: both already contrast-checked in
+  every theme). One component, one look.
+
+**B5, the SMT home (SMT 1, 2, 14, 15).**
+- **SMT 1, the loading graphic:** a turning ring with words (`src/components/shell/LoadingGraphic.tsx`) in every
+  dashboard view still loading (the shared `Skeleton`, so Admissions' and head office's views get it too: it
+  was a bare pulsing box, white on white in Mid), the SMT page's own "Loading SMT…", every walk's loading
+  screen and a home tile's figure on its way. Still under reduced motion.
+- **SMT 2 and 14, the pills:** Whole school, GCSE and Post-16 are buttons. A pick re-scopes the home as the
+  dashboards' level does, and is remembered under the dashboards' own key (`smtLevelKey`), so the dashboard
+  opens on the same phase: Academic's figure is the phase's headline (none for an IGCSE school at GCSE, as on
+  the dashboard); Pupils' is the phase's own roll line; Context's figure and walk read the phase's ages; the
+  Academic, Pupils and Context walks open at the level (`?level=`). Overview stays the whole school at any
+  level, as its dashboard does. A primary school keeps one chip (Key stage 2), not a button.
+- **SMT 15, "Our subjects" (calls):** under the SMT questions, a block per phase (GCSE, Post-16; one when a pill
+  picks a phase), a card per subject the school teaches, largest entries first (nine, then "Show all"), each
+  with its Candidates, Results and Comparisons walks and "Dashboard →". The list is the Teacher home's own
+  read (`/api/front-door/teacher?lite=1`), which any member of the school may read. The walks only read. The
+  Teacher dashboard opens on the subject for that visit (`?subject=…&from=smt`: shown, not saved, as a linked
+  set's subject is) and, with `from=smt`, skips Teacher's one-screen setup, which an SMT reader has no need
+  of. Saving anything there is still the reader's own choice, as on any dashboard.
+- **D6** is in M2 (the walk).
+
+**B6, the Teacher home (Teacher 1).**
+- **What "Coming" meant:** a tile showed "Coming" whenever the home's figures weren't in: while they loaded, and
+  for good if the request failed (the tile had no link without a loaded subject). It never meant "no subject
+  set": with none ticked the home silently showed the school's first subject (English Language at The Chase).
+  Read through the loader on production (read-only), The Chase's GCSE model builds in under 2 s, so on 15 Nov
+  the request most likely failed live; the code isn't logged anywhere I can read. Now a failed load says so,
+  with its code and "Try again", and logs it.
+- **Fixed:** every tile starts its walk at once (the walk loads its own figures and, with no subject, picks the
+  school's first itself); "Coming" is gone from the tile. With no subject set, the home asks "Which subject do
+  you teach?" over the school's subjects; the pick is remembered in this browser (a per-viewer convenience; no
+  database write) and the questions follow it; "Set your subjects for good" opens Teacher setup.
+- **Rewritten test:** R-HOME-TILES's "the SMT Context tile and its walk ask one address" now expects both to ask
+  at the level the pills picked (`smtContextUrl(urn, level)`), the whole school by default.

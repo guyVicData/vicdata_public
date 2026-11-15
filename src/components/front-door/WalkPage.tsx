@@ -30,6 +30,7 @@ import { teacherAnswerStep, teacherScreens, type Screen } from "@/lib/front-door
 import { palette, WalkChart } from "./charts";
 import { RailGlyph, WalkGlyph, walkHref } from "./home";
 import { RoleWalk } from "./role-walks";
+import { LoadingGraphic } from "@/components/shell/LoadingGraphic";
 
 const CLOSE = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
@@ -324,7 +325,7 @@ function TeacherWalk({ walk }: { walk: Walk }) {
   const dark = effectiveTheme(pref) === "dark" && pref !== "mid";
   const pal = palette({ dark, accent: { hex: PHASE_ACCENT[phase]!.hex, light: LIGHT_FOCUS[walk.product] }, categoryId: model && model !== "error" ? model.category.id : null });
   const n = walk.screens.length;
-  if (model === null) return <WalkFrame walk={walk} step={0} steps={n} chip={null}><p className="text-[15px] text-[var(--field-ink)]">Loading…</p></WalkFrame>;
+  if (model === null) return <WalkFrame walk={walk} step={0} steps={n} chip={null}><div className="fd-tile flex min-h-[220px] rounded-[14px]"><LoadingGraphic /></div></WalkFrame>;
   if (model === "error") return <WalkFrame walk={walk} step={0} steps={n} chip={null}><p className="text-[15px] text-[var(--field-ink)]">This walk couldn&rsquo;t load your school&rsquo;s figures. <Link className="underline" href="/teacher">Back to your home</Link>.</p></WalkFrame>;
   const params = { subject: model.focus?.key ?? null };
   if (step >= n) {

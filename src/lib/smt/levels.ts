@@ -35,6 +35,10 @@ export function parseLevel(search: URLSearchParams, phases: SchoolPhases | null,
   return { phase, area };
 }
 
+/** Where a member's level is remembered between visits (the SMT dashboards and, 0.8 feedback B5, the SMT
+ * home's phase pills: one choice for both). */
+export const smtLevelKey = (urn: string) => `vicdata.smt.level:${urn}`;
+
 /** The address's query for a level (the default writes nothing). */
 export function levelQuery(l: SmtLevel): Record<string, string> {
   const q: Record<string, string> = {};

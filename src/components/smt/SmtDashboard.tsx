@@ -27,6 +27,7 @@ import { HeadOfficeBanner } from "@/components/groups/HeadOfficeBanner";
 import { ViewAsWrongRole } from "@/components/view-as/ViewAs";
 import { AdmissionsTeacherNav, Divider } from "@/components/admissions/controls";
 import { Empty, EntryChip, FChip, Skeleton } from "@/components/admissions/ui";
+import { LoadingGraphic } from "@/components/shell/LoadingGraphic";
 import { useWidth } from "@/components/admissions/views/charts";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
@@ -40,7 +41,7 @@ import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata"
 import { ViewSurfaceProvider } from "@/components/feedback/ViewSurface";
 import { schoolSurface } from "@/components/feedback/surface";
 import { editorWritesSettled, useEditSwitch, isPlatformAdminCached, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
-import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parseLevel, setPhaseOf, type SmtLevel, type SmtPhase } from "@/lib/smt/levels";
+import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parseLevel, setPhaseOf, smtLevelKey, type SmtLevel, type SmtPhase } from "@/lib/smt/levels";
 import { SMT_ONLY_MESSAGE } from "@/lib/smt/auth-rules";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { useSmt, type Academic, type Load, type Overview, type SmtSchool, type SmtSetChoice } from "./api";
@@ -124,7 +125,7 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
             <AdmissionsTeacherNav schoolUrn={state.status === "ready" ? state.member.schoolUrn : null} theme={theme} onTheme={setTheme} />
             <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">
               {state.status === "loading" ? (
-                "Loading SMT…"
+                <LoadingGraphic label="Loading SMT…" />
               ) : state.status === "not-found" ? (
                 "Not found."
               ) : state.status === "signed-out" ? (
@@ -160,7 +161,7 @@ function SmtEditor({ slug: pageSlug, school }: { slug: string; school: { urn: st
 
 // ------------------------------------------------------------------------------- the level
 
-const LEVEL_KEY = (urn: string) => `vicdata.smt.level:${urn}`;
+const LEVEL_KEY = smtLevelKey;
 
 function useLevel(urn: string, school: SmtSchool | null): [SmtLevel, (l: SmtLevel) => void] {
   const areas = school ? { gcse: school.areas.gcse.map((a) => a.id), post16: school.areas.post16.map((a) => a.id) } : null;
