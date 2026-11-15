@@ -15,7 +15,9 @@ import { fillTemplate, walksFor, type Walk } from "@/lib/front-door/walks";
 import { useSmt, type Overview, type SmtSchool } from "@/components/smt/api";
 import { loadSmtMember, type SmtMember } from "@/components/smt/member";
 import { useSmtSet } from "@/components/smt/useSmtSet";
-import { setPhaseOf } from "@/lib/smt/levels";
+import { LEVEL_LABEL, setPhaseOf, smtLevelKey } from "@/lib/smt/levels";
+import type { Pupils } from "@/lib/smt/pupils";
+import { Spinner } from "@/components/shell/LoadingGraphic";
 import { periodLabel } from "@/catalogue/years";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { setFitsPage, type SetKind, type StoredSet } from "@/lib/sets/model";
@@ -66,13 +68,39 @@ function SubjectSwitch({ subjects, value, onChange }: { subjects: { key: string;
   );
 }
 
+/** Where the home remembers the subject picked on it, per school and phase (this browser only). */
+const HOME_SUBJECT_KEY = (urn: string, phase: string) => `vicdata.teacher.homeSubject:${urn}:${phase}`;
+
+/**
+ * 0.8 feedback B6 (Teacher 1). The tiles said "Coming" whenever the home's figures hadn't arrived -- while
+ * they loaded, and for good when the request failed -- and the home never asked for a subject when none was
+ * set (it silently took the school's first). Now:
+ *   - every tile starts its walk at once (the walk loads its own figures), never "Coming";
+ *   - with no subject set (no ticked subjects, nothing picked here), the home asks: "Which subject do you
+ *     teach?", a picker over the school's subjects; the pick is remembered in this browser;
+ *   - a failed load says so, with its code and a Try again, and the questions still open.
+ */
 export function TeacherPhaseSection({ urn, phase, heading }: { urn: string; phase: "ks4" | "ks5"; heading?: React.ReactNode }) {
   const [ticked, setTicked] = useState<string[] | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
-  const [model, setModel] = useState<{ key: string; m: TeacherModel | null } | null>(null);
+  const [picked, setPicked] = useState<boolean>(false);
+  const [tries, setTries] = useState(0);
+  const [model, setModel] = useState<{ key: string; m: TeacherModel | null; code: number } | null>(null);
   useEffect(() => {
     let live = true;
-    void fetchPreferences(createBrowserSupabaseClient(), urn, phase).then((p) => live && setTicked(p.subjects));
+    try {
+      const saved = window.localStorage.getItem(HOME_SUBJECT_KEY(urn, phase));
+      if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFocus(saved);
+        setPicked(true);
+      }
+    } catch {
+      // Blocked storage: nothing remembered.
+    }
+    void fetchPreferences(createBrowserSupabaseClient(), urn, phase)
+      .then((p) => live && setTicked(p.subjects))
+      .catch(() => live && setTicked([]));
     return () => {
       live = false;
     };
@@ -81,13 +109,21 @@ export function TeacherPhaseSection({ urn, phase, heading }: { urn: string; phas
   useEffect(() => {
     if (!ask) return;
     let live = true;
-    void getJson<TeacherModel>(ask).then((m) => live && setModel({ key: ask, m }));
+    (async () => {
+      const t = await token();
+      const res = t ? await fetch(ask, { headers: { Authorization: `Bearer ${t}` } }).catch(() => null) : null;
+      const m = res && res.ok ? ((await res.json()) as TeacherModel) : null;
+      if (!m) console.error(`[home] teacher ${phase}: ${res ? `HTTP ${res.status}` : "no answer"}`);
+      if (live) setModel({ key: `${ask}#${tries}`, m, code: res?.status ?? 0 });
+    })();
     return () => {
       live = false;
     };
-  }, [ask]);
-  const m = model?.key === ask ? model.m : null;
-  const loading = !m && model?.key !== ask;
+  }, [ask, tries, phase]);
+  const current = model?.key === `${ask}#${tries}` ? model : null;
+  const m = current?.m ?? null;
+  const failed = !!current && !current.m;
+  const loading = !current;
   const walks = walksFor(phase === "ks4" ? "gcse" : "post16");
   const figures = m ? teacherTileFigures(m) : { many: null, well: null, nearby: null };
   // The switcher lists the subjects the teacher teaches (their ticked ones); with none ticked, every subject.
@@ -96,24 +132,70 @@ export function TeacherPhaseSection({ urn, phase, heading }: { urn: string; phas
     const mine = all.filter((s) => (ticked ?? []).includes(s.key));
     return mine.length ? mine : all;
   }, [m, ticked]);
+  const noneSet = ticked !== null && ticked.length === 0 && !picked;
+  const choose = (k: string) => {
+    setFocus(k);
+    setPicked(true);
+    try {
+      window.localStorage.setItem(HOME_SUBJECT_KEY(urn, phase), k);
+    } catch {
+      // Blocked storage: the pick holds for this visit.
+    }
+  };
   const ctx = { subject: m?.focus?.subject ?? null, category: m?.category.label ?? null };
   const fig: Record<string, TileFigure> = { [`${phase === "ks4" ? "gcse" : "post16"}-many`]: figures.many, [`${phase === "ks4" ? "gcse" : "post16"}-well`]: figures.well, [`${phase === "ks4" ? "gcse" : "post16"}-nearby`]: figures.nearby };
-  const params = { subject: m?.focus?.key ?? null };
+  // The walk opens on the subject shown here; with none yet, the walk picks the school's first itself.
+  const params = { subject: m?.focus?.key ?? focus };
   const label = PHASE_LABELS[phase];
+  const ph = phase === "ks5" ? "students" : "pupils";
+  const picker =
+    noneSet && m && m.subjects.length > 0 ? (
+      <div data-subject-ask="" className="fd-tile flex flex-wrap items-center gap-3 rounded-[14px] px-5 py-4 text-[var(--fg)]">
+        <span className="min-w-0 flex-grow basis-[240px]">
+          <span className="block text-[15.5px] font-semibold">Which subject do you teach?</span>
+          <span className="block text-[13px] text-[var(--muted2)]">The questions below follow it. Showing {m.focus?.subject ?? "the school's first subject"} until you pick.</span>
+        </span>
+        <select data-subject-pick="" aria-label="Your subject" value="" onChange={(e) => e.target.value && choose(e.target.value)} className="min-h-[44px] max-w-full rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-3 text-[14px] font-semibold text-[var(--fg)]">
+          <option value="">Pick a subject…</option>
+          {[...m.subjects].sort((a, b) => a.label.localeCompare(b.label)).map((s) => (
+            <option key={s.key} value={s.key}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <Link href={`/teacher/setup?phase=${phase}`} className="inline-flex min-h-[44px] items-center px-1 text-[13px] text-[var(--muted2)] hover:text-[var(--fg)]">Set your subjects for good &rarr;</Link>
+      </div>
+    ) : null;
   return (
     <HomeSection
       field={phase === "ks4" ? "gcse" : "post16"}
       accent={PHASE_ACCENT[phase]}
       chip={label}
       heading={heading}
-      controls={<SubjectSwitch subjects={subjects} value={m?.focus?.key ?? null} onChange={setFocus} />}
+      controls={
+        loading ? (
+          <span data-subject-loading="" className="inline-flex items-center gap-2 rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]"><Spinner size={14} /> Loading your subjects…</span>
+        ) : noneSet ? null : (
+          <SubjectSwitch subjects={subjects} value={m?.focus?.key ?? null} onChange={choose} />
+        )
+      }
       dashboard={{ label: `Open the full ${label} dashboard`, href: `/teacher/${phase}` }}
       cols={3}
-      links={walks.map((w) => ({ label: fillTemplate(w.question, ctx), href: m?.focus ? walkHref(w, params) : null }))}
+      lead={picker}
+      links={walks.map((w) => ({ label: fillTemplate(w.question, ctx), href: walkHref(w, params) }))}
       tiles={walks.map((w) => (
-        <QuestionTile key={w.id} walk={w} figure={fig[w.id] ?? null} ctx={ctx} href={m?.focus ? walkHref(w, params) : null} loading={loading} />
+        <QuestionTile key={w.id} walk={w} figure={fig[w.id] ?? null} ctx={ctx} href={walkHref(w, params)} loading={loading} />
       ))}
-      note={m && !m.focus ? "No subject results are published for this school at this phase yet." : null}
+      note={
+        failed ? (
+          <span data-home-failed={current?.code ?? 0} className="flex flex-wrap items-center gap-2">
+            Your {label} figures didn&rsquo;t load{current?.code ? ` (error ${current.code})` : ""}. The questions still open: each walk loads its own.
+            <button type="button" onClick={() => setTries((n) => n + 1)} className="min-h-[44px] font-semibold underline sm:min-h-0">Try again</button>
+          </span>
+        ) : m && !m.focus ? (
+          `No subject results are published for this school at this phase yet. The ${ph}' figures appear here once DfE publishes them.`
+        ) : null
+      }
     />
   );
 }
@@ -199,24 +281,45 @@ export function SetsCard({ urn, role = "admissions", entry = null }: { urn: stri
 
 // ------------------------------------------------------------------------------------------------ SMT
 
-function smtFigures(o: Overview | null, primary: boolean): Record<string, TileFigure> {
+/** 0.8 feedback B5 (SMT 2, SMT 14): the phase the SMT home's pills pick -- the dashboards' level, one choice
+ * for both (smtLevelKey); a primary school has none. */
+export type SmtHomeLevel = "whole" | "gcse" | "post16";
+
+/** The tiles' figures at a level. Overview is the whole school at any level, as on the dashboard; Academic
+ * takes the level's headline; Pupils the level's roll (its phase line), from the Pupils answer. */
+export function smtFigures(o: Overview | null, primary: boolean, level: SmtHomeLevel = "whole", p: Pupils | null = null): Record<string, TileFigure> {
   if (!o) return {};
   const out: Record<string, TileFigure> = {};
-  const p = primary ? "smt_primary" : "smt";
+  const pre = primary ? "smt_primary" : "smt";
   if (o.now.roll !== null) {
     const ch = o.now.changePct;
     const dir = ch === null ? "" : Math.abs(ch) < 0.5 ? ", level" : `, ${ch > 0 ? "up" : "down"} ${Math.abs(ch).toFixed(0)}% since ${periodLabel(o.now.base.period)}`;
-    out[`${p}-overview`] = { figure: o.now.roll.toLocaleString("en-GB"), unit: `pupils${dir}` };
+    out[`${pre}-overview`] = { figure: o.now.roll.toLocaleString("en-GB"), unit: `pupils${dir}` };
   }
-  const head = o.rows.find((r) => r.stage === "ks4" && r.unit === "points" && r.value !== null) ?? o.rows.find((r) => r.stage === "ks5" && r.unit === "points" && r.value !== null);
-  if (!primary && head?.value != null) out[`${p}-academic`] = { figure: head.value.toFixed(1), unit: head.label };
-  const whole = o.trends.roll.lines[0];
-  const act = (whole?.actual ?? []).filter((x) => x.value !== null);
+  const want = level === "gcse" ? ["ks4"] : level === "post16" ? ["ks5"] : ["ks4", "ks5"];
+  const head = want.map((st) => o.rows.find((r) => r.stage === st && r.unit === "points" && r.value !== null)).find(Boolean);
+  if (!primary && head?.value != null) out[`${pre}-academic`] = { figure: head.value.toFixed(1), unit: head.label };
+  const line = level === "whole" ? o.trends.roll.lines[0] : (p?.trends.phases ?? []).find((l) => (level === "gcse" ? /secondary|senior/i : /sixth/i).test(`${l.key} ${l.label}`));
+  const act = ((line as { actual?: { value: number | null }[] } | undefined)?.actual ?? []).filter((x) => x.value !== null);
   if (act.length >= 2) {
     const d = (act[act.length - 1].value as number) - (act[act.length - 2].value as number);
-    out[`${p}-pupils`] = { figure: `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(Math.round(d)).toLocaleString("en-GB")}`, unit: "pupils on last year" };
+    out[`${pre}-pupils`] = { figure: `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(Math.round(d)).toLocaleString("en-GB")}`, unit: level === "whole" ? "pupils on last year" : `${LEVEL_LABEL[level]} pupils on last year` };
   }
   return out;
+}
+
+/** The walk's address at a level: Overview is the whole school; the others carry the level. */
+export function smtWalkHref(w: Walk, level: SmtHomeLevel): string {
+  return walkHref(w, level !== "whole" && !w.id.endsWith("-overview") ? { level } : {});
+}
+
+function readHomeLevel(urn: string): SmtHomeLevel {
+  try {
+    const l = new URLSearchParams(window.localStorage.getItem(smtLevelKey(urn)) ?? "").get("level");
+    return l === "gcse" || l === "post16" ? l : "whole";
+  } catch {
+    return "whole";
+  }
 }
 
 /** The line under a primary school's SMT heading (the board's wording). */
@@ -229,15 +332,35 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
   const sets = useSmtSet(member.schoolUrn, s ? setPhaseOf(s.phases) : null);
   const o = useSmt<Overview>(s && sets.set ? "/api/smt/overview" : null, sets.set ? { urn: member.schoolUrn, set: sets.set } : null);
   const primary = !!s && s.phases.primary && !s.phases.gcse && !s.phases.post16;
+  // B5 (SMT 2, 14): the pills switch the home's phase -- the tiles' figures and the walks -- as the
+  // dashboards' level does, and remember it for them (smtLevelKey).
+  const [picked, setPicked] = useState<SmtHomeLevel | null>(null);
+  useEffect(() => {
+    // After the first draw (the server draws the whole school), the level remembered for this school.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPicked((x) => x ?? readHomeLevel(member.schoolUrn));
+  }, [member.schoolUrn]);
+  const want = picked ?? "whole";
+  const level: SmtHomeLevel = !s || primary || (want === "gcse" && !s.phases.gcse) || (want === "post16" && !s.phases.post16) ? "whole" : want;
+  const pickLevel = (l: SmtHomeLevel) => {
+    setPicked(l);
+    try {
+      window.localStorage.setItem(smtLevelKey(member.schoolUrn), l === "whole" ? "" : new URLSearchParams({ level: l }).toString());
+    } catch {
+      // Blocked storage: the pick holds for this visit.
+    }
+  };
+  const p = useSmt<Pupils>(s && sets.set && level !== "whole" ? "/api/smt/pupils" : null, sets.set ? { urn: member.schoolUrn, set: sets.set, level: "whole" } : null);
   const walks = walksFor(primary ? "smt_primary" : "smt");
-  const figures = smtFigures(o.status === "ready" ? o.data : null, primary);
-  const loading = o.status === "loading";
+  const figures = smtFigures(o.status === "ready" ? o.data : null, primary, level, p.status === "ready" ? p.data : null);
+  const loading = o.status === "loading" || (level !== "whole" && p.status === "loading");
   // Front door 2b (M1): Context's figure, fetched late through its walk's own read (the area read), once the
   // home's own reads have settled; cached for the session. No figure until it arrives, and none on an error.
   const contextId = `${primary ? "smt_primary" : "smt"}-context`;
-  const contextFigure = useLateTileFigure<Context>(s ? smtContextUrl(member.schoolUrn) : null, !!s && !loading, smtContextFigure);
+  const contextFigure = useLateTileFigure<Context>(s ? smtContextUrl(member.schoolUrn, level) : null, !!s && !loading, smtContextFigure);
   const accent = pref === "light" ? ROLE_ACCENT_LIGHT.smt : ROLE_ACCENT.smt;
-  const chips = s ? (primary ? ["Key stage 2"] : ["Whole school", ...(s.phases.gcse ? ["GCSE"] : []), ...(s.phases.post16 ? ["Post-16"] : [])]) : [];
+  const chips: { key: SmtHomeLevel | "ks2"; label: string }[] = s ? (primary ? [{ key: "ks2", label: "Key stage 2" }] : [{ key: "whole", label: "Whole school" }, ...(s.phases.gcse ? [{ key: "gcse" as const, label: "GCSE" }] : []), ...(s.phases.post16 ? [{ key: "post16" as const, label: "Post-16" }] : [])]) : [];
+  const levelPill = "rounded-full border border-[var(--field-chip-border)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]";
   return (
     <HomeSection
       field="top"
@@ -245,20 +368,32 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       chip="SMT"
       // Crosscheck (14 Nov, home_primary_smt.png): a primary school's SMT home has its own line under the heading.
       heading={heading && primary ? <HomeHeading sub={PRIMARY_SMT_SUBLINE} onField /> : heading}
-      controls={chips.map((c, i) => (
-        <span key={c} className={`rounded-full px-3.5 py-1.5 text-[14px] ${pick(i === 0, "bg-[var(--field-chip-bg)] font-semibold")} border border-[var(--field-chip-border)] text-[var(--field-chip-fg)]`}>
-          {c}
-        </span>
-      ))}
-      dashboard={{ label: "Open the full SMT dashboards", href: "/teacher/smt" }}
+      controls={
+        chips.length > 1 ? (
+          <span role="group" aria-label="Phase" className="flex flex-wrap gap-2">
+            {chips.map((c) => (
+              <button key={c.key} type="button" data-smt-level={c.key} aria-pressed={level === c.key} onClick={() => pickLevel(c.key as SmtHomeLevel)} className={`min-h-[44px] sm:min-h-0 ${levelPill} ${pick(level === c.key, "bg-[var(--field-chip-bg)] font-semibold")} hover:bg-[var(--field-chip-bg)]`}>
+                {c.label}
+              </button>
+            ))}
+          </span>
+        ) : (
+          chips.map((c) => (
+            <span key={c.key} className={`${levelPill} bg-[var(--field-chip-bg)] font-semibold`}>
+              {c.label}
+            </span>
+          ))
+        )
+      }
+      dashboard={{ label: "Open the full SMT dashboards", href: `/teacher/smt${level !== "whole" ? `?level=${level}` : ""}` }}
       cols={2}
-      links={walks.map((w) => ({ label: w.question, href: w.screens.length ? walkHref(w) : null }))}
+      links={walks.map((w) => ({ label: w.question, href: w.screens.length ? smtWalkHref(w, level) : null }))}
       tiles={walks.map((w) =>
         w.screens.length ? (
           w.id === contextId ? (
-            <QuestionTile key={w.id} walk={w} figure={contextFigure} ctx={{}} href={walkHref(w)} late />
+            <QuestionTile key={w.id} walk={w} figure={contextFigure} ctx={{}} href={smtWalkHref(w, level)} late />
           ) : (
-            <QuestionTile key={w.id} walk={w} figure={figures[w.id] ?? null} ctx={{}} href={walkHref(w)} loading={loading} />
+            <QuestionTile key={w.id} walk={w} figure={figures[w.id] ?? null} ctx={{}} href={smtWalkHref(w, level)} loading={loading} />
           )
         ) : (
           <NoWalkTile key={w.id} walk={w} why="Key stage 2 results by subject aren't in SMT Academic yet. The full SMT dashboards show what there is." />
@@ -266,10 +401,86 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       )}
       note={primary ? "KS2 tests did not run in 2019/20 or 2020/21, so those years show as gaps." : null}
     >
+      {/* B5 (SMT 15): every subject the school teaches, by phase, each opening its Teacher walks and dashboard. */}
+      {s && !primary && <OurSubjects urn={member.schoolUrn} phases={[...(s.phases.gcse ? (["ks4"] as const) : []), ...(s.phases.post16 ? (["ks5"] as const) : [])].filter((ph) => level === "whole" || (level === "gcse" ? ph === "ks4" : ph === "ks5"))} />}
       {/* D21: the school's sets, then (0.8 groups r1) the school's group where its head office holds a group account. */}
       <SetsCard urn={member.schoolUrn} role="smt" />
       <SchoolGroupTile urn={member.schoolUrn} />
     </HomeSection>
+  );
+}
+
+type SubjectsLite = { subjects: TeacherModel["subjects"] };
+
+/**
+ * 0.8 feedback B5 (SMT 15): "Our subjects", built like head office's "Our schools": a card per subject the
+ * school teaches, by phase (largest entries first), each opening that subject's three Teacher walks
+ * (Candidates, Results, Comparisons) and its Teacher dashboard. The walks only read; the dashboard opens on
+ * the subject for this visit (shown, not saved: ?subject=…&from=smt).
+ */
+export function OurSubjects({ urn, phases }: { urn: string; phases: ("ks4" | "ks5")[] }) {
+  const [by, setBy] = useState<Partial<Record<"ks4" | "ks5", SubjectsLite | "error">>>({});
+  const [all, setAll] = useState<Partial<Record<"ks4" | "ks5", boolean>>>({});
+  useEffect(() => {
+    let live = true;
+    for (const ph of phases)
+      void getJson<SubjectsLite>(`/api/front-door/teacher?urn=${urn}&phase=${ph}&lite=1`).then((m) => live && setBy((b) => ({ ...b, [ph]: m ?? "error" })));
+    return () => {
+      live = false;
+    };
+  }, [urn, phases.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!phases.length) return null;
+  const SHOW = 9;
+  return (
+    <div data-our-subjects="" className="flex flex-col gap-3">
+      <h2 className="text-[19px] font-semibold text-[var(--field-ink)]">
+        Our subjects <span className="text-[14px] font-normal">Walk through any subject as its teachers see it.</span>
+      </h2>
+      {phases.map((ph) => {
+        const d = by[ph];
+        const product = ph === "ks4" ? "gcse" : "post16";
+        const walks = walksFor(product);
+        const subjects = d && d !== "error" ? [...d.subjects].sort((a, b) => b.entries - a.entries) : [];
+        return (
+          <div key={ph} className="flex flex-col gap-2" data-our-subjects-phase={ph}>
+            <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--field-ink)]">{PHASE_LABELS[ph]}</p>
+            {!d ? (
+              <p className="flex items-center gap-2 text-[13px] text-[var(--field-ink)]"><Spinner size={16} /> Loading the subjects…</p>
+            ) : d === "error" ? (
+              <p className="text-[13px] text-[var(--field-ink)]">The subjects didn&rsquo;t load. The {PHASE_LABELS[ph]} dashboard lists them.</p>
+            ) : !subjects.length ? (
+              <p className="text-[13px] text-[var(--field-ink)]">No {PHASE_LABELS[ph]} subject results are published for this school yet.</p>
+            ) : (
+              <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" aria-label={`Our ${PHASE_LABELS[ph]} subjects`}>
+                {subjects.slice(0, all[ph] ? undefined : SHOW).map((sub) => (
+                  <li key={sub.key} data-our-subject={sub.key} className="fd-tile flex flex-col gap-2 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
+                    <span className="min-w-0">
+                      <span className="block truncate text-[15px] font-medium">{sub.subject}</span>
+                      <span className="block text-[12.5px] text-[var(--muted2)]">{sub.qualLabel} · {sub.entries.toLocaleString("en-GB")} {sub.entries === 1 ? "entry" : "entries"}</span>
+                    </span>
+                    <span className="flex flex-wrap gap-1.5">
+                      {walks.map((w) => (
+                        <Link key={w.id} href={walkHref(w, { subject: sub.key })} className="inline-flex min-h-[44px] items-center rounded-full bg-[var(--tile-tint)] px-3 text-[12.5px] font-semibold text-[var(--tile-accent-text)] sm:min-h-[30px]">
+                          {w.label.replace(" · Context", "")}
+                        </Link>
+                      ))}
+                      <Link href={`/teacher/${ph}?subject=${encodeURIComponent(sub.key)}&from=smt`} className="inline-flex min-h-[44px] items-center rounded-full px-2 text-[12.5px] text-[var(--muted2)] hover:text-[var(--fg)] sm:min-h-[30px]">
+                        Dashboard &rarr;
+                      </Link>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {subjects.length > SHOW && (
+              <button type="button" onClick={() => setAll((a) => ({ ...a, [ph]: !a[ph] }))} className="w-fit min-h-[44px] text-[13px] font-semibold text-[var(--field-ink)] underline sm:min-h-0">
+                {all[ph] ? "Show fewer" : `Show all ${subjects.length}`}
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -373,12 +584,13 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
       dashboard={{ label: "Open the full Admissions dashboards", href: `/teacher/admissions${current ? `?entry=${encodeURIComponent(current)}` : ""}` }}
       cols={2}
       links={walks.map((w) => ({ label: fillTemplate(w.question, { entry: label }), href: walkHref(w, params) }))}
+      // 0.8 feedback B4 (Admissions 1): the sets (who feeds us, who are our rivals) drive the walks, so they
+      // are the home's top task, above the questions.
+      lead={<SetsCard urn={urn} role="admissions" entry={current} />}
       tiles={walks.map((w, i) => (
         <QuestionTile key={w.id} walk={w} figure={(i === 0 ? f?.pool : f?.share) ?? null} ctx={{ entry: label }} href={walkHref(w, params)} loading={!f} />
       ))}
-    >
-      <SetsCard urn={urn} role="admissions" entry={current} />
-    </HomeSection>
+    />
   );
 }
 

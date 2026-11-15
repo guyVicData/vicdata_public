@@ -259,7 +259,7 @@ export function ValueAddedPanel({ a, fullscreen, highlight = null }: { a: GroupA
           </table>
         </section>
       )}
-      <div className="text-[11px] text-[var(--muted2)]">Each list highest first; {shownOf(show(al.rows), al.rows.length).toLowerCase()} with A-level value added{p8.rows.length ? `, ${shownOf(show(p8.rows), p8.rows.length).replace("Showing ", "")} with Progress 8` : ""}. Value added is never drawn in a results chart (R-GROUP-VA-SEPARATE). Independent schools have no Progress 8: not published.</div>
+      <div className="text-[11px] text-[var(--muted2)]">Each list highest first; {shownOf(show(al.rows), al.rows.length).toLowerCase()} with A-level value added{p8.rows.length ? `, ${shownOf(show(p8.rows), p8.rows.length).replace("Showing ", "")} with Progress 8` : ""}. Value added is shown on its own, never in a results chart. Independent schools have no Progress 8: not published.</div>
     </div>
   );
 }

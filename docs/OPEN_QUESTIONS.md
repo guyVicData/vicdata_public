@@ -3449,3 +3449,144 @@ the report (`docs/v0.8/feedback_a_report_v1.md`) lists every note by number.
   answers still aren't cached; every caller checks `ok` before reading the body (checked).
 - The indexed chart's note names its base honestly: "2021/22, the first year The Chase and the most
   comparators have entries" (The Chase's own first year is 2020/21, which England and the LA don't publish).
+
+## 2026-11-15: feedback build B
+
+Guy's live feedback of 15 Nov (`docs/v0.8/feedback_15nov/`), build B (walks and homes), run unattended from
+`docs/v0.8/vicdata_0_8_feedback_15nov_claude_code_prompt_v1.md`. Each call below was taken without asking;
+the report (`docs/v0.8/feedback_b_report_v1.md`) lists every note by number.
+
+**Subject families (Guy's grouping decision, 15 Nov; Guy may revise it).**
+- **Four families added** to `src/lib/subject-match.ts` (`SUBJECT_FAMILIES`), each shown in comparisons as
+  "{subject} (all titles)", each school's own title kept in its own tables:
+  - Religious Studies with Religious Education, at Post-16 (A level, AS, and the IB components) and at GCSE
+    (any GCSE qualification);
+  - the Design and Technology A level titles: Product Design, Engineering, Textiles Technology, Three
+    Dimensional Design (3D Design), at A level and AS only. The IB's plain "Design and Technology" and a BTEC
+    3D Design stay apart. Design and Technology (Textiles Technology) leaves nothing else: build A kept it out
+    of Art and Design, and it stays out;
+  - Drama and Theatre Studies with Theatre Studies, at Post-16 (A level, AS, and the IB components);
+  - GCSE Art and Design with GCSE Photography (GCSE qualifications only; a separate family from the A level
+    one, so no Fine Art at GCSE).
+- **Across the IB (a call).** In the data, Religious Education and Theatre Studies exist at Post-16 only as
+  IB components ("IBO Standard level component", "IBO Higher level component"). Matched only within the same
+  qualification, as Art and Design is, those two groupings would never join anything. So in these two
+  families an IB component (Higher or Standard) is compared as the GCE A level: the comparator route, the
+  area rows and England's family figure read the IB rows beside the A level ones. The AS stays its own. DfE
+  scores both on its one Post-16 points scale; if Guy would rather keep IB and A level apart, set `acrossIB`
+  to false in the two families and they behave as Art and Design does.
+- **Kept separate:** English, Mathematics, Music, Classics and Computing titles (a test each).
+- **Rewritten test (build A's `feedback-a.test.tsx`):** two assertions said GCSE Art and Design and D&T
+  Textiles were in no family; they now say neither is in the A level Art and Design family. The rule's
+  statement (R-SUBJECT-MATCH) names the new families; its runner adds `feedback-b.test.tsx`.
+- **GCSE families' area rows** read the area's every GCSE subject once and keep the family's titles (build A's
+  grouped path read Post-16 only). England's figure for a GCSE family is added beside its titles' own, in the
+  Teacher dashboard route and the walks' loader.
+
+**B1, every walk ends on its answer (G1, SMT 7; R-WALK-ENDS-ON-ANSWER).**
+- **"The final window" is "Here's what you found".** It now opens on the answer: the walk's question, its
+  sentence and a data view drawn large, then "How you got there" (the old summary), then the way on. The walk's
+  screens are unchanged, so R-WALK-NO-REPEAT still holds and no screen is added to any walk.
+- **Which view answers each walk** (walks.ts `answer`): Teacher, How many: the entries trend; How well: the
+  Results chart (points against England); Comparisons: the ranking (falling back to the nearby schools' points
+  bars where too few schools have a figure to rank). SMT Overview: the scorecard; Academic: the new subjects
+  ranking; Pupils: roll by phase; Context: children nearby over time. Admissions Pipelines: the pipeline;
+  Market share: the share bars against the rivals. Head office Overview: Against others; Schools: who is
+  growing; Academic: schools ranked; Pupils: growing and shrinking. A primary school's Academic walk has no
+  screens and so no answer (as before, its card says why).
+- **SMT 7, how the subjects are ranked.** Points, grades and value added aren't comparable across
+  qualifications, so each subject is ranked on its standing in the set: where the school places among the
+  set's schools teaching it, 1 at the top to 0 at the bottom. Top quarter: "Strong"; bottom quarter: "Needs
+  attention". Subjects the set can't place (too few entries, the only school, no figure) are listed after,
+  with why. Built from the Subject areas view's own figures (`src/lib/smt/subjects-ranked.ts`), so it agrees
+  with the dashboard. It is drawn only on the walk's last window, not added to the dashboard (a call: SMT
+  Academic's dashboard already ranks each subject in Subject areas; Guy may want it as a dashboard view too).
+- **A fix found on the way:** the SMT walk never set the Academic views' band colours (`acVars`), which the
+  dashboard sets on its root; the walk now sets them, so Academic's dots and bands draw in their colours.
+
+**B2, the rail and the way home (D4, Admissions 2, Admissions 12; R-WALK-RAIL, a new rule).**
+- The rail lists the walk's own screens in order; a click steps the walk; "More on the dashboard →" is the
+  one link out. A view the walk shows twice is told apart by its setting ("Bars · whole school").
+- **Dropped:** the SMT, Admissions and head office walks' "As a table" row, which did nothing (its handler was
+  empty). Teacher keeps "As a table" (it switches the chart in place). Head office's walk no longer draws the
+  group view's own rail (still built by `groupWalkView`, and still on the dashboard).
+- "Back to your home" sits beside the heading of "Here's what you found" and again at its foot.
+- **Rewritten:** R-WALK-RHYTHM's statement (the head office walk's rail is the walk's own; the school-first
+  walk); `walks-check.ts` skips the rhythm for a school-first walk's second screen; R-FRONT-DOOR-MOBILE's two
+  exceptions for the removed rail links are gone (`mobile-scan.ts`).
+
+**B4, Admissions 8 (the Pipeline walk starts with the school).** The cohort screen ("Your Year 7 cohort, year
+by year") is second, asking "How many have joined us at 11+, year by year?" (it asked "And our own cohort?" as
+the last screen). That breaks the rhythm (over time before in context), so the walk is marked `schoolFirst` and
+the rhythm check runs from its third screen.
+
+**D6 (SMT 9).** Entry points leave the secondary SMT Pupils walk and stay on the SMT Pupils dashboard. A primary
+school's walk keeps them: its 4+ entry is how that walk answers "are numbers holding up from Reception?"
+(logged in WALK_SCREENS_LEFT_OUT), and Admissions isn't a primary product.
+
+**B3, no build notes in the page (Admissions 6, Admissions 7, SMT 4; R-NO-BUILD-NOTES).**
+- **The rule's reach.** "User text" is checked where it is written: every component's and page's strings and
+  JSX text (the TypeScript parser, so comments never count), the walks' word files, the catalogue's view names,
+  titles and methods, the dataview notes a page actually shows (a role walk's note, the Admissions editor's
+  tooltips), and the walks' words built on the fixtures. Most catalogue `note`s are builders' notes ("Placement
+  mismatch F2…") and no page shows them, so they stay as they are. View IDs in code (`case "DV-…"`) are the
+  code's keys, not words. Exempt: the platform admins' chooser lab (`/platform/chooser-lab`).
+- **Patterns beyond the brief's list:** a view ID, a document path ("docs/…") and a build round ("0.7 r3",
+  "0.8 SMT…"), each of which reached a page.
+- **Rewritten for a teacher:** the walk rail's note (gone, B2); "Past pools (same method, earlier censuses)" →
+  "Earlier years, counted the same way"; the pipeline's "Rung 2 · ages …, widening range" → "Counted now: ages
+  … (years), a wider range"; SMT's market share note → "Admissions' figures, read-only. Where the school has no
+  Admissions rivals at 11+, the view says why."; the Comparisons map note's "Positions on the national grid; no
+  base map in the walk" → "Each dot sits where its school is."; the dumbbell note's "the dashboard's Context ›
+  Trends rail" → "On the dashboard it is Context › Trends"; two rule IDs in tooltips and captions (an IGCSE
+  school on Admissions' bars; head office's value-added lists) and one in a method; four methods' "(empty
+  state)" → "(the view says so / why)"; a method's document path; the Admissions editor's "(0.7 r3, F7)";
+  Admissions' Shape and size captions ("as the school page's Shape card", "the shared classifier"); the area
+  lines' "until more years are synced".
+
+**B4, the Admissions home (Admissions 1, 4, 5).**
+- **Admissions 1:** the sets card ("Who feeds us? · Who do we compete with?") moves above the two questions
+  (HomeSection's new `lead` slot); it was below them.
+- **Admissions 4 and 5, one reading (a call).** Note 4 asks for the "Open the full Admissions dashboard" button
+  to be a tint of the blue; note 5 ("Dashboard in Mid: use a tinted background rather than white, so it's
+  less prominent") is read as the same button in Mid, where it was a white chip. The prompt's wording ("Dashboards
+  in Mid get a tinted background") could mean the dashboard pages' plates; that wasn't done: the Mid dashboard
+  plates are Light's near-white by design (front door 2b, R-THEME-CONTRAST's Mid rows), and the note's own
+  words ("less prominent") fit the button. If Guy meant the plates, it is a stylesheet change for build C.
+- **Every home's dashboard button, not only Admissions'**: HomeSection draws the button for every role, so each
+  takes a tint of its own colour (its tile tint, with the tile's accent text: both already contrast-checked in
+  every theme). One component, one look.
+
+**B5, the SMT home (SMT 1, 2, 14, 15).**
+- **SMT 1, the loading graphic:** a turning ring with words (`src/components/shell/LoadingGraphic.tsx`) in every
+  dashboard view still loading (the shared `Skeleton`, so Admissions' and head office's views get it too: it
+  was a bare pulsing box, white on white in Mid), the SMT page's own "Loading SMT…", every walk's loading
+  screen and a home tile's figure on its way. Still under reduced motion.
+- **SMT 2 and 14, the pills:** Whole school, GCSE and Post-16 are buttons. A pick re-scopes the home as the
+  dashboards' level does, and is remembered under the dashboards' own key (`smtLevelKey`), so the dashboard
+  opens on the same phase: Academic's figure is the phase's headline (none for an IGCSE school at GCSE, as on
+  the dashboard); Pupils' is the phase's own roll line; Context's figure and walk read the phase's ages; the
+  Academic, Pupils and Context walks open at the level (`?level=`). Overview stays the whole school at any
+  level, as its dashboard does. A primary school keeps one chip (Key stage 2), not a button.
+- **SMT 15, "Our subjects" (calls):** under the SMT questions, a block per phase (GCSE, Post-16; one when a pill
+  picks a phase), a card per subject the school teaches, largest entries first (nine, then "Show all"), each
+  with its Candidates, Results and Comparisons walks and "Dashboard →". The list is the Teacher home's own
+  read (`/api/front-door/teacher?lite=1`), which any member of the school may read. The walks only read. The
+  Teacher dashboard opens on the subject for that visit (`?subject=…&from=smt`: shown, not saved, as a linked
+  set's subject is) and, with `from=smt`, skips Teacher's one-screen setup, which an SMT reader has no need
+  of. Saving anything there is still the reader's own choice, as on any dashboard.
+- **D6** is in M2 (the walk).
+
+**B6, the Teacher home (Teacher 1).**
+- **What "Coming" meant:** a tile showed "Coming" whenever the home's figures weren't in: while they loaded, and
+  for good if the request failed (the tile had no link without a loaded subject). It never meant "no subject
+  set": with none ticked the home silently showed the school's first subject (English Language at The Chase).
+  Read through the loader on production (read-only), The Chase's GCSE model builds in under 2 s, so on 15 Nov
+  the request most likely failed live; the code isn't logged anywhere I can read. Now a failed load says so,
+  with its code and "Try again", and logs it.
+- **Fixed:** every tile starts its walk at once (the walk loads its own figures and, with no subject, picks the
+  school's first itself); "Coming" is gone from the tile. With no subject set, the home asks "Which subject do
+  you teach?" over the school's subjects; the pick is remembered in this browser (a per-viewer convenience; no
+  database write) and the questions follow it; "Set your subjects for good" opens Teacher setup.
+- **Rewritten test:** R-HOME-TILES's "the SMT Context tile and its walk ask one address" now expects both to ask
+  at the level the pills picked (`smtContextUrl(urn, level)`), the whole school by default.

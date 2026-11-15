@@ -1,0 +1,22 @@
+#!/bin/zsh
+# usage: checks.sh <sha> <tag>: a scratch worktree at <sha>; eslint, build, tsc, rules, catalogue unit, pglite, unit files
+S=/private/tmp/claude-501/-Users-guy--t3-worktrees-vicdata-public-t3-43191fd7/18cb1b86-d743-4bd9-ae63-ecb97014aaa8/scratchpad
+R=/Users/guy/.t3/worktrees/vicdata_public/t3-43191fd7
+SHA=$1; G=$2; T=$S/wt_$G; O=$S/out_$G
+mkdir -p $O
+cd $R && git worktree add --detach $T $SHA >/dev/null 2>&1
+cp -cR $R/node_modules $T/node_modules; cp $R/.env $R/.env.local $T/
+cd $T
+npx eslint > $O/eslint.txt 2>&1; echo "eslint $?" > $O/checks.txt
+npm run build > $O/build.txt 2>&1; echo "build $?" >> $O/checks.txt
+npx tsc --noEmit -p . > $O/tsc.txt 2>&1; echo "tsc $?" >> $O/checks.txt
+npx -y tsx --env-file=.env --env-file=.env.local scripts/catalogue-rule-tests.ts > $O/rules.txt 2>&1; echo "rules $?" >> $O/checks.txt
+npx -y tsx --test scripts/catalogue-unit-tests.ts > $O/catunit.txt 2>&1; echo "catunit $?" >> $O/checks.txt
+: > $O/pglite.txt
+for f in supabase/tests/*_pglite.mjs; do
+  D=$T; grep -qi postgis $f && D=$S/pgl55
+  if head -5 $f | grep -q "npx tsx\|tsx "; then PGLITE_DIR=$D npx tsx $f >> $O/pglite.txt 2>&1; else PGLITE_DIR=$D node $f >> $O/pglite.txt 2>&1; fi
+  echo "== $? $f" >> $O/pglite.txt
+done
+zsh $S/unit.sh $T $O/unit > $O/unit_total.txt 2>&1
+echo done >> $O/checks.txt

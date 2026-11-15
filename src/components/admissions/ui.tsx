@@ -15,6 +15,7 @@ import { RailPanel } from "@/components/shell/RailPanel";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 import { ARROW, flatBand, signedDelta, signedValue } from "@/lib/signed-delta";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
+import { LoadingGraphic } from "@/components/shell/LoadingGraphic";
 
 const A = productAccent("admissions")!;
 
@@ -137,8 +138,14 @@ export function Empty({ children }: { children: ReactNode }) {
   return <div className="flex grow items-center justify-center rounded-[9px] border border-dashed border-[var(--panel-border2)] p-4 text-center text-[12px] leading-snug text-[var(--muted2)]">{children}</div>;
 }
 
+// 0.8 feedback B5 (SMT 1): a view waiting on its figures shows the loading graphic (a turning ring and
+// words), not a bare pulsing box, which in Mid was white on white. SMT's, Admissions' and head office's views.
 export function Skeleton() {
-  return <div className="grow animate-pulse rounded-[9px] bg-[var(--box-bg)]" aria-label="Loading" />;
+  return (
+    <div className="flex grow rounded-[9px] bg-[var(--box-bg)]">
+      <LoadingGraphic />
+    </div>
+  );
 }
 
 // ------------------------------------------------------------------------- formats

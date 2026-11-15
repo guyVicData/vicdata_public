@@ -27,8 +27,10 @@ test("R-HOME-TILES: the SMT Context tile and its walk ask one address", () => {
     assert.equal(w.screens[0].view, "DV-SMT-C-NOW");
   }
   assert.equal(smtContextUrl("110110"), "/api/smt/context?urn=110110&area=around&level=whole");
-  assert.match(src("src/components/front-door/role-walks.tsx"), /smtContextUrl\(member\.schoolUrn\)/);
-  assert.match(src("src/components/front-door/sections.tsx"), /useLateTileFigure<Context>\(s \? smtContextUrl\(member\.schoolUrn\)/);
+  // 0.8 feedback B5: both at the level the home's pills picked (the walk's ?level=), the whole school by default.
+  assert.equal(smtContextUrl("110110", "post16"), "/api/smt/context?urn=110110&area=around&level=post16");
+  assert.match(src("src/components/front-door/role-walks.tsx"), /smtContextUrl\(member\.schoolUrn, level \?\? "whole"\)/);
+  assert.match(src("src/components/front-door/sections.tsx"), /useLateTileFigure<Context>\(s \? smtContextUrl\(member\.schoolUrn, level\)/);
   assert.match(src("src/components/groups/GroupHome.tsx"), /groupWalkDashUrl\("academic", office\.id, groupWalkCompare\("academic"\)\)/);
   assert.match(src("src/components/front-door/role-walks.tsx"), /groupWalkDashUrl\(dash, account, compare\)/);
 });

@@ -8,8 +8,7 @@
 // has too few schools publishes nothing for the group either.
 import { cachedReference } from "./server-cache";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "./vicdata-reference";
-import { isGrouped, matchedTitles, mergeByPeriod } from "./subject-match";
-import { latestSubjectName } from "./subject-latest-names";
+import { isGrouped, mergeByPeriod, readQualifications, sameSubject } from "./subject-match";
 
 export type AreaRow = { period: number; entries: number | null; avgPointScore: number | null; schoolCount: number };
 
@@ -23,11 +22,24 @@ export async function subjectAreaRows(phase: "ks4" | "ks5", groupingType: "la" |
     );
     return rows.map((r) => ({ period: r.period, entries: num(r.entries_total), avgPointScore: num(r.avg_value), schoolCount: Number(r.school_count ?? 0) })).sort((a, b) => a.period - b.period);
   }
-  const titles = new Set(matchedTitles(phase, subject, qualificationType));
-  const rows = await cachedReference(`geo:${phase}:${groupingType}:${key}:*:${qualificationType ?? ""}`, () =>
-    lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", measure: "avg_point_score", groupingType, groupingKeys: [key], minSchoolCount, qualificationType: qualificationType! }),
+  // 0.8 feedback B: GCSE families read the area's every subject; Post-16 ones every subject in the
+  // qualification, and the IB components too in a family that spans the IB (as build A, no older label: the
+  // area rollups are stored under the latest one).
+  const rows =
+    phase === "ks4"
+      ? await cachedReference(`geo:ks4:${groupingType}:${key}:*:`, () => lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType, groupingKeys: [key], minSchoolCount }))
+      : (
+          await Promise.all(
+            readQualifications(phase, subject, qualificationType!, { aliases: false }).map((q) =>
+              cachedReference(`geo:${phase}:${groupingType}:${key}:*:${q}`, () =>
+                lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", measure: "avg_point_score", groupingType, groupingKeys: [key], minSchoolCount, qualificationType: q }),
+              ),
+            ),
+          )
+        ).flat();
+  const mine = (rows as { subject: string; qualification_type?: string | null; period: number; entries_total: unknown; avg_value: unknown; school_count?: unknown }[]).filter((r) =>
+    sameSubject(phase, { subject, qualificationType }, { subject: r.subject, qualificationType: phase === "ks5" ? (r.qualification_type ?? qualificationType) : null }),
   );
-  const mine = rows.filter((r) => titles.has(latestSubjectName(r.subject)));
   return mergeByPeriod(mine, (r) => ({ entries: num(r.entries_total), points: num(r.avg_value) }), (period, m, parts) => ({
     period,
     entries: m.entries,

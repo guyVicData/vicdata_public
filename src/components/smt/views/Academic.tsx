@@ -24,6 +24,7 @@ import { signedDelta } from "@/lib/signed-delta";
 import type { Theme } from "@/components/shell/TeacherChrome";
 import { APPLIED_LABEL, bandShort, toneOf, type AppliedType, type BandTone } from "@/lib/smt/qual-groups";
 import type { Academic, AreaSubject, Board, BoardRow, Line, Unit } from "@/lib/smt/academic";
+import { subjectsRanked, subjectsRankedAnswer, type RankedSubject } from "@/lib/smt/subjects-ranked";
 import { BandTable } from "./Tables";
 import { ord, rankText, Td, Th } from "../ui";
 
@@ -720,6 +721,67 @@ export function EveryLine({ a }: { a: Academic }) {
   );
 }
 const FragmentRow = ({ children }: { children: ReactNode }) => <>{children}</>;
+
+/**
+ * 0.8 feedback B1 (SMT 7, R-WALK-ENDS-ON-ANSWER): the Academic walk's answer -- every subject, strongest to
+ * weakest by its place in the set (subjects-ranked.ts), the top quarter marked strong, the bottom quarter
+ * marked as needing attention; subjects the set can't place listed after, with why. HTML bars, so nothing
+ * stretches at any width.
+ */
+export function SubjectsRankedView({ a }: { a: Academic }) {
+  const r = subjectsRanked(a);
+  if (!r.rows.length) return <Centre>{subjectsRankedAnswer(r)}</Centre>;
+  const level = a.state.phase === "gcse" ? "GCSE" : "Post-16";
+  const tone = (m: RankedSubject["mark"]) => (m === "strong" ? "var(--ac-above2)" : m === "attention" ? "var(--ac-below2)" : "var(--ac-mid)");
+  return (
+    <div className="flex flex-col gap-2" data-ac-ranked="">
+      <Vt>{level} subjects, strongest to weakest</Vt>
+      <Tl>
+        Each subject&rsquo;s place among the schools in the set ({a.set.label}) teaching it{r.mode === "va" ? ", on value added" : r.unit === "grade" ? ", on average grade" : ", on points per entry"}
+        {r.period !== null ? ` · ${periodLabel(r.period)}` : ""}. The bar runs from the bottom of the set to the top; the line is its middle.
+      </Tl>
+      <ol className="flex flex-col">
+        {r.rows.map((x, i) => (
+          <li key={`${x.qualification}::${x.subject}`} data-ac-ranked-row={x.mark ?? "middle"} className="grid grid-cols-[22px_minmax(0,1fr)_auto] items-center gap-x-2 border-b border-[var(--panel-border)] py-1.5 last:border-0 sm:grid-cols-[22px_minmax(0,200px)_minmax(80px,1fr)_auto_auto]">
+            <span className="text-right text-[11px] tabular-nums text-[var(--muted2)]">{i + 1}</span>
+            <span className="min-w-0 text-[12px] text-[var(--fg)]">
+              <span className="font-semibold">{x.subject}</span> <span className="text-[10.5px] text-[var(--muted2)]">{x.short}</span>
+            </span>
+            <span aria-hidden="true" className="relative col-span-3 col-start-2 h-[10px] rounded-full bg-[var(--box-bg)] ring-1 ring-[var(--panel-border)] sm:col-span-1 sm:col-start-auto">
+              <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.max(4, x.standing * 100)}%`, background: tone(x.mark) }} />
+              <span className="absolute inset-y-[-3px] left-1/2 w-px bg-[var(--fg)] opacity-50" />
+            </span>
+            <span className="col-start-3 row-start-1 whitespace-nowrap text-right text-[11.5px] tabular-nums text-[var(--chip-fg)] sm:col-start-auto sm:row-start-auto">
+              {ord(x.rank)} of {x.of} · <strong className="text-[var(--fg)]">{fmtAc(x.value, x.unit)}</strong>
+            </span>
+            <span className="hidden min-w-[104px] text-right sm:block">
+              {x.mark && (
+                <span className="inline-flex items-center whitespace-nowrap rounded-full px-2 py-[2px] text-[10.5px] font-bold" style={{ border: `1px solid ${tone(x.mark)}`, color: tone(x.mark) }}>
+                  {x.mark === "strong" ? "Strong" : "Needs attention"}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div className="flex flex-wrap gap-3">
+        <Key swatch={<span className="h-[9px] w-[14px] rounded-full" style={{ background: "var(--ac-above2)" }} />}>Strong: the top quarter of the set</Key>
+        <Key swatch={<span className="h-[9px] w-[14px] rounded-full" style={{ background: "var(--ac-below2)" }} />}>Needs attention: the bottom quarter</Key>
+      </div>
+      {r.unranked.length > 0 && (
+        <div className="flex flex-col gap-0.5" data-ac-ranked-unplaced="">
+          <Tl className="font-bold">Not placed</Tl>
+          {/* One line per reason, its subjects listed once. */}
+          {Array.from(new Set(r.unranked.map((u) => u.why))).map((why) => (
+            <Tl key={why}>
+              {why.charAt(0).toUpperCase() + why.slice(1).replace(/\.$/, "")}: {r.unranked.filter((u) => u.why === why).map((u) => `${u.subject} (${u.short})`).join(", ")}.
+            </Tl>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Moves({ a }: { a: Academic }) {
   const m = a.trends.moves;

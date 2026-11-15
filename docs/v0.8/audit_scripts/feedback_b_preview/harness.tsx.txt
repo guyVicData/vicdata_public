@@ -1,0 +1,17 @@
+// 0.8 feedback B: the walks' screenshot harness (review fixes, M2), plus the homes' sections. The app's own
+// WalkPage (every walk) and the homes' own sections in HomeFrame, fed the routes' real answers (fixtures
+// captured read-only), Supabase and next/* stubbed. ?walk=…&step=N (1-based)&theme=, or ?page=home&s=ks4,smt,admissions
+import { createRoot } from "react-dom/client";
+import { WalkPage } from "@/components/front-door/WalkPage";
+import { HomeFrame } from "@/components/front-door/home";
+import { AdmissionsSection, SmtSection, TeacherPhaseSection } from "@/components/front-door/sections";
+const P = new URLSearchParams(location.search);
+const URN = P.get("urn") ?? "110110";
+const SECTIONS: Record<string, () => JSX.Element> = {
+  ks4: () => <TeacherPhaseSection key="ks4" urn={URN} phase="ks4" />,
+  ks5: () => <TeacherPhaseSection key="ks5" urn={URN} phase="ks5" />,
+  smt: () => <SmtSection key="smt" />,
+  admissions: () => <AdmissionsSection key="adm" urn={URN} />,
+};
+const page = P.get("page") === "home" ? <HomeFrame heading={null} sections={(P.get("s") ?? "smt").split(",").map((k) => SECTIONS[k]())} also={[]} /> : <WalkPage walkId={P.get("walk") ?? "gcse-many"} />;
+createRoot(document.getElementById("root")!).render(page);

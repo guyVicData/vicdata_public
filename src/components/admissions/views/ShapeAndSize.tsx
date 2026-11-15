@@ -124,9 +124,9 @@ export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen, column
             </span>
           ))}
         </div>
-        <Muted>Bars by gender (girls lighter), as the school page&rsquo;s Shape card</Muted>
+        <Muted>Bars by gender (girls lighter)</Muted>
         <Bars rows={s.profile} highlight={entries} ages={ages} />
-        <Muted className="leading-[1.4]">Entry ages highlighted. XS&ndash;XL against schools of that phase in {s.laName ?? "the LA"} and nationally (quintiles), as the school page; a phase can differ from the whole school.</Muted>
+        <Muted className="leading-[1.4]">Entry ages highlighted. XS&ndash;XL against schools of that phase in {s.laName ?? "the LA"} and nationally (fifths); a phase can differ from the whole school.</Muted>
       </div>
       <Cards title={"Rivals\u2019 shapes and sizes"} cards={s.rivals} ages={ages} highlight={entries} fullscreen={fullscreen} columns={columns} />
     </div>
@@ -135,4 +135,4 @@ export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen, column
 
 const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
 
-export const SHAPES_NOTE = "Shape labels use the shared classifier (Tube, Pyramid, Top step, Funnel, Mushroom, Wineglass, Irregular), the same for schools and areas.";
+export const SHAPES_NOTE = "Each shape is one of Tube, Pyramid, Top step, Funnel, Mushroom, Wineglass or Irregular, named the same way for schools and areas.";

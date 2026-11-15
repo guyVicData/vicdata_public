@@ -17,7 +17,7 @@ function resultsCell(r: RivalsView | null, urn: string, which: "regional" | "nat
   const row = r?.rows.find((x) => x.urn === urn);
   if (!r) return <span className="text-[var(--muted)]">…</span>;
   if (!row) return <span className="text-[var(--muted)]">&ndash;</span>;
-  if (row.results.note === "igcse_not_ranked") return which === "regional" ? <span className="text-[var(--muted)]" title="IGCSE-heavy: listed, not ranked on GCSE (R-IGCSE-EXCL)">IGCSE</span> : <span className="text-[var(--muted)]">&ndash;</span>;
+  if (row.results.note === "igcse_not_ranked") return which === "regional" ? <span className="text-[var(--muted)]" title="Most entries are IGCSE: listed, not ranked on GCSE">IGCSE</span> : <span className="text-[var(--muted)]">&ndash;</span>;
   if (row.results.note === "no_published_results") return which === "regional" ? <span className="text-[var(--muted)]" title="No published results at this stage">none</span> : <span className="text-[var(--muted)]">&ndash;</span>;
   const p = row.results[which];
   if (!p) return <span className="text-[var(--muted)]">&ndash;</span>;

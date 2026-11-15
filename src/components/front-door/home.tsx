@@ -20,6 +20,7 @@ import { COLUMN_ICON_PATHS } from "@/components/shell/DashboardColumn";
 import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { TeacherNav, useNavLabels } from "@/components/shell/TeacherNav";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
+import { Spinner } from "@/components/shell/LoadingGraphic";
 import { useFewerQuestions } from "@/lib/front-door/fewer";
 import type { MidField } from "@/lib/front-door/contrast";
 import { fillTemplate, screenMeta, type Walk } from "@/lib/front-door/walks";
@@ -93,7 +94,8 @@ export function QuestionTile({ walk, figure, ctx, href, loading, late }: { walk:
             <span className="text-[14px] text-[var(--muted2)]">{figure.unit}</span>
           </p>
         ) : loading && !late ? (
-          <p aria-hidden="true" className="h-[44px] w-24 rounded-md bg-[var(--box-bg)] opacity-60" />
+          // 0.8 feedback B5 (SMT 1): the figure on its way shows the loading graphic's ring.
+          <p data-tile-loading="" className="flex h-[44px] items-center gap-2 text-[13px] text-[var(--muted2)]"><Spinner size={20} /> Loading…</p>
         ) : null}
         <h3 className="text-[19px] font-medium leading-snug text-[var(--fg)]">{question}</h3>
       </div>
@@ -109,14 +111,13 @@ export function QuestionTile({ walk, figure, ctx, href, loading, late }: { walk:
             );
           })}
         </ul>
+        {/* 0.8 feedback B6 (Teacher 1): a tile always starts its walk; it never says "Coming". */}
         <span className="grow" />
         {href ? (
           <Link href={href} data-tile-action="" aria-label={`Start: ${question}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--tile-accent)] text-[var(--tile-on-accent)] hover:opacity-90 sm:h-10 sm:w-10">
             {ARROW}
           </Link>
-        ) : (
-          <span className="text-[12px] text-[var(--muted2)]">Coming</span>
-        )}
+        ) : null}
       </div>
     </article>
   );
@@ -159,6 +160,7 @@ export function HomeSection({
   cols,
   children,
   note,
+  lead,
 }: {
   field: MidField;
   accent: { hex: string; rgb: string } | null;
@@ -171,6 +173,8 @@ export function HomeSection({
   cols: 2 | 3;
   children?: ReactNode;
   note?: ReactNode;
+  /** 0.8 feedback B4 (Admissions 1): the section's top task, above its questions (Admissions' sets). */
+  lead?: ReactNode;
 }) {
   const [fewer] = useFewerQuestions();
   const style = (accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as CSSProperties;
@@ -183,11 +187,14 @@ export function HomeSection({
           {controls}
           <span className="grow" />
           {dashboard && !fewer && (
-            <Link href={dashboard.href} className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-[var(--field-chip-border)] bg-[var(--field-chip-bg)] px-3.5 py-2 text-[14px] font-semibold text-[var(--field-chip-fg)] hover:opacity-90 sm:min-h-0">
+            // 0.8 feedback B4 (Admissions 4, 5): a tint of the section's own colour (its tile tint, with the
+            // accent text that is contrast-checked on it), not white, so it sits back from the questions.
+            <Link href={dashboard.href} data-home-dashboard="" className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] bg-[var(--tile-tint)] px-3.5 py-2 text-[14px] font-semibold text-[var(--tile-accent-text)] hover:opacity-90 sm:min-h-0">
               {GRID} {dashboard.label}
             </Link>
           )}
         </div>
+        {lead}
         {fewer ? (
           <div className="flex flex-col gap-3" data-fewer="">
             {dashboard && (

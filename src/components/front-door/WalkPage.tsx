@@ -7,9 +7,11 @@
 //   screen   the screen's question large, a one-line written answer from the data; the mini-map (the
 //            dashboard's 3x2 grid, this panel lit, "Show me")
 //   panel    a 3px accent bar; the column's icon, name and question; the pill that sets it; the row tag;
-//            the panel's own rail, names written out (lit = this view; "As a table" switches in place; any
-//            other view opens the dashboard); the chart titled with the view's dashboard title; the note (i)
-//   footer   Back; Next previews the next question; the last screen ends on "Here's what you found"
+//            the walk's rail: the walk's own views, names written out, in its order (lit = this screen; a click
+//            steps the walk there; "As a table" switches in place; "More on the dashboard" at its foot:
+//            0.8 feedback B2, D4); the chart titled with the view's dashboard title; the note (i)
+//   footer   Back; Next previews the next question; the last screen ends on "Here's what you found", which
+//            answers the walk's question with a data view and offers the way home (0.8 feedback B1, B2)
 //
 // Mid (C18): the root draws Light (the plates are white) and the header is a dark band of its own; the
 // screen sits on the part's colour. Dark and Light draw the theme's own.
@@ -20,16 +22,15 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { pickMembership, resolveViewAs, resolvePeek } from "@/lib/view-as";
-import { dataviewById, DATAVIEWS } from "@/catalogue/dataviews";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PHASE_LABELS } from "@/lib/teacher-view-phases";
-import { teacherDashboardFor } from "@/catalogue/dashboards/teacher";
-import { fillTemplate, screenMeta, teacherModeOf, walkById, walksFor, type Walk } from "@/lib/front-door/walks";
+import { fillTemplate, screenMeta, teacherModeOf, walkById, walkRailLabels, walksFor, type Walk } from "@/lib/front-door/walks";
 import type { TeacherModel } from "@/lib/front-door/teacher-model";
-import { teacherScreens, type Screen } from "@/lib/front-door/teacher-screens";
+import { teacherAnswerStep, teacherScreens, type Screen } from "@/lib/front-door/teacher-screens";
 import { palette, WalkChart } from "./charts";
 import { RailGlyph, WalkGlyph, walkHref } from "./home";
 import { RoleWalk } from "./role-walks";
+import { LoadingGraphic } from "@/components/shell/LoadingGraphic";
 
 const CLOSE = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
@@ -174,7 +175,6 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
         <nav aria-label="Views" className="flex min-w-0 flex-col gap-1 border-b border-[var(--panel-border)] p-3 md:border-b-0 md:border-r">
           <p className="hidden px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)] md:block">Views</p>
           {rail}
-          <p className="mt-auto hidden px-2 pt-6 text-[11px] text-[var(--muted)] md:block">The same views, in the same order, as this panel&rsquo;s rail on the dashboard.</p>
         </nav>
         <div className="min-w-0 p-4 sm:p-5">
           {/* Review fixes (14 Nov, M2): SMT's, Admissions' and head office's views carry their own title (the
@@ -193,62 +193,37 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
   );
 }
 
-/** The panel's rail: the views on this panel's rail on the dashboard (lit = this one), then "As a table". */
-export function Rail({ view, asTable, onTable, dashboard, rail }: { view: string; asTable: boolean; onTable: (on: boolean) => void; dashboard: string; rail?: string[] }) {
-  const dv = dataviewById(view);
-  const isTable = (d: { renderer: string }) => d.renderer === "RD-YEAR-TABLE" || d.renderer === "RD-SORT-TABLE";
-  // Crosscheck (14 Nov): given the dashboard panel's own rail (its config), the walk lists exactly that, in
-  // its order, its table views in place (they switch the walk to the chart's table); else the catalogue's.
-  if (rail && rail.length) {
-    const list = rail.map((id) => dataviewById(id)).filter((d): d is NonNullable<typeof d> => !!d);
-    const tableView = list.find(isTable);
-    return (
-      <ul className={RAIL_LIST} data-walk-rail="">
-        {list.map((d) => {
-          const on = d.id === view ? !asTable : isTable(d) && d === tableView && asTable;
-          const row = (
-            <span className={`${RAIL_ROW} ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name={d.railIcon} size={13} /></span>
-              <span className="min-w-0 flex-1">{d.label}</span>
-              {d.id !== view && d !== tableView && <span aria-hidden="true" className="hidden text-[11px] text-[var(--muted)] md:inline">&#8599;</span>}
-            </span>
-          );
-          return d.id === view ? (
-            <li key={d.id}><button type="button" className="w-full text-left" onClick={() => onTable(false)} aria-pressed={!asTable}>{row}</button></li>
-          ) : d === tableView ? (
-            <li key={d.id}><button type="button" className="w-full text-left" onClick={() => onTable(true)} aria-pressed={asTable}>{row}</button></li>
-          ) : (
-            <li key={d.id}><Link href={dashboard} title={`Opens the dashboard at this panel: ${d.label}`}>{row}</Link></li>
-          );
-        })}
-        {!tableView && (
-          <li><button type="button" className="w-full text-left" onClick={() => onTable(true)} aria-pressed={asTable}><span className={`${RAIL_ROW} ${asTable ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}><span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${asTable ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name="TableIcon" size={13} /></span>As a table</span></button></li>
-        )}
-      </ul>
-    );
-  }
-  const views = dv ? DATAVIEWS.filter((d) => d.host.id === dv.host.id && d.host.panel === dv.host.panel && (d.status === "live" || d.id === view) && !isTable(d)) : [];
-  const row = (on: boolean, icon: string, label: string) => (
-    <span className={`${RAIL_ROW} ${on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]"}`}>
-      <span className={`flex h-6 w-6 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name={icon} size={13} /></span>
-      {label}
-    </span>
-  );
+/**
+ * 0.8 feedback B2 (D4, Admissions 2; R-WALK-RAIL): the walk's rail -- the walk's own views, in its order, named
+ * as the dashboard names them (walkRailLabels). The lit one is this screen; a click steps the walk to that
+ * screen, never off to the dashboard. "As a table" (where the walk can draw one) switches this screen in place;
+ * "More on the dashboard" at the foot opens the full dashboard.
+ */
+export function WalkRail({ walk, step, onStep, dashboard, asTable, onTable }: { walk: Walk; step: number; onStep: (i: number) => void; dashboard: string; asTable?: boolean; onTable?: (on: boolean) => void }) {
+  const labels = walkRailLabels(walk);
+  const lit = (on: boolean) => (on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]");
+  const glyph = (on: boolean, icon: string) => <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name={icon} size={13} /></span>;
   return (
     <ul className={RAIL_LIST} data-walk-rail="">
-      {(views.length ? views : dv ? [dv] : []).map((d) =>
-        d.id === view ? (
-          <li key={d.id}>
-            <button type="button" className="w-full text-left" onClick={() => onTable(false)} aria-pressed={!asTable}>{row(!asTable, d.railIcon, d.label)}</button>
+      {walk.screens.map((sc, i) => {
+        const on = i === step && !asTable;
+        return (
+          <li key={i}>
+            <button type="button" data-walk-rail-step={i + 1} className="w-full text-left" aria-current={i === step ? "step" : undefined} onClick={() => (onTable?.(false), onStep(i))}>
+              <span className={`${RAIL_ROW} ${lit(on)}`}>{glyph(on, screenMeta(sc.view)?.icon ?? "TilesIcon")}<span className="min-w-0 flex-1">{labels[i]}</span></span>
+            </button>
           </li>
-        ) : (
-          <li key={d.id}>
-            <Link href={dashboard} title={`Opens the dashboard at this panel: ${d.label}`}>{row(false, d.railIcon, d.label)}</Link>
-          </li>
-        ),
+        );
+      })}
+      {onTable && (
+        <li>
+          <button type="button" className="w-full text-left" onClick={() => onTable(!asTable)} aria-pressed={!!asTable}>
+            <span className={`${RAIL_ROW} ${lit(!!asTable)}`}>{glyph(!!asTable, "TableIcon")}As a table</span>
+          </button>
+        </li>
       )}
-      <li>
-        <button type="button" className="w-full text-left" onClick={() => onTable(true)} aria-pressed={asTable}>{row(asTable, "TableIcon", "As a table")}</button>
+      <li className="md:mt-3 md:border-t md:border-[var(--panel-border)] md:pt-2">
+        <Link href={dashboard} data-walk-rail-more="" className={`${RAIL_ROW} text-[var(--muted2)] hover:text-[var(--fg)]`}>More on the dashboard <span aria-hidden="true">&rarr;</span></Link>
       </li>
     </ul>
   );
@@ -350,24 +325,21 @@ function TeacherWalk({ walk }: { walk: Walk }) {
   const dark = effectiveTheme(pref) === "dark" && pref !== "mid";
   const pal = palette({ dark, accent: { hex: PHASE_ACCENT[phase]!.hex, light: LIGHT_FOCUS[walk.product] }, categoryId: model && model !== "error" ? model.category.id : null });
   const n = walk.screens.length;
-  if (model === null) return <WalkFrame walk={walk} step={0} steps={n} chip={null}><p className="text-[15px] text-[var(--field-ink)]">Loading…</p></WalkFrame>;
+  if (model === null) return <WalkFrame walk={walk} step={0} steps={n} chip={null}><div className="fd-tile flex min-h-[220px] rounded-[14px]"><LoadingGraphic /></div></WalkFrame>;
   if (model === "error") return <WalkFrame walk={walk} step={0} steps={n} chip={null}><p className="text-[15px] text-[var(--field-ink)]">This walk couldn&rsquo;t load your school&rsquo;s figures. <Link className="underline" href="/teacher">Back to your home</Link>.</p></WalkFrame>;
   const params = { subject: model.focus?.key ?? null };
-  if (step >= n) return <WalkFrame walk={walk} step={n} steps={n} chip={chip}><Found walk={walk} screens={screens} params={params} ctx={{ subject: model.focus?.subject ?? null, category: model.category.label }} onBack={() => setStep(n - 1)} /></WalkFrame>;
+  if (step >= n) {
+    // R-WALK-ENDS-ON-ANSWER: the answer screen's chart, drawn again on the last window with its sentence.
+    const ai = teacherAnswerStep(walk, screens);
+    const answer = ai >= 0 ? { sentence: screens[ai].answer, title: screens[ai].title, body: <WalkChart chart={screens[ai].chart} p={pal} asTable={false} /> } : null;
+    return <WalkFrame walk={walk} step={n} steps={n} chip={chip}><Found walk={walk} screens={screens} params={params} ctx={{ subject: model.focus?.subject ?? null, category: model.category.label }} onBack={() => setStep(n - 1)} answer={answer} /></WalkFrame>;
+  }
   const s = walk.screens[step];
   const sc = screens[step];
   const col = columnOf(s.view);
   // Crosscheck (14 Nov): a screen lives on GCSE Candidates or GCSE Results (the boards' mini-map names the
-  // dashboard, never a column); its rail is that dashboard panel's own.
+  // dashboard, never a column). 0.8 feedback B2: its rail is the walk's own (WalkRail).
   const mode = modeOf(s);
-  const dashCfg = teacherDashboardFor(phase, mode);
-  const panelCfg = dashCfg.panels.find((pc) => pc.column === (["candidates", "results"].includes(col) ? "c1" : col === "context" ? "c2" : "c3") && pc.row === (s.spot.row === 0 ? "current" : "trends"));
-  const railIds = (panelCfg?.dataviews ?? []).flatMap((v) => (v.kind === "view" ? [v.dataview as string] : [])).filter((id) => {
-    const d = dataviewById(id);
-    const m = s.options?.measure === "points" ? "points" : null;
-    if (id === s.view) return true;
-    return !!d && d.status === "live" && (!m || !d.resultsMeasures || d.resultsMeasures.includes(m as never));
-  });
   const pills = [
     ...(s.options?.against === "category" && col === "context" ? ["Compared against: Subject category"] : []),
     ...(s.options?.against === "whole" ? ["Compared against: Whole school"] : []),
@@ -392,7 +364,7 @@ function TeacherWalk({ walk }: { walk: Walk }) {
         }
         map={<MiniMap cols={[mode, "context", "rankings"]} spot={s.spot} name={`${PHASE_LABELS[phase]} ${mode === "results" ? "Results" : "Candidates"}`} href={s.options?.against === "whole" && col === "context" ? `${walk.dashboard}?against=whole` : walk.dashboard} />}
         panel={
-          <WalkPanel icon={col} name={COLUMN_NAME[col]} question={colQuestion[col]} pills={pills} tag={sc.tag} title={sc.title} note={sc.note} rail={<Rail view={s.view} asTable={asTable} onTable={setAsTable} dashboard={walk.dashboard} rail={railIds} />}>
+          <WalkPanel icon={col} name={COLUMN_NAME[col]} question={colQuestion[col]} pills={pills} tag={sc.tag} title={sc.title} note={sc.note} rail={<WalkRail walk={walk} step={step} onStep={setStep} dashboard={walk.dashboard} asTable={asTable} onTable={setAsTable} />}>
             <WalkChart chart={sc.chart} p={pal} asTable={asTable} />
           </WalkPanel>
         }
@@ -402,13 +374,37 @@ function TeacherWalk({ walk }: { walk: Walk }) {
   );
 }
 
-/** "Here's what you found": every answer with where it lives, then the other questions and the dashboard. */
-export function Found({ walk, screens, params, ctx, onBack }: { walk: Walk; screens: { question: string; answer: string }[]; params: Record<string, string | null>; ctx: { subject?: string | null; category?: string | null; entry?: string | null }; onBack: () => void }) {
+/** The data view that answers a walk's question, for its last window (R-WALK-ENDS-ON-ANSWER). */
+export type FoundAnswer = { sentence: string; title?: string; body: ReactNode };
+
+/**
+ * "Here's what you found". 0.8 feedback B1 (G1): it opens on the answer to the walk's own question -- the walk's
+ * answer view (a ranking, chart or table, walks.ts `answer`), large, with its sentence -- then how you got
+ * there, screen by screen, then the way on: back to your home (B2, Admissions 12), the other questions and the
+ * full dashboard.
+ */
+export function Found({ walk, screens, params, ctx, onBack, answer }: { walk: Walk; screens: { question: string; answer: string }[]; params: Record<string, string | null>; ctx: { subject?: string | null; category?: string | null; entry?: string | null }; onBack: () => void; answer: FoundAnswer | null }) {
   const others = walksFor(walk.product).filter((w) => w.id !== walk.id && w.screens.length);
+  const home = homeOf(walk);
   return (
     <div className="flex flex-col gap-6" data-walk-found="">
-      <h1 className="text-[30px] font-semibold leading-tight text-[var(--field-ink)] sm:text-[38px]">Here&rsquo;s what you found</h1>
-      <ol className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-[30px] font-semibold leading-tight text-[var(--field-ink)] sm:text-[38px]">Here&rsquo;s what you found</h1>
+        <Link href={home} data-walk-home="" className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-4 py-2.5 text-[14.5px] font-semibold text-[var(--fg)]">{ARROW_L} Back to your home</Link>
+      </div>
+      {answer && (
+        <section data-walk-found-answer={walk.answer?.kind ?? ""} className="overflow-hidden rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
+          <div className="h-[3px] bg-[var(--accent,var(--tile-accent))]" />
+          <div className="flex flex-col gap-3 p-4 sm:p-5">
+            <h2 className="text-[20px] font-semibold leading-snug text-[var(--fg)] sm:text-[24px]">{fillTemplate(walk.question, ctx)}</h2>
+            <p className="text-[15.5px] leading-relaxed text-[var(--fg)]">{answer.sentence}</p>
+            {answer.title && <h3 className="text-[14px] font-semibold text-[var(--fg)]">{answer.title}</h3>}
+            <div data-plate="" className="min-w-0 overflow-x-auto rounded-[10px] bg-[var(--box-bg)] p-3 sm:p-4">{answer.body}</div>
+          </div>
+        </section>
+      )}
+      <h2 className="text-[17px] font-semibold text-[var(--field-ink)]">How you got there</h2>
+      <ol className="-mt-3 flex flex-col gap-3">
         {walk.screens.map((s, i) => {
           const meta = screenMeta(s.view);
           return (
@@ -431,8 +427,9 @@ export function Found({ walk, screens, params, ctx, onBack }: { walk: Walk; scre
         ))}
         <Link href={walk.dashboard} className="inline-flex items-center gap-2 rounded-[12px] bg-[var(--tile-accent,var(--accent))] px-4 py-3 text-[14.5px] font-semibold text-[var(--tile-on-accent,#0a0a0b)]">Open the full dashboard {ARROW_R}</Link>
       </div>
-      <div>
+      <div className="flex flex-wrap gap-3">
         <button type="button" onClick={onBack} className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] px-4 py-3 text-[15px] text-[var(--fg)] hover:bg-[var(--box-bg)]">{ARROW_L} Back</button>
+        <Link href={home} className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] px-4 py-3 text-[15px] text-[var(--fg)] hover:bg-[var(--box-bg)]">Back to your home</Link>
       </div>
     </div>
   );

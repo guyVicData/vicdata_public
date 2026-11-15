@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchSchoolGradeRows, type KsStage, type SubjectGradeCount } from "@/lib/academic-data-view";
 import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
-import { isGrouped } from "@/lib/subject-match";
+import { isGrouped, subjectMatchKey } from "@/lib/subject-match";
 
 // Teacher view, Comparisons on a grade threshold (Grade 4+ / A*-E rate): each comparator
 // school's per-grade entry counts for ONE subject, so the page can score every school's
@@ -47,13 +47,16 @@ export async function GET(request: NextRequest) {
   // 0.8 feedback A1 (R-SUBJECT-MATCH, D2): a grouped title ("Art and Design" with "Fine Art"…) reads every
   // school's rows for the group's titles, under the asked-for name, so their grade counts add up as one subject.
   const grouped = isGrouped(stage, subject);
+  // 0.8 feedback B: several families now, so a row joins when it is in the asked-for subject's family.
+  const family = subjectMatchKey(stage, subject);
+  const inFamily = (g: SubjectGradeCount) => isGrouped(stage, g.subject, g.qualificationType) && subjectMatchKey(stage, g.subject, g.qualificationType) === family;
   const { byUrn } = await fetchSchoolGradeRows(urns, stage, grouped ? null : subject);
   const gradeRowsByUrn: Record<string, SubjectGradeCount[]> = {};
   for (const [urn, rows] of byUrn)
     gradeRowsByUrn[urn] = grouped
       ? // The asked-for subject in any qualification (a BTEC "Art and Design" stays itself), and the group's
         // titles in the grouped qualifications under the asked-for name.
-        rows.filter((g) => g.subject === subject || isGrouped(stage, g.subject, g.qualificationType)).map((g) => (isGrouped(stage, g.subject, g.qualificationType) ? { ...g, subject } : g))
+        rows.filter((g) => g.subject === subject || inFamily(g)).map((g) => (inFamily(g) ? { ...g, subject } : g))
       : rows;
   return NextResponse.json({ gradeRowsByUrn });
 }

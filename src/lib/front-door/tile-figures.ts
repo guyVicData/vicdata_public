@@ -17,8 +17,8 @@ import type { Context } from "@/lib/smt/context";
 export type LateTileFigure = { figure: string; unit: string } | null;
 
 /** The SMT Context walk's read (its first screen's): the area around the school, the whole school's ages. */
-export function smtContextUrl(urn: string): string {
-  return `/api/smt/context?urn=${urn}&area=around&level=whole`;
+export function smtContextUrl(urn: string, level: "whole" | "gcse" | "post16" = "whole"): string {
+  return `/api/smt/context?urn=${urn}&area=around&level=${level}`;
 }
 
 /** ContextNow's projection tile value, word for word (changeWord(pct, 1) there). */

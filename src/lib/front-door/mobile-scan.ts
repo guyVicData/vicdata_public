@@ -31,8 +31,6 @@ export const MOBILE_EXCEPTIONS: { file: string; has: string; why: string }[] = [
   { file: "src/components/sets/GuidedSetEditor.tsx", has: 'type="checkbox"', why: "the tick sits in a 44 px label (h-[44px] w-[44px] on a phone)" },
   { file: "src/components/sets/GuidedSetEditor.tsx", has: 'type="range"', why: "the slider is h-[44px] on a phone" },
   { file: "src/components/front-door/WalkPage.tsx", has: 'className="w-full text-left"', why: "a rail button wraps its row (RAIL_ROW: min-h-[44px] on a phone)" },
-  { file: "src/components/front-door/WalkPage.tsx", has: "title={`Opens the dashboard at this panel", why: "a rail link wraps its row (RAIL_ROW: min-h-[44px] on a phone)" },
-  { file: "src/components/front-door/role-walks.tsx", has: "title={`Opens the dashboard: ${r.label}`}", why: "a rail link wraps its row (RAIL_ROW: min-h-[44px] on a phone)" },
   { file: "src/components/front-door/WalkPage.tsx", has: 'className="underline" href="/teach', why: "an inline link in the error sentence (a load failure), not a control of the screen" },
   { file: "src/components/front-door/WalkPage.tsx", has: 'href="/teacher" className="underline"', why: "an inline link in the no-such-walk sentence (a bad address), not a control of the screen" },
   { file: "src/components/front-door/first-visit.tsx", has: 'className="mt-2 inline-block text-[14px] font-semibold underline', why: "a changelog entry's own link, inside its card (the card is the target's row)" },

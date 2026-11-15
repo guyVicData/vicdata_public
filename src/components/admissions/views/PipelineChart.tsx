@@ -26,7 +26,7 @@ export type Segment = { key: string; label: string; years: number; style: "past"
 export function segmentsOf(p: PipelineOk): Segment[] {
   const out: Segment[] = [];
   const past = p.ladder.past.filter((x) => x.pool !== null);
-  if (past.length) out.push({ key: "past", label: "Past pools (same method, earlier censuses)", years: past.length, style: "past" });
+  if (past.length) out.push({ key: "past", label: "Earlier years, counted the same way", years: past.length, style: "past" });
   const runs: { kind: string; source: string; pts: PoolPoint[] }[] = [];
   for (const f of p.ladder.future) {
     const kind = f.source === "counted" ? (kindOfAge(f.rungAge) ?? "schools") : f.source;
@@ -46,7 +46,7 @@ export function segmentsOf(p: PipelineOk): Segment[] {
       const a0 = r.pts[0].rungAge;
       const a1 = r.pts[r.pts.length - 1].rungAge;
       const where = multi ? r.kind : "feeder schools";
-      out.push({ key: `c${rung}`, label: multi ? `Rung ${rung} · ages ${a0}→${a1} in ${where} (${yrs})${rung > 1 ? ", widening range" : ""}` : `Counted now: ages ${a0} → ${a1} in ${where}`, years: r.pts.length, style: "counted" });
+      out.push({ key: `c${rung}`, label: multi ? `Counted now: ages ${a0}→${a1} in ${where} (${yrs})${rung > 1 ? ", a wider range" : ""}` : `Counted now: ages ${a0} → ${a1} in ${where}`, years: r.pts.length, style: "counted" });
     } else if (r.source === "births") {
       const b0 = r.pts[0].birthYear;
       const b1 = r.pts[r.pts.length - 1].birthYear;

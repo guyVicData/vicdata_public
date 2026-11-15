@@ -459,6 +459,18 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       setTicked(prefs.subjects);
       setColumns(prefs.columns);
       const linked = parseLinkedSet(search);
+      // 0.8 feedback B5 (SMT 15): opened from the SMT home's "Our subjects" (?subject=<key>&from=smt): on that
+      // subject for this visit (shown, not saved), past the Teacher setup an SMT reader has no need of.
+      const opened = !linked ? search.get("subject") : null;
+      if (opened) {
+        const items = subjectItemsOf(loadedEntries);
+        const key = items.some((i) => i.key === opened) ? opened : linkedSubjectKey(items, opened.split("::")[0]);
+        if (key) {
+          if (!prefs.subjects.includes(key)) setTicked([...prefs.subjects, key]);
+          setFocusKey(key);
+        }
+        if (search.get("from") === "smt") setOnboarded(true);
+      }
       if (linked) {
         setLinkedSet(linkedSetChoice(linked));
         const key = linkedSubjectKey(subjectItemsOf(loadedEntries), linked.subject);

@@ -3720,7 +3720,9 @@ const RUNNERS: Record<string, Runner> = {
   // 0.8 feedback 15 Nov, build A: the new rules' tests, on the real fixtures, each in its own process.
   async subjectMatch(_L, rule) {
     const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
-    return { pass: r.pass, detail: r.detail };
+    // 0.8 feedback B: the families added on 15 Nov.
+    const b = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass && b.pass, detail: fmt({ artAndDesign: r.detail, families: b.detail }) };
   },
   async rankMin(_L, rule) {
     const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
@@ -3732,6 +3734,19 @@ const RUNNERS: Record<string, Runner> = {
   },
   async walkNoRepeat(_L, rule) {
     const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  // 0.8 feedback 15 Nov, build B: the new rules' tests, on the real fixtures, in their own process.
+  async walkEndsOnAnswer(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async noBuildNotes(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async walkRail(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
   },
   async subjectColour(_L, rule) {
