@@ -111,3 +111,10 @@ Extend the existing rules where touched. Every existing rule still passes; log e
 - **Never add `next/font/google`.** No database writes. If a migration is needed, write it, PGlite-test it, and give Guy its steps. Never put a server key in client code. Stage files by name. Commit; don't push or merge.
 - **Log every call** under "2026-11-15: feedback build {A,B,C}" in `docs/OPEN_QUESTIONS.md`.
 - **Report:** per note (by its number), fixed, not a bug (with why), or left (with why). Then tests and parity. Then Guy's commands in the seven-step order (`docs/FEEDBACK.md`), with step 7 named "Live check".
+
+## Build D (added 15 Nov; runs after A–C are merged and live; scope to be written up as its own prompt then)
+
+Guy's notes D-a, D-b and D-c in `docs/v0.8/feedback_15nov/notes.md`:
+- D-a: subject homes reached from the SMT home;
+- D-b: school homes reached from head office's "Our schools";
+- D-c: head office subject comparisons, inside the group and against other groups, the region and England.

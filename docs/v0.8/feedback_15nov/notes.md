@@ -78,3 +78,10 @@ G1. Every walk's final window must answer the walk's question with a data view (
 ## 02 SMT (added)
 15. SMT home: add an "Our subjects" section, built like head office's "Our schools": a card per subject the school teaches (by phase: GCSE, Post-16), each opening that subject's Teacher walks (Candidates, Results, Comparisons) and its dashboard, read-only, as SMT. So SMT can walk through any subject. Links with Teacher 1 (the subject picker) and SMT 14 (the phase pills).
    UPDATE (15 Nov): Harris fails too under View as, so it isn't Nexus- or special-specific. Rebuilt locally against live production (Harris 3320): the dashboard payload builds for every dash, with and without compare=nearest. So the data and compare logic are fine. The failure is in the request or the access on live: a non-404 error (401 token, 502 throw, 503 no figures, or 502 "Could not confirm View as"). The walk shows one generic message for all of them. Next: get the live status, and log the route's error code into the walk message.
+
+## Phase D (Guy, 15 Nov: after A–C are done and passed)
+D-a. The SMT home lists all the school's subjects below, each linking to that subject's home page (its walks and dashboard links), as Teacher's home is for one subject. (Builds on B5's "Our subjects": B's cards open the subject's walks and dashboard. D makes each one a full subject home.)
+D-b. In the same way, head office's "Our schools" cards go to each school's home page (its walks and dashboards), not straight to a dashboard.
+D-c. Head office can compare subjects and subject areas across the group:
+   - internally: which schools perform highest in each subject or area;
+   - externally: the group against other groups, the region and England.
