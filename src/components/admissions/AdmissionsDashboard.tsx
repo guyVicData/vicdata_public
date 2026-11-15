@@ -1111,14 +1111,14 @@ export function AdmissionsViewPreview({ dataview, spec, urn, schoolName, entry, 
 // as the head office walk draws the group dashboard's (groupWalkView), so a walk screen and its
 // dashboard view can't draw different charts (the walk drew the cohort bars for "Entry point now" and
 // the pool trends for "Pipeline"). Read-only; a missing answer shows the route's own empty message.
-export function AdmissionsWalkBody({ dv, urn, schoolName, entry, pipeline, market, rivals, setLabel = "rivals", height }: { dv: string; urn: string; schoolName: string; entry: string; pipeline: PipelineView | null; market: MarketView | null; rivals: RivalsView | null; setLabel?: string; height?: number }) {
+export function AdmissionsWalkBody({ dv, urn, schoolName, entry, pipeline, market, rivals, rivalsLoading = false, setLabel = "rivals", height }: { dv: string; urn: string; schoolName: string; entry: string; pipeline: PipelineView | null; market: MarketView | null; rivals: RivalsView | null; rivalsLoading?: boolean; setLabel?: string; height?: number }) {
   const member: AdmissionsMember = useMemo(
     () => ({ userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, lead: false, access: "viewAs", canEditLists: false, override: false, canShare: false, canManageTeam: false, readOnly: true, viewAs: null, leadColumn: true }),
     [urn, schoolName],
   );
   const label = entryPoint(entry)?.label ?? entry;
   const missing = <T,>(d: T | null, what: string): Load<T> => (d ? { status: "ready", data: d } : { status: "error", code: 0, message: `No ${what} is published for ${label} yet.` });
-  const c: Ctx = { boardingSchool: false, member, dash: dv.startsWith("DV-ADM-M") ? "market-share" : "pipelines", entry, filters: DEFAULT_FILTERS, projection: false, setProjection: () => undefined, pipeline: missing(pipeline, "pool"), market: missing(market, "market share"), rivals: missing(rivals, "rivals' figures"), shape: { status: "loading" }, setLabel, edit: () => undefined, lists: null };
+  const c: Ctx = { boardingSchool: false, member, dash: dv.startsWith("DV-ADM-M") ? "market-share" : "pipelines", entry, filters: DEFAULT_FILTERS, projection: false, setProjection: () => undefined, pipeline: missing(pipeline, "pool"), market: missing(market, "market share"), rivals: rivalsLoading ? { status: "loading" } : missing(rivals, "rivals' figures"), shape: { status: "loading" }, setLabel, edit: () => undefined, lists: null };
   return <>{viewBody(dv, c, { fullscreen: false, height })}</>;
 }
 

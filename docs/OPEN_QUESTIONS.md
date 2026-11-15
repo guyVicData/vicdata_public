@@ -3399,3 +3399,46 @@ the report (`docs/v0.8/feedback_a_report_v1.md`) lists every note by number.
 - **R-WALK-NO-REPEAT** compares what each Teacher screen draws (a line with no figure counts as not drawn)
   on every fixture; SMT, Admissions and head office walks draw the dashboard's views, so the test checks
   no walk names a view twice with the same options.
+
+**A2, head office walks under View as (R-GROUP-WALKS-LOAD).**
+- **What was found.** The walk's exact request returns 200 for Harris 3320, Nexus 16125, Birmingham's
+  nursery federation 17126, Shaw and Dukes, both in-process through the route (a stubbed platform admin
+  with the View as cookie, live production) and through a local server in a browser. The production
+  database's request log for Guy's session shows View as opened on **group:16132** (the Nexus "School
+  sponsor" twin) and **group:3319** (the Harris twin), never 16125 or 3320: the duplicates of Platform 1.
+  On those, the live route read the group's aggregate and made no further group read, so it answered
+  either 503 (no figures) or 502 (a throw) before the comparisons. The exact code isn't in any log we can
+  read (Render's log would hold a `[group/dash] failed:` line if it was a 502). The walk showed one
+  sentence for every code, so the cause was invisible. Logged as the open item; the new error shows it.
+- **Fixes:** the walk's error names what failed, the route's message and its code, logs it, and links
+  home (every role's walk); the walk reads `account` through `useSearchParams` (on a client navigation
+  from the home, `window.location` wasn't updated yet when the state initialised, so the walk asked
+  without its account: harmless under View as, the wrong group for a head office with several accounts);
+  the sponsor twins no longer appear in View as (A3). A cookie already set to a twin id isn't rewritten:
+  Back to me and picking again gives the trust's id.
+- **HO3, decided:** a platform admin in head-office View as opens every member school's SMT, read-only,
+  from published data, whether the school has joined VicData or not (the home's cards, `school-access`
+  and the SMT routes all agree). A real head office (an account) still opens SMT only for schools that
+  hold their own VicData membership (G2's consent rule, unchanged); its other cards open the public page,
+  and the heading then says so ("…where it has joined VicData; the others open its public page"). No
+  group has an account live (`group_accounts` is empty), so today every head office is View as.
+- **Special schools on SMT:** Overview, Academic and Pupils build for Abbey School (142768, a Nexus
+  special school) without an error; their empty states are on the live list.
+
+**A3, duplicate groups in View as.**
+- They are two real GIAS records per trust: the trust (mat/sat, capitals) and its "School sponsor"
+  record (title case, its own id), with the same member schools: 836 of 848 sponsor records in
+  production. Not deleted at source (the ingest keeps GIAS as it is); the search folds a sponsor into the
+  trust with the same schools, under the trust's id, with the mixed-case name, the sponsor's id kept as
+  an alias (searching it finds the trust). A sponsor spanning several trusts (12, e.g. dioceses) stays.
+  The group id shows on each row. Companies House numbers would need `school_groups_lookup` to return
+  them (an ingest change; the SQL is in the report). The fixtures' Nexus, group:16125, is the trust record.
+
+**A4, moving between walks stalls.**
+- Walk 2 (market share) waited for the rivals answer before drawing anything; rivals reads England's
+  results, about 16 s on a cold server cache (measured through the route handlers: home 0.4–9.7 s, walk 1
+  0.4 s, walk 2's rivals 16.4 s cold, 0.4 s warm), and nothing warmed it; the walks also skipped the
+  browser cache the Admissions dashboard uses. Now the walks and the Admissions home go through that
+  cache (`getJson`, 10 minutes, the same URLs); walk 2 draws as soon as market share is in, rivals loads
+  alongside and only the screens that read it wait ("Working out your rivals' figures…"); the home and
+  walk 1 warm rivals. Cost: one cold rivals build an hour per server for each Admissions home visit.

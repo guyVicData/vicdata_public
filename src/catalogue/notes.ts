@@ -356,6 +356,7 @@ export const GROUP_NOTES = {
   // The home.
   theGroup: "How are our schools doing, and against whom?",
   ourSchools: "Open any member school’s SMT dashboards",
+  ourSchoolsSome: "Open a member school’s SMT dashboards where it has joined VicData; the others open its public page",
   accessCard: "Which schools’ SMT see the group view: {n} of {m}",
   accessCount: "{n} of {m} schools see the group view",
   coming: "Coming in the next group rounds",

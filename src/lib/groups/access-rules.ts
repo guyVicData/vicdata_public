@@ -54,13 +54,17 @@ export function headOfficeSchoolAccess(
   membersByGroup: Map<string, GroupMember[]>,
   urn: string,
   schoolHasAccount: boolean,
+  // 0.8 feedback A2 (HO3): a platform admin in head-office View as reads every member school's SMT, read-only,
+  // from published data, whether or not the school has joined. A real head office still needs the school's
+  // own VicData membership (G2).
+  viewAs = false,
 ): { ok: true; office: HeadOffice; likely: boolean } | { ok: false; reason: SchoolAccessRefusal } {
   if (!offices.length) return { ok: false, reason: "not-head-office" };
   const holding = offices.filter((o) => (membersByGroup.get(membersOf(o)) ?? []).some((m) => m.urn === urn));
   if (!holding.length) return { ok: false, reason: "not-a-member" };
   const active = holding.find((o) => o.status === "active");
   if (!active) return { ok: false, reason: "suspended" };
-  if (!schoolHasAccount) return { ok: false, reason: "no-vicdata-account" };
+  if (!schoolHasAccount && !viewAs) return { ok: false, reason: "no-vicdata-account" };
   return { ok: true, office: active, likely: (membersByGroup.get(membersOf(active)) ?? []).find((m) => m.urn === urn)?.confidence === "likely" };
 }
 

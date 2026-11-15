@@ -3,6 +3,7 @@
 // VicData 0.8 front door (B8, B9): each role's section of the home -- Teacher (one per phase), SMT (and a
 // primary school's SMT), Admissions. Every figure is real (the dashboards' own rows and routes) or absent;
 // never a placeholder number. Head office's home is GroupHome.tsx.
+import { getJson as admissionsGet } from "@/components/admissions/api";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -323,7 +324,14 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
     let live = true;
     (async () => {
       const q = new URLSearchParams({ urn, entry: current }).toString();
-      const [p, m] = await Promise.all([getJson<PipelineLite>(`/api/admissions/pipeline?${q}`), getJson<MarketLite>(`/api/admissions/market-share?${q}`)]);
+      // 0.8 feedback A4: through the Admissions client cache (the same URLs), so both walks and the dashboard
+      // open on these answers; and the market walk's rivals warmed (~15 s on a cold server cache).
+      const viaCache = async <T,>(u: string): Promise<T | null> => {
+        const l = await admissionsGet<T>(u);
+        return l.status === "ready" ? l.data : null;
+      };
+      const [p, m] = await Promise.all([viaCache<PipelineLite>(`/api/admissions/pipeline?${q}`), viaCache<MarketLite>(`/api/admissions/market-share?${q}`)]);
+      void admissionsGet(`/api/admissions/rivals?${q}`);
       const past = (p?.ladder?.past ?? []).filter((x) => x.pool !== null);
       const pool = past.length ? (past[past.length - 1].pool as number) : null;
       const label = entryPoint(current)?.label ?? current;

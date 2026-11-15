@@ -6,9 +6,8 @@
 // small numbers and missing years). Head office's screens draw the group dashboard's own views the same
 // way (groupWalkView), with group sets' picker where a screen compares.
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { useSmt, type Overview, type SmtSchool, type Academic, type Load as SmtLoad } from "@/components/smt/api";
 import { loadSmtMember, type SmtMember } from "@/components/smt/member";
@@ -27,7 +26,7 @@ import { AcademicNow, AreasView, EveryLine, GradesView, RankChart, TrendBand } f
 import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "@/components/smt/views/Pupils";
 import { AgeBars, AreaMap, BirthsAndProjections, ContextNow, NearbyOverTime } from "@/components/smt/views/Context";
 import { admissionsVars } from "@/components/admissions/ui";
-import type { PipelineOk } from "@/components/admissions/api";
+import { getJson as admissionsGet, type PipelineOk } from "@/components/admissions/api";
 import type { MarketView, RivalsView } from "@/lib/admissions/views-api";
 import { AdmissionsWalkBody } from "@/components/admissions/AdmissionsDashboard";
 import { admissionsAnswer } from "@/lib/front-door/admissions-answers";
@@ -36,7 +35,7 @@ import { smtAnswer } from "@/lib/front-door/smt-answers";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { dataviewById } from "@/catalogue/dataviews";
 import { fillTemplate, groupWalkDash, screenMeta, type Walk } from "@/lib/front-door/walks";
-import { Found, MiniMap, Rail, RAIL_LIST, RAIL_ROW, useStep, WalkFooter, WalkFrame, WalkPanel, WalkScreen } from "./WalkPage";
+import { Found, homeOf, MiniMap, Rail, RAIL_LIST, RAIL_ROW, useStep, WalkFooter, WalkFrame, WalkPanel, WalkScreen } from "./WalkPage";
 import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/components/groups/dash/GroupDashboard";
 import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
 import type { ProjectionRow } from "@/components/groups/dash/views-r3";
@@ -44,7 +43,7 @@ import { groupAnswer } from "@/lib/front-door/group-answers";
 import { groupWalkCompare, groupWalkDashUrl, smtContextUrl } from "@/lib/front-door/tile-figures";
 import { RailGlyph } from "./home";
 
-type Load<T> = { status: "loading" } | { status: "error"; message?: string } | { status: "ready"; data: T };
+type Load<T> = { status: "loading" } | { status: "error"; code: number; message: string } | { status: "ready"; data: T };
 type Screenish = { question: string; answer: string; title: string; body: ReactNode; note: string; rail?: ReactNode; tag?: string; controls?: ReactNode };
 
 
@@ -91,6 +90,25 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
   );
 }
 
+/** 0.8 feedback A2 (R-GROUP-WALKS-LOAD): a walk that couldn't load says what failed -- the route's own message
+ * and its status code -- logs it, and always offers the way back to the role's home; never a dead end. */
+function WalkError({ walk, what, code, message, home, ctx }: { walk: Walk; what: string; code: number; message: string; home: string; ctx?: { entry?: string | null } }) {
+  useEffect(() => {
+    console.error(`[walk] ${walk.id}: HTTP ${code} ${message}`);
+  }, [walk.id, code, message]);
+  return (
+    <WalkFrame walk={walk} step={0} steps={walk.screens.length} chip={null} ctx={ctx}>
+      <div data-walk-error={code} className="flex flex-col gap-3">
+        <p className="text-[15px] text-[var(--field-ink)]">This walk couldn&rsquo;t load {what}.</p>
+        <p className="text-[14px] text-[var(--field-ink)]">
+          {message} <span className="tabular-nums opacity-70">(error {code})</span>
+        </p>
+        <Link href={home} data-walk-home="" className="inline-flex min-h-[44px] w-fit items-center font-semibold underline">Back to your home</Link>
+      </div>
+    </WalkFrame>
+  );
+}
+
 function Loading({ walk, text = "Loading…", ctx }: { walk: Walk; text?: string; ctx?: { entry?: string | null } }) {
   return (
     <WalkFrame walk={walk} step={0} steps={walk.screens.length} chip={null} ctx={ctx}>
@@ -119,7 +137,7 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   const loads = { overview: o, academic: a, pupils: p, context: c } as Record<string, Load<unknown>>;
   const load = loads[kind ?? ""];
   if (!s || !load || load.status === "loading") return <Loading walk={walk} />;
-  if (load.status === "error") return <Loading walk={walk} text="This walk couldn't load the school's figures." />;
+  if (load.status === "error") return <WalkError walk={walk} what="the school's figures" code={load.code} message={load.message} home={homeOf(walk)} />;
   const screens = smtScreens(walk, s, load.data, kind === "context" ? cmap : null);
   const n2 = walk.screens.length;
   return (
@@ -188,31 +206,48 @@ function smtScreens(walk: Walk, school: SmtSchool, data: unknown, contextMap: Sm
 
 // ------------------------------------------------------------------------------------------------ Admissions
 
+// The market walk's screens whose answer reads the rivals' answer; the others open without it (A4).
+const NEEDS_RIVALS = new Set(["DV-ADM-M-MOMENTUM", "DV-ADM-M-ACAD-RANK", "DV-ADM-M-ACAD-NUM", "DV-ADM-M-ACAD-CHANGE", "DV-ADM-M-FLAGS", "DV-ADM-M-STRENGTHS"]);
+
 function AdmissionsWalk({ walk, urn, schoolName }: { walk: Walk; urn: string; schoolName: string }) {
   const [pref] = useThemePref();
   const theme = pref === "mid" ? "light" : effectiveTheme(pref);
   const [step, setStep] = useStep(walk.screens.length);
   const entry = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("entry") ?? "11+" : "11+";
-  const [data, setData] = useState<Load<{ p: PipelineOk | null; m: MarketView | null; r: RivalsView | null }>>({ status: "loading" });
+  // 0.8 feedback A4 (Admissions 3): moving from walk 1 to walk 2 stalled because walk 2 waited on the rivals
+  // answer (England's results, ~15 s on a cold server cache) before drawing anything, and nothing warmed it.
+  // Now: the dashboard's cached fetch (fetch-cache, 10 min, the same URLs), so the home, the other walk and
+  // the dashboard share each answer; the walk draws as soon as its own answer is in; rivals loads alongside
+  // and only its screens wait; walk 1 warms walk 2's answers.
+  const market = walk.id === "admissions-market";
+  const [data, setData] = useState<Load<{ p: PipelineOk | null; m: MarketView | null }>>({ status: "loading" });
+  const [rivals, setRivals] = useState<Load<RivalsView>>({ status: "loading" });
   useEffect(() => {
+    let live = true;
+    const q = new URLSearchParams({ urn, entry }).toString();
     (async () => {
-      const { data: s } = await createBrowserSupabaseClient().auth.getSession();
-      const h = { headers: { Authorization: `Bearer ${s.session?.access_token ?? ""}` } };
-      const q = new URLSearchParams({ urn, entry }).toString();
-      const get = async <T,>(u: string) => {
-        const r = await fetch(u, h).catch(() => null);
-        return r?.ok ? ((await r.json()) as T) : null;
-      };
-      const market = walk.id === "admissions-market";
-      const [p, m, r] = await Promise.all([market ? null : get<PipelineOk & { empty?: string }>(`/api/admissions/pipeline?${q}`), market ? get<MarketView>(`/api/admissions/market-share?${q}`) : null, market ? get<RivalsView>(`/api/admissions/rivals?${q}`) : null]);
-      if (!p && !m) return setData({ status: "error" });
-      setData({ status: "ready", data: { p: p && !("empty" in p && p.empty) ? (p as PipelineOk) : null, m, r } });
+      const [p, m] = await Promise.all([market ? null : admissionsGet<PipelineOk & { empty?: string }>(`/api/admissions/pipeline?${q}`), market ? admissionsGet<MarketView>(`/api/admissions/market-share?${q}`) : null]);
+      if (!live) return;
+      const own = market ? m : p;
+      if (own && own.status === "error") return setData(own);
+      const pd = p && p.status === "ready" ? p.data : null;
+      setData({ status: "ready", data: { p: pd && !("empty" in pd && pd.empty) ? (pd as PipelineOk) : null, m: m && m.status === "ready" ? m.data : null } });
+      if (!market) {
+        void admissionsGet(`/api/admissions/market-share?${q}`);
+        void admissionsGet(`/api/admissions/rivals?${q}`);
+      }
     })();
-  }, [urn, entry, walk.id]);
+    if (market) void admissionsGet<RivalsView>(`/api/admissions/rivals?${q}`).then((r) => live && setRivals(r));
+    return () => {
+      live = false;
+    };
+  }, [urn, entry, market]);
   const label = entryPoint(entry)?.label ?? entry;
   if (data.status === "loading") return <Loading walk={walk} ctx={{ entry: label }} />;
-  if (data.status === "error") return <Loading walk={walk} ctx={{ entry: label }} text="This walk couldn't load Admissions' figures for this entry point." />;
-  const { p, m, r } = data.data;
+  if (data.status === "error") return <WalkError walk={walk} ctx={{ entry: label }} what="Admissions' figures for this entry point" code={data.code} message={data.message} home={homeOf(walk)} />;
+  const { p, m } = data.data;
+  const r = rivals.status === "ready" ? rivals.data : null;
+  const rivalsLoading = market && rivals.status === "loading";
   const ep = entryPoint(entry);
   // Review fixes (14 Nov, M1): every placeholder the catalogue's titles use, filled from the routes.
   const fill = admissionsTitleFill(entry, p);
@@ -221,7 +256,8 @@ function AdmissionsWalk({ walk, urn, schoolName }: { walk: Walk; urn: string; sc
     const dv = dataviewById(s.view);
     const base = { question: q, title: fillTitle(dv?.titleTemplate ?? "", fill, dv?.label ?? s.view), note: dv?.note ?? "" };
     // The dashboard's own viewBody draws each screen (as the head office walk draws the group dashboard's).
-    return { ...base, answer: admissionsAnswer(s.view, { label, p, m, r }), body: <AdmissionsWalkBody dv={s.view} urn={urn} schoolName={schoolName} entry={ep?.id ?? entry} pipeline={p} market={m} rivals={r} /> };
+    const pending = rivalsLoading && NEEDS_RIVALS.has(s.view);
+    return { ...base, answer: pending ? "Working out your rivals' figures…" : admissionsAnswer(s.view, { label, p, m, r }), body: <AdmissionsWalkBody dv={s.view} urn={urn} schoolName={schoolName} entry={ep?.id ?? entry} pipeline={p} market={m} rivals={r} rivalsLoading={rivalsLoading} /> };
   });
   const n2 = walk.screens.length;
   return (
@@ -252,8 +288,11 @@ function GroupWalk({ walk }: { walk: Walk }) {
   const theme = pref === "mid" ? "light" : effectiveTheme(pref);
   const [step, setStep] = useStep(walk.screens.length);
   const dash = groupWalkDash(walk.screens[0]?.view ?? "GRP-O-NOW");
-  const [account] = useState(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("account") : null));
-  const [compare, setCompare] = useState<string | null>(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("compare") : null) ?? groupWalkCompare(dash));
+  // 0.8 feedback A2: the address through useSearchParams, not window.location -- on a client navigation from
+  // the home the location isn't updated yet when the state initialises, and the walk asked without its account.
+  const sp = useSearchParams();
+  const account = sp.get("account");
+  const [compare, setCompare] = useState<string | null>(() => sp.get("compare") ?? groupWalkCompare(dash));
   // The home's Academic tile reads this same address for its first screen (tile-figures.ts, front door 2b).
   const load = useSmt<DashResponse>(groupWalkDashUrl(dash, account, compare), null);
   const projQ = new URLSearchParams(account ? { account } : {});
@@ -261,7 +300,7 @@ function GroupWalk({ walk }: { walk: Walk }) {
   const dashHref = account ? `${walk.dashboard}?account=${account}` : walk.dashboard;
   const w = useMemo(() => ({ ...walk, dashboard: dashHref }), [walk, dashHref]);
   if (load.status === "loading") return <Loading walk={w} />;
-  if (load.status === "error") return <Loading walk={w} text={load.code === 404 ? "Not found." : "This walk couldn't load the group's figures."} />;
+  if (load.status === "error") return <WalkError walk={w} what="the group's figures" code={load.code} message={load.code === 404 ? "This group wasn't found, or you can't see it." : load.message} home={account ? `/teacher/group?account=${encodeURIComponent(account)}` : "/teacher/group"} />;
   const d = load.data;
   const projection = proj.status === "ready" ? proj.data.rows : null;
   const o = (dash === "schools" ? d.now : d.overview) ?? null;

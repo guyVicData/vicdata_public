@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       canManage: canManageAccess(office, caller.viewAs),
       summary: { ...summary, period: Number.isFinite(P) && P > 0 ? P : null },
       access: seeingCount(office, members, grants),
-      schools: members.map((m) => ({ urn: m.urn, name: m.name, likely: m.confidence === "likely", vicdata: accounts.has(m.urn) })).sort((a, b) => a.name.localeCompare(b.name)),
+      schools: members.map((m) => ({ urn: m.urn, name: m.name, likely: m.confidence === "likely", vicdata: accounts.has(m.urn) || caller.viewAs })).sort((a, b) => a.name.localeCompare(b.name)),
       source: members[0]?.source ?? null,
       lastSeen: members.reduce<string | null>((d, m) => (m.lastSeen && (!d || m.lastSeen > d) ? m.lastSeen : d), null),
     });

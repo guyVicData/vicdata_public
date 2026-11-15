@@ -3726,6 +3726,10 @@ const RUNNERS: Record<string, Runner> = {
     const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
   },
+  async groupWalksLoad(_L, rule) {
+    const r = groupTests(["src/lib/front-door/group-walks-load.test.tsx"], null);
+    return { pass: r.pass, detail: r.detail };
+  },
   async walkNoRepeat(_L, rule) {
     const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };

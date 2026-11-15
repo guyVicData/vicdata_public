@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     // Head office's own accounts, or (a platform admin in head-office View as) the one being viewed.
     const u = await groupCaller(request);
     if (u instanceof NextResponse) return u;
-    const r = await headOfficeAccess(u.supabase, u.userId, urn, u.offices);
+    const r = await headOfficeAccess(u.supabase, u.userId, urn, u.offices, u.viewAs);
     if (!r.ok) return NOT_FOUND();
     return NextResponse.json({ urn, schoolName: r.schoolName, accountId: r.office.id, groupName: r.office.name, likely: r.likely, admissions: r.shared ? "shared" : "private", note: groupNote("headOfficeReadOnly", { group: r.office.name }) });
   } catch (err) {

@@ -141,17 +141,17 @@ export async function groupViewUsage(urns: string[], days = 30): Promise<Map<str
 /** May this signed-in user open `urn`'s SMT as head office? Their own memberships (RLS), the group's
  * current members (production), and the school's own VicData account. Used by the SMT routes, the
  * chooser-set route and the SMT page. */
-export async function headOfficeAccess(supabase: SupabaseClient, userId: string, urn: string, given?: HeadOffice[]): Promise<{ ok: true; office: HeadOffice; likely: boolean; schoolName: string; shared: boolean } | { ok: false; reason: SchoolAccessRefusal }> {
+export async function headOfficeAccess(supabase: SupabaseClient, userId: string, urn: string, given?: HeadOffice[], viewAs = false): Promise<{ ok: true; office: HeadOffice; likely: boolean; schoolName: string; shared: boolean } | { ok: false; reason: SchoolAccessRefusal }> {
   const offices = given ?? (await officesOf(supabase, userId));
   if (!offices.length) return { ok: false, reason: "not-head-office" };
   const byGroup = new Map<string, GroupMember[]>();
   await Promise.all(offices.map(async (o) => byGroup.set(membersOf(o), await groupMembers(membersOf(o)))));
   const accounts = await schoolAccounts([urn]);
-  const r = headOfficeSchoolAccess(offices, byGroup, urn, accounts.has(urn));
+  const r = headOfficeSchoolAccess(offices, byGroup, urn, accounts.has(urn), viewAs);
   if (!r.ok) return r;
   const schoolName = byGroup.get(membersOf(r.office))?.find((m) => m.urn === urn)?.name ?? urn;
   // A group without an account (View as) has no shares: every member school's Admissions reads as private.
-  const { data } = r.office.noAccount
+  const { data } = r.office.noAccount || !accounts.has(urn)
     ? { data: null }
     : await createServiceRoleSupabaseClient().from("group_admissions_shares").select("shared, set_at").eq("school_account_id", accounts.get(urn)!.accountId).eq("group_account_id", r.office.id).maybeSingle<{ shared: boolean; set_at: string }>();
   // A share set before the school's current membership began (it left and rejoined) is a decision about

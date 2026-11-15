@@ -303,7 +303,7 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
                       {g.name}
                     </button>
                     <span className="ml-1.5 text-xs text-neutral-500">
-                      {g.schools} {g.schools === 1 ? "school" : "schools"} &middot; {g.accountId ? (g.status && g.status !== "active" ? `account (${g.status})` : "account") : "no account yet"}
+                      {g.schools} {g.schools === 1 ? "school" : "schools"} &middot; <span className="tabular-nums" data-group-id="" title="The group's GIAS id">{g.groupId}</span> &middot; {g.accountId ? (g.status && g.status !== "active" ? `account (${g.status})` : "account") : "no account yet"}
                     </span>
                   </li>
                 );

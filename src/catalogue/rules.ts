@@ -2866,6 +2866,17 @@ export const RULES: Rule[] = [
     origin: "0.8 feedback 15 Nov, build A (A5)",
     status: "active",
   },
+  {
+    id: "R-GROUP-WALKS-LOAD",
+    statement:
+      "Every head office walk loads -- its exact request (the walk's own dash, reading, focus and compare) through the group dash route's own body (dashPayload), every screen drawn and answered -- for a mainstream group (Harris), a special trust (Nexus), a nursery federation (Birmingham) and the other fixture groups, each with no group account (View as by production id) and with one. A walk that can't load says what failed (the route's own message and its status code), logs it, and always offers the way back to the role's home; the walk reads its group account from the router's address, never window.location. The View as group search lists a trust once: GIAS's \"School sponsor\" twin with the same schools is folded into it (its id kept as an alias), and each row shows the group id.",
+    why: "Guy, 15 Nov (HO1, HO2, Platform 1): every head office walk said only \"This walk couldn't load the group's figures\" under View as, with no way on; the group search listed each Nexus trust twice and the walks were opened on the sponsor twins.",
+    appliesTo: "head office walks; every walk's error; the View as group search",
+    enforcedIn: ["src/components/front-door/role-walks.tsx:WalkError", "src/components/front-door/role-walks.tsx:GroupWalk", "src/lib/groups/production.ts:foldSponsors", "src/app/api/platform/groups/route.ts", "src/components/view-as/ViewAs.tsx", "src/lib/front-door/group-walks-load.test.tsx"],
+    testCase: { urn: "3320", school: "Harris 3320, Nexus 16125, Birmingham nursery 17126, Shaw 4499, Dukes (docs/v0.8/groups_fixtures)", phase: "ks4", expect: "Every group walk's every screen draws and answers, with and without an account; the error names its code and links home; sponsor twins fold.", check: "groupWalksLoad" },
+    origin: "0.8 feedback 15 Nov, build A (A2, A3)",
+    status: "active",
+  },
   // ------------------------------------------------------------------ 0.8 front door, part 2
   {
     id: "R-GUIDED-SETS",
