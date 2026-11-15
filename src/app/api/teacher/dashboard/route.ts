@@ -80,7 +80,8 @@ async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "qualific
   const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
   return {
     basis: "subject",
-    values: rows.filter((r) => r.avg_value !== null).map((r) => ({ key: r.subject, period: r.period, value: Number(r.avg_value) })),
+    // 0.8 feedback B (R-SUBJECT-MATCH): England's figure for each GCSE family too (Art and Design with Photography).
+    values: [...rows.filter((r) => r.avg_value !== null).map((r) => ({ key: r.subject, period: r.period, value: Number(r.avg_value) })), ...groupEnglandValues(rows, "ks4")],
   };
 }
 

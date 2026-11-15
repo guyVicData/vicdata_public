@@ -23,11 +23,12 @@ test("R-SUBJECT-MATCH: the A level Art and Design titles are one subject; labels
   for (const t of ["Art and Design", "Fine Art", "Photography", "Graphics", "Textiles", "3D Studies", "Critical Studies"]) assert.equal(subjectMatchKey("ks5", t, "GCE A level"), ART_AND_DESIGN_ALL, t);
   // The stored pre-2024/25 label reads as its latest name.
   assert.equal(subjectMatchKey("ks5", "Art and Design (Fine Art)", "GCE A level"), ART_AND_DESIGN_ALL);
-  // Not a BTEC, not GCSE, not History of Art, not Design and Technology.
+  // Not a BTEC, not History of Art, not Design and Technology. (Build B: GCSE Art and Design is its own family,
+  // with GCSE Photography, and D&T Textiles is in the Design and Technology family: feedback-b.test.tsx.)
   assert.equal(isGrouped("ks5", "Art and Design", "BTEC National Extended Certificate L3 - Band F - P-D*"), false);
-  assert.equal(isGrouped("ks4", "Art and Design", "GCSE (9-1) Full Course"), false);
+  assert.ok(!sameSubject("ks4", { subject: "Art and Design", qualificationType: "GCSE (9-1) Full Course" }, { subject: "Fine Art", qualificationType: "GCSE (9-1) Full Course" }));
   assert.equal(isGrouped("ks5", "History of Art", "GCE A level"), false);
-  assert.equal(isGrouped("ks5", "Design and Technology (Textiles Technology)", "GCE A level"), false);
+  assert.notEqual(subjectMatchKey("ks5", "Design and Technology (Textiles Technology)", "GCE A level"), ART_AND_DESIGN_ALL);
   assert.equal(normaliseQualification("A level"), "GCE A level");
   assert.ok(sameSubject("ks5", { subject: "Art and Design", qualificationType: "GCE A level" }, { subject: "Fine Art", qualificationType: "A level" }));
   assert.ok(!sameSubject("ks5", { subject: "Art and Design", qualificationType: "GCE A level" }, { subject: "Fine Art", qualificationType: "GCE AS level" }));

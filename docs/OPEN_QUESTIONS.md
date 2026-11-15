@@ -3449,3 +3449,36 @@ the report (`docs/v0.8/feedback_a_report_v1.md`) lists every note by number.
   answers still aren't cached; every caller checks `ok` before reading the body (checked).
 - The indexed chart's note names its base honestly: "2021/22, the first year The Chase and the most
   comparators have entries" (The Chase's own first year is 2020/21, which England and the LA don't publish).
+
+## 2026-11-15: feedback build B
+
+Guy's live feedback of 15 Nov (`docs/v0.8/feedback_15nov/`), build B (walks and homes), run unattended from
+`docs/v0.8/vicdata_0_8_feedback_15nov_claude_code_prompt_v1.md`. Each call below was taken without asking;
+the report (`docs/v0.8/feedback_b_report_v1.md`) lists every note by number.
+
+**Subject families (Guy's grouping decision, 15 Nov; Guy may revise it).**
+- **Four families added** to `src/lib/subject-match.ts` (`SUBJECT_FAMILIES`), each shown in comparisons as
+  "{subject} (all titles)", each school's own title kept in its own tables:
+  - Religious Studies with Religious Education, at Post-16 (A level, AS, and the IB components) and at GCSE
+    (any GCSE qualification);
+  - the Design and Technology A level titles: Product Design, Engineering, Textiles Technology, Three
+    Dimensional Design (3D Design), at A level and AS only. The IB's plain "Design and Technology" and a BTEC
+    3D Design stay apart. Design and Technology (Textiles Technology) leaves nothing else: build A kept it out
+    of Art and Design, and it stays out;
+  - Drama and Theatre Studies with Theatre Studies, at Post-16 (A level, AS, and the IB components);
+  - GCSE Art and Design with GCSE Photography (GCSE qualifications only; a separate family from the A level
+    one, so no Fine Art at GCSE).
+- **Across the IB (a call).** In the data, Religious Education and Theatre Studies exist at Post-16 only as
+  IB components ("IBO Standard level component", "IBO Higher level component"). Matched only within the same
+  qualification, as Art and Design is, those two groupings would never join anything. So in these two
+  families an IB component (Higher or Standard) is compared as the GCE A level: the comparator route, the
+  area rows and England's family figure read the IB rows beside the A level ones. The AS stays its own. DfE
+  scores both on its one Post-16 points scale; if Guy would rather keep IB and A level apart, set `acrossIB`
+  to false in the two families and they behave as Art and Design does.
+- **Kept separate:** English, Mathematics, Music, Classics and Computing titles (a test each).
+- **Rewritten test (build A's `feedback-a.test.tsx`):** two assertions said GCSE Art and Design and D&T
+  Textiles were in no family; they now say neither is in the A level Art and Design family. The rule's
+  statement (R-SUBJECT-MATCH) names the new families; its runner adds `feedback-b.test.tsx`.
+- **GCSE families' area rows** read the area's every GCSE subject once and keep the family's titles (build A's
+  grouped path read Post-16 only). England's figure for a GCSE family is added beside its titles' own, in the
+  Teacher dashboard route and the walks' loader.
