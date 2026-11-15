@@ -9,7 +9,8 @@ Branch `v0.8-feedback-a`, from `main` 38c9cee, in its own worktree. Not pushed o
 | M1 | A1 subject matching (R-SUBJECT-MATCH), with A5's Teacher guards (R-RANK-MIN, R-WALK-NO-REPEAT) and the unpublished years' reasons, which share the walk's files | 2579772 |
 | M2 | A2 head office walks (R-GROUP-WALKS-LOAD) and HO3; A3 duplicate groups; A4 the stall between walks | 8b0c684 |
 | M3 | The screenshots beside Guy's; the walk error's own words; the indexed chart's base named honestly | ac71e01 |
-| M4 | This report | (this commit) |
+| M4 | This report | 2970b0c |
+| M5 | The runner's two lint warnings; the report's final test column | (this commit) |
 
 `role-walks.tsx` carries both A2 (the walk error, the account) and A4 (the Admissions walk), so A2, A3 and A4 share M2.
 
@@ -91,15 +92,15 @@ The group payloads aren't touched (`dashPayload` is unchanged). Under View as, t
 
 ## Tests and parity
 
-| Check | Base (38c9cee, the review fixes' final) | M1 (2579772) | M2 (8b0c684) | M4 (final) |
+| Check | Base (the review fixes' final run) | M1 (2579772) | M2 (8b0c684) | M4 (2970b0c) |
 |---|---|---|---|---|
-| eslint | 0 errors, 3 warnings | 0 errors, the same 3 | the same | see below |
-| build | pass | pass | pass | |
-| tsc | clean | clean | clean | |
-| Unit tests, one file per process | 98 files, 749 pass | 99 files, 755 pass, 0 fail | 100 files, 758 pass, 0 fail | |
-| Catalogue unit | 77 / 77 | 77 / 77 | 77 / 77 | |
-| Rule tests (production reads, read-only) | PASS 193 | PASS 196, FAIL 0, ERROR 0 | | |
-| PGlite, every suite (PostGIS ones with PGlite 0.5.5) | 29 / 29 | 29 / 29 | 29 / 29 | |
+| eslint | 0 errors, 3 warnings | 0 errors, the same 3 | the same | 0 errors, the same 3 (M4's run found 2 new warnings in the R-GROUP-WALKS-LOAD runner; fixed in M5) |
+| build | pass | pass | pass | pass |
+| tsc | clean | clean | clean | clean |
+| Unit tests, one file per process | 98 files, 749 pass | 99 files, 755 pass, 0 fail | 100 files, 758 pass, 0 fail | 100 files, 758 pass, 0 fail |
+| Catalogue unit | 77 / 77 | 77 / 77 | 77 / 77 | 77 / 77 |
+| Rule tests (production reads, read-only) | PASS 193 | PASS 196, FAIL 0, ERROR 0 | PASS 197, FAIL 0, ERROR 0 | PASS 197, FAIL 0, ERROR 0 |
+| PGlite, every suite (PostGIS ones with PGlite 0.5.5) | 29 / 29 | 29 / 29 | 29 / 29 | 29 / 29 |
 
 **New rules:** R-SUBJECT-MATCH, R-RANK-MIN, R-WALK-NO-REPEAT, R-GROUP-WALKS-LOAD. Each new test fails on base 38c9cee and passes on the branch (checked in a base worktree). `docs/catalogue/*.md` is regenerated. **No rule was rewritten.**
 
