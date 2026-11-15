@@ -92,6 +92,10 @@ export function ChartKey({ keys, p }: { keys: KeyEntry[]; p: Palette }) {
           : k.mark === "dash" ? <span className="inline-block w-4 border-t-2 border-dashed" style={{ borderColor: c }} />
           : k.mark === "tick" ? <span className="inline-block h-3 w-[3px] rounded" style={{ background: c }} />
           : k.mark === "ring" ? <span className="inline-block h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: c }} />
+          // 0.8 feedback C (C10): the focus row's tint (the subject is highlighted, not a family of its own),
+          // and one entry for the dumbbell's direction, ring to dot.
+          : k.mark === "highlight" ? <span className="inline-block h-3 w-5 rounded-[4px]" style={{ background: `color-mix(in srgb, ${p.focus} 22%, transparent)`, boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${p.focus} 45%, transparent)` }} />
+          : k.mark === "ringdot" ? <span className="inline-flex items-center"><span className="inline-block h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: p.muted }} /><span className="inline-block h-[2px] w-2.5" style={{ background: p.muted }} /><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: p.muted }} /></span>
           : <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: c }} />;
         return (
           <li key={i} data-key-entry={k.role} className="inline-flex items-center gap-1.5">
@@ -188,17 +192,12 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
               } else cur.push(`${x(i)},${y(v)}`);
             });
             if (cur.length) segs.push(cur);
-            // A gap in the focus line is bridged dotted.
-            const bridges: string[] = [];
-            if (s.role === "focus") {
-              const idx = s.values.map((v, i) => (v === null ? -1 : i)).filter((i) => i >= 0);
-              for (let k = 1; k < idx.length; k++) if (idx[k] - idx[k - 1] > 1) bridges.push(`${x(idx[k - 1])},${y(s.values[idx[k - 1]]!)} ${x(idx[k])},${y(s.values[idx[k]]!)}`);
-            }
+            // 0.8 feedback C (C11, Teacher 4): a gap in a line stays a gap (the dotted bridge suggested a path
+            // the figures never took); the year is labelled with its reason above.
             return (
               <g key={si}>
                 {/* Review fixes (G5): a one-year segment is a short round-capped stroke, so it shows as a dot. */}
                 {segs.map((pts, k) => <polyline key={k} points={pts.length > 1 ? pts.join(" ") : `${pts[0]} ${pts[0]}`} fill="none" stroke={col} strokeWidth={pts.length > 1 ? (s.role === "focus" ? 3 : 2) : 7} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" strokeDasharray={s.role === "average" && pts.length > 1 ? "5 4" : undefined} />)}
-                {bridges.map((b, k) => <polyline key={`b${k}`} points={b} fill="none" stroke={col} strokeWidth={2} strokeDasharray="1 5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />)}
               </g>
             );
           })}
@@ -213,6 +212,20 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
             ),
           ),
         )}
+        {/* C11: small cohorts -- the focus point ringed, its entries beside it. */}
+        {(c.small ?? []).map((sm) => {
+          const v = c.series.find((s) => s.role === "focus")?.values[sm.index];
+          if (v === null || v === undefined) return null;
+          const col = roleColour(p, "focus");
+          return (
+            <span key={`sm${sm.index}`} data-small-cohort={sm.entries} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${x(sm.index)}%`, top: `${y(v)}%` }}>
+              <span className="block h-[18px] w-[18px] rounded-full border-2" style={{ borderColor: col, background: "transparent" }} />
+              <span data-html-label="small" className="absolute left-1/2 top-[calc(100%+2px)] -translate-x-1/2 whitespace-nowrap rounded px-1 text-[10.5px] font-semibold" style={{ background: p.plate, color: col }}>
+                {sm.entries} {sm.entries === 1 ? "entry" : "entries"}
+              </span>
+            </span>
+          );
+        })}
         {/* Direct end labels: HTML. */}
         {ends.map((e) => {
           const s = c.series[e.si];

@@ -2,7 +2,7 @@
 
 # Dataviews
 
-The registered recipes the chooser offers and dashboards place, in host then rail order. 122 dataviews: 120 live, 2 draft.
+The registered recipes the chooser offers and dashboards place, in host then rail order. 123 dataviews: 121 live, 2 draft.
 
 ## Summary
 
@@ -105,6 +105,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-SMT-A-TREND-LINE | live | smt.academic · trend · Trend | smt.results | level | schools | points | trend | graph | RD-SMT-LINE |
 | DV-SMT-A-TREND-TABLE | live | smt.academic · trend · Trend table | smt.results | level | schools | points | trend | table | RD-SMT-TABLE |
 | DV-SMT-A-LINES | live | smt.academic · trend · Every line | smt.results | level | none | change_points | trend | graph | RD-SMT-LINES |
+| DV-SMT-A-DUMBBELL | live | smt.academic · trend · Entries by subject | smt.subjects | level | none | totals | trend | graph | RD-SMT-DUMBBELL |
 | DV-SMT-A-MOVES | live | smt.academic · trend · Biggest moves | smt.subjects | level | none | totals | trend | table | RD-SMT-MOVES |
 | DV-SMT-A-MIX | live | smt.academic · trend · Entries mix | smt.subjects | level | none | totals | trend | graph | RD-SMT-MIX |
 | DV-SMT-A-MIX-TABLE | live | smt.academic · trend · Entries mix, table | smt.subjects | level | none | totals | trend | table | RD-SMT-TABLE |
@@ -2944,7 +2945,36 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Rules | R-SMT-VIEW-TRENDS, R-SMT-COL1-LEVEL |
 | Used on | SMT Academic › The set › Trends |
 | Note | — |
-| Method | 1. Each line against its own national average (0): the hollow dot is last year, the filled dot this year.<br>Sources: Column 1's lines<br>Rounding: As column 1 |
+| Method | 1. Each line's figure last year (ring) and this year (dot) on one axis that starts at 0, with both figures and the line's entries beside its name.<br>2. In value added, 0 is England's average for that line.<br>3. The change is at the right.<br>Sources: Column 1's lines<br>Rounding: As column 1 |
+
+### DV-SMT-A-DUMBBELL — Entries by subject
+
+| Field | Content |
+| --- | --- |
+| Measures | M-SMT-SUBJECTS (Subject areas and subjects) |
+| Data | smt.subjects |
+| Results sub-measures | — |
+| Phases | — |
+| Focus | level |
+| Compare | none |
+| Number types | totals |
+| Date mode | trend |
+| View type | graph |
+| Renderer | RD-SMT-DUMBBELL |
+| Title template | Entries by subject in the whole school, first year to latest |
+| Title fallback | — |
+| Requires (card warning) | — |
+| Params | level, set |
+| Rail icon | DumbbellIcon |
+| Host | smt.academic, trend, rail "Entries by subject" (src/components/smt/views/Academic.tsx) |
+| Audience | whole-school, academic |
+| Status | live |
+| Verified at | not yet |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Rules | R-SMT-VIEW-TRENDS, R-CHART-AXES |
+| Used on | SMT Academic › The set › Trends |
+| Note | 0.8 feedback C (C10): Teacher's whole-school dumbbell, per level. |
+| Method | 1. One row per subject and qualification: its entries in the first year (ring) and the latest (dot), largest first.<br>2. The qualification is named only where the level has more than one; the level's main one is left unnamed.<br>3. Colour is the subject family; the dashed row is the plain average of the subjects drawn.<br>Sources: The subject-by-qualification rollup (DfE subject tables): the same entries as column 1<br>Rounding: Entries whole numbers |
 
 ### DV-SMT-A-MOVES — Biggest moves
 
@@ -3263,7 +3293,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Rules | R-SMT-VIEW-LEAVING, R-ADM-JOINERS-ESTIMATE, R-SMT-Y12-AGAINST-Y11 |
 | Used on | SMT Pupils › Shape and size › Now |
 | Note | — |
-| Method | 1. For each year, we take the school's pupils aged 16 (Year 12) and its pupils aged 15 (Year 11) in the census the year before.<br>2. Year 12 against Year 11 is Year 12 divided by last year's Year 11.<br>3. Net leavers is last year's Year 11 minus this year's Year 12; if Year 12 is larger, it shows how many more joined.<br>Sources: DfE school census (January), the school's own<br>Rounding: Per cent to a whole number Pupils to whole numbers |
+| Method | 1. For each year, we take the school's pupils aged 16 (Year 12) and its pupils aged 15 (Year 11) in the census the year before.<br>2. Year 12 against Year 11 is Year 12 divided by last year's Year 11.<br>3. The chart draws Year 12 minus last year's Year 11: above the line, more joined than left; below, more left. The table's last column is the same figure, signed.<br>Sources: DfE school census (January), the school's own<br>Rounding: Per cent to a whole number Pupils to whole numbers |
 
 ### DV-SMT-P-MARKET — Market share
 

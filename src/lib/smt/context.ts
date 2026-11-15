@@ -126,7 +126,9 @@ export type Context = {
   // The forward view (F): the area's (or the LA's) children of the school's ages, counted then projected.
   forward: Forward | null;
   // Children of the ages within the radius over time, against the LA and England, indexed.
-  nearby: { school: Pt[]; la: Pt[]; england: Pt[]; indexed: { school: Pt[]; la: Pt[]; england: Pt[] }; base: number | null };
+  // 0.8 feedback C (C7, SMT 13): `school` runs to the area projection's base year (a count); `projected`
+  // (indexed, the same base) carries it on, dashed, to the LA's and England's last year where still short.
+  nearby: { school: Pt[]; la: Pt[]; england: Pt[]; indexed: { school: Pt[]; la: Pt[]; england: Pt[]; projected?: Pt[] }; base: number | null };
   sources: { lsoaYear: number | null; laYear: number | null; snppBase: number | null; iodYear: string | null; fsmYear: number | null; settingsVersion: number | null };
   notes: { aroundSchool: string; children: string; births: string; projection: string; popByAge: string; shade: string; nearby: string; population: string; sources: string };
 };
@@ -385,10 +387,24 @@ export async function buildContext(school: SmtSchool, area: ContextArea, level: 
     : null;
 
   // ------------------------------------------------------------ children nearby over time (indexed)
-  const nearbySchool = acYears.map((y) => ({ year: y.year, value: sumAges(y.children, ages) }));
+  // 0.8 feedback C (C7, SMT 13): the small-area estimates are published a year behind the LA's. The area
+  // projection's first row is a count for the latest year (its base), so the radius's line takes it and
+  // reaches the same last year as the LA and England; any year still short of theirs is the projection
+  // (`projected`, dashed).
+  const acSchool = acYears.map((y) => ({ year: y.year, value: sumAges(y.children, ages) }));
+  const acLastYear = acSchool.filter((x) => x.value !== null).at(-1)?.year ?? null;
+  const nearbySchool = area === "around" && forward && acLastYear !== null ? [...acSchool, ...forward.estimates.filter((e) => e.year > acLastYear && e.value !== null)] : acSchool;
   const nearbyLa = laYears.map((y) => ({ year: y, value: sumAges(laPop.get(y), ages) }));
   const nearbyEng = Array.from(engPop.keys()).sort((a, b) => a - b).map((y) => ({ year: y, value: sumAges(engPop.get(y), ages) }));
   const nix = indexTo([nearbySchool, nearbyLa, nearbyEng]);
+  const lastOf = (xs: Pt[]) => xs.filter((x) => x.value !== null).at(-1)?.year ?? null;
+  const schoolLast = lastOf(nearbySchool);
+  const othersLast = Math.max(lastOf(nearbyLa) ?? -Infinity, lastOf(nearbyEng) ?? -Infinity);
+  const baseRaw = nix.base !== null ? (nearbySchool.find((x) => x.year === nix.base)?.value ?? null) : null;
+  const projectedNearby: Pt[] =
+    area === "around" && forward && schoolLast !== null && baseRaw && othersLast > schoolLast
+      ? [{ year: schoolLast, value: nix.out[0].find((x) => x.year === schoolLast)?.value ?? null }, ...forward.projection.filter((x) => x.year > schoolLast && x.year <= othersLast && x.middle !== null).map((x) => ({ year: x.year, value: (x.middle! / baseRaw) * 100 }))]
+      : [];
 
   // ------------------------------------------------------------ social context
   const idaciMix = ac?.idaciMix ?? null;
@@ -437,7 +453,7 @@ export async function buildContext(school: SmtSchool, area: ContextArea, level: 
       : { period: laLatest, ages: laLatest !== null ? (laPop.get(laLatest) ?? []).map((v, age) => ({ age, value: v })) : [], scope: "la", laName: school.laName },
     births: { la: laPts, england: engPts, indexed: { la: ix.out[0], england: ix.out[1] }, base: ix.base, laName: school.laName },
     forward,
-    nearby: { school: nearbySchool, la: nearbyLa, england: nearbyEng, indexed: { school: nix.out[0], la: nix.out[1], england: nix.out[2] }, base: nix.base },
+    nearby: { school: nearbySchool, la: nearbyLa, england: nearbyEng, indexed: { school: nix.out[0], la: nix.out[1], england: nix.out[2], projected: projectedNearby.length > 1 ? projectedNearby : [] }, base: nix.base },
     sources,
     notes: {
       aroundSchool: smtNote("aroundSchool", { radius }),

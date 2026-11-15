@@ -64,7 +64,7 @@ import { SetMap } from "./views/SetMap";
 import { SchoolFlags } from "./views/Flags";
 import { Direction, IndexedLines, MarketLine, PlainLine, PoolLine, ResultsBand, RollDirectionWord, RollIndexed } from "./views/Lines";
 import { BandTable, MarketTable, RollTable } from "./views/Tables";
-import { AcademicMap, AcademicNow, Against, AppliedSwitch, AreasView, EveryLine, GradesView, MixBars, MixTableView, Moves, RankChart, RankTable, TrendBand, TrendTable, acVars } from "./views/Academic";
+import { AcademicMap, AcademicNow, Against, AppliedSwitch, AreasView, EntriesDumbbell, EveryLine, GradesView, MixBars, MixTableView, Moves, RankChart, RankTable, TrendBand, TrendTable, acVars } from "./views/Academic";
 import { useAcademicAsk, type AcademicAsk } from "./useAcademicState";
 import { ACADEMIC_PHASE_LABEL, GROUP_LABEL, MODES, MODE_LABEL, groupChips, type AcademicMode, type AppliedType, type QualGroup } from "@/lib/smt/qual-groups";
 import { DayAndBoarding, EntryPoints, GirlsAndBoys, LeavingAt16, PupilsNow, ShapeAndSize } from "./views/Pupils";
@@ -718,6 +718,8 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
       return { tag: "Trends", context: c.academic.status === "ready" ? c.academic.data.trends.label : "" };
     case "DV-SMT-A-LINES":
       return { tag: "Trends", context: "every line" };
+    case "DV-SMT-A-DUMBBELL":
+      return { tag: "Trends", context: "entries by subject" };
     case "DV-SMT-A-MOVES":
     case "DV-SMT-A-SETMOVES":
       return { tag: "Trends", context: dv === "DV-SMT-A-MOVES" ? "moves" : "the set's schools" };
@@ -883,6 +885,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-A-TREND-TABLE":
     case "DV-SMT-A-LINES":
     case "DV-SMT-A-MOVES":
+    case "DV-SMT-A-DUMBBELL":
     case "DV-SMT-A-SETMOVES":
     case "DV-SMT-A-MIX":
     case "DV-SMT-A-MIX-TABLE":
@@ -1052,7 +1055,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-P-MARKET":
           return <MarketLine market={p.market} schoolName={c.school.name} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-P-PHASES":
-          return <IndexedLines title="Roll by phase, indexed" lines={p.trends.phases} fullscreen={fullscreen} room={room} caption={smtNote("rollByPhase", { base: periodLabel(p.trends.base ?? CENSUS_FIRST_PERIOD) })} />;
+          return <IndexedLines title={`Roll by phase against ${c.school.laName ?? "the LA"}'s children of the same ages, indexed (${periodLabel(p.trends.base ?? CENSUS_FIRST_PERIOD)} = 100)`} lines={p.trends.phases} fullscreen={fullscreen} room={room} caption={smtNote("rollByPhase", { base: periodLabel(p.trends.base ?? CENSUS_FIRST_PERIOD) })} />;
         case "DV-SMT-P-PHASES-TABLE":
           return <RollTable title="Roll by phase" o={{ trends: { roll: { lines: p.trends.phases, base: p.trends.base, laName: c.school.laName } } } as never} />;
         case "DV-SMT-P-POOL":
@@ -1135,6 +1138,8 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         return <TrendTable a={a} />;
       case "DV-SMT-A-LINES":
         return <EveryLine a={a} />;
+      case "DV-SMT-A-DUMBBELL":
+        return <EntriesDumbbell a={a} fullscreen={fullscreen} />;
       case "DV-SMT-A-MOVES":
       case "DV-SMT-A-SETMOVES":
         return <Moves a={a} />;
@@ -1176,6 +1181,8 @@ function academicCaption(dv: string, a: Academic): string {
       return `${n.middleHalf} ${a.trends.note}`.trim();
     case "DV-SMT-A-LINES":
       return n.lines;
+    case "DV-SMT-A-DUMBBELL":
+      return a.trends.dumbbell ? `Entries by subject in the whole school at ${a.state.phase === "gcse" ? "GCSE" : "Post-16"}, ${periodLabel(a.trends.dumbbell.firstYear)} (ring) to ${periodLabel(a.trends.dumbbell.latestYear)} (dot), largest first. Colour is the subject family.` : n.moves;
     case "DV-SMT-A-MOVES":
       return n.moves;
     case "DV-SMT-A-SETMOVES":

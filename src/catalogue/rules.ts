@@ -2669,7 +2669,7 @@ export const RULES: Rule[] = [
   {
     id: "R-THEME-CONTRAST",
     statement:
-      "Review fixes (14 Nov): the subject families' colours pass 3:1 on each theme's plate (R-SUBJECT-COLOUR's test). Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. The walk's header band (close, the question, the step dots, the subject chip, \"Step n of N\") draws only its own tokens (--wh-*, set on the band), dark in Dark and Mid and light in Light, and each of its pairs, for every part's accent, is in the table. 0.8 front door part 2: the sets library's maker colours (each maker's ink on both stops of its gradient; Mine's outline on the panel, Dark and Light: makerPairs) and the Group pages' head office bronze text and chips (GROUP_BRONZE, which replaced the orange left from before Part 1: groupPairs) and the School-Admin's amber on its plain pages (adminPairs) are in the table too. Front door 2b (M3): Mid on the dashboards (midDashPairs) -- the field's ink on both stops wherever text sits on the bare colour (small: the SMT, Admissions and Group rows' heads and context, Admissions' role line, the library's lines; Teacher's field holds only its columns, so GCSE's and Post-16's ink is large), a text button in Light's text on the field, and the header band's text and muted text on the page's #0a0a0b; the plates on the field are Light's ladder rows.",
+      "Review fixes (14 Nov): the subject families' colours pass 3:1 on each theme's plate (R-SUBJECT-COLOUR's test). Every Mid text/background pair and the panel ladder's text pairs pass WCAG AA (4.5:1 small text, 3:1 large text and marks), read from globals.css itself (contrastTable in src/lib/front-door/contrast.ts). On a Mid field the text is charcoal, a deep tint of the hue, and only large text (the heading) sits on the bare colour; small text, keys and charts sit on the near-white tiles and plates. The walk's header band (close, the question, the step dots, the subject chip, \"Step n of N\") draws only its own tokens (--wh-*, set on the band), dark in Dark and Mid and light in Light, and each of its pairs, for every part's accent, is in the table. 0.8 front door part 2: the sets library's maker colours (each maker's ink on both stops of its gradient; Mine's outline on the panel, Dark and Light: makerPairs) and the Group pages' head office bronze text and chips (GROUP_BRONZE, which replaced the orange left from before Part 1: groupPairs) and the School-Admin's amber on its plain pages (adminPairs) are in the table too. Front door 2b (M3): Mid on the dashboards (midDashPairs) -- the field's ink on both stops wherever text sits on the bare colour (small: the SMT, Admissions and Group rows' heads and context, Admissions' role line, the library's lines; Teacher's field holds only its columns, so GCSE's and Post-16's ink is large), a text button in Light's text on the field, and the header band's text and muted text on the page's #0a0a0b; the plates on the field are Light's ladder rows. 0.8 feedback C (C16, Admissions 5): in Mid a dashboard's plates sit on its part's own tint -- the columns a clear tint, the wells and shut bars a paler one -- and Light's text, muted and muted2 pass AA in each (midDashPairs), the shut bar's border keeping the ladder's 1.4:1 step from the tinted column (R-PANEL-LADDER).",
     why: "C18: white text fails on these fields; Guy asked for every pair checked and the table logged. Guy, 13 Nov: the walk header read dark grey on black in Mid (it inherited the Light page's text colour). Guy, 13 Nov (FD5): the Group pages still used orange for some text and chip tints in Light.",
     appliesTo: "the Mid fields and tiles (GCSE, Post-16, top level, head office, Admissions); the ladder's shut bar, well and column in Dark and Light; the walk's header band in every theme",
     enforcedIn: ["src/app/globals.css", "src/lib/front-door/contrast.ts:contrastTable", "src/lib/front-door/contrast.ts:walkHeadPairs", "src/lib/front-door/contrast.ts:makerPairs", "src/lib/front-door/contrast.ts:groupPairs", "src/lib/front-door/contrast.ts:adminPairs", "src/lib/teacher-view-theme.ts:GROUP_BRONZE", "src/components/groups/ui.ts:groupVars", "src/components/groups/dash/GroupDashboard.tsx:groupDashVars", "src/components/front-door/WalkPage.tsx:WalkHeader", "src/lib/front-door/contrast.ts:midDashPairs", "src/lib/front-door/contrast.test.ts"],
@@ -2680,7 +2680,7 @@ export const RULES: Rule[] = [
   {
     id: "R-PANEL-LADDER",
     statement:
-      "On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark, Light and (front door 2b) Mid: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. In Mid the ladder element is the part's coloured field and draws Light's ladder on it (no Mid rule overrides a ladder token): columns and open panels near-white plates, a shut panel Light's raised bar (border step 1.4:1 at least, with the shadow), and a column stands off every field's lighter stop by 1.4:1 at least.",
+      "On every dashboard (the shell marks it data-dash-ladder: DashboardGrid, ShellPage), Dark, Light and (front door 2b) Mid: page, then column, then an open panel as a sunk well (the chart's plate) and a shut panel as a raised bar -- a clear step from its column (Dark: fill 1.2:1 and border 1.4:1 at least; Light: border 1.4:1 at least, with the shadow), a solid chevron and its lead figure in the accent, so it reads as a button. The ladder reaches each product (Teacher, Admissions, SMT, the group dashboards) through the shell and the tokens alone; pages that aren't dashboards keep their tokens. In Mid the ladder element is the part's coloured field and draws Light's ladder on it: columns and open panels near-white plates, a shut panel Light's raised bar (border step 1.4:1 at least, with the shadow), and a column stands off every field's lighter stop by 1.4:1 at least. 0.8 feedback C (C16): each part tints its own plates (columns a clear tint of the part, wells and shut bars a paler one: --panel-bg, --box-bg, --shut-bg) and no other ladder token; the border step and the column's stand-off are measured on the tinted column.",
     why: "C19: open and shut panels shared one tone (--box-bg), about 6% from the column, so shut panels didn't stand out.",
     appliesTo: "every dashboard: CardBox (open and shut), DashboardColumn, ShellPage, ShellRow's head",
     enforcedIn: ["src/app/globals.css (:has([data-dash-ladder]), --shut-*, --well-border)", "src/components/shell/CardBox.tsx", "src/components/shell/DashboardGrid.tsx", "src/components/shell/Rows.tsx", "src/lib/front-door/contrast.ts:ladderSteps"],
@@ -2909,6 +2909,95 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/front-door/build-notes.ts", "src/lib/front-door/build-notes-scan.ts", "src/lib/front-door/feedback-b.test.tsx"],
     testCase: { urn: "110110", school: "every component and page; the catalogue; Leighton Park and The Chase's walks (docs/v0.8/review_14nov/fixtures)", phase: "ks5", expect: "No finding anywhere; the scan catches a rule ID, a file name and the old rail note, and ignores comments.", check: "noBuildNotes" },
     origin: "0.8 feedback 15 Nov, build B (B3)",
+    status: "active",
+  },
+  // ------------------------------------------------------------------ 0.8 feedback 15 Nov, build C
+  {
+    id: "R-CHART-AXES",
+    statement:
+      "Every trend chart in SMT, Admissions and Group draws a value axis with values: the shared LineChart labels round values across its range (about one per 40 px, at least three; axisValues), and an indexed chart always labels its 100 (the reference) with nothing crowding it; a strip under 70 px labels its reference alone; no line chart turns the axis off. SMT's results band and Academic's trend draw their own. Charts that were squashed open up: Overview's market share is 170 px and draws the rivals its title names (their middle share each year and their middle half). Academic's every line is drawn at its real width (never a stretched drawing): last year to this on one axis from 0, with both figures and the line's entries. Leaving at 16 is a ± bar per year on a signed axis with 0. Size by phase sets each figure beside its place.",
+    why: "Guy, 15 Nov (SMT 4, 6, 10, 11, 12, 13; review item 11): trend charts showed only their first and last years, indexed charts didn't mark 100, the market chart was squashed and didn't draw the 10 nearest, and the every-line dots were stretched into ovals.",
+    appliesTo: "every LineChart (SMT, Admissions, Group); DV-SMT-O-MARKET-LINE; DV-SMT-A-LINES; DV-SMT-P-LEAVING; DV-SMT-O-NOW",
+    enforcedIn: ["src/components/admissions/views/charts.tsx:axisValues", "src/components/smt/views/Lines.tsx", "src/components/smt/views/Academic.tsx:EveryLine", "src/components/smt/views/Pupils.tsx:LeavingAt16", "src/components/smt/views/Now.tsx:SetSizeByPhase", "src/lib/smt/overview.ts:marketAt11", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "Axis values on every line chart, 100 labelled on indexed ones; the market chart's middle line and key; every line's figures, entries and 0; Leaving at 16's bars and reference; no chart turns its axis off.", check: "chartAxes" },
+    origin: "0.8 feedback 15 Nov, build C",
+    status: "active",
+  },
+  {
+    id: "R-SMT-SHAPE-PICTURES",
+    statement:
+      "Shape and size draws the school's year groups with each bar's figure, its shape with the shape's picture and what it means (SHAPE_MEANING), and, as \"Shapes around you\", two small charts drawn the same way: the nearest school in the set (by distance) and the set's middle school at each year group, each with its shape's picture. Still described, never ranked.",
+    why: "Guy, 15 Nov (SMT 8): \"5 Wineglass · 3 Mushroom · 1 Pyramid · 1 Tube\" was incomprehensible, the y axis had no values and \"Funnel\" needed a picture.",
+    appliesTo: "DV-SMT-P-SHAPE",
+    enforcedIn: ["src/lib/smt/pupils.ts:buildPupils", "src/components/smt/views/Pupils.tsx:ShapeAndSize", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "Both small charts on both schools with the main chart's year groups; a figure on every bar; the shape's picture and meaning.", check: "smtShapePictures" },
+    origin: "0.8 feedback 15 Nov, build C",
+    status: "active",
+  },
+  {
+    id: "R-ROLL-BY-PHASE-LA",
+    statement:
+      "Roll by phase draws each of the school's phases against the local authority's residents of that phase's ages (ONS mid-year estimates; Senior 11–15, 16+ 16–17, Primary 4–10), one line each, labelled with the LA and the ages, every line indexed to the first year they all share; no single England line.",
+    why: "Guy, 15 Nov (SMT 11, D7): England's one line covered neither phase and didn't say which ages.",
+    appliesTo: "DV-SMT-P-PHASES, DV-SMT-P-PHASES-TABLE",
+    enforcedIn: ["src/lib/smt/pupils.ts:buildPupils", "src/components/smt/views/Lines.tsx:IndexedLines", "src/lib/front-door/smt-answers.ts", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "One LA line per phase labelled \"Reading, ages 11–15\" and \"…, ages 16–17\"; 100 at the base on every line; the walk's answer names them.", check: "rollByPhaseLa" },
+    origin: "0.8 feedback 15 Nov, build C",
+    status: "active",
+  },
+  {
+    id: "R-BIRTHS-STORY",
+    statement:
+      "Births and projections tells one story on two scales: the children of the school's ages in the area counted (solid) running on into their projection (dashed) on one value axis; births in the LA on their own axis, each birth year also labelled with the year those children reach the school's first age; and the turn said: \"The children born since births peaked in {year} reach {age} from {year + age}\". Children nearby over time reaches the same last year as the LA and England (the area projection's counted base year, then the projection where still short), and marks the year the peak's children reach the first age. No births year is missing between the first and the last.",
+    why: "Guy, 15 Nov (SMT 12, 13): births and the projection shared one unlabelled scale, so births lay flat and the projection looked like their continuation; the nearby line stopped a year early and rose with no reason given.",
+    appliesTo: "DV-SMT-C-BIRTHS, DV-SMT-C-NEARBY",
+    enforcedIn: ["src/components/smt/views/Context.tsx:BirthsAndProjections", "src/components/smt/views/Context.tsx:NearbyOverTime", "src/lib/smt/context.ts:buildContext", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "Births every year 2012 on; the lag sentence; two value axes; within the radius ends with Reading and England.", check: "birthsStory" },
+    origin: "0.8 feedback 15 Nov, build C",
+    status: "active",
+  },
+  {
+    id: "R-SMT-FLAGS-CLOSEST",
+    statement:
+      "With no flag, Overview's Flags lists the figures closest to one, nearest first, each with what a flag needs: each results line's two-year change against the set's middle change and the gap (a flag needs ±SMT_FLAG_RULES.resultsGap), and the roll's falls in the last three years (a flag needs three in a row). The thresholds don't change.",
+    why: "Guy, 15 Nov (SMT 5, D5): an empty Flags panel said nothing about how far the school was from a flag.",
+    appliesTo: "DV-SMT-O-FLAGS",
+    enforcedIn: ["src/lib/smt/overview.ts:buildOverview (flagWatch)", "src/components/smt/views/Flags.tsx:ClosestToAFlag", "src/lib/front-door/smt-answers.ts", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks4", expect: "Both schools list their nearest figures; The Chase: GCSE +1.0 against the set's −0.6, a gap of +1.6, a flag needs ±2.", check: "smtFlagsClosest" },
+    origin: "0.8 feedback 15 Nov, build C",
+    status: "active",
+  },
+  {
+    id: "R-DUMBBELL-KEY",
+    statement:
+      "SMT Academic draws the whole school's entries by subject, first year to latest, at each level (DV-SMT-A-DUMBBELL; entries-dumbbell.ts), the qualification named only where the level has more than one. Every entries dumbbell's key spells out \"○ {first year} (first year) → ● {latest} (latest)\"; Teacher's focus subject is the highlighted row, keyed as such, not a family of its own; the school average labels its own dashed row and isn't keyed; \"(GCE A level)\" appears only where it tells two rows apart.",
+    why: "Guy, 15 Nov (Teacher 2): a good graph for SMT; its key read the focus subject as a ninth family, keyed a School average that wasn't visible, repeated \"(GCE A level)\" and hid the direction of the dots.",
+    appliesTo: "DV-SMT-A-DUMBBELL, DV-C2-TR-DUMBBELL (the walk)",
+    enforcedIn: ["src/lib/smt/entries-dumbbell.ts", "src/components/smt/views/Academic.tsx:EntriesDumbbell", "src/lib/front-door/teacher-screens.ts:dumbbellScreen", "src/lib/front-door/walks-check.ts:keyProblems", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "A dumbbell at both levels for both schools, largest first, no \"(GCE A level)\" tag; the Teacher key's highlight and ring-to-dot entries.", check: "dumbbellKey" },
+    origin: "0.8 feedback 15 Nov, build C",
+    status: "active",
+  },
+  {
+    id: "R-RESULTS-GAPS",
+    statement:
+      "The Teacher Results chart leaves a year with no published figure as a gap (never a dotted bridge), labelled with its reason; a year with a figure but fewer than SMALL_COHORT (10) entries is ringed on the chart with its entries, and keyed.",
+    why: "Guy, 15 Nov (Teacher 4): the dotted bridge from 47.5 to 35.6 suggested a path, and the 9 entries behind 35.6 were only in the sentence.",
+    appliesTo: "DV-C1-RES-TR-CHART (the walk)",
+    enforcedIn: ["src/lib/front-door/teacher-screens.ts", "src/components/front-door/charts.tsx:LinesChart", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "No bridge in the chart's code; every small cohort ringed and keyed; every gap labelled.", check: "resultsGaps" },
+    origin: "0.8 feedback 15 Nov, build C",
+    status: "active",
+  },
+  {
+    id: "R-IGCSE-POST16-AT-11",
+    statement:
+      "At 11+, a school that sits IGCSE (no ranked GCSE headline) is ranked with its rivals on Post-16, A-level points per entry, in the rivals' ranking and the academic ranking (buildRivals' switchedFrom), where it has a Post-16 figure; the view says so. A GCSE school stays on GCSE. The academic ranking never prints a mark for a gap with no change since 2022/23.",
+    why: "Guy, 15 Nov (Admissions 9, 10, 11; D3): Leighton Park read \"No ranked GCSE headline … Not ranked in England\" and \"9 rivals not ranked: IGCSE school\", with a stray \"–\".",
+    appliesTo: "DV-ADM-M-ACAD-RANK, DV-ADM-M-ACAD-NUM, DV-ADM-M-ACAD-CHANGE at 11+; the rivals' ranking at 11+",
+    enforcedIn: ["src/lib/admissions/rivals.ts:buildRivals", "src/lib/admissions/views-api.ts:rivalsView", "src/components/admissions/panels/Academic.tsx:AcademicRanking", "src/lib/front-door/feedback-c.test.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625 (docs/v0.8/feedback_15nov/fixtures)", phase: "ks5", expect: "Leighton Park at 11+: ranked 7th of 10 on A-level points per entry, the switch said; The Chase stays on GCSE.", check: "igcsePost16At11" },
+    origin: "0.8 feedback 15 Nov, build C",
     status: "active",
   },
   // ------------------------------------------------------------------ 0.8 front door, part 2

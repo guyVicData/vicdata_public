@@ -10,8 +10,8 @@ import { lookupAgeBandDistributions } from "../age-band-distributions";
 import { AGE_BANDS, type AgeGenderCounts, type RollSnapshot } from "../roll-data";
 import { cachedCensus, fetchSchoolInfo, type SchoolCensus } from "../admissions/data";
 import { cohortAt } from "../admissions/cohort";
-import { areaByAge, indexTo } from "../admissions/screens";
-import { shapeOf, sizeByBand } from "../admissions/shape";
+import { indexTo } from "../admissions/screens";
+import { localShape, shapeOf, sizeByBand } from "../admissions/shape";
 import { savedLists } from "../admissions/auth";
 import { entryPoint, type EntryPoint } from "../admissions/entry-points";
 import { pipelineView } from "../admissions/views-api";
@@ -57,7 +57,16 @@ export type Pupils = {
     label: string | null;
     sinceYear: number | null;
     was: string | null;
-    around: { la: { label: string; shape: string | null; schools: number; of: number } | null; set: { shape: string; schools: number }[]; stayingOnSet: { pct: number | null; schools: number } };
+    // 0.8 feedback C (C4, SMT 8): `nearest` the nearest school in the set (by distance) with its year
+    // groups; `setMiddle` the set's middle at each year group (the median of its schools teaching that age)
+    // with the shape of the set's year groups added together. Drawn as two small charts like the main one.
+    around: {
+      la: { label: string; shape: string | null; schools: number; of: number } | null;
+      set: { shape: string; schools: number }[];
+      stayingOnSet: { pct: number | null; schools: number };
+      nearest?: { urn: string; name: string; km: number | null; shape: string | null; yearGroups: { age: number; label: string; total: number }[] } | null;
+      setMiddle?: { shape: string | null; schools: number; yearGroups: { age: number; label: string; total: number }[] } | null;
+    };
   };
   entries: { status: "ready"; rows: EntrySummary[] } | { status: "empty"; reason: string };
   leaving: { year: number; year11: number | null; year12: number | null; leaving: number | null; stayingPct: number | null }[];
@@ -144,6 +153,18 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLeve
   };
   const laTop = mostCommon(laShapes)[0];
   const setShapes = mostCommon(setUrns.map((u) => (setCensus.get(u) ? shapeOf(setCensus.get(u)!.ageGender) : null)).filter((x): x is NonNullable<typeof x> => !!x)).map(([shape, schools]) => ({ shape: shapeWord(shape) ?? shape, schools }));
+  // C4: the nearest school in the set with a census, and the set's middle at each of the school's year groups.
+  const ages = yearGroups.map((y) => y.age);
+  const groupsOf = (c: AgeGenderCounts) => ages.map((age) => ({ age, label: yearLabel(age), total: (c.get(age)?.male ?? 0) + (c.get(age)?.female ?? 0) }));
+  const inSet = new Set(setUrns);
+  const nearestC = nearby.find((c) => c.urn !== urn && inSet.has(c.urn) && setCensus.get(c.urn)?.ageGender.size);
+  const nearestOut = nearestC ? { urn: nearestC.urn, name: nearestC.current_name, km: Number.isFinite(nearestC.distance_metres) ? Math.round(nearestC.distance_metres / 100) / 10 : null, shape: shapeWord(shapeOf(setCensus.get(nearestC.urn)!.ageGender)), yearGroups: groupsOf(setCensus.get(nearestC.urn)!.ageGender) } : null;
+  const withCensus = setUrns.map((u) => setCensus.get(u)?.ageGender).filter((c): c is AgeGenderCounts => !!c && c.size > 0);
+  const middleGroups = ages.map((age) => {
+    const vals = withCensus.map((c) => (c.get(age)?.male ?? 0) + (c.get(age)?.female ?? 0)).filter((v) => v > 0);
+    return { age, label: yearLabel(age), total: Math.round(percentile(vals, 50) ?? 0) };
+  });
+  const setMiddleOut = withCensus.length >= 3 && middleGroups.some((g) => g.total > 0) ? { shape: shapeWord(localShape(withCensus)), schools: withCensus.length, yearGroups: middleGroups } : null;
   // Staying on in the set: only its schools with a sixth form (GIAS top age 17 or more); an 11-16
   // school has no staying on to count (its census can still hold a few pupils aged 16).
   const england = await englandSchools();
@@ -194,19 +215,31 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLeve
     return t > 0 ? t : null;
   };
   const phaseLines = bands.filter((b) => sizes.some((s) => s.key === b.key)).map((b) => ({ key: b.key, label: b.key === "secondary" ? "Senior" : b.key === "sixth_form" ? "16+" : "Primary", pts: years.map((y) => ({ year: y, value: bandRoll(y, b) })) }));
-  // England: pupils aged 5-15 in every mainstream school (the nine regions' census aggregates, as
-  // Overview's roll line). roll_aggregates' national series jumps 11% from 2019/20 to 2020/21 (its
-  // first year looks partial), so it isn't used here.
-  const areaRows = await areaByAge();
-  const engPts = years.map((y) => {
-    const rs = areaRows.filter((r) => r.scope === "region" && r.period === y);
-    if (rs.length !== 9) return { year: y, value: null };
-    let t = 0;
-    for (const r of rs) for (let a = 5; a <= 15; a++) t += r.byAge[String(a)] ?? 0;
-    return { year: y, value: t };
-  });
-  const ix = indexTo([...phaseLines.map((l) => l.pts), engPts]);
-  const phases = [...phaseLines.map((l, i) => ({ ...l, pts: ix.out[i], actual: l.pts })), { key: "england", label: "England", pts: ix.out[phaseLines.length], actual: engPts }];
+  // 0.8 feedback C (C6, SMT 11, D7): each phase against the LA's school-age population at that phase's
+  // ages (ONS mid-year estimates, the same read as the area's school-age population below), one line per
+  // phase, labelled with its ages. England's single 5-15 line, which matched neither phase, is gone.
+  const laPopRoll = await laPopulation(school.laCode);
+  const laWord = school.laName ?? "The LA";
+  const laLines = bands
+    .filter((b) => phaseLines.some((l) => l.key === b.key))
+    .map((b) => {
+      const lo = b.key === "primary" ? Math.max(4, b.minAge) : b.minAge;
+      const hi = Math.min(17, b.maxAge);
+      return {
+        key: `la-${b.key}`,
+        label: `${laWord}, ages ${lo}–${hi}`,
+        pts: years.map((y) => {
+          const row = laPopRoll.get(y);
+          if (!row) return { year: y, value: null };
+          let t = 0;
+          for (let a = lo; a <= hi; a++) t += row[a] ?? 0;
+          return { year: y, value: t > 0 ? t : null };
+        }),
+      };
+    })
+    .filter((l) => l.pts.filter((p) => p.value !== null).length >= 2);
+  const ix = indexTo([...phaseLines.map((l) => l.pts), ...laLines.map((l) => l.pts)]);
+  const phases = [...phaseLines.map((l, i) => ({ ...l, pts: ix.out[i], actual: l.pts })), ...laLines.map((l, i) => ({ ...l, pts: ix.out[phaseLines.length + i], actual: l.pts }))];
 
   // The pool for the main entry point: Admissions' ladder -- counted, then from births.
   const mainEntry = school.phases.gcse && (school.low ?? 11) <= 11 ? "11+" : school.phases.primary ? "4+" : school.phases.post16 ? "16+" : null;
@@ -275,6 +308,8 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLeve
         la: laTop ? { label: `${school.laName ?? "The LA"} ${school.low}–${school.high} schools`, shape: shapeWord(laTop[0]), schools: laTop[1], of: laShapes.length } : null,
         set: setShapes,
         stayingOnSet: { pct: percentile(setStaying, 50), schools: setStaying.length },
+        nearest: nearestOut,
+        setMiddle: setMiddleOut,
       },
     },
     entries,

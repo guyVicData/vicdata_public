@@ -59,12 +59,13 @@ export function SetSizeByPhase({ sizes, setShort }: { sizes: Overview["now"]["se
     <div className="flex flex-col gap-[6px] border-t border-[var(--panel-border)] pt-2" data-set-sizes="">
       <Lbl>Size by phase &middot; in {setShort}</Lbl>
       {sizes.map((b) => (
-        <div key={b.key} className="flex items-center gap-2" data-set-size={b.key}>
-          <span className="w-[62px] truncate text-[12px] font-semibold text-[var(--fg)]">{phaseWord(b.label)}</span>
-          <span className="text-[13px] font-bold tabular-nums text-[var(--fg)]">{fmt(b.total, "pupils")}</span>
-          <span className="grow" />
-          <span className="text-[11.5px] text-[var(--chip-fg)]">{b.schools ? `${ord(b.rank)} largest of ${b.of}` : "no other school in the set has this phase"}</span>
-          {b.median !== null && <span className="w-[86px] text-right text-[11px] text-[var(--muted2)]">median {fmt(b.median, "pupils")}</span>}
+        // 0.8 feedback C (C8, SMT 3): the figure and its place sit together (no spring between them), the
+        // median right after; the row reads "Senior 386 · 5th largest of 11 · median 321".
+        <div key={b.key} className="flex flex-wrap items-baseline gap-x-3 gap-y-0" data-set-size={b.key}>
+          <span className="w-[54px] shrink-0 truncate text-[12px] font-semibold text-[var(--fg)]">{phaseWord(b.label)}</span>
+          <span className="w-[44px] shrink-0 text-right text-[13px] font-bold tabular-nums text-[var(--fg)]" data-set-size-figure="">{fmt(b.total, "pupils")}</span>
+          <span className="text-[11.5px] text-[var(--chip-fg)]" data-set-size-rank="">{b.schools ? `${ord(b.rank)} largest of ${b.of}` : "no other school in the set has this phase"}</span>
+          {b.median !== null && <span className="text-[11px] text-[var(--muted2)]">median {fmt(b.median, "pupils")}</span>}
         </div>
       ))}
     </div>

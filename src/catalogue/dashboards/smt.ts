@@ -36,7 +36,7 @@ const ACADEMIC: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-A-NOW"], defaultView: "DV-SMT-A-NOW" },
   { column: "c2", row: "now", span: 2, name: "The set", views: ["DV-SMT-A-CHART", "DV-SMT-A-TABLE", "DV-SMT-A-MAP", "DV-SMT-A-AREAS", "DV-SMT-A-GRADES"], defaultView: "DV-SMT-A-CHART" },
   { column: "c1", row: "trends", name: "Results", views: ["DV-SMT-A-TREND-LINE", "DV-SMT-A-TREND-TABLE"], defaultView: "DV-SMT-A-TREND-LINE" },
-  { column: "c2", row: "trends", name: "Every line", views: ["DV-SMT-A-LINES", "DV-SMT-A-MOVES"], defaultView: "DV-SMT-A-LINES" },
+  { column: "c2", row: "trends", name: "Every line", views: ["DV-SMT-A-LINES", "DV-SMT-A-DUMBBELL", "DV-SMT-A-MOVES"], defaultView: "DV-SMT-A-LINES" },
   { column: "c3", row: "trends", name: "Entries mix", views: ["DV-SMT-A-MIX", "DV-SMT-A-AGAINST", "DV-SMT-A-SETMOVES"], defaultView: "DV-SMT-A-MIX" },
 ];
 

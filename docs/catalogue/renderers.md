@@ -2,7 +2,7 @@
 
 # Renderers
 
-Shape requirements only, no rules. 50 renderers.
+Shape requirements only, no rules. 51 renderers.
 
 ### RD-NUMBER-TILES — NumberTiles
 
@@ -594,7 +594,7 @@ Shape requirements only, no rules. 50 renderers.
 | Field | Content |
 | --- | --- |
 | File | src/components/smt/views/Academic.tsx |
-| Accepts | Every column-1 line, last year to this: value added against its own national average (0); points and shares as the change. |
+| Accepts | Every column-1 line, last year (ring) to this (dot) on one axis with its figures and entries, 0 marked (value added: England's average); the change at the right. |
 | Empty | No line with two years. |
 | Suppressed | — |
 | Partial | — |
@@ -603,6 +603,21 @@ Shape requirements only, no rules. 50 renderers.
 | Fullscreen | The panel's full screen (focus mode), the same view larger. |
 | Phone | Full width; the large view's views become tabs (Phone.dc.html). |
 | Used by | DV-SMT-A-LINES |
+
+### RD-SMT-DUMBBELL — EntriesDumbbell
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Academic.tsx |
+| Accepts | Every subject's entries in the whole school at the level, first year (ring) to latest (dot), largest first, coloured by subject family, with the change; the average of the subjects drawn dashed last. |
+| Empty | Fewer than two years of entries: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-DUMBBELL |
 
 ### RD-SMT-MOVES — Moves
 

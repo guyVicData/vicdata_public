@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import type { ConsortiumMapArea, ConsortiumMapMarker, ConsortiumMapMember } from "@/components/ConsortiumMap";
 import { Empty, Key, Lbl, LineSwatch, Tile, cx, fillHeight } from "@/components/admissions/ui";
-import { LineChart } from "@/components/admissions/views/charts";
+import { LineChart, yearTicks } from "@/components/admissions/views/charts";
 import { productAccent } from "@/components/shell/accent";
 import { SMT_NOTES, smtNote } from "@/catalogue/notes";
 import { periodLabel } from "@/catalogue/years";
@@ -569,30 +569,76 @@ export function PopulationProjected({ c, fullscreen, room }: { c: Context; fulls
   );
 }
 
-/** The large view's "Births and projections": births, and the projection for the school's ages. */
+/** The year births peaked, and the age the school's youngest pupils are (the lag from birth to entry). */
+export function birthsPeak(c: Context): { peak: number; lag: number; reaches: number } | null {
+  const b = c.births.la.filter((p) => p.value !== null);
+  if (b.length < 3) return null;
+  const top = b.reduce((m, p) => (p.value! > m.value! ? p : m));
+  const lag = Number(/^(\d+)/.exec(c.agesWord)?.[1] ?? NaN);
+  if (!Number.isFinite(lag) || top.year === b.at(-1)!.year) return null;
+  return { peak: top.year, lag, reaches: top.year + lag };
+}
+
+/**
+ * 0.8 feedback C (C7, SMT 12): one story, two scales. Above, the children of the school's ages in the area,
+ * counted (solid) running on into the projection (dashed), on their own value axis. Below, births in the LA
+ * on theirs, each birth year also labelled with the year those children reach the school's first age (the
+ * lag line), and the turn marked: "the children born since births peaked in 2012 reach 11 from 2023".
+ */
 export function BirthsAndProjections({ c, fullscreen, room }: { c: Context; fullscreen: boolean; room?: number }) {
   const b = c.births.la;
-  const proj = (c.forward?.projection ?? []).map((p) => ({ year: p.year, value: p.middle }));
-  const lastYear = Math.max(b.at(-1)?.year ?? 0, proj.at(-1)?.year ?? 0);
-  const where = c.forward?.where ?? "";
+  const f = c.forward;
+  const counted = (f?.estimates ?? []).filter((p) => p.value !== null);
+  const proj = (f?.projection ?? []).map((p) => ({ year: p.year, value: p.middle }));
+  const where = f?.where ?? "";
+  const peak = birthsPeak(c);
+  const gaps = b.length > 1 ? Array.from({ length: b.at(-1)!.year - b[0].year + 1 }, (_, i) => b[0].year + i).filter((y) => !b.some((p) => p.year === y && p.value !== null)) : [];
+  const cy = [...counted, ...proj].map((p) => p.year);
+  const top = fullscreen ? fillHeight(room, 160, 220) : 160;
   return (
-    <div className="flex min-h-0 grow flex-col gap-3">
-      <div className="text-[13px] font-bold text-[var(--fg)]">Births and projections, {c.place.la}</div>
-      <LineChart
-        height={fullscreen ? fillHeight(room, 200, 300) : 200}
-        yFormat={(v) => fmt(v, "pupils")}
-        xLabels={b.length ? [String(b[0].year), String(lastYear)] : null}
-        series={[
-          { id: "b", label: "Births", colour: "var(--accent)", points: b.map((p) => ({ x: p.year, y: p.value })) },
-          { id: "p", label: `Children aged ${c.agesWord} ${where} (projection)`, colour: "var(--adm-grey-soft)", dashed: "5 4", dots: true, points: proj.map((p) => ({ x: p.year, y: p.value })) },
-        ]}
-      />
-      <div className="flex flex-wrap gap-3">
-        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Births, {c.place.la}</Key>
-        <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} dashed />}>
-          Children aged {c.agesWord} {where}, projected
-        </Key>
+    <div className="flex min-h-0 grow flex-col gap-3" data-births-story="">
+      <div className="text-[13px] font-bold text-[var(--fg)]">
+        Children aged {c.agesWord} {where}: counted, then projected
       </div>
+      {cy.length > 1 ? (
+        <LineChart
+          height={top}
+          yFormat={(v) => fmt(v, "pupils")}
+          xLabels={[String(Math.min(...cy)), String(Math.max(...cy))]}
+          ticks={yearTicks(cy, String)}
+          series={[
+            { id: "c", label: "Counted", colour: "var(--accent)", points: counted.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${pt.x}: ${fmt(pt.y, "pupils")} aged ${c.agesWord} (counted, ONS)` },
+            { id: "p", label: "Projected", colour: "var(--accent)", dashed: "5 4", width: 2.2, points: proj.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${pt.x}: ${fmt(pt.y, "pupils")} aged ${c.agesWord} (projected)` },
+          ]}
+        />
+      ) : (
+        <Empty>No count or projection of children {where} to draw.</Empty>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Counted (ONS mid-year estimates)</Key>
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} dashed />}>Projected from the counted children</Key>
+      </div>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">Births in {c.place.la}, by year of birth</div>
+      {b.filter((p) => p.value !== null).length > 1 ? (
+        <LineChart
+          height={fullscreen ? 130 : 120}
+          yFormat={(v) => fmt(v, "pupils")}
+          xLabels={[String(b[0].year), String(b.at(-1)!.year)]}
+          ticks={yearTicks(b.map((p) => p.year), String)}
+          xLabels2={peak ? { caption: `the year those children reach ${peak.lag}`, labels: [String(b[0].year + peak.lag), String(b.at(-1)!.year + peak.lag), null] } : null}
+          markers={peak && peak.peak > b[0].year ? [{ x: peak.peak, label: `peak ${peak.peak}` }] : []}
+          series={[{ id: "b", label: "Births", colour: "var(--adm-grey-2)", width: 2.2, dots: true, points: b.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${pt.x}: ${fmt(pt.y, "pupils")} births${peak ? ` (aged ${peak.lag} in ${pt.x + peak.lag})` : ""}` }]}
+        />
+      ) : (
+        <Empty>No births held for {c.place.la}.</Empty>
+      )}
+      {peak && (
+        <div className="text-[12px] leading-[1.4] text-[var(--chip-fg)]" data-births-lag="">
+          The children born since births peaked in {peak.peak} reach {peak.lag} from {peak.reaches}
+          : from then, fewer children reach the school&rsquo;s first year.
+        </div>
+      )}
+      {gaps.length > 0 && <div className="text-[11px] text-[var(--muted2)]">No births figure held for {gaps.join(", ")}.</div>}
       <div className={cx("text-[11px] leading-[1.4] text-[var(--muted2)]")}>
         {c.notes.births} {c.notes.projection}
       </div>
@@ -605,7 +651,11 @@ export function BirthsAndProjections({ c, fullscreen, room }: { c: Context; full
 export function NearbyOverTime({ c, fullscreen, room }: { c: Context; fullscreen: boolean; room?: number }) {
   const ix = c.nearby.indexed;
   if (ix.school.filter((p) => p.value !== null).length < 2) return <Empty>No small-area population held around this school.</Empty>;
-  const ys = [...ix.school, ...ix.la, ...ix.england].map((p) => p.year);
+  // 0.8 feedback C (C7, SMT 13): the radius's line runs on (dashed, projected) to the LA's and England's last
+  // year; the year the children born at the births peak reach the school's first age is marked.
+  const projected = ix.projected ?? [];
+  const peak = birthsPeak(c);
+  const ys = [...ix.school, ...ix.la, ...ix.england, ...projected].map((p) => p.year);
   const raw = (pts: { year: number; value: number | null }[], y: number) => fmt(pts.find((p) => p.year === y)?.value, "pupils");
   const line = (id: string, label: string, colour: string, pts: typeof ix.school, rawPts: typeof ix.school, dashed?: string, width?: number) => ({ id, label, colour, dashed, width, points: pts.map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `${label} ${pt.x}: ${pt.y?.toFixed(0)} (${raw(rawPts, pt.x)} children)` });
   return (
@@ -618,13 +668,25 @@ export function NearbyOverTime({ c, fullscreen, room }: { c: Context; fullscreen
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[String(Math.min(...ys)), String(Math.max(...ys))]}
-        series={[line("s", `Within ${c.radius}`, "var(--accent)", ix.school, c.nearby.school), line("l", c.place.la ?? "LA", "var(--adm-grey-soft)", ix.la, c.nearby.la, "5 4", 1.8), line("e", "England", "var(--adm-grey-2)", ix.england, c.nearby.england, "2 3", 1.6)]}
+        series={[
+          line("s", `Within ${c.radius}`, "var(--accent)", ix.school, c.nearby.school),
+          ...(projected.length > 1 ? [{ id: "sp", label: `Within ${c.radius}, projected`, colour: "var(--accent)", dashed: "5 4", width: 2.2, points: projected.map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `Within ${c.radius} ${pt.x}: ${pt.y?.toFixed(0)} (projected)` }] : []),
+          line("l", c.place.la ?? "LA", "var(--adm-grey-soft)", ix.la, c.nearby.la, "5 4", 1.8),
+          line("e", "England", "var(--adm-grey-2)", ix.england, c.nearby.england, "2 3", 1.6),
+        ]}
+        markers={peak && peak.reaches >= Math.min(...ys) && peak.reaches <= Math.max(...ys) ? [{ x: peak.reaches, label: `born ${peak.peak} (the peak) reach ${peak.lag}` }] : []}
       />
       <div className="flex flex-wrap gap-3">
         <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Within {c.radius}</Key>
+        {projected.length > 1 && <Key swatch={<LineSwatch colour="var(--accent)" width={14} dashed />}>Within {c.radius}, projected (its count is published a year later)</Key>}
         <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} dashed />}>{c.place.la}</Key>
         <Key swatch={<LineSwatch colour="var(--adm-grey-2)" width={14} weight={2} dashed />}>England</Key>
       </div>
+      {peak && (
+        <div className="text-[12px] leading-[1.4] text-[var(--chip-fg)]" data-births-lag="">
+          Today&rsquo;s {c.agesWord}s were born in the years births were rising. The children born since births peaked in {peak.peak} reach {peak.lag} from {peak.reaches}, so the rise slows and turns after that.
+        </div>
+      )}
       <div className="text-[11px] leading-[1.4] text-[var(--muted2)]">{c.notes.nearby}</div>
     </div>
   );

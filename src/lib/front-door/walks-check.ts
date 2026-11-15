@@ -52,7 +52,9 @@ export function keyProblems(c: Chart): string[] {
   };
   if (c.kind === "lines") {
     for (const s of c.series) if (!(s.family && c.keys.some((k) => k.family === s.family && k.shade === s.shade))) need(s.role, s.role === "peer" ? s.shade : undefined);
-    if (c.unpublished.length && !c.keys.some((k) => k.mark === "dash")) out.push("no key for the dotted unpublished years");
+    // 0.8 feedback C (C11): an unpublished year is a gap labelled on the chart with its reason (no dotted
+    // bridge to key); a ringed small cohort needs its key entry.
+    if (c.small?.length && !c.keys.some((k) => k.mark === "ring")) out.push("no key for the ringed small cohorts");
   } else if (c.kind === "vbars") {
     // Review fixes (14 Nov, M7): a row in its family's colour is keyed by its family's entry (R-SUBJECT-COLOUR).
     for (const x of c.rows) if (x.family ? !c.keys.some((k) => k.family === x.family) : !has(x.role)) out.push(`no key for ${x.family ?? x.role}`);
@@ -60,8 +62,10 @@ export function keyProblems(c: Chart): string[] {
   } else if (c.kind === "hbars" || c.kind === "map") {
     for (const r of new Set((c.kind === "map" ? c.points : c.rows).map((x) => x.role))) need(r);
   } else if (c.kind === "dumbbell") {
-    for (const x of c.rows) if (x.family ? !c.keys.some((k) => k.family === x.family) : !has(x.role)) out.push(`no key for ${x.family ?? x.role}`);
-    if (!c.keys.some((k) => k.mark === "ring") || !c.keys.some((k) => k.mark === "dot")) out.push("no key for the ring and the dot");
+    // 0.8 feedback C (C10): the school average labels its own dashed row; one "ringdot" entry spells out ring
+    // to dot.
+    for (const x of c.rows) if (x.role !== "average" && (x.family ? !c.keys.some((k) => k.family === x.family) : !has(x.role))) out.push(`no key for ${x.family ?? x.role}`);
+    if (!c.keys.some((k) => k.mark === "ringdot") && (!c.keys.some((k) => k.mark === "ring") || !c.keys.some((k) => k.mark === "dot"))) out.push("no key for the ring and the dot");
   } else if (c.kind === "grades") {
     need("focus");
     if (c.rows.some((r) => r.england !== null)) need("england");

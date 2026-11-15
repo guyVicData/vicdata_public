@@ -34,6 +34,7 @@ import { englandQualVa, qualRows, subjectVa, vaMatcher, type QualRow, type VaFac
 import { gcseDefaultSet, groupDefaultSet, offering, stateP8Set, type GroupSet } from "./academic-sets";
 import { APPLIED_KEY, APPLIED_LABEL, GROUP_LABEL, GROUP_ORDER, dfeBandOf, groupChips, groupOfQualification, p8Band, rangeBand, shortQualification, type AcademicMode, type AcademicOffer, type AcademicPhase, type AcademicState, type AppliedType, type DfeBand, type QualGroup, type RangeBand, type RealGroup } from "./qual-groups";
 import { entrySizeBadge, entrySizeFifths, entrySizeKey, type EntrySizeKey } from "../subject-entry-size";
+import { entriesDumbbell, type EntriesDumbbell } from "./entries-dumbbell";
 
 export const MIN_SUBJECT_ENTRIES = MIN_SUBJECT_ENTRIES_UI; // R-SMT-SMALL-ENTRIES: a subject needs this many to be ranked
 
@@ -147,11 +148,14 @@ export type Academic = {
     band: BandPt[];
     schoolLabel: string | null; // null: no line for the school (an independent's Progress 8)
     note: string;
-    lines: { key: string; label: string; unit: Unit; from: number | null; to: number | null; fromPeriod: number | null; toPeriod: number | null }[];
+    // 0.8 feedback C (C3): `sub` the line's entries (or its qualification), shown beside its name.
+    lines: { key: string; label: string; sub?: string; unit: Unit; from: number | null; to: number | null; fromPeriod: number | null; toPeriod: number | null }[];
     moves: { label: string; from: number | null; to: number | null; change: number; unit: Unit }[];
     movesKind: "subjects" | "schools" | null;
     mix: { keys: { key: string; label: string }[]; years: { year: number; shares: Record<string, number>; counts: Record<string, number>; total: number }[]; sentence: string | null };
     against: { label: string; mine: number; typical: number; gap: number }[];
+    // 0.8 feedback C (C10): the whole school's entries by subject, first year to latest (entries-dumbbell.ts).
+    dumbbell?: EntriesDumbbell | null;
   };
   notes: Record<string, string>;
 };
@@ -611,7 +615,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     return { year: y, p25: percentile(vals, 25), p75: percentile(vals, 75), n: vals.length };
   });
   const trendNote = [st.group === "all" ? smtNote("acAllFollows", { group: lineLabel(boardLine) }) : null, mode === "va" ? smtNote("acVaGap", { years: `${periodLabel(SIXTH_FORM_VA_FROM - 2)} or ${periodLabel(SIXTH_FORM_VA_FROM - 1)}` }) : mode === "results" ? smtNote("acResultsFrom", { base: periodLabel(TREND_BASE_PERIOD), grading: periodLabel(GRADING_2122_PERIOD) }) : null].filter(Boolean).join(" ");
-  const everyLine = lines.map((l) => ({ key: l.key, label: l.label, unit: l.unit, from: l.last, to: l.value, fromPeriod: L - 1, toPeriod: L }));
+  const everyLine = lines.map((l) => ({ key: l.key, label: l.label, sub: l.sub, unit: l.unit, from: l.last, to: l.value, fromPeriod: L - 1, toPeriod: L }));
 
   // Moves: Entries -- the subjects' biggest changes since the first of three years; otherwise the set's schools.
   let moves: Academic["trends"]["moves"] = [];
@@ -703,7 +707,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     board,
     areas: { blocks, outside, none: blocks.length || outside.length ? null : smtNote("acNoFigure", { what: "subject" }), period: L, sized },
     grades,
-    trends: { label: `${boardLabel} ${word(measureWord)}`, unit: board.unit, school: schoolPts, band, schoolLabel: names[urn]?.name ?? null, note: trendNote, lines: everyLine, moves, movesKind, mix: { keys: mixKeys, years: mixYears, sentence }, against },
+    trends: { label: `${boardLabel} ${word(measureWord)}`, unit: board.unit, school: schoolPts, band, schoolLabel: names[urn]?.name ?? null, note: trendNote, lines: everyLine, moves, movesKind, mix: { keys: mixKeys, years: mixYears, sentence }, against, dumbbell: entriesDumbbell(rows, urn, L, from, famOf) },
     notes,
   };
 }
@@ -891,9 +895,10 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
   const blocks: AreaBlock[] = [];
   let grades: GradeBlock[] = [];
   let gcseSized: boolean | undefined;
+  const gcseFamMap = await cachedReference("smt:family-map:ks4", () => lookupAcademicSubjectFamilyMap({ ksStage: "ks4" }));
+  const gcseFamilyOf = new Map(gcseFamMap.map((r) => [r.raw_subject, r.family_id]));
   if (mode !== "va") {
-    const famMap = await cachedReference("smt:family-map:ks4", () => lookupAcademicSubjectFamilyMap({ ksStage: "ks4" }));
-    const familyOf = new Map(famMap.map((r) => [r.raw_subject, r.family_id]));
+    const familyOf = gcseFamilyOf;
     const labels = new Map(school.areas.gcse.map((a) => [a.id, a.label]));
     const mineNow = rows.filter((r) => r.urn === urn && r.period === subjYear && (!st.area || (r.familyId ?? familyOf.get(r.subject)) === st.area));
     for (const r of mineNow) {
@@ -970,11 +975,12 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
       band: bandPts,
       schoolLabel: noP8 && mode === "va" ? null : (names[urn]?.name ?? null),
       note: mode === "va" ? smtNote("acP8Gap", { p8Last: periodLabel(PROGRESS8_LAST_PERIOD) }) : mode === "results" ? smtNote("acResultsFrom", { base: periodLabel(TREND_BASE_PERIOD), grading: periodLabel(GRADING_2122_PERIOD) }) : "",
-      lines: lines.map((l) => ({ key: l.key, label: l.label, unit: l.unit, from: l.last, to: l.value, fromPeriod: l.lastPeriod, toPeriod: L })),
+      lines: lines.map((l) => ({ key: l.key, label: l.label, sub: l.sub, unit: l.unit, from: l.last, to: l.value, fromPeriod: l.lastPeriod, toPeriod: L })),
       moves,
       movesKind: "schools",
       mix: { keys: [], years: [], sentence: null },
       against: [],
+      dumbbell: entriesDumbbell(rows, urn, subjYear, from, (sub) => gcseFamilyOf.get(sub) ?? null),
     },
     notes,
   };

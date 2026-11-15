@@ -12,7 +12,7 @@
 //   AreasView       subject areas, each area's subjects by qualification
 //   GradesView      the grade profile (Results)
 //   TrendBand / TrendTable / EveryLine / Moves / MixBars / Against   row 2
-import { familyColourVar } from "@/lib/subject-family-colours";
+import { SUBJECT_FAMILY_NAMES, familyColourVar } from "@/lib/subject-family-colours";
 import dynamic from "next/dynamic";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
@@ -676,51 +676,198 @@ export function TrendTable({ a }: { a: Academic }) {
   return <BandTable title={`${t.label} against ${a.set.chosen ? a.set.label : `the ${a.set.label}`}`} school={t.school} band={t.band} unit={unit} setLabel="Comparison set" />;
 }
 
+/**
+ * 0.8 feedback C (C3, SMT 6): last year to this, every line, as a dumbbell drawn at its real width (the old
+ * rows stretched a 260-wide drawing with preserveAspectRatio="none", so the dots became ovals). One axis for
+ * every row, in the measure's own values, with 0 marked (value added: England's average): ○ last year,
+ * ● this year, each with its figure; the line's entries beside its name; the change at the right.
+ */
 export function EveryLine({ a }: { a: Academic }) {
+  const [ref, w] = useWidth<HTMLDivElement>();
   const lines = a.trends.lines.filter((l) => l.from !== null || l.to !== null);
   if (!lines.length) return <Centre>{a.col1.note ?? "No line has two years to compare."}</Centre>;
   const va = a.state.mode === "va";
-  const span = Math.max(0.1, ...lines.flatMap((l) => [Math.abs((l.to ?? 0) - (va ? 0 : (l.from ?? 0))), va ? Math.abs(l.from ?? 0) : 0, va ? Math.abs(l.to ?? 0) : 0]));
-  const W = 260;
-  const sx = scale([-span, span], [8, W - 8]);
+  const unit: Unit = lines[0].unit;
+  const vals = lines.flatMap((l) => [l.from, l.to]).filter((v): v is number => v !== null);
+  // Zero is always on the axis: value added's England average, or the bottom of a points or share scale.
+  let lo = Math.min(0, ...vals);
+  let hi = Math.max(0, ...vals);
+  const padV = (hi - lo || 1) * 0.06;
+  if (lo < 0) lo -= padV;
+  hi += padV;
+  const ticks = niceTicks(lo, hi, 4);
+  lo = Math.min(lo, ticks[0]);
+  hi = Math.max(hi, ticks.at(-1)!);
+  const narrow = w > 0 && w < 520;
+  const labelW = narrow ? 0 : 168;
+  const changeW = 62;
+  const W = Math.max(w, 10);
+  const plotL = labelW + 14;
+  const plotR = W - changeW - 14;
+  const sx = scale([lo, hi], [plotL, Math.max(plotL + 40, plotR)]);
+  const rowH = narrow ? 46 : 34;
+  const top = 26;
+  const H = top + lines.length * rowH + 6;
   const toneFor = (d: number) => (d > 0 ? "var(--ac-above)" : d < 0 ? "var(--ac-below)" : "var(--ac-mid)");
+  const tick = (t: number) => (va ? (Math.abs(t) < 1e-9 ? "0" : fmtTick(t, "va")) : unit === "share" ? `${t}%` : `${t}`);
+  const fromP = lines[0].fromPeriod;
+  const toP = lines[0].toPeriod;
   return (
-    <div className="flex flex-col gap-2" data-ac-lines="">
-      <Vt>Last year to this, every {a.state.phase === "gcse" ? "GCSE" : "Post-16"} line</Vt>
-      <div className="grid grid-cols-[112px_1fr_52px] items-center gap-x-2 gap-y-1">
-        {lines.map((l) => {
-          const d = l.to !== null && l.from !== null ? l.to - l.from : null;
-          // Value added: each line against its own national average (0); points and shares: the change itself.
-          const a0 = va ? (l.from ?? 0) : 0;
-          const a1 = va ? (l.to ?? 0) : (d ?? 0);
-          return (
-            <FragmentRow key={l.key}>
-              <div className="truncate text-[11.5px] text-[var(--chip-fg)]">{l.label}</div>
-              <svg width="100%" height={20} viewBox={`0 0 ${W} 20`} preserveAspectRatio="none" aria-hidden="true">
-                <line x1={sx(0)} x2={sx(0)} y1={0} y2={20} style={{ stroke: "var(--ac-zero)" }} />
-                {d !== null && <line x1={sx(a0)} x2={sx(a1)} y1={10} y2={10} strokeWidth={2.4} style={{ stroke: toneFor(d) }} />}
-                {va && l.from !== null && <circle cx={sx(a0)} cy={10} r={4} strokeWidth={1.6} style={{ fill: "var(--panel-bg)", stroke: "var(--ac-mid)" }} />}
-                {(l.to !== null || !va) && <circle cx={sx(a1)} cy={10} r={5} style={{ fill: "var(--accent)" }} />}
-              </svg>
-              <div className="whitespace-nowrap text-right text-[11px] text-[var(--chip-fg)]">{d === null ? (l.to === null ? "no figure" : "new") : fmtChangeAc(d, l.unit === "share" ? "share" : l.unit)}</div>
-            </FragmentRow>
-          );
-        })}
-      </div>
-      <div className="flex gap-3">
-        {va ? (
-          <>
-            <Key swatch={<span className="h-[9px] w-[9px] rounded-full border-[1.6px] border-[var(--ac-mid)]" />}>{lines[0].fromPeriod !== null ? periodLabel(lines[0].fromPeriod) : ""}</Key>
-            <Key swatch={<span className="h-[9px] w-[9px] rounded-full bg-[var(--accent)]" />}>{lines[0].toPeriod !== null ? periodLabel(lines[0].toPeriod) : ""}</Key>
-          </>
-        ) : (
-          <Tl>{lines[0].fromPeriod !== null && lines[0].toPeriod !== null ? `${periodLabel(lines[0].fromPeriod)} to ${periodLabel(lines[0].toPeriod)}` : ""}</Tl>
-        )}
+    <div ref={ref} className="flex w-full flex-col gap-2" data-ac-lines="">
+      <Vt>Last year to this, every {a.state.phase === "gcse" ? "GCSE" : "Post-16"} line{fromP !== null && toP !== null ? `, ${periodLabel(fromP)} to ${periodLabel(toP)}` : ""}</Vt>
+      {w > 0 && (
+        <svg width={W} height={H} role="img" aria-label={`Every line, ${fromP !== null ? periodLabel(fromP) : "last year"} to ${toP !== null ? periodLabel(toP) : "this year"}`}>
+          {ticks.map((t) => (
+            <g key={t} data-ac-lines-tick={t}>
+              <line x1={sx(t)} x2={sx(t)} y1={top - 6} y2={H - 4} strokeWidth={Math.abs(t) < 1e-9 ? 1.4 : 1} style={{ stroke: Math.abs(t) < 1e-9 ? "var(--ac-zero)" : "var(--adm-grid)" }} />
+              <text x={sx(t)} y={top - 11} fontSize={10} textAnchor="middle" style={{ fill: Math.abs(t) < 1e-9 ? "var(--fg)" : "var(--muted)" }} fontWeight={Math.abs(t) < 1e-9 ? 700 : undefined}>
+                {va && Math.abs(t) < 1e-9 && !narrow ? "0 = England average" : tick(t)}
+              </text>
+            </g>
+          ))}
+          {lines.map((l, i) => {
+            const y0 = top + i * rowH;
+            const cy = y0 + (narrow ? 30 : rowH / 2);
+            const d = l.to !== null && l.from !== null ? l.to - l.from : null;
+            const left = l.from !== null && l.to !== null ? Math.min(l.from, l.to) : null;
+            return (
+              <g key={l.key} data-ac-line={l.key}>
+                <text x={narrow ? 0 : labelW} y={narrow ? y0 + 12 : cy - 1} fontSize={11.5} textAnchor={narrow ? "start" : "end"} style={{ fill: "var(--fg)" }} fontWeight={600}>
+                  {clip(l.label, narrow ? W - changeW : labelW)}
+                  {narrow && l.sub ? <tspan fontSize={10} fontWeight={400} style={{ fill: "var(--muted2)" }}>{`  ${l.sub}`}</tspan> : null}
+                </text>
+                {!narrow && l.sub && (
+                  <text x={labelW} y={cy + 11} fontSize={10} textAnchor="end" style={{ fill: "var(--muted2)" }}>
+                    {clip(l.sub, labelW)}
+                  </text>
+                )}
+                {d !== null && <line x1={sx(l.from!)} x2={sx(l.to!)} y1={cy} y2={cy} strokeWidth={3} strokeLinecap="round" style={{ stroke: toneFor(d) }} />}
+                {l.from !== null && (
+                  <g>
+                    <circle cx={sx(l.from)} cy={cy} r={4.5} strokeWidth={1.8} style={{ fill: "var(--panel-bg)", stroke: "var(--ac-mid)" }}>
+                      <title>{`${l.label}, ${fromP !== null ? periodLabel(fromP) : "last year"}: ${fmtAc(l.from, unit)}`}</title>
+                    </circle>
+                    <text x={sx(l.from) + (left === l.from ? -8 : 8)} y={cy + 3.5} fontSize={10} textAnchor={left === l.from ? "end" : "start"} style={{ fill: "var(--muted2)" }}>
+                      {fmtShort(l.from, unit)}
+                    </text>
+                  </g>
+                )}
+                {l.to !== null && (
+                  <g>
+                    <circle cx={sx(l.to)} cy={cy} r={5.5} style={{ fill: "var(--accent)" }}>
+                      <title>{`${l.label}, ${toP !== null ? periodLabel(toP) : "this year"}: ${fmtAc(l.to, unit)}`}</title>
+                    </circle>
+                    <text x={sx(l.to) + (left === l.to && l.from !== null ? -9 : 9)} y={cy + 3.5} fontSize={10.5} fontWeight={700} textAnchor={left === l.to && l.from !== null ? "end" : "start"} style={{ fill: "var(--fg)" }}>
+                      {fmtShort(l.to, unit)}
+                    </text>
+                  </g>
+                )}
+                <text x={W - 2} y={cy + 3.5} fontSize={11} textAnchor="end" style={{ fill: d === null ? "var(--muted2)" : toneFor(d) }} fontWeight={700} data-ac-line-change="">
+                  {d === null ? (l.to === null ? "no figure" : "new") : fmtChangeAc(d, unit === "share" ? "share" : unit)}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <Key swatch={<span className="h-[9px] w-[9px] rounded-full border-[1.6px] border-[var(--ac-mid)]" />}>{fromP !== null ? periodLabel(fromP) : "Last year"} (last year)</Key>
+        <Key swatch={<span className="h-[9px] w-[9px] rounded-full bg-[var(--accent)]" />}>{toP !== null ? periodLabel(toP) : "This year"} (this year)</Key>
+        <Tl>{va ? "Value added: 0 is England's average." : unit === "share" ? "Share of the level's entries, per cent." : "Points per entry; the axis starts at 0."}</Tl>
       </div>
     </div>
   );
 }
-const FragmentRow = ({ children }: { children: ReactNode }) => <>{children}</>;
+
+/**
+ * 0.8 feedback C (C10, Teacher 2): the whole school's entries by subject at the level, first year to latest --
+ * Teacher's Context › Trends dumbbell, which Guy wanted on SMT. A ring at the first year, a dot at the latest,
+ * the bar between them in the subject family's colour (keyed by family only: no row is singled out), the
+ * latest figure beside its dot and the change at the right; the subjects' plain average drawn dashed last.
+ * The qualification is named only where the level has more than one. HTML rows, so nothing stretches.
+ */
+export function EntriesDumbbell({ a, fullscreen = false }: { a: Academic; fullscreen?: boolean }) {
+  const d = a.trends.dumbbell;
+  if (!d || !d.rows.length) return <Centre>Fewer than two years of entries to compare.</Centre>;
+  const fy = periodLabel(d.firstYear);
+  const ly = periodLabel(d.latestYear);
+  const vals = [...d.rows.flatMap((r) => [r.first, r.latest]), ...(d.average ? [d.average.first, d.average.latest] : [])];
+  const ticks = niceTicks(0, Math.max(...vals), 4);
+  const hi = Math.max(ticks.at(-1)!, ...vals) || 1;
+  const at = (v: number) => (v / hi) * 100;
+  const level = a.state.phase === "gcse" ? "GCSE" : "Post-16";
+  const GRID = fullscreen ? "grid grid-cols-[minmax(0,12rem)_1fr_3.5rem] items-center gap-2" : "grid grid-cols-[minmax(0,8.5rem)_1fr_3rem] items-center gap-2";
+  const families = Array.from(new Set(d.rows.map((r) => r.familyId).filter((x): x is string => !!x)));
+  const row = (key: string, label: string, tag: string | null, first: number, latest: number, colour: string, avg = false) => {
+    const lo = at(Math.min(first, latest));
+    const up = latest >= first;
+    const ch = Math.round(latest - first);
+    return (
+      <div key={key} data-smt-dumbbell-row={avg ? "average" : "subject"} className={`${GRID} px-1 py-[2px] text-[11.5px] ${avg ? "mt-1 border-t border-[var(--panel-border)] pt-1.5" : ""}`} title={`${label}${tag ? ` (${tag})` : ""}: ${Math.round(first)} entries in ${fy}, ${Math.round(latest)} in ${ly}`}>
+        <span className={`truncate text-right ${avg ? "italic text-[var(--muted2)]" : "text-[var(--chip-fg)]"}`}>
+          {label}
+          {tag && <span className="ml-1 rounded-[4px] bg-[var(--box-bg)] px-1 text-[9.5px] text-[var(--muted2)] ring-1 ring-[var(--panel-border)]">{tag}</span>}
+        </span>
+        <span className="relative h-3">
+          <span className="absolute top-1/2 -translate-y-1/2" style={avg ? { left: `${lo}%`, width: `${Math.abs(at(latest) - at(first))}%`, borderTop: `2px dashed ${colour}` } : { left: `${lo}%`, width: `${Math.abs(at(latest) - at(first))}%`, height: 3, background: colour, opacity: 0.55 }} />
+          <span className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-[var(--panel-bg)]" style={{ left: `${at(first)}%`, borderColor: colour }} />
+          <span className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${at(latest)}%`, background: colour }} />
+          <span className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[10.5px] tabular-nums text-[var(--muted2)] ${up ? "pl-2.5" : "-translate-x-full pr-2.5"}`} style={{ left: `${at(latest)}%` }}>
+            {Math.round(latest)}
+          </span>
+        </span>
+        <span className="text-right tabular-nums text-[var(--chip-fg)]">{ch > 0 ? `▲ ${ch}` : ch < 0 ? `▼ ${-ch}` : "– 0"}</span>
+      </div>
+    );
+  };
+  return (
+    <div className="flex min-h-0 w-full grow flex-col gap-1.5" data-smt-dumbbell="">
+      <Vt>
+        Entries by subject in the whole school at {level}, {fy} and {ly}, largest first
+      </Vt>
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        <Key swatch={<span className="inline-flex items-center"><span className="h-2 w-2 rounded-full border-[1.6px] border-[var(--muted2)]" /><span className="h-[2px] w-2 bg-[var(--muted2)]" /><span className="h-2 w-2 rounded-full bg-[var(--muted2)]" /></span>}>
+          ○ {fy} (first year) → ● {ly} (latest)
+        </Key>
+        {families.map((f) => (
+          <Key key={f} swatch={<span className="h-[9px] w-[9px] rounded-[2px]" style={{ background: familyColourVar(f) }} />}>
+            {a.areas.blocks.find((b) => b.id === f)?.label ?? SUBJECT_FAMILY_NAMES[f] ?? f}
+          </Key>
+        ))}
+        {d.average && <Key swatch={<span className="w-4 border-t-2 border-dashed border-[var(--muted2)]" />}>Average of the {d.rows.length} subjects</Key>}
+      </div>
+      <div className={`${GRID} px-1 text-[10px] text-[var(--muted)]`}>
+        <span />
+        <span className="relative h-3">
+          {ticks.map((t) => (
+            <span key={t} className="absolute bottom-0 -translate-x-1/2 tabular-nums" style={{ left: `${at(t)}%` }} data-smt-dumbbell-tick={t}>
+              {t.toLocaleString("en-GB")}
+            </span>
+          ))}
+        </span>
+        <span className="text-right leading-tight">Change</span>
+      </div>
+      {/* In a panel the rows scroll inside it (largest first, so the top of the list shows); full screen, all. */}
+      <div className={fullscreen ? "" : "min-h-0 overflow-y-auto"} data-smt-dumbbell-rows="">
+      <div className="relative">
+        <div aria-hidden="true" className={`pointer-events-none absolute inset-0 ${GRID} px-1`}>
+          <span />
+          <span className="relative">
+            {ticks.map((t) => (
+              <span key={t} className="absolute inset-y-0" style={{ left: `${at(t)}%`, borderLeft: `1px solid var(--adm-grid)` }} />
+            ))}
+          </span>
+        </div>
+        {d.rows.map((r) => row(r.key, r.label, r.qualification, r.first, r.latest, r.familyId ? familyColourVar(r.familyId) : "var(--muted2)"))}
+        {d.average && row("average", "Average", null, d.average.first, d.average.latest, "var(--muted2)", true)}
+      </div>
+      </div>
+      <Tl>
+        Entries (not students); the scale starts at 0.{d.leftOut ? ` ${d.leftOut} ${d.leftOut === 1 ? "subject" : "subjects"} with entries in only one of the two years left out.` : ""}
+      </Tl>
+    </div>
+  );
+}
 
 /**
  * 0.8 feedback B1 (SMT 7, R-WALK-ENDS-ON-ANSWER): the Academic walk's answer -- every subject, strongest to

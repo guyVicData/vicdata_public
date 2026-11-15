@@ -8,7 +8,7 @@
 //   MarketLine    market share at 11+ against the largest rival, from Admissions (read-only)
 import Link from "next/link";
 import { Empty, Key, LineSwatch, fillHeight } from "@/components/admissions/ui";
-import { LineChart, extent, path, scale, useWidth } from "@/components/admissions/views/charts";
+import { LineChart, axisValues, extent, path, scale, useWidth, yearTicks } from "@/components/admissions/views/charts";
 import { GRADING_2122_PERIOD, periodLabel, rollDirection, TREND_BASE_PERIOD, TREND_LINE_MIN_YEARS } from "@/catalogue/years";
 import { TREND_BASE_NOTE } from "@/catalogue/notes";
 import type { Overview } from "../api";
@@ -85,7 +85,10 @@ export function BandChart({ school, band, height, unit, label, setLabel, valueKe
   const xd: [number, number] = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
   const yd = extent([...school.map((p) => p.value), ...band.flatMap((b) => [b.p25, b.p75])], 0.12);
   const W = Math.max(w, 10);
-  const pad = { l: 10, r: 10, t: 8, b: 10 };
+  // 0.8 feedback C (C1, R-CHART-AXES): a value axis, the values in the measure's own unit.
+  const grid = axisValues(yd, height, null, null);
+  const gl = (v: number) => (unit === "pct" || unit === "share" ? `${+v.toFixed(1)}%` : String(+v.toFixed(2)));
+  const pad = { l: grid.length ? Math.max(24, Math.max(...grid.map((v) => gl(v).length)) * 5.8 + 10) : 10, r: 10, t: 8, b: 10 };
   const sx = scale(xd, [pad.l, W - pad.r]);
   const sy = scale(yd, [height - pad.b, pad.t]);
   const pts = band.filter((b) => b.p25 !== null && b.p75 !== null);
@@ -102,6 +105,14 @@ export function BandChart({ school, band, height, unit, label, setLabel, valueKe
             </rect>
           )}
           <line x1={0} x2={W} y1={height - 1} y2={height - 1} stroke="var(--adm-axis)" />
+          {grid.map((v) => (
+            <g key={`g-${v}`} data-y-grid={v}>
+              <line x1={pad.l} x2={W - pad.r} y1={sy(v)} y2={sy(v)} stroke="var(--adm-grid)" />
+              <text x={pad.l - 6} y={sy(v) + 3.5} textAnchor="end" fontSize={10} fill="var(--muted)">
+                {gl(v)}
+              </text>
+            </g>
+          ))}
           {area && (
             <path d={area} fill="var(--adm-grey-bar)" opacity={0.75} data-band="">
               <title>{`${setLabel}, middle half`}</title>
@@ -118,7 +129,7 @@ export function BandChart({ school, band, height, unit, label, setLabel, valueKe
         </svg>
       )}
       {xs.length > 0 && (
-        <div className="flex justify-between text-[10px] text-[var(--muted)]">
+        <div className="flex justify-between text-[10px] text-[var(--muted)]" style={{ paddingLeft: Math.max(0, pad.l - 14) }}>
           {xs.map((x) => (
             <span key={x}>{shortYear(x)}</span>
           ))}
@@ -162,22 +173,38 @@ export function MarketLine({ o, market, schoolName, fullscreen, room }: { o?: Ov
       </>
     );
   const years = m.school.map((p) => p.year);
+  // 0.8 feedback C (C2, C17, SMT 4): the rivals the title names are drawn -- their middle share each year
+  // (dashed) over their middle half (shaded) -- beside the school and its largest rival, on a value axis
+  // (C1) and a taller chart, so the lines aren't squashed together.
+  const against = m.setRivals ?? (m.defaultRivals ? "the 10 nearest schools (default rivals)" : "your rivals");
+  const middle = (m.middle ?? []).filter((p) => p.value !== null);
+  const band = (m.band ?? []).filter((b) => b.p25 !== null && b.p75 !== null && b.n >= 3);
   return (
     <>
-      {/* Review fixes (dashboards.md #4): the grey line is the largest rival only, so the title says so. */}
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Market share at 11+: you and your largest rival{m.rivalName ? ` (${m.rivalName})` : ""}{years.length > 1 ? `, ${yr(years[0])} to ${yr(years[years.length - 1])}` : ""}<span className="font-normal text-[var(--muted2)]"> · against {m.setRivals ?? (m.defaultRivals ? "the 10 nearest schools (default rivals)" : "your rivals")}</span></div>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]" data-market-title="">
+        Market share at 11+: you, your largest rival{m.rivalName ? ` (${m.rivalName})` : ""}{middle.length > 1 ? ` and the middle of ${against}` : ""}
+        {years.length > 1 ? `, ${yr(years[0])} to ${yr(years[years.length - 1])}` : ""}
+        {middle.length < 2 && <span className="font-normal text-[var(--muted2)]"> · among {against}</span>}
+      </div>
       <LineChart
-        height={fullscreen ? fillHeight(room, 150, 300) : 130}
-        yFormat={(v) => `${v.toFixed(1)}%`}
+        // The room left once the title (two lines) and the four-entry key are drawn: 170 in the walk, less
+        // in a dashboard panel, so the key is never cut off.
+        height={fullscreen ? fillHeight(room, 170, 320) : room ? Math.max(110, Math.min(170, room - 130)) : 150}
+        yFormat={(v) => `${+v.toFixed(1)}%`}
         xLabels={years.length ? [yr(years[0]), yr(years[years.length - 1])] : null}
+        ticks={yearTicks(years, yr)}
+        bands={band.length > 1 ? [{ id: "rivals-middle-half", colour: "var(--adm-grey-bar)", opacity: 0.6, points: band.map((b) => ({ x: b.year, lo: b.p25, hi: b.p75 })) }] : []}
         series={[
-          { id: "you", label: "You", colour: "var(--accent)", points: m.school.map((p) => ({ x: p.year, y: p.value })) },
-          ...(m.rival.length ? [{ id: "rival", label: m.rivalName ?? "Largest rival", colour: "var(--adm-grey-soft)", width: 1.6, points: m.rival.map((p) => ({ x: p.year, y: p.value })) }] : []),
+          ...(middle.length > 1 ? [{ id: "middle", label: `Middle of ${against}`, colour: "var(--adm-grey-2)", width: 1.8, dashed: "5 4", points: (m.middle ?? []).map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `Middle of ${against}, ${yr(pt.x)}: ${pt.y?.toFixed(1)}%` }] : []),
+          ...(m.rival.length ? [{ id: "rival", label: m.rivalName ?? "Largest rival", colour: "var(--adm-grey-soft)", width: 1.6, points: m.rival.map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `${m.rivalName ?? "Largest rival"}, ${yr(pt.x)}: ${pt.y?.toFixed(1)}%` }] : []),
+          { id: "you", label: "You", colour: "var(--accent)", points: m.school.map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `${you}, ${yr(pt.x)}: ${pt.y?.toFixed(1)}%` },
         ]}
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3" data-market-key="">
         <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>{you}</Key>
         {m.rival.length > 0 && <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} weight={2} />}>Largest rival{m.rivalName ? ` (${m.rivalName})` : ""}</Key>}
+        {middle.length > 1 && <Key swatch={<LineSwatch colour="var(--adm-grey-2)" width={14} weight={2} dashed />}>Middle of {against}</Key>}
+        {band.length > 1 && <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px] bg-[var(--adm-grey-bar)]" />}>Their middle half</Key>}
       </div>
       <Link href="/teacher/admissions?view=market-share&entry=11%2B" className="text-[11.5px] font-bold text-[var(--adm-accent-text)]">
         Open in Admissions &rarr;
@@ -191,22 +218,25 @@ export function MarketLine({ o, market, schoolName, fullscreen, room }: { o?: Ov
 /** Indexed lines (each phase's roll, England's pupils aged 5-15), 100 in the base year. */
 export function IndexedLines({ title, lines, fullscreen, room, caption }: { title: string; lines: { key: string; label: string; pts: Pt[] }[]; fullscreen: boolean; room?: number; caption?: string }) {
   if (!lines.length || lines[0].pts.filter((p) => p.value !== null).length < 2) return <Empty>Not enough census years to draw a trend.</Empty>;
-  const colour = (k: string, i: number) => (k === "england" ? "var(--adm-grey-2)" : i === 0 ? "var(--accent)" : "rgba(var(--accent-rgb),0.7)");
-  const dash = (k: string, i: number) => (k === "england" ? "4 3" : i > 0 ? "5 4" : undefined);
+  // 0.8 feedback C (C6): each phase's LA line (`la-{phase}`) in grey, dashed as its phase is.
+  const phaseIdx = (k: string) => lines.findIndex((l) => l.key === k.replace(/^la-/, ""));
+  const isRef = (k: string) => k === "england" || k.startsWith("la-");
+  const colour = (k: string, i: number) => (k === "england" ? "var(--adm-grey-2)" : k.startsWith("la-") ? "var(--adm-grey-soft)" : i === 0 ? "var(--accent)" : "rgba(var(--accent-rgb),0.7)");
+  const dash = (k: string, i: number) => (k === "england" ? "4 3" : k.startsWith("la-") ? (phaseIdx(k) > 0 ? "5 4" : undefined) : i > 0 ? "5 4" : undefined);
   const years = lines[0].pts.map((p) => p.year);
   return (
     <>
       <div className="text-[12.5px] font-bold text-[var(--fg)]">{title}</div>
       <LineChart
-        height={fullscreen ? fillHeight(room, 150, 300) : 150}
+        height={fullscreen ? fillHeight(room, 150, 300) : room ? Math.max(100, Math.min(150, room - 150)) : 150}
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[yr(years[0]), yr(years[years.length - 1])]}
-        series={lines.map((l, i) => ({ id: l.key, label: l.label, colour: colour(l.key, i), width: l.key === "england" ? 1.6 : 2.6, dashed: dash(l.key, i), points: l.pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${l.label} ${yr(pt.x)}: ${pt.y?.toFixed(0)}` }))}
+        series={lines.map((l, i) => ({ id: l.key, label: l.label, colour: colour(l.key, i), width: isRef(l.key) ? 1.6 : 2.6, dashed: dash(l.key, i), points: l.pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${l.label} ${yr(pt.x)}: ${pt.y?.toFixed(0)}` }))}
       />
       <div className="flex flex-wrap gap-3">
         {lines.map((l, i) => (
-          <Key key={l.key} swatch={<LineSwatch colour={colour(l.key, i)} width={14} weight={l.key === "england" ? 2 : 2.5} dashed={!!dash(l.key, i)} />}>
+          <Key key={l.key} swatch={<LineSwatch colour={colour(l.key, i)} width={14} weight={isRef(l.key) ? 2 : 2.5} dashed={!!dash(l.key, i)} />}>
             {l.label}
           </Key>
         ))}

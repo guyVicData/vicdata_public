@@ -173,8 +173,16 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school",
     years: "The level's latest year and the year before",
     leftOut: ["A line without both years shows what it has"],
-    steps: [onlyIf("va", "Each line against its own national average (0): the hollow dot is last year, the filled dot this year."), unless("va", "Each line's change from last year to this, on its own scale.")],
+    steps: ["Each line's figure last year (ring) and this year (dot) on one axis that starts at 0, with both figures and the line's entries beside its name.", onlyIf("va", "In value added, 0 is England's average for that line."), "The change is at the right."],
     rounding: ["As column 1"],
+  },
+  "DV-SMT-A-DUMBBELL": {
+    sources: ["The subject-by-qualification rollup (DfE subject tables): the same entries as column 1"],
+    geography: "The school",
+    years: `The first year with entries from ${HISTORIC} and the latest`,
+    leftOut: ["Subjects with entries in only one of the two years (counted under the chart)"],
+    steps: ["One row per subject and qualification: its entries in the first year (ring) and the latest (dot), largest first.", "The qualification is named only where the level has more than one; the level's main one is left unnamed.", "Colour is the subject family; the dashed row is the plain average of the subjects drawn."],
+    rounding: ["Entries whole numbers"],
   },
   "DV-SMT-A-MOVES": {
     sources: ["The subject-by-qualification rollup"],
@@ -262,7 +270,7 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school",
     years: "Each census year from 2020/21 (Year 11 from 2019/20)",
     leftOut: ["Schools without both a GCSE phase and a sixth form", "Years with no census"],
-    steps: ["For each year, we take the school's pupils aged 16 (Year 12) and its pupils aged 15 (Year 11) in the census the year before.", "Year 12 against Year 11 is Year 12 divided by last year's Year 11.", "Net leavers is last year's Year 11 minus this year's Year 12; if Year 12 is larger, it shows how many more joined."],
+    steps: ["For each year, we take the school's pupils aged 16 (Year 12) and its pupils aged 15 (Year 11) in the census the year before.", "Year 12 against Year 11 is Year 12 divided by last year's Year 11.", "The chart draws Year 12 minus last year's Year 11: above the line, more joined than left; below, more left. The table's last column is the same figure, signed."],
     rounding: ["Per cent to a whole number", "Pupils to whole numbers"],
   },
   "DV-SMT-P-MARKET": {

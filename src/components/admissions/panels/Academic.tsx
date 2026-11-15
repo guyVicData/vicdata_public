@@ -36,13 +36,18 @@ export function AcademicRanking({ r }: { r: RivalsView }) {
         {r.overall?.national ? `${ordinal(r.overall.national.rank)} of ${r.overall.national.of.toLocaleString("en-GB")} in England` : "Not ranked in England"}
         {r.overall?.change != null ? ` · ${arrowed(r.overall.change, (x) => x.toFixed(1), 1, 0.05)} since ${yearLabel(TREND_BASE_PERIOD)}` : ""}
       </Muted>
+      {r.switchedFrom === "ks4" && (
+        <span className="mb-1 text-[11px] leading-snug text-[var(--muted2)]" data-switched-post16="">
+          Ranked on Post-16 (A-level points per entry): {r.rows.find((x) => x.isSchool)?.name ?? "the school"} sits IGCSE, so it has no ranked GCSE headline. Rivals without a sixth form have no figure here.
+        </span>
+      )}
       {r.stage !== "ks2" && lead.length > 0 && <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-up-fg)]">Where you lead the rivals</div>}
       {lead.map((a) => (
         <div key={a.familyId} className={ROW}>
           <span>{ordinal(a.rank)}</span>
           <span className="truncate">{r.areaLabels[a.familyId] ?? a.familyId}</span>
           <span className="tabular-nums">{fmtSigned(a.gap, 2, "")}</span>
-          <span>{arrow(a.gapSince2223, 0.05)}</span>
+          <span title={a.gapSince2223 === null ? undefined : `Gap ${fmtSigned(a.gapSince2223, 2, "")} since ${yearLabel(TREND_BASE_PERIOD)}`}>{a.gapSince2223 === null ? "" : arrow(a.gapSince2223, 0.05)}</span>
         </div>
       ))}
       {r.stage !== "ks2" && trail.length > 0 && <div className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-down-fg)]">Where you trail</div>}
@@ -51,7 +56,7 @@ export function AcademicRanking({ r }: { r: RivalsView }) {
           <span>{ordinal(a.rank)}</span>
           <span className="truncate">{r.areaLabels[a.familyId] ?? a.familyId}</span>
           <span className="tabular-nums">{fmtSigned(a.gap, 2, "")}</span>
-          <span>{arrow(a.gapSince2223, 0.05)}</span>
+          <span title={a.gapSince2223 === null ? undefined : `Gap ${fmtSigned(a.gapSince2223, 2, "")} since ${yearLabel(TREND_BASE_PERIOD)}`}>{a.gapSince2223 === null ? "" : arrow(a.gapSince2223, 0.05)}</span>
         </div>
       ))}
       {r.stage === "ks2" && <Muted>KS2 has no subject areas: the headline is reading, writing and maths at the expected standard.</Muted>}

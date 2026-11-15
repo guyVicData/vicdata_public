@@ -7,10 +7,11 @@
 // and boys, and Day and boarding -- the pills' figures as views; their notes are in the (i) (captionOf).
 import { inLevelAges } from "@/lib/smt/levels";
 import Link from "next/link";
-import { SHAPE_LABELS } from "@/components/dashboard/ShapeIcon";
+import { SHAPE_LABELS, ShapeIcon } from "@/components/dashboard/ShapeIcon";
 import { comparisonCaption } from "@/components/dashboard/PhaseBreakdownCard";
 import { Empty, Key, Lbl, LineSwatch, PairTile, Tile, cx, fillHeight } from "@/components/admissions/ui";
-import { LineChart } from "@/components/admissions/views/charts";
+import { LineChart, axisValues, scale, useWidth } from "@/components/admissions/views/charts";
+import { useState } from "react";
 import { ADMISSIONS_NOTES, SMT_NOTES } from "@/catalogue/notes";
 import { CENSUS_FIRST_PERIOD, periodLabel } from "@/catalogue/years";
 import type { ShapeLabel } from "@/lib/shape-classifier";
@@ -18,9 +19,59 @@ import type { Pupils } from "@/lib/smt/pupils";
 import type { SmtSchool } from "../api";
 import { Td, Th, fmt, fmtChange } from "../ui";
 import { SizeByPhase } from "./Now";
-import { arrowed } from "@/lib/signed-delta";
+import { arrowed, signedDelta } from "@/lib/signed-delta";
 
 export const shapeName = (s: string | null) => (s ? (SHAPE_LABELS[s as ShapeLabel] ?? s) : "—");
+// 0.8 feedback C (C4, SMT 8): what each shape name means, in a teacher's words (the classifier's own tree:
+// a single large step, else the first year against the last).
+export const SHAPE_MEANING: Record<ShapeLabel, string> = {
+  tube: "about the same size in every year group",
+  pyramid: "larger in the younger year groups, smaller towards the top",
+  funnel: "larger towards the top: the year groups grow as pupils move up",
+  wineglass: "much larger towards the top: a big intake in the upper years",
+  mushroom: "one big step up (many join at one age), then level",
+  top_step: "one big step down (many leave at one age), then level",
+  irregular: "no clear pattern from year group to year group",
+};
+const isShape = (s: string | null): s is ShapeLabel => !!s && s in SHAPE_MEANING;
+
+/** The shape's name with its picture and, unless `bare`, what it means. */
+export function ShapeWord({ shape, bare = false }: { shape: string | null; bare?: boolean }) {
+  if (!isShape(shape)) return <b className="text-[var(--fg)]">{shapeName(shape)}</b>;
+  return (
+    <span className="inline-flex items-center gap-1.5 align-middle" data-shape={shape} title={`${shapeName(shape)}: ${SHAPE_MEANING[shape]}`}>
+      <ShapeIcon shape={shape} size={20} />
+      <b className="text-[var(--fg)]">{shapeName(shape)}</b>
+      {!bare && <span className="text-[var(--muted2)]">({SHAPE_MEANING[shape]})</span>}
+    </span>
+  );
+}
+
+/** Year-group bars with each bar's figure above it (the main chart and C4's two small ones). */
+function YearGroupBars({ groups, height, colourOf, small = false, label, lit }: { groups: { age: number; label: string; total: number }[]; height: number; colourOf: (age: number) => string; small?: boolean; label: string; lit?: (age: number) => boolean }) {
+  const max = Math.max(1, ...groups.map((y) => y.total));
+  return (
+    <div className="flex flex-col gap-1" role="img" aria-label={label}>
+      <div className={cx("flex items-end", small ? "gap-[3px]" : "gap-[6px]")} style={{ height }}>
+        {groups.map((y) => (
+          <div key={y.age} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-[2px]" title={`${y.label}: ${fmt(y.total, "pupils")}`}>
+            <span className={cx("tabular-nums text-[var(--muted2)]", small ? "text-[8.5px]" : "text-[10px]")} data-bar-value="">
+              {y.total ? fmt(y.total, "pupils") : "—"}
+            </span>
+            <span data-level-age={lit?.(y.age) ? "on" : undefined} className="w-full rounded-t-[3px]" style={{ height: `${(y.total / max) * (height - (small ? 14 : 18))}px`, background: colourOf(y.age) }} />
+          </div>
+        ))}
+      </div>
+      <div className={cx("flex", small ? "gap-[3px]" : "gap-[6px]")}>
+        {groups.map((y) => (
+          <span key={y.age} className={cx("flex-1 text-center", lit?.(y.age) ? "font-bold text-[var(--fg)]" : "text-[var(--muted)]", small ? "text-[9px]" : "text-[10.5px]")}>
+            {y.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 const inLevel = inLevelAges;
 
 export function PupilsNow({ p, school, compact = false }: { p: Pupils; school: SmtSchool; compact?: boolean }) {
@@ -54,7 +105,6 @@ export function PupilsNow({ p, school, compact = false }: { p: Pupils; school: S
 export function ShapeAndSize({ p, height = 190 }: { p: Pupils; height?: number }) {
   const s = p.shape;
   if (!s.yearGroups.length) return <Empty>No census for this school, so no year groups to draw.</Empty>;
-  const max = Math.max(...s.yearGroups.map((y) => y.total));
   const first = s.yearGroups[0].label.replace(/^Y/, "Year ");
   const last = s.yearGroups[s.yearGroups.length - 1].label.replace(/^Y/, "Year ");
   const h = p.highlight;
@@ -64,39 +114,47 @@ export function ShapeAndSize({ p, height = 190 }: { p: Pupils; height?: number }
         <div className="text-[13px] font-bold text-[var(--fg)]">
           Pupils in each year group, {first} to {last}
         </div>
-        <div className="flex items-end gap-[6px]" style={{ height }} role="img" aria-label="Pupils by year group">
-          {s.yearGroups.map((y) => (
-            <div key={y.age} className="flex h-full min-w-0 flex-1 flex-col justify-end" title={`${y.label} (age ${y.age}): ${fmt(y.total, "pupils")} (${fmt(y.female, "pupils")} girls, ${fmt(y.male, "pupils")} boys)`}>
-              <span data-level-age={inLevel(y.age, h) ? "on" : undefined} className="w-full rounded-t-[3px]" style={{ height: `${(y.total / max) * 100}%`, background: !h || inLevel(y.age, h) ? (y.age >= 16 ? "rgba(var(--accent-rgb),0.62)" : "var(--accent)") : "var(--adm-grey-bar)" }} />
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-[6px]">
-          {s.yearGroups.map((y) => (
-            <span key={y.age} className={cx("flex-1 text-center text-[10.5px]", inLevel(y.age, h) ? "font-bold text-[var(--fg)]" : "text-[var(--muted)]")}>
-              {y.label}
-            </span>
-          ))}
-        </div>
+        {/* 0.8 feedback C (C4): each bar's figure above it; the shape with its picture and what it means. */}
+        <YearGroupBars groups={s.yearGroups} height={height} label="Pupils by year group" lit={(age) => inLevel(age, h)} colourOf={(age) => (!h || inLevel(age, h) ? (age >= 16 ? "rgba(var(--accent-rgb),0.62)" : "var(--accent)") : "var(--adm-grey-bar)")} />
         <div className="text-[12.5px] leading-[1.45] text-[var(--chip-fg)]">
-          <b className="text-[var(--fg)]">Shape: {shapeName(s.label)}.</b> {s.was ? `Since ${periodLabel(s.sinceYear ?? CENSUS_FIRST_PERIOD)} (was ${shapeName(s.was)}).` : `Unchanged since ${periodLabel(s.sinceYear ?? CENSUS_FIRST_PERIOD)}.`}
+          <span className="mr-1">Shape:</span>
+          <ShapeWord shape={s.label} />. {s.was ? <>Since {periodLabel(s.sinceYear ?? CENSUS_FIRST_PERIOD)} (was {shapeName(s.was)}).</> : `Unchanged since ${periodLabel(s.sinceYear ?? CENSUS_FIRST_PERIOD)}.`}
         </div>
         {h && <div className="text-[11px] text-[var(--muted2)]">{SMT_NOTES.levelAges}</div>}
       </div>
       <div className="flex w-full shrink-0 flex-col gap-2 border-t border-[var(--panel-border)] pt-3 lg:w-[300px] lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
         <Lbl>Shapes around you</Lbl>
-        {s.around.la && (
-          <div className="flex justify-between gap-2 text-[12.5px]">
-            <span className="text-[var(--chip-fg)]">{s.around.la.label}</span>
-            <span className="font-bold text-[var(--fg)]" title={`${s.around.la.schools} of ${s.around.la.of} nearby schools of the same age range`}>
-              {shapeName(s.around.la.shape)}
-            </span>
+        {/* 0.8 feedback C (C4, SMT 8): two small charts drawn like the main one -- the nearest school in the
+            set, then the set's middle at each year group -- in place of the counted shape words. */}
+        {s.around.nearest && (
+          <div className="flex flex-col gap-1" data-shape-nearest="">
+            <div className="text-[11.5px] text-[var(--chip-fg)]">
+              Nearest: <b className="text-[var(--fg)]">{s.around.nearest.name}</b>
+              {s.around.nearest.km !== null ? ` · ${s.around.nearest.km.toFixed(1)} km` : ""}
+            </div>
+            <YearGroupBars small groups={s.around.nearest.yearGroups} height={64} label={`${s.around.nearest.name}: pupils by year group`} colourOf={() => "var(--adm-grey-soft)"} />
+            <div className="text-[11px]">
+              <ShapeWord shape={s.around.nearest.shape} bare />
+            </div>
           </div>
         )}
-        <div className="flex justify-between gap-2 text-[12.5px]">
-          <span className="text-[var(--chip-fg)]">{p.set.label}</span>
-          <span className="text-right font-bold text-[var(--fg)]">{s.around.set.map((x) => `${x.schools} ${shapeName(x.shape)}`).join(" · ") || "—"}</span>
-        </div>
+        {s.around.setMiddle && (
+          <div className="flex flex-col gap-1" data-shape-set="">
+            <div className="text-[11.5px] text-[var(--chip-fg)]">
+              {p.set.label}: the middle school at each year group ({s.around.setMiddle.schools} schools)
+            </div>
+            <YearGroupBars small groups={s.around.setMiddle.yearGroups} height={64} label={`${p.set.label}: the middle at each year group`} colourOf={() => "var(--adm-grey-2)"} />
+            <div className="text-[11px]">
+              <ShapeWord shape={s.around.setMiddle.shape} bare /> <span className="text-[var(--muted2)]">(their year groups added together)</span>
+            </div>
+          </div>
+        )}
+        {!s.around.nearest && !s.around.setMiddle && (
+          <div className="flex justify-between gap-2 text-[12.5px]">
+            <span className="text-[var(--chip-fg)]">{p.set.label}</span>
+            <span className="text-right font-bold text-[var(--fg)]">{s.around.set.map((x) => `${x.schools} ${shapeName(x.shape)}`).join(" · ") || "—"}</span>
+          </div>
+        )}
         <div className="flex justify-between gap-2 text-[12.5px]">
           <span className="text-[var(--chip-fg)]">{SMT_NOTES.y12Label}, {p.set.label}</span>
           <span className="font-bold text-[var(--fg)]" title={`The middle of the set's ${s.around.stayingOnSet.schools} schools with a sixth form`}>
@@ -159,39 +217,125 @@ export function EntryPoints({ p }: { p: Pupils }) {
   );
 }
 
+const signedPupils = (v: number) => signedDelta(v, (x) => Math.abs(x).toLocaleString("en-GB"), { zero: "±" });
+
+/**
+ * 0.8 feedback C (C5, SMT 10): Leaving at 16 as a chart -- a bar per year, Year 12 against the Year 11 a year
+ * before: more joined than left above the line, more left below, each with its figure. The middle of the set
+ * (its sixth forms' Year 12 against Year 11, latest year) is drawn on every bar as the change it would have
+ * meant for that Year 11. "As a table" switches to the year-by-year table, its change one signed column.
+ */
 export function LeavingAt16({ p, school }: { p: Pupils; school: SmtSchool }) {
+  const [table, setTable] = useState(false);
   if (!p.leaving.length) return <Empty>{school.phases.post16 ? "No Year 11 to follow: this school has no GCSE years." : `${school.name} has no sixth form, so nobody stays on at 16 here.`}</Empty>;
+  const ref = p.shape.around.stayingOnSet.pct;
   return (
     <>
-      <div className="text-[13px] font-bold text-[var(--fg)]">Leaving at 16: Year 11 to Year 12, year by year</div>
-      <div className="min-h-0 overflow-y-auto rounded-[9px] border border-[var(--panel-border)]">
-        <table className="w-full border-collapse">
-          <thead className="border-b border-[var(--panel-border)]">
-            <tr>
-              <Th>Year 12 in</Th>
-              <Th>Year 11 the year before</Th>
-              <Th>Year 12</Th>
-              <Th>{SMT_NOTES.y12Label}</Th>
-              <Th>Net leavers</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {p.leaving.map((r) => (
-              <tr key={r.year} className="border-b border-[var(--panel-border)] last:border-0">
-                <Td>{periodLabel(r.year)}</Td>
-                <Td>{fmt(r.year11, "pupils")}</Td>
-                <Td>{fmt(r.year12, "pupils")}</Td>
-                <Td className="font-bold text-[var(--fg)]">{r.stayingPct === null ? "—" : `${Math.round(r.stayingPct)}%`}</Td>
-                <Td>{r.leaving === null ? "—" : r.leaving < 0 ? `${fmt(-r.leaving, "pupils")} more joined` : fmt(r.leaving, "pupils")}</Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="text-[13px] font-bold text-[var(--fg)]">Leaving at 16: Year 11 to Year 12, year by year</div>
+        <span className="inline-flex overflow-hidden rounded-full border border-[var(--panel-border)] text-[11px]" role="group" aria-label="Chart or table">
+          {(["Chart", "As a table"] as const).map((k) => (
+            <button key={k} type="button" aria-pressed={(k === "As a table") === table} onClick={() => setTable(k === "As a table")} className={cx("px-2.5 py-[3px] font-semibold", (k === "As a table") === table ? "bg-[var(--adm-rail-on)] text-[var(--fg)]" : "text-[var(--muted2)]")}>
+              {k}
+            </button>
+          ))}
+        </span>
       </div>
+      {!table && <div className="text-[11.5px] text-[var(--chip-fg)]">Each bar: {SMT_NOTES.y12Label}, in pupils (Year 12 minus the Year 11 a year before).</div>}
+      {table ? <LeavingTable p={p} /> : <LeavingBars p={p} />}
       {/* Review fixes (tables.md L9): the set's comparator beside the school's own years. */}
-      {p.shape.around.stayingOnSet.pct !== null && <div className="text-[11.5px] text-[var(--muted2)]">The middle of {p.set.label} (latest year): {Math.round(p.shape.around.stayingOnSet.pct)}% stayed on, across {p.shape.around.stayingOnSet.schools} schools with a sixth form.</div>}
+      {ref !== null && <div className="text-[11.5px] text-[var(--muted2)]">The middle of {p.set.label} (latest year): {Math.round(ref)}% stayed on, across {p.shape.around.stayingOnSet.schools} schools with a sixth form.</div>}
       <div className="mt-auto text-[11px] leading-[1.4] text-[var(--muted2)]">{ADMISSIONS_NOTES.leaving16}</div>
     </>
+  );
+}
+
+function LeavingBars({ p, height = 210 }: { p: Pupils; height?: number }) {
+  const [box, w] = useWidth<HTMLDivElement>();
+  const ref = p.shape.around.stayingOnSet.pct;
+  const rows = p.leaving.map((r) => ({ year: r.year, net: r.year11 !== null && r.year12 !== null ? r.year12 - r.year11 : null, at: ref !== null && r.year11 !== null ? Math.round(r.year11 * (ref / 100)) - r.year11 : null, y11: r.year11, y12: r.year12 }));
+  const vals = rows.flatMap((r) => [r.net, r.at]).filter((v): v is number => v !== null);
+  const span = Math.max(4, ...vals.map(Math.abs));
+  const dom: [number, number] = [Math.min(0, ...vals) - span * 0.18, Math.max(0, ...vals) + span * 0.18];
+  const grid = axisValues(dom, height, null, 0);
+  const W = Math.max(w, 10);
+  const padL = 34;
+  const sy = scale(dom, [height - 6, 6]);
+  const n = rows.length;
+  const slot = (W - padL - 4) / Math.max(1, n);
+  const bw = Math.min(46, slot * 0.56);
+  const cx0 = (i: number) => padL + slot * i + slot / 2;
+  return (
+    <div ref={box} className="w-full" data-leaving-chart="">
+      {w > 0 && (
+        <svg width={W} height={height + 18} role="img" aria-label="Year 12 against Year 11, year by year: more joined above the line, more left below">
+          {grid.map((v) => (
+            <g key={v} data-y-grid={v}>
+              <line x1={padL} x2={W} y1={sy(v)} y2={sy(v)} strokeWidth={v === 0 ? 1.4 : 1} style={{ stroke: v === 0 ? "var(--adm-axis)" : "var(--adm-grid)" }} />
+              <text x={padL - 6} y={sy(v) + 3.5} textAnchor="end" fontSize={10} fontWeight={v === 0 ? 700 : undefined} style={{ fill: "var(--muted)" }}>
+                {v === 0 ? "0" : signedPupils(v)}
+              </text>
+            </g>
+          ))}
+          {rows.map((r, i) => {
+            const x = cx0(i);
+            const up = (r.net ?? 0) >= 0;
+            return (
+              <g key={r.year} data-leaving-year={r.year}>
+                {r.net !== null && (
+                  <rect x={x - bw / 2} width={bw} y={Math.min(sy(0), sy(r.net))} height={Math.max(1.5, Math.abs(sy(r.net) - sy(0)))} rx={3} style={{ fill: up ? "var(--accent)" : "var(--adm-grey-2)" }}>
+                    <title>{`${periodLabel(r.year)}: Year 11 ${fmt(r.y11, "pupils")} the year before, Year 12 ${fmt(r.y12, "pupils")}: ${up ? `${fmt(r.net, "pupils")} more joined than left` : `${fmt(-r.net, "pupils")} more left than joined`}`}</title>
+                  </rect>
+                )}
+                {r.at !== null && <line data-leaving-ref="" x1={x - bw / 2 - 5} x2={x + bw / 2 + 5} y1={sy(r.at)} y2={sy(r.at)} strokeWidth={2} strokeDasharray="4 3" style={{ stroke: "var(--fg)" }} opacity={0.55} />}
+                {r.net !== null && (
+                  <text x={x} y={up ? sy(r.net) - 5 : sy(r.net) + 13} textAnchor="middle" fontSize={11} fontWeight={700} style={{ fill: "var(--fg)" }}>
+                    {signedPupils(r.net)}
+                  </text>
+                )}
+                <text x={x} y={height + 14} textAnchor="middle" fontSize={10} style={{ fill: "var(--muted)" }}>
+                  {periodLabel(r.year)}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
+      <div className="flex flex-wrap gap-3 text-[11px]">
+        <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px] bg-[var(--accent)]" />}>More joined than left</Key>
+        <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px] bg-[var(--adm-grey-2)]" />}>More left than joined</Key>
+        {ref !== null && <Key swatch={<LineSwatch colour="var(--fg)" width={14} weight={2} dashed />}>At the middle of {p.set.label} ({Math.round(ref)}% stayed on)</Key>}
+      </div>
+    </div>
+  );
+}
+
+function LeavingTable({ p }: { p: Pupils }) {
+  return (
+    <div className="min-h-0 overflow-y-auto rounded-[9px] border border-[var(--panel-border)]" data-leaving-table="">
+      <table className="w-full border-collapse">
+        <thead className="border-b border-[var(--panel-border)]">
+          <tr>
+            <Th>Year 12 in</Th>
+            <Th>Year 11 the year before</Th>
+            <Th>Year 12</Th>
+            <Th>{SMT_NOTES.y12Label}</Th>
+            <Th>Joined (+) or left (−)</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {p.leaving.map((r) => (
+            <tr key={r.year} className="border-b border-[var(--panel-border)] last:border-0">
+              <Td>{periodLabel(r.year)}</Td>
+              <Td>{fmt(r.year11, "pupils")}</Td>
+              <Td>{fmt(r.year12, "pupils")}</Td>
+              <Td className="font-bold text-[var(--fg)]">{r.stayingPct === null ? "—" : `${Math.round(r.stayingPct)}%`}</Td>
+              <Td className="tabular-nums">{r.leaving === null ? "—" : signedPupils(-r.leaving)}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

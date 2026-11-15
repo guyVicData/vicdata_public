@@ -237,7 +237,7 @@ Owner vicdata · dashboard · layout 3 (independent) · group SMT #1
 | vicdata.smt.academic.c1.now | c1 | now | — | DV-SMT-A-NOW | DV-SMT-A-NOW |
 | vicdata.smt.academic.c2.now | c2 | now | — | DV-SMT-A-CHART, DV-SMT-A-TABLE, DV-SMT-A-MAP, DV-SMT-A-AREAS, DV-SMT-A-GRADES | DV-SMT-A-CHART |
 | vicdata.smt.academic.c1.trends | c1 | trends | — | DV-SMT-A-TREND-LINE, DV-SMT-A-TREND-TABLE | DV-SMT-A-TREND-LINE |
-| vicdata.smt.academic.c2.trends | c2 | trends | — | DV-SMT-A-LINES, DV-SMT-A-MOVES | DV-SMT-A-LINES |
+| vicdata.smt.academic.c2.trends | c2 | trends | — | DV-SMT-A-LINES, DV-SMT-A-DUMBBELL, DV-SMT-A-MOVES | DV-SMT-A-LINES |
 | vicdata.smt.academic.c3.trends | c3 | trends | — | DV-SMT-A-MIX, DV-SMT-A-AGAINST, DV-SMT-A-SETMOVES | DV-SMT-A-MIX |
 
 ## SMT Pupils (`vicdata.smt.pupils`)
