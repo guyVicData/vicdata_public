@@ -143,8 +143,8 @@ export function useViewAsUnconfirmed(): boolean {
 // account where it has one. A group without one is viewed by its group id (NO_ACCOUNT_PREFIX).
 export type GroupHit = { groupId: string; name: string; type: string; schools: number; accountId: string | null; status: string | null };
 
-function useGroupSearch(on: boolean, query: string): { hits: GroupHit[]; state: "idle" | "loading" | "ready" | "error" } {
-  const [out, setOut] = useState<{ q: string; hits: GroupHit[]; state: "loading" | "ready" | "error" } | null>(null);
+function useGroupSearch(on: boolean, query: string): { hits: GroupHit[]; state: "idle" | "loading" | "ready" | "error"; detail?: string } {
+  const [out, setOut] = useState<{ q: string; hits: GroupHit[]; state: "loading" | "ready" | "error"; detail?: string } | null>(null);
   const q = query.trim();
   useEffect(() => {
     if (!on || q.length < 2) return;
@@ -152,16 +152,26 @@ function useGroupSearch(on: boolean, query: string): { hits: GroupHit[]; state: 
     const t = setTimeout(async () => {
       setOut({ q, hits: [], state: "loading" });
       const { data } = await createBrowserSupabaseClient().auth.getSession();
-      const res = await fetch(`/api/platform/groups?q=${encodeURIComponent(q)}`, { headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` } }).catch(() => null);
+      let failure = "no response";
+      const res = await fetch(`/api/platform/groups?q=${encodeURIComponent(q)}`, { headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` } }).catch((e: unknown) => {
+        failure = e instanceof Error ? e.message : "network error";
+        return null;
+      });
       if (!live) return;
-      if (!res || !res.ok) return setOut({ q, hits: [], state: "error" });
+      // 0.8 feedback A (follow-up, 15 Nov): the error says what failed (code and the route's message), as the walks do.
+      if (!res || !res.ok) {
+        const msg = res ? await res.json().then((b: { error?: string }) => b?.error ?? "").catch(() => "") : "";
+        const detail = res ? `error ${res.status}${msg ? `: ${msg}` : ""}` : failure;
+        console.error("[view-as] group search failed:", detail);
+        return setOut({ q, hits: [], state: "error", detail });
+      }
       const body = (await res.json()) as { groups: GroupHit[] };
       setOut({ q, hits: body.groups ?? [], state: "ready" });
     }, 250);
     return () => { live = false; clearTimeout(t); };
   }, [on, q]);
   if (!on || q.length < 2) return { hits: [], state: "idle" };
-  return out && out.q === q ? { hits: out.hits, state: out.state } : { hits: [], state: "loading" };
+  return out && out.q === q ? { hits: out.hits, state: out.state, detail: out.detail } : { hits: [], state: "loading" };
 }
 
 export const groupRefOf = (g: Pick<GroupHit, "groupId" | "accountId">) => g.accountId ?? `${NO_ACCOUNT_PREFIX}${g.groupId}`;
@@ -290,7 +300,7 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
           ) : search.state === "loading" ? (
             <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>Searching…</p>
           ) : search.state === "error" ? (
-            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>Couldn&rsquo;t search the groups just now. Try again.</p>
+            <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>Couldn&rsquo;t search the groups just now. Try again.{search.detail ? ` (${search.detail})` : ""}</p>
           ) : search.hits.length === 0 ? (
             <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>No group matches &ldquo;{groupQuery.trim()}&rdquo;.</p>
           ) : (
