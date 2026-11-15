@@ -2900,6 +2900,17 @@ export const RULES: Rule[] = [
     origin: "0.8 feedback 15 Nov, build B (B2)",
     status: "active",
   },
+  {
+    id: "R-NO-BUILD-NOTES",
+    statement:
+      "No words written for the builders reach a page: no rule ID (R-…), view ID (DV-…), file name, document path or build round, and never \"empty state\", \"harness\", \"placement mismatch\" or a line about the dashboard's rail. Checked in every component's and page's strings and JSX text (read with the TypeScript parser, so comments never count; src/lib/front-door/build-notes.ts, build-notes-scan.ts), in the walks' and homes' word files, in every catalogue view's name and title, every method (i), the notes a page shows (a role walk's screen note, the Admissions editor's tooltips), and in every walk's words built on the real fixtures (Teacher, SMT, Admissions). The platform admins' own lab pages are exempt (listed).",
+    why: "Guy, 15 Nov (Admissions 6, Admissions 7, SMT 4): \"The same views, in the same order, as this panel's rail on the dashboard.\", \"Past pools (same method, earlier censuses)\" and \"an empty state with the reason where…\" read like build notes, not notes for the user.",
+    appliesTo: "every page's words",
+    enforcedIn: ["src/lib/front-door/build-notes.ts", "src/lib/front-door/build-notes-scan.ts", "src/lib/front-door/feedback-b.test.tsx"],
+    testCase: { urn: "110110", school: "every component and page; the catalogue; Leighton Park and The Chase's walks (docs/v0.8/review_14nov/fixtures)", phase: "ks5", expect: "No finding anywhere; the scan catches a rule ID, a file name and the old rail note, and ignores comments.", check: "noBuildNotes" },
+    origin: "0.8 feedback 15 Nov, build B (B3)",
+    status: "active",
+  },
   // ------------------------------------------------------------------ 0.8 front door, part 2
   {
     id: "R-GUIDED-SETS",

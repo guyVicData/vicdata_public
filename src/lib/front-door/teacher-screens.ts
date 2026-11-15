@@ -414,7 +414,7 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
         ...base,
         answer: `${nearestWords(m, true)}, all within ${Math.ceil(far)} km; ${offering === 0 ? "none of them published" : offering === m.nearest.length - 1 ? `all of them published` : `${offering} of them published`} ${cmpSubject(m, subject)} entries in ${latest}.`,
         title: `${m.school.name} and ${nearestWords(m)}, by distance`,
-        note: `The dashboard's default comparison: ${nearestWords(m)} by its own rules.${m.nearestNote ? ` ${m.nearestNote}` : ""} Dots are sized by entries; a hollow dot publishes no figure.${titlesNote(m)} Positions on the national grid; no base map in the walk.`,
+        note: `The dashboard's default comparison: ${nearestWords(m)} by its own rules.${m.nearestNote ? ` ${m.nearestNote}` : ""} Dots are sized by entries; a hollow dot publishes no figure.${titlesNote(m)} Each dot sits where its school is.`,
         // 0.8 feedback A1 (Teacher 6): the school is row 0 of the list; each school's own title where it differs.
         chart: placed.length ? { kind: "map", points: placed.map((x) => ({ label: schoolLabel(x), easting: x.easting!, northing: x.northing!, role: x.isTarget ? "focus" : "nearest", value: lastOf(x.entries), distanceKm: x.distanceKm })), year: latest, keys: [{ label: m.school.name, role: "focus", mark: "dot" }, { label: "The nearest schools", role: "nearest", mark: "dot" }, { label: "No figure", role: "nearest", mark: "ring" }] } : { kind: "none", reason: "No positions published for these schools.", keys: [] },
       };
@@ -532,7 +532,7 @@ function dumbbellScreen(m: TeacherModel, base: { question: string; tag: string }
     ...base,
     answer,
     title: `Entries by subject in the whole school, ${fy} and ${ly}, largest first`,
-    note: `Ordered by this year's entries. Ring: ${fy}; dot: ${ly}. Change in ${m.phase === "ks5" ? "students" : "pupils"}; ▲ / ▼ show direction, and colour means the subject family (keyed). The same view is on the dashboard's Context › Trends rail, "Change (dumbbell)".`,
+    note: `Ordered by this year's entries. Ring: ${fy}; dot: ${ly}. Change in ${m.phase === "ks5" ? "students" : "pupils"}; ▲ / ▼ show direction, and colour means the subject family (keyed). On the dashboard it is Context › Trends, "Change (dumbbell)".`,
     chart: {
       kind: "dumbbell",
       rows: d.rows,

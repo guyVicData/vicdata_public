@@ -193,3 +193,59 @@ test("D6 (SMT 9): Entry points are off the SMT walk, kept on the dashboard and t
   assert.ok(!walkById("smt-pupils")!.screens.some((s) => s.view === "DV-SMT-P-ENTRIES"));
   assert.ok(walkById("smt_primary-pupils")!.screens.some((s) => s.view === "DV-SMT-P-ENTRIES"));
 });
+
+// ------------------------------------------------------------------------------------------------ B3
+
+import { readdirSync } from "node:fs";
+import { userTextFindings, type Finding } from "./build-notes";
+import { sourceFindings } from "./build-notes-scan";
+import { METHODS, methodText } from "@/catalogue/methods";
+import { DATAVIEWS } from "@/catalogue/dataviews";
+import { smtAnswer } from "./smt-answers";
+import { admissionsAnswer } from "./admissions-answers";
+
+/** Pages only platform admins open (Guy's own tools), not a teacher's: their words are for the builders. */
+export const BUILD_NOTES_EXEMPT: { file: string; why: string }[] = [{ file: "src/components/chooser-v06/ChooserLab.tsx", why: "the platform admins' chooser lab (/platform/chooser-lab)" }];
+/** The lib files whose strings are the walks' and homes' words. */
+const WORDS_FILES = ["admissions-answers", "smt-answers", "group-answers", "teacher-screens", "teacher-model", "walk-titles", "words", "walks", "tile-figures"].map((f) => `src/lib/front-door/${f}.ts`).concat(["src/lib/smt/subjects-ranked.ts"]);
+const show = (f: Finding[]) => f.map((x) => `${x.where} (${x.what}): ${x.text}`);
+
+test("R-NO-BUILD-NOTES: no rule IDs, file names, 'empty state', 'harness' or rail notes in any page's words", () => {
+  // Every component and page, strings and JSX text (the TypeScript parser: comments never count).
+  const files = ["src/components", "src/app"].flatMap((d) => (readdirSync(d, { recursive: true }) as string[]).filter((f) => f.endsWith(".tsx")).map((f) => `${d}/${f}`));
+  assert.ok(files.length > 200);
+  const src = [...files.filter((f) => !BUILD_NOTES_EXEMPT.some((e) => e.file === f)), ...WORDS_FILES].flatMap((f) => sourceFindings(f, readFileSync(f, "utf8")));
+  assert.deepEqual(show(src), []);
+  // The catalogue's words a page shows: every view's name and title, every method (i), and the notes shown --
+  // a role walk's screen note and the Admissions editor's tooltips.
+  const roleViews = new Set(WALKS.filter((w) => !["gcse", "post16"].includes(w.product)).flatMap((w) => w.screens.map((s) => s.view)));
+  const cat = [
+    ...DATAVIEWS.flatMap((d) => [...userTextFindings(`${d.id} label`, d.label), ...userTextFindings(`${d.id} title`, d.titleTemplate)]),
+    ...DATAVIEWS.filter((d) => roleViews.has(d.id) || d.id.startsWith("DV-ADM-")).flatMap((d) => userTextFindings(`${d.id} note`, d.note)),
+    ...Object.entries(METHODS).flatMap(([id, m]) => userTextFindings(`method ${id}`, methodText(m))),
+    ...WALKS.flatMap((w) => [w.question, ...w.screens.map((s) => s.question)].flatMap((q) => userTextFindings(w.id, q))),
+  ];
+  assert.deepEqual(show(cat), []);
+});
+
+test("R-NO-BUILD-NOTES: the walks' own words on real fixtures (Teacher, SMT, Admissions)", () => {
+  const out: Finding[] = [];
+  for (const name of TEACHER_FX) {
+    const m = fx<TeacherModel>(name);
+    for (const w of walksFor(m.phase === "ks5" ? "post16" : "gcse"))
+      for (const s of teacherScreens(m, w)) for (const t of [s.question, s.answer, s.title, s.note, s.tag, "caption" in s.chart ? (s.chart as { caption?: string }).caption : null, ...s.chart.keys.map((k) => k.label)]) out.push(...userTextFindings(`${name} ${w.id}`, t));
+  }
+  for (const urn of ["110110", "137625"]) {
+    const d = fx<Record<string, unknown> & { school: Parameters<typeof smtAnswer>[1] }>(`smt_${urn}`);
+    for (const w of walksFor("smt"))
+      for (const s of w.screens) out.push(...userTextFindings(`smt ${urn} ${s.view}`, smtAnswer(s.view, d.school, d[w.id.split("-").pop()!])));
+  }
+  for (const n of ["adm_110110_11", "adm_110110_16", "adm_137625_11"]) {
+    const d = fx<{ p: Parameters<typeof admissionsAnswer>[1]["p"]; m: Parameters<typeof admissionsAnswer>[1]["m"]; r: Parameters<typeof admissionsAnswer>[1]["r"] }>(n);
+    for (const w of walksFor("admissions")) for (const s of w.screens) out.push(...userTextFindings(`${n} ${s.view}`, admissionsAnswer(s.view, { label: "11+", p: d.p, m: d.m, r: d.r })));
+  }
+  assert.deepEqual(show(out), []);
+  // The scan itself: a rule ID, a file name and the old rail note are caught; a comment is not.
+  assert.equal(sourceFindings("x.tsx", 'const a = <p title="ranked (R-IGCSE-EXCL)">The same views, in the same order, as this panel&rsquo;s rail on the dashboard.</p>; // R-FOO-BAR in Foo.tsx').length, 3);
+  assert.equal(sourceFindings("x.tsx", "/* an empty state, R-FOO-BAR */ const a = 1; {/* harness.tsx */}").length, 0);
+});

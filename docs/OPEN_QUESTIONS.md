@@ -3523,3 +3523,23 @@ the rhythm check runs from its third screen.
 **D6 (SMT 9).** Entry points leave the secondary SMT Pupils walk and stay on the SMT Pupils dashboard. A primary
 school's walk keeps them: its 4+ entry is how that walk answers "are numbers holding up from Reception?"
 (logged in WALK_SCREENS_LEFT_OUT), and Admissions isn't a primary product.
+
+**B3, no build notes in the page (Admissions 6, Admissions 7, SMT 4; R-NO-BUILD-NOTES).**
+- **The rule's reach.** "User text" is checked where it is written: every component's and page's strings and
+  JSX text (the TypeScript parser, so comments never count), the walks' word files, the catalogue's view names,
+  titles and methods, the dataview notes a page actually shows (a role walk's note, the Admissions editor's
+  tooltips), and the walks' words built on the fixtures. Most catalogue `note`s are builders' notes ("Placement
+  mismatch F2…") and no page shows them, so they stay as they are. View IDs in code (`case "DV-…"`) are the
+  code's keys, not words. Exempt: the platform admins' chooser lab (`/platform/chooser-lab`).
+- **Patterns beyond the brief's list:** a view ID, a document path ("docs/…") and a build round ("0.7 r3",
+  "0.8 SMT…"), each of which reached a page.
+- **Rewritten for a teacher:** the walk rail's note (gone, B2); "Past pools (same method, earlier censuses)" →
+  "Earlier years, counted the same way"; the pipeline's "Rung 2 · ages …, widening range" → "Counted now: ages
+  … (years), a wider range"; SMT's market share note → "Admissions' figures, read-only. Where the school has no
+  Admissions rivals at 11+, the view says why."; the Comparisons map note's "Positions on the national grid; no
+  base map in the walk" → "Each dot sits where its school is."; the dumbbell note's "the dashboard's Context ›
+  Trends rail" → "On the dashboard it is Context › Trends"; two rule IDs in tooltips and captions (an IGCSE
+  school on Admissions' bars; head office's value-added lists) and one in a method; four methods' "(empty
+  state)" → "(the view says so / why)"; a method's document path; the Admissions editor's "(0.7 r3, F7)";
+  Admissions' Shape and size captions ("as the school page's Shape card", "the shared classifier"); the area
+  lines' "until more years are synced".

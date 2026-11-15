@@ -115,7 +115,7 @@ export function PoolTrends({ p, fullscreen, room, la = true, england = true, end
         {la && <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} weight={2} />}>{t.laName ?? "LA"}</Key>}
         {england && <Key swatch={<LineSwatch colour="var(--adm-grey-2)" width={14} weight={2} dashed />}>England</Key>}
       </div>
-      {areaShort && <div className="text-[10.5px] leading-snug text-[var(--muted)]">{t.laName ?? "The LA"} and England by single age are held for {t.areaYears.map(yr).join(", ") || "no year"} only so far: their lines start when more years are synced.</div>}
+      {areaShort && <div className="text-[10.5px] leading-snug text-[var(--muted)]">{t.laName ?? "The LA"} and England by single age are published here for {t.areaYears.map(yr).join(", ") || "no year"} only so far: their lines start there.</div>}
       {t.pastAreaYears?.length ? <div className="text-[10.5px] leading-snug text-[var(--muted)]">{ADMISSIONS_NOTES.areaUndercount}</div> : null}
     </>
   );

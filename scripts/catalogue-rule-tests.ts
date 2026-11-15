@@ -3741,6 +3741,10 @@ const RUNNERS: Record<string, Runner> = {
     const r = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
   },
+  async noBuildNotes(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
   async walkRail(_L, rule) {
     const r = unitByRule("src/lib/front-door/feedback-b.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
