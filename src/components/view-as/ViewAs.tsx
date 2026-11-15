@@ -304,26 +304,37 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
           ) : search.hits.length === 0 ? (
             <p className={`${compact ? "px-1" : "mt-2"} text-xs text-neutral-500`}>No group matches &ldquo;{groupQuery.trim()}&rdquo;.</p>
           ) : (
-            <ul className={`${compact ? "px-1" : "mt-2"} space-y-1`}>
+            // 15 Nov: one row per group, the chosen one boxed and ticked (the separate "selected" line under
+            // the list read as a second listing).
+            <ul className={`${compact ? "px-1" : "mt-2"} space-y-1`} aria-label="Groups found">
               {search.hits.map((g) => {
                 const ref = groupRefOf(g);
+                const on = group?.accountId === ref;
                 return (
                   <li key={g.groupId}>
-                    <button type="button" data-view-as-group={g.groupId} onClick={() => setGroup({ accountId: ref, name: g.name, groupId: g.groupId })} className={`${text} text-left ${group?.accountId === ref ? "font-semibold underline" : "hover:underline"}`}>
-                      {g.name}
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      data-view-as-group={g.groupId}
+                      onClick={() => setGroup({ accountId: ref, name: g.name, groupId: g.groupId })}
+                      className={`flex w-full items-start gap-2 rounded-md border px-2 py-1.5 text-left ${on ? "border-[var(--fg)] bg-[var(--panel-border2)]/30" : "border-transparent hover:border-[var(--panel-border2)]"}`}
+                    >
+                      <span aria-hidden className={`mt-[1px] w-3 shrink-0 ${text}`}>{on ? "✓" : ""}</span>
+                      <span className="min-w-0">
+                        <span className={`block ${text} ${on ? "font-semibold" : ""}`}>{g.name}</span>
+                        <span className="block text-xs text-neutral-500">
+                          {g.schools} {g.schools === 1 ? "school" : "schools"} &middot; <span className="tabular-nums" data-group-id="" title="The group's GIAS id">{g.groupId}</span> &middot; {g.accountId ? (g.status && g.status !== "active" ? `group account (${g.status})` : "group account") : "no group account yet: read-only"}
+                        </span>
+                      </span>
                     </button>
-                    <span className="ml-1.5 text-xs text-neutral-500">
-                      {g.schools} {g.schools === 1 ? "school" : "schools"} &middot; <span className="tabular-nums" data-group-id="" title="The group's GIAS id">{g.groupId}</span> &middot; {g.accountId ? (g.status && g.status !== "active" ? `account (${g.status})` : "account") : "no account yet"}
-                    </span>
                   </li>
                 );
               })}
             </ul>
           )}
-          {group && (
-            <p className={`${compact ? "px-1 pt-1" : "mt-2"} ${text}`}>
-              <span className="font-medium">{group.name}</span>
-              {group.accountId.startsWith(NO_ACCOUNT_PREFIX) && <span className="text-neutral-500"> &middot; no group account yet: its dashboards, read-only</span>}
+          {group && !search.hits.some((g) => groupRefOf(g) === group.accountId) && (
+            <p className={`${compact ? "px-1 pt-1" : "mt-2"} text-xs text-neutral-500`}>
+              Chosen: <span className="font-medium text-[var(--fg)]">{group.name}</span>
             </p>
           )}
           <div className={`${compact ? "mt-2 px-1" : "mt-4"} flex items-center gap-3`}>
@@ -333,7 +344,7 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
               onClick={() => group && openGroup(group)}
               className={`rounded-md bg-neutral-900 px-3 ${compact ? "py-1.5 text-[12.5px]" : "py-2 text-sm"} text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900`}
             >
-              {busy === "open" ? "Opening…" : "Open its head-office home"}
+              {busy === "open" ? "Opening…" : group ? `Open ${group.name}'s head-office home` : "Open its head-office home"}
             </button>
             {!group && <span className="text-xs text-neutral-500">Pick a group first.</span>}
           </div>

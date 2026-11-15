@@ -16,6 +16,9 @@ import { canKeepSets, isGroupAdmin, readGroupSets } from "@/lib/groups/group-set
 // or a platform admin in View as; anyone else reads "not found". The figures are the group lookups'
 // (aggregates.ts), worded by the pure builders (dash.ts); the sets are read by group-sets-server.ts.
 export async function GET(request: NextRequest) {
+  // 15 Nov (Dukes Education's walks: a 502 live that doesn't happen locally): the failing step and its
+  // error ride on the message, so the walk's note says what broke.
+  let step = "access";
   try {
     const who = await dashViewer(request);
     if (who instanceof NextResponse) return who;
@@ -24,10 +27,13 @@ export async function GET(request: NextRequest) {
     const dash = (["schools", "academic", "pupils"] as const).find((d) => d === q.get("dash")) ?? "overview";
     const reading: Reading = q.get("reading") === "listed_now" ? "listed_now" : "at_time";
     const focus: Focus = FOCI.includes(q.get("focus") as Focus) ? (q.get("focus") as Focus) : "all";
+    step = "figures";
     const agg = await groupAggregate(viewer.groupId, reading);
     if (!agg) return NextResponse.json({ error: "The group figures aren't available yet.", code: "no-figures" }, { status: 503 });
+    step = "members, index, sets";
     const [members, index, read] = await Promise.all([groupMembers(viewer.groupId).catch(() => []), groupLibraryIndex().catch(() => ({ build: null, groups: [], non_mainstream: [] })), readGroupSets(who)]);
     // The sets this viewer may use (the reads stay here, after access); the page's answer is dashPayload's.
+    step = `${dash} build`;
     return NextResponse.json(
       await dashPayload({
         dash,
@@ -48,7 +54,8 @@ export async function GET(request: NextRequest) {
       }),
     );
   } catch (err) {
-    console.error("[group/dash] failed:", err);
-    return NextResponse.json({ error: "Could not build the group dashboard." }, { status: 502 });
+    console.error(`[group/dash] failed at ${step}:`, err);
+    const msg = (err instanceof Error ? err.message : String(err)).replace(/\s+/g, " ").slice(0, 160);
+    return NextResponse.json({ error: `Could not build the group dashboard (${step}: ${msg}).` }, { status: 502 });
   }
 }
