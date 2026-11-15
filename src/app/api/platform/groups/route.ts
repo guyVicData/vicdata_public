@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
     const q = (request.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase();
     if (q.length < 2) return NextResponse.json({ groups: [] });
     const idx = await groupIndex();
-    const hits = idx.filter((g) => g.groupId.toLowerCase() === q || g.groupId.toLowerCase().includes(q) || g.name.toLowerCase().includes(q));
+    // A3: a sponsor id folded into its trust still finds the trust.
+    const hits = idx.filter((g) => g.groupId.toLowerCase().includes(q) || (g.aliases ?? []).some((a) => a.toLowerCase() === q) || g.name.toLowerCase().includes(q));
     hits.sort((a, b) => Number(b.name.toLowerCase().startsWith(q)) - Number(a.name.toLowerCase().startsWith(q)) || b.schools - a.schools);
     const top = hits.slice(0, 20);
     // 0.8 View as fixes: each group's account where it has one (the View as switcher opens that; a group

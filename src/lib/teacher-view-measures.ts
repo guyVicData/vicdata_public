@@ -11,6 +11,7 @@
 // now compared within the focused item's qualification family only (contextKeepsToFamily,
 // contextGroupValue). % change on points and rates is still offered elsewhere.
 import { isDoubleAward } from "./subject-grades";
+import { isGrouped, mergeByPeriod, normaliseQualification, sameSubject, subjectMatchKey } from "./subject-match";
 import type { AcademicSubjectHeadlineEntry, SubjectGradeCount } from "./academic-data-view";
 import { POINTS_BEARING_QUALIFICATION, displayBucketFor } from "./dfe-qualification-buckets";
 import { ENTRIES_MEASURE, headlineMeasure, measuresFor, type Measure, type MeasureId } from "./teacher-view-panels";
@@ -35,8 +36,25 @@ export function ownHeadlineRows(
   qualificationHeadline: AcademicSubjectHeadlineEntry[],
 ): AcademicSubjectHeadlineEntry[] {
   return phase === "ks5"
-    ? qualificationHeadline.filter((h) => h.subject === item.subject && h.qualificationType === item.qualificationType)
+    ? qualificationHeadline.filter((h) => h.subject === item.subject && normaliseQualification(h.qualificationType) === normaliseQualification(item.qualificationType))
     : headline.filter((h) => h.subject === item.subject);
+}
+
+/**
+ * R-SUBJECT-MATCH (0.8 feedback A1, D2): a school's rows for an item AS A COMPARISON reads them -- every
+ * title matched with the item's subject ("Fine Art" and "Photography" for "Art and Design", at A level),
+ * in the same qualification (2020/21's "A level" included), merged into one row per period: entries summed,
+ * points weighted by entries. For a subject in no group, the same rows as ownHeadlineRows.
+ */
+export function matchedHeadlineRows(
+  phase: TeacherPhase | null,
+  item: MeasureItem,
+  headline: AcademicSubjectHeadlineEntry[],
+  qualificationHeadline: AcademicSubjectHeadlineEntry[],
+): AcademicSubjectHeadlineEntry[] {
+  if (!isGrouped(phase, item.subject, item.qualificationType)) return ownHeadlineRows(phase, item, headline, qualificationHeadline);
+  const rows = (phase === "ks5" ? qualificationHeadline : headline).filter((h) => sameSubject(phase, item, { subject: h.subject, qualificationType: h.qualificationType ?? item.qualificationType }));
+  return mergeByPeriod(rows, (h) => ({ entries: h.entriesTotal, points: h.avgPointScore }), (period, m, parts) => ({ ...parts[0], subject: item.subject, period, entriesTotal: m.entries ?? 0, avgPointScore: m.points }));
 }
 
 // ------------------------------------------------------------------ points / entries
@@ -116,7 +134,13 @@ export function englandValueAt(
 ): number | null {
   if (!englandAvg || !phase || phase === "ks2") return null;
   // GCSE rows are keyed by subject, spelt as the headline rows spell it.
-  const key = englandAvg.basis === "subject" ? item.subject : `${item.subject}::${item.qualificationType}`;
+  const key = englandAvg.basis === "subject" ? item.subject : `${item.subject}::${normaliseQualification(item.qualificationType)}`;
+  // R-SUBJECT-MATCH: a grouped title reads the group's England figure (withMatchedEngland), where there is one.
+  if (isGrouped(phase, item.subject, item.qualificationType)) {
+    const g = englandAvg.basis === "subject" ? subjectMatchKey(phase, item.subject) : `${subjectMatchKey(phase, item.subject, item.qualificationType)}::${normaliseQualification(item.qualificationType)}`;
+    const v = englandIndex.get(`${g}@${period}`);
+    if (v !== undefined) return v;
+  }
   return englandIndex.get(`${key}@${period}`) ?? null;
 }
 

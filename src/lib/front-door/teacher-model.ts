@@ -6,15 +6,16 @@
 import type { AcademicSubjectHeadlineEntry, SubjectEntry } from "@/lib/academic-data-view";
 import type { SubjectGradeCount } from "@/lib/grade-rows";
 import { familyFor } from "@/lib/teacher-view-catalogue";
-import { englandIndexOf, englandValueAt, ownHeadlineRows, subjectEntriesAt, subjectPointsAt, type EnglandAverages } from "@/lib/teacher-view-measures";
+import { englandIndexOf, englandValueAt, matchedHeadlineRows, ownHeadlineRows, subjectEntriesAt, subjectPointsAt, type EnglandAverages } from "@/lib/teacher-view-measures";
 import { candidateItemsOf, categoryItemsOf, focusQualificationFamily, schoolSubjectsOf, subjectItemsOf, type SubjectItem } from "@/lib/teacher-view-populations";
 import { qualificationFamilyOf, qualificationShortLabel } from "@/lib/teacher-view-theme";
+import { comparisonLabel, isGrouped, sameSubject } from "@/lib/subject-match";
 
 export type TeacherPhaseId = "ks4" | "ks5";
 type Series = (number | null)[];
 
 export type SubjectRow = { key: string; label: string; subject: string; qualificationType: string; focus: boolean; entries: Series; points: Series; /** Its subject family (review fixes, M7: colour by family). */ familyId?: string | null };
-export type SchoolRow = { urn: string; name: string; distanceKm: number | null; isTarget: boolean; entries: Series; points: Series; easting: number | null; northing: number | null };
+export type SchoolRow = { urn: string; name: string; distanceKm: number | null; isTarget: boolean; entries: Series; points: Series; easting: number | null; northing: number | null; /** R-SUBJECT-MATCH: the titles this school publishes the focus under, when not the focus's own. */ titles?: string[] };
 export type AreaLine = { name: string; entries: Series; points: Series } | null;
 
 export type TeacherModel = {
@@ -22,7 +23,7 @@ export type TeacherModel = {
   school: { urn: string; name: string };
   /** Every subject the school runs (the switcher), by entries. */
   subjects: { key: string; label: string; subject: string; qualLabel: string; entries: number; family: string }[];
-  focus: { key: string; subject: string; qualificationType: string; label: string; qualLabel: string } | null;
+  focus: { key: string; subject: string; qualificationType: string; label: string; qualLabel: string; /** R-SUBJECT-MATCH: the name comparisons use ("Art and Design (all titles)"); the subject when it is in no group. */ matchLabel?: string } | null;
   periods: number[];
   latest: number | null;
   /** The focus's subject category (the taxonomy family the dashboard's Context uses) and its subjects, focus first. */
@@ -72,8 +73,10 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
   const latest = periods.length ? periods[periods.length - 1] : null;
 
   const rowsAt = (rows: AcademicSubjectHeadlineEntry[], p: number) => rows.filter((h) => h.period === p);
-  const seriesFor = (item: { subject: string; qualificationType: string }, headline: AcademicSubjectHeadlineEntry[], qh: AcademicSubjectHeadlineEntry[]) => {
-    const own = ownHeadlineRows(phase, item, headline, qh);
+  // `matched` (0.8 feedback A1, R-SUBJECT-MATCH): a comparison reads every title matched with the subject
+  // ("Fine Art" for "Art and Design"), merged per year, at the school and its nearest alike.
+  const seriesFor = (item: { subject: string; qualificationType: string }, headline: AcademicSubjectHeadlineEntry[], qh: AcademicSubjectHeadlineEntry[], matched = false) => {
+    const own = (matched ? matchedHeadlineRows : ownHeadlineRows)(phase, item, headline, qh);
     return {
       entries: periods.map((p) => subjectEntriesAt(rowsAt(own, p))),
       points: periods.map((p) => subjectPointsAt(phase, item, rowsAt(own, p))),
@@ -91,8 +94,8 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
 
   const nearest: SchoolRow[] = focusItem
     ? [
-        { urn: input.school.urn, name: input.school.name, distanceKm: 0, isTarget: true, ...seriesFor(focusItem, input.headline, input.qualificationHeadline), ...coordOf(input, input.school.urn) },
-        ...input.nearest.map((n) => ({ urn: n.urn, name: n.name, distanceKm: n.distanceKm, isTarget: false, ...seriesFor(focusItem, n.headline, n.qualificationHeadline), ...coordOf(input, n.urn) })),
+        { urn: input.school.urn, name: input.school.name, distanceKm: 0, isTarget: true, ...seriesFor(focusItem, input.headline, input.qualificationHeadline, true), ...titlesOf(phase, focusItem, input.headline, input.qualificationHeadline), ...coordOf(input, input.school.urn) },
+        ...input.nearest.map((n) => ({ urn: n.urn, name: n.name, distanceKm: n.distanceKm, isTarget: false, ...seriesFor(focusItem, n.headline, n.qualificationHeadline, true), ...titlesOf(phase, focusItem, n.headline, n.qualificationHeadline), ...coordOf(input, n.urn) })),
       ]
     : [];
 
@@ -112,7 +115,7 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
     phase,
     school: input.school,
     subjects: items.map((i) => ({ key: i.key, label: i.label, subject: i.subject, qualLabel: qualificationShortLabel(phase, i.qualificationType), entries: i.entries, family: qualificationFamilyOf(phase, i.qualificationType) })),
-    focus: focusItem ? { key: focusItem.key, subject: focusItem.subject, qualificationType: focusItem.qualificationType, label: focusItem.label, qualLabel: qualificationShortLabel(phase, focusItem.qualificationType) } : null,
+    focus: focusItem ? { key: focusItem.key, subject: focusItem.subject, qualificationType: focusItem.qualificationType, label: focusItem.label, qualLabel: qualificationShortLabel(phase, focusItem.qualificationType), ...(isGrouped(phase, focusItem.subject, focusItem.qualificationType) ? { matchLabel: comparisonLabel(phase, focusItem.subject, focusItem.qualificationType) } : {}) } : null,
     periods,
     latest,
     category: { id: focusItem ? familyFor(input.headline, focusItem.subject)?.id ?? null : null, label: focusItem ? familyFor(input.headline, focusItem.subject)?.label ?? null : null, rows: categoryItems.map(rowOf) },
@@ -124,6 +127,14 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
     grades,
   };
 }
+
+/** The titles a school publishes the focus under (R-SUBJECT-MATCH): each school's own title, for its row in
+ * a comparison's table ("Fine Art"), when the focus is matched across titles. */
+const titlesOf = (phase: TeacherPhaseId, item: { subject: string; qualificationType: string }, headline: AcademicSubjectHeadlineEntry[], qh: AcademicSubjectHeadlineEntry[]): { titles?: string[] } => {
+  const rows = (phase === "ks5" ? qh : headline).filter((h) => sameSubject(phase, item, { subject: h.subject, qualificationType: h.qualificationType ?? item.qualificationType }) && h.entriesTotal > 0);
+  const titles = Array.from(new Set(rows.map((h) => h.subject))).sort();
+  return titles.length && !(titles.length === 1 && titles[0] === item.subject) ? { titles } : {};
+};
 
 const coordOf = (input: TeacherModelInput, urn: string) => ({ easting: input.coords?.[urn]?.easting ?? null, northing: input.coords?.[urn]?.northing ?? null });
 
@@ -172,7 +183,8 @@ export function teacherTileFigures(m: TeacherModel): { many: TileFigure | null; 
   return {
     many: entries !== null ? { figure: entries.toLocaleString("en-GB"), unit: p16 ? "students this year" : "pupils this year" } : null,
     well: points !== null ? { figure: points.toFixed(p16 ? 1 : 1), unit: "average points" } : null,
-    nearby: rank ? { figure: ordinal(rank.rank), unit: `of ${rank.of}: us and the ${rank.of - 1} nearest` } : null,
+    // A5 (R-RANK-MIN): no place among fewer than 3 schools with a figure.
+    nearby: rank && rank.of >= 3 ? { figure: ordinal(rank.rank), unit: `of ${rank.of}: us and the ${rank.of - 1} nearest` } : null,
   };
 }
 export type TileFigure = { figure: string; unit: string };

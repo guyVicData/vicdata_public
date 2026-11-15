@@ -110,7 +110,7 @@ export function WalkHeader({ walk, step, steps, chip, ctx, band }: { walk: Walk;
   );
 }
 
-function homeOf(walk: Walk): string {
+export function homeOf(walk: Walk): string {
   if (walk.product === "group") return "/teacher/group";
   return "/teacher";
 }

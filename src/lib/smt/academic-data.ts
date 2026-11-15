@@ -11,6 +11,7 @@ import { cachedReference } from "../server-cache";
 import { callReferenceRpc, lookupAcademicSubjectHeadline, lookupAcademicSubjectQualificationHeadline, lookupReferenceData } from "../vicdata-reference";
 import { schoolSyncStamp } from "../school-sync-stamp";
 import { latestSubjectName } from "../subject-latest-names";
+import { normaliseQualification } from "../subject-match";
 
 export type QualRow = { urn: string; qualification: string; subject: string; familyId: string | null; period: number; entries: number; avg: number | null };
 export type VaFact = { urn: string; qualification: string; subject: string; size: string; period: number; value: number | null; lo: number | null; hi: number | null; entries: number | null };
@@ -37,7 +38,8 @@ export async function qualRows(urns: string[], stage: "ks4" | "ks5", from: numbe
     }
     const rows = await lookupAcademicSubjectQualificationHeadline({ entityIds: Array.from(new Set(urns)), ksStage: stage, periodMin: from });
     return rows
-      .map((r) => ({ urn: r.entity_id, qualification: r.qualification_type, subject: r.subject, familyId: r.family_id ?? null, period: Number(r.period), entries: n(r.entries_total) ?? 0, avg: n(r.avg_point_score) }))
+      // 0.8 feedback A1 (D2): 2020/21's "A level" as later years spell it.
+      .map((r) => ({ urn: r.entity_id, qualification: normaliseQualification(r.qualification_type), subject: r.subject, familyId: r.family_id ?? null, period: Number(r.period), entries: n(r.entries_total) ?? 0, avg: n(r.avg_point_score) }))
       .filter((r) => r.entries > 0);
   });
 }

@@ -16,6 +16,7 @@
 // Figures through existing reads (academic-data.ts lists them). Years from years.ts and the data only
 // (R-SMT-YEARS): the latest per key stage from academic_current_periods, so 2025/26's sixth-form release
 // extends every trend with no code change.
+import { mergeFigures, sameSubject } from "../subject-match";
 import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
 import { smtNote } from "@/catalogue/notes";
 import { GRADING_2122_PERIOD, HISTORIC_GRADE_FROM, PROGRESS8_LAST_PERIOD, SIXTH_FORM_VA_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
@@ -514,6 +515,10 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     const s = g ? (sets.get(g) ?? (await setOf(g))) : gset;
     return s.urns;
   };
+  // 0.8 feedback A1 (R-SUBJECT-MATCH, D2): a set school's figure for a line is its figure for every title
+  // matched with the line's subject ("Fine Art" for "Art and Design"), merged (entries summed, points weighted).
+  const peerFigure = (u: string, y: number, it: { subject: string; qualification: string }) =>
+    mergeFigures(rows.filter((x) => x.urn === u && x.period === y && sameSubject("ks5", { subject: it.subject, qualificationType: it.qualification }, { subject: x.subject, qualificationType: x.qualification })).map((x) => ({ entries: x.entries, points: x.avg })));
   const subject = async (it: Item): Promise<AreaSubject> => {
     const peers = await setForQual(it.qualification);
     const base = { subject: it.subject, qualification: it.qualification, vicdata: it.vicdata, entries: it.entries, size: null, typical: null, offering: null, grade: null } as const;
@@ -529,7 +534,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     if (mode === "entries") {
       const share = (u: string) => {
         const t = levelEntries(u, L);
-        const e = rows.find((x) => x.urn === u && x.period === L && x.qualification === it.qualification && x.subject === it.subject)?.entries ?? 0;
+        const e = (u === urn ? rows.find((x) => x.urn === u && x.period === L && x.qualification === it.qualification && x.subject === it.subject)?.entries : peerFigure(u, L, it).entries) ?? 0;
         return t && e ? (e / t) * 100 : null;
       };
       const peerShares = peers.map(share).filter((v): v is number => v !== null);
@@ -538,7 +543,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     }
     const r = it.row!;
     const small = r.entries < MIN_SUBJECT_ENTRIES;
-    const peerVals = peers.map((u) => rows.find((x) => x.urn === u && x.period === L && x.qualification === it.qualification && x.subject === it.subject && x.entries >= MIN_SUBJECT_ENTRIES)?.avg ?? null).filter((v): v is number => v !== null);
+    const peerVals = peers.map((u) => { const f = peerFigure(u, L, it); return (f.entries ?? 0) >= MIN_SUBJECT_ENTRIES ? f.points : null; }).filter((v): v is number => v !== null);
     const value = small ? null : r.avg;
     return { ...base, counts, value, lo: null, hi: null, band: null, setValues: peerVals, place: value === null ? null : placeIn(new Map<string, number | null>([[urn, value], ...peerVals.map((v, i) => [`p${i}`, v] as [string, number])]), urn), only: value !== null && peerVals.length === 0, ranked: value !== null, why: small ? smtNote("smallEntries", { min: MIN_SUBJECT_ENTRIES }) : r.avg === null ? smtNote("differentScale") : null };
   };

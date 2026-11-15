@@ -174,7 +174,7 @@ function LinesChart({ c, p }: { c: Extract<Chart, { kind: "lines" }>; p: Palette
           <div key={`u${k}`} className="absolute inset-y-0" style={{ left: `${x(k)}%`, borderLeft: `1.5px dotted ${p.muted}` }} />
         ))}
         {gapRuns(c.unpublished).map(([a, b]) => (
-          <span key={`g${a}`} data-html-label="gap" className="absolute top-1 -translate-x-1/2 whitespace-nowrap rounded px-1 text-[10.5px]" style={{ left: `${(x(a) + x(b)) / 2}%`, background: p.plate, color: p.muted }}>{a === b ? c.years[a] : `${c.years[a]}–${c.years[b]}`}: not published</span>
+          <span key={`g${a}`} data-html-label="gap" className="absolute top-1 -translate-x-1/2 whitespace-nowrap rounded px-1 text-[10.5px]" style={{ left: `${(x(a) + x(b)) / 2}%`, background: p.plate, color: p.muted }}>{a === b ? c.years[a] : `${c.years[a]}–${c.years[b]}`}: {gapWhy(c, a, b)}</span>
         ))}
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
           {c.series.map((s, si) => {
@@ -401,6 +401,12 @@ function ShareAxis({ max, p }: { max: number; p: Palette }) {
   );
 }
 
+/** A run of unpublished years' label (A5): the reason where every year in the run shares one. */
+function gapWhy(c: Extract<Chart, { kind: "lines" }>, a: number, b: number): string {
+  const why = c.unpublished.map((k, j) => (k >= a && k <= b ? c.unpublishedWhy?.[j] ?? null : undefined)).filter((w) => w !== undefined);
+  return why.length && why.every((w) => w && w === why[0]) ? (why[0] as string) : "not published";
+}
+
 function Ranking({ c, p }: { c: Extract<Chart, { kind: "ranking" }>; p: Palette }) {
   return (
     <table className="w-full text-[12.5px]" style={{ color: p.text }}>
@@ -447,6 +453,7 @@ function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) 
   const X = (e: number) => 50 + ((e - me.easting) / half) * 50;
   const Y = (nn: number) => 50 - ((nn - me.northing) / half) * 50;
   const others = c.points.filter((q) => q.role !== "focus");
+  const maxV = Math.max(1, ...c.points.map((q) => q.value ?? 0));
   // Review fixes (G9): a number whose label would sit on a nearer neighbour's goes on the dot's left.
   const sides = labelSides(others.map((q) => ({ x: X(q.easting), y: Y(q.northing) })));
   return (
@@ -460,14 +467,23 @@ function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) 
             </span>
           );
         })}
+        {/* 0.8 feedback A1 (Teacher 6): dots sized by entries; hollow where the school publishes no figure. */}
         {c.points.map((q, i) => (
-          <span key={i} title={q.label} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${X(q.easting)}%`, top: `${Y(q.northing)}%`, width: q.role === "focus" ? 14 : 10, height: q.role === "focus" ? 14 : 10, background: roleColour(p, q.role), border: `2px solid ${p.plate}` }}>
+          <span key={i} title={q.label} data-map-dot={q.value === null ? "hollow" : "filled"} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: `${X(q.easting)}%`, top: `${Y(q.northing)}%`, width: dotSize(q, maxV), height: dotSize(q, maxV), ...(q.value === null ? { background: p.plate, border: `2px solid ${roleColour(p, q.role)}` } : { background: roleColour(p, q.role), border: `2px solid ${p.plate}` }) }}>
             {q.role !== "focus" && <span data-html-label="map" className={`absolute top-[-3px] text-[10px] font-semibold ${sides[others.indexOf(q)] === "left" ? "right-3" : "left-3"}`} style={{ color: p.muted }}>{others.indexOf(q) + 1}</span>}
           </span>
         ))}
       </div>
       <ol className="flex flex-col gap-0.5 text-[12.5px]" style={{ color: p.text }}>
         {c.year && <li className="text-[11.5px]" style={{ color: p.muted }}>Distance and entries, {c.year}</li>}
+        {/* 0.8 feedback A1 (Teacher 6): the school itself is row 0. */}
+        {c.points.filter((q) => q.role === "focus").map((q, i) => (
+          <li key={`me${i}`} data-map-row="0" className="flex gap-2 font-semibold" style={{ color: p.focus }}>
+            <span className="w-5 shrink-0 text-right tabular-nums">0</span>
+            <span className="min-w-0 flex-grow">{q.label}</span>
+            <span className="shrink-0 whitespace-nowrap tabular-nums">{q.value === null ? "no figure" : `${q.value} entries`}</span>
+          </li>
+        ))}
         {others.map((q, i) => (
           <li key={i} className="flex gap-2">
             <span className="w-5 shrink-0 text-right tabular-nums" style={{ color: p.muted }}>{i + 1}</span>
@@ -478,6 +494,13 @@ function MapChart({ c, p }: { c: Extract<Chart, { kind: "map" }>; p: Palette }) 
       </ol>
     </div>
   );
+}
+
+/** A map dot's size: by entries (area-true), the school a little larger; a hollow dot for no figure. */
+function dotSize(q: { role: string; value: number | null }, maxV: number): number {
+  const min = q.role === "focus" ? 10 : 7;
+  if (q.value === null) return min + 2;
+  return Math.round(min + Math.sqrt(Math.max(0, q.value) / maxV) * 10);
 }
 
 function Tiles({ c, p }: { c: Extract<Chart, { kind: "tiles" }>; p: Palette }) {

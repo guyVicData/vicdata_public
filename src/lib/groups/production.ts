@@ -15,7 +15,31 @@ export type GroupMember = {
   lastSeen: string | null;
 };
 export type SchoolGroup = { urn: string; groupId: string; type: string; name: string; officialName: string; status: string | null; source: string; confidence: "confirmed" | "likely"; joined: string | null; lastSeen: string | null };
-export type GroupIndexEntry = { groupId: string; name: string; type: string; source: string; schools: number; likely: number };
+export type GroupIndexEntry = { groupId: string; name: string; type: string; source: string; schools: number; likely: number; /** 0.8 feedback A3: the GIAS "School sponsor" ids folded into this trust (same schools). */ aliases?: string[] };
+
+/**
+ * 0.8 feedback A3 (Platform 1): GIAS lists most trusts twice -- the trust (mat/sat, "NEXUS MULTI ACADEMY TRUST",
+ * 16125) and its "School sponsor" record ("Nexus Multi Academy Trust", 16132) -- with exactly the same schools
+ * (836 of 848 sponsor records, 15 Nov 2026). They are two real GIAS records, so the ingest keeps both; the
+ * search lists the body once, under the trust's id, with the sponsor's mixed-case name where the names agree
+ * and the sponsor's id kept as an alias. A sponsor whose schools span several trusts (a diocese) stays.
+ */
+export function foldSponsors(entries: GroupIndexEntry[], membersOf: (groupId: string) => string[]): GroupIndexEntry[] {
+  const key = (id: string) => [...membersOf(id)].sort().join(",");
+  const trusts = new Map(entries.filter((g) => g.type !== "sponsor").map((g) => [key(g.groupId), { ...g }]));
+  const out: GroupIndexEntry[] = [];
+  for (const g of entries) {
+    if (g.type !== "sponsor") continue;
+    const t = trusts.get(key(g.groupId));
+    if (!t) {
+      out.push(g);
+      continue;
+    }
+    t.aliases = [...(t.aliases ?? []), g.groupId];
+    if (t.name.toLowerCase() === g.name.toLowerCase() && t.name === t.name.toUpperCase()) t.name = g.name;
+  }
+  return [...trusts.values(), ...out].sort((a, b) => a.name.localeCompare(b.name));
+}
 
 // Membership changes when the ingest runs (at most daily); ten minutes keeps a revoke-by-leaving
 // prompt without a lookup on every request.
@@ -80,6 +104,7 @@ export function groupIndex(): Promise<GroupIndexEntry[]> {
       const batches: string[][] = [];
       for (let i = 0; i < urns.length; i += 300) batches.push(urns.slice(i, i + 300));
       const by = new Map<string, GroupIndexEntry>();
+      const members = new Map<string, string[]>();
       for (let i = 0; i < batches.length; i += 8) {
         const parts = await Promise.all(batches.slice(i, i + 8).map((b) => rpc<SchoolGroupRow>("school_groups_lookup", { p_urns: b })));
         for (const r of parts.flat()) {
@@ -87,9 +112,10 @@ export function groupIndex(): Promise<GroupIndexEntry[]> {
           e.schools++;
           if (r.confidence === "likely") e.likely++;
           by.set(r.group_id, e);
+          (members.get(r.group_id) ?? members.set(r.group_id, []).get(r.group_id)!).push(r.urn);
         }
       }
-      return Array.from(by.values()).sort((a, b) => a.name.localeCompare(b.name));
+      return foldSponsors(Array.from(by.values()), (id) => members.get(id) ?? []);
     },
     INDEX_TTL_MS,
   );

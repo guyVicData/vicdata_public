@@ -241,7 +241,7 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
             {d && d.schools.length > 0 && (
               <div className="flex flex-col gap-3" data-our-schools="">
                 <h2 className="flex flex-wrap items-baseline gap-x-3 text-[22px] font-semibold text-[var(--field-ink)]">
-                  Our schools <span className="text-[14px] font-normal">{GROUP_NOTES.ourSchools}</span>
+                  Our schools <span className="text-[14px] font-normal">{d.schools.every((s) => s.vicdata) ? GROUP_NOTES.ourSchools : GROUP_NOTES.ourSchoolsSome}</span>
                 </h2>
                 <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" aria-label="Our schools">
                   {d.schools.map((s) => (

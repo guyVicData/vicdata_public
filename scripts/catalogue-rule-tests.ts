@@ -3717,6 +3717,23 @@ const RUNNERS: Record<string, Runner> = {
     const r = unitByRule("src/lib/front-door/chart-titles.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
   },
+  // 0.8 feedback 15 Nov, build A: the new rules' tests, on the real fixtures, each in its own process.
+  async subjectMatch(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async rankMin(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async groupWalksLoad(_L, rule) {
+    const r = groupTests(["src/lib/front-door/group-walks-load.test.tsx"], null);
+    return { pass: r.pass, detail: r.detail };
+  },
+  async walkNoRepeat(_L, rule) {
+    const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
   async subjectColour(_L, rule) {
     const r = unitByRule("src/lib/subject-colour.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };

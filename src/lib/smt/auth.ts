@@ -34,7 +34,7 @@ export async function smtCaller(request: NextRequest, urn: string | null): Promi
       const viewed = viewingAsGroup ? await groupCaller(request).catch(() => null) : null;
       if (viewingAsGroup && (!viewed || viewed instanceof NextResponse)) return null;
       const offices = viewed && !(viewed instanceof NextResponse) ? viewed.offices : undefined;
-      const office = await headOfficeAccess(supabase, userId, urn, offices).catch(() => null);
+      const office = await headOfficeAccess(supabase, userId, urn, offices, viewingAsGroup).catch(() => null);
       if (!office?.ok) return null;
       const admissions: SmtAdmissionsReader = office.shared ? { supabase: createServiceRoleSupabaseClient() } : { supabase: null, privateNote: groupNote("admissionsPrivate", { school: office.schoolName }) };
       return { groupName: office.office.name, admissions };
