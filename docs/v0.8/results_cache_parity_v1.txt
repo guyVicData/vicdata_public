@@ -1,0 +1,112 @@
+== process 1: cache on (first build, stored), then off
+data version ba3789162b615dd7 (live; settled: true); liveVersions() here: has a build
+52 requests
+SAME  smt/overview 110110 10 nearest schools (10): 10311 bytes; on (built, miss) 771 ms, off 90 ms
+SAME  smt/academic post16 110110 10 nearest schools (10): 23797 bytes; on (built, miss) 2040 ms, off 12 ms
+SAME  smt/academic gcse 110110 10 nearest schools (10): 19280 bytes; on (built, miss) 713 ms, off 5 ms
+SAME  smt/pupils 110110 10 nearest schools (10): 10709 bytes; on (built, miss) 2338 ms, off 377 ms
+SAME  smt/overview 110110 Independent schools in England (343): 76800 bytes; on (built, miss) 7845 ms, off 126 ms
+SAME  smt/academic post16 110110 Independent schools in England (343): 65106 bytes; on (built, miss) 2981 ms, off 551 ms
+SAME  smt/academic gcse 110110 Independent schools in England (343): 130247 bytes; on (built, miss) 3455 ms, off 482 ms
+SAME  smt/pupils 110110 Independent schools in England (343): 10850 bytes; on (built, miss) 880 ms, off 406 ms
+SAME  smt/overview 110110 Independent schools in the South East (52): 18871 bytes; on (built, miss) 1382 ms, off 69 ms
+SAME  smt/academic post16 110110 Independent schools in the South East (52): 30017 bytes; on (built, miss) 702 ms, off 32 ms
+SAME  smt/academic gcse 110110 Independent schools in the South East (52): 33949 bytes; on (built, miss) 583 ms, off 24 ms
+SAME  smt/pupils 110110 Independent schools in the South East (52): 10788 bytes; on (built, miss) 465 ms, off 450 ms
+SAME  smt/overview 110110 nearest, head office (Admissions private): 8579 bytes; on (built, miss) 53 ms, off 50 ms
+SAME  smt/pupils 110110 nearest, head office (Admissions private): 9140 bytes; on (built, miss) 292 ms, off 160 ms
+SAME  smt/context 110110 around: 64596 bytes; on (built, miss) 1463 ms, off 40 ms
+SAME  smt/context 110110 la: 64177 bytes; on (built, miss) 178 ms, off 40 ms
+SAME  smt/context/map 110110: 545952 bytes; on (built, miss) 923 ms, off 99 ms
+SAME  smt/overview 138695 10 nearest schools (10): 10618 bytes; on (built, miss) 656 ms, off 67 ms
+SAME  smt/academic gcse 138695 10 nearest schools (10): 24418 bytes; on (built, miss) 708 ms, off 5 ms
+SAME  smt/academic post16 138695 10 nearest schools (10): 18991 bytes; on (built, miss) 845 ms, off 8 ms
+SAME  smt/pupils 138695 10 nearest schools (10): 9720 bytes; on (built, miss) 1648 ms, off 228 ms
+SAME  smt/overview 138695 State schools in the West Midlands (416): 75812 bytes; on (built, miss, not stored: built past a failed read) 9760 ms, off 114 ms
+SAME  smt/academic gcse 138695 State schools in the West Midlands (416): 180237 bytes; on (built, miss) 6529 ms, off 1115 ms
+SAME  smt/academic post16 138695 State schools in the West Midlands (416): 99420 bytes; on (built, miss) 3305 ms, off 403 ms
+SAME  smt/pupils 138695 State schools in the West Midlands (416): 9839 bytes; on (built, miss) 480 ms, off 227 ms
+SAME  smt/overview 138695 nearest, head office (Admissions private): 8893 bytes; on (built, miss) 50 ms, off 42 ms
+SAME  smt/pupils 138695 nearest, head office (Admissions private): 8213 bytes; on (built, miss) 127 ms, off 134 ms
+SAME  smt/context 138695 around: 45703 bytes; on (built, miss) 1192 ms, off 33 ms
+SAME  smt/context 138695 la: 45495 bytes; on (built, miss) 198 ms, off 38 ms
+SAME  smt/context/map 138695: 241514 bytes; on (built, miss) 295 ms, off 83 ms
+SAME  admissions/pipeline 110110 11+: 36573 bytes; on (built, miss) 111 ms, off 104 ms
+SAME  admissions/pipeline 110110 11+ projection: 36935 bytes; on (built, miss) 165 ms, off 107 ms
+SAME  admissions/market-share 110110 11+: 28738 bytes; on (built, miss) 42 ms, off 1 ms
+SAME  admissions/rivals 110110 11+: 12819 bytes; on (built, miss) 7300 ms, off 119 ms
+SAME  admissions/shape 110110 11+: 26497 bytes; on (built, miss) 205 ms, off 127 ms
+SAME  admissions/pipeline 110110 16+: 31759 bytes; on (built, miss) 103 ms, off 131 ms
+SAME  admissions/pipeline 110110 16+ projection: 31759 bytes; on (built, miss) 181 ms, off 176 ms
+SAME  admissions/market-share 110110 16+: 28797 bytes; on (built, miss) 106 ms, off 1 ms
+SAME  admissions/rivals 110110 16+: 10668 bytes; on (built, miss) 59 ms, off 48 ms
+SAME  admissions/shape 110110 16+: 20111 bytes; on (built, miss) 129 ms, off 103 ms
+SAME  teacher/dashboard 110110 ks4: 117059 bytes; on (built, miss) 546 ms, off 432 ms
+SAME  front-door/teacher 110110 ks4: 11566 bytes; on (built, miss) 1385 ms, off 1479 ms
+SAME  front-door/teacher 110110 ks4 full: 12177 bytes; on (built, miss) 1597 ms, off 1610 ms
+SAME  teacher/dashboard 110110 ks5: 335648 bytes; on (built, miss) 533 ms, off 394 ms
+SAME  front-door/teacher 110110 ks5: 13087 bytes; on (built, miss) 572 ms, off 493 ms
+SAME  front-door/teacher 110110 ks5 full: 13614 bytes; on (built, miss) 593 ms, off 501 ms
+SAME  teacher/dashboard 138695 ks4: 210389 bytes; on (built, miss) 446 ms, off 377 ms
+SAME  front-door/teacher 138695 ks4: 16965 bytes; on (built, miss) 779 ms, off 525 ms
+SAME  front-door/teacher 138695 ks4 full: 17589 bytes; on (built, miss) 679 ms, off 630 ms
+SAME  teacher/dashboard 138695 ks5: 229207 bytes; on (built, miss) 749 ms, off 386 ms
+SAME  front-door/teacher 138695 ks5: 9883 bytes; on (built, miss) 458 ms, off 440 ms
+SAME  front-door/teacher 138695 ks5 full: 10421 bytes; on (built, miss) 580 ms, off 445 ms
+stored rows: 51
+every cache-on first build equals cache-off, byte for byte
+
+== process 2 (fresh): cache on, from the store
+SAME  smt/overview 110110 10 nearest schools (10): from the store (L2) in 21 ms
+SAME  smt/academic post16 110110 10 nearest schools (10): from the store (L2) in 5 ms
+SAME  smt/academic gcse 110110 10 nearest schools (10): from the store (L2) in 4 ms
+SAME  smt/pupils 110110 10 nearest schools (10): from the store (L2) in 162 ms
+SAME  smt/overview 110110 Independent schools in England (343): from the store (L2) in 9 ms
+SAME  smt/academic post16 110110 Independent schools in England (343): from the store (L2) in 6 ms
+SAME  smt/academic gcse 110110 Independent schools in England (343): from the store (L2) in 7 ms
+SAME  smt/pupils 110110 Independent schools in England (343): from the store (L2) in 128 ms
+SAME  smt/overview 110110 Independent schools in the South East (52): from the store (L2) in 6 ms
+SAME  smt/academic post16 110110 Independent schools in the South East (52): from the store (L2) in 6 ms
+SAME  smt/academic gcse 110110 Independent schools in the South East (52): from the store (L2) in 5 ms
+SAME  smt/pupils 110110 Independent schools in the South East (52): from the store (L2) in 153 ms
+SAME  smt/overview 110110 nearest, head office (Admissions private): from the store (L2) in 3 ms
+SAME  smt/pupils 110110 nearest, head office (Admissions private): from the store (L2) in 3 ms
+SAME  smt/context 110110 around: from the store (L2) in 6 ms
+SAME  smt/context 110110 la: from the store (L2) in 4 ms
+SAME  smt/context/map 110110: from the store (L2) in 11 ms
+SAME  smt/overview 138695 10 nearest schools (10): from the store (L2) in 2 ms
+SAME  smt/academic gcse 138695 10 nearest schools (10): from the store (L2) in 2 ms
+SAME  smt/academic post16 138695 10 nearest schools (10): from the store (L2) in 4 ms
+SAME  smt/pupils 138695 10 nearest schools (10): from the store (L2) in 85 ms
+DIFF  smt/overview 138695 State schools in the West Midlands (416): BUILT (miss, not stored: built past a failed read) in 10491 ms
+SAME  smt/academic gcse 138695 State schools in the West Midlands (416): from the store (L2) in 10 ms
+SAME  smt/academic post16 138695 State schools in the West Midlands (416): from the store (L2) in 6 ms
+SAME  smt/pupils 138695 State schools in the West Midlands (416): from the store (L2) in 203 ms
+SAME  smt/overview 138695 nearest, head office (Admissions private): from the store (L2) in 5 ms
+SAME  smt/pupils 138695 nearest, head office (Admissions private): from the store (L2) in 4 ms
+SAME  smt/context 138695 around: from the store (L2) in 8 ms
+SAME  smt/context 138695 la: from the store (L2) in 4 ms
+SAME  smt/context/map 138695: from the store (L2) in 8 ms
+SAME  admissions/pipeline 110110 11+: from the store (L2) in 3 ms
+SAME  admissions/pipeline 110110 11+ projection: from the store (L2) in 3 ms
+SAME  admissions/market-share 110110 11+: from the store (L2) in 3 ms
+SAME  admissions/rivals 110110 11+: from the store (L2) in 2 ms
+SAME  admissions/shape 110110 11+: from the store (L2) in 2 ms
+SAME  admissions/pipeline 110110 16+: from the store (L2) in 3 ms
+SAME  admissions/pipeline 110110 16+ projection: from the store (L2) in 3 ms
+SAME  admissions/market-share 110110 16+: from the store (L2) in 2 ms
+SAME  admissions/rivals 110110 16+: from the store (L2) in 1 ms
+SAME  admissions/shape 110110 16+: from the store (L2) in 2 ms
+SAME  teacher/dashboard 110110 ks4: from the store (L2) in 3 ms
+SAME  front-door/teacher 110110 ks4: from the store (L2) in 1 ms
+SAME  front-door/teacher 110110 ks4 full: from the store (L2) in 2 ms
+SAME  teacher/dashboard 110110 ks5: from the store (L2) in 3 ms
+SAME  front-door/teacher 110110 ks5: from the store (L2) in 2 ms
+SAME  front-door/teacher 110110 ks5 full: from the store (L2) in 1 ms
+SAME  teacher/dashboard 138695 ks4: from the store (L2) in 2 ms
+SAME  front-door/teacher 138695 ks4: from the store (L2) in 2 ms
+SAME  front-door/teacher 138695 ks4 full: from the store (L2) in 2 ms
+SAME  teacher/dashboard 138695 ks5: from the store (L2) in 2 ms
+SAME  front-door/teacher 138695 ks5: from the store (L2) in 1 ms
+SAME  front-door/teacher 138695 ks5 full: from the store (L2) in 2 ms
+51 of 52 served without a build in a fresh process; 1 DIFFERENT

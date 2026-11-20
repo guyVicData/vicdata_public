@@ -12,6 +12,7 @@ import { isBoardingSchool } from "../admissions/boarding";
 import { englandSchools } from "../admissions/ranks";
 import type { SchoolPhases } from "./levels";
 import { figure, population, SMT_MEASURES, type Population } from "./population";
+import { markDegraded } from "../build-trace";
 
 // 0.8 IGCSE subjects: at an IGCSE school, an area lacking a subject it takes as IGCSE carries the short label
 // ("Sciences & Maths · no maths (IGCSE)") and its (i) sentence, and isn't ranked against other schools.
@@ -72,7 +73,7 @@ export async function schoolCensuses(urns: string[]): Promise<Map<string, RollSn
   await Promise.all(
     chunks.map(async (chunk) => {
       const batch = cachedReference(`smt:census-batch:${chunk.join(",")}`, async () => {
-        const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk }).catch(() => []);
+        const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk }).catch(() => (markDegraded(), []));
         const by = new Map<string, typeof facts>();
         for (const f of facts) (by.get(f.entity_id) ?? by.set(f.entity_id, []).get(f.entity_id)!).push(f);
         return new Map(chunk.map((u) => [u, buildRollTrend(by.get(u) ?? [], u)]));

@@ -29,6 +29,7 @@ import { CURRENT_CENSUS_PERIOD, type AgeBandKey, type AgeGenderCounts } from "..
 import type { RankMeasure } from "../subject-ranking";
 import { ADMISSIONS_NOTES, TREND_BASE_PERIOD } from "@/catalogue/notes";
 import type { Sex } from "./cohort";
+import { markDegraded } from "../build-trace";
 
 export type { EntryPoint };
 export const DEFAULT_FILTERS: AdmissionsFilters = { lists: "both", sector: "all", boardingOnly: false };
@@ -83,8 +84,8 @@ export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList
   const [now, table, intake, births, trends, area, fe] = await Promise.all([
     entryNow(urn, ep, own, sex),
     feederTable(urn, ep, p.sets, traits, minCohort, { day: listMembers("day_feeders"), boarding: listMembers("boarding_feeders") }, sex),
-    intakeChange(urn, ep, catchment).catch((e) => ({ status: "none" as const, reason: `Could not read the area: ${String((e as Error)?.message ?? e).slice(0, 120)}`, area: null })),
-    localBirths(urn, ep, catchment).catch((e) => ({ status: "none" as const, reason: `Could not read the area: ${String((e as Error)?.message ?? e).slice(0, 120)}`, area: null })),
+    intakeChange(urn, ep, catchment).catch((e) => (markDegraded(), { status: "none" as const, reason: `Could not read the area: ${String((e as Error)?.message ?? e).slice(0, 120)}`, area: null })),
+    localBirths(urn, ep, catchment).catch((e) => (markDegraded(), { status: "none" as const, reason: `Could not read the area: ${String((e as Error)?.message ?? e).slice(0, 120)}`, area: null })),
     poolTrends(ep, p.ladder, me?.laName ?? null),
     cachedReference(`adm:area-pop:${me?.laCode ?? ""}:${CURRENT_CENSUS_PERIOD}`, () => lookupPopulationTrend(me?.laName ?? null, me?.laCode ?? null, CURRENT_CENSUS_PERIOD)),
     own?.latestPeriod == null ? feParticipation(urn, me?.typeGroup ?? null) : Promise.resolve(null),

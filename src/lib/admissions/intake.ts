@@ -27,6 +27,7 @@ import { fetchSchoolTraits } from "./traits";
 import type { EntryPoint } from "./entry-points";
 import { CENSUS_FIRST_PERIOD, CURRENT_CENSUS_PERIOD } from "@/catalogue/years";
 import { birthsAge, endYears, isSmallIntake, meanOf, midYearAt, splitIntake, type IntakeEnd, type IntakeSplit } from "./intake-change";
+import { markDegraded } from "../build-trace";
 
 export type IntakeArea = {
   km: number;
@@ -84,7 +85,7 @@ async function readArea(urn: string, opts: { km?: unknown; savedKm: number | nul
   const independent = t.sector === "independent";
   const school = await withDensity(urn, { independent, low: t.low, high: t.high, phases: { post16: (t.high ?? 0) >= 18 } });
   const c = resolveCatchment(school, opts.km ?? null, opts.savedKm);
-  const ctx = await areaContext(urn, c.km).catch(() => null);
+  const ctx = await areaContext(urn, c.km).catch(() => (markDegraded(), null));
   const years = ctx?.years.map((y) => y.year) ?? [];
   return {
     area: {
@@ -180,7 +181,7 @@ export async function localBirths(urn: string, ep: EntryPoint, opts: { km?: unkn
   if (!r) return { status: "none", reason: "This school isn't in the schools list.", area: null };
   if (!r.ctx || !r.ctx.years.length) return { status: "none", reason: "No small-area population figures around this school.", area: r.area };
   const regionName = (await englandSchools()).get(urn)?.regionName ?? null;
-  const [region, england] = await Promise.all([regionName ? regionBirths(regionName).catch(() => new Map<number, number>()) : Promise.resolve(new Map<number, number>()), englandPopulation().catch(() => new Map<number, number[]>())]);
+  const [region, england] = await Promise.all([regionName ? regionBirths(regionName).catch(() => (markDegraded(), new Map<number, number>())) : Promise.resolve(new Map<number, number>()), englandPopulation().catch(() => (markDegraded(), new Map<number, number[]>()))]);
   const catchment = new Map(r.ctx.years.map((y) => [y.year, y.children[0] ?? null] as const));
   const years = Array.from(catchment.keys()).sort((a, b) => a - b);
   // Indexed to the first year every line has (the catchment's first, where the region and England have it).

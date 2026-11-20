@@ -12,6 +12,7 @@ import { callReferenceRpc, lookupAcademicSubjectHeadline, lookupAcademicSubjectQ
 import { schoolSyncStamp } from "../school-sync-stamp";
 import { latestSubjectName } from "../subject-latest-names";
 import { normaliseQualification } from "../subject-match";
+import { markDegraded } from "../build-trace";
 
 export type QualRow = { urn: string; qualification: string; subject: string; familyId: string | null; period: number; entries: number; avg: number | null };
 export type VaFact = { urn: string; qualification: string; subject: string; size: string; period: number; value: number | null; lo: number | null; hi: number | null; entries: number | null };
@@ -101,6 +102,7 @@ export async function vaMatcher(familyOf: (s: string) => string | null): Promise
   try {
     rows = await ks5LabelMap();
   } catch {
+    markDegraded();
     rows = [];
   }
   const byQual = new Map(rows.filter((r) => r.qualification).map((r) => [`${r.qualification}::${r.stored_label}`, r.latest_label]));

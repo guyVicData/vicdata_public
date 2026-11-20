@@ -13,6 +13,7 @@ import { subjectAreaRows } from "@/lib/subject-geography-rows";
 import { groupEnglandValues } from "@/lib/subject-match";
 import type { EnglandAverages } from "@/lib/teacher-view-measures";
 import { buildTeacherModel, type AreaRows, type TeacherModel, type TeacherModelInput, type TeacherPhaseId } from "./teacher-model";
+import { markDegraded } from "@/lib/build-trace";
 
 /** England's subject averages, as the dashboard route reads them (GCSE by subject, Post-16 by exact qualification). */
 export async function englandSubjectAverages(phase: TeacherPhaseId): Promise<EnglandAverages> {
@@ -33,14 +34,14 @@ async function areaRows(supabase: SupabaseClient, urn: string, phase: TeacherPha
       const { data, error } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();
       if (error) throw error;
       return data?.la_name ?? null;
-    }).catch(() => null),
-    cachedReference(`school:region:${urn}`, async () => (await resolveTargetRegionNation(urn))?.regionName ?? null).catch(() => null),
+    }).catch(() => (markDegraded(), null)),
+    cachedReference(`school:region:${urn}`, async () => (await resolveTargetRegionNation(urn))?.regionName ?? null).catch(() => (markDegraded(), null)),
   ]);
   // 0.8 feedback A1 (R-SUBJECT-MATCH): the subject-geography route's reader; a grouped title reads the
   // group's every title, merged per year.
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null): Promise<AreaRows | null> => {
     if (!key) return null;
-    const rows = await subjectAreaRows(phase, groupingType, key, subject, phase === "ks5" ? qualificationType : null).catch(() => []);
+    const rows = await subjectAreaRows(phase, groupingType, key, subject, phase === "ks5" ? qualificationType : null).catch(() => (markDegraded(), []));
     const out = rows.map((r) => ({ period: r.period, entries: r.entries, avgPointScore: r.avgPointScore }));
     return out.length ? { name: groupingType === "national" ? "England" : key, rows: out } : null;
   };
@@ -54,9 +55,10 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
     fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" }),
     fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined),
     phase === "ks5" ? fetchSubjectQualificationHeadlineForSchools([urn], phase) : Promise.resolve(new Map()),
-    cachedReference(`dashboard:england:${phase}`, () => englandSubjectAverages(phase)).catch(() => null),
+    cachedReference(`dashboard:england:${phase}`, () => englandSubjectAverages(phase)).catch(() => (markDegraded(), null)),
     supabase.from("schools").select("current_name, establishment_type_group").eq("urn", urn).maybeSingle<{ current_name: string | null; establishment_type_group: string | null }>(),
   ]);
+  if (nameRow.error) markDegraded();
   // R-IGCSE-GCSE-ONLY: an independent school in the IGCSE rule (lib/igcse, R-IGCSE-EVERYWHERE) at GCSE.
   const igcseSchool = phase === "ks4" && nameRow.data?.establishment_type_group === "Independent schools" && (await igcseEngland()).has(urn);
   const own = byUrn.get(urn) ?? { entries: [], valueAdded: [], gradeDistribution: [] };
@@ -78,7 +80,7 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
   // The nearest schools and the area: the third tile and the walks' wider screens.
   const focus = buildTeacherModel(input, opts.focusKey, opts.ticked).focus;
   const [near, area] = await Promise.all([
-    resolveDefaultNearest(urn, phase).catch(() => null),
+    resolveDefaultNearest(urn, phase).catch(() => (markDegraded(), null)),
     opts.full && focus ? areaRows(supabase, urn, phase, focus.subject, focus.qualificationType) : Promise.resolve(input.area),
   ]);
   if (near) {
@@ -96,7 +98,8 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
   if (opts.full) {
     // The nearby walk's map: every school's grid position (public school rows).
     const urns = [urn, ...input.nearest.map((n) => n.urn)];
-    const { data: rows } = await supabase.from("schools").select("urn, easting, northing").in("urn", urns);
+    const { data: rows, error: coordsError } = await supabase.from("schools").select("urn, easting, northing").in("urn", urns);
+    if (coordsError) markDegraded();
     input.coords = Object.fromEntries(((rows ?? []) as { urn: string; easting: number | null; northing: number | null }[]).map((r) => [r.urn, { easting: r.easting, northing: r.northing }]));
     // The grades screen's England ticks: England's share at each grade, the same subject and qualification
     // and the same year as the school's grades (the grade-geography rows the dashboard's Grades view reads).
@@ -105,7 +108,7 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
       const p = model.grades.period;
       const geo = await cachedReference(`geo:grades:${phase}:${model.focus.subject}:${model.focus.qualificationType}:${p}`, () =>
         lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], subject: model.focus!.subject, qualificationType: model.focus!.qualificationType, periodMin: p, periodMax: p }),
-      ).catch(() => []);
+      ).catch(() => (markDegraded(), []));
       const total = geo.reduce((t, r) => t + Number(r.entries_total), 0);
       if (total > 0) input.englandGradeShare = Object.fromEntries(geo.map((r) => [r.grade, Number(r.entries_total) / total]));
     }

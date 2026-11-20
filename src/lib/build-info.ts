@@ -11,9 +11,13 @@ export type BuildInfo = {
   built_at: string | null;
   /** The build's history, 12-character shas, newest first; null when the build had none to list. */
   commits: string[] | null;
+  /** A hash of the server's own code (write-build-info.mjs's server_code), or "commit:<sha>" when the
+   * import walk failed; null when unknown. The results cache's code version. */
+  server_code?: string | null;
 };
 
 const SHA = /^[0-9a-f]{7,64}$/;
+const SERVER_CODE = /^(?:[0-9a-f]{16}|commit:[0-9a-f]{7,64})$/;
 
 /** Parse the file's text; anything malformed reads as "no list" rather than a wrong one. */
 export function parseBuildInfo(text: string | null, env: Record<string, string | undefined> = process.env): BuildInfo {
@@ -31,6 +35,7 @@ export function parseBuildInfo(text: string | null, env: Record<string, string |
     built_at: typeof raw.built_at === "string" && !Number.isNaN(Date.parse(raw.built_at)) ? raw.built_at : null,
     // A list that doesn't start at the build's own commit isn't this build's.
     commits: commits && commit && commits[0].startsWith(commit.slice(0, 7)) ? commits : null,
+    server_code: typeof raw.server_code === "string" && SERVER_CODE.test(raw.server_code) ? raw.server_code : null,
   };
 }
 

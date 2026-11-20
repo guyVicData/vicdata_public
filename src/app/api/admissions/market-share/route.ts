@@ -3,7 +3,7 @@ import { admissionsCaller } from "@/lib/admissions/auth";
 import { listsForRoute, setsInUse } from "@/lib/sets/admissions-route";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
-import { marketView } from "@/lib/admissions/views-api";
+import { cachedMarket } from "@/lib/cached-views";
 
 // VicData 0.7 admissions r1 (A5): Market share -- the school's share of the entry age (and its
 // age band) across the rivals plus the school, 2019/20-2025/26, with ranks (R-ADM-GROUP-SHARE).
@@ -15,6 +15,8 @@ import { marketView } from "@/lib/admissions/views-api";
 // 0.8 sets round 1 (B6-B11): &fset= / &rset= choose the Feeder schools / Compared against set
 // (src/lib/sets/admissions-route.ts); the answer names the sets in use (`setChoices`, beside the
 // pipeline's own `sets`, its rung sets), for the headers.
+// Speed plan §4.2 item 2: the view through the shared results cache, keyed on the lists the chosen sets
+// resolved to (this caller's reads); the sets in use are added per request (src/lib/cached-views.ts).
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await admissionsCaller(request, sp.get("urn"));
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
   const sex = sp.get("sex") === "male" || sp.get("sex") === "female" ? (sp.get("sex") as "male" | "female") : "all";
   try {
     const chosen = await listsForRoute(caller, ep, sp, ["compared_against"]);
-    return NextResponse.json({ ...(await marketView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), sex })), setChoices: setsInUse(chosen) });
+    return NextResponse.json({ ...(await cachedMarket(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), sex })), setChoices: setsInUse(chosen) });
   } catch (err) {
     console.error("[admissions/market-share] failed:", err);
     return NextResponse.json({ error: "Could not build market share." }, { status: 502 });

@@ -12,13 +12,22 @@
 // is printed, so Render's build log says which one was used. (Render's failed auto-deploy of 6bddb6d on
 // 30 Oct predates this step; see docs/v0.8/feedback_deploy_gate_report_v1.md.)
 //
+// Speed plan §4.2 item 2 (the shared results cache): `server_code`, a hash of the server's own code -- every
+// file the API routes import, followed import by import from src/app/api (whatever folder it lives in:
+// src/lib, src/catalogue, the few src/components helpers the server uses), plus package-lock.json. A
+// deploy that changes none of them (a page's design) keeps the cached answers; any that does discards
+// them. It reads files, not git, so a shallow clone gives the same answer. If the walk fails, the build's
+// commit stands in (it changes every deploy, which only discards more); with neither, null (the results
+// cache stays off).
+//
 // For the tests only: BUILD_INFO_GIT_REMOTE and BUILD_INFO_GITHUB_API point the two network calls elsewhere.
 //
 //   node scripts/write-build-info.mjs            (writes the file)
 //   node scripts/write-build-info.mjs --print    (prints it instead; for checking)
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MAX = 1000;
@@ -106,6 +115,66 @@ async function fromGitHub(commit) {
   return list.slice(0, MAX);
 }
 
+// ---- server_code -------------------------------------------------------------------------------
+const CODE_EXT = [".ts", ".tsx", ".mts", ".js", ".mjs", ".json"];
+const IMPORT_RE = /(?:^|[^\w$.])(?:import|export)\s+(?:type\s+)?(?:[^'"`;]*?\sfrom\s*)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|require\(\s*["']([^"']+)["']\s*\)/g;
+
+function resolveImport(spec, fromFile) {
+  let base;
+  if (spec.startsWith("@/")) base = join(root, "src", spec.slice(2));
+  else if (spec.startsWith(".")) base = resolve(dirname(fromFile), spec);
+  else return null; // a package: package-lock.json covers it
+  const tries = [base, ...CODE_EXT.map((e) => base + e), ...CODE_EXT.map((e) => join(base, "index" + e))];
+  for (const t of tries) if (existsSync(t) && statSync(t).isFile()) return t;
+  return null;
+}
+
+function filesUnder(dir) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) out.push(...filesUnder(p));
+    else if (CODE_EXT.some((e) => p.endsWith(e))) out.push(p);
+  }
+  return out;
+}
+
+/** sha256 (16 hex) over every file the API routes import, and the lockfile; null if it can't be read. */
+function serverCodeHash() {
+  const api = join(root, "src", "app", "api");
+  if (!existsSync(api)) return null;
+  const seen = new Set();
+  const stack = filesUnder(api).filter((f) => !/\.test\.[a-z]+$/.test(f));
+  while (stack.length) {
+    const f = stack.pop();
+    if (seen.has(f)) continue;
+    seen.add(f);
+    if (f.endsWith(".json")) continue;
+    const text = readFileSync(f, "utf8");
+    for (const m of text.matchAll(IMPORT_RE)) {
+      const r = resolveImport(m[1] ?? m[2] ?? m[3], f);
+      if (r && !seen.has(r)) stack.push(r);
+    }
+  }
+  const h = createHash("sha256");
+  for (const f of [...seen].sort()) h.update(relative(root, f)).update("\0").update(readFileSync(f)).update("\0");
+  const lock = join(root, "package-lock.json");
+  if (existsSync(lock)) h.update("package-lock.json\0").update(readFileSync(lock));
+  log(`server_code over ${seen.size} file(s) imported from src/app/api`);
+  return h.digest("hex").slice(0, 16);
+}
+
+function serverCode(commit) {
+  try {
+    const h = serverCodeHash();
+    if (h) return h;
+    log("server_code: no src/app/api here");
+  } catch (e) {
+    log(`server_code: the import walk failed (${e.message.split("\n")[0]})`);
+  }
+  return commit ? `commit:${commit}` : null;
+}
+
 async function main() {
   const envCommit = (process.env.RENDER_GIT_COMMIT ?? "").trim();
   let info = fromGit();
@@ -119,6 +188,7 @@ async function main() {
     built_at: new Date().toISOString(),
     commits: info?.commits ?? null,
     source: info?.commits ? info.source : null,
+    server_code: serverCode(commit),
   };
   log(result.commits ? `${result.commits.length} commit(s) listed from ${result.source}, newest ${result.commit}` : `no commit list (commits: null); commit ${result.commit ?? "unknown"}`);
 
@@ -136,7 +206,7 @@ main().catch((e) => {
   log(`failed (${e && e.message ? e.message.split("\n")[0] : e}); writing commits: null`);
   try {
     mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, JSON.stringify({ commit: null, built_at: new Date().toISOString(), commits: null, source: null }) + "\n");
+    writeFileSync(out, JSON.stringify({ commit: null, built_at: new Date().toISOString(), commits: null, source: null, server_code: null }) + "\n");
   } catch {
     // The app reads a missing file as "no list" too.
   }

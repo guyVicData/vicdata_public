@@ -20,11 +20,12 @@ export const MAX_CACHED_ROWS = 50_000;
 
 export type StampMap = Record<string, string>;
 
-/** Each source's stamp, read through `load` at most once every `checkMs`; null when unknown. */
-export function makeSourceStamps(load: () => Promise<StampMap>, now: () => number = Date.now, checkMs = STAMP_CHECK_MS): (sourceId: string) => Promise<string | null> {
+/** Each source's stamp, read through `load` at most once every `checkMs`; null when unknown. `.all()`
+ * is every stamp from the same read (the results cache's data version), {} before any read succeeded. */
+export function makeSourceStamps(load: () => Promise<StampMap>, now: () => number = Date.now, checkMs = STAMP_CHECK_MS): ((sourceId: string) => Promise<string | null>) & { all: () => Promise<StampMap> } {
   let last: StampMap = {};
   let checked: { at: number; promise: Promise<StampMap> } | null = null;
-  return async (sourceId) => {
+  const current = (): Promise<StampMap> => {
     const t = now();
     if (!checked || t - checked.at >= checkMs) {
       const promise = load().then(
@@ -36,8 +37,9 @@ export function makeSourceStamps(load: () => Promise<StampMap>, now: () => numbe
       );
       checked = { at: t, promise };
     }
-    return (await checked.promise)[sourceId] ?? null;
+    return checked.promise;
   };
+  return Object.assign(async (sourceId: string) => (await current())[sourceId] ?? null, { all: current });
 }
 
 type Entry = { stamp: string | null; at: number; promise: Promise<readonly object[]> };

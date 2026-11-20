@@ -1,0 +1,43 @@
+PASS apply_results_cache.sql holds the migration verbatim
+applied supabase/ops/results_cache/apply_results_cache.sql
+-- table
+PASS columns  (key,value,data_version,code_version,bytes,built_ms,created_at,last_read_at)
+PASS every column not null
+PASS primary key and three indexes  (results_cache_created_idx,results_cache_last_read_idx,results_cache_pkey,results_cache_versions_idx)
+PASS RLS enabled
+PASS no policies
+PASS recorded in schema_migrations
+PASS value is text, stored EXTENDED (compressed when large)
+-- the service role (the app's server) writes and reads
+PASS the lookup (key + both versions + max age) finds it
+PASS the value comes back byte for byte (key order kept: text, not jsonb)  ({"zeta":1,"alpha":[3,1,2],"nested":{"b":"x","a":null}})
+PASS another version (d2, c1) misses
+PASS another version (d1, c2) misses
+PASS past the maximum age misses
+PASS the upsert replaces the row (one per key)
+PASS the touch updates last_read_at
+-- anon and authenticated: nothing
+PASS anon can't select
+PASS anon can't insert
+PASS anon can't update
+PASS anon can't delete
+PASS authenticated can't select
+PASS authenticated can't insert
+PASS authenticated can't update
+PASS authenticated can't delete
+PASS anon with a grant still reads no rows (RLS)
+PASS anon with a grant still can't insert (RLS)
+PASS anon with a grant deletes nothing (RLS)
+PASS authenticated with a grant still reads no rows (RLS)
+PASS authenticated with a grant still can't insert (RLS)
+PASS authenticated with a grant deletes nothing (RLS)
+PASS the row is still there
+-- prune (postgresStore.prune's two deletes)
+PASS prune keeps the current row and another version's row made in the last 15 minutes  (current,new-other-instance)
+-- idempotent, then rollback
+PASS applying twice is harmless
+PASS rollback drops the table
+PASS rollback removes the schema_migrations row
+PASS and it applies again after the rollback
+
+all passed

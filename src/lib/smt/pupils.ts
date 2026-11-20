@@ -13,6 +13,7 @@ import { cohortAt } from "../admissions/cohort";
 import { indexTo } from "../admissions/screens";
 import { localShape, shapeOf, sizeByBand } from "../admissions/shape";
 import { savedLists } from "../admissions/auth";
+import type { SavedList } from "../admissions/lists";
 import { entryPoint, type EntryPoint } from "../admissions/entry-points";
 import { pipelineView } from "../admissions/views-api";
 import { nearbyCandidates } from "../admissions/rungs";
@@ -25,6 +26,7 @@ import { yearOnYear } from "./entry-net";
 import { marketAt11, rollAt, type Overview, type Pt, type SmtSet } from "./overview";
 import { cachedReference } from "../server-cache";
 import { createServerAnonSupabaseClient } from "../supabase";
+import { markDegraded } from "../build-trace";
 
 // The ages each level highlights (R-SMT-PUPILS-LEVEL), first and last inclusive, as Context counts
 // them (levelAges): GCSE 11-15 (Years 7 to 11), Post-16 16-17 (Years 12 and 13), Primary 4-10
@@ -108,8 +110,38 @@ async function savedEntryPoints(supabase: SupabaseClient, urn: string): Promise<
   return ((data ?? []) as { entry_point: string }[]).map((r) => r.entry_point);
 }
 
-export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLevel, caller: SmtAdmissionsReader | null): Promise<Pupils> {
+/** The main entry point Pupils' pool follows. */
+const mainEntryOf = (school: SmtSchool): string | null => (school.phases.gcse && (school.low ?? 11) <= 11 ? "11+" : school.phases.primary ? "4+" : school.phases.post16 ? "16+" : null);
+
+/** What Pupils reads of the school's own Admissions, with the caller's reader (RLS for a member; the
+ * server for View as, peek and a head office the school shares with; nothing where it doesn't). Read
+ * before the results cache, so the cached answer is keyed on what this caller can see (speed plan
+ * §4.2 item 2): the saved entry points, and the saved lists for each entry point Pupils draws from. */
+export type PupilsAdmissions = { privateNote: string | null; readable: boolean; entryPoints: string[]; lists: Record<string, SavedList[]> };
+
+export async function readPupilsAdmissions(school: SmtSchool, caller: SmtAdmissionsReader | null): Promise<PupilsAdmissions> {
   const urn = school.urn;
+  const sb = caller?.supabase ?? null;
+  const privateNote = caller?.privateNote ?? null;
+  if (!sb) return { privateNote, readable: false, entryPoints: [], lists: {} };
+  const entryPoints = privateNote ? [] : await savedEntryPoints(sb, urn);
+  const takes11 = (school.low ?? 99) <= 11 && (school.high ?? 0) >= 11 && school.phases.gcse;
+  const ids = new Set<string>();
+  for (const id of entryPoints) {
+    const ep = entryPoint(id);
+    if (ep) ids.add(ep.id);
+  }
+  const main = mainEntryOf(school);
+  if (main) ids.add(entryPoint(main)!.id);
+  if (takes11 && !privateNote) ids.add(entryPoint("11+")!.id);
+  const pairs = await Promise.all(Array.from(ids).sort().map(async (id) => [id, await savedLists(sb, urn, id)] as const));
+  return { privateNote, readable: true, entryPoints, lists: Object.fromEntries(pairs) };
+}
+
+export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLevel, caller: SmtAdmissionsReader | null, pre?: PupilsAdmissions): Promise<Pupils> {
+  const urn = school.urn;
+  const adm = pre ?? (await readPupilsAdmissions(school, caller));
+  const listsFor = (id: string) => adm.lists[id] ?? [];
   const setUrns = Array.from(new Set(set.urns.filter((u) => u !== urn)));
   const census = school.census;
   const now = census.at(-1) ?? null;
@@ -176,14 +208,13 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLeve
 
   // ------------------------------------------------------------ entry points at a glance (Admissions, read-only)
   let entries: Pupils["entries"] = { status: "empty", reason: smtNote("entryPointsNone") };
-  const sb = caller?.supabase ?? null;
-  if (caller?.privateNote) entries = { status: "empty", reason: caller.privateNote };
-  else if (sb) {
-    const eps = (await savedEntryPoints(sb, urn)).map((id) => entryPoint(id)).filter((e): e is EntryPoint => !!e);
+  if (adm.privateNote) entries = { status: "empty", reason: adm.privateNote };
+  else if (adm.readable) {
+    const eps = adm.entryPoints.map((id) => entryPoint(id)).filter((e): e is EntryPoint => !!e);
     if (eps.length) {
       const rows = await Promise.all(
         eps.map(async (ep): Promise<EntrySummary> => {
-          const pv = await pipelineView(urn, ep, await savedLists(sb, urn, ep.id));
+          const pv = await pipelineView(urn, ep, listsFor(ep.id));
           if ("empty" in pv) return { entry: ep.id, label: ep.label, age: ep.age, cohort: null, pool: null, poolYear: null, poolSource: null };
           const next = pv.ladder.future[0];
           return { entry: ep.id, label: ep.label.replace(/ \(.*\)$/, ""), age: ep.age, cohort: pv.now.cohort, pool: next?.pool ?? null, poolYear: next?.entryYear ?? null, poolSource: next?.source ?? null };
@@ -242,12 +273,12 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLeve
   const phases = [...phaseLines.map((l, i) => ({ ...l, pts: ix.out[i], actual: l.pts })), ...laLines.map((l, i) => ({ ...l, pts: ix.out[phaseLines.length + i], actual: l.pts }))];
 
   // The pool for the main entry point: Admissions' ladder -- counted, then from births.
-  const mainEntry = school.phases.gcse && (school.low ?? 11) <= 11 ? "11+" : school.phases.primary ? "4+" : school.phases.post16 ? "16+" : null;
+  const mainEntry = mainEntryOf(school);
   let pool: Pupils["trends"]["pool"] = { status: "empty", reason: "No entry point to follow." };
   if (mainEntry) {
     const ep = entryPoint(mainEntry)!;
     // The lead's saved lists where the caller can read them; else Admissions' nearby defaults.
-    const pv = await pipelineView(urn, ep, sb ? await savedLists(sb, urn, ep.id) : []);
+    const pv = await pipelineView(urn, ep, adm.readable ? listsFor(ep.id) : []);
     if (!("empty" in pv)) {
       const counted = [...pv.ladder.past, ...pv.ladder.future.filter((x) => x.source === "counted")].map((x) => ({ year: x.entryYear, value: x.pool }));
       const births = pv.ladder.future.filter((x) => x.source === "births").map((x) => ({ year: x.entryYear, value: x.pool }));
@@ -271,11 +302,11 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, level: SmtLeve
       return { year: y, value: t };
     });
 
-  const proj = await laAreaProjection(school.laCode, areaAges).catch(() => null);
+  const proj = await laAreaProjection(school.laCode, areaAges).catch(() => (markDegraded(), null));
   const fwdRows = proj ? proj.rows.filter((r) => r.ageFrom === areaAges[0] && r.ageTo === areaAges[1]).sort((a, b) => a.year - b.year) : [];
   const forward = fwdRows.length > 1 ? { pts: fwdRows.map((r) => ({ year: r.year, value: r.middle })), unbornFrom: fwdRows.find((r) => r.includesUnborn)?.year ?? null } : null;
 
-  const market = (await marketAt11(school, caller)).trend;
+  const market = (await marketAt11(school, caller, null, adm.readable ? listsFor(entryPoint("11+")!.id) : [])).trend;
   const [girlsBoys, dayBoarding] = await Promise.all([
     school.mixed && mine ? girlsAndBoys(mine.ageGenderByPeriod, setUrns, setCensus) : Promise.resolve(null),
     school.boarding ? dayAndBoarding(census, setUrns) : Promise.resolve(null),
@@ -474,7 +505,7 @@ export async function dayAndBoarding(census: RollSnapshot[], setUrns: string[]):
   const P = last.period;
   const shown = mine.filter((c) => c.period <= P);
   const years = shown.map((c) => c.period);
-  const sets = await Promise.all(setUrns.map((u) => schoolCensus(u).catch(() => [] as RollSnapshot[])));
+  const sets = await Promise.all(setUrns.map((u) => schoolCensus(u).catch(() => (markDegraded(), [] as RollSnapshot[]))));
   const at = (cs: RollSnapshot[], y: number) => cs.find((c) => c.period === y);
   const first = shown.find((c) => boardersShare(c) !== null)!;
   const baseYear = first.period < P ? first.period : null;

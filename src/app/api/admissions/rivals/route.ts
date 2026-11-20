@@ -3,7 +3,7 @@ import { admissionsCaller } from "@/lib/admissions/auth";
 import { listsForRoute } from "@/lib/sets/admissions-route";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
-import { rivalsView } from "@/lib/admissions/views-api";
+import { cachedRivals } from "@/lib/cached-views";
 import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // VicData 0.7 admissions r1 (A5): the rivals -- ranks (headline, subject area; subject when one is
@@ -14,6 +14,8 @@ import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 // `resultsChange` per school (the momentum scatter's y) and `areaLabels` (views-api.ts rivalsView).
 // 0.8 sets round 1 (B6-B11): &fset= / &rset= choose the Feeder schools / Compared against set
 // (src/lib/sets/admissions-route.ts); the answer names the sets in use (`sets`), for the headers.
+// Speed plan §4.2 item 2: the view through the shared results cache, keyed on the lists the chosen sets
+// resolved to (this caller's reads) (src/lib/cached-views.ts).
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await admissionsCaller(request, sp.get("urn"));
@@ -22,7 +24,7 @@ export async function GET(request: NextRequest) {
   if (!ep) return NextResponse.json({ error: "entry must be 4+, 11+, 16+ or age:2-17" }, { status: 400 });
   try {
     const chosen = await listsForRoute(caller, ep, sp, ["compared_against"]);
-    return NextResponse.json(await rivalsView(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), subject: latestSubjectNameOrNull(sp.get("subject")), family: sp.get("family"), qual: sp.get("qual"), measure: sp.get("measure") }));
+    return NextResponse.json(await cachedRivals(caller.urn, ep, chosen.lists, { filters: filtersFrom(sp), subject: latestSubjectNameOrNull(sp.get("subject")), family: sp.get("family"), qual: sp.get("qual"), measure: sp.get("measure") }));
   } catch (err) {
     console.error("[admissions/rivals] failed:", err);
     return NextResponse.json({ error: "Could not build the rivals." }, { status: 502 });

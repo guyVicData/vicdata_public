@@ -25,7 +25,7 @@ const no = (reason: string): GeographyAvailability => ({ ok: false, reason });
 const GCSE_BRIEFING = "/Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo)";
 const POST16_BRIEFING = "/Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo)";
 
-const DASHBOARD_ROUTE = "src/app/api/teacher/dashboard/route.ts";
+const DASHBOARD_ROUTE = "src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts";
 const SUBJECT_LEVEL = "src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools";
 const SUBJECT_HEADLINE = "src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools";
 const SUBJECT_QUAL_HEADLINE = "src/lib/academic-data-view.ts:fetchSubjectQualificationHeadlineForSchools";
@@ -177,7 +177,7 @@ export const MEASURES: Measure[] = [
       "R-DONUT-COUNTS-ONLY",
     ],
     fetchedBy: [
-      `${DASHBOARD_ROUTE} -> ${SUBJECT_LEVEL} (route.ts:169), ${SUBJECT_HEADLINE} (route.ts:172)`,
+      `${DASHBOARD_ROUTE} -> ${SUBJECT_LEVEL} (teacher-dashboard-data.ts:161), ${SUBJECT_HEADLINE} (teacher-dashboard-data.ts:164)`,
       PROFILES,
       SUBJECT_GEO,
       "seriesByUrn.candidates from academic-data-view.ts:entriesSeries (headline pupil_count) in dashboard, chooser-set and saved-sets",
@@ -225,7 +225,7 @@ export const MEASURES: Measure[] = [
       "R-PERIOD-TRIM",
       "R-NUMBER-TYPE-HONESTY",
     ],
-    fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_HEADLINE} (route.ts:172); England via englandAverages (route.ts:46-74)`, SUBJECT_GEO, PROFILES],
+    fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_HEADLINE} (teacher-dashboard-data.ts:164); England via englandAverages (teacher-dashboard-data.ts:65-90)`, SUBJECT_GEO, PROFILES],
     knownGaps: [
       "Rename 'Average point score' -> 'Average points' (C3) done in 0.6 night 2 (teacher-view-panels.ts measuresFor); the Post-16 whole-school headline keeps DfE's own name.",
       "Change is shown in points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind \"points\", changeOf, formatChange).",
@@ -299,7 +299,7 @@ export const MEASURES: Measure[] = [
       "R-DONUT-COUNTS-ONLY",
     ],
     fetchedBy: [
-      `${DASHBOARD_ROUTE} -> ${SUBJECT_LEVEL} (route.ts:169), ${SUBJECT_HEADLINE} (route.ts:172), ${SUBJECT_QUAL_HEADLINE} (route.ts:176)`,
+      `${DASHBOARD_ROUTE} -> ${SUBJECT_LEVEL} (teacher-dashboard-data.ts:161), ${SUBJECT_HEADLINE} (teacher-dashboard-data.ts:164), ${SUBJECT_QUAL_HEADLINE} (teacher-dashboard-data.ts:168)`,
       PROFILES,
       `${SUBJECT_GEO}?phase=ks5&qualificationType=`,
     ],
@@ -349,7 +349,7 @@ export const MEASURES: Measure[] = [
       "R-PERIOD-TRIM",
       "R-NUMBER-TYPE-HONESTY",
     ],
-    fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_QUAL_HEADLINE} (route.ts:176); England via englandAverages (route.ts:46-63)`, SUBJECT_GEO, PROFILES],
+    fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_QUAL_HEADLINE} (teacher-dashboard-data.ts:168); England via englandAverages (teacher-dashboard-data.ts:65-80)`, SUBJECT_GEO, PROFILES],
     knownGaps: [
       "The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).",
       "Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY).",

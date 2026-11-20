@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { smtCaller } from "@/lib/smt/auth";
 import { smtSchool } from "@/lib/smt/school";
-import { buildContext } from "@/lib/smt/context";
-import { buildContextMap } from "@/lib/smt/context-map";
+import { cachedContextMap } from "@/lib/cached-views";
 import { parseLevel } from "@/lib/smt/levels";
 import { resolveCatchment } from "@/lib/smt/catchment";
 import { savedCatchmentKm } from "@/lib/smt/catchment-server";
@@ -13,6 +12,7 @@ import { withDensity } from "@/lib/smt/catchment-density";
 // catchment, as /api/smt/context resolves it). Answers
 // { state: "fallback" } until the LSOA boundaries are loaded (the map then draws round 2's LAs).
 // Public data behind the SMT gate, as /api/smt/context.
+// Speed plan §4.2 item 2: after the caller check, through the shared results cache (src/lib/cached-views.ts).
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const caller = await smtCaller(request, sp.get("urn"));
@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
     const level = parseLevel(sp, school.phases, null).phase;
     // 0.8 Admissions fb1: a state school's default is its density radius (catchment.ts).
     const catchment = resolveCatchment(await withDensity(caller.urn, school), sp.get("km"), await savedCatchmentKm(caller, caller.urn));
-    const c = await buildContext(school, "around", level, catchment);
-    return NextResponse.json(await buildContextMap(school, level, c.map.schools, catchment.km));
+    return NextResponse.json(await cachedContextMap(school, level, catchment));
   } catch (err) {
     console.error("[smt/context/map] failed:", err);
     return NextResponse.json({ error: "Could not build the map." }, { status: 502 });

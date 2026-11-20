@@ -27,6 +27,7 @@
 import { cachedReference } from "./server-cache";
 import { createServerAnonSupabaseClient } from "./supabase";
 import { sizeBadgeForValue, type SizeBadge } from "./age-band-distributions";
+import { markDegraded } from "./build-trace";
 
 export type EntrySizeStage = "ks4" | "ks5";
 
@@ -130,6 +131,7 @@ export async function entrySizeFifths(stage: EntrySizeStage, keys: EntrySizeKey[
   const years = await Promise.all(
     periods.map((p) =>
       loadYear(stage, p).catch((e) => {
+        markDegraded();
         console.warn(`[entrySizeFifths] ${stage} ${p}: ${(e as Error).message}`);
         return new Map<string, EntrySizeFifths>();
       }),

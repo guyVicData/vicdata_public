@@ -23,7 +23,7 @@ import { cohortAt } from "../admissions/cohort";
 import { indexTo } from "../admissions/screens";
 import { sizeByBand } from "../admissions/shape";
 import { savedLists } from "../admissions/auth";
-import { rivalsFromLists } from "../admissions/lists";
+import { rivalsFromLists, type SavedList } from "../admissions/lists";
 import { buildMarketShare } from "../admissions/market";
 import { entryPoint } from "../admissions/entry-points";
 import { loadThresholds, phaseForEntryAge } from "../admissions/thresholds";
@@ -510,7 +510,7 @@ export async function setNames(urns: string[]): Promise<Record<string, { name: s
  * F-7 (R-MARKET-DEFAULT-RIVALS): where Admissions hasn't chosen rivals (or the caller can't read its
  * lists), the rivals are Admissions' own default -- the 10 nearest schools teaching Year 7 -- and the
  * panel says so. Shared by Overview and Pupils. */
-export async function marketAt11(school: SmtSchool, caller: SmtAdmissionsReader | null, set: { label: string; urns: string[] } | null = null): Promise<{ trend: Overview["trends"]["market"]; row: ScoreRow | null }> {
+export async function marketAt11(school: SmtSchool, caller: SmtAdmissionsReader | null, set: { label: string; urns: string[] } | null = null, preLists?: SavedList[]): Promise<{ trend: Overview["trends"]["market"]; row: ScoreRow | null }> {
   const urn = school.urn;
   let row: ScoreRow | null = null;
   const takes11 = (school.low ?? 99) <= 11 && (school.high ?? 0) >= 11 && school.phases.gcse;
@@ -519,7 +519,8 @@ export async function marketAt11(school: SmtSchool, caller: SmtAdmissionsReader 
   else if (takes11) {
     const ep = entryPoint("11+")!;
     // F-9: with a set (Overview), its schools are the rivals, whatever Admissions has chosen.
-    const lists = !set && caller?.supabase ? await savedLists(caller.supabase, urn, ep.id) : [];
+    // preLists: what Pupils already read with the caller's reader (readPupilsAdmissions).
+    const lists = !set && caller?.supabase ? (preLists ?? (await savedLists(caller.supabase, urn, ep.id))) : [];
     const rivals = set ? set.urns.filter((u) => u !== urn) : rivalsFromLists(lists);
     {
       // No saved rivals: buildMarketShare's default (defaultRivals: the 10 nearest teaching Year 7).

@@ -20,6 +20,12 @@
 //   - a single value over a quarter of that budget is handed back but not kept;
 //   - when anything is dropped for room, one line goes to the log, at most every ten minutes.
 // It changes no figure: the same request returns the same rows either way.
+//
+// Speed plan §4.2 item 2: each kept value carries its build's trace (build-trace.ts), linked into any
+// build that reads it, hit or miss, so the results cache never stores an answer built from a value
+// whose own build carried past a failed read.
+
+import { dependOn, settle, traced, type BuildTrace } from "./build-trace";
 
 export const REFERENCE_TTL_MS = 60 * 60_000;
 const MAX_ENTRIES = 2000;
@@ -35,7 +41,7 @@ function budgetFromEnv(): number {
 let maxBytes = budgetFromEnv();
 let maxEntries = MAX_ENTRIES;
 
-type Entry = { at: number; promise: Promise<unknown>; bytes: number };
+type Entry = { at: number; promise: Promise<unknown>; bytes: number; trace?: BuildTrace };
 // A Map keeps insertion order: the first key is the least recently used.
 const store = new Map<string, Entry>();
 let totalBytes = 0;
@@ -87,15 +93,17 @@ export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs: n
     // Refresh recency: move to the back of the Map.
     store.delete(key);
     store.set(key, hit);
+    dependOn(hit.trace);
     return hit.promise as Promise<T>;
   }
   if (hit) remove(key, hit);
-  const promise = load();
-  const entry: Entry = { at: now, promise, bytes: 0 };
+  const { trace, promise } = traced(load);
+  const entry: Entry = { at: now, promise, bytes: 0, trace };
   store.set(key, entry);
   evictForRoom(key);
   promise.then(
     (value) => {
+      settle(trace);
       if (store.get(key) !== entry) return;
       const bytes = estimateBytes(value);
       if (bytes > maxBytes * OVERSIZE_FRACTION) {
@@ -111,6 +119,12 @@ export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs: n
     () => remove(key, entry),
   );
   return promise;
+}
+
+/** Drop one key (the results cache: an answer it won't keep isn't kept in memory either). */
+export function forgetReference(key: string, promise?: Promise<unknown>): void {
+  const e = store.get(key);
+  if (e && (!promise || e.promise === promise)) remove(key, e);
 }
 
 // ---- size estimate -------------------------------------------------------------------------
@@ -186,6 +200,12 @@ function sampled(
 
 export function referenceCacheStats(): { entries: number; approxBytes: number; evictions: number; oversizedSkips: number } {
   return { entries: store.size, approxBytes: totalBytes, evictions, oversizedSkips };
+}
+
+/** Drop every kept value, keeping the counters (the results cache, when the data version changes). */
+export function clearReferenceValues(): void {
+  store.clear();
+  totalBytes = 0;
 }
 
 /** Tests only. */

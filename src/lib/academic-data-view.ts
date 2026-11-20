@@ -41,6 +41,7 @@ import {
   ks5BucketMeasureKey,
   type Ks5Bucket,
 } from "@/lib/dfe-qualification-buckets";
+import { markDegraded } from "./build-trace";
 
 export type KsStage = "ks2" | "ks4" | "ks5";
 
@@ -1393,6 +1394,7 @@ async function fillDoubleAwardPoints(byUrn: Map<string, AcademicSubjectHeadlineE
   try {
     rows = await lookupAcademicSubjectGradeRollup({ entityIds: want, ksStage: "ks4", qualificationType: DOUBLE_AWARD_QUALIFICATION });
   } catch {
+    markDegraded();
     return;
   }
   if (!rows?.length) return;

@@ -4,20 +4,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveCaller } from "@/lib/view-as-server";
-import { loadTeacherModel } from "@/lib/front-door/teacher-data";
+import { tracedFetch } from "@/lib/build-trace";
+import { cachedTeacherModel } from "@/lib/cached-views";
 
+// Speed plan §4.2 item 2: after the caller check, through the shared results cache (public rows only).
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams;
   const urn = q.get("urn");
   const phase = q.get("phase");
   const authHeader = request.headers.get("authorization");
   if (!urn || (phase !== "ks4" && phase !== "ks5") || !authHeader) return NextResponse.json({ error: "urn, phase (ks4 or ks5) and Authorization are required" }, { status: 400 });
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } });
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { global: { headers: { Authorization: authHeader }, fetch: tracedFetch }, auth: { persistSession: false } });
   const caller = await resolveCaller(request, urn, { visibleRow: true, supabase, refusal: "Teacher view is available to verified school staff." });
   if (caller instanceof NextResponse) return caller;
   const ticked = (q.get("ticked") ?? "").split("|").filter(Boolean);
   try {
-    const model = await loadTeacherModel(supabase, urn, phase, { focusKey: q.get("focus"), ticked, full: q.get("full") === "1", lite: q.get("lite") === "1" });
+    const model = await cachedTeacherModel(supabase, urn, phase, { focusKey: q.get("focus"), ticked, full: q.get("full") === "1", lite: q.get("lite") === "1" });
     return NextResponse.json(model);
   } catch {
     return NextResponse.json({ error: "Could not load this school's figures." }, { status: 502 });

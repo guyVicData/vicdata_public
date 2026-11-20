@@ -8,6 +8,7 @@ import type { GradeRollupRow } from "./grade-rows";
 import { latestYearsFromRows, type LatestYears } from "../catalogue/years";
 import { latestBreakdown, latestSubjectName, latestSubjectNameOrNull } from "./subject-latest-names";
 import { makeReferenceCache, makeSourceStamps, type StampMap } from "./reference-cache";
+import { markDegraded, tracedFetch } from "./build-trace";
 
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
@@ -35,7 +36,7 @@ async function fetchPage(
 ): Promise<unknown[]> {
   const apiUrl = requireEnv("VICDATA_API_URL");
   const anonKey = requireEnv("VICDATA_ANON_KEY");
-  const res = await fetch(`${apiUrl}/rest/v1/rpc/${path}`, {
+  const res = await tracedFetch(`${apiUrl}/rest/v1/rpc/${path}`, {
     method: "POST",
     headers: {
       apikey: anonKey,
@@ -99,6 +100,9 @@ const sourceStamp = makeSourceStamps(async () => {
   return out;
 });
 const referenceCache = makeReferenceCache({ stamp: sourceStamp });
+/** Every source's stamp (production's reference_source_stamps), read at most once a minute; {} until a
+ * read has succeeded. The results cache's data version (results-cache-versions.ts). */
+export const allSourceStamps = (): Promise<StampMap> => sourceStamp.all();
 /** For tests and scripts: forget every cached reference read. */
 export const clearReferenceReads = () => referenceCache.clear();
 
@@ -452,6 +456,7 @@ async function inEntityChunks<T>(
     try {
       rows.push(...(await fetchChunk(chunk)));
     } catch (err) {
+      markDegraded();
       failed.push(...chunk);
       console.error(`[${rpc}] chunk failed, continuing with the rest`, {
         ksStage: context.ksStage,
@@ -837,7 +842,7 @@ export async function lookupAcademicRegionNationRank(params: {
 }): Promise<AcademicRegionNationRankResult> {
   const apiUrl = requireEnv("VICDATA_API_URL");
   const anonKey = requireEnv("VICDATA_ANON_KEY");
-  const res = await fetch(`${apiUrl}/rest/v1/rpc/academic_region_nation_rank`, {
+  const res = await tracedFetch(`${apiUrl}/rest/v1/rpc/academic_region_nation_rank`, {
     method: "POST",
     headers: {
       apikey: anonKey,

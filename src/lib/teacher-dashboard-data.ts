@@ -1,0 +1,197 @@
+// Teacher view dashboard data: the body of /api/teacher/dashboard, moved here unchanged (speed plan §4.2
+// item 2) so the route can keep its answer in the results cache. The caller is checked by the route
+// first; what is read here is public (schools, school_nearest_neighbours: readable by anyone, read with
+// the caller's own client as before) and the production reference data, so the answer is the same for
+// every caller allowed to see it.
+import { lookupAcademicLatestYears, lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
+import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { markDegraded } from "@/lib/build-trace";
+import { cachedReference } from "@/lib/server-cache";
+import { igcseAmong } from "@/lib/igcse";
+import { groupEnglandValues } from "@/lib/subject-match";
+import {
+  fetchSubjectLevelDataForSchools,
+  fetchSubjectHeadlineForSchools,
+  fetchSubjectQualificationHeadlineForSchools,
+  fetchAcademicProfiles,
+  HEADLINE_AGE,
+  HEADLINE_LABEL,
+  populationAtAge,
+  entriesSeries,
+  fetchLatestCohortSizes,
+  type KsStage,
+} from "@/lib/academic-data-view";
+import { neighbourPool, rankSets, type NeighbourRow, type SetBuilder } from "@/lib/teacher-view-comparator-series";
+import {
+  isIndependent,
+  sameSector,
+  localRivals,
+  similarSize,
+  SET_SIZE,
+  type PoolSchool,
+  type RankingsSetId,
+} from "@/lib/teacher-view-rankings";
+
+// Teacher view dashboard data (design brief v2 §5's four questions).
+//
+// One round trip for a dashboard, reusing the same fetchers the advanced view already
+// uses rather than a parallel set that could drift. Serialised rather than Promise.all
+// for the same reason the subject-comparison route is: these two lookups contend, and
+// running them together is what produced a real statement timeout before.
+
+// The comparator pool, rows and series now live in teacher-view-comparator-series.ts,
+// shared with the saved-comparator-sets route (accordion round Part 3).
+
+// The Results card's anchor: the England average for the same subject or qualification,
+// from vicdata's national aggregate rows.
+//   - GCSE: per SUBJECT, from academic_subject_geography_aggregate via
+//     academic_subject_geography_lookup. Until 2026-09-21 no national figure existed per
+//     subject, and this used the England average for the subject's whole family instead;
+//     the backend round of that date added the subject-grain aggregate (the national
+//     roll-up of academic_subject_rollup), so a subject is now compared with itself. Only
+//     "GCSE (9-1) Full Course" carries points at KS4, so this is the England GCSE average
+//     for that subject. Keyed by subject name, spelt as the headline rows spell it.
+//   - Post-16 (Part C): per SUBJECT and exact QUALIFICATION TYPE, keyed
+//     "{subject}::{qualificationType}", from academic_subject_qualification_geography_aggregate
+//     -- A-level Maths against England's A-level Maths, not against every A-level entry.
+//     It holds scored qualifications only, so VRQ, AEA and Other have no England figure,
+//     and show none. Part D: no fallback to the per-bucket figure any more -- it only ever
+//     marked an empty bar, and it was a cross-qualification blend (VRQ against BTEC's
+//     England average) of exactly the kind the exact figures replace.
+type EnglandAverage = { key: string; period: number; value: number };
+
+// R-KS5-ENGLAND-EXACT, R-MIN-SCHOOLS (national: min 1)
+async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "qualification" | "subject"; values: EnglandAverage[] }> {
+  if (phase === "ks5") {
+    // One unfiltered national call, keyed here. National only, so every real row
+    // (minSchoolCount 1): Persian or Gujarati A level at four schools is still England's
+    // real figure.
+    const exact = await lookupAcademicSubjectQualificationGeography({
+      ksStage: "ks5",
+      measure: "avg_point_score",
+      groupingType: "national",
+      groupingKeys: [NATIONAL_GROUPING_KEY],
+      minSchoolCount: 1,
+    });
+    const values = exact
+      .filter((r) => r.avg_value !== null)
+      .map((r) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) }));
+    // 0.8 feedback A1 (R-SUBJECT-MATCH): England's figure for each group of matched titles too.
+    return { basis: "qualification", values: [...values, ...groupEnglandValues(exact, "ks5")] };
+  }
+  // National only, so no minimum school count beyond 1: see minSchoolCount.
+  const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
+  return {
+    basis: "subject",
+    // 0.8 feedback B (R-SUBJECT-MATCH): England's figure for each GCSE family too (Art and Design with Photography).
+    values: [...rows.filter((r) => r.avg_value !== null).map((r) => ({ key: r.subject, period: r.period, value: Number(r.avg_value) })), ...groupEnglandValues(rows, "ks4")],
+  };
+}
+
+export async function buildTeacherDashboard(supabase: SupabaseClient, urn: string, phase: KsStage) {
+  // §5: KS2's "how many" question is the Year 6 cohort from roll data, NOT exam entries --
+  // every pupil sits the same fixed tests, so there is no entries concept. Reuses
+  // populationAtAge(profile, HEADLINE_AGE.ks2), which resolves age 10 from the age
+  // breakdown; the census also carries a `year_group_10` field, which is the GCSE year and
+  // would silently put a secondary cohort on a primary card (Q6).
+  // 0.6.4 C2: the two small vicdata-public reads together (one round trip, not two).
+  const [{ data: neighbourRows, error: neighbourError }, { data: targetRow, error: targetError }] = await Promise.all([
+    supabase
+      .from("school_nearest_neighbours")
+      .select("rank, distance_km, schools!school_nearest_neighbours_neighbour_urn_fkey(urn, current_name, phase, status, establishment_type_group, statutory_low_age, statutory_high_age, la_name)")
+      .eq("urn", urn)
+      .eq("pool", "general")
+      .order("rank", { ascending: true })
+      .limit(100),
+    supabase.from("schools").select("establishment_type_group").eq("urn", urn).maybeSingle(),
+  ]);
+  // Speed plan §4.2 item 2: a failed read here would build a thinner dashboard; never keep that one.
+  if (neighbourError || targetError) markDegraded();
+  const pool = neighbourPool((neighbourRows ?? []) as unknown as NeighbourRow[], phase);
+  const targetIndependent = isIndependent((targetRow as { establishment_type_group: string | null } | null)?.establishment_type_group ?? null);
+
+  // Similar-sized needs every pool school's cohort, so it is the one set that costs an
+  // extra lookup -- a single batched headline call. Not offered at KS2: there is no
+  // published KS2 exam-cohort figure, only the census Year 6 count, and the brief only
+  // defines this set for GCSE and Post-16.
+  const cohortSizes = phase === "ks2" ? null : await fetchLatestCohortSizes([urn, ...pool.map((p) => p.urn)], phase);
+  // Comparator dropdown round (2026-09-27): MOTHBALLED as comparator choices. The Teacher
+  // view pill no longer offers these four sets -- the comparator chooser replaced them, and
+  // its "10 nearest schools" (chooser-sets.ts resolveDefaultNearest) is the column's
+  // default -- and the page no longer reads comparatorSets or setInfo. They are still
+  // built because `nearest` feeds `neighbours` (the Results headline's comparison) and the
+  // same rankSets pass yields targetSeries and seriesByUrn; retire the other three here
+  // once nothing is expected to bring them back.
+  const buildSets: SetBuilder = (usable) => {
+    const sets: Partial<Record<RankingsSetId, PoolSchool[]>> = {
+      nearest: usable.slice(0, SET_SIZE),
+      same_sector: sameSector(usable, targetIndependent),
+      local_rivals: localRivals(usable),
+    };
+    if (cohortSizes) sets.similar_size = similarSize(usable, cohortSizes, cohortSizes.get(urn) ?? null);
+    return sets;
+  };
+  const { ranked: comparatorSets, targetProfile, targetSeries, seriesByUrn } = await rankSets(urn, pool, buildSets, phase, cohortSizes);
+  const setInfo = { targetIndependent, targetCohortSize: cohortSizes?.get(urn) ?? null };
+
+  if (phase === "ks2") {
+    const profiles = await fetchAcademicProfiles([urn], { includePopulation: true });
+    const profile = profiles.find((p) => p.urn === urn) ?? null;
+    return {
+      phase,
+      rollAtAge10: profile ? populationAtAge(profile, HEADLINE_AGE.ks2) : null,
+      subjectData: { entries: [], valueAdded: [], gradeDistribution: [] },
+      headline: [],
+      neighbours: comparatorSets.nearest ?? [],
+      comparatorSets,
+      setInfo,
+      cohortSeries: [],
+      // Round 6: this school's own headline measure per year, for Comparisons' Trend and
+      // % change panels (§6.4). Real published figures only -- years with no figure are
+      // absent rather than carried forward.
+      ownSeries: targetSeries,
+      seriesByUrn,
+      headlineLabel: HEADLINE_LABEL[phase],
+    };
+  }
+
+  // 0.6.2 S2: the school's grade rows cover 2021/22-2024/25 (the rollup at GCSE when its RPC
+  // is applied, else the modern + historic facts; the facts at Post-16). Entries stay modern.
+  const { byUrn } = await fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" });
+  // Every bucket at KS5, so a subject row can take the points belonging to its own
+  // qualification rather than the whole-school 'all' row.
+  const headlineByUrn = await fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined);
+  // Post-16 Part C: the school's own figures per exact qualification, which is what each
+  // ticked (subject, qualification) item reads. The bucket rows above still serve the
+  // category lookup and Context's whole-subject group.
+  const qualificationHeadline = phase === "ks5" ? (await fetchSubjectQualificationHeadlineForSchools([urn], phase)).get(urn) ?? [] : [];
+  // 0.6.4 C2: England's national rows are the same for every school -- kept an hour per instance.
+  const england = await cachedReference(`dashboard:england:${phase}`, () => englandAverages(phase));
+  // 0.7 year rules: the latest year per key stage, from the data, with DfE's provisional flag
+  // (src/catalogue/years.ts) -- what the page's catalogue titles and "Data" lines read.
+  const latestYears = await cachedReference("years:latest", () => lookupAcademicLatestYears()).catch(() => null);
+  // 0.8 audit fixes (R-IGCSE-GROUP-LABEL): whether the IGCSE rule takes this school out of GCSE
+  // rankings, so Column 1 can say which subjects its groups lack (taken as IGCSE).
+  const igcseExcluded = phase === "ks4" ? (await igcseAmong([urn])).has(urn) : false;
+
+  return {
+    phase,
+    rollAtAge10: null,
+    subjectData: byUrn.get(urn) ?? { entries: [], valueAdded: [], gradeDistribution: [] },
+    headline: headlineByUrn.get(urn) ?? [],
+    qualificationHeadline,
+    neighbours: comparatorSets.nearest ?? [],
+    comparatorSets,
+    setInfo,
+    // Candidates' "Entries, % of year group": the whole exam cohort per year -- the
+    // same figure the map sizes this school's dot by.
+    englandAverages: england,
+    cohortSeries: targetProfile ? entriesSeries(targetProfile, phase, null) : [],
+    ownSeries: targetSeries,
+    seriesByUrn,
+    headlineLabel: HEADLINE_LABEL[phase],
+    latestYears,
+    igcseExcluded,
+  };
+}
