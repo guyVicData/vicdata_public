@@ -21,7 +21,7 @@ import { percentile } from "../admissions/stats";
 import { englandSchools } from "../admissions/ranks";
 import { agesWordOf, levelAges, type SmtLevel } from "./levels";
 import { laAreaProjection, laPopulation } from "./area-data";
-import { schoolCensus, type SmtSchool } from "./school";
+import { schoolCensuses, type SmtSchool } from "./school";
 import { yearOnYear } from "./entry-net";
 import { marketAt11, rollAt, type Overview, type Pt, type SmtSet } from "./overview";
 import { cachedReference } from "../server-cache";
@@ -505,7 +505,11 @@ export async function dayAndBoarding(census: RollSnapshot[], setUrns: string[]):
   const P = last.period;
   const shown = mine.filter((c) => c.period <= P);
   const years = shown.map((c) => c.period);
-  const sets = await Promise.all(setUrns.map((u) => schoolCensus(u).catch(() => (markDegraded(), [] as RollSnapshot[]))));
+  // 20 Nov: the set's censuses through schoolCensuses (40 schools a read, 3 reads at a time, each tried twice),
+  // not one read a school all at once -- a 488-school set fired 488 census reads together (measured: up to 488
+  // in flight, the slowest 5-7.5 s), the fan-out production's statement timeout cancels. The same rows per school.
+  const by = await schoolCensuses(setUrns);
+  const sets = setUrns.map((u) => by.get(u) ?? []);
   const at = (cs: RollSnapshot[], y: number) => cs.find((c) => c.period === y);
   const first = shown.find((c) => boardersShare(c) !== null)!;
   const baseYear = first.period < P ? first.period : null;
