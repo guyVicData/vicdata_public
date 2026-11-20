@@ -77,6 +77,14 @@ Leighton Park, live, with both on:
 
 The big-set Overviews weren't being stored at first: their census reads all ran at once and production cancelled most of them (440-480 of 488 schools came back with no census, so the live Overview was incomplete too). Fixed in `f803f1a` (three reads at a time, each retried once): every school's census now arrives, and the Overviews are stored like everything else. After that fix, a second visit to every Leighton Park page, big sets included, is 0.8-2.0 s, and stays so across design-only deploys.
 
+## 3c. Later on 20 Nov (night)
+
+- `0a1e650`: the school lookup (`/api/smt/school`) and the comparison sets (`/api/teacher/chooser-set`) go through the results cache too; the store is only asked after the caller check.
+- `38227f4`: a state school isn't offered "State schools in England" (3,497 at GCSE: 67-117 s cold Overview, sometimes the statement timeout, and the routes only ever used its top 600); a note points to the Overview's England figures. Independent schools keep theirs.
+- `cd881d6`: the figures build as a nightly job (`npm run figures:build`, skips when nothing changed); Render cron setup in `smt_school_figures_v1.md`.
+- `0d38c3c`: the SMT routes read the school from the store before building, so a restart no longer pays 6-8 s before a stored answer is served.
+- Open: SMT routes cut a set to 600 schools (`MAX_SET`); "All schools in the South East" (682, Leighton Park's GCSE default) and "All schools in London" (659) are cut. Raise to ~750, or label them -- Guy to decide.
+
 ## 4. After the demo: the architecture (agreed with Guy, 20 Nov)
 
 ### 4.1 Why whole-population sets are slow (measured)
