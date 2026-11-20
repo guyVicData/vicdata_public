@@ -23,7 +23,7 @@ import { Scorecard } from "@/components/smt/views/Scorecard";
 import { SchoolFlags } from "@/components/smt/views/Flags";
 import { MarketLine, ResultsBand, RollIndexed, IndexedLines, PlainLine } from "@/components/smt/views/Lines";
 import { periodLabel } from "@/catalogue/years";
-import { AcademicNow, AreasView, EveryLine, GradesView, RankChart, SubjectsRankedView, TrendBand, acVars } from "@/components/smt/views/Academic";
+import { AcademicNow, Against, AreasView, EntriesDumbbell, EveryLine, GradesView, MixBars, Moves, RankChart, SubjectsRankedView, TrendBand, acVars } from "@/components/smt/views/Academic";
 import { subjectsRanked, subjectsRankedAnswer } from "@/lib/smt/subjects-ranked";
 import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "@/components/smt/views/Pupils";
 import { AgeBars, AreaMap, BirthsAndProjections, ContextNow, NearbyOverTime } from "@/components/smt/views/Context";
@@ -37,7 +37,7 @@ import { smtAnswer } from "@/lib/front-door/smt-answers";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { dataviewById } from "@/catalogue/dataviews";
 import { answerStep, fillTemplate, groupWalkDash, screenMeta, SMT_SUBJECTS_RANKED, type Walk } from "@/lib/front-door/walks";
-import { Found, homeOf, MiniMap, useStep, WalkFooter, WalkFrame, WalkPanel, WalkRail, WalkScreen, type FoundAnswer } from "./WalkPage";
+import { Found, homeOf, MiniMap, useStep, useWalkTab, WalkFooter, WalkFrame, WalkPanel, WalkRail, WalkScreen, type FoundAnswer } from "./WalkPage";
 import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/components/groups/dash/GroupDashboard";
 import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
 import type { ProjectionRow } from "@/components/groups/dash/views-r3";
@@ -145,6 +145,10 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   const level = s && kind !== "overview" && ((asked === "gcse" && s.phases.gcse) || (asked === "post16" && s.phases.post16)) ? asked : null;
   const o = useSmt<Overview>(s && body && kind === "overview" ? "/api/smt/overview" : null, body);
   const a = useSmt<Academic>(s && body && kind === "academic" && walk.screens.length ? "/api/smt/academic" : null, body ? { ...body, ...(level ? { level } : {}) } : null);
+  // Leighton Park prep (20 Nov): the Entries walk is SMT Academic in its entries mode, at the tab's level (the
+  // school's own phase when the address has none).
+  const entriesLevel = level ?? (s ? (s.phases.post16 && !s.phases.gcse ? "post16" : s.phases.gcse ? "gcse" : "post16") : null);
+  const ae = useSmt<Academic>(s && body && kind === "entries" ? "/api/smt/academic" : null, body && entriesLevel ? { ...body, level: entriesLevel, mode: "entries" } : null);
   const p = useSmt<Pupils>(s && body && kind === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level ?? "whole" } : null);
   // The home's Context tile reads this same address (tile-figures.ts, front door 2b), so the two agree.
   const c = useSmt<Context>(s && kind === "context" ? smtContextUrl(member.schoolUrn, level ?? "whole") : null, null);
@@ -167,8 +171,10 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
       live = false;
     };
   }, [borrows, member.schoolUrn]);
+  // The home tab it was opened from (?level=): its colour, not SMT orange (20 Nov).
+  const tab = useWalkTab(walk);
   const [step, setStep] = useStep(walk.screens.length);
-  const loads = { overview: o, academic: a, pupils: p, context: c } as Record<string, Load<unknown>>;
+  const loads = { overview: o, academic: a, pupils: p, context: c, entries: ae } as Record<string, Load<unknown>>;
   const load = loads[kind ?? ""];
   if (!s || !load || load.status === "loading") return <Loading walk={walk} />;
   if (load.status === "error") return <WalkError walk={walk} what="the school's figures" code={load.code} message={load.message} home={homeOf(walk)} />;
@@ -176,8 +182,8 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   const n2 = walk.screens.length;
   return (
     // The Academic views' band colours (acVars), as the dashboard sets them on its root.
-    <div style={kind === "academic" ? { ...smtVars(theme), ...acVars(theme) } : smtVars(theme)}>
-      <WalkFrame walk={walk} step={step} steps={n2} chip={level ? `${s.name} · ${LEVEL_LABEL[level]}` : s.name}>
+    <div style={kind === "academic" || kind === "entries" ? { ...smtVars(theme, tab), ...acVars(theme) } : smtVars(theme, tab)}>
+      <WalkFrame walk={walk} step={step} steps={n2} chip={kind === "entries" && entriesLevel ? `${s.name} · ${LEVEL_LABEL[entriesLevel]}` : level ? `${s.name} · ${LEVEL_LABEL[level]}` : s.name}>
         {step >= n2 ? (
           <Found walk={walk} screens={screens} params={{}} ctx={{}} onBack={() => setStep(n2 - 1)} answer={walk.answer?.view === SMT_SUBJECTS_RANKED ? smtSubjectsAnswer(load.data as Academic) : answerOf(walk, screens)} />
         ) : (
@@ -245,6 +251,10 @@ function smtScreens(walk: Walk, school: SmtSchool, data: unknown, contextMap: Sm
         case "DV-SMT-A-GRADES": return <GradesView a={a} />;
         case "DV-SMT-A-TREND-LINE": return <TrendBand a={a} fullscreen={false} room={260} />;
         case "DV-SMT-A-LINES": return <EveryLine a={a} />;
+        case "DV-SMT-A-MIX": return <MixBars a={a} fullscreen={false} room={260} />;
+        case "DV-SMT-A-DUMBBELL": return <EntriesDumbbell a={a} />;
+        case "DV-SMT-A-MOVES": return <Moves a={a} />;
+        case "DV-SMT-A-AGAINST": return <Against a={a} />;
         case "DV-SMT-P-NOW": return <PupilsNow p={p} school={school} />;
         case "DV-SMT-P-SHAPE": return <ShapeAndSize p={p} />;
         case "DV-SMT-P-ENTRIES": return <EntryPoints p={p} />;

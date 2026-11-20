@@ -372,7 +372,17 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
     }
   };
   const p = useSmt<Pupils>(s && sets.set && level !== "whole" ? "/api/smt/pupils" : null, sets.set ? { urn: member.schoolUrn, set: sets.set, level: "whole" } : null);
-  const walks = walksFor(primary ? "smt_primary" : "smt");
+  // Leighton Park prep (20 Nov): the whole school has Overview, Academic, Context and Pupils; the GCSE and Post-16
+  // tabs have Entries then Results (Academic, renamed); an IGCSE school's GCSE tab has none -- DfE publishes no
+  // IGCSE results, so only its GCSE subjects (Our subjects, below) have walks and comparisons.
+  const igcseGcse = !!s && level === "gcse" && !!s.phases.igcse;
+  const allWalks = walksFor(primary ? "smt_primary" : "smt");
+  const walks =
+    level === "whole"
+      ? allWalks.filter((w) => !w.id.endsWith("-entries"))
+      : igcseGcse
+        ? []
+        : (["entries", "academic"] as const).map((k) => allWalks.find((w) => w.id.endsWith(`-${k}`))).filter((w): w is Walk => !!w).map((w) => (w.id.endsWith("-academic") ? { ...w, label: "Results" } : w));
   const figures = smtFigures(o.status === "ready" ? o.data : null, primary, level, p.status === "ready" ? p.data : null);
   const loading = o.status === "loading" || (level !== "whole" && p.status === "loading");
   // Front door 2b (M1): Context's figure, fetched late through its walk's own read (the area read), once the
@@ -428,10 +438,18 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
     >
       {/* B5 (SMT 15): every subject the phase teaches, each opening its Teacher walks and dashboard -- on the GCSE
           and Post-16 tabs only (Leighton Park prep, 20 Nov: not on the whole school). */}
-      {s && !primary && level !== "whole" && <OurSubjects urn={member.schoolUrn} phases={level === "gcse" ? ["ks4"] : ["ks5"]} />}
+      {igcseGcse && (
+        <div data-smt-igcse-note="" className="fd-tile rounded-[14px] px-5 py-4 text-[14px] leading-relaxed text-[var(--fg)]">
+          <p className="font-semibold">Why there are no GCSE walkthroughs for {s?.name ?? "the school"}</p>
+          <p className="mt-1 text-[var(--muted2)]">
+            {s?.name ?? "The school"} takes IGCSE in its core subjects, and DfE publishes no IGCSE results, so there are no whole-school GCSE figures to compare fairly. The subjects below are the ones it takes as GCSE: each has its own walkthroughs and comparisons.
+          </p>
+        </div>
+      )}
+      {s && !primary && level !== "whole" && <OurSubjects urn={member.schoolUrn} phases={level === "gcse" ? ["ks4"] : ["ks5"]} gcseOnly={igcseGcse} />}
       {/* Leighton Park prep (20 Nov): the comparison set -- what it is for, the choices (the one in use ticked),
           who is in it, and the builder; then (0.8 groups r1) the school's group where its head office holds a group account. */}
-      <SmtSetsPanel urn={member.schoolUrn} schoolName={s?.name ?? member.schoolName} school={s} phase={s ? setPhaseOf(s.phases) : null} sets={sets} o={o.status === "ready" ? o.data : null} readOnly={member.readOnly || !!member.viewAs} theme={pref === "mid" ? "light" : effectiveTheme(pref)} accentInk={tab === "whole" && pref === "light" ? "#fff" : "#111"} />
+      {!igcseGcse && <SmtSetsPanel urn={member.schoolUrn} schoolName={s?.name ?? member.schoolName} school={s} phase={s ? setPhaseOf(s.phases) : null} sets={sets} o={o.status === "ready" ? o.data : null} readOnly={member.readOnly || !!member.viewAs} theme={pref === "mid" ? "light" : effectiveTheme(pref)} accentInk={tab === "whole" && pref === "light" ? "#fff" : "#111"} />}
       <SchoolGroupTile urn={member.schoolUrn} />
     </HomeSection>
   );
@@ -445,7 +463,7 @@ type SubjectsLite = { subjects: TeacherModel["subjects"] };
  * (Candidates, Results, Comparisons) and its Teacher dashboard. The walks only read; the dashboard opens on
  * the subject for this visit (shown, not saved: ?subject=…&from=smt).
  */
-export function OurSubjects({ urn, phases }: { urn: string; phases: ("ks4" | "ks5")[] }) {
+export function OurSubjects({ urn, phases, gcseOnly = false }: { urn: string; phases: ("ks4" | "ks5")[]; /** An IGCSE school's GCSE tab (20 Nov): its GCSE subjects only. */ gcseOnly?: boolean }) {
   const [by, setBy] = useState<Partial<Record<"ks4" | "ks5", SubjectsLite | "error">>>({});
   const [all, setAll] = useState<Partial<Record<"ks4" | "ks5", boolean>>>({});
   useEffect(() => {
@@ -467,7 +485,7 @@ export function OurSubjects({ urn, phases }: { urn: string; phases: ("ks4" | "ks
         const d = by[ph];
         const product = ph === "ks4" ? "gcse" : "post16";
         const walks = walksFor(product);
-        const subjects = d && d !== "error" ? [...d.subjects].sort((a, b) => b.entries - a.entries) : [];
+        const subjects = d && d !== "error" ? [...d.subjects].filter((x) => !gcseOnly || /^GCSE\b/.test(x.qualLabel)).sort((a, b) => b.entries - a.entries) : [];
         return (
           <div key={ph} className="flex flex-col gap-2" data-our-subjects-phase={ph}>
             <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--field-ink)]">{PHASE_LABELS[ph]}</p>

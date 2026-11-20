@@ -16,6 +16,8 @@
 // Mid (C18): the root draws Light (the plates are white) and the header is a dark band of its own; the
 // screen sits on the part's colour. Dark and Light draw the theme's own.
 import Link from "next/link";
+import { PHASE_TONES } from "@/components/smt/ui";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -57,18 +59,28 @@ const ROLE_WALK_ACCENT: Record<string, { dark: { hex: string; rgb: string }; lig
 };
 const FIELD: Record<string, "gcse" | "post16" | "top" | "group" | "admissions"> = { gcse: "gcse", post16: "post16", smt: "top", smt_primary: "top", admissions: "admissions", group: "group" };
 
+/** Leighton Park prep (20 Nov): an SMT walk opened from the home's GCSE or Post-16 tab (?level=) keeps that tab's
+ * colour and field, not SMT orange. Null for any other walk (Overview is the whole school at any level). */
+export function useWalkTab(walk: Pick<Walk, "product" | "id">): "gcse" | "post16" | null {
+  const sp = useSearchParams();
+  if (walk.product !== "smt" || walk.id.endsWith("-overview")) return null;
+  const l = sp.get("level");
+  return l === "gcse" || l === "post16" ? l : null;
+}
+
 // ------------------------------------------------------------------------------------------------ the frame
 
 export function WalkFrame({ walk, step, steps, chip, ctx, children }: { walk: Walk; step: number; steps: number; chip: string | null; ctx?: { subject?: string | null; category?: string | null; entry?: string | null }; children: ReactNode }) {
   const [pref] = useThemePref();
   const theme = effectiveTheme(pref);
   const mid = pref === "mid";
-  const accent = walk.product === "gcse" || walk.product === "post16" ? PHASE_ACCENT[walk.product === "gcse" ? "ks4" : "ks5"]! : (ROLE_WALK_ACCENT[walk.product]?.[mid || theme === "light" ? "light" : "dark"] ?? null);
+  const tab = useWalkTab(walk);
+  const accent = walk.product === "gcse" || walk.product === "post16" ? PHASE_ACCENT[walk.product === "gcse" ? "ks4" : "ks5"]! : tab ? PHASE_TONES[tab][mid || theme === "light" ? "light" : "dark"] : (ROLE_WALK_ACCENT[walk.product]?.[mid || theme === "light" ? "light" : "dark"] ?? null);
   const style = (accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as CSSProperties;
   return (
     <main id="teacher-root" data-theme={mid ? "light" : theme} data-pref={pref} data-walk={walk.id} className="flex min-h-screen flex-col bg-[var(--bg)] text-[var(--fg)]" style={style}>
-      <WalkHeader walk={walk} step={step} steps={steps} chip={chip} ctx={ctx} band={mid || theme === "dark" ? "dark" : "light"} />
-      <section data-field={FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
+      <WalkHeader walk={walk} step={step} steps={steps} chip={chip} ctx={ctx} band={mid || theme === "dark" ? "dark" : "light"} part={tab ?? FIELD[walk.product]} />
+      <section data-field={tab ?? FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
         {/* Crosscheck (14 Nov): the boards' walk column is 1060 px (the homes keep 1160). */}
         <div className="mx-auto flex max-w-[1060px] flex-col gap-6">{children}</div>
       </section>
@@ -82,9 +94,9 @@ export function WalkFrame({ walk, step, steps, chip, ctx, children }: { walk: Wa
  * -- a dark band over a Light page -- nothing inherits the page's dark text (Guy, 13 Nov: dark grey on
  * black). Every pair is in the contrast table (R-THEME-CONTRAST).
  */
-export function WalkHeader({ walk, step, steps, chip, ctx, band }: { walk: Walk; step: number; steps: number; chip: string | null; ctx?: { subject?: string | null; category?: string | null; entry?: string | null }; band: "dark" | "light" }) {
+export function WalkHeader({ walk, step, steps, chip, ctx, band, part }: { walk: Walk; step: number; steps: number; chip: string | null; ctx?: { subject?: string | null; category?: string | null; entry?: string | null }; band: "dark" | "light"; part?: string }) {
   return (
-    <header data-walk-head={band} data-part={FIELD[walk.product]} data-theme={band === "dark" ? "dark" : undefined} className="border-b border-[var(--wh-border)] bg-[var(--wh-bg)] text-[var(--wh-fg)]">
+    <header data-walk-head={band} data-part={part ?? FIELD[walk.product]} data-theme={band === "dark" ? "dark" : undefined} className="border-b border-[var(--wh-border)] bg-[var(--wh-bg)] text-[var(--wh-fg)]">
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         <ViewAsBanner />
       </div>

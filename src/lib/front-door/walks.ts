@@ -193,6 +193,31 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
             { view: "DV-SMT-A-LINES", question: "What moved most since last year?", answer: "smt-academic-lines", rhythm: "wider" },
           ],
     },
+    // Leighton Park prep (20 Nov): the GCSE and Post-16 tabs' first walk -- the level's entries (SMT Academic's
+    // Entries views, read in its entries mode at the tab's level). Secondary schools only; the home shows it on the
+    // phase tabs, never on the whole school.
+    ...(primary
+      ? []
+      : [
+          {
+            id: `${product}-entries`,
+            product,
+            question: "How many entries, and in which subjects?",
+            icon: "VerticalBarsIcon",
+            label: "Entries",
+            kind: "Dashboard",
+            dashboard: `${SMT_O}/academic`,
+            // Which subjects: each subject's entries, first year to latest (a chart).
+            answer: { kind: "chart" as const, view: "DV-SMT-A-DUMBBELL" },
+            screens: [
+              { view: "DV-SMT-A-NOW", question: "How many entries this year?", answer: "smt-entries-now", rhythm: "this-year" as const },
+              { view: "DV-SMT-A-MIX", question: "Which qualifications are they in?", answer: "smt-entries-mix", rhythm: "in-context" as const },
+              { view: "DV-SMT-A-DUMBBELL", question: "Which subjects have grown or shrunk?", answer: "smt-entries-subjects", rhythm: "over-time" as const },
+              { view: "DV-SMT-A-MOVES", question: "What moved most?", answer: "smt-entries-moves", rhythm: "over-time" as const },
+              { view: "DV-SMT-A-AGAINST", question: "How does our mix differ from the set's?", answer: "smt-entries-against", rhythm: "wider" as const },
+            ],
+          },
+        ]),
     // Leighton Park prep (20 Nov): Context comes before Pupils -- the area first, then whether our numbers hold up in it.
     {
       id: `${product}-context`,

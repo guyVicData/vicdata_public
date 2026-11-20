@@ -40,7 +40,7 @@ function everything(): Said[] {
           out.push({ where: `smt ${urn} ${w.id} ${s.view}`, question: fillTemplate(s.question, { entry: label }), answer: admissionsAnswer(s.view, { ...fx<Parameters<typeof admissionsAnswer>[1]>(`adm_${urn}_11`), label }), phase: "smt", walk: w });
           continue;
         }
-        out.push({ where: `smt ${urn} ${w.id} ${s.view}`, question: s.question, answer: smtAnswer(s.view, d.school, d[w.id.split("-")[1]]), phase: "smt", walk: w });
+        out.push({ where: `smt ${urn} ${w.id} ${s.view}`, question: s.question, answer: smtAnswer(s.view, d.school, d[w.id.split("-")[1] === "entries" ? "academic" : w.id.split("-")[1]]), phase: "smt", walk: w });
       }
   }
   for (const [name, entry] of [["adm_110110_11", "11+"], ["adm_110110_16", "16+"], ["adm_137625_11", "11+"]] as const) {

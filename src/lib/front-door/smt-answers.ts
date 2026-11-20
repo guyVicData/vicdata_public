@@ -101,6 +101,43 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       }
       return `${a.col1.title} (${a.col1.sub}): ${listJoin(a.col1.summary.slice(0, 3).map((x) => `${x.label} ${x.value}`))}.`;
     }
+    // Leighton Park prep (20 Nov): the Entries walk's answers (SMT Academic in its entries mode).
+    case "DV-SMT-A-MIX": {
+      const a = data as Academic;
+      const ys = a.trends.mix.years;
+      const last = ys[ys.length - 1];
+      if (!last || !last.total) return "No entries are published at this level yet.";
+      const parts = a.trends.mix.keys.map((k) => ({ label: k.label, share: last.shares[k.key] ?? 0, count: last.counts[k.key] ?? 0 })).filter((x) => x.count > 0).sort((x, y) => y.share - x.share);
+      const top = parts.slice(0, 3).map((x) => `${x.label} ${Math.round(x.share)}%`);
+      return `${n(last.total)} entries in ${periodLabel(last.year)}: ${listJoin(top)}.`;
+    }
+    case "DV-SMT-A-DUMBBELL": {
+      const a = data as Academic;
+      const d = a.trends.dumbbell;
+      if (!d || !d.rows.length) return "Not enough years of entries to compare yet.";
+      const up = [...d.rows].sort((x, y) => y.change - x.change)[0];
+      const down = [...d.rows].sort((x, y) => x.change - y.change)[0];
+      const word = (r: typeof up) => `${r.label} (${n(r.first)} to ${n(r.latest)})`;
+      return `From ${periodLabel(d.firstYear)} to ${periodLabel(d.latestYear)}, ${up.change > 0 ? `${word(up)} grew most` : "no subject grew"}${down.change < 0 ? ` and ${word(down)} fell most` : ""}.`;
+    }
+    case "DV-SMT-A-MOVES": {
+      const a = data as Academic;
+      const m = a.trends.moves;
+      if (!m.length) return "Nothing has moved yet: there aren't two years to compare.";
+      // In its entries mode the view moves subjects (entries); otherwise the set's schools (the measure's unit).
+      const by = (x: (typeof m)[number]) => `${x.label} (${x.change > 0 ? "+" : "−"}${x.unit === "entries" ? n(Math.abs(x.change)) : fig(Math.abs(x.change), x.unit)}${x.unit === "entries" ? " entries" : ""})`;
+      const up = m.filter((x) => x.change > 0).slice(0, 2).map(by);
+      const down = m.filter((x) => x.change < 0).slice(0, 2).map(by);
+      const [g, f] = a.trends.movesKind === "schools" ? ["rising most", "falling most"] : ["growing most", "shrinking most"];
+      return [up.length ? `${g}: ${listJoin(up)}` : null, down.length ? `${f}: ${listJoin(down)}` : null].filter(Boolean).join("; ").replace(/^./, (c) => c.toUpperCase()) + ".";
+    }
+    case "DV-SMT-A-AGAINST": {
+      const a = data as Academic;
+      const x = a.trends.against;
+      if (!x.length) return "There isn't a subject to compare with the set's typical school.";
+      const r = x[0];
+      return `The biggest difference from the set: ${r.label}, ${r.mine.toFixed(1)}% of entries here against ${r.typical.toFixed(1)}% at the set's typical school.`;
+    }
     case "DV-SMT-A-CHART": {
       const a = data as Academic;
       const b = a.board;

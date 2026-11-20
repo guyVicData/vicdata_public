@@ -238,7 +238,7 @@ test("R-NO-BUILD-NOTES: the walks' own words on real fixtures (Teacher, SMT, Adm
   for (const urn of ["110110", "137625"]) {
     const d = fx<Record<string, unknown> & { school: Parameters<typeof smtAnswer>[1] }>(`smt_${urn}`);
     for (const w of walksFor("smt"))
-      for (const s of w.screens) out.push(...userTextFindings(`smt ${urn} ${s.view}`, smtAnswer(s.view, d.school, d[w.id.split("-").pop()!])));
+      for (const s of w.screens) out.push(...userTextFindings(`smt ${urn} ${s.view}`, smtAnswer(s.view, d.school, d[w.id.endsWith("-entries") ? "academic" : w.id.split("-").pop()!])));
   }
   for (const n of ["adm_110110_11", "adm_110110_16", "adm_137625_11"]) {
     const d = fx<{ p: Parameters<typeof admissionsAnswer>[1]["p"]; m: Parameters<typeof admissionsAnswer>[1]["m"]; r: Parameters<typeof admissionsAnswer>[1]["r"] }>(n);
