@@ -58,7 +58,7 @@ const Tick = () => (
   </svg>
 );
 
-export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, readOnly, theme }: { urn: string; schoolName: string; school?: { independent: boolean; regionCode?: string | null; regionName: string | null; laName?: string | null } | null; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme }) {
+export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, readOnly, theme, accentInk = "#111" }: { urn: string; schoolName: string; school?: { independent: boolean; regionCode?: string | null; regionName: string | null; laName?: string | null } | null; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme; /** Text on the accent: white on light SMT's deep orange, else near-black. */ accentInk?: string }) {
   const set = sets.set;
   // Rankings are for GCSE and Post-16 (the chooser-set route); a primary school's defaults are the nearest only.
   const defaults = phase === "ks4" || phase === "ks5" ? defaultRankings(school) : [];
@@ -108,7 +108,6 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
   const oNow = set ? o : null;
   const n = set?.urns.length ?? null;
   const builder = phase === "ks4" || phase === "ks5" ? guidedHref({ urn, kind: "compared_against", product: "smt", phase, fromHome: true }) : null;
-  const pill = "inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--panel-border2)] px-4 text-[13.5px] font-semibold text-[var(--fg)] hover:border-[var(--tile-accent-text,var(--accent))]";
   return (
     <section data-smt-sets="" aria-labelledby="smt-sets-h" className="fd-tile flex flex-col gap-4 rounded-[14px] px-5 py-5 text-[var(--fg)]">
       <div className="flex flex-col gap-1">
@@ -152,7 +151,7 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
             </div>
           ))}
           {builder && !readOnly && (
-            <Link href={builder} data-smt-set-build="" className="inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[14px] font-semibold text-[#111] hover:opacity-90">
+            <Link href={builder} data-smt-set-build="" style={{ color: accentInk }} className="inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[14px] font-semibold hover:opacity-90">
               <span aria-hidden="true">+</span> Make your own set
             </Link>
           )}
@@ -183,9 +182,17 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-[var(--panel-border)] pt-4">
-        <Link href="/sets?kind=compared_against" className={pill}>
-          All sets <span aria-hidden="true">&rarr;</span>
+        {/* 20 Nov: the library as a call to action -- build and manage your sets -- in the view's own colour. */}
+        <Link href="/sets?kind=compared_against" data-smt-sets-library="" style={{ color: accentInk }} className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[var(--accent)] px-5 text-[15px] font-semibold hover:opacity-90">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="7" cy="7" r="3" />
+            <circle cx="17" cy="7" r="3" />
+            <circle cx="7" cy="17" r="3" />
+            <path d="M17 14v6M14 17h6" />
+          </svg>
+          Build your own sets <span aria-hidden="true">&rarr;</span>
         </Link>
+        <span className="text-[13px] text-[var(--muted2)]">Every set the school and you have made, and new ones.</span>
       </div>
     </section>
   );
