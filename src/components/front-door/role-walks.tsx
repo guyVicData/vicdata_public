@@ -44,6 +44,7 @@ import type { ProjectionRow } from "@/components/groups/dash/views-r3";
 import { groupAnswer } from "@/lib/front-door/group-answers";
 import { LoadingGraphic } from "@/components/shell/LoadingGraphic";
 import { groupWalkCompare, groupWalkDashUrl, smtContextUrl } from "@/lib/front-door/tile-figures";
+import { schoolEntries } from "./entry-default";
 
 type Load<T> = { status: "loading" } | { status: "error"; code: number; message: string } | { status: "ready"; data: T };
 type Screenish = { question: string; answer: string; title: string; body: ReactNode; note: string; tag?: string; controls?: ReactNode };
@@ -69,7 +70,7 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
             <p data-walk-answer="" className="text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{sc.answer}</p>
           </>
         }
-        map={<MiniMap cols={cols} spot={s.spot} name={`${walk.label}`} href={walk.dashboard} />}
+        map={s.from === "admissions" ? <MiniMap cols={["AdmPipelineIcon", "DonutIcon", "TrendLineIcon"]} spot={s.spot} name="Admissions · Pipelines" href="/teacher/admissions" /> : <MiniMap cols={cols} spot={s.spot} name={`${walk.label}`} href={walk.dashboard} />}
         panel={
           <WalkPanel
             icon={walk.icon}
@@ -148,12 +149,30 @@ function SmtWalk({ walk, member }: { walk: Walk; member: SmtMember }) {
   // The home's Context tile reads this same address (tile-figures.ts, front door 2b), so the two agree.
   const c = useSmt<Context>(s && kind === "context" ? smtContextUrl(member.schoolUrn, level ?? "whole") : null, null);
   const cmap = useSmt<ContextMap>(s && kind === "context" ? `/api/smt/context/map?urn=${member.schoolUrn}&level=${level ?? "whole"}` : null, null);
+  // Leighton Park prep (20 Nov): a screen borrowed from Admissions (Pupils ends on Share needed) reads the
+  // Pipelines answer at the school's first entry point, as the Admissions home opens on it; that screen waits
+  // alone, the rest of the walk doesn't.
+  const borrows = walk.screens.some((x) => x.from === "admissions");
+  const [adm, setAdm] = useState<{ entry: string; p: PipelineOk | null } | "loading" | "none">("loading");
+  useEffect(() => {
+    if (!borrows) return;
+    let live = true;
+    void (async () => {
+      const entry = (await schoolEntries(member.schoolUrn).catch(() => ["11+"]))[0] ?? "11+";
+      const r = await admissionsGet<PipelineOk & { empty?: string }>(`/api/admissions/pipeline?${new URLSearchParams({ urn: member.schoolUrn, entry }).toString()}`);
+      if (!live) return;
+      setAdm(r.status === "ready" ? { entry, p: "empty" in r.data && r.data.empty ? null : r.data } : "none");
+    })();
+    return () => {
+      live = false;
+    };
+  }, [borrows, member.schoolUrn]);
   const [step, setStep] = useStep(walk.screens.length);
   const loads = { overview: o, academic: a, pupils: p, context: c } as Record<string, Load<unknown>>;
   const load = loads[kind ?? ""];
   if (!s || !load || load.status === "loading") return <Loading walk={walk} />;
   if (load.status === "error") return <WalkError walk={walk} what="the school's figures" code={load.code} message={load.message} home={homeOf(walk)} />;
-  const screens = smtScreens(walk, s, load.data, kind === "context" ? cmap : null);
+  const screens = smtScreens(walk, s, load.data, kind === "context" ? cmap : null, { adm, theme });
   const n2 = walk.screens.length;
   return (
     // The Academic views' band colours (acVars), as the dashboard sets them on its root.
@@ -174,9 +193,33 @@ function smtSubjectsAnswer(a: Academic): FoundAnswer {
   return { sentence: subjectsRankedAnswer(subjectsRanked(a)), body: <SubjectsRankedView a={a} /> };
 }
 
-function smtScreens(walk: Walk, school: SmtSchool, data: unknown, contextMap: SmtLoad<ContextMap> | null): Screenish[] {
+type Borrowed = { adm: { entry: string; p: PipelineOk | null } | "loading" | "none"; theme: "light" | "dark" };
+
+/** A screen from Admissions' Pipelines in an SMT walk: the dashboard's own view and answer, in its colours. */
+function admissionsScreen(s: Walk["screens"][number], school: SmtSchool, { adm, theme }: Borrowed): Screenish {
+  const dv = dataviewById(s.view);
+  if (adm === "loading") return { question: fillTemplate(s.question, {}), title: dv?.label ?? s.view, note: "", answer: "Working out the pool for your entry point…", body: <div className="fd-tile flex min-h-[220px] rounded-[14px]"><LoadingGraphic label="Loading the pool…" /></div> };
+  if (adm === "none") return { question: fillTemplate(s.question, {}), title: dv?.label ?? s.view, note: "", answer: "Admissions' pool didn't load for this school.", body: <p className="text-[13px]">The Admissions dashboard shows the share needed for each entry point.</p> };
+  const ep = entryPoint(adm.entry);
+  const label = ep?.label ?? adm.entry;
+  return {
+    question: fillTemplate(s.question, { entry: label }),
+    title: fillTitle(dv?.titleTemplate ?? "", admissionsTitleFill(adm.entry, adm.p), dv?.label ?? s.view),
+    note: dv?.note ?? "",
+    tag: "Admissions · Forward",
+    answer: admissionsAnswer(s.view, { label, p: adm.p, m: null, r: null }),
+    body: (
+      <div style={admissionsVars(theme)}>
+        <AdmissionsWalkBody dv={s.view} urn={school.urn} schoolName={school.name} entry={ep?.id ?? adm.entry} pipeline={adm.p} market={null} rivals={null} />
+      </div>
+    ),
+  };
+}
+
+function smtScreens(walk: Walk, school: SmtSchool, data: unknown, contextMap: SmtLoad<ContextMap> | null, borrowed: Borrowed): Screenish[] {
   const name = school.name;
   return walk.screens.map((s) => {
+    if (s.from === "admissions") return admissionsScreen(s, school, borrowed);
     const title = titleOf(s.view, smtTitleFill(name));
     const base = { question: s.question, title, note: dataviewById(s.view)?.note ?? "" };
     // Review fixes (14 Nov): the answers are worked out in smt-answers.ts, from the figures each view draws.

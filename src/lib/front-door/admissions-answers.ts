@@ -41,6 +41,20 @@ export function admissionsAnswer(view: string, d: AdmissionsAnswerData): string 
       const k = feederCount(p);
       return k ? `${plural(k, "feeder school")} make the ${label} pool; the map sizes each by its pupils aged ${p.poolTrends.age} and colours it by trend.` : `No feeder schools are listed for ${label} yet.`;
     }
+    case "DV-ADM-P-HOLD-LINE":
+    case "DV-ADM-P-HOLD-TABLE": {
+      // Leighton Park prep (20 Nov): the SMT Pupils walk ends here. A requirement, not a forecast (R-ADM-HOLD-SHARE).
+      if (!p) return noPool;
+      const h = p.hold;
+      const needed = h.needed.filter((x) => x.share !== null);
+      if (!h.current || !needed.length) return `No share needed can be worked out for ${label}: the school has no entry cohort or pool there yet.`;
+      // The year the dashboard's own view marks (ShareNeeded's target): the pipeline's change year, else the fourth.
+      const far = needed.find((x) => x.entryYear === p.changeYear) ?? needed[Math.min(3, needed.length - 1)];
+      const now = h.current.share;
+      const gap = far.share! - now;
+      const how = Math.abs(gap) < 0.5 ? "about the same share as now" : gap > 0 ? `${gap.toFixed(1)} points more than now` : `${Math.abs(gap).toFixed(1)} points less than now`;
+      return `To take ${n(h.current.cohort)} at ${label} again, the school needs ${far.share!.toFixed(1)}% of the pool by September ${far.entryYear} (${how}: ${now.toFixed(1)}% in ${h.current.entryYear}). A requirement, not a forecast.`;
+    }
     case "DV-ADM-P-POOL-INDEXED": {
       if (!p) return noPool;
       const t = p.poolTrends;

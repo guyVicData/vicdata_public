@@ -37,6 +37,9 @@ export type WalkScreen = {
   spot: GridSpot;
   /** How the view is set: the pill's measure, what it's compared against. */
   options?: { measure?: "entries" | "points"; against?: "category" | "whole" | "nearest" };
+  /** A screen borrowed from another role's dashboard (Leighton Park prep, 20 Nov: SMT Pupils ends on Admissions'
+   * Share needed); its spot comes from that dashboard. "admissions": the Pipelines dashboard. */
+  from?: "admissions";
 };
 
 /** A screen as written below: its spot comes from the dashboard's config. */
@@ -190,30 +193,7 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
             { view: "DV-SMT-A-LINES", question: "What moved most since last year?", answer: "smt-academic-lines", rhythm: "wider" },
           ],
     },
-    {
-      id: `${product}-pupils`,
-      product,
-      // Review fixes (24): no screen answers "Are we filling our Reception places?" (no view holds places
-      // or offers), so the primary walk asks what its screens answer.
-      question: primary ? "Who are our pupils, and are numbers holding up from Reception?" : "Who are our pupils, and are numbers holding up?",
-      // Crosscheck (14 Nov, home_smt.png / home_group.png): the Pupils badge is the year-groups stack.
-      icon: "AdmShapeIcon",
-      label: "Pupils",
-      kind: "Dashboard",
-      dashboard: `${SMT_O}/pupils`,
-      // Are numbers holding up: each phase's roll, year by year (a chart).
-      answer: { kind: "chart", view: "DV-SMT-P-PHASES" },
-      screens: [
-        { view: "DV-SMT-P-NOW", question: "How many pupils do we have this year?", answer: "smt-pupils-now", rhythm: "this-year" },
-        { view: "DV-SMT-P-SHAPE", question: "How big is each year group?", answer: "smt-pupils-shape", rhythm: "in-context" },
-        // 0.8 feedback B5 (D6, SMT 9): Entry points leave the secondary walk ("who is the pool?" -- Admissions
-        // answers it); they stay on the SMT Pupils dashboard, and on a primary school's walk (its 4+ entry).
-        ...(primary ? [{ view: "DV-SMT-P-ENTRIES", question: "How many could join at each entry point?", answer: "smt-pupils-entries", rhythm: "in-context" as const }] : []),
-        ...(primary ? [] : [{ view: "DV-SMT-P-LEAVING", question: "How many leave at 16?", answer: "smt-pupils-leaving", rhythm: "over-time" as const }]),
-        { view: "DV-SMT-P-PHASES", question: "Has each phase grown or shrunk?", answer: "smt-pupils-phases", rhythm: "over-time" },
-        { view: "DV-SMT-P-AREA", question: "Is the area's school-age population changing?", answer: "smt-pupils-area", rhythm: "wider" },
-      ],
-    },
+    // Leighton Park prep (20 Nov): Context comes before Pupils -- the area first, then whether our numbers hold up in it.
     {
       id: `${product}-context`,
       product,
@@ -230,6 +210,32 @@ const smtWalks = (primary: boolean): AuthoredWalk[] => {
         { view: "DV-SMT-C-BYAGE", question: "How old are they?", answer: "smt-context-byage", rhythm: "in-context" },
         { view: "DV-SMT-C-BIRTHS", question: "How many children are being born nearby?", answer: "smt-context-births", rhythm: "over-time" },
         { view: "DV-SMT-C-NEARBY", question: "And over the next few years?", answer: "smt-context-nearby", rhythm: "wider" },
+      ],
+    },
+    {
+      id: `${product}-pupils`,
+      product,
+      // Review fixes (24): no screen answers "Are we filling our Reception places?" (no view holds places
+      // or offers), so the primary walk asks what its screens answer.
+      question: primary ? "Who are our pupils, and are numbers holding up from Reception?" : "Who are our pupils, and are numbers holding up?",
+      // Crosscheck (14 Nov, home_smt.png / home_group.png): the Pupils badge is the year-groups stack.
+      icon: "AdmShapeIcon",
+      label: "Pupils",
+      kind: "Dashboard",
+      dashboard: `${SMT_O}/pupils`,
+      // Are numbers holding up: each phase's roll, year by year (a chart); a secondary school's walk ends on the
+      // share of the pool needed to hold numbers steady (Leighton Park prep, 20 Nov: Admissions' Pipelines).
+      answer: { kind: "chart", view: primary ? "DV-SMT-P-PHASES" : "DV-ADM-P-HOLD-LINE" },
+      screens: [
+        { view: "DV-SMT-P-NOW", question: "How many pupils do we have this year?", answer: "smt-pupils-now", rhythm: "this-year" },
+        { view: "DV-SMT-P-SHAPE", question: "How big is each year group?", answer: "smt-pupils-shape", rhythm: "in-context" },
+        // 0.8 feedback B5 (D6, SMT 9): Entry points leave the secondary walk ("who is the pool?" -- Admissions
+        // answers it); they stay on the SMT Pupils dashboard, and on a primary school's walk (its 4+ entry).
+        ...(primary ? [{ view: "DV-SMT-P-ENTRIES", question: "How many could join at each entry point?", answer: "smt-pupils-entries", rhythm: "in-context" as const }] : []),
+        ...(primary ? [] : [{ view: "DV-SMT-P-LEAVING", question: "How many leave at 16?", answer: "smt-pupils-leaving", rhythm: "over-time" as const }]),
+        { view: "DV-SMT-P-PHASES", question: "Has each phase grown or shrunk?", answer: "smt-pupils-phases", rhythm: "over-time" },
+        { view: "DV-SMT-P-AREA", question: "Is the area's school-age population changing?", answer: "smt-pupils-area", rhythm: "wider" },
+        ...(primary ? [] : [{ view: "DV-ADM-P-HOLD-LINE", question: "What share of the [entry] pool must we win to hold our numbers?", answer: "adm-hold", rhythm: "wider" as const, from: "admissions" as const }]),
       ],
     },
   ];
@@ -395,7 +401,8 @@ export function teacherModeOf(s: { view: string; options?: { measure?: string } 
 }
 
 /** The dashboard config a walk screen draws from (Teacher, SMT, Admissions); null for head office. */
-export function walkDashboardConfig(walk: Pick<Walk, "product" | "dashboard">, s: { view: string; options?: { measure?: string } }): DashboardConfig | null {
+export function walkDashboardConfig(walk: Pick<Walk, "product" | "dashboard">, s: { view: string; options?: { measure?: string }; from?: "admissions" }): DashboardConfig | null {
+  if (s.from === "admissions") return ADMISSIONS_DASHBOARDS[0] ?? null;
   if (walk.product === "gcse" || walk.product === "post16") return teacherDashboardFor(walk.product === "gcse" ? "ks4" : "ks5", teacherModeOf(s));
   if (walk.product === "smt" || walk.product === "smt_primary") {
     const part = walk.dashboard.split("/")[3] ?? "overview";
@@ -406,7 +413,7 @@ export function walkDashboardConfig(walk: Pick<Walk, "product" | "dashboard">, s
 }
 
 /** Where a screen's view sits on its dashboard, from the dashboard's own config (or the group layout). */
-export function spotOf(walk: Pick<Walk, "product" | "dashboard">, s: { view: string; options?: { measure?: string } }): GridSpot | null {
+export function spotOf(walk: Pick<Walk, "product" | "dashboard">, s: { view: string; options?: { measure?: string }; from?: "admissions" }): GridSpot | null {
   const COL = { c1: 0, c2: 1, c3: 2 } as const;
   if (walk.product === "group") {
     const L = GROUP_LAYOUT_IDS[groupWalkDash(s.view)];

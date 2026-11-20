@@ -28,6 +28,7 @@ import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
 import { smtContextFigure, smtContextUrl } from "@/lib/front-door/tile-figures";
 import type { Context } from "@/lib/smt/context";
 import { useLateTileFigure } from "./late-figure";
+import { schoolEntries } from "./entry-default";
 
 async function token(): Promise<string | null> {
   const { data } = await createBrowserSupabaseClient().auth.getSession();
@@ -313,6 +314,20 @@ export function smtWalkHref(w: Walk, level: SmtHomeLevel): string {
   return walkHref(w, level !== "whole" && !w.id.endsWith("-overview") ? { level } : {});
 }
 
+/** Leighton Park prep (20 Nov): the SMT home's tabs -- Whole school, Admissions, GCSE, Post-16. Admissions is
+ * the home's own tab, not a dashboard level, so it is remembered apart from the level (smtLevelKey). */
+export type SmtHomeTab = SmtHomeLevel | "admissions";
+const SMT_HOME_TAB_KEY = (urn: string) => `vicdata.smt.homeTab:${urn}`;
+
+function readHomeTab(urn: string): SmtHomeTab {
+  try {
+    if (window.localStorage.getItem(SMT_HOME_TAB_KEY(urn)) === "admissions") return "admissions";
+  } catch {
+    // Blocked storage: the level below.
+  }
+  return readHomeLevel(urn);
+}
+
 function readHomeLevel(urn: string): SmtHomeLevel {
   try {
     const l = new URLSearchParams(window.localStorage.getItem(smtLevelKey(urn)) ?? "").get("level");
@@ -334,18 +349,21 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
   const primary = !!s && s.phases.primary && !s.phases.gcse && !s.phases.post16;
   // B5 (SMT 2, 14): the pills switch the home's phase -- the tiles' figures and the walks -- as the
   // dashboards' level does, and remember it for them (smtLevelKey).
-  const [picked, setPicked] = useState<SmtHomeLevel | null>(null);
+  const [picked, setPicked] = useState<SmtHomeTab | null>(null);
   useEffect(() => {
-    // After the first draw (the server draws the whole school), the level remembered for this school.
+    // After the first draw (the server draws the whole school), the tab remembered for this school.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPicked((x) => x ?? readHomeLevel(member.schoolUrn));
+    setPicked((x) => x ?? readHomeTab(member.schoolUrn));
   }, [member.schoolUrn]);
   const want = picked ?? "whole";
-  const level: SmtHomeLevel = !s || primary || (want === "gcse" && !s.phases.gcse) || (want === "post16" && !s.phases.post16) ? "whole" : want;
-  const pickLevel = (l: SmtHomeLevel) => {
+  const tab: SmtHomeTab = !s || primary || (want === "gcse" && !s.phases.gcse) || (want === "post16" && !s.phases.post16) ? "whole" : want;
+  // The SMT questions' level: the Admissions tab leaves it as the dashboards last had it (whole school here).
+  const level: SmtHomeLevel = tab === "admissions" ? "whole" : tab;
+  const pickLevel = (l: SmtHomeTab) => {
     setPicked(l);
     try {
-      window.localStorage.setItem(smtLevelKey(member.schoolUrn), l === "whole" ? "" : new URLSearchParams({ level: l }).toString());
+      window.localStorage.setItem(SMT_HOME_TAB_KEY(member.schoolUrn), l === "admissions" ? "admissions" : "");
+      if (l !== "admissions") window.localStorage.setItem(smtLevelKey(member.schoolUrn), l === "whole" ? "" : new URLSearchParams({ level: l }).toString());
     } catch {
       // Blocked storage: the pick holds for this visit.
     }
@@ -358,33 +376,37 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
   // home's own reads have settled; cached for the session. No figure until it arrives, and none on an error.
   const contextId = `${primary ? "smt_primary" : "smt"}-context`;
   const contextFigure = useLateTileFigure<Context>(s ? smtContextUrl(member.schoolUrn, level) : null, !!s && !loading, smtContextFigure);
-  const accent = pref === "light" ? ROLE_ACCENT_LIGHT.smt : ROLE_ACCENT.smt;
-  const chips: { key: SmtHomeLevel | "ks2"; label: string }[] = s ? (primary ? [{ key: "ks2", label: "Key stage 2" }] : [{ key: "whole", label: "Whole school" }, ...(s.phases.gcse ? [{ key: "gcse" as const, label: "GCSE" }] : []), ...(s.phases.post16 ? [{ key: "post16" as const, label: "Post-16" }] : [])]) : [];
+  // Each tab in its own colour: SMT orange, Admissions blue, the GCSE and Post-16 phase colours.
+  const accent = tab === "admissions" ? ROLE_ACCENT.admissions : tab === "gcse" ? PHASE_ACCENT.ks4 : tab === "post16" ? PHASE_ACCENT.ks5 : pref === "light" ? ROLE_ACCENT_LIGHT.smt : ROLE_ACCENT.smt;
+  const field = tab === "admissions" ? "admissions" : tab === "gcse" ? "gcse" : tab === "post16" ? "post16" : "top";
+  const chips: { key: SmtHomeTab | "ks2"; label: string }[] = s ? (primary ? [{ key: "ks2", label: "Key stage 2" }] : [{ key: "whole", label: "Whole school" }, { key: "admissions", label: "Admissions" }, ...(s.phases.gcse ? [{ key: "gcse" as const, label: "GCSE" }] : []), ...(s.phases.post16 ? [{ key: "post16" as const, label: "Post-16" }] : [])]) : [];
   const levelPill = "rounded-full border border-[var(--field-chip-border)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]";
+  const tabs =
+    chips.length > 1 ? (
+      <span role="group" aria-label="Phase" className="flex flex-wrap gap-2">
+        {chips.map((c) => (
+          <button key={c.key} type="button" data-smt-level={c.key} aria-pressed={tab === c.key} onClick={() => pickLevel(c.key as SmtHomeTab)} className={`min-h-[44px] sm:min-h-0 ${levelPill} ${pick(tab === c.key, "bg-[var(--field-chip-bg)] font-semibold")} hover:bg-[var(--field-chip-bg)]`}>
+            {c.label}
+          </button>
+        ))}
+      </span>
+    ) : (
+      chips.map((c) => (
+        <span key={c.key} className={`${levelPill} bg-[var(--field-chip-bg)] font-semibold`}>
+          {c.label}
+        </span>
+      ))
+    );
+  // The Admissions tab: the Admissions home's questions (pool, market share) and its sets, under the SMT chip.
+  if (tab === "admissions") return <AdmissionsSection urn={member.schoolUrn} heading={heading} chip="SMT" tabs={tabs} />;
   return (
     <HomeSection
-      field="top"
+      field={field}
       accent={accent}
       chip="SMT"
       // Crosscheck (14 Nov, home_primary_smt.png): a primary school's SMT home has its own line under the heading.
       heading={heading && primary ? <HomeHeading sub={PRIMARY_SMT_SUBLINE} onField /> : heading}
-      controls={
-        chips.length > 1 ? (
-          <span role="group" aria-label="Phase" className="flex flex-wrap gap-2">
-            {chips.map((c) => (
-              <button key={c.key} type="button" data-smt-level={c.key} aria-pressed={level === c.key} onClick={() => pickLevel(c.key as SmtHomeLevel)} className={`min-h-[44px] sm:min-h-0 ${levelPill} ${pick(level === c.key, "bg-[var(--field-chip-bg)] font-semibold")} hover:bg-[var(--field-chip-bg)]`}>
-                {c.label}
-              </button>
-            ))}
-          </span>
-        ) : (
-          chips.map((c) => (
-            <span key={c.key} className={`${levelPill} bg-[var(--field-chip-bg)] font-semibold`}>
-              {c.label}
-            </span>
-          ))
-        )
-      }
+      controls={tabs}
       dashboard={{ label: "Open the full SMT dashboards", href: `/teacher/smt${level !== "whole" ? `?level=${level}` : ""}` }}
       cols={2}
       links={walks.map((w) => ({ label: w.question, href: w.screens.length ? smtWalkHref(w, level) : null }))}
@@ -401,8 +423,9 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       )}
       note={primary ? "KS2 tests did not run in 2019/20 or 2020/21, so those years show as gaps." : null}
     >
-      {/* B5 (SMT 15): every subject the school teaches, by phase, each opening its Teacher walks and dashboard. */}
-      {s && !primary && <OurSubjects urn={member.schoolUrn} phases={[...(s.phases.gcse ? (["ks4"] as const) : []), ...(s.phases.post16 ? (["ks5"] as const) : [])].filter((ph) => level === "whole" || (level === "gcse" ? ph === "ks4" : ph === "ks5"))} />}
+      {/* B5 (SMT 15): every subject the phase teaches, each opening its Teacher walks and dashboard -- on the GCSE
+          and Post-16 tabs only (Leighton Park prep, 20 Nov: not on the whole school). */}
+      {s && !primary && level !== "whole" && <OurSubjects urn={member.schoolUrn} phases={level === "gcse" ? ["ks4"] : ["ks5"]} />}
       {/* D21: the school's sets, then (0.8 groups r1) the school's group where its head office holds a group account. */}
       <SetsCard urn={member.schoolUrn} role="smt" />
       <SchoolGroupTile urn={member.schoolUrn} />
@@ -496,33 +519,19 @@ export function SmtSection({ heading }: { heading?: React.ReactNode }) {
 
 // ------------------------------------------------------------------------------------------------ Admissions
 
-type ListsAnswer = { entryPoints: { entry_point: string }[] };
 type MarketLite = { summary?: { share: number | null; latest: number | null } };
 type PipelineLite = { ladder?: { past: { entryYear: number; pool: number | null }[] }; now?: { cohort: number | null } };
 
-function defaultEntries(low: number | null, high: number | null): string[] {
-  // As AdmissionsDashboard's defaultEntries (the school's ages when no entry points are saved).
-  if (low === null || high === null) return ["11+"];
-  const out: string[] = [];
-  if (low <= 4 && high >= 4) out.push("4+");
-  if (low <= 11 && high >= 12) out.push("11+");
-  if (low <= 16 && high >= 17) out.push("16+");
-  return out.length ? out : [`age:${Math.max(2, Math.min(17, low))}`];
-}
-
-export function AdmissionsSection({ urn, heading }: { urn: string; heading?: React.ReactNode }) {
+/** The Admissions home's section. `chip` and `tabs`: the SMT home draws it as its Admissions tab (Leighton Park
+ * prep, 20 Nov), under the SMT chip with the SMT tabs before the entry point. */
+export function AdmissionsSection({ urn, heading, chip = "Admissions", tabs = null }: { urn: string; heading?: React.ReactNode; chip?: string; tabs?: React.ReactNode }) {
   const [entries, setEntries] = useState<string[] | null>(null);
   const [entry, setEntry] = useState<string | null>(null);
   const [fig, setFig] = useState<{ entry: string; pool: TileFigure; share: TileFigure } | null>(null);
   useEffect(() => {
     let live = true;
     (async () => {
-      const [lists, row] = await Promise.all([
-        getJson<ListsAnswer>(`/api/admissions/lists?urn=${urn}`),
-        createBrowserSupabaseClient().from("schools").select("statutory_low_age, statutory_high_age").eq("urn", urn).maybeSingle<{ statutory_low_age: number | null; statutory_high_age: number | null }>(),
-      ]);
-      const saved = (lists?.entryPoints ?? []).map((e) => e.entry_point);
-      const es = saved.length ? saved : defaultEntries(row.data?.statutory_low_age ?? null, row.data?.statutory_high_age ?? null);
+      const es = await schoolEntries(urn);
       if (live) setEntries(es);
     })();
     return () => {
@@ -565,10 +574,12 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
     <HomeSection
       field="admissions"
       accent={ROLE_ACCENT.admissions}
-      chip="Admissions"
+      chip={chip}
       heading={heading}
       controls={
-        entries && entries.length > 0 ? (
+        <>
+          {tabs}
+          {entries && entries.length > 0 ? (
           <label className="inline-flex items-center gap-1.5 rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]">
             Entry point
             <select data-entry-switch="" value={current ?? ""} onChange={(e) => setEntry(e.target.value)} className="min-h-[44px] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none sm:min-h-0">
@@ -579,7 +590,8 @@ export function AdmissionsSection({ urn, heading }: { urn: string; heading?: Rea
               ))}
             </select>
           </label>
-        ) : null
+          ) : null}
+        </>
       }
       dashboard={{ label: "Open the full Admissions dashboards", href: `/teacher/admissions${current ? `?entry=${encodeURIComponent(current)}` : ""}` }}
       cols={2}

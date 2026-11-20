@@ -33,7 +33,15 @@ function everything(): Said[] {
   for (const urn of ["110110", "137625"]) {
     const d = fx<Record<string, unknown> & { school: { name: string } }>(`smt_${urn}`);
     for (const w of WALKS.filter((x) => x.product === "smt" || x.product === "smt_primary"))
-      for (const s of w.screens) out.push({ where: `smt ${urn} ${w.id} ${s.view}`, question: s.question, answer: smtAnswer(s.view, d.school, d[w.id.split("-")[1]]), phase: "smt", walk: w });
+      for (const s of w.screens) {
+        // A screen borrowed from Admissions (SMT Pupils' Share needed) answers from the Admissions fixture at 11+.
+        if (s.from === "admissions") {
+          const label = entryPoint("11+")!.label;
+          out.push({ where: `smt ${urn} ${w.id} ${s.view}`, question: fillTemplate(s.question, { entry: label }), answer: admissionsAnswer(s.view, { ...fx<Parameters<typeof admissionsAnswer>[1]>(`adm_${urn}_11`), label }), phase: "smt", walk: w });
+          continue;
+        }
+        out.push({ where: `smt ${urn} ${w.id} ${s.view}`, question: s.question, answer: smtAnswer(s.view, d.school, d[w.id.split("-")[1]]), phase: "smt", walk: w });
+      }
   }
   for (const [name, entry] of [["adm_110110_11", "11+"], ["adm_110110_16", "16+"], ["adm_137625_11", "11+"]] as const) {
     const d = fx<Parameters<typeof admissionsAnswer>[1]>(name);
