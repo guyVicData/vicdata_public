@@ -17,6 +17,7 @@ import { AGE_BANDS, CURRENT_CENSUS_PERIOD, type AgeBandKey, type AgeGenderCounts
 import type { RegionNationRow } from "../region-nation-comparator";
 import { TREND_BASE_PERIOD } from "../../catalogue/years";
 import { placeAmong } from "../rank";
+import { mapLimited, pagesLimited } from "../limited";
 
 export const KS2_HEADLINE = HEADLINE_MEASURE.ks2;
 const FIGURE_YEARS = 3; // the latest year and the two before (two-year changes)
@@ -71,6 +72,8 @@ export function familyPopulation(stage: "ks4" | "ks5", latest: number, urns: str
   });
 }
 
+const ENGLAND_AT_ONCE = 3;
+
 export type SchoolPlace = { regionCode: string; regionName: string; roll: number | null; counts: AgeGenderCounts; name: string; low: number | null; high: number | null; group: string | null };
 /** Every school in England: its region (school_region_nation, the canonical map), and its roll
  * and age-gender counts where it has a census (region_nation_set, per region). */
@@ -79,20 +82,31 @@ export function englandSchools(): Promise<Map<string, SchoolPlace>> {
     const supabase = createServerAnonSupabaseClient();
     const out = new Map<string, SchoolPlace>();
     const codes = Object.values(REGION_NAME_TO_ONS_CODE).filter((c) => c.startsWith("E12"));
-    for (let from = 0; ; from += 1000) {
-      const { data, error } = await supabase.from("school_region_nation").select("urn, region_code, region_name").in("region_code", codes).order("urn").range(from, from + 999);
-      if (error) throw error;
-      for (const r of (data ?? []) as { urn: string; region_code: string; region_name: string }[]) out.set(r.urn, { regionCode: r.region_code, regionName: r.region_name, roll: null, counts: new Map(), name: r.urn, low: null, high: null, group: null });
-      if (!data || data.length < 1000) break;
-    }
-    await Promise.all(codes.map(async (code) => {
-      const { data, error } = await supabase.rpc("region_nation_set", { p_region_code: code, p_nation: null, p_exclude_urn: "" });
-      if (error) throw error;
-      for (const r of (data ?? []) as RegionNationRow[]) {
+    // 20 Nov: the two reads together, each a few at a time and each read tried twice (limited.ts). Before, the 50
+    // pages were read one after another (~3.3 s) and then all 9 regions at once, where each region_nation_set
+    // took ~2-2.4 s of production's ~3 s statement timeout (3 at a time: ~0.8-1.1 s each, the same ~2 s in all).
+    // A failed read still fails the whole answer, as before. The rows, and their order, are the same.
+    type Row = { urn: string; region_code: string; region_name: string };
+    const [rows, regions] = await Promise.all([
+      pagesLimited(async (page) => {
+        const from = page * 1000;
+        const { data, error } = await supabase.from("school_region_nation").select("urn, region_code, region_name").in("region_code", codes).order("urn").range(from, from + 999);
+        if (error) throw error;
+        return (data ?? []) as Row[];
+      }, ENGLAND_AT_ONCE, 1000),
+      mapLimited(codes, ENGLAND_AT_ONCE, async (code) => {
+        const { data, error } = await supabase.rpc("region_nation_set", { p_region_code: code, p_nation: null, p_exclude_urn: "" });
+        if (error) throw error;
+        return (data ?? []) as RegionNationRow[];
+      }),
+    ]);
+    for (const r of rows) out.set(r.urn, { regionCode: r.region_code, regionName: r.region_name, roll: null, counts: new Map(), name: r.urn, low: null, high: null, group: null });
+    for (const data of regions) {
+      for (const r of data) {
         const place = out.get(r[0]);
         if (place) Object.assign(place, { roll: r[9], counts: ageGenderCountsFromCompact(r[11]), name: r[1], low: r[6], high: r[7], group: r[4] });
       }
-    }));
+    }
     return out;
   });
 }
