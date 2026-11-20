@@ -36,6 +36,28 @@ function readStored(urn: string): Stored {
   return { kind: "nearest" };
 }
 
+type Phase = "ks2" | "ks4" | "ks5";
+
+/** The chooser-set request for a set that isn't a saved one: the one body, so a head start shares its answer. */
+function chooserBody(urn: string, phase: Phase, effective: Exclude<Stored, { kind: "saved" }>): string {
+  // 20 Nov (Leighton Park prep): a ranking is SMT's benchmark, so it is the WHOLE population (`full`), not
+  // the chooser's top 15 and 5 either side -- the school's real regional or national position.
+  const set = effective.kind === "nearest" ? { kind: "nearest" } : effective.kind === "urns" ? { kind: "urns", urns: effective.urns } : { kind: "ranking", filters: effective.filters, full: true };
+  return JSON.stringify({ urn, phase, set });
+}
+
+// 20 Nov (speed): the set's phase comes from /api/smt/school (setPhaseOf), and the set's schools waited for
+// it. Remembered per school in this browser, so the next visit asks for the set alongside the school.
+const PHASE_KEY = (urn: string) => `vicdata.smt.setPhase:${urn}`;
+function readPhase(urn: string): Phase | null {
+  try {
+    const p = window.localStorage.getItem(PHASE_KEY(urn));
+    return p === "ks2" || p === "ks4" || p === "ks5" ? p : null;
+  } catch {
+    return null;
+  }
+}
+
 export type SmtSetState = {
   choice: Stored;
   set: SmtSetChoice | null; // null while it resolves
@@ -83,6 +105,39 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
   }, []);
   const effective: Stored = linked ? { kind: "urns", label: linked.label, urns: linked.urns } : choice;
   const key = JSON.stringify([urn, phase, effective, effective.kind === "saved" ? !!savedSets : null]);
+  // 20 Nov (speed): a head start. While the page waits for the school (and so the set's phase), the set's
+  // own requests start with the phase this school had last time here, or, with none remembered, the
+  // default "10 nearest schools" at GCSE (most schools' set phase). Fire and forget: nothing here is read.
+  // The real requests below are unchanged and are made once the phase is known; when it is the phase
+  // guessed, they are the same requests and share these answers (the fetch cache), else these are unused.
+  // So the set used, and every figure, is exactly as before; only sooner.
+  useEffect(() => {
+    if (!urn) return;
+    if (phase) {
+      try {
+        window.localStorage.setItem(PHASE_KEY(urn), phase);
+      } catch {
+        // Blocked storage: no head start next time.
+      }
+      return;
+    }
+    const remembered = readPhase(urn);
+    const guess = remembered ?? "ks4";
+    // A guess (nothing remembered) only for the default set, the cheapest; a ranking only where it can be.
+    if (!remembered && effective.kind !== "nearest") return;
+    if (effective.kind === "ranking" && guess === "ks2") return;
+    let live = true;
+    (async () => {
+      if (remembered) void fetchSavedSets(supabase, urn, remembered);
+      if (effective.kind === "saved") return;
+      const token = await freshToken();
+      if (!token || !live) return;
+      void cachedFetchJson("/api/teacher/chooser-set", { token, method: "POST", body: chooserBody(urn, guess, effective) }).catch(() => undefined);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [urn, phase === null]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!urn || !phase) return;
     let live = true;
@@ -100,11 +155,9 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
       }
       const token = await freshToken();
       if (!token) return;
-      // 20 Nov (Leighton Park prep): a ranking is SMT's benchmark, so it is the WHOLE population (`full`), not
-      // the chooser's top 15 and 5 either side -- the school's real regional or national position.
-      const set = effective.kind === "nearest" ? { kind: "nearest" } : effective.kind === "urns" ? { kind: "urns", urns: effective.urns } : { kind: "ranking", filters: effective.filters, full: true };
       // One quiet retry (a busy or restarting server answers 502 now and then) before the set says it failed.
-      const ask = () => cachedFetchJson<{ rows: { urn: string }[] } & Partial<RankingPopulationResult>>("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase, set }) }).catch(() => ({ ok: false, status: 0, body: null }));
+      // A head start below (the same request, sooner) is shared here through the fetch cache.
+      const ask = () => cachedFetchJson<{ rows: { urn: string }[] } & Partial<RankingPopulationResult>>("/api/teacher/chooser-set", { token, method: "POST", body: chooserBody(urn, phase, effective) }).catch(() => ({ ok: false, status: 0, body: null }));
       let res = await ask();
       if (live && (!res.ok || !res.body)) {
         await new Promise((r) => setTimeout(r, 2000));
