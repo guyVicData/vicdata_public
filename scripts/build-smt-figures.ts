@@ -18,9 +18,16 @@
 //                  Writes the build as 'building', every row, then 'complete', then deletes that stage's
 //                  older builds (their rows go with them). A re-run of the same version replaces it.
 //
+// Nightly (Render cron job, docs/v0.8/smt_school_figures_v1.md "The nightly build"): `npm run figures:build`, which
+// is `tsx scripts/build-smt-figures.ts --live` with the environment Render already holds. A stage whose stored
+// build is complete for the current data version is skipped (a few small reads, a second or two), so a night with
+// no new data costs next to nothing; --force builds it anyway.
+//
 // Usage:
-//   npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts (--pglite DIR | --out FILE | --live) [--stage ks4|ks5] [--school URN,URN] [--concurrency N]
-//   --school   build only these schools (testing; never marked complete with --live)
+//   npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts (--pglite DIR | --out FILE | --live) [--stage ks4|ks5] [--school URN,URN] [--concurrency N] [--force | --check]
+//   --school   build only these schools (testing; never marked complete with --live; never skipped)
+//   --force    build even when the stored build is complete for the current version
+//   --check    say, per stage, whether the stored build is up to date, and write nothing (read-only, even with --live)
 import { createWriteStream } from "node:fs";
 import { createServerAnonSupabaseClient, createServiceRoleSupabaseClient } from "../src/lib/supabase";
 import { lookupAcademicSubjectFamily, type AcademicSubjectFamilyRow } from "../src/lib/vicdata-reference";
@@ -40,6 +47,12 @@ const OUT = opt("--out");
 const LIVE = flag("--live");
 if ([PGLITE, OUT, LIVE ? "live" : undefined].filter(Boolean).length !== 1) {
   console.error("Say where to write: exactly one of --pglite DIR, --out FILE, --live.");
+  process.exit(2);
+}
+const FORCE = flag("--force");
+const CHECK = flag("--check");
+if (FORCE && CHECK) {
+  console.error("--force builds and --check doesn't: pass one.");
   process.exit(2);
 }
 const STAGES: Stage[] = opt("--stage") ? [opt("--stage") as Stage] : ["ks4", "ks5"];
@@ -88,11 +101,15 @@ async function schoolsFor(stage: Stage): Promise<string[]> {
 
 // ------------------------------------------------------------------------------------------ writers
 
-type Writer = { start(stage: Stage, version: string): Promise<void>; write(stage: Stage, version: string, rows: FiguresRow[]): Promise<void>; finish(stage: Stage, version: string, s: { schools: number; rows: number; bytes: number }, complete: boolean): Promise<void>; close(): Promise<void> };
+type Writer = { /** Is a complete build stored for this stage and version? */ complete(stage: Stage, version: string): Promise<boolean>; start(stage: Stage, version: string): Promise<void>; write(stage: Stage, version: string, rows: FiguresRow[]): Promise<void>; finish(stage: Stage, version: string, s: { schools: number; rows: number; bytes: number }, complete: boolean): Promise<void>; close(): Promise<void> };
 
 async function pgliteWriter(dir: string): Promise<Writer> {
   const db = await openFiguresPglite(dir);
   return {
+    async complete(stage, version) {
+      const r = await db.query(`select 1 from smt_figures_builds where stage = $1 and data_version = $2 and status = 'complete'`, [stage, version]);
+      return r.rows.length > 0;
+    },
     async start(stage, version) {
       await db.query(`delete from smt_figures_builds where stage = $1 and data_version = $2`, [stage, version]);
       await db.query(`insert into smt_figures_builds (stage, data_version, status) values ($1, $2, 'building')`, [stage, version]);
@@ -113,14 +130,16 @@ async function pgliteWriter(dir: string): Promise<Writer> {
 }
 
 function fileWriter(path: string): Writer {
-  const out = createWriteStream(path);
+  let out: ReturnType<typeof createWriteStream> | null = null; // opened on the first write, so --check leaves no file
+  const file = () => (out ??= createWriteStream(path));
   return {
+    complete: async () => false,
     async start() {},
     async write(stage, version, rows) {
-      for (const r of rows) out.write(JSON.stringify({ stage, data_version: version, ...r }) + "\n");
+      for (const r of rows) file().write(JSON.stringify({ stage, data_version: version, ...r }) + "\n");
     },
     async finish() {},
-    close: () => new Promise((res) => out.end(res)),
+    close: () => new Promise((res) => (out ? out.end(res) : res(undefined))),
   };
 }
 
@@ -131,6 +150,10 @@ function liveWriter(): Writer {
     return r;
   };
   return {
+    async complete(stage, version) {
+      const r = must("read the stored build", await db.from("smt_figures_builds").select("status").eq("stage", stage).eq("data_version", version).maybeSingle());
+      return (r.data as { status?: string } | null)?.status === "complete";
+    },
     async start(stage, version) {
       must("clear this version", await db.from("smt_figures_builds").delete().eq("stage", stage).eq("data_version", version));
       must("start the build", await db.from("smt_figures_builds").insert({ stage, data_version: version, status: "building" }));
@@ -150,9 +173,8 @@ function liveWriter(): Writer {
 
 // ------------------------------------------------------------------------------------------ the build
 
-async function buildStage(stage: Stage, w: Writer) {
+async function buildStage(stage: Stage, version: string, w: Writer) {
   const t0 = Date.now();
-  const version = await figuresVersion(stage);
   const urns = await schoolsFor(stage);
   console.log(`${stage}: version ${version}, ${urns.length} schools, from ${BUILD_FROM}`);
   await w.start(stage, version);
@@ -182,8 +204,17 @@ async function buildStage(stage: Stage, w: Writer) {
 
 async function main() {
   const w = PGLITE ? await pgliteWriter(PGLITE) : OUT ? fileWriter(OUT) : liveWriter();
-  for (const stage of STAGES) await buildStage(stage, w);
+  const t0 = Date.now();
+  for (const stage of STAGES) {
+    const version = await figuresVersion(stage);
+    // --school is a test of a few schools: always built, never compared with the stored build.
+    const upToDate = !FORCE && !ONLY.length && (await w.complete(stage, version));
+    if (upToDate) console.log(`${stage}: up to date -- the stored build is complete for version ${version}; skipped${CHECK ? "" : " (--force builds it anyway)"}`);
+    else if (CHECK) console.log(`${stage}: would build -- no complete build stored for version ${version}`);
+    else await buildStage(stage, version, w);
+  }
   await w.close();
+  console.log(`done in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   process.exit(0);
 }
 main().catch((e) => {

@@ -29,7 +29,7 @@ Nothing else in the builder changed. The school's own rows still come whole, in 
 | Build script | `scripts/build-smt-figures.ts` (`--pglite DIR` / `--out FILE` / `--live`) |
 | Parity harness | `scripts/smt-academic-parity.ts` (`--figures-pglite DIR` reads the figures) |
 
-**Why the app repo, not the ingest.** Parity depends on the build running the app's own TypeScript: `qualRows` with its subject renames and qualification aliases, `parseVa`, and `yearFigures`. The Python ingest can't share that code, and a second copy is exactly what the rule forbids. So the ingest's last step (or a Render cron job) runs `npx tsx scripts/build-smt-figures.ts --live` from this repo.
+**Why the app repo, not the ingest.** Parity depends on the build running the app's own TypeScript: `qualRows` with its subject renames and qualification aliases, `parseVa`, and `yearFigures`. The Python ingest can't share that code, and a second copy is exactly what the rule forbids. So a Render cron job runs it from this repo every night (`npm run figures:build`; "The nightly build" below), and skips when nothing changed.
 
 ## Tables
 
@@ -111,6 +111,33 @@ Other checks:
 2. Build: `npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts --live`. It takes about a minute and writes about 50,000 rows. Re-run verify: one `complete` build per stage.
 3. Set `SMT_FIGURES=on` on Render and redeploy.
    - **Check:** `/teacher/smt/academic?lookAs=110110&as=smt&peek=1` against independent schools in England is fast on its first view. Render's log shows no `[smt figures] … today's reads` line for it.
-4. **After every ingest** (KS4/Post-16 subject promote, GIAS refresh, subject map migration), run step 2 again. Until then pages make today's reads. They're slower, but correct.
+4. **After every ingest** (KS4/Post-16 subject promote, GIAS refresh, subject map migration) the nightly build (below) rebuilds it; to have it sooner, run step 2 again. Until then pages make today's reads. They're slower, but correct.
+
+## The nightly build (Render cron job)
+
+`npm run figures:build` is `tsx scripts/build-smt-figures.ts --live`, reading its settings from the environment (no `.env` files). For each key stage it works out the current data version first. A stage whose stored build is already `complete` for that version is skipped: a night with no new data takes about a second and writes nothing. Otherwise it rebuilds that stage (about 25 s for Post-16, 45 s for GCSE, locally) and deletes the stage's older build. `-- --force` rebuilds anyway; `npm run figures:check` (`--check`) only says, per stage, "up to date" or "would build", and writes nothing.
+
+**What Guy creates in Render** (New → Cron Job):
+
+| Setting | Value |
+|---|---|
+| Repository and branch | this repo, `main`, auto-deploy on, as the web service. The data version includes the app's subject maps and `FORMAT`, so the job must run the same code as the site. |
+| Name | `vicdata-smt-figures` |
+| Region | Frankfurt, as the web service |
+| Runtime | Node, the same Node version as the web service (copy `NODE_VERSION` if the web service sets one) |
+| Schedule | `30 3 * * *`. Render's schedules are in UTC, so that's 03:30 in winter and 04:30 in summer, UK time. |
+| Build command | `npm ci --include=dev` (`tsx` is a devDependency; `--include=dev` keeps it even if `NODE_ENV=production` is set). No `next build` is needed. |
+| Command | `npm run figures:build` |
+| Instance type | Starter (512 MB). The GCSE stage peaked at 213 MB locally. |
+| Environment | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (the app database), `VICDATA_API_URL`, `VICDATA_ANON_KEY` (the reference data). Copy the values from the web service (or put the five in an Environment Group both use). `SMT_FIGURES`, `RESULTS_CACHE` and `NODE_OPTIONS` aren't needed. |
+
+**Checking it ran:**
+- Render → `vicdata-smt-figures` → Logs, after 03:30 UTC. A quiet night ends with `ks4: up to date …`, `ks5: up to date …` and `done in 0.4 s` (about a second). A night after new data ends with `ks4: complete -- 7740 schools …` (or `ks5`) and the time taken. A failed run exits 1, and Render marks it failed (turn on its failure email under the job's notifications).
+- `NOT complete: the data changed during the build` means an ingest landed mid-run: the next night (or **Trigger Run** in Render) builds it.
+- From a laptop, read-only: `npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts --live --check`. Both stages should say `up to date`.
+- In SQL: `select stage, data_version, status, schools, row_count, finished_at from smt_figures_builds order by stage;` shows one `complete` row per stage. `finished_at` moves only on a night that built.
+- **Trigger Run** in Render runs it at once, e.g. straight after an ingest.
+
+**Not caught by the version** (above): a rollup rebuild that promotes no source and changes no map. After one, run it by hand with `--force` (`npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts --live --force`).
 
 **Rollback:** unset `SMT_FIGURES`, then optionally run `rollback_smt_figures.sql`. It drops only rebuildable figures.

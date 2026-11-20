@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "node scripts/write-build-info.mjs && next build",
     "start": "next start -p ${PORT:-3000}",
-    "lint": "eslint"
+    "lint": "eslint",
+    "figures:build": "tsx scripts/build-smt-figures.ts --live",
+    "figures:check": "tsx scripts/build-smt-figures.ts --live --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
