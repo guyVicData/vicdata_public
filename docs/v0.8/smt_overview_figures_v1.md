@@ -79,17 +79,17 @@ The Overview falls back to today's reads, with one log line, whenever:
 
 **Cold Overview, each in a fresh process** (`/api/smt/school`'s national loads warm first, as on the page):
 
-| Set | main | this branch, switch off | figures |
+| Set | main at 0a1e6504 | switch off, on main at 310cd0f8 (the read fan-out fixes) | figures |
 |---|---|---|---|
-| Leighton Park Post-16, independent schools in England (488) | 19.5 s | 10.0 s | 0.72 s |
-| Leighton Park Post-16, all sixth forms and colleges in the South East (457) | 19.3 s | 9.2 s | 0.74 s |
-| Leighton Park GCSE, all schools in the South East (682) | 19.1 s | 14.7 s | 0.87 s |
-| George Dixon GCSE, state schools in the West Midlands (416) | 19.8 s | 8.5 s | 0.99 s |
+| Leighton Park Post-16, independent schools in England (488) | 19.5 s | 7.3 s | 0.68 s |
+| Leighton Park Post-16, all sixth forms and colleges in the South East (457) | 19.3 s | 7.8 s | 0.80 s |
+| Leighton Park GCSE, all schools in the South East (682) | 19.1 s | 11.6 s | 0.86 s |
+| George Dixon GCSE, state schools in the West Midlands (416) | 19.8 s | 7.7 s | 1.02 s |
 
 - The figures were read from local PGlite; live adds one RPC round trip.
-- With the switch off, the branch is already faster than main because the census by year is read once instead of twice.
+- With the switch off, today's reads are already faster than at 0a1e6504. The census by year is now read once (this branch, and d4ae3b4b on main, independently), and the census reads are pooled and retried (f5369da9).
 - **Warm** (second build, same process): 50–160 ms on every path.
-- **The 58-case matrix in one process,** sum of first builds: main 220 s, switch off 129 s, figures 12 s.
+- **The 58-case matrix in one process,** sum of first builds: main at 0a1e6504 220 s; switch off 129 s (67 s after rebasing on 310cd0f8); figures 10–12 s.
 - **Not removed here: the national loads.** The populations, England's schools and the IGCSE list take 8.7 s cold, once per process, shared by every school and page.
   - Since 0d38c3c0 the SMT routes read the school from the results cache after a restart, so the Overview may be the first thing to need them.
   - The first Overview after a deploy, for a set whose answer isn't stored yet, can therefore still take about 9 s, even with these figures. Stored answers are unaffected.
@@ -101,6 +101,7 @@ The Overview falls back to today's reads, with one log line, whenever:
 |---|---|---|---|
 | Switch off (today's reads through members, `groupShare` split, census read once) vs `origin/main` | 58 | 58 | 0 |
 | Figures (PGlite build) vs `origin/main` | 58 | 58 | 0 |
+| Both again, after rebasing on main at 9b4a6b1e, then again at 310cd0f8 (the shared limiter, the census retries) | 58 + 58 each | all | 0 |
 | Edge cases: the school in its own fixed list; a closed, unbuilt school in the list (falls back); a head office | 3 | 3 | 0 |
 | An incomplete census build (every request falls back) | 2 | 2 | 0 |
 
