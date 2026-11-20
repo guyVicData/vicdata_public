@@ -9,6 +9,7 @@ import { latestYearsFromRows, type LatestYears } from "../catalogue/years";
 import { latestBreakdown, latestSubjectName, latestSubjectNameOrNull } from "./subject-latest-names";
 import { makeReferenceCache, makeSourceStamps, type StampMap } from "./reference-cache";
 import { markDegraded, tracedFetch } from "./build-trace";
+import { mapLimited } from "./limited";
 
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
@@ -287,6 +288,24 @@ export async function lookupAcademicHeadline(params: {
   periodMax?: number;
   signal?: AbortSignal;
 }): Promise<AcademicHeadlineRow[]> {
+  // 20 Nov: a national read (no schools named) from a given year is read a year at a time, 3 years at a time,
+  // each tried twice (limited.ts), and put back in the RPC's own order (school, then year). One national GCSE
+  // read from 2021 is ~27,000 rows: 28 offset pages one after another, each re-running the whole query (~4-6 s,
+  // the slowest part of a cold Admissions rivals or SMT build); a year is ~5,600 rows, 6 pages, and the years
+  // together take ~0.7 s. The rows are the same (checked against live data, both stages).
+  if (!params.entityIds && params.periodMin !== undefined) {
+    const last = params.periodMax ?? new Date().getFullYear();
+    const spans: { periodMin: number; periodMax: number | undefined }[] = [];
+    for (let y = params.periodMin; y <= last; y++) spans.push({ periodMin: y, periodMax: y });
+    if (params.periodMax === undefined) spans.push({ periodMin: last + 1, periodMax: undefined });
+    const parts = await mapLimited(spans, HEADLINE_YEARS_AT_ONCE, (span) => academicHeadlinePaged({ ...params, ...span }));
+    return parts.flat().sort((a, b) => (a.entity_id < b.entity_id ? -1 : a.entity_id > b.entity_id ? 1 : a.period - b.period));
+  }
+  return academicHeadlinePaged(params);
+}
+const HEADLINE_YEARS_AT_ONCE = 3;
+
+async function academicHeadlinePaged(params: { entityIds?: string[]; ksStage?: KsStage; periodMin?: number; periodMax?: number; signal?: AbortSignal }): Promise<AcademicHeadlineRow[]> {
   const rows: AcademicHeadlineRow[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
     const batch = (await fetchPage(
@@ -303,6 +322,8 @@ export async function lookupAcademicHeadline(params: {
     )) as AcademicHeadlineRow[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
+    // As the other paged lookups: the cap still stops the read, but says so.
+    if (page === MAX_PAGES - 1) console.warn(`[academic_headline_lookup] stopped at ${MAX_PAGES} pages (${rows.length} rows) for ${params.entityIds?.length ?? "all"} entities; later rows were not read`);
   }
   return rows;
 }
