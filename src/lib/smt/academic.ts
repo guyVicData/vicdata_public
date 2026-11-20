@@ -22,7 +22,7 @@ import { smtNote } from "@/catalogue/notes";
 import { GRADING_2122_PERIOD, HISTORIC_GRADE_FROM, PROGRESS8_LAST_PERIOD, SIXTH_FORM_VA_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import { cachedReference } from "../server-cache";
 import { fetchSubjectLevelDataForSchools } from "../academic-data-view";
-import { lookupAcademicSubjectFamily, lookupAcademicSubjectFamilyMap } from "../vicdata-reference";
+import { lookupAcademicSubjectFamilyMap } from "../vicdata-reference";
 import { englandSchools } from "../admissions/ranks";
 import { percentile } from "../admissions/stats";
 import { latestSubjectName } from "../subject-latest-names";
@@ -30,7 +30,9 @@ import { MIN_SUBJECT_ENTRIES_UI } from "./levels";
 import { figure, num, population, SMT_MEASURES, type Population } from "./population";
 import type { SmtSchool } from "./school";
 import { igcseExcluded, setNames, type BandPt, type Pt, type Rank, type SmtSet } from "./overview";
-import { englandQualVa, qualRows, subjectVa, vaMatcher, type QualRow, type VaFact } from "./academic-data";
+import { englandQualVa, qualRows, vaMatcher, type QualRow, type VaFact } from "./academic-data";
+import { areaEntries as areaEntriesOf, areaRow as areaRowOf, groupEntries as groupEntriesOf, groupPoints, levelEntries as levelEntriesOf, vaLine, type VaLine } from "./school-figures";
+import { academicInputs } from "./smt-figures-store";
 import { gcseDefaultSet, groupDefaultSet, offering, stateP8Set, type GroupSet } from "./academic-sets";
 import { APPLIED_KEY, APPLIED_LABEL, GROUP_LABEL, GROUP_ORDER, dfeBandOf, groupChips, groupOfQualification, p8Band, rangeBand, shortQualification, type AcademicMode, type AcademicOffer, type AcademicPhase, type AcademicState, type AppliedType, type DfeBand, type QualGroup, type RangeBand, type RealGroup } from "./qual-groups";
 import { entrySizeBadge, entrySizeFifths, entrySizeKey, type EntrySizeKey } from "../subject-entry-size";
@@ -309,14 +311,16 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     if (!setCache.has(id)) setCache.set(id, chosen ? Promise.resolve({ kind: chosen.kind, label: chosen.label, urns: chosen.urns, chosen: true, reachKm: null }) : groupDefaultSet(urn, lineGroup(id), L, me ?? null, id.startsWith("applied:") ? (id.slice(8) as AppliedType) : undefined));
     return setCache.get(id)!;
   };
-  const offeringOf = (id: LineId, urns: string[]) => offering(lineGroup(id), urns, L, pop, id.startsWith("applied:") ? (id.slice(8) as AppliedType) : undefined);
+  // The groups offering() reads from the subject rows (EPQ, Core Maths, AS) from the set schools' figures:
+  // a row in the year is entries in the group that year (qualRows keeps rows with entries only).
+  const offeringOf = (id: LineId, urns: string[]) => offering(lineGroup(id), urns, L, pop, id.startsWith("applied:") ? (id.slice(8) as AppliedType) : undefined, (u, y, g) => groupEntriesOf(members, u, y, g) > 0);
   const setIds: LineId[] = [...lineIds, ...(offer.groups.includes("applied") ? ["applied" as LineId] : [])];
   const sets = new Map<string, GroupSet>(await Promise.all(setIds.map(async (id) => [id, await setOf(id)] as const)));
   const everyone = Array.from(new Set([urn, ...Array.from(sets.values()).flatMap((s) => s.urns)]));
   const from = Math.min(HISTORIC_GRADE_FROM, L - 2);
-  const [rows, va, names, mine, famMap] = await Promise.all([
-    qualRows(everyone, "ks5", from),
-    subjectVa(everyone),
+  // Speed plan §4.2 item 1: the set schools' figures, built ahead (smt-figures-store.ts) or from today's reads.
+  const [{ rows, va, members }, names, mine, famMap] = await Promise.all([
+    academicInputs("ks5", urn, everyone, from, { subjectPeriod: () => L }),
     setNames(everyone),
     cachedReference(`smt:subjects:${urn}:ks5`, () => fetchSubjectLevelDataForSchools([urn], "ks5", { gradeYears: "four" })),
     cachedReference("smt:family-map:ks5", () => lookupAcademicSubjectFamilyMap({ ksStage: "ks5" })),
@@ -328,21 +332,18 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
   // Speed (20 Nov): looked up by school and year once, not by searching every row for each school and year --
   // the same rows in the same order (grouping keeps it), so the same figures; a 488-school set's 62,618 rows
   // took ~3.5 s of CPU per build searched that way.
+  // `rows` and `va` are the school's own (with today's reads, every set school's too); every set school,
+  // the school included, is read through `members` (school-figures.ts: the same figures either way).
   const rowsIndex = indexBy(rows, (r) => `${r.urn}|${r.period}`);
   const rowsOf = (u: string, y: number) => rowsIndex.get(`${u}|${y}`) ?? NONE_ROWS;
-  const levelEntries = (u: string, y: number) => sum(rowsOf(u, y).map((r) => r.entries));
-  const groupEntries = (u: string, y: number, g: RealGroup) => sum(rowsOf(u, y).filter((r) => groupOfQualification(r.qualification) === g).map((r) => r.entries));
+  const levelEntries = (u: string, y: number) => levelEntriesOf(members, u, y);
+  const groupEntries = (u: string, y: number, g: RealGroup) => groupEntriesOf(members, u, y, g);
 
   // ---------------------------------------------------------------- one line's figure for any school, any year
   type Fig = { value: number | null; lo: number | null; hi: number | null; band: Band; grade: string | null; entries: number | null; size?: string | null };
   const NONE: Fig = { value: null, lo: null, hi: null, band: null, grade: null, entries: null };
-  const vaIndex = indexBy(va, (r) => `${r.urn}|${r.period}`);
-  const vaRow = (u: string, y: number, q: RegExp) => (vaIndex.get(`${u}|${y}`) ?? NONE_ROWS).find((r) => q.test(r.qualification) && r.subject === "All subjects") ?? null;
-  const computedPoints = (u: string, y: number, g: RealGroup) => {
-    const rs = rowsOf(u, y).filter((r) => groupOfQualification(r.qualification) === g && r.avg !== null);
-    const e = sum(rs.map((r) => r.entries));
-    return e ? sum(rs.map((r) => r.avg! * r.entries)) / e : null;
-  };
+  const vaRow = (u: string, y: number, line: VaLine) => vaLine(members, u, y, line);
+  const computedPoints = (u: string, y: number, g: RealGroup) => groupPoints(members, u, y, g);
   const headType = (id: LineId): string | null => (id === "alevel" ? "A level" : id.startsWith("applied:") ? APPLIED_KEY[id.slice(8) as AppliedType] : null);
   const fig = (id: LineId, mode: AcademicMode, u: string, y: number): Fig => {
     const g = lineGroup(id);
@@ -366,12 +367,11 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
       const lo = figure(pop, u, y, `${t}::value_added_lower_ci`);
       const hi = figure(pop, u, y, `${t}::value_added_upper_ci`);
       const band = dfeBandOf(pop.get(u)?.get(y)?.[`${t}::progress_banding`]);
-      const e = t === "A level" ? (vaRow(u, y, /^GCE A level$/)?.entries ?? null) : null;
+      const e = t === "A level" ? (vaRow(u, y, "alevel")?.entries ?? null) : null;
       return { value: v, lo, hi, band: band ?? (v !== null ? rangeBand(lo, hi) : null), grade: null, entries: e };
     }
-    const q = VA_FILE_QUAL[g];
-    if (!q) return NONE; // T level: no value added
-    const r = vaRow(u, y, q);
+    if (!VA_FILE_QUAL[g]) return NONE; // T level: no value added
+    const r = vaRow(u, y, g as VaLine);
     return r ? { value: r.value, lo: r.lo, hi: r.hi, band: rangeBand(r.lo, r.hi), grade: null, entries: r.entries } : NONE;
   };
   const noFigureWhy = (id: LineId, mode: AcademicMode): string | null => {
@@ -541,7 +541,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
   // 0.8 feedback A1 (R-SUBJECT-MATCH, D2): a set school's figure for a line is its figure for every title
   // matched with the line's subject ("Fine Art" for "Art and Design"), merged (entries summed, points weighted).
   const peerFigure = (u: string, y: number, it: { subject: string; qualification: string }) =>
-    mergeFigures(rows.filter((x) => x.urn === u && x.period === y && sameSubject("ks5", { subject: it.subject, qualificationType: it.qualification }, { subject: x.subject, qualificationType: x.qualification })).map((x) => ({ entries: x.entries, points: x.avg })));
+    mergeFigures(members.subjectRows(u, y).filter((x) => sameSubject("ks5", { subject: it.subject, qualificationType: it.qualification }, { subject: x.subject, qualificationType: x.qualification })).map((x) => ({ entries: x.entries, points: x.avg })));
   const subject = async (it: Item): Promise<AreaSubject> => {
     const peers = await setForQual(it.qualification);
     const base = { subject: it.subject, qualification: it.qualification, vicdata: it.vicdata, entries: it.entries, size: null, typical: null, offering: null, grade: null } as const;
@@ -549,7 +549,7 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
     if (mode === "va") {
       const r = it.vaRow!;
       const peerVals = peers
-        .map((u) => va.find((x) => x.urn === u && x.period === L && x.qualification === it.qualification && vaMatch(x.qualification, x.subject).subject === it.subject)?.value ?? null)
+        .map((u) => members.vaRows(u, L).find((x) => x.qualification === it.qualification && vaMatch(x.qualification, x.subject).subject === it.subject)?.value ?? null)
         .filter((v): v is number => v !== null);
       const all = new Map<string, number | null>([[urn, r.value], ...peerVals.map((v, i) => [`p${i}`, v] as [string, number])]);
       return { ...base, counts, value: r.value, lo: r.lo, hi: r.hi, band: rangeBand(r.lo, r.hi), setValues: peerVals, place: placeIn(all, urn), only: peerVals.length === 0, ranked: true, why: null };
@@ -766,20 +766,20 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
 
   // ---------------------------------------------------------------- measures
   const from = HISTORIC_GRADE_FROM;
-  const [rows, fam] = await Promise.all([
-    qualRows(everyone, "ks4", from),
-    st.area && mode !== "va" ? cachedReference(`smt:family:ks4:${everyone.slice().sort().join(",")}`, () => lookupAcademicSubjectFamily({ entityIds: everyone, ksStage: "ks4", periodMin: from })) : Promise.resolve([]),
-  ]);
-  // Speed (20 Nov): by school and year once (see post16's rowsOf).
-  const rowsIndex = indexBy(rows, (r) => `${r.urn}|${r.period}`);
-  const levelEntries = (u: string, y: number) => sum((rowsIndex.get(`${u}|${y}`) ?? NONE_ROWS).map((r) => r.entries));
   // The subject rollup can trail the headline by a release (GCSE 2025/26's headline lands first): subjects,
   // entries and areas read the rollup's own latest year, and say it.
-  const LS = Math.max(...rows.filter((r) => r.urn === urn).map((r) => r.period), -Infinity);
-  const subjYear = Number.isFinite(LS) ? Math.min(LS, L) : L;
+  const subjectYear = (own: QualRow[], at: number) => {
+    const LS = Math.max(...own.filter((r) => r.urn === urn).map((r) => r.period), -Infinity);
+    return Number.isFinite(LS) ? Math.min(LS, at) : at;
+  };
+  // Speed plan §4.2 item 1: the set schools' figures, built ahead (smt-figures-store.ts) or from today's reads
+  // (`rows`: the school's own, with today's reads every set school's too; every school through `members`).
+  const L0 = L;
+  const { rows, members } = await academicInputs("ks4", urn, everyone, from, { fam: !!st.area && mode !== "va", subjectPeriod: (own) => subjectYear(own, L0) });
+  const levelEntries = (u: string, y: number) => levelEntriesOf(members, u, y);
+  const subjYear = subjectYear(rows, L);
   if (mode === "entries") L = subjYear;
-  const famIndex = indexBy(fam, (x) => `${x.entity_id}|${Number(x.period)}`);
-  const areaRow = (u: string, y: number) => (famIndex.get(`${u}|${y}`) ?? NONE_ROWS).find((x) => x.family_id === st.area && (x.bucket ?? "all") === "all");
+  const areaRow = (u: string, y: number) => areaRowOf(members, u, y, st.area!);
   type Fig = { value: number | null; lo: number | null; hi: number | null; band: Band; entries: number | null };
   const key = mode === "va" ? SMT_MEASURES.ks4.p8 : st.area ? null : SMT_MEASURES.ks4.a8;
   const fig = (u: string, y: number): Fig => {
@@ -792,7 +792,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
     if (mode === "entries") {
       const t = levelEntries(u, y);
       if (!st.area) return { value: t || null, lo: null, hi: null, band: null, entries: t || null };
-      const e = sum(rows.filter((x) => x.urn === u && x.period === y && x.familyId === st.area).map((x) => x.entries));
+      const e = areaEntriesOf(members, u, y, st.area);
       return { value: t && e ? (e / t) * 100 : null, lo: null, hi: null, band: null, entries: e || null };
     }
     if (st.area) {
@@ -896,7 +896,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
     const t = levelEntries(urn, L);
     const areaIds = school.areas.gcse.map((a) => a.id);
     // R-SMT-ENTRIES-ONE-TOTAL: each area's entries from the same subject rows as the page's total.
-    const areaEntries = (u: string, id: string) => sum(rows.filter((x) => x.urn === u && x.period === L && x.familyId === id).map((x) => x.entries));
+    const areaEntries = (u: string, id: string) => areaEntriesOf(members, u, L!, id);
     const shareOf = (u: string, id: string) => {
       const tt = levelEntries(u, L);
       const e = areaEntries(u, id);
@@ -933,7 +933,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
       if (mode === "entries") {
         const share = (u: string) => {
           const tt = levelEntries(u, subjYear);
-          const e = rows.find((x) => x.urn === u && x.period === subjYear && x.qualification === r.qualification && x.subject === r.subject)?.entries ?? 0;
+          const e = members.subjectRows(u, subjYear).find((x) => x.qualification === r.qualification && x.subject === r.subject)?.entries ?? 0;
           return tt && e ? (e / tt) * 100 : null;
         };
         const peers = gset.urns.map(share).filter((v): v is number => v !== null);
@@ -941,7 +941,7 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
         q.subjects.push({ subject: r.subject, qualification: r.qualification, vicdata: false, entries: r.entries, counts, value: m, lo: null, hi: null, band: null, grade: null, setValues: peers, typical: median(peers), offering: { n: peers.length, of: gset.urns.length }, place: placeIn(new Map<string, number | null>([[urn, m], ...peers.map((v, i) => [`p${i}`, v] as [string, number])]), urn), only: peers.length === 0, size: null, ranked: true, why: null });
       } else {
         const small = r.entries < MIN_SUBJECT_ENTRIES;
-        const peers = gset.urns.map((u) => rows.find((x) => x.urn === u && x.period === subjYear && x.qualification === r.qualification && x.subject === r.subject && x.entries >= MIN_SUBJECT_ENTRIES)?.avg ?? null).filter((v): v is number => v !== null);
+        const peers = gset.urns.map((u) => members.subjectRows(u, subjYear).find((x) => x.qualification === r.qualification && x.subject === r.subject && x.entries >= MIN_SUBJECT_ENTRIES)?.avg ?? null).filter((v): v is number => v !== null);
         const value = small ? null : r.avg;
         q.subjects.push({ subject: r.subject, qualification: r.qualification, vicdata: false, entries: r.entries, counts, value, lo: null, hi: null, band: null, grade: null, setValues: peers, typical: null, offering: null, place: value === null ? null : placeIn(new Map<string, number | null>([[urn, value], ...peers.map((v, i) => [`p${i}`, v] as [string, number])]), urn), only: value !== null && peers.length === 0, size: null, ranked: value !== null, why: small ? smtNote("smallEntries", { min: MIN_SUBJECT_ENTRIES }) : r.avg === null ? smtNote("differentScale") : null });
       }

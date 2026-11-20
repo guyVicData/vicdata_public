@@ -103,6 +103,9 @@ const referenceCache = makeReferenceCache({ stamp: sourceStamp });
 /** Every source's stamp (production's reference_source_stamps), read at most once a minute; {} until a
  * read has succeeded. The results cache's data version (results-cache-versions.ts). */
 export const allSourceStamps = (): Promise<StampMap> => sourceStamp.all();
+/** A source's latest promote or retraction (null when unknown), read at most once a minute: SMT's
+ * precomputed figures (smt/smt-figures-store.ts) are keyed on the stamps of the sources they come from. */
+export const referenceSourceStamp = sourceStamp;
 /** For tests and scripts: forget every cached reference read. */
 export const clearReferenceReads = () => referenceCache.clear();
 

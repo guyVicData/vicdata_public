@@ -25,9 +25,11 @@ export type GroupSet = { kind: string; label: string; urns: string[]; chosen: bo
 /** Which of these schools offer a Post-16 group: entries (or a published figure) in either of the two
  * latest years. Headline groups from the national headline read (no extra read); EPQ, Core Maths and AS
  * from the subject x qualification rollup, for these schools only. */
-export async function offering(group: RealGroup, urns: string[], latest: number, pop?: Population, applied?: AppliedType): Promise<Set<string>> {
+export async function offering(group: RealGroup, urns: string[], latest: number, pop?: Population, applied?: AppliedType, inYear?: (urn: string, period: number, group: RealGroup) => boolean): Promise<Set<string>> {
   const years = [latest, latest - 1];
   if (group === "epq" || group === "coremaths" || group === "as") {
+    // `inYear` (SMT Academic): whether a school has entries in the group that year, from figures already read.
+    if (inYear) return new Set(urns.filter((u) => years.some((y) => inYear(u, y, group))));
     const rows = await qualRows(urns, "ks5", latest - 1);
     return new Set(rows.filter((r) => years.includes(r.period) && groupOfQualification(r.qualification) === group).map((r) => r.urn));
   }

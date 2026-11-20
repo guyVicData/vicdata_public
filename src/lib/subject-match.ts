@@ -88,7 +88,7 @@ export function readQualifications(phase: Phase, subject: string, q: string, opt
 }
 
 /** DfE's 2020/21 Post-16 labels, as later years spell them. */
-const QUAL_ALIASES: Readonly<Record<string, string>> = { "A level": "GCE A level", "AS level": "GCE AS level" };
+export const QUAL_ALIASES: Readonly<Record<string, string>> = { "A level": "GCE A level", "AS level": "GCE AS level" };
 
 /** A qualification label as the latest years spell it ("A level" in 2020/21 = "GCE A level"). */
 export function normaliseQualification(q: string): string;
