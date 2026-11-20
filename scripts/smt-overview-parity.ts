@@ -10,6 +10,7 @@
 //         nation:Independent|State   the sector in England
 //         region:Independent|State|all|own   the school's own region (own: its own sector)
 //         region@E12000008:all|...   a named region
+//         list:URN,URN,...           a fixed set, as a saved set arrives (the school may be in it)
 //         :private  as a head office the school doesn't share Admissions with (the market's privateNote)
 //   --sets FILE   the resolved sets: read when there, else resolved and written, so both runs build the same sets
 //   --random N    N schools with sixth forms (seed --seed), each ks4 and ks5 × nearest and region:own
@@ -58,6 +59,7 @@ const ranking = (sectors: string[], scope: RankingFilters["scope"]): RankingFilt
 
 async function resolveSet(urn: string, stage: "ks4" | "ks5", spec: string): Promise<SmtSet> {
   const school = (await smtSchool(urn))!;
+  if (spec.startsWith("list:")) return { kind: "urns", label: "Fixed list", urns: spec.slice(5).split(",") };
   if (spec === "nearest") return { kind: "nearest", label: "10 nearest schools", urns: (await resolveDefaultNearest(urn, stage)).rows.map((r) => r.urn).filter((u) => u !== urn) };
   const [where, sectorSpec] = spec.split(":");
   const sector = sectorSpec === "own" ? (school.independent ? "Independent" : "State") : sectorSpec;
@@ -113,7 +115,7 @@ async function main() {
     await buildOverview(school, set, admissions as never);
     const warmMs = Date.now() - t1;
     const json = JSON.stringify(o);
-    writeFileSync(join(OUT, c.replace(/[:@]/g, "_") + ".json"), json);
+    writeFileSync(join(OUT, c.replace(/[:@,]/g, "_").slice(0, 120) + ".json"), json);
     summary.push({ case: c, setSize: set.urns.length, coldMs, warmMs, bytes: json.length });
     console.log(`${c}  set ${set.urns.length}  cold ${coldMs} ms  warm ${warmMs} ms`);
   }
