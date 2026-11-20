@@ -79,9 +79,29 @@ Nothing else in the builder changed. The school's own rows still come whole, in 
 | George Dixon GCSE, state schools in the West Midlands (416) | 7.4 s | 0.5 s |
 
 - **Warm, all 18 states** (Leighton Park, 488 schools): 18.2 s → 0.75 s.
+- **George Dixon GCSE, state schools in England (3,497):**
+  - Main: 131 s for the first view, then 45–165 s for each later state.
+  - Figures: 2.5 s for the first view, then 25 ms to 1.5 s.
+- **Stored:** 67 MB of table and index for both key stages.
 - **One read's payload** (local PGlite; live adds the network and gzip):
   - 488 independents, Post-16: 2.0 MB of JSON (0.28 MB gzipped).
-  - The national state GCSE set was 18 MB (2.0 MB gzipped) before `drop`. The figure after `drop` is in the parity summary.
+  - 3,497 state schools, GCSE: 1.4 MB (value added), 6.6 MB (results), 9.8 MB (entries), 15 MB (results by area). That's 0.12–1.6 MB gzipped.
+  - The next trim, if needed: read only the chosen area's rollup row.
+
+## Parity (byte-for-byte JSON, figures read against main, 20 Nov)
+
+| Matrix | States | Identical | Different |
+|---|---|---|---|
+| Core: Leighton Park Post-16 and GCSE × nearest, independents in England, all in the South East; George Dixon GCSE nearest and West Midlands state; Ashton SFC and Barton Peveril × nearest and the South East | 221 | 221 | 0 |
+| 10 random schools with sixth forms (seed 20261120) × GCSE and Post-16 × nearest and own sector's region | 642 | 642 | 0 |
+| Edge cases: the school in its own set (both levels); a set school never built (that request uses today's reads) | 71 | 71 | 0 |
+| George Dixon GCSE, state schools in England (3,497) | 19 | 11 | 8 |
+
+**About the 8 national differences:** they are the results-by-area states, and main is wrong in them. Main's area rollup read stopped at 50 pages and dropped every school from URN 137343 on: 1,973 of 3,497. This branch fixes that read (`areaRowsFor`). With the fix, today's reads and the figures agree on all 9 national results states.
+
+Other checks:
+- An incomplete build made all 18 Post-16 states use today's reads, and they were identical. Meanwhile, the complete GCSE build was still read.
+- The unit and SQL tests pass. `next build` passes.
 
 ## Switching it on (Guy)
 
