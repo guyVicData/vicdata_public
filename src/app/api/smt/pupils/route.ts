@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setFrom, smtCaller } from "@/lib/smt/auth";
-import { smtSchool } from "@/lib/smt/school";
-import { cachedPupils } from "@/lib/cached-views";
+import { cachedPupils, cachedSmtSchool } from "@/lib/cached-views";
 import { parseLevel } from "@/lib/smt/levels";
 
 // VicData 0.8 SMT r2: Pupils -- the roll now, shape and size, Admissions' entry points, leaving at 16
@@ -16,7 +15,7 @@ export async function POST(request: NextRequest) {
   const set = setFrom(body);
   if (!set) return NextResponse.json({ error: "set is required" }, { status: 400 });
   try {
-    const school = await smtSchool(caller.urn);
+    const school = await cachedSmtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     const level = parseLevel(new URLSearchParams(body?.level ? { level: body.level } : {}), school.phases, null);
     return NextResponse.json(await cachedPupils(school, set, level, caller.admissions));

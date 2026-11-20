@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setFrom, smtCaller } from "@/lib/smt/auth";
-import { smtSchool } from "@/lib/smt/school";
 import { academicOffer } from "@/lib/smt/academic";
-import { cachedAcademic } from "@/lib/cached-views";
+import { cachedAcademic, cachedSmtSchool } from "@/lib/cached-views";
 import { parseAcademic } from "@/lib/smt/qual-groups";
 
 // VicData 0.8 SMT Academic by qualification: Academic for one state -- the level, the mode (Results ·
@@ -18,7 +17,7 @@ export async function POST(request: NextRequest) {
   const set = setFrom(body);
   if (!set) return NextResponse.json({ error: "set is required" }, { status: 400 });
   try {
-    const school = await smtSchool(caller.urn);
+    const school = await cachedSmtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     const q = new URLSearchParams();
     for (const k of ["level", "mode", "group", "applied", "area"] as const) if (typeof body?.[k] === "string") q.set(k, body[k]!);

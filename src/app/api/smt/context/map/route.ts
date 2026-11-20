@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { smtCaller } from "@/lib/smt/auth";
-import { smtSchool } from "@/lib/smt/school";
-import { cachedContextMap } from "@/lib/cached-views";
+import { cachedContextMap, cachedSmtSchool } from "@/lib/cached-views";
 import { parseLevel } from "@/lib/smt/levels";
 import { resolveCatchment } from "@/lib/smt/catchment";
 import { savedCatchmentKm } from "@/lib/smt/catchment-server";
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
   const caller = await smtCaller(request, sp.get("urn"));
   if (caller instanceof NextResponse) return caller;
   try {
-    const school = await smtSchool(caller.urn);
+    const school = await cachedSmtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     const level = parseLevel(sp, school.phases, null).phase;
     // 0.8 Admissions fb1: a state school's default is its density radius (catchment.ts).

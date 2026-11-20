@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setFrom, smtCaller } from "@/lib/smt/auth";
-import { smtSchool } from "@/lib/smt/school";
-import { cachedOverview } from "@/lib/cached-views";
+import { cachedOverview, cachedSmtSchool } from "@/lib/cached-views";
 
 // VicData 0.8 SMT r1: Overview -- the school now, the scorecard against the set, the region and
 // England, the flags, and row 2's trends. POST { urn, set: { kind, label, urns } }: a set is the
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
   const set = setFrom(body);
   if (!set) return NextResponse.json({ error: "set is required" }, { status: 400 });
   try {
-    const school = await smtSchool(caller.urn);
+    const school = await cachedSmtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     return NextResponse.json(await cachedOverview(school, set, caller.admissions));
   } catch (err) {
