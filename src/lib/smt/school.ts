@@ -59,6 +59,34 @@ export function schoolCensus(urn: string): Promise<RollSnapshot[]> {
   return cachedReference(`smt:census:${urn}`, async () => buildRollTrend(await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: [urn] }), urn));
 }
 
+/** 20 Nov: many schools' censuses in a few reads (CENSUS_BATCH a read) instead of one a school -- a whole-population
+ * set (134 to 490 schools) made the Overview's set lines and map rolls hundreds of requests, which stalled live.
+ * Each school's answer is cached as schoolCensus caches it, so a later single read is a hit. */
+const CENSUS_BATCH = 40;
+export async function schoolCensuses(urns: string[]): Promise<Map<string, RollSnapshot[]>> {
+  const uniq = Array.from(new Set(urns));
+  const key = (u: string) => `smt:census:${u}`;
+  const chunks: string[][] = [];
+  for (let i = 0; i < uniq.length; i += CENSUS_BATCH) chunks.push(uniq.slice(i, i + CENSUS_BATCH));
+  const out = new Map<string, RollSnapshot[]>();
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      const batch = cachedReference(`smt:census-batch:${chunk.join(",")}`, async () => {
+        const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk }).catch(() => []);
+        const by = new Map<string, typeof facts>();
+        for (const f of facts) (by.get(f.entity_id) ?? by.set(f.entity_id, []).get(f.entity_id)!).push(f);
+        return new Map(chunk.map((u) => [u, buildRollTrend(by.get(u) ?? [], u)]));
+      });
+      const got = await batch;
+      for (const u of chunk) {
+        const cs = got.get(u) ?? [];
+        out.set(u, await cachedReference(key(u), async () => cs));
+      }
+    }),
+  );
+  return out;
+}
+
 /** R-IGCSE-EXCL on the school's own GCSE rows: the one test, through lib/igcse (R-IGCSE-EVERYWHERE). */
 export async function sitsIgcse(urn: string, typeGroup: string | null): Promise<boolean> {
   return typeGroup === INDEPENDENT_GROUP && (await igcseEngland()).has(urn);

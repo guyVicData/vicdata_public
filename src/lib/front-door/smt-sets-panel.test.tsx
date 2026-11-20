@@ -50,7 +50,6 @@ test("SMT sets panel: the 10 nearest ticks however it was chosen; the region and
   const html = draw(state({ kind: "ranking", label: "Independent schools in the South East", filters: {} as never, rankingId: null }, 212));
   assert.match(html, /Independent schools in England/);
   assert.match(html, /All sixth forms and colleges in the South East/);
-  assert.match(html, /too many to benchmark as one set/);
   assert.deepEqual(ticked(html), ["default:region"]);
   const other = draw(state({ kind: "urns", label: "Schools in Wokingham", urns: [] }, 30));
   assert.match(other, /In use now/);

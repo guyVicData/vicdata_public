@@ -29,7 +29,7 @@ import { entryPoint } from "../admissions/entry-points";
 import { loadThresholds, phaseForEntryAge } from "../admissions/thresholds";
 import { percentile } from "../admissions/stats";
 import { figure, placesOn, population, setPlace, SMT_MEASURES, type Population } from "./population";
-import { schoolCensus, type SmtSchool } from "./school";
+import { schoolCensuses, type SmtSchool } from "./school";
 import { entryTiles, type EntryTile } from "./entry-net";
 import { entryShrinking, resultsAgainstSet, rollFalling, SMT_FLAG_RULES, type SmtFlag } from "./flags";
 
@@ -398,7 +398,8 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtA
   }
   // F-11 (R-ROLL-INDEXED-SET): against the selected set, not the LA and England -- the set's average day
   // roll, and its average boarding roll (grey, dotted) where the set has boarders.
-  const setCensuses = await Promise.all(setUrns.map((u) => schoolCensus(u).catch(() => [] as RollSnapshot[])));
+  const censusBy = await schoolCensuses(setUrns);
+  const setCensuses = setUrns.map((u) => censusBy.get(u) ?? []);
   const at = (cs: RollSnapshot[], y: number) => cs.find((c) => c.period === y) ?? null;
   const daySeries = setCensuses.map((cs) => years.map((y) => {
     const c = at(cs, y);
@@ -479,9 +480,10 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtA
  * 3-year direction. */
 export async function mapRolls(urns: string[]): Promise<Overview["rolls"]> {
   const out: Overview["rolls"] = {};
+  const censusBy = await schoolCensuses(urns);
   await Promise.all(
     urns.map(async (u) => {
-      const census = await schoolCensus(u).catch(() => [] as RollSnapshot[]);
+      const census = censusBy.get(u) ?? [];
       const pts = census.filter((c) => c.period >= CENSUS_FIRST_PERIOD).map((c) => ({ year: c.period, value: c.totalRoll > 0 ? c.totalRoll : null }));
       const last = [...pts].reverse().find((p) => p.value !== null) ?? null;
       const d = rollDirection(pts, 0);

@@ -221,11 +221,6 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
               </ul>
             </div>
           ))}
-          {defaults.length > 0 && (
-            <p data-smt-sets-england="" className="text-[12.5px] leading-relaxed text-[var(--muted2)]">
-              Every {phase === "ks5" ? "sixth form and college" : "school"} in England, state and independent, is too many to benchmark as one set. You don&rsquo;t need to pick it: the Overview walk ranks each headline against all of them, and against all of them in {regionWords(school?.regionName ?? null)}, whichever set is in use.
-            </p>
-          )}
           {builder && !readOnly && (
             <Link href={builder} data-smt-set-build="" style={{ color: accentInk }} className="inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[14px] font-semibold hover:opacity-90">
               <span aria-hidden="true">+</span> Make your own set
