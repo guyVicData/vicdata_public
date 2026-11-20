@@ -85,7 +85,7 @@ import type { FrameSetGrades } from "@/lib/view-series/frames";
 import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
-import { SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf, uniqueChipLabels } from "@/lib/teacher-view-theme";
+import { offeredAtGcse, SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf, uniqueChipLabels } from "@/lib/teacher-view-theme";
 import { fetchComparatorQualifications, seriesFromQualificationRows, type ComparatorQualificationRow } from "@/lib/teacher-view-comparator-quals";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
@@ -655,7 +655,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
 
   // R-IB-NONSUBJECT (S3b): subjectItemsOf leaves the IB Diploma total and IB Core rows out.
   const items = useMemo(() => subjectItemsOf(entries), [entries]);
-  const tickedItems = useMemo(() => items.filter((i) => ticked.includes(i.key)), [items, ticked]);
+  // R-IGCSE-GCSE-ONLY (Guy, 20 Nov): at an IGCSE school's GCSE dashboard, the subjects a teacher can pick and
+  // focus on are its GCSE ones; comparisons (the category, the whole school) still read every subject.
+  const offeredItems = useMemo(() => offeredAtGcse(items, phase ?? "ks4", igcseOwn), [items, phase, igcseOwn]);
+  const tickedItems = useMemo(() => offeredItems.filter((i) => ticked.includes(i.key)), [offeredItems, ticked]);
 
   const persist = useCallback(
     async (next: string[]) => {
@@ -2757,7 +2760,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               tiles, then the category picker straight underneath, no Next between them. */}
           {(() => {
             const ph = phase as "ks4" | "ks5";
-            const present = QUALIFICATION_FAMILIES[ph].filter((f) => items.some((i) => familyOfItem(ph, i) === f.id));
+            const present = QUALIFICATION_FAMILIES[ph].filter((f) => offeredItems.some((i) => familyOfItem(ph, i) === f.id));
             // Pre-ticked from the real current selection: every family that holds at least
             // one ticked subject. (Onboarding pre-ticks everything with data instead; that
             // default is for someone who has not chosen yet.)
@@ -2768,7 +2771,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
                 setQuickFamilies(selected.filter((f) => f !== id));
                 // As in onboarding: a family's subjects go with it, rather than staying
                 // saved, hidden from the picker, and still on every card above.
-                const drop = new Set(items.filter((i) => familyOfItem(ph, i) === id).map((i) => i.key));
+                const drop = new Set(offeredItems.filter((i) => familyOfItem(ph, i) === id).map((i) => i.key));
                 if (ticked.some((k) => drop.has(k))) persist(ticked.filter((k) => !drop.has(k)));
               } else {
                 setQuickFamilies([...selected, id]);
@@ -2790,7 +2793,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
                   families={present}
                   selected={selected}
                   onToggle={toggleQuickFamily}
-                  subjectCounts={Object.fromEntries(present.map((f) => [f.id, items.filter((i) => familyOfItem(ph, i) === f.id).length]))}
+                  subjectCounts={Object.fromEntries(present.map((f) => [f.id, offeredItems.filter((i) => familyOfItem(ph, i) === f.id).length]))}
                 />
                 {open.length === 0 ? (
                   <p className="py-4 text-center text-[13px] text-[var(--muted3)]">
@@ -2799,7 +2802,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
                 ) : (
                   <CategorySubjectPicker
                     families={open}
-                    items={toPickerItems(ph, items.filter((i) => selected.includes(familyOfItem(ph, i))))}
+                    items={toPickerItems(ph, offeredItems.filter((i) => selected.includes(familyOfItem(ph, i))))}
                     ticked={ticked}
                     onToggle={toggleQuickSubject}
                     onSetTicked={(next) => {

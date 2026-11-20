@@ -117,6 +117,18 @@ export function colourByGroup(phase: TeacherPhase, items: { qualificationType: s
 // grouping after it can never disagree about what counts as GCSE or BTEC/OCR.
 const KS4_GCSE = "GCSE (9-1) Full Course";
 const KS4_GCSE_DOUBLE = "GCSE (9-1) Full Course (Double Award)";
+
+/** A GCSE qualification (full course or double award), not a vocational one (BTEC, Cambridge National). */
+export const isGcseQualification = (qualificationType: string) => qualificationType === KS4_GCSE || qualificationType === KS4_GCSE_DOUBLE;
+
+/**
+ * Guy, 20 Nov (R-IGCSE-GCSE-ONLY): at an independent school that takes IGCSE in its core subjects, the GCSE walks,
+ * the GCSE dashboard's picker and SMT's Our subjects offer only the subjects it takes as GCSE -- the only fair
+ * comparison when DfE publishes no IGCSE results. Every other school is unchanged (all its published subjects).
+ */
+export function offeredAtGcse<T extends { qualificationType: string }>(items: T[], phase: "ks2" | "ks4" | "ks5", igcseSchool: boolean): T[] {
+  return phase === "ks4" && igcseSchool ? items.filter((i) => isGcseQualification(i.qualificationType)) : items;
+}
 const isCambridgeNational = (q: string) => /cambridge national/i.test(q);
 const isBtec = (q: string) => /^btec/i.test(q);
 

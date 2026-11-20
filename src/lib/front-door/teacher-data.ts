@@ -1,6 +1,7 @@
 // VicData 0.8 front door: loads the rows the Teacher home and walks are built from, for one school and
 // phase, with the same lib calls the dashboard route and the subject-geography route make (so the walk's
 // figures are the dashboard's). Server only. The shaping is teacher-model.ts (pure).
+import { igcseEngland } from "@/lib/igcse";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { fetchSubjectHeadlineForSchools, fetchSubjectLevelDataForSchools, fetchSubjectQualificationHeadlineForSchools } from "@/lib/academic-data-view";
@@ -54,8 +55,10 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
     fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined),
     phase === "ks5" ? fetchSubjectQualificationHeadlineForSchools([urn], phase) : Promise.resolve(new Map()),
     cachedReference(`dashboard:england:${phase}`, () => englandSubjectAverages(phase)).catch(() => null),
-    supabase.from("schools").select("current_name").eq("urn", urn).maybeSingle<{ current_name: string | null }>(),
+    supabase.from("schools").select("current_name, establishment_type_group").eq("urn", urn).maybeSingle<{ current_name: string | null; establishment_type_group: string | null }>(),
   ]);
+  // R-IGCSE-GCSE-ONLY: an independent school in the IGCSE rule (lib/igcse, R-IGCSE-EVERYWHERE) at GCSE.
+  const igcseSchool = phase === "ks4" && nameRow.data?.establishment_type_group === "Independent schools" && (await igcseEngland()).has(urn);
   const own = byUrn.get(urn) ?? { entries: [], valueAdded: [], gradeDistribution: [] };
   const input: TeacherModelInput = {
     phase,
@@ -68,6 +71,7 @@ export async function loadTeacherInput(supabase: SupabaseClient, urn: string, ph
     area: { la: null, region: null, england: null },
     nearest: [],
     nearestNote: null,
+    igcseSchool,
   };
   // Setup needs the subject list only.
   if (opts.lite) return input;

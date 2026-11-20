@@ -8,7 +8,7 @@ import type { SubjectGradeCount } from "@/lib/grade-rows";
 import { familyFor } from "@/lib/teacher-view-catalogue";
 import { englandIndexOf, englandValueAt, matchedHeadlineRows, ownHeadlineRows, subjectEntriesAt, subjectPointsAt, type EnglandAverages } from "@/lib/teacher-view-measures";
 import { candidateItemsOf, categoryItemsOf, focusQualificationFamily, schoolSubjectsOf, subjectItemsOf, type SubjectItem } from "@/lib/teacher-view-populations";
-import { qualificationFamilyOf, qualificationShortLabel } from "@/lib/teacher-view-theme";
+import { offeredAtGcse, qualificationFamilyOf, qualificationShortLabel } from "@/lib/teacher-view-theme";
 import { comparisonLabel, isGrouped, sameSubject } from "@/lib/subject-match";
 
 export type TeacherPhaseId = "ks4" | "ks5";
@@ -21,6 +21,8 @@ export type AreaLine = { name: string; entries: Series; points: Series } | null;
 export type TeacherModel = {
   phase: TeacherPhaseId;
   school: { urn: string; name: string };
+  /** At GCSE, an IGCSE school (R-IGCSE-GCSE-ONLY): `subjects` holds its GCSE subjects only, and the home says why. */
+  igcseSchool?: boolean;
   /** Every subject the school runs (the switcher), by entries. */
   subjects: { key: string; label: string; subject: string; qualLabel: string; entries: number; family: string }[];
   focus: { key: string; subject: string; qualificationType: string; label: string; qualLabel: string; /** R-SUBJECT-MATCH: the name comparisons use ("Art and Design (all titles)"); the subject when it is in no group. */ matchLabel?: string } | null;
@@ -55,6 +57,8 @@ export type TeacherModelInput = {
   englandGradeShare?: Record<string, number> | null;
   /** Map positions (British National Grid), by URN: the nearby walk's map. */
   coords?: Record<string, { easting: number | null; northing: number | null }>;
+  /** An independent school taking IGCSE in its core subjects (R-IGCSE-GCSE-ONLY): at GCSE, GCSE subjects only. */
+  igcseSchool?: boolean;
 };
 export type AreaRows = { name: string; rows: { period: number; entries: number | null; avgPointScore: number | null }[] };
 
@@ -67,7 +71,9 @@ export function pickFocus(items: { key: string }[], ticked: string[], wanted: st
 export function buildTeacherModel(input: TeacherModelInput, focusKey: string | null, ticked: string[] = []): TeacherModel {
   const { phase } = input;
   const items: SubjectItem[] = subjectItemsOf(input.entries);
-  const key = pickFocus(items, ticked, focusKey);
+  // R-IGCSE-GCSE-ONLY: the subjects a Teacher can pick (the switcher, the focus); comparisons still read them all.
+  const offered = offeredAtGcse(items, phase, !!input.igcseSchool);
+  const key = pickFocus(offered, ticked, focusKey);
   const focusItem = items.find((i) => i.key === key) ?? null;
   const periods = Array.from(new Set([...input.headline, ...input.qualificationHeadline].map((h) => h.period))).sort((a, b) => a - b);
   const latest = periods.length ? periods[periods.length - 1] : null;
@@ -114,7 +120,8 @@ export function buildTeacherModel(input: TeacherModelInput, focusKey: string | n
   return {
     phase,
     school: input.school,
-    subjects: items.map((i) => ({ key: i.key, label: i.label, subject: i.subject, qualLabel: qualificationShortLabel(phase, i.qualificationType), entries: i.entries, family: qualificationFamilyOf(phase, i.qualificationType) })),
+    igcseSchool: phase === "ks4" && !!input.igcseSchool,
+    subjects: offered.map((i) => ({ key: i.key, label: i.label, subject: i.subject, qualLabel: qualificationShortLabel(phase, i.qualificationType), entries: i.entries, family: qualificationFamilyOf(phase, i.qualificationType) })),
     focus: focusItem ? { key: focusItem.key, subject: focusItem.subject, qualificationType: focusItem.qualificationType, label: focusItem.label, qualLabel: qualificationShortLabel(phase, focusItem.qualificationType), ...(isGrouped(phase, focusItem.subject, focusItem.qualificationType) ? { matchLabel: comparisonLabel(phase, focusItem.subject, focusItem.qualificationType) } : {}) } : null,
     periods,
     latest,

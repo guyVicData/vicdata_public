@@ -198,6 +198,9 @@ export function TeacherPhaseSection({ urn, phase, heading }: { urn: string; phas
           </span>
         ) : m && !m.focus ? (
           `No subject results are published for this school at this phase yet. The ${ph}' figures appear here once DfE publishes them.`
+        ) : m?.igcseSchool ? (
+          // R-IGCSE-GCSE-ONLY (Guy, 20 Nov): why the switcher holds the GCSE subjects only.
+          <span data-igcse-only="">{m.school.name} takes IGCSE in its core subjects, and DfE publishes no IGCSE results. These walks and the {label} dashboard cover the subjects it takes as GCSE.</span>
         ) : null
       }
     />
