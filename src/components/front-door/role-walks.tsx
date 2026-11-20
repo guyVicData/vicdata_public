@@ -37,7 +37,7 @@ import { smtAnswer } from "@/lib/front-door/smt-answers";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { dataviewById } from "@/catalogue/dataviews";
 import { answerStep, fillTemplate, groupWalkDash, screenMeta, SMT_SUBJECTS_RANKED, type Walk } from "@/lib/front-door/walks";
-import { Found, homeOf, MiniMap, useStep, useWalkTab, WalkFooter, WalkFrame, WalkPanel, WalkRail, WalkScreen, type FoundAnswer } from "./WalkPage";
+import { Found, homeOf, MiniMap, useStep, useWalkBack, useWalkHome, useWalkTab, WalkFooter, WalkFrame, WalkPanel, WalkRail, WalkScreen, type FoundAnswer } from "./WalkPage";
 import { groupDashVars, groupWalkView, type DashResponse, type ViewId } from "@/components/groups/dash/GroupDashboard";
 import { GroupSetPicker } from "@/components/groups/dash/GroupSetPicker";
 import type { ProjectionRow } from "@/components/groups/dash/views-r3";
@@ -58,6 +58,7 @@ function titleOf(view: string, fill: Record<string, string | number | null>): st
 /** The walk's panel and its chrome, for any role. */
 function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }: { walk: Walk; step: number; screens: Screenish[]; cols: string[]; colName: string; colQuestion: string; onStep: (s: number) => void }) {
   const router = useRouter();
+  const back = useWalkBack();
   const s = walk.screens[step];
   const sc = screens[step];
   const next = step + 1 < walk.screens.length ? screens[step + 1].question : "Here's what you found";
@@ -89,7 +90,7 @@ function RoleScreen({ walk, step, screens, cols, colName, colQuestion, onStep }:
           </WalkPanel>
         }
       />
-      <WalkFooter onBack={() => (step === 0 ? router.push(walk.product === "group" ? "/teacher/group" : "/teacher") : onStep(step - 1))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => onStep(step + 1)} next={next} finish={step + 1 >= walk.screens.length} />
+      <WalkFooter onBack={() => (step === 0 ? router.push(back.href) : onStep(step - 1))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => onStep(step + 1)} next={next} finish={step + 1 >= walk.screens.length} />
     </>
   );
 }
@@ -102,7 +103,9 @@ function answerOf(walk: Walk, screens: Screenish[]): FoundAnswer | null {
 
 /** 0.8 feedback A2 (R-GROUP-WALKS-LOAD): a walk that couldn't load says what failed -- the route's own message
  * and its status code -- logs it, and always offers the way back to the role's home; never a dead end. */
-function WalkError({ walk, what, code, message, home, ctx }: { walk: Walk; what: string; code: number; message: string; home: string; ctx?: { entry?: string | null } }) {
+function WalkError({ walk, what, code, message, ctx }: { walk: Walk; what: string; code: number; message: string; home?: string; ctx?: { entry?: string | null } }) {
+  // The way back: where the walk was opened from (?back=), else its role's section of the home.
+  const home = useWalkHome(walk);
   useEffect(() => {
     console.error(`[walk] ${walk.id}: HTTP ${code} ${message}`);
   }, [walk.id, code, message]);
@@ -113,7 +116,7 @@ function WalkError({ walk, what, code, message, home, ctx }: { walk: Walk; what:
         <p className="text-[14px] text-[var(--field-ink)]">
           {message} <span className="tabular-nums opacity-70">(error {code})</span>
         </p>
-        <Link href={home} data-walk-home="" className="inline-flex min-h-[44px] w-fit items-center font-semibold underline">Back to your home</Link>
+        <Link href={home.href} data-walk-home="" className="inline-flex min-h-[44px] w-fit items-center font-semibold underline">{home.label}</Link>
       </div>
     </WalkFrame>
   );

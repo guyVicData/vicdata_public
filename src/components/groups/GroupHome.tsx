@@ -5,6 +5,7 @@
 // (its dashboards shown as coming until rounds 2 and 3, and a summary line that already works), our
 // schools (each opening that school's SMT read-only, or its public page), Access, My dashboards and
 // Meetings. A platform admin sees it through View as, read-only and never logged.
+import { withBack } from "@/lib/front-door/back";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -43,7 +44,7 @@ export function GroupDashChips({ accountId, size = "md", library = false }: { ac
       {GROUP_DASHBOARD_NAMES.map((n) => {
         const href = GROUP_DASHBOARD_LIVE[n];
         return href ? (
-          <Link key={n} href={`${href}?account=${accountId}`} data-group-dash={n} className={`inline-flex min-h-[44px] items-center rounded-full border border-[var(--group-card-edge)] bg-[var(--group-switch-on)] px-[11px] sm:min-h-0 ${pad} text-[12px] font-bold text-[var(--group-switch-knob-on)]`}>
+          <Link key={n} href={withBack(`${href}?account=${accountId}`, `/teacher/group?account=${accountId}`)} data-group-dash={n} className={`inline-flex min-h-[44px] items-center rounded-full border border-[var(--group-card-edge)] bg-[var(--group-switch-on)] px-[11px] sm:min-h-0 ${pad} text-[12px] font-bold text-[var(--group-switch-knob-on)]`}>
             {n}
           </Link>
         ) : (
@@ -183,7 +184,9 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
   const walks = walksFor("group");
   const figures = groupFigures(d);
   const academic = academicFigure;
-  const params = { account: o.id };
+  // 20 Nov (navigation): every walk and member school opened here comes back to this group's home.
+  const groupHome = `/teacher/group?account=${o.id}`;
+  const params = { account: o.id, back: groupHome };
   const heading = <HomeHeading sub="How the group is doing, and how its schools compare. Each question walks you through a few screens." onField />;
   const also: AlsoItem[] = [
     ...(!offices.viewAs ? [{ href: "/dashboards", title: "My dashboards", line: "Yours, and those shared with head office", icon: <DashboardsGlyph />, colour: DASHBOARDS_TILE }] : []),
@@ -246,7 +249,7 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
                 <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" aria-label="Our schools">
                   {d.schools.map((s) => (
                     <li key={s.urn}>
-                      <Link href={s.vicdata ? `/teacher/smt?headOffice=${s.urn}` : `/schools/${s.urn}`} className="fd-tile flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
+                      <Link href={s.vicdata ? withBack(`/teacher/smt?headOffice=${s.urn}`, groupHome) : `/schools/${s.urn}`} className="fd-tile flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
                           <SchoolsGlyph />
                         </span>

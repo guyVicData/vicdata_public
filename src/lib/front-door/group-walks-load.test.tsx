@@ -65,7 +65,8 @@ test("R-GROUP-WALKS-LOAD: every group walk loads for a mainstream group, a speci
 test("R-GROUP-WALKS-LOAD: a walk that can't load names the failure and its code, and links home", async () => {
   const src = (await import("node:fs")).readFileSync("src/components/front-door/role-walks.tsx", "utf8");
   assert.doesNotMatch(src, /This walk couldn't load the group's figures\."/, "no bare sentence");
-  assert.match(src, /function WalkError[\s\S]*\(error \{code\}\)[\s\S]*Back to your home/);
+  // 20 Nov (navigation): the link back is where the walk was opened from, in words (useWalkHome: "Back to the group").
+  assert.match(src, /function WalkError[\s\S]*useWalkHome\(walk\)[\s\S]*\(error \{code\}\)[\s\S]*\{home\.label\}/);
   assert.ok((src.match(/<WalkError /g) ?? []).length >= 3, "SMT, Admissions and head office walks");
   // The walk reads its account from the address the router holds, not window.location (A2).
   assert.match(src, /useSearchParams\(\)/);

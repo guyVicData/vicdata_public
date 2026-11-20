@@ -25,6 +25,7 @@ import { guidedHref } from "@/lib/sets/guided";
 import { HomeHeading, HomeSection, NoWalkTile, QuestionTile, walkHref, type TileFigure } from "./home";
 import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { SmtSetsPanel } from "./smt-sets-panel";
+import { HOME_SECTION, withBack } from "@/lib/front-door/back";
 import { AdmissionsSetsPanel, readPicks, writePicks, type AdmissionsPicks } from "./admissions-sets-panel";
 import { loadAdmissionsMember } from "@/components/admissions/member";
 import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
@@ -508,11 +509,11 @@ export function OurSubjects({ urn, phases, gcseOnly = false }: { urn: string; ph
                     </span>
                     <span className="flex flex-wrap gap-1.5">
                       {walks.map((w) => (
-                        <Link key={w.id} href={walkHref(w, { subject: sub.key })} className="inline-flex min-h-[44px] items-center rounded-full bg-[var(--tile-tint)] px-3 text-[12.5px] font-semibold text-[var(--tile-accent-text)] sm:min-h-[30px]">
+                        <Link key={w.id} href={walkHref(w, { subject: sub.key, back: HOME_SECTION.smt })} className="inline-flex min-h-[44px] items-center rounded-full bg-[var(--tile-tint)] px-3 text-[12.5px] font-semibold text-[var(--tile-accent-text)] sm:min-h-[30px]">
                           {w.label.replace(" · Context", "")}
                         </Link>
                       ))}
-                      <Link href={`/teacher/${ph}?subject=${encodeURIComponent(sub.key)}&from=smt`} className="inline-flex min-h-[44px] items-center rounded-full px-2 text-[12.5px] text-[var(--muted2)] hover:text-[var(--fg)] sm:min-h-[30px]">
+                      <Link href={withBack(`/teacher/${ph}?subject=${encodeURIComponent(sub.key)}&from=smt`, HOME_SECTION.smt)} className="inline-flex min-h-[44px] items-center rounded-full px-2 text-[12.5px] text-[var(--muted2)] hover:text-[var(--fg)] sm:min-h-[30px]">
                         Dashboard &rarr;
                       </Link>
                     </span>
@@ -616,7 +617,8 @@ export function AdmissionsSection({ urn, heading, chip = "Admissions", tabs = nu
   const walks = walksFor("admissions");
   const label = current ? entryPoint(current)?.label ?? current : null;
   const f = fig?.key === figKey ? fig : null;
-  const params = { entry: current, ...setQ };
+  // On SMT's Admissions tab the walks go back to the SMT home, not the Admissions one (20 Nov).
+  const params = { entry: current, ...setQ, ...(chip === "SMT" ? { back: HOME_SECTION.smt } : {}) };
   const dashQ = new URLSearchParams({ ...(current ? { entry: current } : {}), ...setQ }).toString();
   return (
     <HomeSection

@@ -13,6 +13,7 @@
 // Mid is read here (useThemePref, listed in MID_PAGES): the root stays dark in Mid, and each field turns
 // the tokens to Light's itself (globals.css). Colours are tokens only, never a `dark:` utility, so a
 // field draws the same in every theme's own terms.
+import { withBack } from "@/lib/front-door/back";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import * as PanelIcons from "@/components/shell/PanelIcons";
@@ -148,6 +149,9 @@ export type SectionChip = { label: ReactNode; strong?: boolean };
  * One area you work in. `field` picks its Mid colour; `accent` is its product accent for Dark and Light.
  * In "fewer questions" mode the dashboard button leads and the questions are one line of links (B10).
  */
+/** A home section's id, from its chip ("SMT" → smt, "Post-16" → post-16): where a way back lands (lib/front-door/back.ts). */
+export const sectionId = (chip: string) => chip.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
 export function HomeSection({
   field,
   accent,
@@ -179,7 +183,7 @@ export function HomeSection({
   const [fewer] = useFewerQuestions();
   const style = (accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as CSSProperties;
   return (
-    <section data-field={field} data-home-section={chip} style={style} className="px-4 py-8 sm:px-10 sm:py-11">
+    <section id={sectionId(chip)} data-field={field} data-home-section={chip} style={style} className="scroll-mt-4 px-4 py-8 sm:px-10 sm:py-11">
       <div className="mx-auto flex max-w-[1160px] flex-col gap-6">
         {heading}
         <div className="flex flex-wrap items-center gap-2.5">
@@ -189,7 +193,7 @@ export function HomeSection({
           {dashboard && !fewer && (
             // 0.8 feedback B4 (Admissions 4, 5): a tint of the section's own colour (its tile tint, with the
             // accent text that is contrast-checked on it), not white, so it sits back from the questions.
-            <Link href={dashboard.href} data-home-dashboard="" className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] bg-[var(--tile-tint)] px-3.5 py-2 text-[14px] font-semibold text-[var(--tile-accent-text)] hover:opacity-90 sm:min-h-0">
+            <Link href={withBack(dashboard.href, `/teacher#${sectionId(chip)}`)} data-home-dashboard="" className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] bg-[var(--tile-tint)] px-3.5 py-2 text-[14px] font-semibold text-[var(--tile-accent-text)] hover:opacity-90 sm:min-h-0">
               {GRID} {dashboard.label}
             </Link>
           )}
@@ -198,7 +202,7 @@ export function HomeSection({
         {fewer ? (
           <div className="flex flex-col gap-3" data-fewer="">
             {dashboard && (
-              <Link href={dashboard.href} className="fd-tile flex items-center justify-center gap-2.5 rounded-[16px] px-5 py-5 text-[18px] font-semibold text-[var(--fg)]">
+              <Link href={withBack(dashboard.href, `/teacher#${sectionId(chip)}`)} className="fd-tile flex items-center justify-center gap-2.5 rounded-[16px] px-5 py-5 text-[18px] font-semibold text-[var(--fg)]">
                 {GRID} {dashboard.label}
               </Link>
             )}

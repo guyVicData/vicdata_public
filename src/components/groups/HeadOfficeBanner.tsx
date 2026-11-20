@@ -3,11 +3,20 @@
 // VicData 0.8 groups r1 (G2): the strip over a member school's SMT dashboards when head office opens
 // them -- read-only, and the way back to the group's home.
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { backFrom } from "@/lib/front-door/back";
 import { GROUP_ACCENT, GROUP_BRONZE } from "@/lib/teacher-view-theme";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 
 export function HeadOfficeBanner({ note, className = "" }: { note: string; className?: string }) {
   const [theme] = useTeacherTheme();
+  // 20 Nov: back to the group head office came from (?back=, with its account), else the group home.
+  const [back, setBack] = useState("/teacher/group");
+  useEffect(() => {
+    const b = backFrom(window.location.search, "/teacher/group");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (b.given && b.href.startsWith("/teacher/group")) setBack(b.href);
+  }, []);
   return (
     <div
       role="status"
@@ -16,7 +25,7 @@ export function HeadOfficeBanner({ note, className = "" }: { note: string; class
     >
       <span>{note}</span>
       <span className="flex-grow" />
-      <Link href="/teacher/group" className="font-bold" style={{ color: theme === "dark" ? GROUP_ACCENT.hex : GROUP_BRONZE.light.accentText }}>
+      <Link href={back} className="font-bold" style={{ color: theme === "dark" ? GROUP_ACCENT.hex : GROUP_BRONZE.light.accentText }}>
         Back to the group &rarr;
       </Link>
     </div>

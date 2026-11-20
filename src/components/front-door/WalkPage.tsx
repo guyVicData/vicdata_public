@@ -19,18 +19,19 @@ import Link from "next/link";
 import { PHASE_TONES } from "@/components/smt/ui";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { backFrom, HOME_SECTION, withBack } from "@/lib/front-door/back";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { pickMembership, resolveViewAs, resolvePeek } from "@/lib/view-as";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PHASE_LABELS } from "@/lib/teacher-view-phases";
-import { fillTemplate, screenMeta, teacherModeOf, walkById, walkRailLabels, walksFor, type Walk } from "@/lib/front-door/walks";
+import { fillTemplate, screenMeta, teacherModeOf, walkById, walkRailLabels, type Walk } from "@/lib/front-door/walks";
 import type { TeacherModel } from "@/lib/front-door/teacher-model";
 import { teacherAnswerStep, teacherScreens, type Screen } from "@/lib/front-door/teacher-screens";
 import { palette, WalkChart } from "./charts";
-import { RailGlyph, WalkGlyph, walkHref } from "./home";
+import { RailGlyph, WalkGlyph } from "./home";
 import { RoleWalk } from "./role-walks";
 import { LoadingGraphic } from "@/components/shell/LoadingGraphic";
 
@@ -75,9 +76,11 @@ export function WalkFrame({ walk, step, steps, chip, ctx, children }: { walk: Wa
   const theme = effectiveTheme(pref);
   const mid = pref === "mid";
   const tab = useWalkTab(walk);
+  const home = useWalkHome(walk);
   const accent = walk.product === "gcse" || walk.product === "post16" ? PHASE_ACCENT[walk.product === "gcse" ? "ks4" : "ks5"]! : tab ? PHASE_TONES[tab][mid || theme === "light" ? "light" : "dark"] : (ROLE_WALK_ACCENT[walk.product]?.[mid || theme === "light" ? "light" : "dark"] ?? null);
   const style = (accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as CSSProperties;
   return (
+    <WalkHomeContext.Provider value={home}>
     <main id="teacher-root" data-theme={mid ? "light" : theme} data-pref={pref} data-walk={walk.id} className="flex min-h-screen flex-col bg-[var(--bg)] text-[var(--fg)]" style={style}>
       <WalkHeader walk={walk} step={step} steps={steps} chip={chip} ctx={ctx} band={mid || theme === "dark" ? "dark" : "light"} part={tab ?? FIELD[walk.product]} />
       <section data-field={tab ?? FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
@@ -85,6 +88,7 @@ export function WalkFrame({ walk, step, steps, chip, ctx, children }: { walk: Wa
         <div className="mx-auto flex max-w-[1060px] flex-col gap-6">{children}</div>
       </section>
     </main>
+    </WalkHomeContext.Provider>
   );
 }
 
@@ -95,6 +99,7 @@ export function WalkFrame({ walk, step, steps, chip, ctx, children }: { walk: Wa
  * black). Every pair is in the contrast table (R-THEME-CONTRAST).
  */
 export function WalkHeader({ walk, step, steps, chip, ctx, band, part }: { walk: Walk; step: number; steps: number; chip: string | null; ctx?: { subject?: string | null; category?: string | null; entry?: string | null }; band: "dark" | "light"; part?: string }) {
+  const back = useWalkBack();
   return (
     <header data-walk-head={band} data-part={part ?? FIELD[walk.product]} data-theme={band === "dark" ? "dark" : undefined} className="border-b border-[var(--wh-border)] bg-[var(--wh-bg)] text-[var(--wh-fg)]">
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
@@ -103,7 +108,7 @@ export function WalkHeader({ walk, step, steps, chip, ctx, band, part }: { walk:
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
         {/* Crosscheck (14 Nov, walk_*.png): the step dots sit centred, the walk on the left, chip and step right. */}
         <span className="flex w-full min-w-0 items-center gap-x-4 sm:w-auto sm:flex-1">
-          <Link href={homeOf(walk)} aria-label="Close the walk" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--wh-muted)] hover:text-[var(--wh-fg)] sm:h-8 sm:w-8">{CLOSE}</Link>
+          <Link href={back.href} aria-label={`Close the walk: ${back.label.toLowerCase()}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--wh-muted)] hover:text-[var(--wh-fg)] sm:h-8 sm:w-8">{CLOSE}</Link>
           <span data-walk-head-icon="" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--wh-tint)] text-[var(--wh-accent)]">
             <WalkGlyph icon={walk.icon} size={17} />
           </span>
@@ -123,13 +128,29 @@ export function WalkHeader({ walk, step, steps, chip, ctx, band, part }: { walk:
   );
 }
 
-export function homeOf(walk: Walk): string {
-  if (walk.product === "group") return "/teacher/group";
-  return "/teacher";
+/** A walk's natural parent: its role's own section of the home (HomeSection's id), or the group's home. */
+export function homeOf(walk: Pick<Walk, "product">): string {
+  if (walk.product === "group") return HOME_SECTION.group;
+  if (walk.product === "smt" || walk.product === "smt_primary") return HOME_SECTION.smt;
+  if (walk.product === "admissions") return HOME_SECTION.admissions;
+  return walk.product === "gcse" ? HOME_SECTION.gcse : HOME_SECTION.post16;
 }
 
+/** Guy, 20 Nov (navigation): where a walk goes back to -- the ?back= it was opened with (lib/front-door/back.ts),
+ * else its natural parent -- for its close, its first Back, its last window and the dashboards it opens. */
+export function useWalkHome(walk: Pick<Walk, "product">): { href: string; label: string } {
+  const sp = useSearchParams();
+  const b = backFrom(sp, homeOf(walk));
+  return { href: b.href, label: b.label };
+}
+const WalkHomeContext = createContext<{ href: string; label: string }>({ href: "/teacher", label: "Back to your home" });
+/** The way back, inside a walk's frame (WalkFrame provides it). */
+export const useWalkBack = () => useContext(WalkHomeContext);
+
 /** The mini-map: the dashboard's 3x2 grid, column icons above, this panel lit; Show me opens the dashboard. */
-export function MiniMap({ cols, spot, name, href }: { cols: string[]; spot: { col: number; row: number; span?: number; panel?: string }; name: string; href: string }) {
+export function MiniMap({ cols, spot, name, href: to }: { cols: string[]; spot: { col: number; row: number; span?: number; panel?: string }; name: string; href: string }) {
+  // The dashboard it opens goes back where the walk began, not into the walk.
+  const href = withBack(to, useWalkBack().href);
   return (
     <aside data-mini-map="" className="fd-tile w-full shrink-0 rounded-[12px] p-3 sm:max-w-[220px]">
       <div className="flex items-center justify-between text-[11.5px] text-[var(--muted)]">
@@ -218,6 +239,7 @@ export function WalkPanel({ icon, name, question, pills, tag, rail, title, note,
  * "More on the dashboard" at the foot opens the full dashboard.
  */
 export function WalkRail({ walk, step, onStep, dashboard, asTable, onTable }: { walk: Walk; step: number; onStep: (i: number) => void; dashboard: string; asTable?: boolean; onTable?: (on: boolean) => void }) {
+  const back = useWalkBack();
   const labels = walkRailLabels(walk);
   const lit = (on: boolean) => (on ? "bg-[rgba(var(--accent-rgb,138,138,144),0.16)] font-semibold text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]");
   const glyph = (on: boolean, icon: string) => <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] ${on ? "bg-[var(--accent,var(--fg))] text-[var(--bg)]" : ""}`}><RailGlyph name={icon} size={13} /></span>;
@@ -241,7 +263,7 @@ export function WalkRail({ walk, step, onStep, dashboard, asTable, onTable }: { 
         </li>
       )}
       <li className="md:mt-3 md:border-t md:border-[var(--panel-border)] md:pt-2">
-        <Link href={dashboard} data-walk-rail-more="" className={`${RAIL_ROW} text-[var(--muted2)] hover:text-[var(--fg)]`}>More on the dashboard <span aria-hidden="true">&rarr;</span></Link>
+        <Link href={withBack(dashboard, back.href)} data-walk-rail-more="" className={`${RAIL_ROW} text-[var(--muted2)] hover:text-[var(--fg)]`}>More on the dashboard <span aria-hidden="true">&rarr;</span></Link>
       </li>
     </ul>
   );
@@ -322,6 +344,7 @@ async function schoolUrn(): Promise<string | null> {
 }
 
 function TeacherWalk({ walk }: { walk: Walk }) {
+  const teacherHome = useWalkHome(walk);
   const phase = walk.product === "gcse" ? "ks4" : "ks5";
   const [model, setModel] = useState<TeacherModel | null | "error">(null);
   const [step, setStep] = useStep(walk.screens.length);
@@ -387,7 +410,7 @@ function TeacherWalk({ walk }: { walk: Walk }) {
           </WalkPanel>
         }
       />
-      <WalkFooter onBack={() => (step === 0 ? router.push("/teacher") : (setAsTable(false), setStep(step - 1)))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => { setAsTable(false); setStep(step + 1); }} next={next} finish={step + 1 >= n} />
+      <WalkFooter onBack={() => (step === 0 ? router.push(teacherHome.href) : (setAsTable(false), setStep(step - 1)))} backLabel={step === 0 ? "Questions" : "Back"} onNext={() => { setAsTable(false); setStep(step + 1); }} next={next} finish={step + 1 >= n} />
     </WalkFrame>
   );
 }
@@ -401,14 +424,14 @@ export type FoundAnswer = { sentence: string; title?: string; body: ReactNode };
  * there, screen by screen, then the way on: back to your home (B2, Admissions 12), the other questions and the
  * full dashboard.
  */
-export function Found({ walk, screens, params, ctx, onBack, answer }: { walk: Walk; screens: { question: string; answer: string }[]; params: Record<string, string | null>; ctx: { subject?: string | null; category?: string | null; entry?: string | null }; onBack: () => void; answer: FoundAnswer | null }) {
-  const others = walksFor(walk.product).filter((w) => w.id !== walk.id && w.screens.length);
-  const home = homeOf(walk);
+export function Found({ walk, screens, ctx, onBack, answer }: { walk: Walk; screens: { question: string; answer: string }[]; params: Record<string, string | null>; ctx: { subject?: string | null; category?: string | null; entry?: string | null }; onBack: () => void; answer: FoundAnswer | null }) {
+  // Guy, 20 Nov: a walk ends by going back where it began (up one level) -- no list of other walks, no dashboard.
+  const home = useWalkBack();
   return (
     <div className="flex flex-col gap-6" data-walk-found="">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-[30px] font-semibold leading-tight text-[var(--field-ink)] sm:text-[38px]">Here&rsquo;s what you found</h1>
-        <Link href={home} data-walk-home="" className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-4 py-2.5 text-[14.5px] font-semibold text-[var(--fg)]">{ARROW_L} Back to your home</Link>
+        <Link href={home} data-walk-home="" className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-4 py-2.5 text-[14.5px] font-semibold text-[var(--fg)]">{ARROW_L} {home.label}</Link>
       </div>
       {answer && (
         <section data-walk-found-answer={walk.answer?.kind ?? ""} className={WALK_WINDOW}>
@@ -437,16 +460,8 @@ export function Found({ walk, screens, params, ctx, onBack, answer }: { walk: Wa
         })}
       </ol>
       <div className="flex flex-wrap gap-3">
-        {others.map((w) => (
-          <Link key={w.id} href={walkHref(w, params)} className="fd-tile inline-flex items-center gap-2 rounded-[12px] px-4 py-3 text-[14.5px] font-medium text-[var(--fg)]">
-            <WalkGlyph icon={w.icon} size={16} /> {fillTemplate(w.question, ctx)}
-          </Link>
-        ))}
-        <Link href={walk.dashboard} className="inline-flex items-center gap-2 rounded-[12px] bg-[var(--tile-accent,var(--accent))] px-4 py-3 text-[14.5px] font-semibold text-[var(--tile-on-accent,#0a0a0b)]">Open the full dashboard {ARROW_R}</Link>
-      </div>
-      <div className="flex flex-wrap gap-3">
         <button type="button" onClick={onBack} className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] px-4 py-3 text-[15px] text-[var(--fg)] hover:bg-[var(--box-bg)]">{ARROW_L} Back</button>
-        <Link href={home} className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] px-4 py-3 text-[15px] text-[var(--fg)] hover:bg-[var(--box-bg)]">Back to your home</Link>
+        <Link href={home} className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[var(--panel-border2)] px-4 py-3 text-[15px] text-[var(--fg)] hover:bg-[var(--box-bg)]">{home.label}</Link>
       </div>
     </div>
   );

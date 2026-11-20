@@ -10,6 +10,7 @@
 // Colours are the Teacher view tokens, not the wireframe's literal hexes: the wireframe
 // was drawn dark-only, and #7a7a7a / #1c1c1c / #262626 are its eyeballed stand-ins for
 // --muted / --panel-bg / --panel-border2, which also have light-theme values.
+import { BackBar } from "./BackBar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
@@ -79,8 +80,9 @@ export function TeacherNav({
   onTheme: (t: Theme) => void;
 }) {
   return (
-    // Two groups at opposite edges, as in Redesign.dc.html: the wordmark alone on the
-    // left, everything from Home to the theme toggle as one cluster pinned to the right.
+    <>
+    {/* Two groups at opposite edges, as in Redesign.dc.html: the wordmark alone on the
+        left, everything from Home to the theme toggle as one cluster pinned to the right. */}
     <nav aria-label="Teacher view" className="flex flex-wrap items-center justify-between gap-3.5 print:hidden">
       <Link href="/" className="text-[15px] font-extrabold tracking-tight">VicData</Link>
       <div className="flex flex-wrap items-center gap-3.5">
@@ -118,6 +120,9 @@ export function TeacherNav({
         </div>
       </div>
     </nav>
+      {/* 20 Nov: the way back, in words, when the page was opened from a level above (?back=). */}
+      <BackBar className="mt-3" />
+    </>
   );
 }
 
@@ -375,6 +380,7 @@ export function PhoneNav({
           <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>
       </div>
+      <BackBar className="pb-3" />
       <div className="h-px bg-[var(--panel-border2)]" />
       <div className="flex items-center gap-2 pt-3">
         <PhaseBadgeMenu phase={phase} phases={phases} />
