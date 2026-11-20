@@ -2,7 +2,7 @@
 // anything -- its phases (the level chips), whether it is mixed (the Gender pill) and a boarding
 // school (the Day + boarding pill), whether it sits IGCSEs (the marked GCSE chip), and the subject
 // areas it enters at GCSE and Post-16 (the second row). Server-only; public data, cached an hour.
-import { cachedReference } from "../server-cache";
+import { cachedReference, hasReference } from "../server-cache";
 import { createServerAnonSupabaseClient } from "../supabase";
 import { lookupAcademicLatestYears, lookupAcademicSubjectFamily, lookupAcademicSubjectHeadline, lookupReferenceData } from "../vicdata-reference";
 import { igcseGroupLabel, igcseGroupNote } from "../igcse-words";
@@ -69,9 +69,15 @@ const CENSUS_AT_ONCE = 3;
 export async function schoolCensuses(urns: string[]): Promise<Map<string, RollSnapshot[]>> {
   const uniq = Array.from(new Set(urns));
   const key = (u: string) => `smt:census:${u}`;
+  // 20 Nov: only the schools not already held are read. The Overview asks twice (the set, then the set and the
+  // school), and different chunk boundaries missed every batch, so a 488-school set read its census twice (26
+  // reads, ~8 s of the build); a school held from any earlier read (this one's, schoolCensus's) is a hit.
+  const held = uniq.filter((u) => hasReference(key(u)));
+  const missing = uniq.filter((u) => !hasReference(key(u)));
   const chunks: string[][] = [];
-  for (let i = 0; i < uniq.length; i += CENSUS_BATCH) chunks.push(uniq.slice(i, i + CENSUS_BATCH));
+  for (let i = 0; i < missing.length; i += CENSUS_BATCH) chunks.push(missing.slice(i, i + CENSUS_BATCH));
   const out = new Map<string, RollSnapshot[]>();
+  for (const u of held) out.set(u, await schoolCensus(u).catch(() => (markDegraded(), [] as RollSnapshot[])));
   // 20 Nov (evening): CENSUS_AT_ONCE reads at a time, each retried once. All of a 488-school set's 13 reads at once
   // made production cancel 11 of them at its statement timeout ("canceling statement due to statement timeout"), so
   // 440-480 of the 488 schools came back with no census and the Overview was built without them (and, built past a

@@ -121,6 +121,13 @@ export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs: n
   return promise;
 }
 
+/** Whether `key` has a live entry (read or being read) -- without touching it. For a batched read that skips
+ * what is already held (smt/school.ts schoolCensuses). */
+export function hasReference(key: string, ttlMs: number = defaultTtlFor(key)): boolean {
+  const hit = store.get(key);
+  return !!hit && Date.now() - hit.at < ttlMs;
+}
+
 /** Drop one key (the results cache: an answer it won't keep isn't kept in memory either). */
 export function forgetReference(key: string, promise?: Promise<unknown>): void {
   const e = store.get(key);
