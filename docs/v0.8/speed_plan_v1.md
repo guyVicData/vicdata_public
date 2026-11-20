@@ -46,18 +46,21 @@ The Chase's (137625) GCSE dashboard drew in 2.8 s; everything had loaded at 3.9�
 2. **Whole-population sets are the one truly slow thing:** 10–18 s for England-wide or all-sector regional sets, even warm. Region-and-sector sets (about 7 s) are tolerable.
 3. **Each page does too much.** A typical page makes 8–11 API calls. Several run one after another. Some are duplicated: the account badge twice, the Teacher home's figures twice. Some load data for a page the user hasn't opened.
 
-## 3. Before the demo (low risk, hours each)
+## 3. Before the demo (done 20 Nov, evening)
 
-In order of value for the demo:
+| Step | Commit | Result |
+|---|---|---|
+| Warm-up script, one page at a time (`scripts/warm-demo.mjs`; setup and use at its top). National values are kept 12 hours, so a morning run lasts the day. | `0c707e4`, this commit | Leighton Park, cold → warm: Teacher home 2–10 s → 1.7–2.1 s; SMT home 9–13 s → 1.4 s; SMT Academic, Pupils, Context 3.3–3.5 s → 1.2–1.7 s; Admissions 4.4–4.9 s → 2.1–2.3 s. **Big sets:** independent schools in England 15.9 s / 13.3 s → 1.1 s / 3.4 s; all sixth forms in the South East 11.0 s / 13.6 s → 1.0 s / 3.0 s; independent schools in the South East 5.8 s / 4.6 s → 1.0 s / 1.4 s |
+| SMT Academic looks rows up by school and year once (byte-for-byte the same output on 7 states) | `0c707e4` | 488-school set: 3.6 s → 2.0 s of building |
+| Account badge: count only, once per page, not blocking the menu | `e35d2e7` | |
+| Teacher home: identical phase requests share one answer | `e35d2e7` | |
+| SMT: the comparison set's request starts alongside `/api/smt/school` | `9dc4fee` | |
+| Saved comparison sets for head office and peek (was 403) | `9dc4fee` | |
+| Background preloads | kept | Once the memory crash was fixed they cost little, and with one presenter they make switching phase or Admissions dashboard instant. Revisit for the beta, when many people use the site at once. |
 
-1. **A warm-up script, run once after the last deploy and again an hour before the demo.** It requests, one at a time, every page and set we'll show (Leighton Park's Teacher, SMT, Admissions, the sets chosen for the demo). It must run one request at a time: the reverted background warm-up (bc6d8b0) ran in parallel and broke the next request. Raise the TTL from 1 h to 12 h for the national, public reads (populations, IGCSE list, England figures), which change only at ingest, so a morning warm-up lasts the day. **Biggest win for the least risk.**
-2. **Stop the background preloads.** The Teacher dashboard fetches the other phase 4 s after drawing (`prefetchOtherPhases`, `TeacherDashboard.tsx`). Admissions fetches the other dashboard's routes after 1.2 s. Each page view costs the server double, and that work competes with the next click.
-3. **A cheap account badge.** `/api/school-admin/account?waiting=1` runs the whole account summary, including a `usage_events` scan, to show one number. It's on every Teacher page, and is often called twice (0.4–1 s each). Give it a count-only path, and call it once.
-4. **Remove duplicate calls:** `/api/front-door/teacher` twice per phase on the Teacher home, the account badge twice.
-5. **SMT: run `smt/school` and the chooser-set together** instead of one after the other (about 1 s off every SMT page).
-6. **Demo choice, not code:** demo SMT on Leighton Park's 10 nearest or *independent schools in the South East*. Open *independent schools in England* only after warming it.
+**For the demo:** run `node scripts/warm-demo.mjs 110110 --sets` after the last deploy and again within the hour before (about 1–2 minutes). Any deploy afterwards restarts the server and empties the caches.
 
-Also found, not speed: **`/api/teacher/saved-comparator-sets` returns 403 for head-office users** on a member school's SMT pages, so their saved sets are missing. The route recognises only the View as cookie, not head-office access or the peek. Small fix; worth doing before groups are demoed.
+**Found, not fixed:** a state school's *State schools in England* set at GCSE is 3,497 schools and takes over 2 minutes to build (too long for the browser, and too big to cache). Leighton Park, as an independent school, never sees it. Hide that default for state schools before the beta, or wait for 4.2 item 1.
 
 ## 4. After the demo: the architecture (agreed with Guy, 20 Nov)
 
