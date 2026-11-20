@@ -30,6 +30,11 @@ import { openViewAs, ViewAsPill } from "@/components/view-as/ViewAs";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
 import { NavRoleSwitch, showSchool, useMemberSchools } from "./RoleSwitch";
 import { useFewerQuestions } from "@/lib/front-door/fewer";
+import { cachedFetchJson } from "@/lib/fetch-cache";
+
+// Speed (20 Nov): the badge's answer is shared by the menus drawn together, not kept: a page opened more than
+// this later asks again, and People drops it on any change, so an approved request clears the badge as before.
+const ADMIN_BADGE_TTL_MS = 10_000;
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
@@ -242,9 +247,15 @@ export function AccountMenu() {
       ]);
       setCanManage(school.status === "ready" && school.school.canManage);
       if (school.status === "ready" && school.school.canManage) {
-        const r = await fetch(`/api/school-admin/account?urn=${encodeURIComponent(school.school.schoolUrn)}&waiting=1`, { headers: { Authorization: `Bearer ${data.session.access_token}` } }).catch(() => null);
-        const w = r && r.ok ? ((await r.json().catch(() => null)) as { isSchoolAdmin: boolean; waiting: number } | null) : null;
-        setWaiting(w && showAdminBadge(w) ? w.waiting : 0);
+        // Speed (20 Nov): every page draws this menu twice (the desktop nav and the phone nav), and each asked
+        // for the badge; the shared fetch cache (one promise per URL and person, kept ADMIN_BADGE_TTL_MS) makes
+        // it one request. Not awaited: the rows below never wait on the badge.
+        void cachedFetchJson<{ isSchoolAdmin: boolean; waiting: number }>(`/api/school-admin/account?urn=${encodeURIComponent(school.school.schoolUrn)}&waiting=1`, { token: data.session.access_token, ttlMs: ADMIN_BADGE_TTL_MS })
+          .catch(() => null)
+          .then((r) => {
+            const w = r && r.ok ? r.body : null;
+            setWaiting(w && showAdminBadge(w) ? w.waiting : 0);
+          });
       }
       setPlatformAdmin(!admin.error && admin.data === true);
       setStaff(await isPlatformAdminCached(supabase));

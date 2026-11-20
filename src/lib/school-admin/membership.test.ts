@@ -104,7 +104,7 @@ test("R-ADMIN-BADGE: the account menu shows the badge exactly when something wai
   assert.equal(showAdminBadge({ isSchoolAdmin: true, waiting: 0 }), false);
   assert.equal(showAdminBadge({ isSchoolAdmin: false, waiting: 3 }), false);
   const nav = readFileSync(new URL("../../components/shell/TeacherNav.tsx", import.meta.url), "utf8");
-  assert.match(nav, /if \(school\.status === "ready" && school\.school\.canManage\) \{\s*const r = await fetch\(`\/api\/school-admin\/account\?urn=/, "asked only for a School-Admin (canManage)");
+  assert.match(nav, /if \(school\.status === "ready" && school\.school\.canManage\) \{[^}]*?void cachedFetchJson<[^>]*>\(`\/api\/school-admin\/account\?urn=/, "asked only for a School-Admin (canManage), shared and not awaited (speed, 20 Nov)");
   assert.match(nav, /setWaiting\(w && showAdminBadge\(w\) \? w\.waiting : 0\)/, "the shared rule decides");
   assert.match(nav, /\{canManage && waiting > 0 && \(\s*<span data-admin-menu-badge/, "drawn only when something waits");
   const route = readFileSync(new URL("../../app/api/school-admin/account/route.ts", import.meta.url), "utf8");

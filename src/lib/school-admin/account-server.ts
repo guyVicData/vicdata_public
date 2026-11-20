@@ -75,6 +75,49 @@ export async function readMembership(reader: SupabaseClient, schoolAccountId: st
   };
 }
 
+/**
+ * Speed (20 Nov): the account menu's badge, on every Teacher view page, read the whole summary (people, teams,
+ * sets, a usage_events scan, head office) for one number. Only two rows ever carry a badge -- Join requests and
+ * Membership's "Add a card" (accountRows) -- so this reads just those, with the same reader: the account, then
+ * the pending requests (a count) and the membership record's status, joined date, card and plan, together.
+ * Everything else is left empty; the route counts it with accountRows + waitingCount, as the page does.
+ */
+export async function readAccountWaiting(reader: SupabaseClient, o: { urn: string }): Promise<AccountSummary> {
+  const empty: AccountSummary = { school: { urn: o.urn, name: o.urn }, joinRequests: 0, people: 0, roles: 0, activeThisMonth: null, teams: 0, schoolSets: 0, headOffice: null, membership: null, membershipNotSetUp: false };
+  const { data: acc } = await reader.from("school_accounts").select("id").eq("school_urn", o.urn).maybeSingle<{ id: string }>();
+  if (!acc) return empty;
+  const [pending, rec] = await Promise.all([
+    reader.from("school_memberships").select("id", { count: "exact", head: true }).eq("school_account_id", acc.id).eq("status", "pending_approval"),
+    reader
+      .from("account_memberships")
+      .select("status, joined_on, card_brand, card_last4, membership_plans(code, name, applies_to, price_month_pence, price_year_pence, per_school_month_pence, pilot_months)")
+      .eq("school_account_id", acc.id)
+      .maybeSingle<Pick<RecordRow, "status" | "joined_on" | "card_brand" | "card_last4" | "membership_plans">>(),
+  ]);
+  // As readMembership: an error, or a record without its plan, is no record.
+  const r = rec.error ? null : rec.data;
+  const membership: MembershipRecord | null =
+    r && r.membership_plans
+      ? {
+          status: r.status,
+          plan: planOf(r.membership_plans),
+          joinedOn: r.joined_on,
+          // Not read: no badge depends on them (needsCard reads the status, joined date and card).
+          pilotEndsOn: null,
+          renewsOn: null,
+          autoRenew: false,
+          coveredBy: null,
+          billingContactName: null,
+          billingContactEmail: null,
+          purchaseOrder: null,
+          invoiceAddress: null,
+          card: r.card_brand && r.card_last4 ? { brand: r.card_brand, last4: r.card_last4, expMonth: null, expYear: null } : null,
+          invoices: [],
+        }
+      : null;
+  return { ...empty, joinRequests: pending.count ?? 0, membership };
+}
+
 /** Everything the account page summarises, for one school. */
 export async function readAccountSummary(reader: SupabaseClient, o: { urn: string; today: string }): Promise<AccountSummary & { schoolAccountId: string | null; ages: { low: number | null; high: number | null } }> {
   const [{ data: acc }, { data: school }] = await Promise.all([

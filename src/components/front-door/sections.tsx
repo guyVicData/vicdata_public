@@ -33,6 +33,7 @@ import { smtContextFigure, smtContextUrl } from "@/lib/front-door/tile-figures";
 import type { Context } from "@/lib/smt/context";
 import { useLateTileFigure } from "./late-figure";
 import { schoolEntries } from "./entry-default";
+import { cachedFetchJson } from "@/lib/fetch-cache";
 
 async function token(): Promise<string | null> {
   const { data } = await createBrowserSupabaseClient().auth.getSession();
@@ -116,8 +117,11 @@ export function TeacherPhaseSection({ urn, phase, heading }: { urn: string; phas
     let live = true;
     (async () => {
       const t = await token();
-      const res = t ? await fetch(ask, { headers: { Authorization: `Bearer ${t}` } }).catch(() => null) : null;
-      const m = res && res.ok ? ((await res.json()) as TeacherModel) : null;
+      // Speed (20 Nov): through the shared fetch cache, so a second ask for the same phase, subjects and focus
+      // while this one is in flight (seen live: two identical requests ~10 ms apart) shares its answer. Errors
+      // are never cached; Try again goes to the route afresh.
+      const res = t ? await cachedFetchJson<TeacherModel>(ask, { token: t, fresh: tries > 0 }).catch(() => null) : null;
+      const m = res && res.ok ? res.body : null;
       if (!m) console.error(`[home] teacher ${phase}: ${res ? `HTTP ${res.status}` : "no answer"}`);
       if (live) setModel({ key: `${ask}#${tries}`, m, code: res?.status ?? 0 });
     })();

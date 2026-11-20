@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveCaller } from "@/lib/view-as-server";
-import { readAccountSummary } from "@/lib/school-admin/account-server";
+import { readAccountSummary, readAccountWaiting } from "@/lib/school-admin/account-server";
 import { accountRows, membershipView, phasesWords, waitingCount } from "@/lib/school-admin/membership";
 
 // VicData 0.8 front door, part 2 (F26, F28; R-ADMIN-BADGE, R-MEMBERSHIP): the School-Admin's account page,
@@ -20,10 +20,12 @@ export async function GET(request: NextRequest) {
   if (!c.isAdmin && !c.isAccountHolder) return menu ? NextResponse.json({ isSchoolAdmin: false, waiting: 0 }) : NextResponse.json({ error: "The school account page is for the School-Admin." }, { status: 403 });
   const today = new Date().toISOString().slice(0, 10);
   try {
+    // Speed (20 Nov): the menu reads only what can carry a badge (readAccountWaiting), counted by the
+    // page's own rows -- the same number, without the people, teams, sets, usage and head office reads.
+    if (menu) return NextResponse.json({ isSchoolAdmin: true, waiting: waitingCount(accountRows(await readAccountWaiting(c.reader, { urn: c.urn }), today)) });
     const s = await readAccountSummary(c.reader, { urn: c.urn, today });
     const rows = accountRows(s, today);
     const waiting = waitingCount(rows);
-    if (menu) return NextResponse.json({ isSchoolAdmin: true, waiting });
     const phases = phasesWords(s.ages.low, s.ages.high);
     return NextResponse.json({
       school: s.school,

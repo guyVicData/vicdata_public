@@ -17,6 +17,7 @@ import {
   SearchBox, SectionLabel, VIEW_AS_READ_ONLY, displayNameOf, loadViewAsPeople, useAdminSchool, type AdminSchool,
 } from "./AdminChrome";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
+import { invalidateFetchCache } from "@/lib/fetch-cache";
 
 type MemberRow = {
   id: string;
@@ -131,6 +132,8 @@ export function People({ school }: { school: AdminSchool }) {
     setError(null);
     const { error: e } = await p;
     if (e) setError(e.message);
+    // Speed (20 Nov): the account menu's badge answer is shared for a few seconds; a change here asks afresh.
+    invalidateFetchCache("/api/school-admin/account");
     await load();
   }
 
