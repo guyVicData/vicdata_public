@@ -232,7 +232,14 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
           )}
         </div>
         <div className="min-w-0" data-smt-set-show="">
-          {set && rt ? (
+          {!set && sets.failed ? (
+            <div data-smt-set-failed="" className="flex min-h-[200px] flex-col items-start justify-center gap-3 rounded-[10px] border border-[var(--panel-border)] px-5 py-6 text-[14px]">
+              <p>This set&rsquo;s schools didn&rsquo;t load. Try it again in a moment, or pick another set.</p>
+              <button type="button" onClick={() => sets.choose({ kind: "nearest" })} className="min-h-[44px] rounded-full border border-[var(--panel-border2)] px-4 font-semibold hover:border-[var(--accent)]">
+                Back to the 10 nearest schools
+              </button>
+            </div>
+          ) : set && rt ? (
             <div className="flex flex-col gap-3" style={smtVars(theme) as CSSProperties}>
               <RankTable rt={rt} schoolName={schoolName} phase={phase} />
               {/* 20 Nov: what the map's colours say for a small set -- each school's roll over 3 years -- for the

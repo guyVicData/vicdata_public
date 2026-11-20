@@ -45,6 +45,8 @@ export type SmtSetState = {
   reloadSaved: () => Promise<void>;
   /** A ranking in use: its whole population, ranked (null for any other set, and while it resolves). */
   rankTable: SmtRankTable | null;
+  /** The set's schools couldn't be loaded (its route failed): say so, never wait for ever. */
+  failed: boolean;
 };
 
 export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | null): SmtSetState {
@@ -71,6 +73,7 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
   }, [urn, phase, supabase]);
 
   const [resolved, setResolved] = useState<{ key: string; set: SmtSetChoice; rankTable?: SmtRankTable } | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
   const effective: Stored = linked ? { kind: "urns", label: linked.label, urns: linked.urns } : choice;
   const key = JSON.stringify([urn, phase, effective, effective.kind === "saved" ? !!savedSets : null]);
   useEffect(() => {
@@ -94,7 +97,12 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
       // the chooser's top 15 and 5 either side -- the school's real regional or national position.
       const set = effective.kind === "nearest" ? { kind: "nearest" } : effective.kind === "urns" ? { kind: "urns", urns: effective.urns } : { kind: "ranking", filters: effective.filters, full: true };
       const res = await cachedFetchJson<{ rows: { urn: string }[] } & Partial<RankingPopulationResult>>("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase, set }) });
-      if (!live || !res.ok || !res.body) return;
+      if (!live) return;
+      if (!res.ok || !res.body) {
+        console.error(`[smt set] ${effective.kind}: HTTP ${res.status}`);
+        setFailedKey(key);
+        return;
+      }
       const label = effective.kind === "nearest" ? DEFAULT_SET_LABEL : effective.label;
       const b = res.body;
       const rankTable = effective.kind === "ranking" && b.ranking ? { ranking: b.ranking, targetRank: b.targetRank ?? null, ranked: b.ranked ?? b.ranking.length, measure: b.measure ?? "", period: b.period ?? null } : undefined;
@@ -126,5 +134,5 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
     [urn],
   );
 
-  return { choice: effective, set: resolved?.key === key ? resolved.set : null, savedSets, linked: !!linked, choose, reloadSaved, rankTable: resolved?.key === key ? (resolved.rankTable ?? null) : null };
+  return { choice: effective, set: resolved?.key === key ? resolved.set : null, savedSets, linked: !!linked, choose, reloadSaved, rankTable: resolved?.key === key ? (resolved.rankTable ?? null) : null, failed: failedKey === key && resolved?.key !== key };
 }
