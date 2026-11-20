@@ -23,7 +23,8 @@ import { entryPoint } from "@/lib/admissions/entry-points";
 import { setFitsPage, type SetKind, type StoredSet } from "@/lib/sets/model";
 import { guidedHref } from "@/lib/sets/guided";
 import { HomeHeading, HomeSection, NoWalkTile, QuestionTile, walkHref, type TileFigure } from "./home";
-import { useThemePref } from "@/components/shell/TeacherChrome";
+import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
+import { SmtSetsPanel } from "./smt-sets-panel";
 import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
 import { smtContextFigure, smtContextUrl } from "@/lib/front-door/tile-figures";
 import type { Context } from "@/lib/smt/context";
@@ -426,8 +427,9 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       {/* B5 (SMT 15): every subject the phase teaches, each opening its Teacher walks and dashboard -- on the GCSE
           and Post-16 tabs only (Leighton Park prep, 20 Nov: not on the whole school). */}
       {s && !primary && level !== "whole" && <OurSubjects urn={member.schoolUrn} phases={level === "gcse" ? ["ks4"] : ["ks5"]} />}
-      {/* D21: the school's sets, then (0.8 groups r1) the school's group where its head office holds a group account. */}
-      <SetsCard urn={member.schoolUrn} role="smt" />
+      {/* Leighton Park prep (20 Nov): the comparison set -- what it is for, the choices (the one in use ticked),
+          who is in it, and the builder; then (0.8 groups r1) the school's group where its head office holds a group account. */}
+      <SmtSetsPanel urn={member.schoolUrn} schoolName={s?.name ?? member.schoolName} phase={s ? setPhaseOf(s.phases) : null} sets={sets} o={o.status === "ready" ? o.data : null} readOnly={member.readOnly || !!member.viewAs} theme={pref === "mid" ? "light" : effectiveTheme(pref)} />
       <SchoolGroupTile urn={member.schoolUrn} />
     </HomeSection>
   );
