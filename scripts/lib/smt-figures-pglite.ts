@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 
-const MIGRATION = new URL("../../supabase/migrations/20261125090000_v08_smt_school_figures.sql", import.meta.url).pathname;
+const MIGRATION = new URL("../../supabase/migrations/20261125100000_v08_smt_school_figures.sql", import.meta.url).pathname;
 
 export async function openFiguresPglite(dir: string): Promise<PGlite> {
   const db = new PGlite(dir);

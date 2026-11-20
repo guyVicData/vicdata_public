@@ -1,5 +1,5 @@
 #!/usr/bin/env -S npx tsx
-// Speed plan §4.2 item 1: builds smt_school_figures (migration 20261125090000) -- every school's SMT Academic
+// Speed plan §4.2 item 1: builds smt_school_figures (migration 20261125100000) -- every school's SMT Academic
 // figures per key stage and year, from the same reads SMT Academic makes (qualRows, subjectVa, the GCSE area
 // rollup), worked out by the same code (src/lib/smt/school-figures.ts yearFigures, smt-figures-store.ts
 // encodeSchool). Run after each ingest that promotes a KS4 or Post-16 subject source, after the GIAS refresh,

@@ -1,7 +1,7 @@
 -- After apply_smt_figures.sql: read-only checks (supabase db query --remote --read-only -f ...).
 -- Expect: recorded 1, both tables, rls_on true, no policies, anon/authenticated locked out, the service role
 -- can call the read; builds/rows 0 until scripts/build-smt-figures.ts --live has run.
-select (select count(*) from supabase_migrations.schema_migrations where version = '20261125090000') as recorded,
+select (select count(*) from supabase_migrations.schema_migrations where version = '20261125100000') as recorded,
        to_regclass('public.smt_school_figures') is not null and to_regclass('public.smt_figures_builds') is not null as tables,
        (select bool_and(relrowsecurity) from pg_class where oid in ('public.smt_school_figures'::regclass, 'public.smt_figures_builds'::regclass)) as rls_on,
        (select count(*) from pg_policies where tablename in ('smt_school_figures', 'smt_figures_builds')) as policies,

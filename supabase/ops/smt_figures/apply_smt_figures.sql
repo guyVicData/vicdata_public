@@ -68,5 +68,5 @@ comment on table public.smt_figures_builds is
     'One row per build of smt_school_figures (key stage, data version); the app reads a version only when its build is complete. Deleting a build deletes its figures.';
 
 
-insert into supabase_migrations.schema_migrations (version, name) values ('20261125090000', 'v08_smt_school_figures') on conflict do nothing;
+insert into supabase_migrations.schema_migrations (version, name) values ('20261125100000', 'v08_smt_school_figures') on conflict do nothing;
 commit;

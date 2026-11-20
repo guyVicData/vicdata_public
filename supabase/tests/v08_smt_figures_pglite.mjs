@@ -1,5 +1,5 @@
 // Run from the repo root: node supabase/tests/v08_smt_figures_pglite.mjs   (ROLLBACK=1 also runs the rollback)
-// Speed plan 4.2 item 1: smt_school_figures (20261125090000_v08_smt_school_figures.sql). Local only (WASM
+// Speed plan 4.2 item 1: smt_school_figures (20261125100000_v08_smt_school_figures.sql). Local only (WASM
 // Postgres); never touches a real database. Checks: anon and authenticated can neither read nor write either
 // table nor call the read; the service role writes and reads; the read answers null until the build is
 // complete, only the asked schools and years, subject rows only for the school itself and the subject year;
@@ -18,7 +18,7 @@ alter default privileges in schema public grant all on tables to authenticated, 
 alter default privileges in schema public grant all on functions to authenticated, anon, service_role;
 `);
 process.on("uncaughtException", (e) => { console.log("ERROR", e.message); process.exit(1); });
-const M = "20261125090000_v08_smt_school_figures.sql";
+const M = "20261125100000_v08_smt_school_figures.sql";
 await ex(readFileSync(repo + "migrations/" + M, "utf8"));
 console.log("applied", M);
 
@@ -79,9 +79,9 @@ check("deleting the build deletes its rows", (await q(`select count(*)::int as n
 
 if (process.env.ROLLBACK === "1") {
   console.log("\n-- rollback");
-  await ex(`create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261125090000') on conflict do nothing;`);
+  await ex(`create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261125100000') on conflict do nothing;`);
   await ex(readFileSync(repo + "ops/smt_figures/rollback_smt_figures.sql", "utf8"));
-  const left = (await q(`select to_regclass('public.smt_school_figures') as a, to_regclass('public.smt_figures_builds') as b, to_regprocedure('public.smt_school_figures_read(text, text, text[], integer, integer, text, text[])') as f, (select count(*)::int from supabase_migrations.schema_migrations where version = '20261125090000') as rec`)).rows[0];
+  const left = (await q(`select to_regclass('public.smt_school_figures') as a, to_regclass('public.smt_figures_builds') as b, to_regprocedure('public.smt_school_figures_read(text, text, text[], integer, integer, text, text[])') as f, (select count(*)::int from supabase_migrations.schema_migrations where version = '20261125100000') as rec`)).rows[0];
   check("rollback removes both tables, the read and the record", !left.a && !left.b && !left.f && left.rec === 0, JSON.stringify(left));
   await ex(readFileSync(repo + "migrations/" + M, "utf8"));
   check("the migration applies again after the rollback", !!(await q(`select to_regclass('public.smt_school_figures') as a`)).rows[0].a);

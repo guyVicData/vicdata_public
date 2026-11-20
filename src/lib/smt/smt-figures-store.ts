@@ -1,7 +1,7 @@
 // VicData speed plan §4.2 item 1: SMT Academic's set schools read from figures built ahead, not from raw rows.
 // Server-only.
 //
-// smt_school_figures (migration 20261125090000) holds, for every school and year at a key stage, that
+// smt_school_figures (migration 20261125100000) holds, for every school and year at a key stage, that
 // school's figures (school-figures.ts yearFigures) and that year's subject and value-added rows, all from
 // the same reads Academic makes today (qualRows, subjectVa, the GCSE area rollup), built by
 // scripts/build-smt-figures.ts after new data arrives. A page asks for its set's schools' figures in one

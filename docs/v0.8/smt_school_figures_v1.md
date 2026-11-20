@@ -22,7 +22,7 @@ Nothing else in the builder changed. The school's own rows still come whole, in 
 | Per-school figures (pure) | `src/lib/smt/school-figures.ts` |
 | Read path, version, encode/decode | `src/lib/smt/smt-figures-store.ts` |
 | Builder wiring | `src/lib/smt/academic.ts` (post16, gcse), `src/lib/smt/academic-sets.ts` (`offering` can take the figures) |
-| Migration | `supabase/migrations/20261125090000_v08_smt_school_figures.sql` |
+| Migration | `supabase/migrations/20261125100000_v08_smt_school_figures.sql` |
 | Ops | `supabase/ops/smt_figures/{apply,verify,rollback}_smt_figures.sql` |
 | SQL test (PGlite) | `supabase/tests/v08_smt_figures_pglite.mjs` (`ROLLBACK=1` also runs the rollback) |
 | Unit test | `src/lib/smt/school-figures.test.ts` |
