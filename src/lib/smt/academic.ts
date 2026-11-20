@@ -279,6 +279,20 @@ const noticeNotes = (): Record<string, string> => ({
   middleHalf: "",
 });
 
+/** Rows grouped by a key, each group in the rows' own order (so a .find or .filter on a group returns what it
+ * would on the whole list). Speed (20 Nov): whole-population sets searched the full list per school and year. */
+function indexBy<T>(rows: readonly T[], key: (r: T) => string): Map<string, T[]> {
+  const m = new Map<string, T[]>();
+  for (const r of rows) {
+    const k = key(r);
+    const g = m.get(k);
+    if (g) g.push(r);
+    else m.set(k, [r]);
+  }
+  return m;
+}
+const NONE_ROWS: never[] = [];
+
 // ============================================================================================ Post-16
 
 async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer, chosen: SmtSet | null, regionOf: Ctx["regionOf"]): Promise<Academic> {
@@ -311,14 +325,19 @@ async function post16(school: SmtSchool, st: AcademicState, offer: AcademicOffer
   const famOf = (s: string) => familyOf.get(s) ?? familyOf.get(latestSubjectName(s)) ?? null;
   const areaLabels = new Map(school.areas.post16.map((a) => [a.id, a.label]));
   const famLabel = new Map<string, string>(famMap.map((r) => [r.family_id, areaLabels.get(r.family_id) ?? r.family_id]));
-  const rowsOf = (u: string, y: number) => rows.filter((r) => r.urn === u && r.period === y);
+  // Speed (20 Nov): looked up by school and year once, not by searching every row for each school and year --
+  // the same rows in the same order (grouping keeps it), so the same figures; a 488-school set's 62,618 rows
+  // took ~3.5 s of CPU per build searched that way.
+  const rowsIndex = indexBy(rows, (r) => `${r.urn}|${r.period}`);
+  const rowsOf = (u: string, y: number) => rowsIndex.get(`${u}|${y}`) ?? NONE_ROWS;
   const levelEntries = (u: string, y: number) => sum(rowsOf(u, y).map((r) => r.entries));
   const groupEntries = (u: string, y: number, g: RealGroup) => sum(rowsOf(u, y).filter((r) => groupOfQualification(r.qualification) === g).map((r) => r.entries));
 
   // ---------------------------------------------------------------- one line's figure for any school, any year
   type Fig = { value: number | null; lo: number | null; hi: number | null; band: Band; grade: string | null; entries: number | null; size?: string | null };
   const NONE: Fig = { value: null, lo: null, hi: null, band: null, grade: null, entries: null };
-  const vaRow = (u: string, y: number, q: RegExp) => va.find((r) => r.urn === u && r.period === y && q.test(r.qualification) && r.subject === "All subjects") ?? null;
+  const vaIndex = indexBy(va, (r) => `${r.urn}|${r.period}`);
+  const vaRow = (u: string, y: number, q: RegExp) => (vaIndex.get(`${u}|${y}`) ?? NONE_ROWS).find((r) => q.test(r.qualification) && r.subject === "All subjects") ?? null;
   const computedPoints = (u: string, y: number, g: RealGroup) => {
     const rs = rowsOf(u, y).filter((r) => groupOfQualification(r.qualification) === g && r.avg !== null);
     const e = sum(rs.map((r) => r.entries));
@@ -751,13 +770,16 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
     qualRows(everyone, "ks4", from),
     st.area && mode !== "va" ? cachedReference(`smt:family:ks4:${everyone.slice().sort().join(",")}`, () => lookupAcademicSubjectFamily({ entityIds: everyone, ksStage: "ks4", periodMin: from })) : Promise.resolve([]),
   ]);
-  const levelEntries = (u: string, y: number) => sum(rows.filter((r) => r.urn === u && r.period === y).map((r) => r.entries));
+  // Speed (20 Nov): by school and year once (see post16's rowsOf).
+  const rowsIndex = indexBy(rows, (r) => `${r.urn}|${r.period}`);
+  const levelEntries = (u: string, y: number) => sum((rowsIndex.get(`${u}|${y}`) ?? NONE_ROWS).map((r) => r.entries));
   // The subject rollup can trail the headline by a release (GCSE 2025/26's headline lands first): subjects,
   // entries and areas read the rollup's own latest year, and say it.
   const LS = Math.max(...rows.filter((r) => r.urn === urn).map((r) => r.period), -Infinity);
   const subjYear = Number.isFinite(LS) ? Math.min(LS, L) : L;
   if (mode === "entries") L = subjYear;
-  const areaRow = (u: string, y: number) => fam.find((x) => x.entity_id === u && Number(x.period) === y && x.family_id === st.area && (x.bucket ?? "all") === "all");
+  const famIndex = indexBy(fam, (x) => `${x.entity_id}|${Number(x.period)}`);
+  const areaRow = (u: string, y: number) => (famIndex.get(`${u}|${y}`) ?? NONE_ROWS).find((x) => x.family_id === st.area && (x.bucket ?? "all") === "all");
   type Fig = { value: number | null; lo: number | null; hi: number | null; band: Band; entries: number | null };
   const key = mode === "va" ? SMT_MEASURES.ks4.p8 : st.area ? null : SMT_MEASURES.ks4.a8;
   const fig = (u: string, y: number): Fig => {

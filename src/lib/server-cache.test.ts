@@ -165,3 +165,9 @@ test("size estimate: roughly right, cheap on big arrays, safe on cycles", () => 
   cyclic.self = cyclic;
   assert.ok(Number.isFinite(estimateBytes(cyclic)));
 });
+
+test("national, same-for-everyone keys keep 12 hours by default; a school's own keep the hour", async () => {
+  const { defaultTtlFor, NATIONAL_TTL_MS, REFERENCE_TTL_MS } = await import("./server-cache");
+  for (const k of ["smt:population:ks5", "igcse:england", "years:latest", "dashboard:england:ks4", "adm:england-schools:2025", "smt:family-map:ks4"]) assert.equal(defaultTtlFor(k), NATIONAL_TTL_MS, k);
+  for (const k of ["smt:census:110110", "school:la:110110", "smt:qrows:ks5:2016:abc", "geo:grades:ks4:x"]) assert.equal(defaultTtlFor(k), REFERENCE_TTL_MS, k);
+});

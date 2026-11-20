@@ -71,7 +71,16 @@ function evictForRoom(keep: string): void {
   if (evicted) maybeLog();
 }
 
-export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs = REFERENCE_TTL_MS): Promise<T> {
+// Speed (20 Nov, before the Leighton Park demo): England-wide, same-for-every-school values -- the national
+// populations, the IGCSE list, England's averages, the latest periods, the subject family maps -- are kept
+// 12 hours rather than 1 (when the caller passes no ttlMs), so a warm-up in the morning lasts the day. They
+// change only at an ingest; the raw reads beneath them already follow the source stamps (reference-cache.ts),
+// and a deploy or restart empties this cache anyway. A school's own values keep the hour.
+export const NATIONAL_TTL_MS = 12 * 60 * 60_000;
+const NATIONAL_PREFIXES = ["igcse:", "years:latest", "phases:current-periods", "dashboard:england:", "smt:population:", "smt:england-", "smt:family-map:", "smt:boarders:", "adm:england-schools:"];
+export const defaultTtlFor = (key: string): number => (NATIONAL_PREFIXES.some((p) => key.startsWith(p)) ? NATIONAL_TTL_MS : REFERENCE_TTL_MS);
+
+export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs: number = defaultTtlFor(key)): Promise<T> {
   const now = Date.now();
   const hit = store.get(key);
   if (hit && now - hit.at < ttlMs) {
