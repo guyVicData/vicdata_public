@@ -25,6 +25,8 @@ const opt = (n: string) => {
 };
 const OUT = opt("--out") ?? "parity-out";
 const ONLY_MODE = opt("--only-mode") as AcademicMode | undefined;
+// --figures-pglite DIR: SMT_FIGURES=on, the figures read from a local PGlite built by build-smt-figures.ts --pglite.
+const FIGURES_PGLITE = opt("--figures-pglite");
 const RANDOM = Number(opt("--random") ?? 0);
 const SEED = Number(opt("--seed") ?? 20261120);
 const cases = args;
@@ -81,6 +83,12 @@ function statesFor(offer: Awaited<ReturnType<typeof academicOffer>>, phase: "gcs
 }
 
 async function main() {
+  if (FIGURES_PGLITE) {
+    const { openFiguresPglite, pgliteFiguresRpc } = await import("./lib/smt-figures-pglite");
+    const { setFiguresRpc } = await import("../src/lib/smt/smt-figures-store");
+    process.env.SMT_FIGURES = "on";
+    setFiguresRpc(pgliteFiguresRpc(await openFiguresPglite(FIGURES_PGLITE)));
+  }
   const summary: { case: string; states: number; setSize: number; setMs: number; firstMs: number; totalMs: number }[] = [];
   const eng = await englandSchools();
   if (RANDOM) cases.push(...(await randomCases(RANDOM)));
@@ -116,6 +124,8 @@ async function main() {
     summary.push({ case: c, states: states.length, setSize: set.urns.length, setMs, firstMs, totalMs: Date.now() - t1 });
   }
   console.table(summary);
+  const { figuresReads } = await import("../src/lib/smt/smt-figures-store");
+  console.log(`academic inputs: ${figuresReads.store} from the figures, ${figuresReads.live} from today's reads`);
   writeFileSync(join(OUT, "summary.json"), JSON.stringify(summary, null, 1));
   process.exit(0);
 }

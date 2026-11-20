@@ -147,6 +147,8 @@ function membersFromStore(recs: Map<string, Map<number, Got>>, viewer: string, s
 /** What Academic reads for a school and its set: the school's own rows and value added (its whole lists,
  * in the reads' order), and every school's figures as Members. */
 export type AcademicInputs = { rows: QualRow[]; va: VaFact[]; members: Members; source: "store" | "live" };
+/** How many Academic builds read each way since the process started (scripts and the parity harness). */
+export const figuresReads = { store: 0, live: 0 };
 
 /** `subjectPeriod`: the year Academic compares subjects in, from the school's own rows (the set schools'
  * subject rows are read for that year only). `fam` (GCSE): today's reads include the area rollup (a
@@ -158,6 +160,7 @@ export async function academicInputs(stage: Stage, viewer: string, everyone: str
       stage === "ks5" ? subjectVa(everyone) : Promise.resolve([] as VaFact[]),
       stage === "ks4" && opts.fam ? cachedReference(`smt:family:ks4:${everyone.slice().sort().join(",")}`, () => lookupAcademicSubjectFamily({ entityIds: everyone, ksStage: "ks4", periodMin: from })) : Promise.resolve([] as AcademicSubjectFamilyRow[]),
     ]);
+    figuresReads.live++;
     return { rows, va, members: membersFromRaw(stage, rows, va, fam), source: "live" };
   };
   if (!figuresOn() || from < BUILD_FROM) return live();
@@ -180,6 +183,7 @@ export async function academicInputs(stage: Stage, viewer: string, everyone: str
     }
     const all = new Map(recs);
     all.set(viewer, mine);
+    figuresReads.store++;
     return { rows, va, members: membersFromStore(all, viewer, sp), source: "store" };
   } catch (e) {
     console.warn(`[smt figures] ${stage}: today's reads instead:`, e instanceof Error ? e.message : e);
