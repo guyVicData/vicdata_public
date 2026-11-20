@@ -59,19 +59,41 @@ In order of value for the demo:
 
 Also found, not speed: **`/api/teacher/saved-comparator-sets` returns 403 for head-office users** on a member school's SMT pages, so their saved sets are missing. The route recognises only the View as cookie, not head-office access or the peek. Small fix; worth doing before groups are demoed.
 
-## 4. After the demo, before the January beta
+## 4. After the demo: the architecture (agreed with Guy, 20 Nov)
 
-1. **Finished answers cached per set.** Cache the built Overview and Academic for each set (memory note: split out the caller-dependent Admissions figures first). A whole-population set then costs 17 s once an hour, not every time.
-2. **Set figures computed in the database.** `rankSets`, `rankFixedSets`, `buildOverview` and `smt/academic`'s whole-set rows become SQL functions: one call instead of 8–15 one after another, and far less data shipped to Node. This continues the 17 Oct database work (`db_performance_report_v1.md`).
-3. **A per-school dashboard payload worked out when new data comes in** (v0.6.4 "C3"). The Teacher dashboard becomes one read.
-4. **Cookie sessions** (front door part 3, Q1, agreed): the server knows who's signed in, checks it once per page instead of 4–6 times, and can render the first view itself.
-5. **Hosting:**
-   - Render is in Frankfurt, which is its nearest region; Render has no London. Supabase is in London (eu-west-2). Each call one after another pays about 10–20 ms each way. Cutting how many calls run one after another (2 and 3 above) fixes this better than moving.
-   - **Two instances** (Render's Pro workspace, $25/month plus compute) means one restart or crash doesn't take the site down. The in-process cache is per instance, so pair it with a shared cache (Render Key Value / Redis) once there are two.
-   - Keep the deploy-time warm-up as a post-deploy step.
+### 4.1 Why whole-population sets are slow (measured)
+Leighton Park, SMT Academic against independent schools in England (488 schools), locally against the live data:
+
+| Step | Time |
+|---|---|
+| Resolve the set's members | 4.6 s cold |
+| Fetch every member school's qualification rows (62,618 rows, fetched in pages one after another) | 7.3 s cold |
+| Fetch value added | 1.0 s cold |
+| Compute the page: the row list is filtered again for every school and year, so the work grows with the square of the set size | **3.5 s of CPU every time, even warm** (more on Render's single CPU) |
+
+The set's members and each member school's figures are the same whoever is looking. Only "where you sit" and leaving your own school out of the set differ.
+
+### 4.2 The changes, in order
+
+1. **Each school's figures worked out when new data comes in** (the main job). After each ingest, a job writes one row per school per line, mode and year (value, range, entries, band), plus the member lists of the ~60 standard sets (regions × sectors × phases, and England). A request reads only the members' finished figures (~490 small rows, not 62,000 raw ones) and computes the set's averages in milliseconds, leaving the school out exactly as now. It works for any set: custom and saved sets too, since a set is just a list of schools. The database rank lookup already works this way (17 Oct, `db_performance_report_v1.md`). Expected: 17 s → under 1 s, first view included.
+2. **A shared results cache in Postgres** (Guy's idea): the first person to open a view pays, every colleague after reads it in milliseconds. The key is school + view + set + data version. A new ingest changes the version, so stale figures can't be served, and a clean-up job deletes old answers. It survives restarts and deploys, and works with two servers.
+   - Anything that depends on the viewer is kept out of the stored answer and added per request: personal saved sets, notes, and the role-dependent Admissions figures in the SMT Overview (split those out first).
+   - Security is unchanged: membership is checked first, and only the server (service role) reads the table.
+   - Size: ~1,000 schools × ~30 answers × ~100 KB stored (Postgres compresses large JSON) ≈ 3 GB; 3,000 schools ≈ 10 GB. That's within or near Supabase Pro's included 8 GB, then about $0.125/GB a month. Bounded by deleting answers unopened for 60–90 days, and storing only answers that took more than about 0.5 s to build.
+   - **Warm it ahead of time:** after each ingest, a background job builds the default views for every beta school, one at a time (1,000 schools at ~10 s each is under 3 hours, overnight), so no tester ever opens a cold page.
+3. **One data call per page instead of 8–11**, together with Stage 2's cookie sessions (front door part 3, Q1, agreed): the server checks who is signed in once and can draw the first view itself.
+4. **Cloudflare caches the public, same-for-everyone data:** England figures, region maps, LA and LSOA boundaries, national populations. These get their own cacheable routes, so they never reach our server.
+5. **Heavy work off the web server:** ingest-time builds and warm-ups run as a separate Render background worker or cron job, so a slow build never delays a click.
+6. **Two web instances** (Render's Pro workspace, $25/month plus compute): one restart or crash doesn't take the site down. They pair with 2, which every instance shares.
+7. **Hosting regions stay as they are:** Render's nearest region to Supabase's London (eu-west-2) is Frankfurt, and Render has no London region. Cutting how many calls run one after another (1 and 3) fixes the distance better than moving would.
+
+**Order:** 1 and 2 together straight after the demo (nearly every page under a second for every school, first view included), then 3 alongside Stage 2's cookie sessions, then 4–6 before the January beta.
+
+### 4.3 Before the demo, from this
+Look the Academic builder's rows up by school and year once, instead of searching the whole list each time (and check the Overview for the same pattern): the 3.5 s of computing becomes milliseconds on every SMT set, with no figure changed.
 
 ## 5. Not recommended
 
 - **A bigger instance than `1c-2g`:** Node mostly uses one CPU; the 2 GB isn't full.
 - **A parallel background warm-up:** that's what broke requests before.
-- **Bigger caches as a fix for slow whole-population sets:** a cold set still takes 17 s. The fix is computing less (4.1 and 4.2).
+- **Bigger in-memory caches as the fix for slow whole-population sets:** a cold set still takes 17 s. The fix is computing less, and remembering the answer durably (4.2, items 1 and 2).
