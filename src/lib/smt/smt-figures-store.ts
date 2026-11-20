@@ -101,6 +101,8 @@ let rpc: FiguresRpc = async (fn, args) => {
   if (error) throw new Error(`${fn}: ${error.message}`);
   return data;
 };
+/** The read, wherever it goes (SMT Overview's census figures share it: overview-figures-store.ts). */
+export const figuresRpc: FiguresRpc = (fn, args) => rpc(fn, args);
 /** Scripts and tests: read the figures from somewhere else (a local PGlite holding the same migration). */
 export const setFiguresRpc = (f: FiguresRpc) => {
   rpc = f;

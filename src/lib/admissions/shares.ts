@@ -36,20 +36,37 @@ export function holdShare(ladder: Ladder, school: CohortTable, censusPeriod: num
 
 export type GroupShareRow = { urn: string; period: number; count: number | null; share: number | null; rank: number | null };
 
+/** A school's pupils at the given ages in each year of its table (null: no pupils counted that year). The one
+ * per-school figure group shares are made of: SMT's Overview stores it for every school (smt/overview-figures.ts). */
+export function cohortSeries(t: CohortTable, ages: number[], sex: Sex = "all"): Map<number, number | null> {
+  const out = new Map<number, number | null>();
+  for (const p of periodsOf(t)) {
+    let c: number | null = null;
+    for (const a of ages) {
+      const v = cohortAt(t, a, p, sex);
+      if (v !== null) c = (c ?? 0) + v;
+    }
+    out.set(p, c);
+  }
+  return out;
+}
+
 /** Each school's share of the group's pupils at the given ages, per census year, with ranks. */
 export function groupShare(tables: Map<string, CohortTable>, ages: number[], sex: Sex = "all"): { periods: number[]; rows: GroupShareRow[]; totals: Map<number, number> } {
-  const periods = Array.from(new Set(Array.from(tables.values()).flatMap(periodsOf))).sort((a, b) => a - b);
+  return groupShareOfSeries(new Map(Array.from(tables, ([urn, t]) => [urn, cohortSeries(t, ages, sex)] as const)));
+}
+
+/** groupShare from each school's cohort series (cohortSeries): every year any school has, a school without
+ * that year counting none. */
+export function groupShareOfSeries(series: ReadonlyMap<string, ReadonlyMap<number, number | null>>): { periods: number[]; rows: GroupShareRow[]; totals: Map<number, number> } {
+  const periods = Array.from(new Set(Array.from(series.values()).flatMap((s) => Array.from(s.keys())))).sort((a, b) => a - b);
   const rows: GroupShareRow[] = [];
   const totals = new Map<number, number>();
   for (const p of periods) {
     const counts = new Map<string, number | null>();
     let total = 0;
-    for (const [urn, t] of tables) {
-      let c: number | null = null;
-      for (const a of ages) {
-        const v = cohortAt(t, a, p, sex);
-        if (v !== null) c = (c ?? 0) + v;
-      }
+    for (const [urn, s] of series) {
+      const c = s.get(p) ?? null;
       counts.set(urn, c);
       total += c ?? 0;
     }
