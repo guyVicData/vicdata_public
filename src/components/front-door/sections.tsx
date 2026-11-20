@@ -25,6 +25,8 @@ import { guidedHref } from "@/lib/sets/guided";
 import { HomeHeading, HomeSection, NoWalkTile, QuestionTile, walkHref, type TileFigure } from "./home";
 import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { SmtSetsPanel } from "./smt-sets-panel";
+import { AdmissionsSetsPanel, readPicks, writePicks, type AdmissionsPicks } from "./admissions-sets-panel";
+import { loadAdmissionsMember } from "@/components/admissions/member";
 import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
 import { smtContextFigure, smtContextUrl } from "@/lib/front-door/tile-figures";
 import type { Context } from "@/lib/smt/context";
@@ -525,86 +527,92 @@ type MarketLite = { summary?: { share: number | null; latest: number | null } };
 type PipelineLite = { ladder?: { past: { entryYear: number; pool: number | null }[] }; now?: { cohort: number | null } };
 
 /** The Admissions home's section. `chip` and `tabs`: the SMT home draws it as its Admissions tab (Leighton Park
- * prep, 20 Nov), under the SMT chip with the SMT tabs before the entry point. */
+ * prep, 20 Nov), under the SMT chip with the SMT tabs. Its sets panel (admissions-sets-panel.tsx) under the
+ * questions picks the entry point and the feeder and rival sets; the picks drive the tiles, the walks and the
+ * dashboard link (&fset= / &rset=). */
+type PipelineHome = PipelineLite & { setChoices?: { feeders?: { urns?: string[] } } };
+type MarketHome = MarketLite & { setChoices?: { rivals?: { urns?: string[] } }; rivals?: string[] };
 export function AdmissionsSection({ urn, heading, chip = "Admissions", tabs = null }: { urn: string; heading?: React.ReactNode; chip?: string; tabs?: React.ReactNode }) {
   const [entries, setEntries] = useState<string[] | null>(null);
   const [entry, setEntry] = useState<string | null>(null);
-  const [fig, setFig] = useState<{ entry: string; pool: TileFigure; share: TileFigure } | null>(null);
+  const [fig, setFig] = useState<{ key: string; pool: TileFigure; share: TileFigure; feeders: string[] | null; rivals: string[] | null } | null>(null);
+  const [who, setWho] = useState<{ canMake: boolean; readOnly: boolean; name: string | null }>({ canMake: false, readOnly: true, name: null });
   useEffect(() => {
     let live = true;
     (async () => {
-      const es = await schoolEntries(urn);
-      if (live) setEntries(es);
+      const [es, m] = await Promise.all([schoolEntries(urn), loadAdmissionsMember().catch(() => null)]);
+      if (!live) return;
+      setEntries(es);
+      // Admissions makes the school's sets (its members, and the School-Admin); anyone else here switches.
+      if (m && m.status === "ready") setWho({ canMake: m.member.roles.includes("admissions") || m.member.lead || m.member.isAdmin, readOnly: m.member.readOnly || !!m.member.viewAs, name: m.member.schoolName ?? null });
     })();
     return () => {
       live = false;
     };
   }, [urn]);
   const current = entry ?? entries?.[0] ?? null;
+  // The picks for this entry point, remembered in this browser (readPicks), read after the first draw.
+  const [picks, setPicksState] = useState<AdmissionsPicks>({ fset: null, rset: null });
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPicksState(readPicks(urn, current));
+  }, [urn, current]);
+  const setPicks = (p: AdmissionsPicks) => {
+    setPicksState(p);
+    if (current) writePicks(urn, current, p);
+  };
+  const setQ = { ...(picks.fset ? { fset: picks.fset } : {}), ...(picks.rset ? { rset: picks.rset } : {}) };
+  const figKey = `${current}|${picks.fset ?? ""}|${picks.rset ?? ""}`;
   useEffect(() => {
     if (!current) return;
     let live = true;
     (async () => {
-      const q = new URLSearchParams({ urn, entry: current }).toString();
+      const q = new URLSearchParams({ urn, entry: current, ...setQ }).toString();
       // 0.8 feedback A4: through the Admissions client cache (the same URLs), so both walks and the dashboard
       // open on these answers; and the market walk's rivals warmed (~15 s on a cold server cache).
       const viaCache = async <T,>(u: string): Promise<T | null> => {
         const l = await admissionsGet<T>(u);
         return l.status === "ready" ? l.data : null;
       };
-      const [p, m] = await Promise.all([viaCache<PipelineLite>(`/api/admissions/pipeline?${q}`), viaCache<MarketLite>(`/api/admissions/market-share?${q}`)]);
+      const [p, m] = await Promise.all([viaCache<PipelineHome>(`/api/admissions/pipeline?${q}`), viaCache<MarketHome>(`/api/admissions/market-share?${q}`)]);
       void admissionsGet(`/api/admissions/rivals?${q}`);
       const past = (p?.ladder?.past ?? []).filter((x) => x.pool !== null);
       const pool = past.length ? (past[past.length - 1].pool as number) : null;
       const label = entryPoint(current)?.label ?? current;
       if (live)
         setFig({
-          entry: current,
+          key: figKey,
           pool: pool !== null ? { figure: Math.round(pool).toLocaleString("en-GB"), unit: `children in the ${label} pool` } : null,
           share: m?.summary?.share != null ? { figure: `${m.summary.share.toFixed(1)}%`, unit: "of the intake: you and your rivals" } : null,
+          feeders: p?.setChoices?.feeders?.urns ?? null,
+          rivals: m?.setChoices?.rivals?.urns ?? m?.rivals ?? null,
         });
     })();
     return () => {
       live = false;
     };
-  }, [urn, current]);
+  }, [urn, figKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const walks = walksFor("admissions");
   const label = current ? entryPoint(current)?.label ?? current : null;
-  const f = fig?.entry === current ? fig : null;
-  const params = { entry: current };
+  const f = fig?.key === figKey ? fig : null;
+  const params = { entry: current, ...setQ };
+  const dashQ = new URLSearchParams({ ...(current ? { entry: current } : {}), ...setQ }).toString();
   return (
     <HomeSection
       field="admissions"
       accent={ROLE_ACCENT.admissions}
       chip={chip}
       heading={heading}
-      controls={
-        <>
-          {tabs}
-          {entries && entries.length > 0 ? (
-          <label className="inline-flex items-center gap-1.5 rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)]">
-            Entry point
-            <select data-entry-switch="" value={current ?? ""} onChange={(e) => setEntry(e.target.value)} className="min-h-[44px] bg-transparent font-semibold text-[var(--field-chip-fg)] outline-none sm:min-h-0">
-              {entries.map((e) => (
-                <option key={e} value={e}>
-                  {entryPoint(e)?.label ?? e}
-                </option>
-              ))}
-            </select>
-          </label>
-          ) : null}
-        </>
-      }
-      dashboard={{ label: "Open the full Admissions dashboards", href: `/teacher/admissions${current ? `?entry=${encodeURIComponent(current)}` : ""}` }}
+      controls={tabs ?? undefined}
+      dashboard={{ label: "Open the full Admissions dashboards", href: `/teacher/admissions${dashQ ? `?${dashQ}` : ""}` }}
       cols={2}
       links={walks.map((w) => ({ label: fillTemplate(w.question, { entry: label }), href: walkHref(w, params) }))}
-      // 0.8 feedback B4 (Admissions 1): the sets (who feeds us, who are our rivals) drive the walks, so they
-      // are the home's top task, above the questions.
-      lead={<SetsCard urn={urn} role="admissions" entry={current} />}
       tiles={walks.map((w, i) => (
         <QuestionTile key={w.id} walk={w} figure={(i === 0 ? f?.pool : f?.share) ?? null} ctx={{ entry: label }} href={walkHref(w, params)} loading={!f} />
       ))}
-    />
+    >
+      <AdmissionsSetsPanel urn={urn} schoolName={who.name} entries={entries} entry={current} onEntry={setEntry} picks={picks} onPicks={setPicks} canMake={who.canMake} readOnly={who.readOnly} urnsOf={{ feeders: f?.feeders ?? null, rivals: f?.rivals ?? null }} />
+    </HomeSection>
   );
 }
 

@@ -278,6 +278,11 @@ function AdmissionsWalk({ walk, urn, schoolName }: { walk: Walk; urn: string; sc
   const theme = pref === "mid" ? "light" : effectiveTheme(pref);
   const [step, setStep] = useStep(walk.screens.length);
   const entry = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("entry") ?? "11+" : "11+";
+  // Leighton Park prep (20 Nov): the feeder and rival sets picked on the home (&fset= / &rset=), which every
+  // Admissions route reads; none is the school's own.
+  const sp0 = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const fset = sp0.get("fset");
+  const rset = sp0.get("rset");
   // 0.8 feedback A4 (Admissions 3): moving from walk 1 to walk 2 stalled because walk 2 waited on the rivals
   // answer (England's results, ~15 s on a cold server cache) before drawing anything, and nothing warmed it.
   // Now: the dashboard's cached fetch (fetch-cache, 10 min, the same URLs), so the home, the other walk and
@@ -288,7 +293,7 @@ function AdmissionsWalk({ walk, urn, schoolName }: { walk: Walk; urn: string; sc
   const [rivals, setRivals] = useState<Load<RivalsView>>({ status: "loading" });
   useEffect(() => {
     let live = true;
-    const q = new URLSearchParams({ urn, entry }).toString();
+    const q = new URLSearchParams({ urn, entry, ...(fset ? { fset } : {}), ...(rset ? { rset } : {}) }).toString();
     (async () => {
       const [p, m] = await Promise.all([market ? null : admissionsGet<PipelineOk & { empty?: string }>(`/api/admissions/pipeline?${q}`), market ? admissionsGet<MarketView>(`/api/admissions/market-share?${q}`) : null]);
       if (!live) return;
@@ -305,7 +310,7 @@ function AdmissionsWalk({ walk, urn, schoolName }: { walk: Walk; urn: string; sc
     return () => {
       live = false;
     };
-  }, [urn, entry, market]);
+  }, [urn, entry, market, fset, rset]);
   const label = entryPoint(entry)?.label ?? entry;
   if (data.status === "loading") return <Loading walk={walk} ctx={{ entry: label }} />;
   if (data.status === "error") return <WalkError walk={walk} ctx={{ entry: label }} what="Admissions' figures for this entry point" code={data.code} message={data.message} home={homeOf(walk)} />;
@@ -327,7 +332,7 @@ function AdmissionsWalk({ walk, urn, schoolName }: { walk: Walk; urn: string; sc
   return (
     <div style={admissionsVars(theme)}>
       <WalkFrame walk={walk} step={step} steps={n2} chip={`Admissions · ${label}`} ctx={{ entry: label }}>
-        {step >= n2 ? <Found walk={walk} screens={screens} params={{ entry }} ctx={{ entry: label }} onBack={() => setStep(n2 - 1)} answer={answerOf(walk, screens)} /> : <RoleScreen walk={walk} step={step} screens={screens} cols={["AdmPipelineIcon", "DonutIcon", "TrendLineIcon"]} colName={walk.label} colQuestion={fillTemplate(walk.question, { entry: label })} onStep={setStep} />}
+        {step >= n2 ? <Found walk={walk} screens={screens} params={{ entry, ...(fset ? { fset } : {}), ...(rset ? { rset } : {}) }} ctx={{ entry: label }} onBack={() => setStep(n2 - 1)} answer={answerOf(walk, screens)} /> : <RoleScreen walk={walk} step={step} screens={screens} cols={["AdmPipelineIcon", "DonutIcon", "TrendLineIcon"]} colName={walk.label} colQuestion={fillTemplate(walk.question, { entry: label })} onStep={setStep} />}
       </WalkFrame>
     </div>
   );

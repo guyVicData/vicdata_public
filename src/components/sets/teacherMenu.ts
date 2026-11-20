@@ -18,8 +18,8 @@ export const rankingKey = (id: string) => `ranking:${id}`;
 
 const creatorOfSet = (s: SavedComparatorSet): CreatorKind => (s.vc ? "victoria_consultancy" : s.group ? "group" : s.mine ? "me" : (s.creator ?? "school_admin"));
 
-export function teacherMenuRows(payload: SavedSetsPayload | null, o: { nearestLabel: string; nearestCount: number | null; rankings?: SavedRanking[] }): { rows: { default: SetMenuRow[]; school: SetMenuRow[]; mine: SetMenuRow[] }; mine: { active: number; cap: number } | null } {
-  const sets = payload?.sets ?? [];
+export function teacherMenuRows(payload: SavedSetsPayload | null, o: { nearestLabel: string; nearestCount: number | null; rankings?: SavedRanking[]; /** SMT (20 Nov, Guy): Admissions' rival sets live on the Admissions panel, not in SMT's comparison list. */ hideAdmissions?: boolean }): { rows: { default: SetMenuRow[]; school: SetMenuRow[]; mine: SetMenuRow[] }; mine: { active: number; cap: number } | null } {
+  const sets = (payload?.sets ?? []).filter((s) => !(o.hideAdmissions && !s.mine && s.creator === "admissions"));
   const rankings = o.rankings ?? payload?.rankings ?? [];
   const row = (s: SavedComparatorSet): SetMenuRow => ({ key: `saved:${s.id}`, name: s.name, count: s.members.length, creator: creatorOfSet(s), creatorLabel: undefined, pinned: s.vc || !!s.group ? false : s.shared });
   const rrow = (r: SavedRanking): SetMenuRow => ({ key: rankingKey(r.id), name: r.name, count: null, creator: r.mine ? "me" : "school_admin", title: `${r.name}: a ranking` });

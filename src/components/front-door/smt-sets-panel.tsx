@@ -142,7 +142,7 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
   }, [urn, phase, laLabel]);
   const selected = smtSetKey(sets.choice, defaults, laLabel);
   const laRow: SetMenuRow[] = laLabel && (laUrns?.length || selected === "default:la") ? [{ key: "default:la", name: laLabel, count: selected === "default:la" && set ? set.urns.length : (laUrns?.length ?? null), creator: "default" }] : [];
-  const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: selected === NEAREST_KEY && set ? set.urns.length : 10 });
+  const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: selected === NEAREST_KEY && set ? set.urns.length : 10, hideAdmissions: true });
   const inUse: SetMenuRow[] = selected === "current" ? [{ key: "current", name: set?.label ?? ("label" in sets.choice ? sets.choice.label : "This set"), count: set ? set.urns.length : null, creator: "me" }] : [];
   const groups: { title: string; rows: SetMenuRow[] }[] = [
     { title: "In use now", rows: inUse },

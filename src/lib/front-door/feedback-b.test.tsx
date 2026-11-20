@@ -255,12 +255,12 @@ test("R-NO-BUILD-NOTES: the walks' own words on real fixtures (Teacher, SMT, Adm
 import type { Overview } from "@/lib/smt/overview";
 import type { Pupils } from "@/lib/smt/pupils";
 
-test("B4 (Admissions 1, 4, 5): the sets lead the Admissions home; every home's dashboard button is a tint of its colour", async () => {
+test("B4 (Admissions 1, 4, 5), Leighton Park prep (20 Nov): the sets panel is drawn under the questions, as SMT's is; every home's dashboard button is a tint of its colour", async () => {
   const { AdmissionsSection } = await import("@/components/front-door/sections");
   const html = renderToStaticMarkup(createElement(AdmissionsSection, { urn: "110110" }));
-  const sets = html.indexOf("data-sets-card");
-  assert.ok(sets > 0, "the sets card is drawn");
-  assert.ok(sets < html.indexOf("data-home-tile"), "above the questions");
+  const sets = html.indexOf("data-adm-sets");
+  assert.ok(sets > 0, "the sets panel is drawn");
+  assert.ok(sets > html.indexOf("data-home-tile"), "under the questions (Guy, 20 Nov: like the SMT home)");
   const button = /<a[^>]*data-home-dashboard=""[^>]*>/.exec(html)?.[0] ?? "";
   assert.match(button, /bg-\[var\(--tile-tint\)\]/);
   assert.match(button, /text-\[var\(--tile-accent-text\)\]/);

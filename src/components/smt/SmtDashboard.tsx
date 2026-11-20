@@ -353,7 +353,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   // its other default sets (the LA, the rankings) are built there.
   const savedId = sets.choice.kind === "saved" ? sets.choice.id : null;
   const savedNow = savedId ? (sets.savedSets?.sets.find((x) => x.id === savedId) ?? null) : null;
-  const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: sets.choice.kind === "nearest" && set ? set.urns.length : 10 });
+  const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: sets.choice.kind === "nearest" && set ? set.urns.length : 10, hideAdmissions: true });
   const selectedKey = sets.choice.kind === "nearest" ? NEAREST_KEY : sets.choice.kind === "saved" ? `saved:${sets.choice.id}` : sets.choice.kind === "ranking" && sets.choice.rankingId ? rankingKey(sets.choice.rankingId) : null;
   // C17, D20: Edit this set… and New set… open the set editor (a copy where the set isn't yours to change).
   const editHref = member.viewAs ? null : teacherEditorHref({ urn: member.schoolUrn, phase, product: "smt", current: set ? { savedId: savedNow?.id ?? null, name: set.label, urns: set.urns } : null, fresh: false });
