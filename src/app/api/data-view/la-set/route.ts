@@ -34,6 +34,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Could not load this school." }, { status: 404 });
   }
   const laNames = lasParam.split(",").map((s) => s.trim()).filter(Boolean);
-  const set = await buildLaComparatorSet(resolved.target, laNames, resolved.targetPhase, genderTag(resolved.target.gender));
+  const set = await buildLaComparatorSet(resolved.target, laNames, resolved.targetPhase, genderTag(resolved.target.gender), resolved.schoolTypeCategory === "special");
   return NextResponse.json({ set });
 }

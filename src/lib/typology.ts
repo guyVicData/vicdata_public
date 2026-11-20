@@ -89,6 +89,17 @@ function isNurseryOrPru(establishmentType: string | null): boolean {
   return establishmentType !== null && NURSERY_AND_PRU_ESTABLISHMENT_TYPES.has(establishmentType);
 }
 
+/**
+ * Special, alternative provision or a pupil referral unit, by GIAS group or type (20 Nov, Guy: "special schools
+ * should NOT be in default lists as they distort averages"). GIAS files many outside "Special schools" --
+ * "Academy special converter", "Free schools special", "Academy alternative provision converter" -- so the type
+ * is read too. Default comparison lists leave these out for a mainstream school.
+ */
+export function isSpecialOrAlternative(establishmentTypeGroup: string | null, establishmentType: string | null): boolean {
+  if (establishmentTypeGroup === SPECIAL_SCHOOLS_GROUP) return true;
+  return !!establishmentType && /special|alternative provision|pupil referral/i.test(establishmentType);
+}
+
 export function sectorTag(
   establishmentTypeGroup: string | null,
   establishmentType: string | null,

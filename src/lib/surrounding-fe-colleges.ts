@@ -29,7 +29,7 @@
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData } from "./vicdata-reference";
-import { FE_PARTICIPATION_ESTABLISHMENT_TYPES, CONSORTIUM_SIXTH_FORM_CENTRE_TYPE, sectorTag, phaseTags } from "./typology";
+import { FE_PARTICIPATION_ESTABLISHMENT_TYPES, CONSORTIUM_SIXTH_FORM_CENTRE_TYPE, isSpecialOrAlternative, sectorTag, phaseTags } from "./typology";
 import { AGE_SEGMENT_BREAKDOWNS, buildIlrParticipationSnapshot } from "./ilr-participation-data";
 
 const TARGET_COUNT = 10;
@@ -214,6 +214,7 @@ export type Local16PlusProvision = { urn: string; name: string; sector: string; 
 export async function findLocal16PlusProvision(
   targetUrn: string,
   laName: string,
+  includeSpecial = false,
 ): Promise<Local16PlusProvision[]> {
   const supabase = createServerAnonSupabaseClient();
 
@@ -247,7 +248,9 @@ export async function findLocal16PlusProvision(
     statutory_low_age: number | null;
     statutory_high_age: number | null;
   };
-  const candidates = (rows ?? []) as Row[];
+  // 2026-11-20 (Guy): special schools, AP and PRUs stay out of a mainstream school's default list
+  // (they distort its averages); a special school's own list keeps them.
+  const candidates = ((rows ?? []) as Row[]).filter((r) => includeSpecial || !isSpecialOrAlternative(r.establishment_type_group, r.establishment_type));
   if (candidates.length === 0) return [];
 
   // 2026-09-08, real bug fix (Camden Post-16 list pulling in HE institutions/an

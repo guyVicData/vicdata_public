@@ -18,7 +18,7 @@ import { findSurroundingSchools, genderMatches, type MatchedSchool } from "./sur
 import { findNearestFeColleges, findLocal16PlusProvision, type NamedFeCollege, type Local16PlusProvision } from "./surrounding-fe-colleges";
 import { fetchCensusFactsBatched } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, CURRENT_CENSUS_PERIOD } from "./roll-data";
-import { effectivePhaseTags, phaseTags, genderTag, boardingRatio, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type GenderTag, type PhaseTag } from "./typology";
+import { effectivePhaseTags, phaseTags, genderTag, boardingRatio, isSpecialOrAlternative, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type GenderTag, type PhaseTag } from "./typology";
 import { resolveTargetRegionNation } from "./region-nation-comparator";
 import { lookupAcademicCurrentPeriods, lookupAcademicHeadline } from "./vicdata-reference";
 import { cachedReference } from "./server-cache";
@@ -209,6 +209,10 @@ function genderMatchesRelaxed(target: GenderTag | null, candidate: GenderTag | n
 // versa -- a mainstream target's List 2 can now include a nearby special school),
 // matching the public map's own non-discriminating behaviour instead of leaving this
 // as an implicit, undocumented gap.
+//
+// 2026-11-20 (Guy, Leighton Park prep): reversed for a mainstream school -- "special schools should NOT be in
+// default lists as they distort averages". Special schools, alternative provision and PRUs (isSpecialOrAlternative:
+// by type as well as group) are left out unless the school is itself special (`includeSpecial`).
 const LIST2_CAP = 30;
 
 // 2026-09-06, UX refinements round 1, B3: generalised from a single `target.la_name`
@@ -221,6 +225,7 @@ export async function buildLaComparatorSet(
   laNames: string[],
   targetPhase: PhaseTag[],
   targetGender: GenderTag | null,
+  includeSpecial = false,
 ): Promise<DefaultList | null> {
   if (laNames.length === 0 || target.easting === null || target.northing === null) return null;
   const label = laNames.length === 1 ? `In ${laNames[0]} (all sectors)` : `In ${laNames.join(", ")} (all sectors)`;
@@ -247,6 +252,7 @@ export async function buildLaComparatorSet(
   if (rows.length === 0) return { key: "in_la", label, schools: [] };
 
   const phaseFiltered = rows.filter((r) => {
+    if (!includeSpecial && isSpecialOrAlternative(r.establishment_type_group, r.establishment_type)) return false;
     if (targetPhase.length === 0) return true;
     const candidatePhase = phaseTags(r.statutory_low_age, r.statutory_high_age, r.establishment_type);
     const sharesTag = candidatePhase.some((p) => targetPhase.includes(p));
@@ -753,8 +759,8 @@ export async function buildDefaultComparatorLists(urn: string, opts: { only?: "n
 
   const [matched, list2, local16PlusCandidates, boardingBand, boardingRecipe] = await Promise.all([
     findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", ...(post16 ? { extraFilterUrns: withKs5Results, filterBeforeFacts: true } : gcse ? { extraFilterUrns: notIgcse } : {}) }),
-    target.la_name && !nearestOnly ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
-    target.la_name && hasPost16Provision && !nearestOnly ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
+    target.la_name && !nearestOnly ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender, schoolTypeCategory === "special") : Promise.resolve(null),
+    target.la_name && hasPost16Provision && !nearestOnly ? findLocal16PlusProvision(urn, target.la_name, schoolTypeCategory === "special") : Promise.resolve<Local16PlusProvision[]>([]),
     isBoardingCategory ? resolveBoardingQuintileBand(urn) : Promise.resolve<BoardingQuintileBand | null>(null),
     // At GCSE a few more, nearest first, so ten remain once IGCSE schools are passed over.
     boardingConfig ? boardingQuintileListFast(target, schoolTypeCategory as "independent_boarding_senior" | "independent_boarding_prep" | "state_boarding", boardingConfig.quintileBasis, gcse ? 40 : 10, boardingConfig.sectorGroups) : Promise.resolve<DefaultList | null>(null),
