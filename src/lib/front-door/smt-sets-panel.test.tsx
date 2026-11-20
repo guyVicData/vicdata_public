@@ -22,7 +22,7 @@ const saved = {
   candidates: [],
 } as unknown as SavedSetsPayload;
 
-const state = (choice: SmtSetState["choice"], urns: number): SmtSetState => ({ choice, set: { kind: choice.kind, label: "Berkshire independents", urns: Array.from({ length: urns }, (_, i) => `${i}`) }, savedSets: saved, linked: false, choose: () => undefined, reloadSaved: async () => undefined, rankTable: null, failed: false });
+const state = (choice: SmtSetState["choice"], urns: number): SmtSetState => ({ choice, set: { kind: choice.kind, label: "Berkshire independents", urns: Array.from({ length: urns }, (_, i) => `${i}`) }, savedSets: saved, linked: false, choose: () => undefined, reloadSaved: async () => undefined, rankTable: null, failed: false, retry: () => undefined });
 const school = { independent: true, regionCode: "E12000008", regionName: "South East" };
 const draw = (sets: SmtSetState, readOnly = false) => renderToStaticMarkup(createElement(SmtSetsPanel, { urn: "110110", schoolName: "Leighton Park School", school, phase: "ks5", sets, o: null, readOnly, theme: "dark" }));
 const ticked = (html: string) => [...html.matchAll(/aria-checked="true"[^>]*data-smt-set-row="([^"]+)"/g)].map((m) => m[1]);

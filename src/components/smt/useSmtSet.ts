@@ -45,8 +45,9 @@ export type SmtSetState = {
   reloadSaved: () => Promise<void>;
   /** A ranking in use: its whole population, ranked (null for any other set, and while it resolves). */
   rankTable: SmtRankTable | null;
-  /** The set's schools couldn't be loaded (its route failed): say so, never wait for ever. */
+  /** The set's schools couldn't be loaded (its route failed, twice): say so, never wait for ever. */
   failed: boolean;
+  retry: () => void;
 };
 
 export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | null): SmtSetState {
@@ -74,6 +75,12 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
 
   const [resolved, setResolved] = useState<{ key: string; set: SmtSetChoice; rankTable?: SmtRankTable } | null>(null);
   const [failedKey, setFailedKey] = useState<string | null>(null);
+  // Try again: the same set asked again.
+  const [tries, setTries] = useState(0);
+  const retry = useCallback(() => {
+    setFailedKey(null);
+    setTries((t) => t + 1);
+  }, []);
   const effective: Stored = linked ? { kind: "urns", label: linked.label, urns: linked.urns } : choice;
   const key = JSON.stringify([urn, phase, effective, effective.kind === "saved" ? !!savedSets : null]);
   useEffect(() => {
@@ -96,7 +103,13 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
       // 20 Nov (Leighton Park prep): a ranking is SMT's benchmark, so it is the WHOLE population (`full`), not
       // the chooser's top 15 and 5 either side -- the school's real regional or national position.
       const set = effective.kind === "nearest" ? { kind: "nearest" } : effective.kind === "urns" ? { kind: "urns", urns: effective.urns } : { kind: "ranking", filters: effective.filters, full: true };
-      const res = await cachedFetchJson<{ rows: { urn: string }[] } & Partial<RankingPopulationResult>>("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase, set }) });
+      // One quiet retry (a busy or restarting server answers 502 now and then) before the set says it failed.
+      const ask = () => cachedFetchJson<{ rows: { urn: string }[] } & Partial<RankingPopulationResult>>("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase, set }) }).catch(() => ({ ok: false, status: 0, body: null }));
+      let res = await ask();
+      if (live && (!res.ok || !res.body)) {
+        await new Promise((r) => setTimeout(r, 2000));
+        res = await ask();
+      }
       if (!live) return;
       if (!res.ok || !res.body) {
         console.error(`[smt set] ${effective.kind}: HTTP ${res.status}`);
@@ -111,7 +124,7 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
     return () => {
       live = false;
     };
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key, tries]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const choose = useCallback(
     (c: ChooserChoice | { kind: "nearest" }) => {
@@ -134,5 +147,5 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
     [urn],
   );
 
-  return { choice: effective, set: resolved?.key === key ? resolved.set : null, savedSets, linked: !!linked, choose, reloadSaved, rankTable: resolved?.key === key ? (resolved.rankTable ?? null) : null, failed: failedKey === key && resolved?.key !== key };
+  return { choice: effective, set: resolved?.key === key ? resolved.set : null, savedSets, linked: !!linked, choose, reloadSaved, rankTable: resolved?.key === key ? (resolved.rankTable ?? null) : null, failed: failedKey === key && resolved?.key !== key, retry };
 }
