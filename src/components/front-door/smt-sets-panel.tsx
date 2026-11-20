@@ -15,7 +15,7 @@ import type { SmtSetState } from "@/components/smt/useSmtSet";
 import { DEFAULT_SET_LABEL } from "@/components/smt/useSmtSet";
 import { smtVars } from "@/components/smt/ui";
 import { SetMap } from "@/components/smt/views/SetMap";
-import { NEAREST_KEY, rankingKey, teacherMenuRows } from "@/components/sets/teacherMenu";
+import { NEAREST_KEY, rankingKey, teacherEditorHref, teacherMenuRows } from "@/components/sets/teacherMenu";
 import type { SetMenuRow } from "@/components/sets/SetSelector";
 import { guidedHref } from "@/lib/sets/guided";
 import { defaultRankingFilters, NATIONAL, type RankingFilters } from "@/lib/comparator-chooser";
@@ -57,6 +57,46 @@ const Tick = () => (
     <path d="M5 12.5l4.5 4.5L19 7.5" />
   </svg>
 );
+
+/** What the set is, in words: who is in it, where, and why they were matched (Leighton Park prep, 20 Nov).
+ * Pure, from the set's own recipe -- the chooser's rules (chooser-sets.ts, default-comparator-lists.ts). */
+export type SetStoryInput = {
+  key: string; // smtSetKey: nearest, default:la, default:region, default:nation, saved:<id>, ranking:<id>, current
+  count: number;
+  schoolName: string;
+  phase: "ks2" | "ks4" | "ks5" | null;
+  independent: boolean;
+  laName: string | null;
+  regionName: string | null;
+  saved?: { name: string; creator?: string | null } | null;
+  label: string;
+};
+const CREATOR_WORD: Record<string, string> = { admissions: "Admissions", smt: "SMT", school_admin: "the School-Admin", me: "you", teacher: "a teacher", hod: "a head of department", group: "the school's group", victoria_consultancy: "Victoria Consultancy" };
+export function setStory(i: SetStoryInput): string {
+  const n = `${i.count.toLocaleString("en-GB")} ${i.count === 1 ? "school" : "schools"}`;
+  const sector = i.independent ? "independent" : "state";
+  const stage = i.phase === "ks5" ? "with a sixth form" : i.phase === "ks4" ? "teaching GCSE" : "of the same phase";
+  const measure = i.phase === "ks5" ? "A level average points per entry" : i.phase === "ks4" ? "Attainment 8" : "their headline results";
+  const area = i.laName ? `in and around ${i.laName}` : "nearby";
+  switch (i.key) {
+    case "nearest":
+      return `This set includes ${n} ${area}, matched because they are the ${sector} schools ${stage} closest to ${i.schoolName}, across local authority lines (VicData's default).`;
+    case "default:la":
+      return `This set includes ${n} in ${i.laName ?? "the local authority"}, matched because they are every school there ${stage}: state, independent and special.`;
+    case "default:region":
+    case "default:nation": {
+      // English regions take "the" ("the South East"), London doesn't.
+      const where = i.key === "default:region" ? (i.regionName ? (i.regionName === "London" ? "London" : `the ${i.regionName}`) : "the region") : "England";
+      return `This set includes ${n} in ${where}, matched because they are the top 15 ${sector} schools there by ${measure}, and the 5 ranked either side of ${i.schoolName}.`;
+    }
+  }
+  if (i.key.startsWith("saved:") && i.saved) {
+    const who = i.saved.creator ? CREATOR_WORD[i.saved.creator] ?? "the school" : "the school";
+    return `This set includes ${n}, matched because ${who === "you" ? "you" : who} chose them by hand, as "${i.saved.name}".`;
+  }
+  if (i.key.startsWith("ranking:")) return `This set includes ${n}, matched because they are the top 15 in the ranking "${i.label}", and the 5 ranked either side of ${i.schoolName}.`;
+  return `This set includes ${n} (${i.label}).`;
+}
 
 export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, readOnly, theme, accentInk = "#111" }: { urn: string; schoolName: string; school?: { independent: boolean; regionCode?: string | null; regionName: string | null; laName?: string | null } | null; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme; /** Text on the accent: white on light SMT's deep orange, else near-black. */ accentInk?: string }) {
   const set = sets.set;
@@ -107,6 +147,14 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
   // The map draws the Overview answer for the set now in use (useSmt keys it on the set: never a stale one).
   const oNow = set ? o : null;
   const n = set?.urns.length ?? null;
+  const savedId = selected.startsWith("saved:") ? selected.slice(6) : null;
+  const savedRow = savedId ? (sets.savedSets?.sets.find((x) => x.id === savedId) ?? null) : null;
+  const story = set
+    ? setStory({ key: selected, count: set.urns.length, schoolName, phase, independent: !!school?.independent, laName: school?.laName ?? null, regionName: school?.regionName ?? null, label: set.label, saved: savedRow ? { name: savedRow.name, creator: savedRow.vc ? "victoria_consultancy" : savedRow.group ? "group" : savedRow.mine ? "me" : (savedRow.creator ?? null) } : null })
+    : "";
+  // The schools by name, A to Z, from the Overview answer for this set (its schools carry their names).
+  const names = set && oNow ? set.urns.map((u) => oNow.schools[u]?.name).filter((x): x is string => !!x).sort((a, b) => a.localeCompare(b, "en-GB")) : [];
+  const editHref = readOnly || !set ? null : teacherEditorHref({ urn, phase, product: "smt", current: { savedId, name: set.label, urns: set.urns }, fresh: false });
   const builder = phase === "ks4" || phase === "ks5" ? guidedHref({ urn, kind: "compared_against", product: "smt", phase, fromHome: true }) : null;
   return (
     <section data-smt-sets="" aria-labelledby="smt-sets-h" className="fd-tile flex flex-col gap-4 rounded-[14px] px-5 py-5 text-[var(--fg)]">
@@ -179,20 +227,27 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
               </p>
             </div>
           )}
+          {set && (
+            <div data-smt-set-story="" className="mt-3 flex flex-col gap-2 text-[13.5px] leading-relaxed">
+              <p>
+                {story}
+                {editHref && (
+                  <>
+                    {" "}
+                    <Link href={editHref} className="font-semibold text-[var(--tile-accent-text,var(--accent))] underline">
+                      {savedRow?.editable ? "Edit this set" : "Edit a copy"}
+                    </Link>
+                  </>
+                )}
+              </p>
+              {names.length > 0 && (
+                <p className="text-[var(--muted2)]">
+                  <span className="font-semibold text-[var(--fg)]">Schools in the set:</span> {names.join(", ")}.
+                </p>
+              )}
+            </div>
+          )}
         </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 border-t border-[var(--panel-border)] pt-4">
-        {/* 20 Nov: the library as a call to action -- build and manage your sets -- in the view's own colour. */}
-        <Link href="/sets?kind=compared_against" data-smt-sets-library="" style={{ color: accentInk }} className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[var(--accent)] px-5 text-[15px] font-semibold hover:opacity-90">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-            <circle cx="7" cy="7" r="3" />
-            <circle cx="17" cy="7" r="3" />
-            <circle cx="7" cy="17" r="3" />
-            <path d="M17 14v6M14 17h6" />
-          </svg>
-          Build your own sets <span aria-hidden="true">&rarr;</span>
-        </Link>
-        <span className="text-[13px] text-[var(--muted2)]">Every set the school and you have made, and new ones.</span>
       </div>
     </section>
   );
