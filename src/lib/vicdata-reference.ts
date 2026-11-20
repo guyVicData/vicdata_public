@@ -350,6 +350,9 @@ export async function lookupAcademicSubjectFamily(params: {
     )) as AcademicSubjectFamilyRow[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
+    // As reference_data_lookup: the cap still stops the read, but says so (SMT's national GCSE set lost
+    // ~2,000 schools' area rows here silently until 20 Nov; smt-figures-store.ts areaRowsFor now chunks it).
+    if (page === MAX_PAGES - 1) console.warn(`[academic_subject_family_lookup] stopped at ${MAX_PAGES} pages (${rows.length} rows) for ${params.entityIds?.length ?? "all"} entities; later rows were not read`);
   }
   return rows;
 }

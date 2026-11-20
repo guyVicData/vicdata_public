@@ -160,6 +160,24 @@ export function membersFromStore(recs: Map<string, Map<number, Got>>, viewer: st
   };
 }
 
+/** GCSE's area rollup rows for these schools, a few hundred schools a call: the rollup pages at 1,000 rows and
+ * stops at 50 pages, so one call for a national set (3,497 state schools, ~250,000 rows) silently lost every
+ * school after the first ~1,500 (found by the parity run, 20 Nov). Each school's rows as one call gives them. */
+export async function areaRowsFor(urns: string[], from: number): Promise<AcademicSubjectFamilyRow[]> {
+  const CHUNK = 200;
+  const parts: string[][] = [];
+  for (let i = 0; i < urns.length; i += CHUNK) parts.push(urns.slice(i, i + CHUNK));
+  const out: AcademicSubjectFamilyRow[][] = new Array(parts.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(4, parts.length) }, async () => {
+    while (next < parts.length) {
+      const i = next++;
+      out[i] = await lookupAcademicSubjectFamily({ entityIds: parts[i], ksStage: "ks4", periodMin: from });
+    }
+  }));
+  return out.flat();
+}
+
 /** What Academic reads for a school and its set: the school's own rows and value added (its whole lists,
  * in the reads' order), and every school's figures as Members. */
 export type AcademicInputs = { rows: QualRow[]; va: VaFact[]; members: Members; source: "store" | "live" };
@@ -175,7 +193,7 @@ export async function academicInputs(stage: Stage, viewer: string, everyone: str
     const [rows, va, fam] = await Promise.all([
       qualRows(everyone, stage, from),
       stage === "ks5" ? subjectVa(everyone) : Promise.resolve([] as VaFact[]),
-      stage === "ks4" && opts.fam ? cachedReference(`smt:family:ks4:${everyone.slice().sort().join(",")}`, () => lookupAcademicSubjectFamily({ entityIds: everyone, ksStage: "ks4", periodMin: from })) : Promise.resolve([] as AcademicSubjectFamilyRow[]),
+      stage === "ks4" && opts.fam ? cachedReference(`smt:family:ks4:${everyone.slice().sort().join(",")}`, () => areaRowsFor(everyone, from)) : Promise.resolve([] as AcademicSubjectFamilyRow[]),
     ]);
     figuresReads.live++;
     return { rows, va, members: membersFromRaw(stage, rows, va, fam), source: "live" };
