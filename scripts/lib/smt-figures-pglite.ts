@@ -3,12 +3,21 @@
 // three roles, and the real read function called, so the local runs read exactly what the live table would
 // answer (jsonb round trip included). Never touches a real database.
 import { readFileSync } from "node:fs";
-import { PGlite } from "@electric-sql/pglite";
+
+// A local test tool, not one of the app's packages (Render doesn't install it, and the build's type check
+// must not need it): loaded at run time, only when a local run asks for PGlite.
+type PGliteDb = { query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>; exec(sql: string): Promise<unknown>; close(): Promise<void> };
+async function newPGlite(dir: string): Promise<PGliteDb> {
+  const spec = "@electric-sql/pglite";
+  const { PGlite } = (await import(spec)) as { PGlite: new (dir: string) => PGliteDb };
+  return new PGlite(dir);
+}
+
 
 const MIGRATION = new URL("../../supabase/migrations/20261125100000_v08_smt_school_figures.sql", import.meta.url).pathname;
 
-export async function openFiguresPglite(dir: string): Promise<PGlite> {
-  const db = new PGlite(dir);
+export async function openFiguresPglite(dir: string): Promise<PGliteDb> {
+  const db = await newPGlite(dir);
   const has = await db.query<{ t: string | null }>(`select to_regclass('public.smt_school_figures')::text as t`);
   if (!has.rows[0]?.t) {
     await db.exec(`
@@ -24,7 +33,7 @@ export async function openFiguresPglite(dir: string): Promise<PGlite> {
 }
 
 /** The read function, as the service role calls it. */
-export function pgliteFiguresRpc(db: PGlite) {
+export function pgliteFiguresRpc(db: PGliteDb) {
   return async (fn: string, a: Record<string, unknown>) => {
     if (fn !== "smt_school_figures_read") throw new Error(`no ${fn} here`);
     await db.exec("set role service_role");

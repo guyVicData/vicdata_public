@@ -19,7 +19,6 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { PGlite } from "@electric-sql/pglite";
 import { liveVersions, resultsCacheStats, setResultsCacheForTests, type ResultsStore, type Versions } from "../src/lib/results-cache";
 import { cachedAcademic, cachedContext, cachedContextMap, cachedMarket, cachedOverview, cachedPipeline, cachedPupils, cachedRivals, cachedShape, cachedTeacherModel } from "../src/lib/cached-views";
 import { buildTeacherDashboard } from "../src/lib/teacher-dashboard-data";
@@ -40,6 +39,16 @@ import type { AdmissionsCaller } from "../src/lib/admissions/auth";
 import type { SmtSet } from "../src/lib/smt/overview";
 import type { RankingFilters } from "../src/lib/comparator-chooser";
 
+// A local test tool, not one of the app's packages (Render doesn't install it, and the build's type check
+// must not need it): loaded at run time, only when a local run asks for PGlite.
+type PGliteDb = { query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>; exec(sql: string): Promise<unknown>; close(): Promise<void> };
+async function newPGlite(dir: string): Promise<PGliteDb> {
+  const spec = "@electric-sql/pglite";
+  const { PGlite } = (await import(spec)) as { PGlite: new (dir: string) => PGliteDb };
+  return new PGlite(dir);
+}
+
+
 const out = process.argv[2];
 const phase = process.argv[3] ?? "parent";
 if (!out) throw new Error("usage: results-cache-parity.ts OUT_DIR");
@@ -48,7 +57,7 @@ mkdirSync(join(out, "off"), { recursive: true });
 // ---- the PGlite stand-in for public.results_cache (the store's own SQL, as the PGlite test runs it) ----
 async function pgliteStore(dir: string): Promise<{ store: ResultsStore; close: () => Promise<void>; count: () => Promise<number> }> {
   const fresh = !existsSync(join(dir, "PG_VERSION"));
-  const db = new PGlite(dir);
+  const db = await newPGlite(dir);
   if (fresh) {
     await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema supabase_migrations; create table supabase_migrations.schema_migrations (version text primary key, name text);`);
     await db.exec(readFileSync("supabase/ops/results_cache/apply_results_cache.sql", "utf8"));
