@@ -24,6 +24,7 @@ import {
   gradeRowsFromFacts,
   gradeRowsFromRollup,
   parseSubjectGradeDistribution,
+  type GradeRollupRow,
   type SubjectGradeCount,
 } from "./grade-rows";
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
@@ -1400,17 +1401,25 @@ export async function fetchSubjectHeadlineForSchools(
 // points get the average from their own grade rows, on DfE's convention (doubleAwardPoints: two
 // entries, each the average of its two grades). One grade-rollup read for the double-award rows
 // only; if it fails or isn't there, the rows stay as the rollup gave them.
+const DOUBLE_AWARD_CHUNK = 40;
+const DOUBLE_AWARD_AT_ONCE = 3;
 async function fillDoubleAwardPoints(byUrn: Map<string, AcademicSubjectHeadlineEntry[]>): Promise<void> {
   const want = Array.from(byUrn).filter(([, list]) => list.some((e) => e.avgPointScore === null && e.entriesTotal > 0)).map(([u]) => u);
   if (!want.length) return;
-  let rows: Awaited<ReturnType<typeof lookupAcademicSubjectGradeRollup>> = null;
-  try {
-    rows = await lookupAcademicSubjectGradeRollup({ entityIds: want, ksStage: "ks4", qualificationType: DOUBLE_AWARD_QUALIFICATION });
-  } catch {
-    markDegraded();
-    return;
-  }
-  if (!rows?.length) return;
+  // 20 Nov: DOUBLE_AWARD_CHUNK schools a read, DOUBLE_AWARD_AT_ONCE at a time, each tried twice (limited.ts). One
+  // read for every school paged deeper and slower as the set grew (measured, West Midlands state schools: 40
+  // schools 0.3 s, 200 6.8 s, 417 21.9 s in 30 pages), and for a 417-school set its first page once crossed
+  // production's statement timeout (3.06 s, HTTP 500), leaving every school's Double Award without points. A
+  // chunk failing both tries leaves its own schools' rows as the rollup gave them, and marks the build.
+  const chunks: string[][] = [];
+  for (let i = 0; i < want.length; i += DOUBLE_AWARD_CHUNK) chunks.push(want.slice(i, i + DOUBLE_AWARD_CHUNK));
+  const parts = await mapLimited(chunks, DOUBLE_AWARD_AT_ONCE, (c) =>
+    retryOnce(() => lookupAcademicSubjectGradeRollup({ entityIds: c, ksStage: "ks4", qualificationType: DOUBLE_AWARD_QUALIFICATION })).catch(() => (markDegraded(), [] as GradeRollupRow[])),
+    { retry: false },
+  );
+  if (parts.some((p) => p === null)) return; // the RPC isn't there
+  const rows = parts.flatMap((p) => p ?? []);
+  if (!rows.length) return;
   const grades = new Map<string, { grade: string; entries: number }[]>();
   for (const r of rows) {
     const k = `${r.entity_id}|${r.subject}|${r.period}`;
