@@ -429,7 +429,7 @@ function SmtInner({ member, heading }: { member: SmtMember; heading?: React.Reac
       {s && !primary && level !== "whole" && <OurSubjects urn={member.schoolUrn} phases={level === "gcse" ? ["ks4"] : ["ks5"]} />}
       {/* Leighton Park prep (20 Nov): the comparison set -- what it is for, the choices (the one in use ticked),
           who is in it, and the builder; then (0.8 groups r1) the school's group where its head office holds a group account. */}
-      <SmtSetsPanel urn={member.schoolUrn} schoolName={s?.name ?? member.schoolName} phase={s ? setPhaseOf(s.phases) : null} sets={sets} o={o.status === "ready" ? o.data : null} readOnly={member.readOnly || !!member.viewAs} theme={pref === "mid" ? "light" : effectiveTheme(pref)} />
+      <SmtSetsPanel urn={member.schoolUrn} schoolName={s?.name ?? member.schoolName} school={s} phase={s ? setPhaseOf(s.phases) : null} sets={sets} o={o.status === "ready" ? o.data : null} readOnly={member.readOnly || !!member.viewAs} theme={pref === "mid" ? "light" : effectiveTheme(pref)} />
       <SchoolGroupTile urn={member.schoolUrn} />
     </HomeSection>
   );

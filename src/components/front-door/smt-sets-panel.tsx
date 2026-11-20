@@ -16,14 +16,37 @@ import { SetMap } from "@/components/smt/views/SetMap";
 import { NEAREST_KEY, rankingKey, teacherMenuRows } from "@/components/sets/teacherMenu";
 import type { SetMenuRow } from "@/components/sets/SetSelector";
 import { guidedHref } from "@/lib/sets/guided";
+import { defaultRankingFilters, NATIONAL, type RankingFilters } from "@/lib/comparator-chooser";
 import { Spinner } from "@/components/shell/LoadingGraphic";
 import type { Theme } from "@/components/shell/TeacherChrome";
 
 /** Up to this many schools, the set is drawn on its map; more than that reads as a cloud of dots. */
 export const SET_MAP_MAX = 40;
 
-export function smtSetKey(choice: SmtSetState["choice"]): string | null {
-  return choice.kind === "nearest" ? NEAREST_KEY : choice.kind === "saved" ? `saved:${choice.id}` : choice.kind === "ranking" && choice.rankingId ? rankingKey(choice.rankingId) : null;
+/** A one-click VicData default beyond the 10 nearest: the school's own sector, ranked in its region and in England
+ * (the chooser's rankings, unsaved: rankingId null). */
+type DefaultRanking = { key: string; label: string; filters: RankingFilters };
+export function defaultRankings(school: { independent: boolean; regionCode?: string | null; regionName: string | null } | null): DefaultRanking[] {
+  if (!school) return [];
+  const sector = school.independent ? "Independent" : "State";
+  const filters = (scope: RankingFilters["scope"]): RankingFilters => ({ ...defaultRankingFilters(scope), sectors: [sector] });
+  return [
+    ...(school.regionCode && school.regionName ? [{ key: "default:region", label: `${sector} schools in ${school.regionName}`, filters: filters({ kind: "region", code: school.regionCode, name: school.regionName }) }] : []),
+    { key: "default:nation", label: `${sector} schools in England`, filters: filters(NATIONAL) },
+  ];
+}
+
+/** The row the set in use ticks: a saved set or ranking by id; the 10 nearest however it was chosen (the
+ * dashboard's chooser stores it as a list of schools); a default ranking by its name. "current" when none fits. */
+export function smtSetKey(choice: SmtSetState["choice"], defaults: DefaultRanking[] = []): string {
+  if (choice.kind === "nearest" || (choice.kind === "urns" && choice.label === DEFAULT_SET_LABEL)) return NEAREST_KEY;
+  if (choice.kind === "saved") return `saved:${choice.id}`;
+  if (choice.kind === "ranking") {
+    if (choice.rankingId) return rankingKey(choice.rankingId);
+    const d = defaults.find((x) => x.label === choice.label);
+    if (d) return d.key;
+  }
+  return "current";
 }
 
 const Tick = () => (
@@ -32,17 +55,24 @@ const Tick = () => (
   </svg>
 );
 
-export function SmtSetsPanel({ urn, schoolName, phase, sets, o, readOnly, theme }: { urn: string; schoolName: string; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme }) {
+export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, readOnly, theme }: { urn: string; schoolName: string; school?: { independent: boolean; regionCode?: string | null; regionName: string | null } | null; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme }) {
   const set = sets.set;
-  const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: sets.choice.kind === "nearest" && set ? set.urns.length : 10 });
-  const selected = smtSetKey(sets.choice);
+  // Rankings are for GCSE and Post-16 (the chooser-set route); a primary school's defaults are the nearest only.
+  const defaults = phase === "ks4" || phase === "ks5" ? defaultRankings(school) : [];
+  const selected = smtSetKey(sets.choice, defaults);
+  const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: selected === NEAREST_KEY && set ? set.urns.length : 10 });
+  const inUse: SetMenuRow[] = selected === "current" ? [{ key: "current", name: set?.label ?? ("label" in sets.choice ? sets.choice.label : "This set"), count: set ? set.urns.length : null, creator: "me" }] : [];
   const groups: { title: string; rows: SetMenuRow[] }[] = [
-    { title: "VicData default", rows: menu.rows.default },
+    { title: "In use now", rows: inUse },
+    { title: "VicData default", rows: [...menu.rows.default, ...defaults.map((d): SetMenuRow => ({ key: d.key, name: d.label, count: selected === d.key && set ? set.urns.length : null, creator: "default", countText: selected === d.key && set ? undefined : d.key === "default:region" ? "region" : "national" }))] },
     { title: "School sets", rows: menu.rows.school },
     { title: "My sets", rows: menu.rows.mine },
   ].filter((g) => g.rows.length);
   const pick = (r: SetMenuRow) => {
-    if (r.key === NEAREST_KEY) sets.choose({ kind: "nearest" });
+    const d = defaults.find((x) => x.key === r.key);
+    if (r.key === "current") return;
+    if (d) sets.choose({ kind: "ranking", label: d.label, filters: d.filters, rankingId: null });
+    else if (r.key === NEAREST_KEY) sets.choose({ kind: "nearest" });
     else if (r.key.startsWith("saved:")) sets.choose({ kind: "saved", id: r.key.slice(6) });
     else if (r.key.startsWith("ranking:")) {
       const rk = sets.savedSets?.rankings?.find((x) => rankingKey(x.id) === r.key);
@@ -96,6 +126,12 @@ export function SmtSetsPanel({ urn, schoolName, phase, sets, o, readOnly, theme 
               </ul>
             </div>
           ))}
+          {builder && !readOnly && (
+            <Link href={builder} data-smt-set-build="" className="inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[14px] font-semibold text-[#111] hover:opacity-90">
+              <span aria-hidden="true">+</span> Make your own set
+            </Link>
+          )}
+          {builder && readOnly && <p className="text-[12.5px] text-[var(--muted2)]">Making a set isn&rsquo;t open while you look as this school.</p>}
           {sets.linked && set && (
             <p className="text-[12.5px] text-[var(--muted2)]">Now showing a linked set ({set.label}). Pick one above to go back to yours.</p>
           )}
@@ -122,15 +158,8 @@ export function SmtSetsPanel({ urn, schoolName, phase, sets, o, readOnly, theme 
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-[var(--panel-border)] pt-4">
-        {builder && !readOnly ? (
-          <Link href={builder} data-smt-set-build="" className={pill}>
-            Build your own set <span aria-hidden="true">&rarr;</span>
-          </Link>
-        ) : (
-          builder && <span className="text-[13px] text-[var(--muted2)]">Building a set isn&rsquo;t open while you look as this school.</span>
-        )}
-        <Link href="/sets?kind=compared_against" className="inline-flex min-h-[44px] items-center px-2 text-[13px] text-[var(--muted2)] hover:text-[var(--fg)]">
-          All sets
+        <Link href="/sets?kind=compared_against" className={pill}>
+          All sets <span aria-hidden="true">&rarr;</span>
         </Link>
       </div>
     </section>

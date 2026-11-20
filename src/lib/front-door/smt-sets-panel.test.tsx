@@ -23,7 +23,9 @@ const saved = {
 } as unknown as SavedSetsPayload;
 
 const state = (choice: SmtSetState["choice"], urns: number): SmtSetState => ({ choice, set: { kind: choice.kind, label: "Berkshire independents", urns: Array.from({ length: urns }, (_, i) => `${i}`) }, savedSets: saved, linked: false, choose: () => undefined, reloadSaved: async () => undefined });
-const draw = (sets: SmtSetState, readOnly = false) => renderToStaticMarkup(createElement(SmtSetsPanel, { urn: "110110", schoolName: "Leighton Park School", phase: "ks5", sets, o: null, readOnly, theme: "dark" }));
+const school = { independent: true, regionCode: "E12000008", regionName: "South East" };
+const draw = (sets: SmtSetState, readOnly = false) => renderToStaticMarkup(createElement(SmtSetsPanel, { urn: "110110", schoolName: "Leighton Park School", school, phase: "ks5", sets, o: null, readOnly, theme: "dark" }));
+const ticked = (html: string) => [...html.matchAll(/aria-checked="true"[^>]*data-smt-set-row="([^"]+)"/g)].map((m) => m[1]);
 
 test("SMT sets panel: explains the set, lists every choice by group, ticks the one in use", () => {
   const html = draw(state({ kind: "saved", id: "s1" }, 7));
@@ -40,4 +42,16 @@ test("SMT sets panel: a large set is worded, not mapped; read-only hides the bui
   assert.match(html, /too many to map/);
   assert.doesNotMatch(html, /data-smt-set-build/);
   assert.deepEqual([...html.matchAll(/aria-checked="true"[^>]*data-smt-set-row="([^"]+)"/g)].map((m) => m[1]), ["nearest"]);
+});
+
+test("SMT sets panel: the 10 nearest ticks however it was chosen; the region and England rankings are defaults; anything else shows as In use now", () => {
+  // The dashboard's chooser stores the 10 nearest as a list of schools.
+  assert.deepEqual(ticked(draw(state({ kind: "urns", label: "10 nearest schools", urns: [] }, 10))), ["nearest"]);
+  const html = draw(state({ kind: "ranking", label: "Independent schools in South East", filters: {} as never, rankingId: null }, 212));
+  assert.match(html, /Independent schools in England/);
+  assert.deepEqual(ticked(html), ["default:region"]);
+  const other = draw(state({ kind: "urns", label: "Schools in Wokingham", urns: [] }, 30));
+  assert.match(other, /In use now/);
+  assert.deepEqual(ticked(other), ["current"]);
+  assert.match(draw(state({ kind: "nearest" }, 10)), /Make your own set/);
 });

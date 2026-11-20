@@ -26,6 +26,8 @@ export type SmtSchool = {
   // GIAS's town (the place line; VicData holds no district for a school).
   town: string | null;
   regionName: string | null;
+  // The region's ONS code (E12…), for the comparison panel's regional ranking (Leighton Park prep, 20 Nov).
+  regionCode?: string | null;
   independent: boolean;
   typeGroup: string | null;
   // GIAS establishment type (0.8 SMT r3: DfE publishes no FSM for "Other independent special school"s,
@@ -122,6 +124,7 @@ export async function smtSchool(urn: string): Promise<SmtSchool | null> {
     laName: data.la_name,
     town: data.town,
     regionName: england.get(urn)?.regionName ?? null,
+    regionCode: england.get(urn)?.regionCode ?? null,
     independent: typeGroup === "Independent schools",
     typeGroup,
     establishmentType: data.establishment_type,
