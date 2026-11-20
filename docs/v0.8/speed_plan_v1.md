@@ -75,7 +75,7 @@ Leighton Park, live, with both on:
 | SMT home vs independent schools in England | 16.6 s (the Overview isn't precomputed yet) | 1.2 s |
 | Every other Leighton Park page | 1.5–10 s | 0.9–2.0 s |
 
-Not stored yet: the big-set Overviews whose builds saw a failed census read (the cache refuses an answer built past a failed read) -- the census timeouts on big sets are their own fix, after the freeze.
+The big-set Overviews weren't being stored at first: their census reads all ran at once and production cancelled most of them (440-480 of 488 schools came back with no census, so the live Overview was incomplete too). Fixed in `f803f1a` (three reads at a time, each retried once): every school's census now arrives, and the Overviews are stored like everything else. After that fix, a second visit to every Leighton Park page, big sets included, is 0.8-2.0 s, and stays so across design-only deploys.
 
 ## 4. After the demo: the architecture (agreed with Guy, 20 Nov)
 
