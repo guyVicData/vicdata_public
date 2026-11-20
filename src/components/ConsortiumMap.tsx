@@ -84,9 +84,13 @@ export type ConsortiumMapOptions = {
   //   labelOf     a permanent label beside a dot (main feeders, close rivals, the school itself)
   rings?: { easting: number; northing: number; km: readonly number[]; colour: string };
   labelOf?: (m: ConsortiumMapMember) => string | null;
+  // 20 Nov (Leighton Park prep, additive): a map inside a page people scroll -- a trackpad's scroll or a finger's
+  // swipe moves the page, not the map. The +/- buttons zoom; a click on the map lets the wheel zoom it until the
+  // pointer leaves; on touch, one finger moves the page (the map pinch-zooms, and its buttons zoom).
+  pageScroll?: boolean;
 };
 
-export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas, circle, fitCircle, markerOf, redrawKey, rings, labelOf }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
+export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas, circle, fitCircle, markerOf, redrawKey, rings, labelOf, pageScroll = false }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const router = useRouter();
@@ -98,10 +102,14 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
     import("leaflet").then((L) => {
       if (cancelled || !mapElRef.current) return;
 
-      const map = L.map(mapElRef.current, { zoomControl: false, attributionControl: true });
+      const map = L.map(mapElRef.current, { zoomControl: false, attributionControl: true, ...(pageScroll ? { scrollWheelZoom: false, dragging: !L.Browser.mobile, tapHold: false } : {}) });
       mapRef.current = map;
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
+      if (pageScroll) {
+        map.on("click", () => map.scrollWheelZoom.enable());
+        map.on("mouseout", () => map.scrollWheelZoom.disable());
+      }
       // The ring's bounds from its centre and radius; fitting to it first gives the map a view before any
       // layer is added (a canvas layer needs one).
       const centre = circle ? bngToLatLng(circle.easting, circle.northing) : null;

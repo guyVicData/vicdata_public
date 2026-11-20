@@ -261,7 +261,7 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
             </div>
           ) : n !== null && n <= SET_MAP_MAX && oNow ? (
             <div className="flex flex-col gap-2" style={smtVars(theme) as CSSProperties}>
-              <SetMap o={oNow} fullscreen={false} />
+              <SetMap o={oNow} fullscreen={false} pageScroll />
             </div>
           ) : (
             <div className="flex min-h-[200px] flex-col justify-center gap-2 rounded-[10px] border border-[var(--panel-border)] px-5 py-6">

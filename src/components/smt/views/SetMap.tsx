@@ -38,7 +38,7 @@ export function mapLabel(o: Overview, urn: string): string {
   return `<b>${name}</b><br>${roll}<br>${trend}`;
 }
 
-export function SetMap({ o, fullscreen, room }: { o: Overview; fullscreen: boolean; room?: number }) {
+export function SetMap({ o, fullscreen, room, pageScroll = false }: { o: Overview; fullscreen: boolean; room?: number; /** On a scrolling page (the SMT home): scrolling moves the page, not the map. */ pageScroll?: boolean }) {
   const members: ConsortiumMapMember[] = useMemo(
     () => Object.entries(o.schools).filter(([, s]) => s.easting !== null && s.northing !== null).map(([urn, s]) => ({ urn, name: s.name, easting: s.easting!, northing: s.northing!, roll: o.rolls?.[urn]?.roll ?? null })),
     [o],
@@ -61,6 +61,7 @@ export function SetMap({ o, fullscreen, room }: { o: Overview; fullscreen: boole
         <ConsortiumMap
           members={members}
           targetUrn={o.urn}
+          pageScroll={pageScroll}
           heightClass={`${h ? "h-full" : fullscreen ? "h-[560px]" : "h-[340px]"} w-full overflow-hidden rounded-[10px] border border-[var(--panel-border)]`}
           markerOf={(x) => {
             const c = colour(x.urn);
