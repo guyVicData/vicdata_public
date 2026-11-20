@@ -52,9 +52,10 @@ grant select, insert, update, delete on public.smt_school_figures to service_rol
 
 -- One call per request (one json value, as reference_data_lookup_all): every asked school's rows from
 -- p_period_min on (and its marker), each year's subject and value-added rows only for p_full_urn (the
--- school itself, every year) and for p_subject_period (the year the page compares subjects in). Null when
--- no complete build carries p_version.
-create or replace function public.smt_school_figures_read(p_stage text, p_version text, p_urns text[], p_period_min integer, p_subject_period integer, p_full_urn text)
+-- school itself, every year) and for p_subject_period (the year the page compares subjects in), and the
+-- figures without the keys in p_drop (parts the view doesn't read: GCSE's area rows are most of a national
+-- set's answer). Null when no complete build carries p_version.
+create or replace function public.smt_school_figures_read(p_stage text, p_version text, p_urns text[], p_period_min integer, p_subject_period integer, p_full_urn text, p_drop text[])
 returns json
 language sql
 stable
@@ -66,7 +67,7 @@ as $$
             select coalesce(json_agg(json_build_object(
                 'u', f.urn,
                 'p', f.period,
-                'f', f.figures,
+                'f', case when p_drop is null or f.urn = p_full_urn then f.figures else f.figures - p_drop end,
                 's', case when f.urn = p_full_urn or f.period = p_subject_period then f.subjects end,
                 'v', case when f.urn = p_full_urn or f.period = p_subject_period then f.va end)), '[]'::json)
             from public.smt_school_figures f
@@ -75,8 +76,8 @@ as $$
     end;
 $$;
 
-revoke all on function public.smt_school_figures_read(text, text, text[], integer, integer, text) from public, anon, authenticated;
-grant execute on function public.smt_school_figures_read(text, text, text[], integer, integer, text) to service_role;
+revoke all on function public.smt_school_figures_read(text, text, text[], integer, integer, text, text[]) from public, anon, authenticated;
+grant execute on function public.smt_school_figures_read(text, text, text[], integer, integer, text, text[]) to service_role;
 
 comment on table public.smt_school_figures is
     'Each school''s SMT Academic figures per key stage, data version and year (src/lib/smt/school-figures.ts yearFigures), with that year''s subject and value-added rows. Written only by scripts/build-smt-figures.ts; read by the app''s server through smt_school_figures_read when SMT_FIGURES=on. Speed plan 4.2 item 1.';

@@ -26,7 +26,7 @@ let fails = 0;
 const check = (name, ok, extra = "") => { console.log(ok ? "PASS" : "FAIL", name, extra); if (!ok) fails++; };
 const as = async (role, fn) => { await ex(`set role ${role}`); try { return await fn(); } finally { await ex("reset role"); } };
 const denied = async (role, sql) => { try { await as(role, () => q(sql)); return false; } catch (e) { return /permission denied|row-level security/i.test(e.message); } };
-const read = (role, args) => as(role, () => q(`select smt_school_figures_read($1, $2, $3, $4, $5, $6) as r`, args)).then((x) => x.rows[0].r);
+const read = (role, args) => as(role, () => q(`select smt_school_figures_read($1, $2, $3, $4, $5, $6, $7) as r`, args.length === 7 ? args : [...args, null])).then((x) => x.rows[0].r);
 
 // Awkward doubles: shortest round-trip forms, an exponent, a long fraction.
 const pts = [33.333333333333336, 0.1 + 0.2, 1e-7, 123456.78901234567, -0.4];
@@ -57,6 +57,9 @@ const a = got.find((g) => g.u === "100001" && g.p === 2023);
 const b = got.find((g) => g.u === "100001" && g.p === 2024);
 const back = [a.f.g.alevel[1], a.s[0][4], b.f.g.alevel[1], b.s[0][4], b.v[0][3]];
 check("numbers come back exactly as written", back.every((v, i) => Object.is(v, pts[i])), JSON.stringify(back));
+const dropped = await read("service_role", ["ks5", "v1", ["100001", "100002"], 2021, 2024, "100002", ["g"]]);
+check("p_drop leaves those figure keys out for set schools", dropped.filter((g) => g.u === "100001" && g.p > 0).every((g) => g.f.g === undefined && g.f.e > 0));
+check("p_drop keeps the school itself whole", dropped.find((g) => g.u === "100002" && g.p === 2024).f.e === 5);
 check("another version reads null", (await read("service_role", ["ks5", "v2", ["100001"], 2021, 2024, null])) === null);
 check("another key stage reads null", (await read("service_role", ["ks4", "v1", ["100001"], 2021, 2024, null])) === null);
 
@@ -66,7 +69,7 @@ for (const role of ["anon", "authenticated"]) {
   check(`${role} can't read builds`, await denied(role, `select * from smt_figures_builds`));
   check(`${role} can't write figures`, await denied(role, `insert into smt_school_figures (stage, data_version, urn, period, figures) values ('ks5', 'v1', '1', 1, '{}')`));
   check(`${role} can't mark a build complete`, await denied(role, `update smt_figures_builds set status = 'complete'`));
-  check(`${role} can't call the read`, await denied(role, `select smt_school_figures_read('ks5', 'v1', array['100001'], 2021, 2024, null)`));
+  check(`${role} can't call the read`, await denied(role, `select smt_school_figures_read('ks5', 'v1', array['100001'], 2021, 2024, null, null)`));
 }
 check("RLS on both tables", (await q(`select bool_and(relrowsecurity) as on from pg_class where oid in ('public.smt_school_figures'::regclass, 'public.smt_figures_builds'::regclass)`)).rows[0].on === true);
 
@@ -78,7 +81,7 @@ if (process.env.ROLLBACK === "1") {
   console.log("\n-- rollback");
   await ex(`create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261125090000') on conflict do nothing;`);
   await ex(readFileSync(repo + "ops/smt_figures/rollback_smt_figures.sql", "utf8"));
-  const left = (await q(`select to_regclass('public.smt_school_figures') as a, to_regclass('public.smt_figures_builds') as b, to_regprocedure('public.smt_school_figures_read(text, text, text[], integer, integer, text)') as f, (select count(*)::int from supabase_migrations.schema_migrations where version = '20261125090000') as rec`)).rows[0];
+  const left = (await q(`select to_regclass('public.smt_school_figures') as a, to_regclass('public.smt_figures_builds') as b, to_regprocedure('public.smt_school_figures_read(text, text, text[], integer, integer, text, text[])') as f, (select count(*)::int from supabase_migrations.schema_migrations where version = '20261125090000') as rec`)).rows[0];
   check("rollback removes both tables, the read and the record", !left.a && !left.b && !left.f && left.rec === 0, JSON.stringify(left));
   await ex(readFileSync(repo + "migrations/" + M, "utf8"));
   check("the migration applies again after the rollback", !!(await q(`select to_regclass('public.smt_school_figures') as a`)).rows[0].a);

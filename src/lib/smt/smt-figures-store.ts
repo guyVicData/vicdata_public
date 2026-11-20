@@ -94,7 +94,7 @@ const vaOf = (urn: string, period: number, c: VaCell): VaFact => ({ urn, qualifi
 
 // ------------------------------------------------------------------------------------------ the read
 
-type Got = { u: string; p: number; f: YearFigures; s: SubjectCell[] | null; v: VaCell[] | null };
+export type Got = { u: string; p: number; f: YearFigures; s: SubjectCell[] | null; v: VaCell[] | null };
 export type FiguresRpc = (fn: string, args: Record<string, unknown>) => Promise<unknown>;
 let rpc: FiguresRpc = async (fn, args) => {
   const { data, error } = await createServiceRoleSupabaseClient().rpc(fn, args);
@@ -109,9 +109,9 @@ export const setFiguresRpc = (f: FiguresRpc) => {
 const key = (urns: string[]) => Array.from(new Set(urns)).sort().join(",");
 
 // null: no complete build carries this version.
-async function read(stage: Stage, version: string, urns: string[], periodMin: number, subjectPeriod: number | null, full: string | null): Promise<Map<string, Map<number, Got>> | null> {
-  return cachedReference(`smt:figures:${version}:${periodMin}:${subjectPeriod}:${full}:${key(urns)}`, async () => {
-    const got = (await rpc("smt_school_figures_read", { p_stage: stage, p_version: version, p_urns: Array.from(new Set(urns)), p_period_min: periodMin, p_subject_period: subjectPeriod, p_full_urn: full })) as Got[] | null;
+async function read(stage: Stage, version: string, urns: string[], periodMin: number, subjectPeriod: number | null, full: string | null, drop: FigureKey[]): Promise<Map<string, Map<number, Got>> | null> {
+  return cachedReference(`smt:figures:${version}:${periodMin}:${subjectPeriod}:${full}:${drop.join("")}:${key(urns)}`, async () => {
+    const got = (await rpc("smt_school_figures_read", { p_stage: stage, p_version: version, p_urns: Array.from(new Set(urns)), p_period_min: periodMin, p_subject_period: subjectPeriod, p_full_urn: full, p_drop: drop.length ? drop : null })) as Got[] | null;
     if (!got) return null;
     const out = new Map<string, Map<number, Got>>();
     for (const g of got) (out.get(g.u) ?? out.set(g.u, new Map()).get(g.u)!).set(g.p, g);
@@ -119,14 +119,30 @@ async function read(stage: Stage, version: string, urns: string[], periodMin: nu
   });
 }
 
-function membersFromStore(recs: Map<string, Map<number, Got>>, viewer: string, subjectPeriod: number | null): Members {
+type FigureKey = Exclude<keyof YearFigures, "e">;
+
+/** Exported for tests. */
+export function membersFromStore(recs: Map<string, Map<number, Got>>, viewer: string, subjectPeriod: number | null, drop: FigureKey[]): Members {
+  // A part left out of the read throws when read, so a view can never draw a missing part as "none".
+  const guarded = new Map<string, YearFigures>();
+  const guard = (u: string, y: number, f: YearFigures): YearFigures => {
+    if (!drop.length || u === viewer) return f;
+    const k = `${u}|${y}`;
+    let g = guarded.get(k);
+    if (!g) {
+      g = { ...f };
+      for (const d of drop) Object.defineProperty(g, d, { get: () => { throw new Error(`smt figures: "${d}" for ${u} in ${y} was not read`); } });
+      guarded.set(k, g);
+    }
+    return g;
+  };
   const rowsMemo = new Map<string, QualRow[]>();
   const vaMemo = new Map<string, VaFact[]>();
   const loaded = (u: string, y: number, what: string) => {
     if (u !== viewer && y !== subjectPeriod) throw new Error(`smt figures: ${what} for ${u} in ${y} were not read (only ${subjectPeriod})`);
   };
   return {
-    year: (u, y) => recs.get(u)?.get(y)?.f ?? NO_FIGURES,
+    year: (u, y) => guard(u, y, recs.get(u)?.get(y)?.f ?? NO_FIGURES),
     subjectRows(u, y) {
       loaded(u, y, "subject rows");
       const k = `${u}|${y}`;
@@ -151,9 +167,10 @@ export type AcademicInputs = { rows: QualRow[]; va: VaFact[]; members: Members; 
 export const figuresReads = { store: 0, live: 0 };
 
 /** `subjectPeriod`: the year Academic compares subjects in, from the school's own rows (the set schools'
- * subject rows are read for that year only). `fam` (GCSE): today's reads include the area rollup (a
- * subject-area state); the figures always carry it. */
-export async function academicInputs(stage: Stage, viewer: string, everyone: string[], from: number, opts: { fam?: boolean; subjectPeriod: (own: QualRow[]) => number | null }): Promise<AcademicInputs> {
+ * subject rows are read for that year only; null: none). `fam` (GCSE): today's reads include the area
+ * rollup (a subject-area state); the figures always carry it. `drop`: parts of the set schools' figures the
+ * view doesn't read, left out of the read (reading one throws). */
+export async function academicInputs(stage: Stage, viewer: string, everyone: string[], from: number, opts: { fam?: boolean; subjectPeriod: (own: QualRow[]) => number | null; drop?: FigureKey[] }): Promise<AcademicInputs> {
   const live = async (): Promise<AcademicInputs> => {
     const [rows, va, fam] = await Promise.all([
       qualRows(everyone, stage, from),
@@ -166,7 +183,8 @@ export async function academicInputs(stage: Stage, viewer: string, everyone: str
   if (!figuresOn() || from < BUILD_FROM) return live();
   try {
     const version = await figuresVersion(stage);
-    const own = await read(stage, version, [viewer], from, null, viewer);
+    const drop = opts.drop ?? [];
+    const own = await read(stage, version, [viewer], from, null, viewer, []);
     const mine = own?.get(viewer);
     if (!own || !mine) return live();
     const byPlace = <T,>(cells: [number, T][]) => cells.sort((a, b) => a[0] - b[0]).map((x) => x[1]);
@@ -174,7 +192,7 @@ export async function academicInputs(stage: Stage, viewer: string, everyone: str
     const va = byPlace(Array.from(mine.values()).flatMap((g) => (g.v ?? []).map((c) => [c[7], vaOf(viewer, g.p, c)] as [number, VaFact])));
     const sp = opts.subjectPeriod(rows);
     const others = Array.from(new Set(everyone)).filter((u) => u !== viewer);
-    const recs = others.length ? await read(stage, version, others, from, sp, null) : new Map<string, Map<number, Got>>();
+    const recs = others.length ? await read(stage, version, others, from, sp, null, drop) : new Map<string, Map<number, Got>>();
     if (!recs) return live();
     const missing = others.filter((u) => !recs.has(u));
     if (missing.length) {
@@ -184,7 +202,7 @@ export async function academicInputs(stage: Stage, viewer: string, everyone: str
     const all = new Map(recs);
     all.set(viewer, mine);
     figuresReads.store++;
-    return { rows, va, members: membersFromStore(all, viewer, sp), source: "store" };
+    return { rows, va, members: membersFromStore(all, viewer, sp, drop), source: "store" };
   } catch (e) {
     console.warn(`[smt figures] ${stage}: today's reads instead:`, e instanceof Error ? e.message : e);
     return live();

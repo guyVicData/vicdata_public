@@ -6,9 +6,9 @@ select (select count(*) from supabase_migrations.schema_migrations where version
        (select bool_and(relrowsecurity) from pg_class where oid in ('public.smt_school_figures'::regclass, 'public.smt_figures_builds'::regclass)) as rls_on,
        (select count(*) from pg_policies where tablename in ('smt_school_figures', 'smt_figures_builds')) as policies,
        not has_table_privilege('anon', 'public.smt_school_figures', 'select') and not has_table_privilege('authenticated', 'public.smt_school_figures', 'select') as tables_locked,
-       not has_function_privilege('anon', 'public.smt_school_figures_read(text, text, text[], integer, integer, text)', 'execute')
-         and not has_function_privilege('authenticated', 'public.smt_school_figures_read(text, text, text[], integer, integer, text)', 'execute') as read_locked,
-       has_function_privilege('service_role', 'public.smt_school_figures_read(text, text, text[], integer, integer, text)', 'execute') as server_reads;
+       not has_function_privilege('anon', 'public.smt_school_figures_read(text, text, text[], integer, integer, text, text[])', 'execute')
+         and not has_function_privilege('authenticated', 'public.smt_school_figures_read(text, text, text[], integer, integer, text, text[])', 'execute') as read_locked,
+       has_function_privilege('service_role', 'public.smt_school_figures_read(text, text, text[], integer, integer, text, text[])', 'execute') as server_reads;
 
 -- After the build: one complete build per key stage, its size.
 select stage, data_version, status, schools, row_count, pg_size_pretty(payload_bytes) as json, finished_at - started_at as took

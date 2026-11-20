@@ -6,7 +6,8 @@
 // Usage:
 //   npx tsx --env-file=.env --env-file=.env.local scripts/smt-academic-parity.ts --out DIR CASE [CASE...]
 //   CASE  urn:phase:set   phase gcse|post16; set nearest | nation:Independent | nation:State | region:Independent |
-//                         region:State | region:all   (the SMT sets panel's VicData defaults)
+//                         region:State | region:all   (the SMT sets panel's VicData defaults) | region:own (the
+//                         school's own sector) | list:URN,URN,... (a fixed set, as a saved set arrives)
 //   --only-mode results|entries|va   one mode only
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -53,6 +54,8 @@ async function randomCases(n: number): Promise<string[]> {
 
 async function setFor(urn: string, phase: "gcse" | "post16", spec: string, regionCode: string | null, regionName: string | null) {
   if (spec === "nearest") return { kind: "nearest", label: "10 nearest schools", urns: [] as string[] };
+  // list:URN,URN,...  a fixed set as a saved one arrives (the school may be in it: Academic leaves it out)
+  if (spec.startsWith("list:")) return { kind: "urns", label: "Fixed list", urns: spec.slice(5).split(",") };
   const [scopeKind, sector] = spec.split(":");
   const scope: RankingFilters["scope"] = scopeKind === "nation" ? NATIONAL : ({ kind: "region", code: regionCode!, name: regionName! } as RankingFilters["scope"]);
   const filters: RankingFilters = { ...defaultRankingFilters(scope), sectors: sector === "all" ? [] : ([sector] as RankingFilters["sectors"]) };
@@ -124,8 +127,12 @@ async function main() {
     summary.push({ case: c, states: states.length, setSize: set.urns.length, setMs, firstMs, totalMs: Date.now() - t1 });
   }
   console.table(summary);
-  const { figuresReads } = await import("../src/lib/smt/smt-figures-store");
-  console.log(`academic inputs: ${figuresReads.store} from the figures, ${figuresReads.live} from today's reads`);
+  try {
+    const { figuresReads } = await import("../src/lib/smt/smt-figures-store");
+    console.log(`academic inputs: ${figuresReads.store} from the figures, ${figuresReads.live} from today's reads`);
+  } catch {
+    // main before the figures: nothing to count
+  }
   writeFileSync(join(OUT, "summary.json"), JSON.stringify(summary, null, 1));
   process.exit(0);
 }

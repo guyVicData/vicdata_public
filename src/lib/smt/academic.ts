@@ -775,7 +775,13 @@ async function gcse(school: SmtSchool, st: AcademicState, offer: AcademicOffer, 
   // Speed plan §4.2 item 1: the set schools' figures, built ahead (smt-figures-store.ts) or from today's reads
   // (`rows`: the school's own, with today's reads every set school's too; every school through `members`).
   const L0 = L;
-  const { rows, members } = await academicInputs("ks4", urn, everyone, from, { fam: !!st.area && mode !== "va", subjectPeriod: (own) => subjectYear(own, L0) });
+  // The set schools' parts each view reads: area entries in Entries, the area rollup in an area's Results,
+  // subject rows except in Value added (most of a national set's answer is these).
+  const { rows, members } = await academicInputs("ks4", urn, everyone, from, {
+    fam: !!st.area && mode !== "va",
+    subjectPeriod: (own) => (mode === "va" ? null : subjectYear(own, L0)),
+    drop: [...(mode === "entries" ? [] : (["a"] as const)), ...(mode === "results" && st.area ? [] : (["f"] as const))],
+  });
   const levelEntries = (u: string, y: number) => levelEntriesOf(members, u, y);
   const subjYear = subjectYear(rows, L);
   if (mode === "entries") L = subjYear;

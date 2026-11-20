@@ -29,7 +29,7 @@ export function pgliteFiguresRpc(db: PGlite) {
     if (fn !== "smt_school_figures_read") throw new Error(`no ${fn} here`);
     await db.exec("set role service_role");
     try {
-      const r = await db.query<{ r: unknown }>(`select public.smt_school_figures_read($1, $2, $3, $4, $5, $6) as r`, [a.p_stage, a.p_version, a.p_urns, a.p_period_min, a.p_subject_period, a.p_full_urn]);
+      const r = await db.query<{ r: unknown }>(`select public.smt_school_figures_read($1, $2, $3, $4, $5, $6, $7) as r`, [a.p_stage, a.p_version, a.p_urns, a.p_period_min, a.p_subject_period, a.p_full_urn, a.p_drop ?? null]);
       return r.rows[0]?.r ?? null;
     } finally {
       await db.exec("reset role");
