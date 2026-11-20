@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { KsStage } from "@/lib/academic-data-view";
 import { isIndependent, type PoolSchool } from "@/lib/teacher-view-rankings";
 import { neighbourPool, rankFixedSets, type NeighbourRow } from "@/lib/teacher-view-comparator-series";
 import { PERSONAL_COMPARATOR_CAP, readViewAsStore, type SavedComparatorSet, type SavedRanking } from "@/lib/teacher-view-saved-sets";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
-import { viewAsForRequest, viewAsMembership, ViewAsUnconfirmed } from "@/lib/view-as";
+import { parseViewAsGroup, PEEK_HEADER, viewAsForRequest, viewAsMembership, ViewAsUnconfirmed } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
+import { groupCaller, headOfficeAccess } from "@/lib/groups/server";
 import { schoolGroupSets } from "@/lib/groups/school-sets";
 import { readSets } from "@/lib/sets/store";
 import { activePersonalCount, canCurate, creatorFor, setFitsPage, type StoredSet } from "@/lib/sets/model";
@@ -108,14 +110,8 @@ export async function GET(request: NextRequest) {
     const { data: account } = await svc.from("school_accounts").select("id").eq("school_urn", urn).maybeSingle<{ id: string }>();
     const accountId = account?.id ?? "";
     const own = await readViewAsStore(supabase, userId, viewAs.stateKey);
-    const [{ data: shared }, { data: vc }, { data: sharedRankings }, { data: ownSchools }] = await Promise.all([
-      accountId
-        ? readSets(svc, { schoolAccountId: accountId, kind: "compared_against" }).then(async (r) => ({ data: await withSchools(svc, r.sets.filter((x) => x.ownerScope === "school" && forTeacherPage(x, phase)), null) }))
-        : Promise.resolve({ data: [] as SetRow[] }),
-      accountId ? svc.from("vc_set_school_visibility").select(VC_SELECT).eq("school_account_id", accountId) : Promise.resolve({ data: [] }),
-      accountId
-        ? svc.from("saved_rankings").select("id, name, phase, filters").eq("school_account_id", accountId).is("owner_membership_id", null).order("created_at", { ascending: true })
-        : Promise.resolve({ data: [] }),
+    const [{ shared, vc, sharedRankings }, { data: ownSchools }] = await Promise.all([
+      schoolShared(accountId, phase),
       own.sets.length
         ? supabase.from("schools").select("urn, current_name, la_name, establishment_type_group").in("urn", [...new Set(own.sets.flatMap((x) => x.urns))])
         : Promise.resolve({ data: [] }),
@@ -132,9 +128,9 @@ export async function GET(request: NextRequest) {
       members: x.urns.map((u) => ({ urn: u, schools: schoolBy.get(u) ?? null })),
     }));
     // As the member's own query orders them: by when each was made.
-    const rows = [...((shared ?? []) as SetRow[]), ...ownRows].sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));
+    const rows = [...shared, ...ownRows].sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));
     const rankings: SavedRanking[] = [
-      ...((sharedRankings ?? []) as { id: string; name: string; phase: "ks4" | "ks5"; filters: SavedRanking["filters"] }[]).map((r) => ({ id: r.id, name: r.name, shared: true, mine: false, editable: viewAsMembership(viewAs.role).is_admin, phase: r.phase, filters: r.filters })),
+      ...sharedRankings.map((r) => ({ id: r.id, name: r.name, shared: true, mine: false, editable: viewAsMembership(viewAs.role).is_admin, phase: r.phase, filters: r.filters })),
       ...own.rankings.map((r) => ({ id: r.id, name: r.name, shared: false, mine: true, editable: true, phase: r.phase, filters: r.filters })),
     ];
     if (request.nextUrl.searchParams.get("only") === "rankings") return NextResponse.json({ rankings });
@@ -143,7 +139,7 @@ export async function GET(request: NextRequest) {
     // View as "admissions" is the lead (as the Admissions page treats it); View as is read-only anyway.
     const curator = { roles: viewed.roles, isAdmin: !!viewed.is_admin, isAccountHolder: viewed.isAccountHolder, lead: viewAs.role === "admissions" };
     const canEditShared = canCurate(curator, "compared_against");
-    ctx = { membershipId: "", profileId: null, schoolAccountId: accountId, canEditShared, creatorKind: creatorFor(curator, "compared_against", "smt"), personalCount: own.sets.length, rows, vcRows: (vc ?? []) as unknown as VcRow[], rankings };
+    ctx = { membershipId: "", profileId: null, schoolAccountId: accountId, canEditShared, creatorKind: creatorFor(curator, "compared_against", "smt"), personalCount: own.sets.length, rows, vcRows: vc, rankings };
   } else {
     // The caller's OWN approved membership of this school -- the owner of any personal set
     // they make, and whether they may create or edit the school's shared sets.
@@ -163,48 +159,63 @@ export async function GET(request: NextRequest) {
         school_account_id: string;
         school_accounts: { school_urn: string; account_holder_membership_id: string | null };
       }>();
-    if (!membership) {
-      return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+    // 20 Nov: head office reading a member school's SMT, and a platform admin's peek (PEEK_HEADER, or no
+    // membership here) or head-office View as, read the school's sets as the sibling routes decide them
+    // (resolveCaller, as /api/teacher/chooser-set): read-only, never anyone's personal sets. Asked only
+    // when there is no membership, or the request carries a peek or a head-office View as -- a member's
+    // request is decided by the query above alone, exactly as before.
+    const reader = !membership || request.headers.get(PEEK_HEADER) || parseViewAsGroup(request.headers.get("cookie")) ? await readOnlyReader(request, supabase, userId, urn) : null;
+    if (reader instanceof NextResponse) return reader;
+    if (reader) {
+      // Head office with the school's Admissions private: its Admissions lists (entry-point sets) stay private.
+      const { shared: rows, vc, sharedRankings } = await schoolShared(reader.accountId, phase, reader.entryPointSets);
+      const rankings: SavedRanking[] = sharedRankings.filter((r) => r.phase === phase).map((r) => ({ id: r.id, name: r.name, shared: true, mine: false, editable: false, phase: r.phase, filters: r.filters }));
+      if (request.nextUrl.searchParams.get("only") === "rankings") return NextResponse.json({ rankings });
+      ctx = { membershipId: "", profileId: null, schoolAccountId: reader.accountId, canEditShared: false, creatorKind: null, personalCount: 0, rows, vcRows: vc, rankings };
+    } else {
+      if (!membership) {
+        return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+      }
+      // 0.8 sets round 1 (A2, lead-only, Guy 7 Nov): the Admissions lead, SMT and the School-Admin (or the
+      // account holder) curate the school's compared-against sets (can_curate_sets); everyone else uses them.
+      const curator = { roles: membership.roles ?? [], isAdmin: !!membership.is_admin, isAccountHolder: membership.school_accounts.account_holder_membership_id === membership.id, lead: !!membership.admissions_lead };
+      const canEditShared = canCurate(curator, "compared_against");
+
+      const read = await readSets(supabase, { schoolAccountId: membership.school_account_id, profileId: userId });
+      const setRows = await withSchools(supabase, read.sets.filter((x) => forTeacherPage(x, phase) && (x.ownerScope === "school" || x.ownerProfileId === userId)), userId);
+
+      // Victoria Consultancy Sets (20261102100000): the VC-authored sets switched on for this
+      // school. Read under the caller's own token, so RLS returns exactly those -- none at all
+      // until VC switches one on -- and never anything writable. Ranked and charted like any
+      // saved set; flagged `vc` so the chooser shows them in their own row.
+      const { data: vcRows } = await supabase
+        .from("vc_set_school_visibility")
+        .select(VC_SELECT)
+        .eq("school_account_id", membership.school_account_id);
+      // 0.8 sets round 1 (B9): saved rankings follow their owner in the set menu -- the school's in
+      // School sets, the member's own in My sets. Read under the member's own token (RLS), as the
+      // chooser reads them.
+      const { data: rankingRows } = await supabase
+        .from("saved_rankings")
+        .select("id, name, phase, filters, owner_membership_id")
+        .eq("school_account_id", membership.school_account_id)
+        .order("created_at", { ascending: true });
+      const memberRankings: SavedRanking[] = ((rankingRows ?? []) as { id: string; name: string; phase: "ks4" | "ks5"; filters: SavedRanking["filters"]; owner_membership_id: string | null }[])
+        .filter((r) => r.phase === phase)
+        .map((r) => ({ id: r.id, name: r.name, shared: r.owner_membership_id === null, mine: r.owner_membership_id === membership.id, editable: r.owner_membership_id === membership.id || (r.owner_membership_id === null && canEditShared), phase: r.phase, filters: r.filters }));
+      ctx = {
+        membershipId: membership.id,
+        profileId: userId,
+        rankings: memberRankings,
+        schoolAccountId: membership.school_account_id,
+        canEditShared,
+        creatorKind: creatorFor(curator, "compared_against", "smt"),
+        // The cap counts every active personal set of theirs, of any kind or page.
+        personalCount: activePersonalCount(read.sets, userId),
+        rows: setRows,
+        vcRows: (vcRows ?? []) as unknown as VcRow[],
+      };
     }
-    // 0.8 sets round 1 (A2, lead-only, Guy 7 Nov): the Admissions lead, SMT and the School-Admin (or the
-    // account holder) curate the school's compared-against sets (can_curate_sets); everyone else uses them.
-    const curator = { roles: membership.roles ?? [], isAdmin: !!membership.is_admin, isAccountHolder: membership.school_accounts.account_holder_membership_id === membership.id, lead: !!membership.admissions_lead };
-    const canEditShared = canCurate(curator, "compared_against");
-
-    const read = await readSets(supabase, { schoolAccountId: membership.school_account_id, profileId: userId });
-    const setRows = await withSchools(supabase, read.sets.filter((x) => forTeacherPage(x, phase) && (x.ownerScope === "school" || x.ownerProfileId === userId)), userId);
-
-    // Victoria Consultancy Sets (20261102100000): the VC-authored sets switched on for this
-    // school. Read under the caller's own token, so RLS returns exactly those -- none at all
-    // until VC switches one on -- and never anything writable. Ranked and charted like any
-    // saved set; flagged `vc` so the chooser shows them in their own row.
-    const { data: vcRows } = await supabase
-      .from("vc_set_school_visibility")
-      .select(VC_SELECT)
-      .eq("school_account_id", membership.school_account_id);
-    // 0.8 sets round 1 (B9): saved rankings follow their owner in the set menu -- the school's in
-    // School sets, the member's own in My sets. Read under the member's own token (RLS), as the
-    // chooser reads them.
-    const { data: rankingRows } = await supabase
-      .from("saved_rankings")
-      .select("id, name, phase, filters, owner_membership_id")
-      .eq("school_account_id", membership.school_account_id)
-      .order("created_at", { ascending: true });
-    const memberRankings: SavedRanking[] = ((rankingRows ?? []) as { id: string; name: string; phase: "ks4" | "ks5"; filters: SavedRanking["filters"]; owner_membership_id: string | null }[])
-      .filter((r) => r.phase === phase)
-      .map((r) => ({ id: r.id, name: r.name, shared: r.owner_membership_id === null, mine: r.owner_membership_id === membership.id, editable: r.owner_membership_id === membership.id || (r.owner_membership_id === null && canEditShared), phase: r.phase, filters: r.filters }));
-    ctx = {
-      membershipId: membership.id,
-      profileId: userId,
-      rankings: memberRankings,
-      schoolAccountId: membership.school_account_id,
-      canEditShared,
-      creatorKind: creatorFor(curator, "compared_against", "smt"),
-      // The cap counts every active personal set of theirs, of any kind or page.
-      personalCount: activePersonalCount(read.sets, userId),
-      rows: setRows,
-      vcRows: (vcRows ?? []) as unknown as VcRow[],
-    };
   }
   const membership = { id: ctx.membershipId, school_account_id: ctx.schoolAccountId };
   const canEditShared = ctx.canEditShared;
@@ -280,4 +291,47 @@ export async function GET(request: NextRequest) {
       independent: isIndependent((target as { establishment_type_group: string | null } | null)?.establishment_type_group ?? null),
     },
   });
+}
+
+// The school's shared compared-against sets for this page, the Victoria Consultancy sets switched on for
+// it, and its shared saved rankings: read with the service role, ONLY once the caller is confirmed (a
+// platform admin's View as or peek, or head office's access). `entryPointSets` false leaves out the
+// school's Admissions lists (sets with an entry point), for a head office the school keeps them from.
+async function schoolShared(accountId: string, phase: string, entryPointSets = true): Promise<{ shared: SetRow[]; vc: VcRow[]; sharedRankings: { id: string; name: string; phase: "ks4" | "ks5"; filters: SavedRanking["filters"] }[] }> {
+  if (!accountId) return { shared: [], vc: [], sharedRankings: [] };
+  const svc = createServiceRoleSupabaseClient();
+  const [shared, { data: vc }, { data: sharedRankings }] = await Promise.all([
+    readSets(svc, { schoolAccountId: accountId, kind: "compared_against" }).then((r) => withSchools(svc, r.sets.filter((x) => x.ownerScope === "school" && forTeacherPage(x, phase) && (entryPointSets || !x.entryPoint)), null)),
+    svc.from("vc_set_school_visibility").select(VC_SELECT).eq("school_account_id", accountId),
+    svc.from("saved_rankings").select("id, name, phase, filters").eq("school_account_id", accountId).is("owner_membership_id", null).order("created_at", { ascending: true }),
+  ]);
+  return { shared, vc: (vc ?? []) as unknown as VcRow[], sharedRankings: (sharedRankings ?? []) as { id: string; name: string; phase: "ks4" | "ks5"; filters: SavedRanking["filters"] }[] };
+}
+
+// 20 Nov: who else may READ this school's sets, as the sibling routes decide it (resolveCaller; head
+// office as /api/teacher/chooser-set and the SMT routes ask it): a platform admin's peek, or one with no
+// membership here (read-only), and head office reading a current member school (or a platform admin's
+// head-office View as or peek of it). Null: decide as a member (the caller is one, and nothing above
+// applies). The response: refused (403, the route's own words), or try again (502).
+async function readOnlyReader(request: NextRequest, supabase: SupabaseClient, userId: string, urn: string): Promise<{ accountId: string; entryPointSets: boolean } | null | NextResponse> {
+  // Head office as asked below, kept here: a platform admin's head-office peek is called "peek" once decided.
+  let office: { shared: boolean } | null = null;
+  const c = await resolveCaller<{ shared: boolean }>(request, urn, {
+    supabase,
+    userId,
+    refusal: "Teacher view is available to verified school staff.",
+    headOffice: async (sb, uid, viewingAsGroup) => {
+      const viewed = viewingAsGroup ? await groupCaller(request).catch(() => null) : null;
+      if (viewingAsGroup && (!viewed || viewed instanceof NextResponse)) return null;
+      const access = await headOfficeAccess(sb, uid, urn, viewed && !(viewed instanceof NextResponse) ? viewed.offices : undefined, viewingAsGroup).catch(() => null);
+      office = access?.ok ? { shared: access.shared } : null;
+      return office;
+    },
+  });
+  if (c instanceof NextResponse) return c;
+  if (c.access === "member") return null;
+  const { data: account } = await c.reader.from("school_accounts").select("id").eq("school_urn", urn).maybeSingle<{ id: string }>();
+  // Head office (or a platform admin seeing as one) reads Admissions' lists only where the school shares them.
+  const seenAs = office as { shared: boolean } | null;
+  return { accountId: account?.id ?? "", entryPointSets: seenAs ? seenAs.shared : c.access !== "headOffice" };
 }
