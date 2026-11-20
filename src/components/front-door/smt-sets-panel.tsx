@@ -10,6 +10,8 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchDefaultLists } from "@/components/teacher/chooser/data";
+import { cachedFetchJson } from "@/lib/fetch-cache";
+import { freshToken } from "@/components/admissions/member";
 import type { Overview } from "@/components/smt/api";
 import type { SmtSetState } from "@/components/smt/useSmtSet";
 import { DEFAULT_SET_LABEL } from "@/components/smt/useSmtSet";
@@ -140,6 +142,23 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
       live = false;
     };
   }, [urn, phase, laLabel]);
+  // 20 Nov: the default rankings, ready before they're picked -- the same request useSmtSet makes (the browser's
+  // 10-minute cache keeps it), one at a time once the home has its own answer, so a pick waits only on the Overview.
+  const warmKey = defaults.map((d) => d.key).join(",");
+  useEffect(() => {
+    if (!phase || !o || !defaults.length) return;
+    let live = true;
+    void (async () => {
+      const token = await freshToken();
+      for (const d of defaults) {
+        if (!live || !token) return;
+        await cachedFetchJson("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase, set: { kind: "ranking", filters: d.filters, full: true } }) }).catch(() => null);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [urn, phase, warmKey, !!o]); // eslint-disable-line react-hooks/exhaustive-deps
   const selected = smtSetKey(sets.choice, defaults, laLabel);
   const laRow: SetMenuRow[] = laLabel && (laUrns?.length || selected === "default:la") ? [{ key: "default:la", name: laLabel, count: selected === "default:la" && set ? set.urns.length : (laUrns?.length ?? null), creator: "default" }] : [];
   const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: selected === NEAREST_KEY && set ? set.urns.length : 10 });
