@@ -3,10 +3,8 @@ import { headOfficeAccess } from "@/lib/groups/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
-import { resolveDefaultNearest, resolveFixedSet, resolveRankingPopulation, resolveRankingSet } from "@/lib/chooser-sets";
 import type { RankingFilters } from "@/lib/comparator-chooser";
-import { serializeAcademicProfile } from "@/lib/academic-data-view";
-import { fetchTeacherComparatorProfiles, profileUrnsFor } from "@/lib/teacher-comparator-profiles";
+import { cachedFixedSet, cachedNearestSet, cachedRankingPopulationSet, cachedRankingSet } from "@/lib/cached-views";
 
 // Teacher view comparator chooser: the rows and series the Comparisons column reads for a
 // choice made in the chooser but not (necessarily) saved -- a list of schools, or a
@@ -45,29 +43,27 @@ export async function POST(request: NextRequest) {
   // (teacher-comparator-profiles.ts), for exactly the schools the page would otherwise ask
   // academic-schools for when this set is all it holds -- one request instead of two in a
   // row, and the 0.6.4 prefetch of the other phase's nearest set now warms them as well.
-  const phase = body.phase;
-  const withProfiles = async <T extends { rows: { urn: string }[]; subjectRows?: { urn: string }[] }>(set: T) =>
-    phase === "ks2"
-      ? set
-      : { ...set, profiles: (await fetchTeacherComparatorProfiles(profileUrnsFor([...set.rows, ...(set.subjectRows ?? [])].map((r) => r.urn), body.urn), phase)).map(serializeAcademicProfile) };
-
+  // 20 Nov (speed): every kind goes through the shared results cache (cached-views.ts), keyed on what
+  // the set is resolved from, never on the caller: public data, the same for everyone past the gate above.
   try {
     // 0.6.5 S4: the default nearest set is school-level public data (the same for every member,
     // changing only with the ingest), so it is kept an hour per instance (server-cache.ts); at
     // Post-16 its build widens past the 100 precomputed neighbours more often (fewer have a sixth form).
     if (body.set.kind === "nearest") {
       const { urn, phase } = body;
-      return NextResponse.json(await cachedReference(`chooser:nearest:${urn}:${phase}`, async () => withProfiles(await resolveDefaultNearest(urn, phase))));
+      return NextResponse.json(await cachedReference(`chooser:nearest:${urn}:${phase}`, () => cachedNearestSet(urn, phase)));
     }
     if (body.set.kind === "urns") {
       const urns = Array.from(new Set(body.set.urns.filter((u) => typeof u === "string" && /^\d{5,7}$/.test(u)))).slice(0, MAX_URNS);
-      return NextResponse.json(await withProfiles(await resolveFixedSet(body.urn, body.phase, urns)));
+      return NextResponse.json(await cachedFixedSet(body.urn, body.phase, urns));
     }
     if (body.phase === "ks2") return NextResponse.json({ error: "Rankings are for GCSE and Post-16." }, { status: 400 });
     const { data: target } = await supabase.from("schools").select("current_name, la_name").eq("urn", body.urn).maybeSingle<{ current_name: string; la_name: string | null }>();
+    const targetName = target?.current_name ?? "This school";
+    const laName = target?.la_name ?? null;
     // 20 Nov: SMT asks for the whole population (`full`), ranked, without per-school profiles or series.
-    if (body.set.full) return NextResponse.json(await resolveRankingPopulation(body.urn, target?.current_name ?? "This school", body.phase, body.set.filters, target?.la_name ?? null));
-    return NextResponse.json(await withProfiles(await resolveRankingSet(body.urn, target?.current_name ?? "This school", body.phase, body.set.filters, target?.la_name ?? null)));
+    if (body.set.full) return NextResponse.json(await cachedRankingPopulationSet(body.urn, targetName, body.phase, body.set.filters, laName));
+    return NextResponse.json(await cachedRankingSet(body.urn, targetName, body.phase, body.set.filters, laName));
   } catch (err) {
     console.error("[teacher/chooser-set] failed:", err);
     return NextResponse.json({ error: "Could not load these schools." }, { status: 502 });

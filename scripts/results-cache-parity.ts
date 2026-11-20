@@ -2,6 +2,7 @@
 //
 //   npm i --no-save @electric-sql/pglite@0.2
 //   npx tsx --env-file=.env --env-file=.env.local scripts/results-cache-parity.ts OUT_DIR
+//   PARITY_ONLY='^(smt/school|chooser/)' ... the same, only the requests whose names match (a regex)
 //
 // For real requests (Leighton Park 110110 and George Dixon 138695: SMT Overview, Academic, Pupils,
 // Context and its map against the nearest set and the big ranking sets; Admissions' four views at
@@ -20,7 +21,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { liveVersions, resultsCacheStats, setResultsCacheForTests, type ResultsStore, type Versions } from "../src/lib/results-cache";
-import { cachedAcademic, cachedContext, cachedContextMap, cachedMarket, cachedOverview, cachedPipeline, cachedPupils, cachedRivals, cachedShape, cachedTeacherModel } from "../src/lib/cached-views";
+import { cachedAcademic, cachedContext, cachedContextMap, cachedFixedSet, cachedMarket, cachedNearestSet, cachedOverview, cachedPipeline, cachedPupils, cachedRankingPopulationSet, cachedRankingSet, cachedRivals, cachedShape, cachedSmtSchool, cachedTeacherModel } from "../src/lib/cached-views";
 import { buildTeacherDashboard } from "../src/lib/teacher-dashboard-data";
 import { cachedResult, resultKey } from "../src/lib/results-cache";
 import { smtSchool, type SmtSchool } from "../src/lib/smt/school";
@@ -165,8 +166,49 @@ function teacherCases(urn: string): Case[] {
   return cases;
 }
 
+// /api/smt/school and /api/teacher/chooser-set: the route's gate (member, View as / peek, head office)
+// decides only whether to answer; the answer is built from the request alone, so a head-office or
+// peek request is the same call with the same key as a member's.
+const region = (code: string, name: string): RankingFilters["scope"] => ({ kind: "region", code, name });
+const anyRanking = (sectors: RankingFilters["sectors"], scope: RankingFilters["scope"]): RankingFilters => ({ sectors, gender: null, boarding: "any", qualification: null, scope, sizes: [] });
+async function chooserCases(): Promise<Case[]> {
+  const cases: Case[] = [];
+  for (const urn of ["110110", "138695"]) cases.push({ name: `smt/school ${urn}`, run: () => cachedSmtSchool(urn) });
+  // The school's name and LA as the route reads them (the schools table, public).
+  const target = async (urn: string) => {
+    const { data } = await anon.from("schools").select("current_name, la_name").eq("urn", urn).maybeSingle<{ current_name: string; la_name: string | null }>();
+    return { name: data?.current_name ?? "This school", la: data?.la_name ?? null };
+  };
+  const lp = await target("110110");
+  const gd = await target("138695");
+  for (const p of ["ks4", "ks5"] as const) cases.push({ name: `chooser/nearest 110110 ${p}`, run: () => cachedNearestSet("110110", p) });
+  cases.push({ name: `chooser/nearest 138695 ks4`, run: () => cachedNearestSet("138695", "ks4") });
+  const se = region("E12000008", "South East");
+  const wm = region("E12000005", "West Midlands");
+  const rankings: { tag: string; urn: string; t: { name: string; la: string | null }; phase: "ks4" | "ks5"; f: RankingFilters }[] = [
+    { tag: "110110 ks5 Independent in England", urn: "110110", t: lp, phase: "ks5", f: anyRanking(["Independent"], { kind: "nation", nation: "england" }) },
+    { tag: "110110 ks5 Independent in the South East", urn: "110110", t: lp, phase: "ks5", f: anyRanking(["Independent"], se) },
+    { tag: "110110 ks5 all in the South East", urn: "110110", t: lp, phase: "ks5", f: anyRanking([], se) },
+    { tag: "138695 ks4 State in the West Midlands", urn: "138695", t: gd, phase: "ks4", f: anyRanking(["State"], wm) },
+  ];
+  for (const r of rankings) cases.push({ name: `chooser/ranking-full ${r.tag}`, run: () => cachedRankingPopulationSet(r.urn, r.t.name, r.phase, r.f, r.t.la) });
+  for (const r of [rankings[0], rankings[3]]) cases.push({ name: `chooser/ranking ${r.tag}`, run: () => cachedRankingSet(r.urn, r.t.name, r.phase, r.f, r.t.la) });
+  const near = await cachedNearestSet("110110", "ks4");
+  cases.push({ name: `chooser/urns 110110 ks4 (the nearest ten as a list)`, run: () => cachedFixedSet("110110", "ks4", near.rows.map((r) => r.urn).filter((u) => u !== "110110")) });
+  return cases;
+}
+
 async function allCases(): Promise<Case[]> {
-  return [...(await smtCases("110110")), ...(await smtCases("138695")), ...(await admissionsCases("110110")), ...teacherCases("110110"), ...teacherCases("138695")];
+  const only = process.env.PARITY_ONLY ? new RegExp(process.env.PARITY_ONLY) : null;
+  const keep = (cases: Case[]) => (only ? cases.filter((c) => only.test(c.name)) : cases);
+  // Only the groups a filter can match are resolved (each group reads the live data to set itself up).
+  const want = (...prefixes: string[]) => !only || prefixes.some((p) => only.test(p));
+  return keep([
+    ...(want("smt/overview", "smt/academic", "smt/pupils", "smt/context") ? [...(await smtCases("110110")), ...(await smtCases("138695"))] : []),
+    ...(want("admissions/") ? await admissionsCases("110110") : []),
+    ...(want("teacher/dashboard", "front-door/teacher") ? [...teacherCases("110110"), ...teacherCases("138695")] : []),
+    ...(want("smt/school", "chooser/") ? await chooserCases() : []),
+  ]);
 }
 
 const file = (name: string) => join(out, "off", name.replace(/[^a-z0-9+.-]+/gi, "_") + ".json");

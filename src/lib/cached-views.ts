@@ -13,7 +13,7 @@
 // the cache is byte for byte the answer built.
 import { cachedResult, resultKey } from "./results-cache";
 import type { SmtAdmissionsReader } from "./smt/auth-rules";
-import type { SmtSchool } from "./smt/school";
+import { smtSchool, type SmtSchool } from "./smt/school";
 import { buildOverview, type SmtSet } from "./smt/overview";
 import { buildAcademic } from "./smt/academic";
 import type { AcademicState } from "./smt/qual-groups";
@@ -30,10 +30,22 @@ import { marketView, pipelineView, rivalsView, shapeView } from "./admissions/vi
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadTeacherModel } from "./front-door/teacher-data";
 import type { TeacherPhaseId } from "./front-door/teacher-model";
+import { resolveDefaultNearest, resolveFixedSet, resolveRankingPopulation, resolveRankingSet } from "./chooser-sets";
+import type { RankingFilters } from "./comparator-chooser";
+import type { RankingPhase } from "./ranking-population";
+import { serializeAcademicProfile } from "./academic-data-view";
+import { fetchTeacherComparatorProfiles, profileUrnsFor } from "./teacher-comparator-profiles";
 
 const setKey = (s: SmtSet) => ({ kind: s.kind, label: s.label, urns: s.urns });
 
 // ---- SMT ---------------------------------------------------------------------------------------
+
+/** The school as SMT's chips need it (/api/smt/school): public data only (the anon client, the national
+ * populations, the IGCSE list, England's schools), the same for every caller, so keyed on the URN alone.
+ * "No such school" (null) isn't kept. */
+export function cachedSmtSchool(urn: string) {
+  return cachedResult(resultKey("smt/school", urn, {}), () => smtSchool(urn), { shouldStore: (s) => s !== null });
+}
 
 /** Overview: the caller matters only through whether a head office may see the school's Admissions
  * (the market panel's privateNote); with a set, the market rivals are the set's, so no lists are read. */
@@ -93,4 +105,39 @@ export function cachedShape(urn: string, ep: EntryPoint, lists: SavedList[], o: 
  * reference data; the focus, ticks and depth are the request's. */
 export function cachedTeacherModel(supabase: SupabaseClient, urn: string, phase: TeacherPhaseId, opts: { focusKey: string | null; ticked: string[]; full: boolean; lite: boolean }) {
   return cachedResult(resultKey("front-door/teacher", urn, { phase, ...opts }), () => loadTeacherModel(supabase, urn, phase, opts));
+}
+
+// ---- the comparator chooser's sets (/api/teacher/chooser-set; SMT's sets too) -------------------
+// Every kind is public data resolved from what the request names: the school, the phase, the URNs or
+// the ranking's filters (as sent: arrays keep their order) and the school's own name and LA as the route
+// read them. Nothing here reads with the caller's rights or depends on who is asking, so the route's
+// gate (member, View as / peek, head office) comes first and the key never names the caller.
+
+type ChooserPhase = "ks2" | "ks4" | "ks5";
+
+/** At GCSE and Post-16 the answer carries the set's lean school details too (0.6.7 B1). */
+async function withChooserProfiles<T extends { rows: { urn: string }[]; subjectRows?: { urn: string }[] }>(urn: string, phase: ChooserPhase, set: T) {
+  return phase === "ks2"
+    ? set
+    : { ...set, profiles: (await fetchTeacherComparatorProfiles(profileUrnsFor([...set.rows, ...(set.subjectRows ?? [])].map((r) => r.urn), urn), phase)).map(serializeAcademicProfile) };
+}
+
+/** The column's default: the chooser's own "10 nearest schools". */
+export function cachedNearestSet(urn: string, phase: ChooserPhase) {
+  return cachedResult(resultKey("chooser/nearest", urn, { phase }), async () => withChooserProfiles(urn, phase, await resolveDefaultNearest(urn, phase)));
+}
+
+/** A list of schools, as given (already deduplicated and capped by the route). */
+export function cachedFixedSet(urn: string, phase: ChooserPhase, urns: string[]) {
+  return cachedResult(resultKey("chooser/urns", urn, { phase, urns }), async () => withChooserProfiles(urn, phase, await resolveFixedSet(urn, phase, urns)));
+}
+
+/** A ranking for Teacher: the top and the school's neighbours, with the whole population's figures. */
+export function cachedRankingSet(urn: string, targetName: string, phase: RankingPhase, filters: RankingFilters, laName: string | null) {
+  return cachedResult(resultKey("chooser/ranking", urn, { phase, filters, targetName, laName }), async () => withChooserProfiles(urn, phase, await resolveRankingSet(urn, targetName, phase, filters, laName)));
+}
+
+/** A ranking's whole population, for SMT (`full`): ranked, no profiles or series. */
+export function cachedRankingPopulationSet(urn: string, targetName: string, phase: RankingPhase, filters: RankingFilters, laName: string | null) {
+  return cachedResult(resultKey("chooser/ranking-full", urn, { phase, filters, targetName, laName }), () => resolveRankingPopulation(urn, targetName, phase, filters, laName));
 }
