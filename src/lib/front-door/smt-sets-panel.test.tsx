@@ -22,7 +22,7 @@ const saved = {
   candidates: [],
 } as unknown as SavedSetsPayload;
 
-const state = (choice: SmtSetState["choice"], urns: number): SmtSetState => ({ choice, set: { kind: choice.kind, label: "Berkshire independents", urns: Array.from({ length: urns }, (_, i) => `${i}`) }, savedSets: saved, linked: false, choose: () => undefined, reloadSaved: async () => undefined });
+const state = (choice: SmtSetState["choice"], urns: number): SmtSetState => ({ choice, set: { kind: choice.kind, label: "Berkshire independents", urns: Array.from({ length: urns }, (_, i) => `${i}`) }, savedSets: saved, linked: false, choose: () => undefined, reloadSaved: async () => undefined, rankTable: null });
 const school = { independent: true, regionCode: "E12000008", regionName: "South East" };
 const draw = (sets: SmtSetState, readOnly = false) => renderToStaticMarkup(createElement(SmtSetsPanel, { urn: "110110", schoolName: "Leighton Park School", school, phase: "ks5", sets, o: null, readOnly, theme: "dark" }));
 const ticked = (html: string) => [...html.matchAll(/aria-checked="true"[^>]*data-smt-set-row="([^"]+)"/g)].map((m) => m[1]);
@@ -47,8 +47,10 @@ test("SMT sets panel: a large set is worded, not mapped; read-only hides the bui
 test("SMT sets panel: the 10 nearest ticks however it was chosen; the region and England rankings are defaults; anything else shows as In use now", () => {
   // The dashboard's chooser stores the 10 nearest as a list of schools.
   assert.deepEqual(ticked(draw(state({ kind: "urns", label: "10 nearest schools", urns: [] }, 10))), ["nearest"]);
-  const html = draw(state({ kind: "ranking", label: "Independent schools in South East", filters: {} as never, rankingId: null }, 212));
+  const html = draw(state({ kind: "ranking", label: "Independent schools in the South East", filters: {} as never, rankingId: null }, 212));
   assert.match(html, /Independent schools in England/);
+  assert.match(html, /All sixth forms and colleges in the South East/);
+  assert.match(html, /too many to benchmark as one set/);
   assert.deepEqual(ticked(html), ["default:region"]);
   const other = draw(state({ kind: "urns", label: "Schools in Wokingham", urns: [] }, 30));
   assert.match(other, /In use now/);
@@ -61,4 +63,19 @@ test("SMT sets panel: Schools in the LA (every sector) is a default, ticked when
   assert.match(html, /Schools in Reading/);
   assert.deepEqual(ticked(html), ["default:la"]);
   assert.doesNotMatch(html, /In use now/);
+});
+
+test("SMT sets panel: a ranking is its whole population -- the school's real place, Teacher's ranking table, no top-15 wording", () => {
+  const ranking = Array.from({ length: 135 }, (_, i) => ({ urn: `${1000 + i}`, name: i === 37 ? "Leighton Park School" : `School ${i + 1}`, value: 50 - i * 0.1, rank: i + 1, isTarget: i === 37 }));
+  const sets = { ...state({ kind: "ranking", label: "Independent schools in the South East", filters: {} as never, rankingId: null }, 134), rankTable: { ranking, targetRank: 38, ranked: 135, measure: "A level::aps_per_entry", period: 2025 } };
+  const html = draw(sets);
+  assert.match(html, /This set includes all 134 independent schools in the South East with published A level results\. Leighton Park School ranks 38th of 135/);
+  assert.match(html, /compare it with the middle of them, not the top/);
+  assert.doesNotMatch(html, /top 15/);
+  assert.match(html, /data-smt-rank-table/);
+  assert.match(html, /Leighton Park School: 38 of 135/);
+  assert.match(html, /Top 10/);
+  assert.match(html, /Bottom 3/);
+  assert.equal((html.match(/data-rank-row="you"/g) ?? []).length, 1);
+  assert.doesNotMatch(html, /Edit a copy|Edit this set/);
 });

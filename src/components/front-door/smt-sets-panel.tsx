@@ -19,22 +19,30 @@ import { NEAREST_KEY, rankingKey, teacherEditorHref, teacherMenuRows } from "@/c
 import type { SetMenuRow } from "@/components/sets/SetSelector";
 import { guidedHref } from "@/lib/sets/guided";
 import { defaultRankingFilters, NATIONAL, type RankingFilters } from "@/lib/comparator-chooser";
+import { chunkedRankingDisplay } from "@/lib/data-view-cards";
 import { Spinner } from "@/components/shell/LoadingGraphic";
 import type { Theme } from "@/components/shell/TeacherChrome";
 
 /** Up to this many schools, the set is drawn on its map; more than that reads as a cloud of dots. */
 export const SET_MAP_MAX = 40;
 
-/** A one-click VicData default beyond the 10 nearest: the school's own sector, ranked in its region and in England
- * (the chooser's rankings, unsaved: rankingId null). */
+/** English regions take "the" ("the South East"); London doesn't. */
+export const regionWords = (name: string | null) => (name ? (name === "London" ? "London" : `the ${name}`) : "the region");
+
+/** A one-click VicData default beyond the 10 nearest: rankings, each a WHOLE population (20 Nov) -- the school's
+ * own sector in its region and in England, and every school and college in its region (all sectors). Every school
+ * and college in England is too many to benchmark as a set (2,535 at Post-16): the Overview's England ranks are it. */
 type DefaultRanking = { key: string; label: string; filters: RankingFilters };
-export function defaultRankings(school: { independent: boolean; regionCode?: string | null; regionName: string | null } | null): DefaultRanking[] {
+export function defaultRankings(school: { independent: boolean; regionCode?: string | null; regionName: string | null } | null, phase: "ks2" | "ks4" | "ks5" | null = "ks5"): DefaultRanking[] {
   if (!school) return [];
   const sector = school.independent ? "Independent" : "State";
-  const filters = (scope: RankingFilters["scope"]): RankingFilters => ({ ...defaultRankingFilters(scope), sectors: [sector] });
+  const filters = (scope: RankingFilters["scope"], sectors: RankingFilters["sectors"]): RankingFilters => ({ ...defaultRankingFilters(scope), sectors });
+  const region = school.regionCode && school.regionName ? ({ kind: "region", code: school.regionCode, name: school.regionName } as const) : null;
+  const all = phase === "ks5" ? "All sixth forms and colleges" : "All schools";
   return [
-    ...(school.regionCode && school.regionName ? [{ key: "default:region", label: `${sector} schools in ${school.regionName}`, filters: filters({ kind: "region", code: school.regionCode, name: school.regionName }) }] : []),
-    { key: "default:nation", label: `${sector} schools in England`, filters: filters(NATIONAL) },
+    ...(region ? [{ key: "default:region", label: `${sector} schools in ${regionWords(school.regionName)}`, filters: filters(region, [sector]) }] : []),
+    { key: "default:nation", label: `${sector} schools in England`, filters: filters(NATIONAL, [sector]) },
+    ...(region ? [{ key: "default:region-all", label: `${all} in ${regionWords(school.regionName)}`, filters: filters(region, []) }] : []),
   ];
 }
 
@@ -70,6 +78,12 @@ export type SetStoryInput = {
   regionName: string | null;
   saved?: { name: string; creator?: string | null } | null;
   label: string;
+  /** A ranking's whole population: the school's place and how many are ranked. */
+  ranked?: { rank: number | null; of: number } | null;
+};
+const ordinalOf = (n: number) => {
+  const t = n % 100;
+  return `${n.toLocaleString("en-GB")}${t >= 11 && t <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 };
 const CREATOR_WORD: Record<string, string> = { admissions: "Admissions", smt: "SMT", school_admin: "the School-Admin", me: "you", teacher: "a teacher", hod: "a head of department", group: "the school's group", victoria_consultancy: "Victoria Consultancy" };
 export function setStory(i: SetStoryInput): string {
@@ -82,26 +96,30 @@ export function setStory(i: SetStoryInput): string {
     case "nearest":
       return `This set includes ${n} ${area}, matched because they are the ${sector} schools ${stage} closest to ${i.schoolName}, across local authority lines (VicData's default).`;
     case "default:la":
-      return `This set includes ${n} in ${i.laName ?? "the local authority"}, matched because they are every school there ${stage}: state, independent and special.`;
+      return `This set includes ${n} in ${i.laName ?? "the local authority"}, matched because they are every state and independent school there ${stage} (special schools and alternative provision are left out: they would distort the averages).`;
     case "default:region":
-    case "default:nation": {
-      // English regions take "the" ("the South East"), London doesn't.
-      const where = i.key === "default:region" ? (i.regionName ? (i.regionName === "London" ? "London" : `the ${i.regionName}`) : "the region") : "England";
-      return `This set includes ${n} in ${where}, matched because they are the top 15 ${sector} schools there by ${measure}, and the 5 ranked either side of ${i.schoolName}.`;
+    case "default:nation":
+    case "default:region-all": {
+      const where = i.key === "default:nation" ? "England" : regionWords(i.regionName);
+      const who = i.key === "default:region-all" ? (i.phase === "ks5" ? "sixth forms and colleges, state and independent," : "schools, state and independent,") : `${sector} schools`;
+      const results = i.phase === "ks5" ? "A level results" : i.phase === "ks4" ? "GCSE results" : "results";
+      const of = i.ranked?.of ?? i.count + 1;
+      const place = i.ranked?.rank ? ` ${i.schoolName} ranks ${ordinalOf(i.ranked.rank)} of ${of.toLocaleString("en-GB")} by ${measure}, and the walks compare it with the middle of them, not the top.` : ` ${i.schoolName} has no published ${measure} to rank.`;
+      return `This set includes all ${(of - (i.ranked?.rank ? 1 : 0)).toLocaleString("en-GB")} ${who} in ${where} with published ${results}.${place}`;
     }
   }
   if (i.key.startsWith("saved:") && i.saved) {
     const who = i.saved.creator ? CREATOR_WORD[i.saved.creator] ?? "the school" : "the school";
     return `This set includes ${n}, matched because ${who === "you" ? "you" : who} chose them by hand, as "${i.saved.name}".`;
   }
-  if (i.key.startsWith("ranking:")) return `This set includes ${n}, matched because they are the top 15 in the ranking "${i.label}", and the 5 ranked either side of ${i.schoolName}.`;
+  if (i.key.startsWith("ranking:")) return `This set includes every school in the ranking "${i.label}" with a published figure${i.ranked?.rank ? `: ${i.schoolName} ranks ${ordinalOf(i.ranked.rank)} of ${i.ranked.of.toLocaleString("en-GB")}` : ""}.`;
   return `This set includes ${n} (${i.label}).`;
 }
 
 export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, readOnly, theme, accentInk = "#111" }: { urn: string; schoolName: string; school?: { independent: boolean; regionCode?: string | null; regionName: string | null; laName?: string | null } | null; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme; /** Text on the accent: white on light SMT's deep orange, else near-black. */ accentInk?: string }) {
   const set = sets.set;
   // Rankings are for GCSE and Post-16 (the chooser-set route); a primary school's defaults are the nearest only.
-  const defaults = phase === "ks4" || phase === "ks5" ? defaultRankings(school) : [];
+  const defaults = phase === "ks4" || phase === "ks5" ? defaultRankings(school, phase) : [];
   // The schools in the LA, every sector (state, independent, special), as the dashboard's chooser lists them
   // (default-lists' List 2, with the LA's 16+ provision at Post-16), labelled as the chooser labels it.
   const laLabel = school?.laName ? `Schools in ${school.laName}` : null;
@@ -125,7 +143,7 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
   const inUse: SetMenuRow[] = selected === "current" ? [{ key: "current", name: set?.label ?? ("label" in sets.choice ? sets.choice.label : "This set"), count: set ? set.urns.length : null, creator: "me" }] : [];
   const groups: { title: string; rows: SetMenuRow[] }[] = [
     { title: "In use now", rows: inUse },
-    { title: "VicData default", rows: [...menu.rows.default, ...laRow, ...defaults.map((d): SetMenuRow => ({ key: d.key, name: d.label, count: selected === d.key && set ? set.urns.length : null, creator: "default", countText: selected === d.key && set ? undefined : d.key === "default:region" ? "region" : "national" }))] },
+    { title: "VicData default", rows: [...menu.rows.default, ...laRow, ...defaults.map((d): SetMenuRow => ({ key: d.key, name: d.label, count: selected === d.key && set ? set.urns.length : null, creator: "default", countText: selected === d.key && set ? undefined : d.key === "default:nation" ? "national" : "region" }))] },
     { title: "School sets", rows: menu.rows.school },
     { title: "My sets", rows: menu.rows.mine },
   ].filter((g) => g.rows.length);
@@ -149,12 +167,14 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
   const n = set?.urns.length ?? null;
   const savedId = selected.startsWith("saved:") ? selected.slice(6) : null;
   const savedRow = savedId ? (sets.savedSets?.sets.find((x) => x.id === savedId) ?? null) : null;
+  const rt = sets.rankTable;
   const story = set
-    ? setStory({ key: selected, count: set.urns.length, schoolName, phase, independent: !!school?.independent, laName: school?.laName ?? null, regionName: school?.regionName ?? null, label: set.label, saved: savedRow ? { name: savedRow.name, creator: savedRow.vc ? "victoria_consultancy" : savedRow.group ? "group" : savedRow.mine ? "me" : (savedRow.creator ?? null) } : null })
+    ? setStory({ ranked: rt ? { rank: rt.targetRank, of: rt.ranked } : null, key: selected, count: set.urns.length, schoolName, phase, independent: !!school?.independent, laName: school?.laName ?? null, regionName: school?.regionName ?? null, label: set.label, saved: savedRow ? { name: savedRow.name, creator: savedRow.vc ? "victoria_consultancy" : savedRow.group ? "group" : savedRow.mine ? "me" : (savedRow.creator ?? null) } : null })
     : "";
   // The schools by name, A to Z, from the Overview answer for this set (its schools carry their names).
-  const names = set && oNow ? set.urns.map((u) => oNow.schools[u]?.name).filter((x): x is string => !!x).sort((a, b) => a.localeCompare(b, "en-GB")) : [];
-  const editHref = readOnly || !set ? null : teacherEditorHref({ urn, phase, product: "smt", current: { savedId, name: set.label, urns: set.urns }, fresh: false });
+  const names = set && oNow && !rt ? set.urns.map((u) => oNow.schools[u]?.name).filter((x): x is string => !!x).sort((a, b) => a.localeCompare(b, "en-GB")) : [];
+  // A ranking is a recipe over hundreds of schools, not a list to edit: no edit link.
+  const editHref = readOnly || !set || rt ? null : teacherEditorHref({ urn, phase, product: "smt", current: { savedId, name: set.label, urns: set.urns }, fresh: false });
   const builder = phase === "ks4" || phase === "ks5" ? guidedHref({ urn, kind: "compared_against", product: "smt", phase, fromHome: true }) : null;
   return (
     <section data-smt-sets="" aria-labelledby="smt-sets-h" className="fd-tile flex flex-col gap-4 rounded-[14px] px-5 py-5 text-[var(--fg)]">
@@ -198,6 +218,11 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
               </ul>
             </div>
           ))}
+          {defaults.length > 0 && (
+            <p data-smt-sets-england="" className="text-[12.5px] leading-relaxed text-[var(--muted2)]">
+              Every {phase === "ks5" ? "sixth form and college" : "school"} in England, state and independent, is too many to benchmark as one set. You don&rsquo;t need to pick it: the Overview walk ranks each headline against all of them, and against all of them in {regionWords(school?.regionName ?? null)}, whichever set is in use.
+            </p>
+          )}
           {builder && !readOnly && (
             <Link href={builder} data-smt-set-build="" style={{ color: accentInk }} className="inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[14px] font-semibold hover:opacity-90">
               <span aria-hidden="true">+</span> Make your own set
@@ -209,7 +234,9 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
           )}
         </div>
         <div className="min-w-0" data-smt-set-show="">
-          {!set || (n !== null && n <= SET_MAP_MAX && !oNow) ? (
+          {set && rt ? (
+            <RankTable rt={rt} schoolName={schoolName} phase={phase} />
+          ) : !set || (n !== null && n <= SET_MAP_MAX && !oNow) ? (
             <div className="flex min-h-[340px] items-center justify-center rounded-[10px] border border-[var(--panel-border)] text-[13px] text-[var(--muted2)]">
               <span className="flex items-center gap-2">
                 <Spinner size={16} /> Loading the set&rsquo;s schools…
@@ -250,5 +277,48 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
         </div>
       </div>
     </section>
+  );
+}
+
+/** Teacher's ranking table for a whole population (data-view-cards' chunkedRankingDisplay: the top 10, the school
+ * with 2 either side, the bottom 3, each at its real place), headed by the school's place. */
+function RankTable({ rt, schoolName, phase }: { rt: NonNullable<SmtSetState["rankTable"]>; schoolName: string; phase: "ks2" | "ks4" | "ks5" | null }) {
+  const chunks = chunkedRankingDisplay(rt.ranking, rt.targetRank);
+  const fmt = (v: number) => v.toFixed(phase === "ks4" ? 1 : 2);
+  const measure = phase === "ks5" ? "A level points per entry" : phase === "ks4" ? "Attainment 8" : "Headline";
+  return (
+    <div data-smt-rank-table="" className="flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] px-4 py-3">
+      <p className="text-[15px] font-semibold">
+        {rt.targetRank ? `${schoolName}: ${rt.targetRank.toLocaleString("en-GB")} of ${rt.ranked.toLocaleString("en-GB")}` : `${rt.ranked.toLocaleString("en-GB")} ranked`}
+        <span className="ml-2 text-[12.5px] font-normal text-[var(--muted2)]">by {measure}</span>
+      </p>
+      <table className="w-full text-[13px] tabular-nums">
+        <thead>
+          <tr className="text-left text-[11.5px] text-[var(--muted2)]">
+            <th className="w-[52px] font-normal">Place</th>
+            <th className="font-normal">School</th>
+            <th className="text-right font-normal">{phase === "ks5" ? "Points" : measure}</th>
+          </tr>
+        </thead>
+        {chunks.map((c, ci) => (
+          <tbody key={ci}>
+            {chunks.length > 1 && c.label && (
+              <tr>
+                <td colSpan={3} className="pb-1 pt-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--muted2)]">
+                  {c.label === "Around this school" ? `Around ${schoolName}` : c.label}
+                </td>
+              </tr>
+            )}
+            {c.rows.map((r) => (
+              <tr key={r.urn} data-rank-row={r.isTarget ? "you" : undefined} className={`border-t border-[var(--panel-border)] ${r.isTarget ? "bg-[rgba(var(--accent-rgb),0.16)] font-semibold" : ""}`}>
+                <td className="py-[5px] pl-1">{r.rank}</td>
+                <td className="min-w-0 truncate py-[5px] pr-2">{r.name}</td>
+                <td className="py-[5px] pr-1 text-right">{fmt(r.value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        ))}
+      </table>
+    </div>
   );
 }

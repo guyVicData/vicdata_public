@@ -119,6 +119,57 @@ const TOP = 15;
 const EITHER_SIDE = 5;
 
 
+/**
+ * Leighton Park prep (20 Nov, Guy: "real regional position and national will be what SMT and governors expect"):
+ * a ranking's WHOLE population, for SMT -- every matching school with a published headline figure, ranked, the
+ * IGCSE rule's schools out at GCSE as resolveRankingSet does. SMT benchmarks against all of them (not the top 15
+ * and 5 either side, which set every school against the best), and its panel draws Teacher's ranking table.
+ * Names come from the population itself; no per-school series (SMT's own routes read the figures).
+ */
+export type RankingPopulationResult = {
+  rows: { urn: string }[];
+  ranking: { urn: string; name: string; value: number; rank: number; isTarget: boolean }[];
+  targetRank: number | null;
+  ranked: number;
+  measure: string;
+  period: number | null;
+};
+export async function resolveRankingPopulation(targetUrn: string, targetName: string, phase: RankingPhase, filters: RankingFilters, laName: string | null): Promise<RankingPopulationResult> {
+  const population = await cachedRankingPopulation(filters.scope.kind === "region" ? filters.scope.code : null, phase, laName);
+  const matched = population.filter((r) => matchesRanking(r, filters));
+  const igcse = phase === "ks4" ? await igcseEngland() : new Set<string>();
+  const names = new Map(matched.map((r) => [r[0], r[1]]));
+  const urns = matched.map((r) => r[0]).filter((u) => !igcse.has(u));
+  if (!urns.includes(targetUrn) && !igcse.has(targetUrn)) urns.push(targetUrn);
+  names.set(targetUrn, names.get(targetUrn) ?? targetName);
+  const measure = HEADLINE_MEASURE[phase];
+  const headline = await lookupAcademicHeadline({ entityIds: urns, ksStage: phase });
+  const latest = new Map<string, { period: number; value: number }>();
+  for (const h of headline) {
+    const v = Number(h.measures[measure]);
+    if (!Number.isFinite(v)) continue;
+    const cur = latest.get(h.entity_id);
+    if (!cur || h.period > cur.period) latest.set(h.entity_id, { period: h.period, value: v });
+  }
+  const order = urns.filter((u) => latest.has(u)).sort((a, b) => latest.get(b)!.value - latest.get(a)!.value || a.localeCompare(b));
+  // Standard competition ranking (ties share a place), as every ranking here.
+  const ranking: RankingPopulationResult["ranking"] = [];
+  order.forEach((u, i) => {
+    const value = latest.get(u)!.value;
+    const rank = i > 0 && ranking[i - 1].value === value ? ranking[i - 1].rank : i + 1;
+    ranking.push({ urn: u, name: names.get(u) ?? u, value, rank, isTarget: u === targetUrn });
+  });
+  const periods = Array.from(latest.values()).map((x) => x.period);
+  return {
+    rows: order.filter((u) => u !== targetUrn).map((urn) => ({ urn })),
+    ranking,
+    targetRank: ranking.find((r) => r.isTarget)?.rank ?? null,
+    ranked: ranking.length,
+    measure,
+    period: periods.length ? Math.max(...periods) : null,
+  };
+}
+
 export async function resolveRankingSet(
   targetUrn: string,
   targetName: string,

@@ -16,6 +16,10 @@ import { parseLinkedSet } from "@/lib/teacher-view-linked-set";
 import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { freshToken } from "@/components/admissions/member";
 import type { SmtSetChoice } from "./api";
+import type { RankingPopulationResult } from "@/lib/chooser-sets";
+
+/** A ranking's whole population, ranked (20 Nov): what SMT benchmarks against, and the panel's table. */
+export type SmtRankTable = Omit<RankingPopulationResult, "rows">;
 
 export const DEFAULT_SET_LABEL = "10 nearest schools";
 type Stored = { kind: "nearest" } | ChooserChoice;
@@ -39,6 +43,8 @@ export type SmtSetState = {
   linked: boolean;
   choose: (c: ChooserChoice | { kind: "nearest" }) => void;
   reloadSaved: () => Promise<void>;
+  /** A ranking in use: its whole population, ranked (null for any other set, and while it resolves). */
+  rankTable: SmtRankTable | null;
 };
 
 export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | null): SmtSetState {
@@ -64,7 +70,7 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
     if (urn && phase) setSavedSets(await fetchSavedSets(supabase, urn, phase, { fresh: true }));
   }, [urn, phase, supabase]);
 
-  const [resolved, setResolved] = useState<{ key: string; set: SmtSetChoice } | null>(null);
+  const [resolved, setResolved] = useState<{ key: string; set: SmtSetChoice; rankTable?: SmtRankTable } | null>(null);
   const effective: Stored = linked ? { kind: "urns", label: linked.label, urns: linked.urns } : choice;
   const key = JSON.stringify([urn, phase, effective, effective.kind === "saved" ? !!savedSets : null]);
   useEffect(() => {
@@ -84,11 +90,15 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
       }
       const token = await freshToken();
       if (!token) return;
-      const set = effective.kind === "nearest" ? { kind: "nearest" } : effective.kind === "urns" ? { kind: "urns", urns: effective.urns } : { kind: "ranking", filters: effective.filters };
-      const res = await cachedFetchJson<{ rows: { urn: string }[] }>("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase, set }) });
+      // 20 Nov (Leighton Park prep): a ranking is SMT's benchmark, so it is the WHOLE population (`full`), not
+      // the chooser's top 15 and 5 either side -- the school's real regional or national position.
+      const set = effective.kind === "nearest" ? { kind: "nearest" } : effective.kind === "urns" ? { kind: "urns", urns: effective.urns } : { kind: "ranking", filters: effective.filters, full: true };
+      const res = await cachedFetchJson<{ rows: { urn: string }[] } & Partial<RankingPopulationResult>>("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase, set }) });
       if (!live || !res.ok || !res.body) return;
       const label = effective.kind === "nearest" ? DEFAULT_SET_LABEL : effective.label;
-      setResolved({ key, set: { kind: effective.kind, label, urns: res.body.rows.map((r) => r.urn).filter((u) => u !== urn) } });
+      const b = res.body;
+      const rankTable = effective.kind === "ranking" && b.ranking ? { ranking: b.ranking, targetRank: b.targetRank ?? null, ranked: b.ranked ?? b.ranking.length, measure: b.measure ?? "", period: b.period ?? null } : undefined;
+      setResolved({ key, set: { kind: effective.kind, label, urns: b.rows.map((r) => r.urn).filter((u) => u !== urn) }, rankTable });
     })();
     return () => {
       live = false;
@@ -116,5 +126,5 @@ export function useSmtSet(urn: string | null, phase: "ks2" | "ks4" | "ks5" | nul
     [urn],
   );
 
-  return { choice: effective, set: resolved?.key === key ? resolved.set : null, savedSets, linked: !!linked, choose, reloadSaved };
+  return { choice: effective, set: resolved?.key === key ? resolved.set : null, savedSets, linked: !!linked, choose, reloadSaved, rankTable: resolved?.key === key ? (resolved.rankTable ?? null) : null };
 }

@@ -3,7 +3,7 @@ import { headOfficeAccess } from "@/lib/groups/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
-import { resolveDefaultNearest, resolveFixedSet, resolveRankingSet } from "@/lib/chooser-sets";
+import { resolveDefaultNearest, resolveFixedSet, resolveRankingPopulation, resolveRankingSet } from "@/lib/chooser-sets";
 import type { RankingFilters } from "@/lib/comparator-chooser";
 import { serializeAcademicProfile } from "@/lib/academic-data-view";
 import { fetchTeacherComparatorProfiles, profileUrnsFor } from "@/lib/teacher-comparator-profiles";
@@ -16,7 +16,7 @@ import { fetchTeacherComparatorProfiles, profileUrnsFor } from "@/lib/teacher-co
 // GCSE and Post-16, the phases with an exam population to rank within.
 type Body =
   | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "urns"; urns: string[] } }
-  | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "ranking"; filters: RankingFilters } }
+  | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "ranking"; filters: RankingFilters; full?: boolean } }
   // Comparator dropdown round: the column's default before anything is chosen -- the
   // chooser's own "10 nearest schools", resolved here in one request.
   | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "nearest" } };
@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
     }
     if (body.phase === "ks2") return NextResponse.json({ error: "Rankings are for GCSE and Post-16." }, { status: 400 });
     const { data: target } = await supabase.from("schools").select("current_name, la_name").eq("urn", body.urn).maybeSingle<{ current_name: string; la_name: string | null }>();
+    // 20 Nov: SMT asks for the whole population (`full`), ranked, without per-school profiles or series.
+    if (body.set.full) return NextResponse.json(await resolveRankingPopulation(body.urn, target?.current_name ?? "This school", body.phase, body.set.filters, target?.la_name ?? null));
     return NextResponse.json(await withProfiles(await resolveRankingSet(body.urn, target?.current_name ?? "This school", body.phase, body.set.filters, target?.la_name ?? null)));
   } catch (err) {
     console.error("[teacher/chooser-set] failed:", err);
