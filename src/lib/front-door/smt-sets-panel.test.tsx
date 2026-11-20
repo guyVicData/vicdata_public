@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SmtSetsPanel } from "@/components/front-door/smt-sets-panel";
+import { defaultRankings, SmtSetsPanel } from "@/components/front-door/smt-sets-panel";
 import type { SmtSetState } from "@/components/smt/useSmtSet";
 import type { SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 
@@ -88,4 +88,19 @@ test("SMT sets panel: a large set's rolls -- growing, steady and shrinking on th
   assert.equal(r.schools, 4);
   assert.equal(r.median, -1.4);
   assert.equal(r.mine?.pct, 4);
+});
+
+test("SMT sets panel: a state school isn't offered State schools in England (too many to benchmark); an independent school keeps its England set", () => {
+  const birmingham = { independent: false, regionCode: "E12000005", regionName: "West Midlands" };
+  for (const phase of ["ks4", "ks5"] as const) {
+    assert.deepEqual(defaultRankings(birmingham, phase).map((d) => d.key), ["default:region", "default:region-all"]);
+    assert.deepEqual(defaultRankings(school, phase).map((d) => d.key), ["default:region", "default:nation", "default:region-all"]);
+  }
+  const html = renderToStaticMarkup(createElement(SmtSetsPanel, { urn: "138695", schoolName: "George Dixon Academy", school: birmingham, phase: "ks4", sets: state({ kind: "nearest" }, 10), o: null, readOnly: false, theme: "dark" }));
+  assert.match(html, /State schools in the West Midlands/);
+  assert.doesNotMatch(html, /data-smt-set-row="default:nation"/);
+  assert.match(html, /data-smt-set-note="nation"[^>]*>State schools in England isn’t a set here/);
+  assert.match(html, /The Overview sets George Dixon Academy against England’s figures and ranks instead/);
+  // The independent school's panel has no such note.
+  assert.doesNotMatch(draw(state({ kind: "nearest" }, 10)), /data-smt-set-note/);
 });

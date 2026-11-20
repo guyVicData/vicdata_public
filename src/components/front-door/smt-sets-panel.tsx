@@ -34,7 +34,11 @@ export const regionWords = (name: string | null) => (name ? (name === "London" ?
 
 /** A one-click VicData default beyond the 10 nearest: rankings, each a WHOLE population (20 Nov) -- the school's
  * own sector in its region and in England, and every school and college in its region (all sectors). Every school
- * and college in England is too many to benchmark as a set (2,535 at Post-16): the Overview's England ranks are it. */
+ * and college in England is too many to benchmark as a set (2,535 at Post-16): the Overview's England ranks are it.
+ * So, for a state school, are the state schools in England (20 Nov: 3,497 at GCSE, 1,855 at Post-16): the Overview
+ * took 67-117 s cold (or hit the database's statement timeout), one build pushed every other school's values out of
+ * the server's cache, and the SMT routes keep at most 600 schools of a set (MAX_SET), so it was never the whole
+ * population the panel described. An independent school keeps its England set (489 at Post-16). */
 type DefaultRanking = { key: string; label: string; filters: RankingFilters };
 export function defaultRankings(school: { independent: boolean; regionCode?: string | null; regionName: string | null } | null, phase: "ks2" | "ks4" | "ks5" | null = "ks5"): DefaultRanking[] {
   if (!school) return [];
@@ -44,10 +48,13 @@ export function defaultRankings(school: { independent: boolean; regionCode?: str
   const all = phase === "ks5" ? "All sixth forms and colleges" : "All schools";
   return [
     ...(region ? [{ key: "default:region", label: `${sector} schools in ${regionWords(school.regionName)}`, filters: filters(region, [sector]) }] : []),
-    { key: "default:nation", label: `${sector} schools in England`, filters: filters(NATIONAL, [sector]) },
+    ...(nationalSetOffered(school) ? [{ key: "default:nation", label: `${sector} schools in England`, filters: filters(NATIONAL, [sector]) }] : []),
     ...(region ? [{ key: "default:region-all", label: `${all} in ${regionWords(school.regionName)}`, filters: filters(region, []) }] : []),
   ];
 }
+
+/** Whether "<sector> schools in England" is a default: for an independent school only (defaultRankings). */
+export const nationalSetOffered = (school: { independent: boolean }) => school.independent;
 
 /** The row the set in use ticks: a saved set or ranking by id; the 10 nearest however it was chosen (the
  * dashboard's chooser stores it as a list of schools); a default ranking by its name. "current" when none fits. */
@@ -221,6 +228,11 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
               </ul>
             </div>
           ))}
+          {defaults.length > 0 && school && !nationalSetOffered(school) && (
+            <p data-smt-set-note="nation" className="text-[12.5px] leading-relaxed text-[var(--muted2)]">
+              State schools in England isn&rsquo;t a set here: every state school is too many to benchmark against. The Overview sets {schoolName} against England&rsquo;s figures and ranks instead.
+            </p>
+          )}
           {builder && !readOnly && (
             <Link href={builder} data-smt-set-build="" style={{ color: accentInk }} className="inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[14px] font-semibold hover:opacity-90">
               <span aria-hidden="true">+</span> Make your own set
