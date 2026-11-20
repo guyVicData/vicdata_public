@@ -11,3 +11,9 @@ test("isSpecialOrAlternative: by GIAS group or type; mainstream and independent 
   for (const [g, t] of [["Academies", "Academy converter"], ["Free Schools", "Free schools"], ["Independent schools", "Other independent school"], ["Local authority maintained schools", "Voluntary aided school"], ["Free Schools", "University technical college"]] as const)
     assert.ok(!isSpecialOrAlternative(g, t), t);
 });
+
+test("isSpecialOrAlternative: Red Balloon's centres by name, though GIAS files some as ordinary independents", () => {
+  assert.ok(isSpecialOrAlternative("Independent schools", "Other independent school", "Red Balloon Learner Centre Reading"));
+  assert.ok(isSpecialOrAlternative("Independent schools", "Other independent school", "Red Balloon Learner Centre - Cambridge"));
+  assert.ok(!isSpecialOrAlternative("Independent schools", "Other independent school", "Leighton Park School"));
+});

@@ -252,7 +252,7 @@ export async function buildLaComparatorSet(
   if (rows.length === 0) return { key: "in_la", label, schools: [] };
 
   const phaseFiltered = rows.filter((r) => {
-    if (!includeSpecial && isSpecialOrAlternative(r.establishment_type_group, r.establishment_type)) return false;
+    if (!includeSpecial && isSpecialOrAlternative(r.establishment_type_group, r.establishment_type, r.current_name)) return false;
     if (targetPhase.length === 0) return true;
     const candidatePhase = phaseTags(r.statutory_low_age, r.statutory_high_age, r.establishment_type);
     const sharesTag = candidatePhase.some((p) => targetPhase.includes(p));

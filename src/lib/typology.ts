@@ -95,10 +95,16 @@ function isNurseryOrPru(establishmentType: string | null): boolean {
  * "Academy special converter", "Free schools special", "Academy alternative provision converter" -- so the type
  * is read too. Default comparison lists leave these out for a mainstream school.
  */
-export function isSpecialOrAlternative(establishmentTypeGroup: string | null, establishmentType: string | null): boolean {
+export function isSpecialOrAlternative(establishmentTypeGroup: string | null, establishmentType: string | null, name: string | null = null): boolean {
   if (establishmentTypeGroup === SPECIAL_SCHOOLS_GROUP) return true;
+  if (name && NOT_MAINSTREAM_NAMES.some((re) => re.test(name))) return true;
   return !!establishmentType && /special|alternative provision|pupil referral/i.test(establishmentType);
 }
+
+/** Providers GIAS files as ordinary independent schools that are alternative provision (20 Nov, Guy): Red Balloon's
+ * centres, for children out of school (Reading's and Cambridge's are "Other independent school"; its others are
+ * already filed as special). By name, as GIAS gives nothing else to tell them apart. */
+export const NOT_MAINSTREAM_NAMES: readonly RegExp[] = [/^red balloon\b/i];
 
 export function sectorTag(
   establishmentTypeGroup: string | null,

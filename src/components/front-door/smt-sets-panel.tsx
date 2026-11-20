@@ -21,6 +21,7 @@ import { guidedHref } from "@/lib/sets/guided";
 import { defaultRankingFilters, NATIONAL, type RankingFilters } from "@/lib/comparator-chooser";
 import { chunkedRankingDisplay } from "@/lib/data-view-cards";
 import { Spinner } from "@/components/shell/LoadingGraphic";
+import { featuredRow } from "@/components/shell/accent";
 import type { Theme } from "@/components/shell/TeacherChrome";
 
 /** Up to this many schools, the set is drawn on its map; more than that reads as a cloud of dots. */
@@ -235,7 +236,9 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
         </div>
         <div className="min-w-0" data-smt-set-show="">
           {set && rt ? (
-            <RankTable rt={rt} schoolName={schoolName} phase={phase} />
+            <div style={smtVars(theme) as CSSProperties}>
+              <RankTable rt={rt} schoolName={schoolName} phase={phase} />
+            </div>
           ) : !set || (n !== null && n <= SET_MAP_MAX && !oNow) ? (
             <div className="flex min-h-[340px] items-center justify-center rounded-[10px] border border-[var(--panel-border)] text-[13px] text-[var(--muted2)]">
               <span className="flex items-center gap-2">
@@ -269,7 +272,8 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
               </p>
               {names.length > 0 && (
                 <p className="text-[var(--muted2)]">
-                  <span className="font-semibold text-[var(--fg)]">Schools in the set:</span> {names.join(", ")}.
+                  {/* 20 Nov: semicolons between, as some names carry a comma ("The King's School, Gloucester"). */}
+                  <span className="font-semibold text-[var(--fg)]">Schools in the set:</span> {names.join("; ")}.
                 </p>
               )}
             </div>
@@ -310,7 +314,7 @@ function RankTable({ rt, schoolName, phase }: { rt: NonNullable<SmtSetState["ran
               </tr>
             )}
             {c.rows.map((r) => (
-              <tr key={r.urn} data-rank-row={r.isTarget ? "you" : undefined} className={`border-t border-[var(--panel-border)] ${r.isTarget ? "bg-[rgba(var(--accent-rgb),0.16)] font-semibold" : ""}`}>
+              <tr key={r.urn} data-rank-row={r.isTarget ? "you" : undefined} {...featuredRow(r.isTarget)} className={`border-t border-[var(--panel-border)] ${r.isTarget ? "font-semibold" : ""}`}>
                 <td className="py-[5px] pl-1">{r.rank}</td>
                 <td className="min-w-0 truncate py-[5px] pr-2">{r.name}</td>
                 <td className="py-[5px] pr-1 text-right">{fmt(r.value)}</td>

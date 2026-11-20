@@ -20,6 +20,7 @@ export const FOCUS_TABLES: { file: string; view: string }[] = [
   { file: "src/components/data-view/RankingsView.tsx", view: "Data View: Rankings (rank, over time, large set)" },
   { file: "src/components/data-view/AcademicRankingsView.tsx", view: "Data View: academic Rankings" },
   { file: "src/components/data-view/SubjectDeepDiveDrawer.tsx", view: "Data View: the subject deep dive" },
+  { file: "src/components/front-door/smt-sets-panel.tsx", view: "SMT home: a ranking set's whole population, ranked" },
 ];
 
 /** Rows of schools with no focus row to tint, each with why. `has` picks the element (a fragment of its

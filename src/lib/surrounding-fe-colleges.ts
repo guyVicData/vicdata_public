@@ -250,7 +250,7 @@ export async function findLocal16PlusProvision(
   };
   // 2026-11-20 (Guy): special schools, AP and PRUs stay out of a mainstream school's default list
   // (they distort its averages); a special school's own list keeps them.
-  const candidates = ((rows ?? []) as Row[]).filter((r) => includeSpecial || !isSpecialOrAlternative(r.establishment_type_group, r.establishment_type));
+  const candidates = ((rows ?? []) as Row[]).filter((r) => includeSpecial || !isSpecialOrAlternative(r.establishment_type_group, r.establishment_type, r.current_name));
   if (candidates.length === 0) return [];
 
   // 2026-09-08, real bug fix (Camden Post-16 list pulling in HE institutions/an

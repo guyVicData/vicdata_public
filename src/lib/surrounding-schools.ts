@@ -30,7 +30,7 @@ import {
   type AgeGenderCounts,
 } from "./roll-data";
 import { classifyShape, type ShapeLabel, type ShapeMetrics, type DominantTransition } from "./shape-classifier";
-import { genderTag, phaseTags, effectivePhaseTags, type GenderTag } from "./typology";
+import { isSpecialOrAlternative, genderTag, phaseTags, effectivePhaseTags, type GenderTag } from "./typology";
 
 const TARGET_COUNT = 10; // reduced from 20, chart palette doc's "Public View rebuild"
 const CANDIDATE_BUFFER = 40; // skip-and-backfill past both no-roll-data AND gender-mismatched candidates
@@ -263,13 +263,16 @@ export async function findSurroundingSchools(
   // call already enforces the correct sector rule in SQL via its own p_relax_sector
   // argument, so re-filtering it locally here would be redundant, not incorrect.
   async function matchAgainst(rawCandidates: Candidate[], applyLocalSectorFilter: boolean): Promise<MatchedSchool[]> {
-    const candidateList = options.stateOnly
+    const sectorList = options.stateOnly
       ? rawCandidates.filter((a) => !isIndependent(a.establishment_type_group))
       : applyLocalSectorFilter
       ? rawCandidates.filter(
           (a) => targetIsSpecial || relaxSectorForThroughSchool || isIndependent(a.establishment_type_group) === isIndependent(target?.establishment_type_group ?? null),
         )
       : rawCandidates;
+    // 20 Nov (Guy): a mainstream school's nearest leave out special schools and alternative provision, by type or
+    // name (typology.ts isSpecialOrAlternative: Red Balloon's centres are filed as ordinary independents).
+    const candidateList = targetIsSpecial ? sectorList : sectorList.filter((c) => !isSpecialOrAlternative(c.establishment_type_group, c.establishment_type, c.current_name));
     if (candidateList.length === 0) return [];
 
     // Phase match: does the candidate's stacked phase-tag set share at least one tag
