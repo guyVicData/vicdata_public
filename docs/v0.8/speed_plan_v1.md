@@ -62,6 +62,21 @@ The Chase's (137625) GCSE dashboard drew in 2.8 s; everything had loaded at 3.9�
 
 **Found, not fixed:** a state school's *State schools in England* set at GCSE is 3,497 schools and takes over 2 minutes to build (too long for the browser, and too big to cache). Leighton Park, as an independent school, never sees it. Hide that default for state schools before the beta, or wait for 4.2 item 1.
 
+## 3b. Items 1 and 2 brought forward (20 Nov, evening; live)
+
+Both switched on in Render on 20 Nov (`RESULTS_CACHE=on`, `SMT_FIGURES=on`); tables `results_cache`, `smt_school_figures` and `smt_figures_builds` applied live (RLS on, service role only). First figures build: GCSE 7,740 schools / 31,899 rows (40 s), Post-16 7,523 schools / 18,704 rows (36 s), 67 MB. Re-run `scripts/build-smt-figures.ts --live` after any KS4/Post-16 subject promote, GIAS refresh or subject-map change (until a nightly job does it); until then a new data version simply falls back to today's reads.
+
+Leighton Park, live, with both on:
+
+| Page | Cold, just after a restart | Second visit |
+|---|---|---|
+| SMT Academic vs independent schools in England | 1.8 s (was 16.1 s) | 1.5 s |
+| SMT Academic vs all sixth forms in the South East | 1.8 s (was 15.2 s) | 1.2 s |
+| SMT home vs independent schools in England | 16.6 s (the Overview isn't precomputed yet) | 1.2 s |
+| Every other Leighton Park page | 1.5–10 s | 0.9–2.0 s |
+
+Not stored yet: the big-set Overviews whose builds saw a failed census read (the cache refuses an answer built past a failed read) -- the census timeouts on big sets are their own fix, after the freeze.
+
 ## 4. After the demo: the architecture (agreed with Guy, 20 Nov)
 
 ### 4.1 Why whole-population sets are slow (measured)
