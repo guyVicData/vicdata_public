@@ -6,6 +6,7 @@
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData, type ReferenceFact } from "./vicdata-reference";
+import { mapLimited } from "./limited";
 import {
   buildRollSnapshot,
   buildRollTrend,
@@ -118,23 +119,19 @@ export async function fetchCensusFactsBatched(
   for (let i = 0; i < entityIds.length; i += CENSUS_FETCH_CHUNK) {
     chunks.push(entityIds.slice(i, i + CENSUS_FETCH_CHUNK));
   }
-  const all: ReferenceFact[] = [];
-  for (let i = 0; i < chunks.length; i += CENSUS_FETCH_CONCURRENCY) {
-    const batch = chunks.slice(i, i + CENSUS_FETCH_CONCURRENCY);
-    const results = await Promise.all(
-      batch.map((chunk) =>
-        lookupReferenceData({
-          sourceId: "dfe_school_census",
-          entityIds: chunk,
-          periodMin: options?.periodMin,
-          periodMax: options?.periodMax,
-          breakdowns: options?.breakdowns,
-        }),
-      ),
-    );
-    for (const facts of results) all.push(...facts);
-  }
-  return all;
+  // 20 Nov: CENSUS_FETCH_CONCURRENCY reads at a time as a rolling pool (was waves of 4, each waiting for its
+  // slowest), each read tried twice (limited.ts): one failed 40-school read failed the whole view it was for
+  // (Admissions, SMT Overview's set census). The facts, in chunk order, are the same.
+  const parts = await mapLimited(chunks, CENSUS_FETCH_CONCURRENCY, (chunk) =>
+    lookupReferenceData({
+      sourceId: "dfe_school_census",
+      entityIds: chunk,
+      periodMin: options?.periodMin,
+      periodMax: options?.periodMax,
+      breakdowns: options?.breakdowns,
+    }),
+  );
+  return parts.flat();
 }
 
 // Year the "since 2019" trend badges (brief §5: Current Roll/Gender/Boarding cards)
