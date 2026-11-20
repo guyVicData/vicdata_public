@@ -69,8 +69,11 @@ The Overview falls back to today's reads, with one log line, whenever:
 
 **The build** (`--stage census`, 3 batches of 40 schools at a time):
 - 27,602 schools (every open school plus SMT's national KS4/Post-16 populations), 24,655 with a census.
-- 27,602 rows, 7.3 MB of JSON, **544 s**.
-- Two batches hit production's statement timeout and passed on their first retry.
+- 27,602 rows, 7.3 MB of JSON (21 MB of table in PGlite).
+- **Time:** 544 s writing to PGlite, then 464 s writing to a file. In the first run two batches hit production's statement timeout and passed on their first retry; the second run needed none.
+- **Repeatable:** the two runs agree on every school's figures.
+- **Memory:** 291 MB peak RSS under `--max-old-space-size=400`, so it fits the nightly job's Starter instance (512 MB).
+  - Before the build cleared the reference reads' in-process cache after each batch (`clearReferenceReads`), that cache kept every batch: 4,000 schools ran out of a 300 MB heap.
 
 **One read:** about 270 bytes of JSON per school, so about 130 KB for a 488-school set.
 
@@ -87,6 +90,10 @@ The Overview falls back to today's reads, with one log line, whenever:
 - With the switch off, the branch is already faster than main because the census by year is read once instead of twice.
 - **Warm** (second build, same process): 50–160 ms on every path.
 - **The 58-case matrix in one process,** sum of first builds: main 220 s, switch off 129 s, figures 12 s.
+- **Not removed here: the national loads.** The populations, England's schools and the IGCSE list take 8.7 s cold, once per process, shared by every school and page.
+  - Since 0d38c3c0 the SMT routes read the school from the results cache after a restart, so the Overview may be the first thing to need them.
+  - The first Overview after a deploy, for a set whose answer isn't stored yet, can therefore still take about 9 s, even with these figures. Stored answers are unaffected.
+  - The warm-up script (`scripts/warm-demo.mjs`) loads them. Building them ahead is the next item.
 
 ## Parity (byte-for-byte JSON)
 
@@ -115,11 +122,15 @@ The 58 cases:
      - `policies 0`
      - `tables_locked true`, `read_locked true` and `server_reads true`
 2. **Build:**
-   - Run `npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts --live --stage census` once nothing else is reading the reference database heavily. It takes about 9 minutes and writes 27,602 rows.
+   - Run `npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts --live --stage census` once nothing else is reading the reference database heavily. It takes 8–9 minutes and writes 27,602 rows.
    - Then re-run verify: expect a `complete` census build next to the ks4 and ks5 builds.
 3. **Switch on:** set `SMT_OVERVIEW_FIGURES=on` on Render and deploy.
    - **Check:** `/teacher/smt?lookAs=110110&as=smt&peek=1` against independent schools in England is quick on its first view after the deploy.
    - Render's log shows no `[smt figures] census: … today's reads` line for it.
-4. **After every school census promote, GIAS refresh or school sync,** run step 2 again. Until then the Overview makes today's reads. They're slower, but correct.
+4. **The nightly job:** change the Render cron job's command to `npm run figures:build -- --stage all` (ks4, ks5 and census).
+   - Add `NODE_OPTIONS=--max-old-space-size=400` to the job's environment.
+   - A night with no new census skips the stage in about a second. A night after a school census promote, GIAS refresh or school sync rebuilds it (8–9 minutes).
+   - Until a rebuild has run, the Overview makes today's reads: slower, but correct.
+   - `--stage census` isn't part of the default (`npm run figures:build` alone), so the job can't fail before this migration is applied.
 
 **Rollback:** unset `SMT_OVERVIEW_FIGURES`. Optionally also run `rollback_smt_census_figures.sql`, which deletes only the census builds and leaves Academic's figures.

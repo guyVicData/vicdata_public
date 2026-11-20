@@ -46,7 +46,7 @@ import { openFiguresPglite } from "./lib/smt-figures-pglite";
 import { CENSUS_STAGE, censusVersion, encodeCensusSchool, type CensusRow } from "../src/lib/smt/overview-figures-store";
 import { fetchCensus } from "../src/lib/admissions/data";
 import { buildRollTrend } from "../src/lib/roll-data";
-import { lookupReferenceData } from "../src/lib/vicdata-reference";
+import { clearReferenceReads, lookupReferenceData } from "../src/lib/vicdata-reference";
 
 const args = process.argv.slice(2);
 const flag = (n: string) => args.includes(n);
@@ -255,6 +255,9 @@ async function buildCensus(version: string, w: Writer) {
     const by = new Map<string, typeof facts>();
     for (const f of facts) (by.get(f.entity_id) ?? by.set(f.entity_id, []).get(f.entity_id)!).push(f);
     const out = batch.map((u) => encodeCensusSchool(u, buildRollTrend(by.get(u) ?? [], u), adm.get(u)));
+    // The reference reads' in-process cache (vicdata-reference.ts, capped by count, not size) would keep every
+    // batch's whole census: 4,000 schools passed a 300 MB heap. Nothing reads a batch twice, so let it go.
+    clearReferenceReads();
     await w.write(CENSUS_STAGE, version, out);
     totals.schools += batch.length;
     totals.rows += out.length;
