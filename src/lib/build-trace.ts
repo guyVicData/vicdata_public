@@ -38,6 +38,15 @@ export function traced<T>(fn: () => Promise<T>): { trace: BuildTrace; promise: P
   return { trace, promise: als.run(trace, fn) };
 }
 
+/** Run `fn` in a new trace NOT linked into the current one: the caller links it (dependOn) only if it keeps
+ * the answer. For a read that is tried again (limited.ts retryOnce): a first try that failed, and was
+ * replaced by a second that didn't, shouldn't mark the build. */
+export function detached<T>(fn: () => Promise<T>): { trace: BuildTrace; promise: Promise<T> } {
+  const trace: BuildTrace = { degraded: false, deps: [] };
+  if (!als) return { trace, promise: fn() };
+  return { trace, promise: als.run(trace, fn) };
+}
+
 /** The answer being built has less in it than it should (a read failed and was carried past). */
 export function markDegraded(): void {
   const t = als?.getStore();

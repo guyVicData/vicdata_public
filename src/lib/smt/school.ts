@@ -13,6 +13,7 @@ import { englandSchools } from "../admissions/ranks";
 import type { SchoolPhases } from "./levels";
 import { figure, population, SMT_MEASURES, type Population } from "./population";
 import { markDegraded } from "../build-trace";
+import { limiter, retryOnce } from "../limited";
 
 // 0.8 IGCSE subjects: at an IGCSE school, an area lacking a subject it takes as IGCSE carries the short label
 // ("Sciences & Maths · no maths (IGCSE)") and its (i) sentence, and isn't ranked against other schools.
@@ -75,30 +76,12 @@ export async function schoolCensuses(urns: string[]): Promise<Map<string, RollSn
   // made production cancel 11 of them at its statement timeout ("canceling statement due to statement timeout"), so
   // 440-480 of the 488 schools came back with no census and the Overview was built without them (and, built past a
   // failed read, never kept by the results cache). Three at a time: 13 reads in ~4 s, none failed.
-  const read = async (chunk: string[]) => {
-    try {
-      return await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk });
-    } catch {
-      await new Promise((r) => setTimeout(r, 500));
-      return lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk });
-    }
-  };
-  let running = 0;
-  const waiting: (() => void)[] = [];
-  const limited = async <T,>(fn: () => Promise<T>): Promise<T> => {
-    if (running >= CENSUS_AT_ONCE) await new Promise<void>((r) => waiting.push(r));
-    running++;
-    try {
-      return await fn();
-    } finally {
-      running--;
-      waiting.shift()?.();
-    }
-  };
+  // The limiter and the retry are limited.ts's (the same pattern for every fan-out since).
+  const limited = limiter(CENSUS_AT_ONCE);
   await Promise.all(
     chunks.map(async (chunk) => {
       const batch = cachedReference(`smt:census-batch:${chunk.join(",")}`, async () => {
-        const facts = await limited(() => read(chunk)).catch(() => (markDegraded(), []));
+        const facts = await limited(() => retryOnce(() => lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk }))).catch(() => (markDegraded(), []));
         const by = new Map<string, typeof facts>();
         for (const f of facts) (by.get(f.entity_id) ?? by.set(f.entity_id, []).get(f.entity_id)!).push(f);
         return new Map(chunk.map((u) => [u, buildRollTrend(by.get(u) ?? [], u)]));
