@@ -55,3 +55,10 @@ test("SMT sets panel: the 10 nearest ticks however it was chosen; the region and
   assert.deepEqual(ticked(other), ["current"]);
   assert.match(draw(state({ kind: "nearest" }, 10)), /Make your own set/);
 });
+
+test("SMT sets panel: Schools in the LA (every sector) is a default, ticked when in use", async () => {
+  const html = renderToStaticMarkup(createElement(SmtSetsPanel, { urn: "110110", schoolName: "Leighton Park School", school: { ...school, laName: "Reading" }, phase: "ks5", sets: state({ kind: "urns", label: "Schools in Reading", urns: [] }, 14), o: null, readOnly: false, theme: "dark" }));
+  assert.match(html, /Schools in Reading/);
+  assert.deepEqual(ticked(html), ["default:la"]);
+  assert.doesNotMatch(html, /In use now/);
+});

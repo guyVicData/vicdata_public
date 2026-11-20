@@ -7,7 +7,9 @@
 // (SetMap, from the Overview answer the home already holds), a large one in words, and (d) opens the set
 // builder to make your own.
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { fetchDefaultLists } from "@/components/teacher/chooser/data";
 import type { Overview } from "@/components/smt/api";
 import type { SmtSetState } from "@/components/smt/useSmtSet";
 import { DEFAULT_SET_LABEL } from "@/components/smt/useSmtSet";
@@ -38,8 +40,9 @@ export function defaultRankings(school: { independent: boolean; regionCode?: str
 
 /** The row the set in use ticks: a saved set or ranking by id; the 10 nearest however it was chosen (the
  * dashboard's chooser stores it as a list of schools); a default ranking by its name. "current" when none fits. */
-export function smtSetKey(choice: SmtSetState["choice"], defaults: DefaultRanking[] = []): string {
+export function smtSetKey(choice: SmtSetState["choice"], defaults: DefaultRanking[] = [], laLabel: string | null = null): string {
   if (choice.kind === "nearest" || (choice.kind === "urns" && choice.label === DEFAULT_SET_LABEL)) return NEAREST_KEY;
+  if (choice.kind === "urns" && laLabel && choice.label === laLabel) return "default:la";
   if (choice.kind === "saved") return `saved:${choice.id}`;
   if (choice.kind === "ranking") {
     if (choice.rankingId) return rankingKey(choice.rankingId);
@@ -55,22 +58,44 @@ const Tick = () => (
   </svg>
 );
 
-export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, readOnly, theme }: { urn: string; schoolName: string; school?: { independent: boolean; regionCode?: string | null; regionName: string | null } | null; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme }) {
+export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, readOnly, theme }: { urn: string; schoolName: string; school?: { independent: boolean; regionCode?: string | null; regionName: string | null; laName?: string | null } | null; phase: "ks2" | "ks4" | "ks5" | null; sets: SmtSetState; o: Overview | null; readOnly: boolean; theme: Theme }) {
   const set = sets.set;
   // Rankings are for GCSE and Post-16 (the chooser-set route); a primary school's defaults are the nearest only.
   const defaults = phase === "ks4" || phase === "ks5" ? defaultRankings(school) : [];
-  const selected = smtSetKey(sets.choice, defaults);
+  // The schools in the LA, every sector (state, independent, special), as the dashboard's chooser lists them
+  // (default-lists' List 2, with the LA's 16+ provision at Post-16), labelled as the chooser labels it.
+  const laLabel = school?.laName ? `Schools in ${school.laName}` : null;
+  const [laUrns, setLaUrns] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!laLabel || !phase) return;
+    let live = true;
+    void fetchDefaultLists(createBrowserSupabaseClient(), urn, phase === "ks5").then((b) => {
+      if (!live || !b) return;
+      const out = (b.list2?.schools ?? []).map((x) => x.urn);
+      for (const x of b.local16Plus?.schools ?? []) if (!out.includes(x.urn)) out.push(x.urn);
+      setLaUrns(out.filter((u) => u !== urn));
+    });
+    return () => {
+      live = false;
+    };
+  }, [urn, phase, laLabel]);
+  const selected = smtSetKey(sets.choice, defaults, laLabel);
+  const laRow: SetMenuRow[] = laLabel && (laUrns?.length || selected === "default:la") ? [{ key: "default:la", name: laLabel, count: selected === "default:la" && set ? set.urns.length : (laUrns?.length ?? null), creator: "default" }] : [];
   const menu = teacherMenuRows(sets.savedSets, { nearestLabel: DEFAULT_SET_LABEL, nearestCount: selected === NEAREST_KEY && set ? set.urns.length : 10 });
   const inUse: SetMenuRow[] = selected === "current" ? [{ key: "current", name: set?.label ?? ("label" in sets.choice ? sets.choice.label : "This set"), count: set ? set.urns.length : null, creator: "me" }] : [];
   const groups: { title: string; rows: SetMenuRow[] }[] = [
     { title: "In use now", rows: inUse },
-    { title: "VicData default", rows: [...menu.rows.default, ...defaults.map((d): SetMenuRow => ({ key: d.key, name: d.label, count: selected === d.key && set ? set.urns.length : null, creator: "default", countText: selected === d.key && set ? undefined : d.key === "default:region" ? "region" : "national" }))] },
+    { title: "VicData default", rows: [...menu.rows.default, ...laRow, ...defaults.map((d): SetMenuRow => ({ key: d.key, name: d.label, count: selected === d.key && set ? set.urns.length : null, creator: "default", countText: selected === d.key && set ? undefined : d.key === "default:region" ? "region" : "national" }))] },
     { title: "School sets", rows: menu.rows.school },
     { title: "My sets", rows: menu.rows.mine },
   ].filter((g) => g.rows.length);
   const pick = (r: SetMenuRow) => {
     const d = defaults.find((x) => x.key === r.key);
     if (r.key === "current") return;
+    if (r.key === "default:la") {
+      if (laLabel && laUrns) sets.choose({ kind: "urns", label: laLabel, urns: laUrns });
+      return;
+    }
     if (d) sets.choose({ kind: "ranking", label: d.label, filters: d.filters, rankingId: null });
     else if (r.key === NEAREST_KEY) sets.choose({ kind: "nearest" });
     else if (r.key.startsWith("saved:")) sets.choose({ kind: "saved", id: r.key.slice(6) });
