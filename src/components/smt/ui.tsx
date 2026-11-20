@@ -17,7 +17,7 @@ const S = productAccent("smt")!;
 /** The page root's variables: Admissions' semantic colours, SMT's accent. */
 // 0.8 front door (C20): SMT is orange (violet before): #fb923c on Dark, the darker ROLE_ACCENT_LIGHT.smt
 // on Light, where #fb923c is too faint on white.
-export function smtVars(theme: Theme, phase: "gcse" | "post16" | null = null): CSSProperties {
+export function smtVars(theme: Theme, phase: PhaseTone | null = null): CSSProperties {
   const dark = theme === "dark";
   // Leighton Park prep (20 Nov): an SMT walk opened from the GCSE or Post-16 tab keeps the tab's colour.
   if (phase) {
@@ -25,7 +25,7 @@ export function smtVars(theme: Theme, phase: "gcse" | "post16" | null = null): C
     const a = dark ? p.dark : p.light;
     return {
       ...admissionsVars(theme),
-      ...accentVars(a, phase),
+      ...accentVars(a, phase === "primary" ? null : phase),
       "--adm-tint": `rgba(${a.rgb},0.12)`,
       "--adm-accent-text": dark ? p.dark.hex : p.light.hex,
       "--adm-on-accent": dark ? "#0b1220" : "#ffffff",
@@ -43,8 +43,18 @@ export function smtVars(theme: Theme, phase: "gcse" | "post16" | null = null): C
   } as CSSProperties;
 }
 
-/** The GCSE and Post-16 colours (Teacher's phase accents; the deeper tone on a light plate, as the walks' LIGHT_FOCUS). */
+/** The GCSE and Post-16 colours (Teacher's phase accents; the deeper tone on a light plate, as the walks' LIGHT_FOCUS),
+ * and Primary's blue (the group home's Primary tab, 20 Nov). */
+export type PhaseTone = "gcse" | "post16" | "primary";
+/** A phase tab's accent over a page's own variables: the accent, its tint and its accent text (20 Nov). */
+export function phaseVars(theme: Theme, phase: PhaseTone | null): CSSProperties {
+  if (!phase) return {};
+  const p = PHASE_TONES[phase];
+  const a = theme === "dark" ? p.dark : p.light;
+  return { "--accent": a.hex, "--accent-rgb": a.rgb, "--adm-tint": `rgba(${a.rgb},0.12)`, "--adm-accent-text": a.hex, "--adm-range-edge": theme === "dark" ? p.edgeDark : p.edgeLight } as CSSProperties;
+}
 export const PHASE_TONES = {
+  primary: { dark: { hex: "#60a5fa", rgb: "96,165,250" }, light: { hex: "#2563eb", rgb: "37,99,235" }, edgeDark: "#1e3a8a", edgeLight: "#93c5fd" },
   gcse: { dark: { hex: "#34d399", rgb: "52,211,153" }, light: { hex: "#12a05c", rgb: "18,160,92" }, edgeDark: "#14532d", edgeLight: "#86efac" },
   post16: { dark: { hex: "#a78bfa", rgb: "167,139,250" }, light: { hex: "#7c5ce6", rgb: "124,92,230" }, edgeDark: "#3b2a6b", edgeLight: "#c4b5fd" },
 } as const;

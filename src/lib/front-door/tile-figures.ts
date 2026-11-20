@@ -38,8 +38,9 @@ export function smtContextFigure(c: Pick<Context, "now"> | null | undefined): La
  * The group dashboard route's address as head office's walks ask it (GroupWalk): the same parameters in
  * the same order, so the tile's read and the walk's are one request (and one cache entry).
  */
-export function groupWalkDashUrl(dash: string, account: string | null, compare: string | null): string {
-  const q = new URLSearchParams({ dash, reading: "at_time", focus: "all" });
+export function groupWalkDashUrl(dash: string, account: string | null, compare: string | null, focus: "all" | "primary" | "secondary" | "post16" = "all"): string {
+  // 20 Nov: a phase tab on the group home opens its walks at that phase (the route's own focus).
+  const q = new URLSearchParams({ dash, reading: "at_time", focus });
   if (account) q.set("account", account);
   if (compare) q.set("compare", compare);
   return `/api/group/dash?${q.toString()}`;

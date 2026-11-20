@@ -16,7 +16,7 @@
 // Mid (C18): the root draws Light (the plates are white) and the header is a dark band of its own; the
 // screen sits on the part's colour. Dark and Light draw the theme's own.
 import Link from "next/link";
-import { PHASE_TONES } from "@/components/smt/ui";
+import { PHASE_TONES, type PhaseTone } from "@/components/smt/ui";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
@@ -62,8 +62,13 @@ const FIELD: Record<string, "gcse" | "post16" | "top" | "group" | "admissions"> 
 
 /** Leighton Park prep (20 Nov): an SMT walk opened from the home's GCSE or Post-16 tab (?level=) keeps that tab's
  * colour and field, not SMT orange. Null for any other walk (Overview is the whole school at any level). */
-export function useWalkTab(walk: Pick<Walk, "product" | "id">): "gcse" | "post16" | null {
+export function useWalkTab(walk: Pick<Walk, "product" | "id">): PhaseTone | null {
   const sp = useSearchParams();
+  // The group home's phase tabs (?focus=): Secondary is GCSE's green, Post-16 its purple, Primary blue.
+  if (walk.product === "group") {
+    const f = sp.get("focus");
+    return f === "secondary" ? "gcse" : f === "post16" ? "post16" : f === "primary" ? "primary" : null;
+  }
   if (walk.product !== "smt" || walk.id.endsWith("-overview")) return null;
   const l = sp.get("level");
   return l === "gcse" || l === "post16" ? l : null;
@@ -82,8 +87,8 @@ export function WalkFrame({ walk, step, steps, chip, ctx, children }: { walk: Wa
   return (
     <WalkHomeContext.Provider value={home}>
     <main id="teacher-root" data-theme={mid ? "light" : theme} data-pref={pref} data-walk={walk.id} className="flex min-h-screen flex-col bg-[var(--bg)] text-[var(--fg)]" style={style}>
-      <WalkHeader walk={walk} step={step} steps={steps} chip={chip} ctx={ctx} band={mid || theme === "dark" ? "dark" : "light"} part={tab ?? FIELD[walk.product]} />
-      <section data-field={tab ?? FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
+      <WalkHeader walk={walk} step={step} steps={steps} chip={chip} ctx={ctx} band={mid || theme === "dark" ? "dark" : "light"} part={tab === "primary" ? "top" : tab ?? FIELD[walk.product]} />
+      <section data-field={tab === "primary" ? "top" : tab ?? FIELD[walk.product]} className="flex-grow px-4 py-8 sm:px-10">
         {/* Crosscheck (14 Nov): the boards' walk column is 1060 px (the homes keep 1160). */}
         <div className="mx-auto flex max-w-[1060px] flex-col gap-6">{children}</div>
       </section>

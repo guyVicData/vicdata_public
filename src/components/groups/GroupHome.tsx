@@ -29,6 +29,10 @@ import { arrowed } from "@/lib/signed-delta";
 import type { GroupAcademic } from "@/lib/groups/dash-r3";
 import { groupAcademicFigure, groupWalkCompare, groupWalkDashUrl } from "@/lib/front-door/tile-figures";
 import { useLateTileFigure } from "@/components/front-door/late-figure";
+import { useSmt } from "@/components/smt/api";
+import type { DashResponse } from "@/components/groups/dash/GroupDashboard";
+import { GroupSetsPanel } from "./GroupSetsPanel";
+import { PHASE_TONES } from "@/components/smt/ui";
 
 const ACCESS_TILE: TileColour = { hex: "#fbbf24", rgb: "251,191,36" };
 const DASHBOARDS_TILE: TileColour = { hex: "#c4b5fd", rgb: "167,139,250" };
@@ -112,6 +116,12 @@ export function summaryLine(d: Pick<GroupHomeData, "summary">): string {
 // GroupDashChips keeps its `library` chip for the places that draw the chips.
 const GROUPS_LIBRARY_HREF = (accountId: string) => `/teacher/group/groups?account=${accountId}`;
 
+type GroupTab = "all" | "primary" | "secondary" | "post16";
+const GROUP_TABS: GroupTab[] = ["all", "primary", "secondary", "post16"];
+const TAB_LABEL: Record<GroupTab, string> = { all: "Whole group", primary: "Primary", secondary: "Secondary", post16: "Post-16" };
+/** Each tab's colour: the group's bronze, then the phases' (Secondary is GCSE's green). */
+const TAB_TONE: Record<GroupTab, "primary" | "gcse" | "post16" | null> = { all: null, primary: "primary", secondary: "gcse", post16: "post16" };
+
 export function GroupHome() {
   const [pref] = useThemePref();
   const offices = useGroupOffices();
@@ -132,11 +142,38 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
   const [data, setData] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: GroupHomeData }>({ status: "loading" });
   const [nextMeeting, setNextMeeting] = useState<{ name: string; date: string | null } | null>(null);
   const office = offices.status === "ready" ? offices.office : null;
+  // Guy, 20 Nov ("learn from SMT"): the home's tabs -- Whole group, then each phase the group has -- each in its own
+  // colour, and the comparison set picked under the walks; both remembered per group in this browser.
+  const [tab, setTabState] = useState<GroupTab>("all");
+  const [compare, setCompareState] = useState<string>("nearest");
+  useEffect(() => {
+    if (!office) return;
+    try {
+      const t = window.localStorage.getItem(`vicdata.group.homeTab:${office.id}`) as GroupTab | null;
+      const c = window.localStorage.getItem(`vicdata.group.compare:${office.id}`);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTabState(t && GROUP_TABS.includes(t) ? t : "all");
+      setCompareState(c || "nearest");
+    } catch {
+      // Blocked storage: the defaults.
+    }
+  }, [office]);
+  const remember = (k: string, v: string) => {
+    try {
+      if (office) window.localStorage.setItem(`${k}:${office.id}`, v);
+    } catch {
+      // This visit only.
+    }
+  };
+  const setTab = (t: GroupTab) => (setTabState(t), remember("vicdata.group.homeTab", t));
+  const setCompare = (c: string) => (setCompareState(c), remember("vicdata.group.compare", c));
+  // The group's Overview answer at the set in use: the panel's choices and members, and which phases the group has.
+  const ov = useSmt<DashResponse>(office ? groupWalkDashUrl("overview", office.id, compare) : null, null);
   // Front door 2b (M1): Academic's figure, fetched late through its walk's first screen's own read (the group
   // dashboard route's academic build, with the walk's parameters), once the home's own read has settled;
   // cached for the session. No figure until it arrives, and none on an error.
   const academicFigure = useLateTileFigure<{ academic?: GroupAcademic }>(
-    office ? groupWalkDashUrl("academic", office.id, groupWalkCompare("academic")) : null,
+    office ? groupWalkDashUrl("academic", office.id, compare || groupWalkCompare("academic")) : null,
     data.status !== "loading",
     (r) => groupAcademicFigure(r.academic),
   );
@@ -181,12 +218,19 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
   if (offices.status === "none") return frame(plain("The group view comes with a group membership, bought by the group’s head office. You aren’t a member of one."));
   const o = offices.office;
   const d = data.status === "ready" ? data.data : null;
-  const walks = walksFor("group");
-  const figures = groupFigures(d);
-  const academic = academicFigure;
+  const byPhase = ov.status === "ready" ? ov.data.overview?.now.byPhase ?? null : null;
+  const tabs = GROUP_TABS.filter((t) => t === "all" || (byPhase?.[t] ?? 0) > 0);
+  const tabNow: GroupTab = tabs.includes(tab) ? tab : "all";
+  // Whole group: the four walks; a phase tab: Schools, Academic and Pupils at that phase (Overview is the group's whole).
+  const walks = walksFor("group").filter((w) => tabNow === "all" || !w.id.endsWith("-overview"));
+  const figures = tabNow === "all" ? groupFigures(d) : {};
+  // The tile asks what its walk asks (R-HOME-TILES): the whole group at the set in use; a phase tab shows none.
+  const academic = tabNow === "all" ? academicFigure : null;
   // 20 Nov (navigation): every walk and member school opened here comes back to this group's home.
   const groupHome = `/teacher/group?account=${o.id}`;
-  const params = { account: o.id, back: groupHome };
+  const params = { account: o.id, back: groupHome, ...(tabNow !== "all" ? { focus: tabNow } : {}), ...(compare !== "nearest" ? { compare } : {}) };
+  const tone = TAB_TONE[tabNow];
+  const accent = tone ? PHASE_TONES[tone][theme === "dark" ? "dark" : "light"] : GROUP_ACCENT;
   const heading = <HomeHeading sub="How the group is doing, and how its schools compare. Each question walks you through a few screens." onField />;
   const also: AlsoItem[] = [
     ...(!offices.viewAs ? [{ href: "/dashboards", title: "My dashboards", line: "Yours, and those shared with head office", icon: <DashboardsGlyph />, colour: DASHBOARDS_TILE }] : []),
@@ -202,12 +246,13 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
         [
           <HomeSection
             key="group"
-            field="group"
-            accent={GROUP_ACCENT}
+            field={tabNow === "secondary" ? "gcse" : tabNow === "post16" ? "post16" : tabNow === "primary" ? "top" : "group"}
+            accent={accent}
             chip="Head office"
             heading={heading}
             controls={
-              offices.all.length > 1 ? (
+              <>
+                {offices.all.length > 1 ? (
                 <span className="flex flex-wrap gap-1.5" role="group" aria-label="Group">
                   {offices.all.map((x) => (
                     <Link key={x.id} href={`/teacher/group?account=${x.id}`} aria-current={x.id === o.id ? "true" : undefined} className={`inline-flex min-h-[44px] items-center rounded-full border border-[var(--field-chip-border)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)] sm:min-h-0 ${x.id === o.id ? "bg-[var(--field-chip-bg)] font-semibold" : ""}`}>
@@ -217,9 +262,19 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
                 </span>
               ) : (
                 <span className="rounded-full bg-[var(--field-chip-bg)] px-3.5 py-1.5 text-[14px] font-semibold text-[var(--field-chip-fg)]">{o.name}</span>
-              )
+              )}
+                {tabs.length > 1 ? (
+                <span role="group" aria-label="Phase" className="flex flex-wrap gap-2">
+                  {tabs.map((t) => (
+                    <button key={t} type="button" data-group-tab={t} aria-pressed={tabNow === t} onClick={() => setTab(t)} className={`min-h-[44px] rounded-full border border-[var(--field-chip-border)] px-3.5 py-1.5 text-[14px] text-[var(--field-chip-fg)] hover:bg-[var(--field-chip-bg)] sm:min-h-0 ${tabNow === t ? "bg-[var(--field-chip-bg)] font-semibold" : ""}`}>
+                      {TAB_LABEL[t]}
+                    </button>
+                  ))}
+                </span>
+              ) : null}
+              </>
             }
-            dashboard={{ label: "Open the full group dashboards", href: `/teacher/group/overview?account=${o.id}` }}
+            dashboard={{ label: "Open the full group dashboards", href: `/teacher/group/${tabNow === "all" ? "overview" : "academic"}?${new URLSearchParams({ account: o.id, ...(tabNow !== "all" ? { focus: tabNow } : {}), ...(compare !== "nearest" ? { compare } : {}) }).toString()}` }}
             cols={2}
             links={walks.map((w) => ({ label: w.question, href: walkHref(w, params) }))}
             tiles={walks.map((w) => (
@@ -266,6 +321,8 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
                 {d.source && <p className="text-[12px] text-[var(--field-ink)]">{groupNote("membershipAsOf", { date: d.lastSeen ? shortDate(d.lastSeen) : "—", source: GROUP_SOURCE_LABELS[d.source] ?? d.source })}</p>}
               </div>
             )}
+            {/* Guy, 20 Nov: the comparison set, as on the SMT home -- what it is for, the choices, who is in it. */}
+            <GroupSetsPanel data={ov.status === "ready" ? ov.data : ov.status === "error" ? "error" : "loading"} groupName={o.name} account={o.id} groupHome={groupHome} onPick={setCompare} readOnly={offices.viewAs} />
           </HomeSection>,
         ],
         also,

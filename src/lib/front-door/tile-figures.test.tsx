@@ -31,8 +31,11 @@ test("R-HOME-TILES: the SMT Context tile and its walk ask one address", () => {
   assert.equal(smtContextUrl("110110", "post16"), "/api/smt/context?urn=110110&area=around&level=post16");
   assert.match(src("src/components/front-door/role-walks.tsx"), /smtContextUrl\(member\.schoolUrn, level \?\? "whole"\)/);
   assert.match(src("src/components/front-door/sections.tsx"), /useLateTileFigure<Context>\(s \? smtContextUrl\(member\.schoolUrn, level\)/);
-  assert.match(src("src/components/groups/GroupHome.tsx"), /groupWalkDashUrl\("academic", office\.id, groupWalkCompare\("academic"\)\)/);
-  assert.match(src("src/components/front-door/role-walks.tsx"), /groupWalkDashUrl\(dash, account, compare\)/);
+  // 20 Nov: both at the comparison picked on the home (&compare=, "nearest" by default); the tile on Whole group only,
+  // where the walk's focus is all.
+  assert.match(src("src/components/groups/GroupHome.tsx"), /groupWalkDashUrl\("academic", office\.id, compare \|\| groupWalkCompare\("academic"\)\)/);
+  assert.match(src("src/components/groups/GroupHome.tsx"), /const academic = tabNow === "all" \? academicFigure : null/);
+  assert.match(src("src/components/front-door/role-walks.tsx"), /groupWalkDashUrl\(dash, account, compare, focus\)/);
 });
 
 test("R-HOME-TILES: a late figure is never a placeholder, and none without a projection", () => {

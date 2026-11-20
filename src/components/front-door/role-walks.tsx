@@ -12,7 +12,7 @@ import { effectiveTheme, useThemePref } from "@/components/shell/TeacherChrome";
 import { useSmt, type Overview, type SmtSchool, type Academic, type Load as SmtLoad } from "@/components/smt/api";
 import { loadSmtMember, type SmtMember } from "@/components/smt/member";
 import { useSmtSet } from "@/components/smt/useSmtSet";
-import { smtVars } from "@/components/smt/ui";
+import { phaseVars, smtVars } from "@/components/smt/ui";
 import { LEVEL_LABEL, setPhaseOf } from "@/lib/smt/levels";
 import type { Pupils } from "@/lib/smt/pupils";
 import type { Context } from "@/lib/smt/context";
@@ -375,11 +375,15 @@ function GroupWalk({ walk }: { walk: Walk }) {
   const sp = useSearchParams();
   const account = sp.get("account");
   const [compare, setCompare] = useState<string | null>(() => sp.get("compare") ?? groupWalkCompare(dash));
+  // 20 Nov: a phase tab on the group home (?focus=) opens the walk at that phase, in the tab's colour.
+  const fq = sp.get("focus");
+  const focus = fq === "primary" || fq === "secondary" || fq === "post16" ? fq : "all";
+  const tab = useWalkTab(walk);
   // The home's Academic tile reads this same address for its first screen (tile-figures.ts, front door 2b).
-  const load = useSmt<DashResponse>(groupWalkDashUrl(dash, account, compare), null);
+  const load = useSmt<DashResponse>(groupWalkDashUrl(dash, account, compare, focus), null);
   const projQ = new URLSearchParams(account ? { account } : {});
   const proj = useSmt<{ rows: ProjectionRow[] }>(walk.screens.some((s) => s.view === "GRP-P-PROJECTION") ? `/api/group/projection?${projQ.toString()}` : null, null);
-  const dashHref = account ? `${walk.dashboard}?account=${account}` : walk.dashboard;
+  const dashHref = `${walk.dashboard}?${new URLSearchParams({ ...(account ? { account } : {}), ...(focus !== "all" ? { focus } : {}), ...(compare ? { compare } : {}) }).toString()}`;
   const w = useMemo(() => ({ ...walk, dashboard: dashHref }), [walk, dashHref]);
   if (load.status === "loading") return <Loading walk={w} />;
   if (load.status === "error") return <WalkError walk={w} what="the group's figures" code={load.code} message={load.code === 404 ? "This group wasn't found, or you can't see it." : load.message} home={account ? `/teacher/group?account=${encodeURIComponent(account)}` : "/teacher/group"} />;
@@ -412,7 +416,7 @@ function GroupWalk({ walk }: { walk: Walk }) {
           {view.flag}
         </>
       ),
-      body: <div style={groupDashVars(theme)} data-group-walk-view={s.view}>{view.body}</div>,
+      body: <div style={{ ...groupDashVars(theme), ...phaseVars(theme, tab) }} data-group-walk-view={s.view}>{view.body}</div>,
     };
   });
   const n2 = walk.screens.length;
