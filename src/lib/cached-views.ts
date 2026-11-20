@@ -14,6 +14,7 @@
 import { cachedResult, resultKey } from "./results-cache";
 import type { SmtAdmissionsReader } from "./smt/auth-rules";
 import { smtSchool, type SmtSchool } from "./smt/school";
+import { dependOn, type BuildTrace } from "./build-trace";
 import { buildOverview, type SmtSet } from "./smt/overview";
 import { buildAcademic } from "./smt/academic";
 import type { AcademicState } from "./smt/qual-groups";
@@ -43,8 +44,19 @@ const setKey = (s: SmtSet) => ({ kind: s.kind, label: s.label, urns: s.urns });
 /** The school as SMT's chips need it (/api/smt/school): public data only (the anon client, the national
  * populations, the IGCSE list, England's schools), the same for every caller, so keyed on the URN alone.
  * "No such school" (null) isn't kept. */
-export function cachedSmtSchool(urn: string) {
-  return cachedResult(resultKey("smt/school", urn, {}), () => smtSchool(urn), { shouldStore: (s) => s !== null });
+/** `started`: the route's own read, begun alongside its caller check -- reused as the build, so the shared store
+ * is only asked (and only ever written) once the caller has passed. */
+export function cachedSmtSchool(urn: string, started?: { trace: BuildTrace; promise: Promise<SmtSchool | null> }) {
+  return cachedResult(
+    resultKey("smt/school", urn, {}),
+    () => {
+      if (!started) return smtSchool(urn);
+      // Begun outside this build: link its trace in, so a read it carried past still keeps the answer out of the store.
+      dependOn(started.trace);
+      return started.promise;
+    },
+    { shouldStore: (s) => s !== null },
+  );
 }
 
 /** Overview: the caller matters only through whether a head office may see the school's Admissions
