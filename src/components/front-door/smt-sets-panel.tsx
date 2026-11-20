@@ -14,7 +14,9 @@ import type { Overview } from "@/components/smt/api";
 import type { SmtSetState } from "@/components/smt/useSmtSet";
 import { DEFAULT_SET_LABEL } from "@/components/smt/useSmtSet";
 import { smtVars } from "@/components/smt/ui";
-import { SetMap } from "@/components/smt/views/SetMap";
+import { SetMap, TREND_HEX } from "@/components/smt/views/SetMap";
+import { RollIndexed } from "@/components/smt/views/Lines";
+import { periodLabel, ROLL_DIRECTION_SPAN, ROLL_WORD } from "@/catalogue/years";
 import { NEAREST_KEY, rankingKey, teacherEditorHref, teacherMenuRows } from "@/components/sets/teacherMenu";
 import type { SetMenuRow } from "@/components/sets/SetSelector";
 import { guidedHref } from "@/lib/sets/guided";
@@ -91,7 +93,7 @@ export function setStory(i: SetStoryInput): string {
   const n = `${i.count.toLocaleString("en-GB")} ${i.count === 1 ? "school" : "schools"}`;
   const sector = i.independent ? "independent" : "state";
   const stage = i.phase === "ks5" ? "with a sixth form" : i.phase === "ks4" ? "teaching GCSE" : "of the same phase";
-  const measure = i.phase === "ks5" ? "A level average points per entry" : i.phase === "ks4" ? "Attainment 8" : "their headline results";
+  const measure = i.phase === "ks5" ? "academic points per entry (A level, IB, Pre-U)" : i.phase === "ks4" ? "Attainment 8" : "their headline results";
   const area = i.laName ? `in and around ${i.laName}` : "nearby";
   switch (i.key) {
     case "nearest":
@@ -103,7 +105,7 @@ export function setStory(i: SetStoryInput): string {
     case "default:region-all": {
       const where = i.key === "default:nation" ? "England" : regionWords(i.regionName);
       const who = i.key === "default:region-all" ? (i.phase === "ks5" ? "sixth forms and colleges, state and independent," : "schools, state and independent,") : `${sector} schools`;
-      const results = i.phase === "ks5" ? "A level results" : i.phase === "ks4" ? "GCSE results" : "results";
+      const results = i.phase === "ks5" ? "academic results (A level, IB or Pre-U)" : i.phase === "ks4" ? "GCSE results" : "results";
       const of = i.ranked?.of ?? i.count + 1;
       const place = i.ranked?.rank ? ` ${i.schoolName} ranks ${ordinalOf(i.ranked.rank)} of ${of.toLocaleString("en-GB")} by ${measure}, and the walks compare it with the middle of them, not the top.` : ` ${i.schoolName} has no published ${measure} to rank.`;
       return `This set includes all ${(of - (i.ranked?.rank ? 1 : 0)).toLocaleString("en-GB")} ${who} in ${where} with published ${results}.${place}`;
@@ -236,8 +238,11 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
         </div>
         <div className="min-w-0" data-smt-set-show="">
           {set && rt ? (
-            <div style={smtVars(theme) as CSSProperties}>
+            <div className="flex flex-col gap-3" style={smtVars(theme) as CSSProperties}>
               <RankTable rt={rt} schoolName={schoolName} phase={phase} />
+              {/* 20 Nov: what the map's colours say for a small set -- each school's roll over 3 years -- for the
+                  whole population, with the school's roll against the set's average (the Overview walk's chart). */}
+              {oNow && <SetRolls o={oNow} urn={urn} schoolName={schoolName} />}
             </div>
           ) : !set || (n !== null && n <= SET_MAP_MAX && !oNow) ? (
             <div className="flex min-h-[340px] items-center justify-center rounded-[10px] border border-[var(--panel-border)] text-[13px] text-[var(--muted2)]">
@@ -289,7 +294,7 @@ export function SmtSetsPanel({ urn, schoolName, school = null, phase, sets, o, r
 function RankTable({ rt, schoolName, phase }: { rt: NonNullable<SmtSetState["rankTable"]>; schoolName: string; phase: "ks2" | "ks4" | "ks5" | null }) {
   const chunks = chunkedRankingDisplay(rt.ranking, rt.targetRank);
   const fmt = (v: number) => v.toFixed(phase === "ks4" ? 1 : 2);
-  const measure = phase === "ks5" ? "A level points per entry" : phase === "ks4" ? "Attainment 8" : "Headline";
+  const measure = phase === "ks5" ? "academic points per entry (A level, IB, Pre-U)" : phase === "ks4" ? "Attainment 8" : "Headline";
   return (
     <div data-smt-rank-table="" className="flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] px-4 py-3">
       <p className="text-[15px] font-semibold">
@@ -323,6 +328,46 @@ function RankTable({ rt, schoolName, phase }: { rt: NonNullable<SmtSetState["ran
           </tbody>
         ))}
       </table>
+    </div>
+  );
+}
+
+/** A large set's rolls, as the map colours a small one's: how many are growing, steady and shrinking on the shared
+ * 3-year rule (Overview.rolls, the map's own), the middle school's change against this school's, and the school's
+ * roll against the set's average, indexed (RollIndexed, the Overview walk's "Has the roll grown or shrunk?"). */
+export function setRollSummary(o: Pick<Overview, "rolls">, urn: string, setUrns: string[]) {
+  const trends = setUrns.filter((u) => u !== urn).map((u) => o.rolls[u]?.trend).filter((t): t is NonNullable<typeof t> => !!t);
+  const count = { up: 0, flat: 0, down: 0 } as Record<"up" | "flat" | "down", number>;
+  for (const t of trends) count[t.dir] += 1;
+  const pcts = trends.map((t) => t.pct).sort((a, b) => a - b);
+  const median = pcts.length ? (pcts.length % 2 ? pcts[(pcts.length - 1) / 2] : (pcts[pcts.length / 2 - 1] + pcts[pcts.length / 2]) / 2) : null;
+  const mine = o.rolls[urn]?.trend ?? null;
+  const span = trends[0] ?? mine;
+  return { count, median, mine, schools: trends.length, from: span?.from ?? null, to: span?.to ?? null };
+}
+
+const signedPct = (v: number) => `${v > 0.5 ? "▲ " : v < -0.5 ? "▼ " : ""}${Math.abs(v).toFixed(0)}%`;
+
+function SetRolls({ o, urn, schoolName }: { o: Overview; urn: string; schoolName: string }) {
+  const r = setRollSummary(o, urn, Object.keys(o.rolls));
+  if (!r.schools) return null;
+  const years = r.from !== null && r.to !== null ? ` (${periodLabel(r.from)} to ${periodLabel(r.to)})` : "";
+  return (
+    <div data-smt-set-rolls="" className="flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] px-4 py-3">
+      <p className="text-[15px] font-semibold">Pupil numbers across the set</p>
+      <p className="text-[13.5px] leading-relaxed">
+        Roll over {ROLL_DIRECTION_SPAN} years{years}: {schoolName} {r.mine ? <b>{signedPct(r.mine.pct)}</b> : "no roll trend"}; the middle school in the set {r.median !== null ? <b>{signedPct(r.median)}</b> : "—"}.
+      </p>
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-[13px]">
+        {(["up", "flat", "down"] as const).map((d) => (
+          <span key={d} className="inline-flex items-center gap-1.5">
+            <span className="h-[10px] w-[10px] rounded-full" style={{ background: TREND_HEX[d] }} aria-hidden="true" />
+            {r.count[d].toLocaleString("en-GB")} {ROLL_WORD[d].toLowerCase()}
+          </span>
+        ))}
+        <span className="text-[var(--muted2)]">of {r.schools.toLocaleString("en-GB")} with a census roll</span>
+      </p>
+      <RollIndexed o={o} fullscreen={false} />
     </div>
   );
 }

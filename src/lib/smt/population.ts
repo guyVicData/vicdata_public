@@ -12,11 +12,8 @@ import { HISTORIC_GRADE_FROM } from "@/catalogue/years";
 import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
 
 // The measures SMT reads, by key stage, as academic_headline_snapshot names them.
-export const SMT_MEASURES = {
-  ks4: { a8: "attainment8_average", em5: "engmath_95_percent", em4: "engmath_94_percent", p8: "progress8_average", p8lo: "progress8_lower_95_ci", p8hi: "progress8_upper_95_ci" },
-  ks5: { aps: "A level::aps_per_entry", va: "A level::value_added", valo: "A level::value_added_lower_ci", vahi: "A level::value_added_upper_ci", band: "A level::progress_banding" },
-  ks2: { rwm: KS2_HEADLINE },
-} as const;
+export { SMT_MEASURES } from "./measures";
+import { SMT_MEASURES } from "./measures";
 
 // The qualification types DfE publishes A-level-stage value added for (the headline's prefixes).
 export const VA_QUALS = ["A level", "Academic", "Applied general", "Tech level"] as const;

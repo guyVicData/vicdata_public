@@ -4,6 +4,7 @@
 // Phone.dc.html). Roll and its change since 2019/20; girls · boys (or day · boarding at a boarding
 // school); each phase's headline with its national rank; A-level value added; Progress 8 or the
 // reason it isn't there (R-SMT-P8-REASON); the school page's XS-XL by phase. R-SMT-VIEW-NOW.
+import { SMT_MEASURES } from "@/lib/smt/measures";
 import { BADGE_ORDER, comparisonCaption } from "@/components/dashboard/PhaseBreakdownCard";
 import { Lbl, PairTile, Tile, cx } from "@/components/admissions/ui";
 import { CENSUS_FIRST_PERIOD, periodLabel } from "@/catalogue/years";
@@ -79,7 +80,7 @@ export function SchoolNow({ o, school, compact = false }: { o: Overview; school:
   const n = o.now;
   const row = (key: string) => o.rows.find((r) => r.key === key);
   const a8 = row("attainment8_average");
-  const aps = row("A level::aps_per_entry");
+  const aps = row(SMT_MEASURES.ks5.aps);
   const ks2 = o.rows.find((r) => r.stage === "ks2");
   const change = n.changePct === null ? "—" : `${arrowed(n.changePct, (x) => `${x.toFixed(0)}%`, 0)} since ${periodLabel(CENSUS_FIRST_PERIOD)}`;
   const tiles = [
@@ -99,9 +100,9 @@ export function SchoolNow({ o, school, compact = false }: { o: Overview; school:
       ),
     );
   }
-  if (school.phases.post16) tiles.push(<Tile key="aps" small label="Points per entry · A level" value={fmt(aps?.value, "points", aps?.key)} sub={setRankSub(aps, o.set.short)} />);
+  if (school.phases.post16) tiles.push(<Tile key="aps" small label="Points per entry · Academic" value={fmt(aps?.value, "points", aps?.key)} sub={setRankSub(aps, o.set.short)} />);
   if (ks2) tiles.push(<Tile key="ks2" small label="KS2 · reading, writing, maths" value={fmt(ks2.value, "pct")} sub={setRankSub(ks2, o.set.short)} />);
-  if (school.phases.post16) tiles.push(o.va ? <Tile key="va" small label="A-level value added" value={fmt(o.va.value, "va")} sub={`DfE, ${yearOf(o.va.period)}`} /> : <NoteTile key="va" label="A-level value added" title="Not published" sub={SMT_NOTES.vaNotPublished} />);
+  if (school.phases.post16) tiles.push(o.va ? <Tile key="va" small label="Academic value added" value={fmt(o.va.value, "va")} sub={`DfE, ${yearOf(o.va.period)}`} /> : <NoteTile key="va" label="Academic value added" title="Not published" sub={SMT_NOTES.vaNotPublished} />);
   if (school.phases.gcse) tiles.push(o.p8.status === "published" ? <Tile key="p8" small label="Progress 8" value={fmt(o.p8.value, "va")} sub={`${yearOf(o.p8.period)}; none since (no KS2 baseline)`} /> : <NoteTile key="p8" label="Progress 8" title="Not published" sub={o.p8.status === "independent" ? "for independent schools" : o.p8.status === "no_baseline" ? o.p8.text.replace(/^Progress 8 is not published /, "") : o.p8.text} />);
   // F-8 (R-INDEP-ENTRY-TILES): an independent school's GCSE note and Progress 8 note give way to its entry
   // tiles -- the label, this year's number and one change since 2019/20; the arithmetic is in the (i).

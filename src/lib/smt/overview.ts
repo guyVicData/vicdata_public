@@ -311,8 +311,8 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtA
     results.push({ stage: "ks4", key: SMT_MEASURES.ks4.em5, label: "Grade 5+ in English and maths", unit: "pct", pop: ks4, trend: false });
   }
   if (school.phases.post16) {
-    results.push({ stage: "ks5", key: SMT_MEASURES.ks5.aps, label: "A level: points per entry", unit: "points", pop: ks5, trend: true });
-    results.push({ stage: "ks5", key: SMT_MEASURES.ks5.va, label: "A-level value added", unit: "va", pop: ks5, trend: false });
+    results.push({ stage: "ks5", key: SMT_MEASURES.ks5.aps, label: "Academic: points per entry", unit: "points", pop: ks5, trend: true });
+    results.push({ stage: "ks5", key: SMT_MEASURES.ks5.va, label: "Academic value added", unit: "va", pop: ks5, trend: false });
   }
   if (school.phases.primary && school.results.ks2) results.push({ stage: "ks2", key: SMT_MEASURES.ks2.rwm, label: "KS2: reading, writing and maths", unit: "pct", pop: ks2, trend: false });
 
@@ -322,7 +322,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, caller: SmtA
     const exclude = r.stage === "ks4" ? igcse : new Set<string>();
     // F-3: an IGCSE school isn't ranked on its whole-school GCSE figures, so the rows are left out.
     if (r.stage === "ks4" && schoolIgcse) continue;
-    // A-level value added: the latest year it is published (2023/24 and 2024/25 so far).
+    // Academic value added: the latest year it is published (2023/24 and 2024/25 so far).
     const p = r.unit === "va" ? [period, period - 1].find((y) => figure(r.pop, urn, y, r.key) !== null) ?? period : period;
     const places = await placesOn(r.pop, p, r.key, [urn], exclude);
     const place = places.get(urn)!;

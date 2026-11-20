@@ -15,7 +15,7 @@ export const SMT_FLAG_RULES = {
 
 // 0.8 audit fixes (3, S1): the flags caption, filled the one way. The results clause names the
 // school's own measures (GCSE unless it sits IGCSEs, Post-16 where it has one); none, no clause.
-const GAP_WORDS = { ks4: (n: number) => `${n} Attainment 8 points`, ks5: (n: number) => `${n} A-level points per entry` };
+const GAP_WORDS = { ks4: (n: number) => `${n} Attainment 8 points`, ks5: (n: number) => `${n} academic points per entry` };
 export function flagsRuleText(p: { gcse: boolean; post16: boolean; igcse?: boolean }): string {
   const stages = [...(p.gcse && !p.igcse ? (["ks4"] as const) : []), ...(p.post16 ? (["ks5"] as const) : [])];
   if (!stages.length) return smtNote("flagsRuleNoResults");

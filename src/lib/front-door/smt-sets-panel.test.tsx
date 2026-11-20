@@ -69,7 +69,7 @@ test("SMT sets panel: a ranking is its whole population -- the school's real pla
   const ranking = Array.from({ length: 135 }, (_, i) => ({ urn: `${1000 + i}`, name: i === 37 ? "Leighton Park School" : `School ${i + 1}`, value: 50 - i * 0.1, rank: i + 1, isTarget: i === 37 }));
   const sets = { ...state({ kind: "ranking", label: "Independent schools in the South East", filters: {} as never, rankingId: null }, 134), rankTable: { ranking, targetRank: 38, ranked: 135, measure: "A level::aps_per_entry", period: 2025 } };
   const html = draw(sets);
-  assert.match(html, /This set includes all 134 independent schools in the South East with published A level results\. Leighton Park School ranks 38th of 135/);
+  assert.match(html, /This set includes all 134 independent schools in the South East with published academic results \(A level, IB or Pre-U\)\. Leighton Park School ranks 38th of 135 by academic points per entry \(A level, IB, Pre-U\)/);
   assert.match(html, /compare it with the middle of them, not the top/);
   assert.doesNotMatch(html, /top 15/);
   assert.match(html, /data-smt-rank-table/);
@@ -78,4 +78,15 @@ test("SMT sets panel: a ranking is its whole population -- the school's real pla
   assert.match(html, /Bottom 3/);
   assert.equal((html.match(/data-rank-row="you"/g) ?? []).length, 1);
   assert.doesNotMatch(html, /Edit a copy|Edit this set/);
+});
+
+test("SMT sets panel: a large set's rolls -- growing, steady and shrinking on the map's rule, the middle school's change against ours", async () => {
+  const { setRollSummary } = await import("@/components/front-door/smt-sets-panel");
+  const t = (dir: "up" | "flat" | "down", pct: number) => ({ roll: 500, year: 2025, trend: { dir, word: dir, pct, from: 2022, to: 2025 } });
+  const rolls = { "110110": t("up", 4), a: t("up", 6), b: t("flat", 0.2), c: t("down", -3), d: t("down", -8), e: { roll: null, year: null, trend: null } };
+  const r = setRollSummary({ rolls } as never, "110110", Object.keys(rolls));
+  assert.deepEqual(r.count, { up: 1, flat: 1, down: 2 });
+  assert.equal(r.schools, 4);
+  assert.equal(r.median, -1.4);
+  assert.equal(r.mine?.pct, 4);
 });

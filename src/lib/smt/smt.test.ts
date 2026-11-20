@@ -181,8 +181,8 @@ const flagForms = {
   };
 test("flags caption (0.8 audit fixes, 3, S1): names the school's own measures and sizes", () => {
     assert.match(flagForms.gcse, /differs from the set's middle change by at least 2 Attainment 8 points \(with at least 4 set schools to compare\)/);
-    assert.match(flagForms.post16, /by at least 3 A-level points per entry \(/);
-    assert.match(flagForms.both, /by at least 2 Attainment 8 points at GCSE or 3 A-level points per entry at Post-16 \(/);
+    assert.match(flagForms.post16, /by at least 3 academic points per entry \(/);
+    assert.match(flagForms.both, /by at least 2 Attainment 8 points at GCSE or 3 academic points per entry at Post-16 \(/);
     assert.equal(flagForms.igcseWithSixthForm, flagForms.post16);
   });
 test("flags caption (0.8 audit fixes, 3, S1): a school with no GCSE or Post-16 results has no results clause", () => {

@@ -38,7 +38,7 @@ export function summaryLine(o: Overview): string {
   const parts: string[] = [];
   if (o.now.changePct !== null) parts.push(`Roll ${arrowed(o.now.changePct, (x) => `${x.toFixed(0)}%`, 0)} since ${periodLabel(CENSUS_FIRST_PERIOD)}`);
   const head = o.rows.find((r) => r.stage && r.stage !== "ks2" && r.unit === "points" && r.set);
-  if (head?.set) parts.push(`${head.label === "A level: points per entry" ? "A-level points" : head.label} ${head.set.rank} of ${head.set.of}`);
+  if (head?.set) parts.push(`${head.label === "Academic: points per entry" ? "Academic points" : head.label} ${head.set.rank} of ${head.set.of}`);
   parts.push(o.flags.length === 1 ? "1 flag" : `${o.flags.length} flags`);
   return parts.join(" · ");
 }

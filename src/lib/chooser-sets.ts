@@ -10,6 +10,8 @@
 //     and the column is given the top 15 and the ten schools either side of this one --
 //     a population of thousands cannot be drawn school by school, and the note says
 //     where the school actually stands in the whole of it.
+import { SMT_MEASURES } from "./smt/measures";
+import { figure, num, population as smtPopulation } from "./smt/population";
 import { placeWord } from "./view-series/tiles";
 import { igcseEngland } from "./igcse";
 import { igcseNotRankedLine, igcseTargetLine } from "./igcse-words";
@@ -142,14 +144,17 @@ export async function resolveRankingPopulation(targetUrn: string, targetName: st
   const urns = matched.map((r) => r[0]).filter((u) => !igcse.has(u));
   if (!urns.includes(targetUrn) && !igcse.has(targetUrn)) urns.push(targetUrn);
   names.set(targetUrn, names.get(targetUrn) ?? targetName);
-  const measure = HEADLINE_MEASURE[phase];
-  const headline = await lookupAcademicHeadline({ entityIds: urns, ksStage: phase });
+  // SMT's own Post-16 headline (Academic: A level, IB, Pre-U on one scale), so the set ranks on what SMT shows.
+  const measure = phase === "ks5" ? SMT_MEASURES.ks5.aps : HEADLINE_MEASURE[phase];
+  // SMT's own national population (smt/population.ts, cached), the scorecard's source, in its latest year with
+  // a figure, with no older figure standing in: the table's place is the scorecard's set rank.
+  const pop = await smtPopulation(phase);
+  let year = -Infinity;
+  for (const u of urns) for (const [p, m] of pop.get(u) ?? []) if (p > year && num(m[measure]) !== null) year = p;
   const latest = new Map<string, { period: number; value: number }>();
-  for (const h of headline) {
-    const v = Number(h.measures[measure]);
-    if (!Number.isFinite(v)) continue;
-    const cur = latest.get(h.entity_id);
-    if (!cur || h.period > cur.period) latest.set(h.entity_id, { period: h.period, value: v });
+  for (const u of urns) {
+    const v = figure(pop, u, year, measure);
+    if (v !== null) latest.set(u, { period: year, value: v });
   }
   const order = urns.filter((u) => latest.has(u)).sort((a, b) => latest.get(b)!.value - latest.get(a)!.value || a.localeCompare(b));
   // Standard competition ranking (ties share a place), as every ranking here.
@@ -159,7 +164,7 @@ export async function resolveRankingPopulation(targetUrn: string, targetName: st
     const rank = i > 0 && ranking[i - 1].value === value ? ranking[i - 1].rank : i + 1;
     ranking.push({ urn: u, name: names.get(u) ?? u, value, rank, isTarget: u === targetUrn });
   });
-  const periods = Array.from(latest.values()).map((x) => x.period);
+  const periods = Number.isFinite(year) ? [year] : [];
   return {
     rows: order.filter((u) => u !== targetUrn).map((urn) => ({ urn })),
     ranking,

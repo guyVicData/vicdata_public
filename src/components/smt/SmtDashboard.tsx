@@ -8,6 +8,7 @@
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
+import { SMT_MEASURES } from "@/lib/smt/measures";
 import { useEditorReturnReload } from "@/lib/sets/editor-return";
 import { indexBaseWords, indexedLabel } from "@/lib/index-base";
 import { signedDelta } from "@/lib/signed-delta";
@@ -1022,7 +1023,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
                 </div>
               )}
               {dv.endsWith("TABLE") ? (
-                <BandTable title={`${t.label} against ${o.set.label}`} school={t.school} band={t.band} unit="points" setLabel={o.set.label} valueKey={t.stage === "ks5" ? "A level::aps_per_entry" : undefined} />
+                <BandTable title={`${t.label} against ${o.set.label}`} school={t.school} band={t.band} unit="points" setLabel={o.set.label} valueKey={t.stage === "ks5" ? SMT_MEASURES.ks5.aps : undefined} />
               ) : (
                 <ResultsBand schoolName={c.school.name.replace(/ School$/, "")} trend={t} setLabel={o.set.label} fullscreen={fullscreen} room={room} title={`${t.stage === "ks4" ? "GCSE" : "Post-16"} results against ${o.set.label}`} />
               )}
