@@ -57,17 +57,15 @@ export function familyPopulation(stage: "ks4" | "ks5", latest: number, urns: str
     const out = new Map<string, Map<string, Map<number, FamilyFigure>>>();
     const chunks: string[][] = [];
     for (let i = 0; i < urns.length; i += 150) chunks.push(urns.slice(i, i + 150));
-    let next = 0;
-    await Promise.all(Array.from({ length: 6 }, async () => {
-      while (next < chunks.length) {
-        const c = chunks[next++];
-        const rows = await lookupAcademicSubjectFamily({ entityIds: c, ksStage: stage, periodMin: firstResultsYear(latest) });
-        for (const r of rows) {
-          const byFam = out.get(r.entity_id) ?? out.set(r.entity_id, new Map()).get(r.entity_id)!;
-          (byFam.get(r.family_id) ?? byFam.set(r.family_id, new Map()).get(r.family_id)!).set(r.period, { avg: r.avg_point_score === null ? null : Number(r.avg_point_score), entries: Number(r.entries_total) });
-        }
+    // 20 Nov: the same 6 reads at a time, each now tried twice (limited.ts) -- one failed chunk failed the whole
+    // rivals view -- and folded in chunk order rather than as each came back.
+    const parts = await mapLimited(chunks, 6, (c) => lookupAcademicSubjectFamily({ entityIds: c, ksStage: stage, periodMin: firstResultsYear(latest) }));
+    for (const rows of parts) {
+      for (const r of rows) {
+        const byFam = out.get(r.entity_id) ?? out.set(r.entity_id, new Map()).get(r.entity_id)!;
+        (byFam.get(r.family_id) ?? byFam.set(r.family_id, new Map()).get(r.family_id)!).set(r.period, { avg: r.avg_point_score === null ? null : Number(r.avg_point_score), entries: Number(r.entries_total) });
       }
-    }));
+    }
     return out;
   });
 }
