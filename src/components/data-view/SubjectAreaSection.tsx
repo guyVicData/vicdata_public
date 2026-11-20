@@ -179,12 +179,11 @@ export function buildCategoryRows(
 // re-exported here so existing imports keep working.
 export { POINTS_BEARING_QUALIFICATION };
 
-// Trims the DfE band/grade-structure suffix off a qualification label so a
-// disambiguating row label stays readable: "BTEC National Foundation Diploma L3 -
-// Band H - P-D*" becomes "BTEC National Foundation Diploma L3". Purely cosmetic.
-export function shortQualificationLabel(qualificationType: string): string {
-  return qualificationType.split(" - Band ")[0].replace(/\s*\(any AO and grade structure\)/i, "").trim();
-}
+// shortQualificationLabel lives in a plain module so server code can call it too
+// (src/lib/qualification-short-label.ts); imported for this file's own use and re-exported for
+// existing client importers.
+import { shortQualificationLabel } from "@/lib/qualification-short-label";
+export { shortQualificationLabel };
 
 // SUBJECT mode: real subjects mapped to the active family via
 // academic_subject_family_map_lookup (subjectData.subjectFamilyMap) for candidates

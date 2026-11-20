@@ -7,7 +7,7 @@
 import { comparabilityKey, comparabilityLabel } from "./teacher-view-catalogue";
 import { displayBucketFor, KS5_BUCKET_LABEL } from "./dfe-qualification-buckets";
 import type { TeacherPhase } from "./teacher-view-phases";
-import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
+import { shortQualificationLabel } from "@/lib/qualification-short-label";
 
 // The phase accent: column icon backgrounds, the 3px bar on every card, the builder
 // link, the active fullscreen icon. KS2 has its own, different design (the rebuild brief

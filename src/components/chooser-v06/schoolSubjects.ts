@@ -13,7 +13,7 @@ import { familyFor } from "@/lib/teacher-view-catalogue";
 import { fetchPreferences } from "@/lib/teacher-view-data";
 import { subjectItemsOf } from "@/lib/teacher-view-populations";
 import { QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
-import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
+import { shortQualificationLabel } from "@/lib/qualification-short-label";
 import type { SubjectSource } from "./StepScreens";
 
 type Phase = "ks4" | "ks5";
