@@ -64,16 +64,41 @@ export function schoolCensus(urn: string): Promise<RollSnapshot[]> {
  * set (134 to 490 schools) made the Overview's set lines and map rolls hundreds of requests, which stalled live.
  * Each school's answer is cached as schoolCensus caches it, so a later single read is a hit. */
 const CENSUS_BATCH = 40;
+const CENSUS_AT_ONCE = 3;
 export async function schoolCensuses(urns: string[]): Promise<Map<string, RollSnapshot[]>> {
   const uniq = Array.from(new Set(urns));
   const key = (u: string) => `smt:census:${u}`;
   const chunks: string[][] = [];
   for (let i = 0; i < uniq.length; i += CENSUS_BATCH) chunks.push(uniq.slice(i, i + CENSUS_BATCH));
   const out = new Map<string, RollSnapshot[]>();
+  // 20 Nov (evening): CENSUS_AT_ONCE reads at a time, each retried once. All of a 488-school set's 13 reads at once
+  // made production cancel 11 of them at its statement timeout ("canceling statement due to statement timeout"), so
+  // 440-480 of the 488 schools came back with no census and the Overview was built without them (and, built past a
+  // failed read, never kept by the results cache). Three at a time: 13 reads in ~4 s, none failed.
+  const read = async (chunk: string[]) => {
+    try {
+      return await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk });
+    } catch {
+      await new Promise((r) => setTimeout(r, 500));
+      return lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk });
+    }
+  };
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  const limited = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    if (running >= CENSUS_AT_ONCE) await new Promise<void>((r) => waiting.push(r));
+    running++;
+    try {
+      return await fn();
+    } finally {
+      running--;
+      waiting.shift()?.();
+    }
+  };
   await Promise.all(
     chunks.map(async (chunk) => {
       const batch = cachedReference(`smt:census-batch:${chunk.join(",")}`, async () => {
-        const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk }).catch(() => (markDegraded(), []));
+        const facts = await limited(() => read(chunk)).catch(() => (markDegraded(), []));
         const by = new Map<string, typeof facts>();
         for (const f of facts) (by.get(f.entity_id) ?? by.set(f.entity_id, []).get(f.entity_id)!).push(f);
         return new Map(chunk.map((u) => [u, buildRollTrend(by.get(u) ?? [], u)]));
