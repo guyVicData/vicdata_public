@@ -23,8 +23,16 @@
 // build is complete for the current data version is skipped (a few small reads, a second or two), so a night with
 // no new data costs next to nothing; --force builds it anyway.
 //
+// --stage census (SMT's Overview, docs/v0.8/smt_overview_figures_v1.md): every school's census figures for the
+// Overview (src/lib/smt/overview-figures.ts overviewFigures), from the same two census reads the Overview makes
+// (school.ts schoolCensuses' read by year, admissions/data.ts fetchCensus's age by age), one row per school. Its
+// version moves with a school census promote, the GIAS refresh and a school sync. The schools: every open school
+// in the app's schools table, and every school in SMT's national headline populations (colleges, closed schools
+// with figures). Needs migration 20261125110000, so not built by default: say --stage census, or --stage all
+// (ks4, ks5 and census; the nightly job's command once that migration is applied).
+//
 // Usage:
-//   npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts (--pglite DIR | --out FILE | --live) [--stage ks4|ks5] [--school URN,URN] [--concurrency N] [--force | --check]
+//   npx tsx --env-file=.env --env-file=.env.local scripts/build-smt-figures.ts (--pglite DIR | --out FILE | --live) [--stage ks4|ks5|census|all] [--school URN,URN] [--concurrency N] [--force | --check]
 //   --school   build only these schools (testing; never marked complete with --live; never skipped)
 //   --force    build even when the stored build is complete for the current version
 //   --check    say, per stage, whether the stored build is up to date, and write nothing (read-only, even with --live)
@@ -35,6 +43,10 @@ import { qualRows, subjectVa, type VaFact } from "../src/lib/smt/academic-data";
 import { population } from "../src/lib/smt/population";
 import { BUILD_FROM, encodeSchool, figuresVersion, type FiguresRow, type Stage } from "../src/lib/smt/smt-figures-store";
 import { openFiguresPglite } from "./lib/smt-figures-pglite";
+import { CENSUS_STAGE, censusVersion, encodeCensusSchool, type CensusRow } from "../src/lib/smt/overview-figures-store";
+import { fetchCensus } from "../src/lib/admissions/data";
+import { buildRollTrend } from "../src/lib/roll-data";
+import { lookupReferenceData } from "../src/lib/vicdata-reference";
 
 const args = process.argv.slice(2);
 const flag = (n: string) => args.includes(n);
@@ -55,7 +67,9 @@ if (FORCE && CHECK) {
   console.error("--force builds and --check doesn't: pass one.");
   process.exit(2);
 }
-const STAGES: Stage[] = opt("--stage") ? [opt("--stage") as Stage] : ["ks4", "ks5"];
+type AnyStage = Stage | typeof CENSUS_STAGE;
+const STAGE_OPT = opt("--stage");
+const STAGES: AnyStage[] = STAGE_OPT === "all" ? ["ks4", "ks5", CENSUS_STAGE] : STAGE_OPT ? [STAGE_OPT as AnyStage] : ["ks4", "ks5"];
 const ONLY = (opt("--school") ?? "").split(",").filter(Boolean);
 const CONCURRENCY = Number(opt("--concurrency") ?? 4);
 const BATCH: Record<Stage, number> = { ks4: 10, ks5: 20 }; // the area rollup pages at 1,000 rows; qualRows chunks by 20
@@ -101,7 +115,7 @@ async function schoolsFor(stage: Stage): Promise<string[]> {
 
 // ------------------------------------------------------------------------------------------ writers
 
-type Writer = { /** Is a complete build stored for this stage and version? */ complete(stage: Stage, version: string): Promise<boolean>; start(stage: Stage, version: string): Promise<void>; write(stage: Stage, version: string, rows: FiguresRow[]): Promise<void>; finish(stage: Stage, version: string, s: { schools: number; rows: number; bytes: number }, complete: boolean): Promise<void>; close(): Promise<void> };
+type Writer = { /** Is a complete build stored for this stage and version? */ complete(stage: AnyStage, version: string): Promise<boolean>; start(stage: AnyStage, version: string): Promise<void>; write(stage: AnyStage, version: string, rows: (FiguresRow | CensusRow)[]): Promise<void>; finish(stage: AnyStage, version: string, s: { schools: number; rows: number; bytes: number }, complete: boolean): Promise<void>; close(): Promise<void> };
 
 async function pgliteWriter(dir: string): Promise<Writer> {
   const db = await openFiguresPglite(dir);
@@ -202,15 +216,69 @@ async function buildStage(stage: Stage, version: string, w: Writer) {
   console.log(`${stage}: ${complete ? "complete" : after !== version ? `NOT complete: the data changed during the build (${after}); run again` : "written, not marked complete (--school)"} -- ${totals.schools} schools (${totals.withData} with figures), ${totals.rows} rows, ${(totals.bytes / 1e6).toFixed(1)} MB of JSON, ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 }
 
+// ------------------------------------------------------------------------------------------ the census (Overview)
+
+const CENSUS_BATCH = 40; // school.ts schoolCensuses' and data-view-profiles' fetchCensusFactsBatched's chunk
+// Three batches at a time (school.ts CENSUS_AT_ONCE): whole-census reads in a burst get cancelled at production's
+// reference statement timeout (f803f1a).
+const CENSUS_CONCURRENCY = Number(opt("--concurrency") ?? 3);
+
+async function censusSchools(): Promise<string[]> {
+  if (ONLY.length) return ONLY;
+  const supabase = createServerAnonSupabaseClient();
+  const out = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from("schools").select("urn").eq("status", "open").order("urn").range(from, from + 999);
+    if (error) throw error;
+    for (const r of (data ?? []) as { urn: string }[]) out.add(r.urn);
+    if (!data || data.length < 1000) break;
+  }
+  for (const stage of ["ks4", "ks5"] as const) for (const u of (await population(stage)).keys()) out.add(u);
+  return Array.from(out).sort();
+}
+
+async function buildCensus(version: string, w: Writer) {
+  const t0 = Date.now();
+  const urns = await censusSchools();
+  console.log(`census: version ${version}, ${urns.length} schools`);
+  await w.start(CENSUS_STAGE, version);
+  const totals = { schools: 0, rows: 0, bytes: 0, withData: 0 };
+  let done = 0;
+  const batches = chunks(urns, CENSUS_BATCH);
+  await pool(batches, CENSUS_CONCURRENCY, async (batch) => {
+    // The Overview's two reads, as today: the age-by-age census (cachedCensus's fetchCensus, which asks a school
+    // whose rows start late for its predecessor's years), then the census by year (schoolCensuses' read, each
+    // school's facts through buildRollTrend). Unlike the page, a failed read fails the batch (retried), never
+    // stores a school as having no census.
+    const adm = await withRetry(`census ages ${batch[0]}..`, () => fetchCensus(batch));
+    const facts = await withRetry(`census ${batch[0]}..`, () => lookupReferenceData({ sourceId: "dfe_school_census", entityIds: batch }));
+    const by = new Map<string, typeof facts>();
+    for (const f of facts) (by.get(f.entity_id) ?? by.set(f.entity_id, []).get(f.entity_id)!).push(f);
+    const out = batch.map((u) => encodeCensusSchool(u, buildRollTrend(by.get(u) ?? [], u), adm.get(u)));
+    await w.write(CENSUS_STAGE, version, out);
+    totals.schools += batch.length;
+    totals.rows += out.length;
+    totals.withData += out.filter((r) => r.figures.c.length > 0).length;
+    totals.bytes += out.reduce((t, r) => t + JSON.stringify(r).length, 0);
+    if (++done % 50 === 0 || done === batches.length) console.log(`  census ${done}/${batches.length} batches, ${totals.rows} rows, ${(totals.bytes / 1e6).toFixed(1)} MB, ${Math.round((Date.now() - t0) / 1000)} s`);
+  });
+  // The data mustn't have moved under the build: a version that changed meanwhile is never marked complete.
+  const after = await censusVersion();
+  const complete = after === version && !(LIVE && ONLY.length);
+  await w.finish(CENSUS_STAGE, version, totals, complete);
+  console.log(`census: ${complete ? "complete" : after !== version ? `NOT complete: the data changed during the build (${after}); run again` : "written, not marked complete (--school)"} -- ${totals.schools} schools (${totals.withData} with a census), ${totals.rows} rows, ${(totals.bytes / 1e6).toFixed(1)} MB of JSON, ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+}
+
 async function main() {
   const w = PGLITE ? await pgliteWriter(PGLITE) : OUT ? fileWriter(OUT) : liveWriter();
   const t0 = Date.now();
   for (const stage of STAGES) {
-    const version = await figuresVersion(stage);
+    const version = stage === CENSUS_STAGE ? await censusVersion() : await figuresVersion(stage);
     // --school is a test of a few schools: always built, never compared with the stored build.
     const upToDate = !FORCE && !ONLY.length && (await w.complete(stage, version));
     if (upToDate) console.log(`${stage}: up to date -- the stored build is complete for version ${version}; skipped${CHECK ? "" : " (--force builds it anyway)"}`);
     else if (CHECK) console.log(`${stage}: would build -- no complete build stored for version ${version}`);
+    else if (stage === CENSUS_STAGE) await buildCensus(version, w);
     else await buildStage(stage, version, w);
   }
   await w.close();

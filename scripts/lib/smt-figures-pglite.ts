@@ -14,7 +14,7 @@ async function newPGlite(dir: string): Promise<PGliteDb> {
 }
 
 
-const MIGRATION = new URL("../../supabase/migrations/20261125100000_v08_smt_school_figures.sql", import.meta.url).pathname;
+const MIGRATIONS = ["20261125100000_v08_smt_school_figures.sql", "20261125110000_v08_smt_census_figures.sql"].map((m) => new URL(`../../supabase/migrations/${m}`, import.meta.url).pathname);
 
 export async function openFiguresPglite(dir: string): Promise<PGliteDb> {
   const db = await newPGlite(dir);
@@ -27,8 +27,11 @@ export async function openFiguresPglite(dir: string): Promise<PGliteDb> {
         if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role bypassrls; end if;
       end $$;
       grant usage on schema public to anon, authenticated, service_role;`);
-    await db.exec(readFileSync(MIGRATION, "utf8"));
+    await db.exec(readFileSync(MIGRATIONS[0], "utf8"));
   }
+  // The census stage (20261125110000): a PGlite made before it takes it now.
+  const census = await db.query<{ ok: boolean }>(`select pg_get_constraintdef(oid) like '%census%' as ok from pg_constraint where conname = 'smt_figures_builds_stage_check'`);
+  if (!census.rows[0]?.ok) await db.exec(readFileSync(MIGRATIONS[1], "utf8"));
   return db;
 }
 
