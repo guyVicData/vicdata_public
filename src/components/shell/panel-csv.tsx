@@ -20,7 +20,7 @@
 // The page names who the figures are for (the school or group) with PanelCsvScope, for the file
 // name; a view may name the comparison set and the data year in its table's `about`, and the page
 // may give defaults for both in the scope.
-import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CsvTable } from "@/lib/csv";
 
 export type PanelCsvBuild = () => CsvTable | null;
@@ -60,9 +60,8 @@ export function createCsvRegistry(title: string): Registry {
 /** CardBox's: the panel's registry. */
 export function PanelCsvRegistry({ title, children }: { title: string; children: ReactNode }) {
   // One registry for the panel's life; the title is read live (a rail switch renames the panel).
-  const reg = useRef<Registry | null>(null);
-  reg.current ??= createCsvRegistry(title);
-  const value = useMemo<Registry>(() => ({ ...reg.current!, title }), [title]);
+  const [reg] = useState(() => createCsvRegistry(title));
+  const value = useMemo<Registry>(() => ({ ...reg, title }), [reg, title]);
   return <RegistryContext.Provider value={value}>{children}</RegistryContext.Provider>;
 }
 
