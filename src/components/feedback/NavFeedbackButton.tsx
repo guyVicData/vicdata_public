@@ -23,6 +23,7 @@ import { useHostCount } from "./ViewSurface";
 import { getActiveViewAs, readPeek } from "@/lib/view-as";
 import { pageKey, type ViewProduct, type ViewSurface } from "@/lib/view-ref";
 import { loadAdminSchool } from "@/components/admin/AdminChrome";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 export const NAV_FEEDBACK_LABEL = "Send feedback";
 /** Traffic-light amber, and the ink and edges on it (the contrast test reads these). */
@@ -48,8 +49,8 @@ export function navPageName(path: string): string {
   return words.map((w, i) => (i === 0 ? w[0].toUpperCase() + w.slice(1) : w)).join(" · ");
 }
 
-/** A page that hasn't said what it is: the whole page, at the school it is for (a peek's, View as, else the
- * person's own). null when there is no school to tie it to (the item must name one). */
+/** A page that hasn't said what it is: the whole page, at the school it is for (a peek's on a /teacher page,
+ * View as, else the person's own). */
 export function navSurface(o: { path: string; urn: string; name: string; role: string; viewAs: boolean; peek: boolean }): ViewSurface {
   return {
     product: navProduct(o.path),
@@ -65,8 +66,14 @@ export function navSurface(o: { path: string; urn: string; name: string; role: s
 }
 
 async function fallbackSurface(path: string): Promise<ViewSurface | null> {
-  const peek = readPeek(new URLSearchParams(window.location.search));
-  if (peek) return navSurface({ path, urn: peek.urn, name: peek.urn, role: peek.role, viewAs: false, peek: true });
+  // A peek is honoured by the /teacher pages only (AGENTS.md); Sets, Account and the rest show the person's own
+  // school (or View as's) whatever the address says, so that is the school the item names there.
+  const peek = /^\/teacher(\/|$)/.test(path) ? readPeek(new URLSearchParams(window.location.search)) : null;
+  if (peek) {
+    // The school's name (schools is readable by anyone: schools_select_anyone); its URN if that read fails.
+    const { data } = await createBrowserSupabaseClient().from("schools").select("current_name").eq("urn", peek.urn).maybeSingle<{ current_name: string | null }>();
+    return navSurface({ path, urn: peek.urn, name: data?.current_name ?? peek.urn, role: peek.role, viewAs: false, peek: true });
+  }
   const school = await loadAdminSchool();
   if (school.status !== "ready") return null;
   const va = getActiveViewAs();

@@ -98,9 +98,8 @@
   --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
   --box-bg: #0e0e10; --source: #5c5c62;
 }
-/* R-NAV-FEEDBACK: "Send feedback", traffic-light amber, in every nav.
-   R-NAV-FEEDBACK: "Send feedback", traffic-light amber -- the fill, the ink on it (11:1), and its edge: a darker
-   amber in Light, so the pill stands off a white bar (4.9:1), the fill itself in Dark (11:1 on the bar). */
+/* R-NAV-FEEDBACK: "Send feedback", traffic-light amber -- the fill, the ink on it (11.0:1), and its edge: a darker
+   amber in Light, so the pill stands off the light bar (4.6:1), the fill itself in Dark (12.0:1 on the bar). */
 #teacher-root, [data-shell-nav], body > [data-feedback-window] { --nav-fb-fill: #ffbf00; --nav-fb-ink: #1f1300; --nav-fb-edge: #a16207; }
 @media (prefers-color-scheme: dark) {
   #teacher-root:not([data-theme="light"]), [data-shell-nav]:not([data-theme="light"]) { --nav-fb-edge: #ffbf00; }
