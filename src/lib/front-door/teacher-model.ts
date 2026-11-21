@@ -3,6 +3,7 @@
 // (subjectItemsOf, categoryItemsOf, schoolSubjectsOf, ownHeadlineRows, subjectEntriesAt, subjectPointsAt,
 // englandValueAt), so a figure on a home tile or a walk screen is the dashboard's figure. The loader
 // (teacher-data.ts) fetches the rows; this shapes them. No database here.
+import { ordinalWord, placeAmong, placeWord } from "@/lib/rank";
 import type { AcademicSubjectHeadlineEntry, SubjectEntry } from "@/lib/academic-data-view";
 import type { SubjectGradeCount } from "@/lib/grade-rows";
 import { familyFor } from "@/lib/teacher-view-catalogue";
@@ -167,18 +168,14 @@ export function firstReal(s: Series): { i: number; v: number } | null {
 }
 
 /** Rank by value, largest first; ties share a place (the dashboards' rankByValue rule). */
-export function rankOf(rows: { key: string; value: number | null }[], key: string): { rank: number; of: number } | null {
+export function rankOf(rows: { key: string; value: number | null }[], key: string): { rank: number; of: number; tied: boolean } | null {
   const real = rows.filter((r) => r.value !== null) as { key: string; value: number }[];
   const me = real.find((r) => r.key === key);
   if (!me) return null;
-  return { rank: 1 + real.filter((r) => r.value > me.value).length, of: real.length };
+  return placeAmong(real.map((r) => r.value), me.value);
 }
 
-export function ordinal(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-}
+export const ordinal = ordinalWord;
 
 /** The three Teacher home tiles' figures (B9): real or none, never a placeholder. */
 export function teacherTileFigures(m: TeacherModel): { many: TileFigure | null; well: TileFigure | null; nearby: TileFigure | null } {
@@ -191,7 +188,7 @@ export function teacherTileFigures(m: TeacherModel): { many: TileFigure | null; 
     many: entries !== null ? { figure: entries.toLocaleString("en-GB"), unit: p16 ? "students this year" : "pupils this year" } : null,
     well: points !== null ? { figure: points.toFixed(p16 ? 1 : 1), unit: "average points" } : null,
     // A5 (R-RANK-MIN): no place among fewer than 3 schools with a figure.
-    nearby: rank && rank.of >= 3 ? { figure: ordinal(rank.rank), unit: `of ${rank.of}: us and the ${rank.of - 1} nearest` } : null,
+    nearby: rank && rank.of >= 3 ? { figure: placeWord(rank.rank, rank.tied), unit: `of ${rank.of}: us and the ${rank.of - 1} nearest` } : null,
   };
 }
 export type TileFigure = { figure: string; unit: string };

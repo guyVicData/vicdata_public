@@ -10,6 +10,7 @@
 // published figure) is listed after the ranking with its reason, never ranked.
 import type { Academic, AreaSubject, Unit } from "./academic";
 import { RANK_MIN } from "@/lib/front-door/teacher-screens";
+import { placeText } from "@/lib/rank";
 
 export type RankedSubject = {
   subject: string;
@@ -20,6 +21,7 @@ export type RankedSubject = {
   entries: number;
   rank: number;
   of: number;
+  tied?: boolean;
   /** 1 = top of the set, 0 = bottom. */
   standing: number;
   mark: "strong" | "attention" | null;
@@ -39,7 +41,7 @@ export function subjectsRanked(a: Academic): SubjectsRanked {
     // R-RANK-MIN: a place needs at least 3 schools with a figure (1st or 2nd of 2 says nothing).
     if (s.value !== null && s.place && s.place.of >= RANK_MIN && s.ranked && !s.only) {
       const standing = (s.place.of - s.place.rank) / (s.place.of - 1);
-      rows.push({ subject: s.subject, qualification: s.qualification, short, value: s.value, unit, entries: s.entries, rank: s.place.rank, of: s.place.of, standing, mark: standing >= 1 - MARK_QUARTER ? "strong" : standing <= MARK_QUARTER ? "attention" : null });
+      rows.push({ subject: s.subject, qualification: s.qualification, short, value: s.value, unit, entries: s.entries, rank: s.place.rank, of: s.place.of, tied: s.place.tied, standing, mark: standing >= 1 - MARK_QUARTER ? "strong" : standing <= MARK_QUARTER ? "attention" : null });
     } else unranked.push({ subject: s.subject, short, why: s.only ? "the only school in the set teaching it" : s.value !== null && s.place && s.place.of < RANK_MIN ? `fewer than ${RANK_MIN} schools in the set with a figure` : s.why ?? (s.value === null ? "no published figure" : "too few schools in the set to place it") });
   }
   // Strongest first; at the same standing, the larger set (a firmer place), then more entries.
@@ -50,7 +52,7 @@ export function subjectsRanked(a: Academic): SubjectsRanked {
 /** The walk's answer, in a sentence: the strongest and those needing attention, by name and place. */
 export function subjectsRankedAnswer(r: SubjectsRanked): string {
   if (!r.rows.length) return r.unranked.length ? `No subject can be placed in the set yet: ${r.unranked.length} ${r.unranked.length === 1 ? "has" : "have"} too few schools or entries to compare.` : "No subjects to rank this year.";
-  const name = (x: RankedSubject) => `${x.subject} (${x.short}, ${ordinal(x.rank)} of ${x.of})`;
+  const name = (x: RankedSubject) => `${x.subject} (${x.short}, ${placeText(x)})`;
   const strong = r.rows.filter((x) => x.mark === "strong");
   const weak = r.rows.filter((x) => x.mark === "attention");
   const list = (xs: RankedSubject[]) => (xs.length <= 3 ? xs.map(name).join(", ") : `${xs.slice(0, 3).map(name).join(", ")} and ${xs.length - 3} more`);
@@ -59,8 +61,4 @@ export function subjectsRankedAnswer(r: SubjectsRanked): string {
   return `${top}${bottom}`;
 }
 
-function ordinal(n: number): string {
-  const t = n % 100;
-  if (t >= 11 && t <= 13) return `${n}th`;
-  return `${n}${({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
-}
+

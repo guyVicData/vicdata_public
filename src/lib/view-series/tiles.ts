@@ -18,18 +18,12 @@ import { changeOver, directionOf, signed } from "@/lib/teacher-view-trend-styles
 import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, SeriesFrame } from "./frames";
 import type { BuildContext, TileData, ViewSeries } from "./series";
 import { igcseTileName } from "@/lib/igcse-words";
-import { competitionRanks } from "../rank";
+import { competitionRanks, placeWord } from "../rank";
 
-// 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd". (NumberTiles re-exports it.)
-export function ordinal(n: number): string {
-  const teen = n % 100 >= 11 && n % 100 <= 13;
-  const suffix = teen ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
-  return `${n.toLocaleString()}${suffix}`;
-}
-
-// 0.8 audit fixes (8, T2): a ranking's place, "=3rd" where the school shares it (standard competition
-// ranking: two schools tied at 3rd, then 5th). R-RANK-TIES.
-export const placeWord = (rank: number, tied?: boolean) => `${tied ? "=" : ""}${ordinal(rank)}`;
+// 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd". (NumberTiles re-exports it.) 0.8 audit fixes (8, T2): a
+// ranking's place, "=3rd" where the school shares it (standard competition ranking: two schools tied at 3rd, then
+// 5th). R-RANK-TIES. Both are the one shared formatter's (src/lib/rank.ts), as the walks' are.
+export { ordinalWord as ordinal, placeWord } from "../rank";
 
 type Built = { title: string | null; main: { figure: string; label: string } | null; tiles: TileData[]; vars: TileVars; note?: string };
 

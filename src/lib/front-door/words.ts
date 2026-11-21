@@ -3,17 +3,15 @@
 // "no schools"), a name ending in s takes a bare apostrophe ("Physics' grades"), a list ends "… and …", and
 // a change under half a unit reads "level". Pure.
 import { GRADING_2122_PERIOD, periodLabel } from "@/catalogue/years";
+import { ordinalWord, placeText } from "@/lib/rank";
 
-/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th, 21st. */
-export function ordinal(n: number): string {
-  const r = Math.round(n);
-  const t = r % 100;
-  return `${r}${t >= 11 && t <= 13 ? "th" : (["th", "st", "nd", "rd"][r % 10] ?? "th")}`;
-}
+/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th, 21st: the one shared formatter's (src/lib/rank.ts). */
+export const ordinal = ordinalWord;
 
-/** "3rd of 11" -- with what's ranked when given ("3rd of 11 schools"). */
-export function placeOf(rank: number, of: number, what?: string): string {
-  return `${ordinal(rank)} of ${of.toLocaleString("en-GB")}${what ? ` ${what}` : ""}`;
+/** "3rd of 11" -- with what's ranked when given ("3rd of 11 schools"); "=3rd of 11" where the place is shared, as
+ * the dashboards write it (R-RANK-TIES: the one shared formatter, placeText). */
+export function placeOf(rank: number, of: number, what?: string, tied?: boolean): string {
+  return placeText({ rank, of, tied }, what);
 }
 
 /** "1 school", "3 schools", "no schools" (zero: "no", unless `zero` says otherwise). */

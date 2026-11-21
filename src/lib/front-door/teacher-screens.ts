@@ -8,7 +8,8 @@ import { periodLabel } from "@/catalogue/years";
 import { dataviewById } from "@/catalogue/dataviews";
 import { fillTitle } from "./walk-titles";
 import { SUBJECT_FAMILY_NAMES } from "@/lib/subject-family-colours";
-import { firstReal, lastOf, ordinal, prevOf, rankOf, type SubjectRow, type TeacherModel } from "./teacher-model";
+import { firstReal, lastOf, prevOf, rankOf, type SubjectRow, type TeacherModel } from "./teacher-model";
+import { placeWord } from "@/lib/rank";
 import { answerStep, type Walk, type WalkScreen } from "./walks";
 import { gradingCaveat, learners, listJoin, placeOf, plural, smallNote } from "./words";
 
@@ -175,8 +176,8 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
           kind: "tiles",
           main: { figure: now === null ? "—" : fmtN(now), label: `${now === 1 ? "entry" : "entries"} in ${latest}${before !== null ? ` (${fmtN(before)} in ${periodLabel(m.periods[n - 2])})` : ""}` },
           tiles: [
-            ...(catRank && catRank.of > 1 ? [{ icon: "PodiumIcon", figure: ordinal(catRank.rank), scope: `of ${catRank.of} in ${cat}` }] : []),
-            ...(schoolRank ? [{ icon: "SchoolIcon", figure: ordinal(schoolRank.rank), scope: `of ${schoolRank.of} subjects at the school` }] : []),
+            ...(catRank && catRank.of > 1 ? [{ icon: "PodiumIcon", figure: placeWord(catRank.rank, catRank.tied), scope: `of ${catRank.of} in ${cat}` }] : []),
+            ...(schoolRank ? [{ icon: "SchoolIcon", figure: placeWord(schoolRank.rank, schoolRank.tied), scope: `of ${schoolRank.of} subjects at the school` }] : []),
             ...(change !== null && first ? [{ icon: "ChangeArrowIcon", figure: `${signed(change)}%`, scope: `since ${periodLabel(m.periods[first.i])}` }] : []),
           ],
           keys: [],
@@ -204,7 +205,7 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
             : `No ${subject} entries for ${latest}.`
           : sorted.length < 2
             ? `${subject} is the only subject in ${where} with a figure for ${latest}.`
-            : `${rank ? `${subject} is ${placeOf(rank.rank, rank.of, "subjects")}` : subject} ${pts ? `on average points in ${where}, at ${fmtP(fv)}${smallNote(m.phase, lastOf(f.entries))}` : `by entries in ${where}, with ${fmtN(fv)}`}${avg !== null ? `, ${Math.abs(fv - avg) < (pts ? 0.05 : 0.5) ? "right on" : fv > avg ? "above" : "below"} the ${whole ? "school average" : catAvg} of ${pts ? fmtP(avg) : fmtN(avg)}` : ""}.`;
+            : `${rank ? `${subject} is ${placeOf(rank.rank, rank.of, "subjects", rank.tied)}` : subject} ${pts ? `on average points in ${where}, at ${fmtP(fv)}${smallNote(m.phase, lastOf(f.entries))}` : `by entries in ${where}, with ${fmtN(fv)}`}${avg !== null ? `, ${Math.abs(fv - avg) < (pts ? 0.05 : 0.5) ? "right on" : fv > avg ? "above" : "below"} the ${whole ? "school average" : catAvg} of ${pts ? fmtP(avg) : fmtN(avg)}` : ""}.`;
       return {
         ...base,
         answer,
@@ -381,8 +382,8 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
           kind: "tiles",
           main: { figure: now === null ? "—" : fmtP(now), label: `average points in ${latest}${before !== null ? ` (${fmtP(before)} in ${periodLabel(m.periods[n - 2])})` : ""}` },
           tiles: [
-            ...(catRank && catRank.of > 1 ? [{ icon: "PodiumIcon", figure: ordinal(catRank.rank), scope: `of ${catRank.of} in ${cat}` }] : []),
-            ...(schoolRank ? [{ icon: "SchoolIcon", figure: ordinal(schoolRank.rank), scope: `of ${schoolRank.of} subjects at the school` }] : []),
+            ...(catRank && catRank.of > 1 ? [{ icon: "PodiumIcon", figure: placeWord(catRank.rank, catRank.tied), scope: `of ${catRank.of} in ${cat}` }] : []),
+            ...(schoolRank ? [{ icon: "SchoolIcon", figure: placeWord(schoolRank.rank, schoolRank.tied), scope: `of ${schoolRank.of} subjects at the school` }] : []),
             ...(now !== null && eng !== null ? [{ icon: "FlagIcon", figure: signed(now - eng, 1), scope: `${now >= eng ? "above" : "below"} England (${fmtP(eng)})` }] : []),
           ],
           keys: [],
@@ -431,7 +432,7 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       const missing = m.nearest.length - rows.length;
       const cs = cmpSubject(m, subject);
       // A5 (R-RANK-MIN): a place needs at least RANK_MIN schools with a figure; under that, the counts.
-      const where = me && rank !== null && rows.length >= RANK_MIN ? `${placeOf(rank, rows.length, "schools")}, ${pts ? "highest first" : "most first"}` : `${plural(rows.length, "school has", "schools have")} a figure, too few to rank`;
+      const where = me && rank !== null && rows.length >= RANK_MIN ? `${placeOf(rank, rows.length, "schools", rows.filter((r) => r.v === me.v).length > 1)}, ${pts ? "highest first" : "most first"}` : `${plural(rows.length, "school has", "schools have")} a figure, too few to rank`;
       const answer = !me
         ? `${m.school.name} has no published ${pts ? "average points" : "entries"} for ${subject} in ${latest}.${rows.length ? ` ${plural(rows.length, "nearby school publishes", "nearby schools publish")} ${cs}.` : ""}`
         : `${pts ? `${fmtP(me.v)} average points here${smallNote(m.phase, lastOf(f.entries))}` : `${pupils(m, me.v)} here`}: ${where}.${missing ? ` ${plural(missing, "school publishes", "schools publish")} no figure.` : ""}`;
@@ -457,7 +458,7 @@ function teacherScreenRaw(m: TeacherModel, walk: Walk, i: number): Screen {
       }
       return {
         ...base,
-        answer: me ? `${placeOf(me.rank, ranked.length, "schools")} on average points in ${cs}, ${latest}${smallNote(m.phase, lastOf(f.entries))}.${without ? ` ${plural(without, "school publishes", "schools publish")} no figure.` : ""}` : `${m.school.name} has no published average points in ${subject} for ${latest}, so it isn't ranked.`,
+        answer: me ? `${placeOf(me.rank, ranked.length, "schools", ranked.filter((r) => r.v === me.v).length > 1)} on average points in ${cs}, ${latest}${smallNote(m.phase, lastOf(f.entries))}.${without ? ` ${plural(without, "school publishes", "schools publish")} no figure.` : ""}` : `${m.school.name} has no published average points in ${subject} for ${latest}, so it isn't ranked.`,
         title: `${cs}: the school and its nearest ranked, ${latest}`,
         note: `Ranked on average points per entry, highest first, on the unrounded figure: two schools showing the same figure to one decimal can take different places; only an exact tie shares one.${titlesNote(m)}`,
         // Review fixes (walks.md T1): each school's entries beside its average, and a caption with the year and N.

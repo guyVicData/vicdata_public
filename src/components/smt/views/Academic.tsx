@@ -130,7 +130,7 @@ function LineRow({ l, va, entries }: { l: Line; va: boolean; entries: boolean })
         <Tl className="col-span-2">{l.series.map((p) => (p.value ?? 0).toLocaleString("en-GB")).join(" → ")} since {l.series[0] ? periodLabel(l.series[0].period) : ""}</Tl>
       ) : (
         <>
-          <Tl>{l.place ? `${ord(l.place.rank)} of ${l.place.of} · ${l.placeLabel}` : "not ranked"}</Tl>
+          <Tl>{l.place ? `${rankText(l.place)} · ${l.placeLabel}` : "not ranked"}</Tl>
           <Tl className="text-right">{l.last !== null ? `${fmtShort(l.last, l.unit)} last year` : ""}</Tl>
         </>
       )}
@@ -506,7 +506,7 @@ function QualRows({ q, mode, unit, vals, cols, maxShare, sized }: { q: { qualifi
           <Td className="text-right font-bold text-[var(--fg)]" title={s.why ?? undefined}>{s.value === null ? <span className="font-normal text-[var(--muted2)]">{s.why ? "not ranked" : "—"}</span> : fmtAc(s.value, unit)}</Td>
           <Td>{s.value !== null && <Dots s={s} unit={unit} vals={vals} mode={mode} maxShare={maxShare} />}</Td>
           {mode === "entries" && <Td className="text-right">{s.value !== null && s.typical !== null ? `${signedDelta(s.value - s.typical, (x) => Math.abs(x).toFixed(1), { zero: "±" })} pp` : "none"}</Td>}
-          <Td className="whitespace-nowrap text-right">{mode === "entries" ? (s.offering ? `${s.offering.n} of ${s.offering.of}` : "—") : s.only ? "only school" : s.place ? `${ord(s.place.rank)} of ${s.place.of}` : "—"}</Td>
+          <Td className="whitespace-nowrap text-right">{mode === "entries" ? (s.offering ? `${s.offering.n} of ${s.offering.of}` : "—") : s.only ? "only school" : s.place ? rankText(s.place) : "—"}</Td>
         </tr>
       ))}
     </>

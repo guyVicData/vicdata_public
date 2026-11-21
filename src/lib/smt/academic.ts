@@ -30,6 +30,7 @@ import { MIN_SUBJECT_ENTRIES_UI } from "./levels";
 import { figure, num, population, SMT_MEASURES, type Population } from "./population";
 import type { SmtSchool } from "./school";
 import { igcseExcluded, setNames, type BandPt, type Pt, type Rank, type SmtSet } from "./overview";
+import { placeAmong } from "@/lib/rank";
 import { englandQualVa, qualRows, vaMatcher, type QualRow, type VaFact } from "./academic-data";
 import { areaEntries as areaEntriesOf, areaRow as areaRowOf, groupEntries as groupEntriesOf, groupPoints, levelEntries as levelEntriesOf, vaLine, type VaLine } from "./school-figures";
 import { academicInputs } from "./smt-figures-store";
@@ -170,7 +171,7 @@ const placeIn = (vals: Map<string, number | null>, urn: string): Rank | null => 
   const mine = vals.get(urn);
   if (mine === null || mine === undefined) return null;
   const all = Array.from(vals.values()).filter((v): v is number => v !== null);
-  return { rank: 1 + all.filter((v) => v > mine).length, of: all.length };
+  return placeAmong(all, mine);
 };
 const quarterOf = (v: number | null, p25: number | null, p75: number | null): BoardRow["quarter"] => (v === null || p25 === null || p75 === null ? null : v > p75 ? "top" : v < p25 ? "bottom" : "middle");
 const km = (a: { easting: number | null; northing: number | null } | undefined, b: { easting: number | null; northing: number | null } | undefined) =>

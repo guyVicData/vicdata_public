@@ -38,7 +38,7 @@ import { entryShrinking, resultsAgainstSet, rollFalling, SMT_FLAG_RULES, type Sm
 
 export type SmtSet = { kind: string; label: string; urns: string[] };
 
-export type Rank = { rank: number; of: number };
+export type Rank = { rank: number; of: number; tied?: boolean };
 export type Stage = "ks2" | "ks4" | "ks5";
 export type Unit = "pupils" | "points" | "pct" | "va" | "share";
 

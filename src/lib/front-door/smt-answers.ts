@@ -47,7 +47,7 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const ranked = o.rows.filter((r) => r.set && r.value !== null);
       const best = strongestRow(o);
       if (!best) return `No headline is ranked against ${o.set.label} yet.`;
-      return `Strongest against ${theSet(o.set.label)}: ${best.label}, ${placeOf(best.set!.rank, best.set!.of)}. ${plural(ranked.length, "headline is", "headlines are")} ranked.`;
+      return `Strongest against ${theSet(o.set.label)}: ${best.label}, ${placeOf(best.set!.rank, best.set!.of, undefined, best.set!.tied)}. ${plural(ranked.length, "headline is", "headlines are")} ranked.`;
     }
     case "DV-SMT-O-ROLL-LINE": {
       const o = data as Overview;
@@ -144,7 +144,7 @@ export function smtAnswer(view: string, school: { name: string }, data: unknown)
       const me = b.rows.find((r) => r.you);
       const ranked = b.rows.filter((r) => r.value !== null);
       if (b.empty || !me || me.value === null || !b.place.set) return b.empty ?? `The school has no ${measureWord(b.measure)} to rank against ${theSet(a.set.pill)} yet.`;
-      return `${placeOf(b.place.set.rank, b.place.set.of)} against ${theSet(a.set.pill)} on ${measureWord(b.measure)} (${fig(me.value, b.unit)}${b.period ? `, ${periodLabel(b.period)}` : ""})${b.median !== null ? `; the set's median is ${fig(b.median, b.unit)}` : ""}.`.replace(/ of (\d+) against/, ` of ${ranked.length} against`);
+      return `${placeOf(b.place.set.rank, b.place.set.of, undefined, b.place.set.tied)} against ${theSet(a.set.pill)} on ${measureWord(b.measure)} (${fig(me.value, b.unit)}${b.period ? `, ${periodLabel(b.period)}` : ""})${b.median !== null ? `; the set's median is ${fig(b.median, b.unit)}` : ""}.`.replace(/ of (\d+) against/, ` of ${ranked.length} against`);
     }
     case "DV-SMT-A-AREAS": {
       const a = data as Academic;

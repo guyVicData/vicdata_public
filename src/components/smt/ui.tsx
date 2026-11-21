@@ -4,6 +4,7 @@
 // and Admissions' small kit (tiles, flag pills, keys, the chart kit) -- the same tokens, the boards'
 // semantic colours as Admissions variables -- with SMT's accent (ROLE_ACCENT.smt) in place of
 // Admissions'. Nothing here computes a figure: every value arrives from /api/smt/*.
+import { ordinalWord, placeText } from "@/lib/rank";
 import type { CSSProperties, ReactNode } from "react";
 import { accentVars, productAccent } from "@/components/shell/accent";
 import { ROLE_ACCENT_LIGHT } from "@/lib/teacher-view-theme";
@@ -99,12 +100,9 @@ const DIR_CLASS: Record<Direction, string> = { up: "text-[var(--adm-up-fg)]", do
 export const dirClass = (v: number | null | undefined, flat = 0.05, dp = 2) => (v === null || v === undefined ? DIR_CLASS.flat : DIR_CLASS[flatBand(v, dp, flat)]);
 export const arrowOf = (v: number | null | undefined, flat = 0.05, dp = 2) => (v === null || v === undefined ? "" : ARROW[flatBand(v, dp, flat)]);
 
-export const ord = (n: number) => {
-  const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
-  return `${n.toLocaleString("en-GB")}${s}`;
-};
-// A shared place reads "=851st", as Teacher's rankings print it (subject-ranking-view.ts).
-export const rankText = (r: { rank: number; of: number; tied?: boolean } | null | undefined) => (r ? `${r.tied ? "=" : ""}${ord(r.rank)} of ${r.of.toLocaleString("en-GB")}` : "—");
+export const ord = ordinalWord;
+// A shared place reads "=851st", as Teacher's rankings print it (subject-ranking-view.ts): the one shared formatter.
+export const rankText = (r: { rank: number; of: number; tied?: boolean } | null | undefined) => (r ? placeText(r) : "—");
 
 /** A results year, "(provisional)" where the data says so (years.ts). */
 export const yearOf = (p: number | null | undefined, family?: YearFamily | null) => (p === null || p === undefined ? "" : withProvisional(periodLabel(p), family ?? null, p));

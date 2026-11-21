@@ -24,3 +24,23 @@ export function competitionRanks<K>(items: readonly { key: K; value: number | nu
 export function placeAmong(values: readonly number[], value: number): Place {
   return { rank: 1 + values.filter((v) => v > value).length, of: values.length, tied: values.filter((v) => v === value).length > 1 };
 }
+
+// Review pack 22 Nov, issue 8 (R-RANK-TIES, the words): every place is written by these, the dashboards' tiles and
+// tables and the walks' answers alike, so a shared place reads "=2nd" everywhere (the walk said "2nd" where its
+// dashboard said "=2nd" for the same three-way tie).
+
+/** 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd", 1234 -> "1,234th". */
+export function ordinalWord(n: number): string {
+  const r = Math.round(n);
+  const t = r % 100;
+  const suffix = t >= 11 && t <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[r % 10] ?? "th";
+  return `${r.toLocaleString("en-GB")}${suffix}`;
+}
+
+/** A place: "=2nd" where it is shared, else "2nd". */
+export const placeWord = (rank: number, tied?: boolean): string => `${tied ? "=" : ""}${ordinalWord(rank)}`;
+
+/** "=2nd of 4" -- with what's ranked when given ("=2nd of 4 subjects"). */
+export function placeText(p: { rank: number; of: number; tied?: boolean }, what?: string): string {
+  return `${placeWord(p.rank, p.tied)} of ${p.of.toLocaleString("en-GB")}${what ? ` ${what}` : ""}`;
+}
