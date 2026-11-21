@@ -515,7 +515,7 @@ function MainSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; high
         </table>
       </div>
       <div className="text-[11.5px] text-[var(--muted2)]">
-        Showing {s.counts.shown} of {s.counts.listed} · {s.counts.withHeadline} with a {s.focus === "all" ? "headline" : `${FOCUS_LABEL[s.focus]} headline`}, {s.counts.withoutHeadline} with the reason instead{head.mixed ? " · each headline is its school's phase's measure, so Headline and Rank in England sort within each measure" : ""} · Rank in group: among the group&rsquo;s schools with that headline · Roll, {GROWING_SPAN} yrs: the change in each school&rsquo;s roll over the last {GROWING_SPAN} censuses · each name opens the school&rsquo;s SMT view where head office has access, otherwise its public page
+        Showing {s.counts.shown} of {s.counts.listed} · {s.counts.withHeadline} with a {s.focus === "all" ? "headline" : `${FOCUS_LABEL[s.focus]} headline`}, {s.counts.withoutHeadline} with the reason instead{head.mixed ? " · each headline is its school's phase's measure, so Headline and Rank in England sort within each measure" : ""} · Rank in group: among the group&rsquo;s schools with that headline · Roll, {GROWING_SPAN} yrs: the change in each school&rsquo;s roll over the last {GROWING_SPAN} censuses · each name opens the school&rsquo;s SMT view where head office has access
       </div>
     </div>
   );
@@ -526,10 +526,10 @@ function SchoolTr({ r, on, onHighlight }: { r: SchoolRow; on: boolean; onHighlig
   return (
     <tr data-featured-row={on ? "" : undefined} className="border-b border-[var(--panel-border)] last:border-0" style={on ? { background: FEATURED_ROW_BG } : undefined} onClick={() => onHighlight(r.urn)}>
       <Td>
-        {r.outsideEngland ? (
-          <span>{r.name}</span>
+        {r.outsideEngland || !r.link ? (
+          <span className={r.outsideEngland ? undefined : "font-semibold"}>{r.name}</span>
         ) : (
-          <Link href={r.link.href} className="font-semibold text-[var(--adm-accent-text)] hover:underline" title={r.link.kind === "smt" ? "Its SMT dashboards, read-only" : "Its public page"}>
+          <Link href={r.link.href} className="font-semibold text-[var(--adm-accent-text)] hover:underline" title="Its SMT dashboards, read-only">
             {r.name}
           </Link>
         )}
@@ -586,7 +586,7 @@ function NmSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highli
               return (
                 <tr key={r.urn} data-featured-row={on ? "" : undefined} className="border-b border-[var(--panel-border)] last:border-0" style={on ? { background: FEATURED_ROW_BG } : undefined} onClick={() => onHighlight(r.urn)}>
                   <Td>
-                    <Link href={r.link.href} className="font-semibold text-[var(--adm-accent-text)] hover:underline" title={r.link.kind === "smt" ? "Its SMT dashboards, read-only" : "Its public page"}>{r.name}</Link>
+                    {r.link ? <Link href={r.link.href} className="font-semibold text-[var(--adm-accent-text)] hover:underline" title="Its SMT dashboards, read-only">{r.name}</Link> : <span className="font-semibold">{r.name}</span>}
                     {r.confidence === "likely" && <span className="ml-1 rounded-[5px] bg-[var(--group-likely-bg)] px-[6px] text-[10px] font-bold text-[var(--group-likely-fg)]">likely</span>}
                   </Td>
                   <Td>{r.kindTag ?? "—"}</Td>

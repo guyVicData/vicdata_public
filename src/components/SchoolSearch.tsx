@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 export type SchoolSearchResult = {
@@ -28,24 +27,25 @@ function describeSchool(r: SearchResult): string {
 // byUrn (0.6 snag 2, View as): a query that is a URN also finds that
 // school directly (search_schools matches names, towns and postcodes only).
 // allowRequest false drops the "Can't find your school?" request form.
+// onSelect is required: a picker only. It used to open the public school page when no onSelect was
+// given (the public home); those pages are hidden for the private beta (R-NO-PUBLIC-SCHOOL-LINKS).
 export default function SchoolSearch({
   onSelect,
   placeholder,
   byUrn = false,
   allowRequest = true,
 }: {
-  onSelect?: (school: SchoolSearchResult) => void;
+  onSelect: (school: SchoolSearchResult) => void;
   placeholder?: string;
   byUrn?: boolean;
   allowRequest?: boolean;
-} = {}) {
+}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const router = useRouter();
   // The client is a singleton (supabase.ts), so no ref is needed to keep it stable.
   const supabase = createBrowserSupabaseClient();
   // Below MIN_CHARS the dropdown is simply not drawn (rather than cleared from the effect).
@@ -114,8 +114,7 @@ export default function SchoolSearch({
                 className="block w-full border-b border-neutral-100 px-4 py-3 text-left last:border-b-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
                 onClick={() => {
                   setOpen(false);
-                  if (onSelect) onSelect(r);
-                  else router.push(`/schools/${r.urn}`);
+                  onSelect(r);
                 }}
               >
                 <div className="font-medium">{r.current_name}</div>

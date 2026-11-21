@@ -587,7 +587,9 @@ export type SchoolRow = {
   basis: string;
   joined: string | null;
   lastSeen: string | null;
-  link: { kind: "smt" | "public"; href: string };
+  /** Its SMT, read-only, where head office has access; otherwise null and the name is plain text (the
+   * public school pages are hidden for the private beta, R-NO-PUBLIC-SCHOOL-LINKS). */
+  link: { kind: "smt"; href: string } | null;
   /** 0.8 non-mainstream groups (NM11, R-NM-OWN-SCHOOLS): a special, AP, PRU or nursery school placed
    * against its region's state-funded pool of its kind -- in a mainstream group in place of the bare
    * "not in group figures" tag, and every counted school of a non-mainstream group. */
@@ -671,7 +673,7 @@ export function buildSchools(input: {
   members?: { urn: string; joined: string | null; lastSeen: string | null }[];
   vicdata?: Set<string>;
   // Head office (and View as) opens a member school's SMT read-only (round 1's rule); a member school's
-  // SMT opens the public page of every other school.
+  // SMT shows every other school's name as plain text (no public school pages in the private beta).
   headOffice?: boolean;
   name?: string;
   /** 0.8 non-mainstream groups: production's `pools` rows, to place each special, AP and nursery school. */
@@ -755,7 +757,7 @@ export function buildSchools(input: {
     const vv = vaM && vy !== null ? s.years.find((x) => x.period === vy)?.figures?.value_added[vaM] : undefined;
     const independent = s.establishment_type_group === "Independent schools";
     const m = mem.get(s.urn);
-    const link = input.headOffice && input.vicdata?.has(s.urn) ? { kind: "smt" as const, href: `/teacher/smt?headOffice=${s.urn}` } : { kind: "public" as const, href: `/schools/${s.urn}` };
+    const link = input.headOffice && input.vicdata?.has(s.urn) ? { kind: "smt" as const, href: `/teacher/smt?headOffice=${s.urn}` } : null;
     return {
       urn: s.urn,
       name: s.name ?? s.urn,

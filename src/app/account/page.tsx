@@ -201,11 +201,6 @@ function MembershipCard({
               Open Teacher View
             </Link>
           </p>
-          <p className="mt-2 text-sm">
-            <Link href={`/schools/${account.school_urn}/data`} className="underline">
-              Open Advanced Dashboard
-            </Link>
-          </p>
         </>
       )}
 

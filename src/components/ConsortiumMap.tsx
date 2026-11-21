@@ -2,7 +2,6 @@
 
 import { rollRadius } from "@/lib/map-radius";
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import proj4 from "proj4";
 import type * as L from "leaflet";
 import type { Map as LeafletMap, LayerGroup } from "leaflet";
@@ -93,7 +92,6 @@ export type ConsortiumMapOptions = {
 export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas, circle, fitCircle, markerOf, redrawKey, rings, labelOf, pageScroll = false }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     if (!mapElRef.current || mapRef.current || members.length === 0) return;
@@ -164,8 +162,13 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
             direction: "top",
             offset: [0, -4],
           });
-        marker.on("click", () => (onSelect ? onSelect(m.urn) : router.push(`/schools/${m.urn}`)));
-        (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
+        // A marker is clickable only where the caller picks with it (onSelect). It used to open
+        // the school's public page otherwise; those are hidden for the private beta
+        // (R-NO-PUBLIC-SCHOOL-LINKS), so without onSelect a marker is a tooltip only.
+        if (onSelect) {
+          marker.on("click", () => onSelect(m.urn));
+          (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
+        }
         marker.addTo(group);
       }
 

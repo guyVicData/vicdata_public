@@ -7,7 +7,7 @@ import { ROLL_DIRECTION_SPAN } from "@/catalogue/years";
 
 // VicData 0.8 groups r1 (G3): the head-office home. The group's one-line summary (from the production
 // lookups and the census: no new aggregate yet), its member schools (each opening that school's SMT
-// read-only where the school holds VicData, else its public page) and the Access count.
+// read-only where the school holds VicData, else its name only) and the Access count.
 // GET ?account=. Another group's account, or none of the caller's, is "not found".
 export async function GET(request: NextRequest) {
   try {

@@ -113,7 +113,7 @@ function Page({ p, query, mid = false }: { p: LibraryGroupPage & { source: strin
                 {p.schools.map((s) => (
                   <tr key={s.urn} className="border-t border-[var(--panel-border)]" data-urn={s.urn}>
                     <td className="py-1.5 pr-2 font-semibold">
-                      <Link href={`/schools/${s.urn}`} className="hover:underline">{s.name}</Link>
+                      {s.name}
                       {s.likely && <span className="ml-1.5 rounded-full bg-[var(--group-likely-bg)] px-1.5 text-[10px] font-bold text-[var(--group-likely-fg)]">likely</span>}
                     </td>
                     <td className="py-1.5 pr-2 text-[var(--muted)]">{s.la ?? "—"}</td>

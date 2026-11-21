@@ -262,6 +262,8 @@ body:has(#teacher-root[data-mid-dash]) { background: #0a0a0b; }
    lifting on hover (translateY -3px, a longer softer shadow). */
 .fd-tile { background: var(--tile-bg, var(--panel-bg)); box-shadow: var(--tile-shadow, none); transition: transform .18s ease, box-shadow .18s ease; }
 .fd-tile:hover { transform: translateY(-3px); box-shadow: var(--tile-shadow-hover, none); }
+/* A tile that opens nothing (a group's school without VicData) doesn't lift. */
+.fd-tile[data-no-link]:hover { transform: none; box-shadow: var(--tile-shadow, none); }
 @media (prefers-reduced-motion: reduce) { .fd-tile, .fd-tile:hover { transition: none; transform: none; } }
 /* 0.8 front door 2b: a tile's late figure (late-figure.ts) fades in when it arrives; the question was there first. */
 @keyframes fd-late-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

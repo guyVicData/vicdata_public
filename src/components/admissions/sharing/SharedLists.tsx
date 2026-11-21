@@ -8,7 +8,6 @@
 //                     routes stay role-gated; decision 5)
 // Everything is read and written with the member's own session; RLS decides.
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { readSets } from "@/lib/sets/store";
@@ -66,11 +65,7 @@ export function SharedListsOnly({ member, theme, onTheme }: { member: Admissions
             </div>
             <ul className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-[12.5px] text-[var(--chip-fg)] sm:grid-cols-2">
               {(l.members ?? []).map((u) => (
-                <li key={u}>
-                  <Link href={`/schools/${u}`} className="hover:underline">
-                    {names[u] ?? u}
-                  </Link>
-                </li>
+                <li key={u}>{names[u] ?? u}</li>
               ))}
             </ul>
           </section>

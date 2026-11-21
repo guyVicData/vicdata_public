@@ -3,7 +3,7 @@
 // VicData 0.8 groups r1 (G3): the head-office home (docs/wireframes/groups/Home.dc.html), at
 // /teacher/group: the shell's nav and the role-home pattern (src/app/teacher/page.tsx). The group card
 // (its dashboards shown as coming until rounds 2 and 3, and a summary line that already works), our
-// schools (each opening that school's SMT read-only, or its public page), Access, My dashboards and
+// schools (each opening that school's SMT read-only; a school without VicData is its name only), Access, My dashboards and
 // Meetings. A platform admin sees it through View as, read-only and never logged.
 import { withBack } from "@/lib/front-door/back";
 import Link from "next/link";
@@ -304,17 +304,32 @@ function Body({ offices, theme }: { offices: OfficesState; theme: "dark" | "ligh
                 <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" aria-label="Our schools">
                   {d.schools.map((s) => (
                     <li key={s.urn}>
-                      <Link href={s.vicdata ? withBack(`/teacher/smt?headOffice=${s.urn}`, groupHome) : `/schools/${s.urn}`} className="fd-tile flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
-                          <SchoolsGlyph />
-                        </span>
-                        <span className="min-w-0 flex-grow">
-                          <span className="block truncate text-[15px] font-medium">{s.name}</span>
-                          <span className="block text-[12.5px] text-[var(--muted2)]">{s.vicdata ? "SMT home, read-only" : "Public page"}</span>
-                        </span>
-                        {s.likely && <span title={GROUP_NOTES.likelyWhy} className="rounded-[6px] bg-[var(--group-likely-bg)] px-[7px] py-px text-[10.5px] font-bold text-[var(--group-likely-fg)]">{GROUP_NOTES.likely}</span>}
-                        <span aria-hidden="true" className="text-[var(--muted2)]">&rarr;</span>
-                      </Link>
+                      {/* The public school pages are hidden for the private beta (R-NO-PUBLIC-SCHOOL-LINKS): a school
+                          without VicData is its name, not a link. */}
+                      {(() => {
+                        const body = (
+                          <>
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--tile-tint)] text-[var(--tile-accent-text)]">
+                              <SchoolsGlyph />
+                            </span>
+                            <span className="min-w-0 flex-grow">
+                              <span className="block truncate text-[15px] font-medium">{s.name}</span>
+                              <span className="block text-[12.5px] text-[var(--muted2)]">{s.vicdata ? "SMT home, read-only" : "Not on VicData yet"}</span>
+                            </span>
+                            {s.likely && <span title={GROUP_NOTES.likelyWhy} className="rounded-[6px] bg-[var(--group-likely-bg)] px-[7px] py-px text-[10.5px] font-bold text-[var(--group-likely-fg)]">{GROUP_NOTES.likely}</span>}
+                            {s.vicdata && <span aria-hidden="true" className="text-[var(--muted2)]">&rarr;</span>}
+                          </>
+                        );
+                        return s.vicdata ? (
+                          <Link href={withBack(`/teacher/smt?headOffice=${s.urn}`, groupHome)} className="fd-tile flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
+                            {body}
+                          </Link>
+                        ) : (
+                          <div data-no-link="" className="fd-tile cursor-default flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-3 text-[var(--fg)]">
+                            {body}
+                          </div>
+                        );
+                      })()}
                     </li>
                   ))}
                 </ul>
