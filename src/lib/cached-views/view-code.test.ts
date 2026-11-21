@@ -14,7 +14,7 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, sta
 import { tmpdir } from "node:os";
 import { execFileSync, spawnSync } from "node:child_process";
 import path from "node:path";
-import { ALWAYS, VIEWS_DIR, ViewListError, checkedViews, viewCode, viewFiles } from "../../../scripts/write-build-info.mjs";
+import { ALWAYS, VIEWS_DIR, ViewListError, checkedViews, importClosure, preloadCodeHash, viewCode, viewFiles } from "../../../scripts/write-build-info.mjs";
 import { parseBuildInfo } from "../build-info";
 
 const root = path.resolve(__dirname, "../../..");
@@ -199,6 +199,7 @@ test("view_code: a view list that doesn't match the code fails the build; a walk
     const ok = runScript(dir);
     assert.equal(ok.code, 0, ok.out);
     assert.ok(ok.info && typeof ok.info.view_code === "object" && ok.info.view_code, "view_code written");
+    assert.match(String(ok.info.preload_code), /^[0-9a-f]{16}$/, "preload_code written");
 
     const lib = path.join(dir, "src/lib/smt/overview.ts");
     const libWas = readFileSync(lib, "utf8");
@@ -245,4 +246,57 @@ test("build-info: view_code is read only when every entry is a view name and a 1
   assert.deepEqual(read({ "smt/overview": "aaaaaaaaaaaaaaaa", "teacher/dashboard": "bbbbbbbbbbbbbbbb" }), { "smt/overview": "aaaaaaaaaaaaaaaa", "teacher/dashboard": "bbbbbbbbbbbbbbbb" });
   for (const bad of [null, undefined, {}, [], "x", { "smt/overview": "short" }, { "smt/overview": "aaaaaaaaaaaaaaaa", other: 1 }, { "a|b": "aaaaaaaaaaaaaaaa" }, { "": "aaaaaaaaaaaaaaaa" }]) assert.equal(read(bad), null, JSON.stringify(bad));
   assert.equal(parseBuildInfo(JSON.stringify({ ...base, view_code: { "smt/overview": "aaaaaaaaaaaaaaaa" } }), {}).server_code, base.server_code, "server_code kept beside it");
+});
+
+test("preload_code: changing anything the boot preload reaches changes it; nothing else does", { timeout: 300_000 }, () => {
+  const dir = copyRepo();
+  try {
+    const base = preloadCodeHash(dir);
+    assert.match(String(base), /^[0-9a-f]{16}$/);
+    const files = [...importClosure([path.join(dir, "src/instrumentation.ts")], dir)] as string[];
+    assert.ok(files.some((f) => f.endsWith("src/lib/national-loads.ts")) && files.some((f) => f.endsWith("src/lib/national-preload.ts")), "it follows the dynamic import to the preload and its loads");
+    for (const f of files) {
+      const was = readFileSync(f);
+      appendFileSync(f, f.endsWith(".json") ? " " : "\n// changed\n");
+      try {
+        assert.notEqual(preloadCodeHash(dir), base, path.relative(dir, f));
+      } finally {
+        writeFileSync(f, was);
+      }
+    }
+    const ui = path.join(dir, "src/components/smt/SmtDashboard.tsx");
+    appendFileSync(ui, "\n// changed\n");
+    assert.equal(preloadCodeHash(dir), base);
+    rmSync(path.join(dir, "src/instrumentation.ts"));
+    assert.equal(preloadCodeHash(dir), null, "no preload in the build");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("view_code: adding a view, or pointing one at another module, moves only that view", () => {
+  const dir = copyRepo();
+  try {
+    const base = quietly(() => viewCode(dir)) as Record<string, string>;
+    const list = path.join(dir, VIEWS_DIR, "views.json");
+    const was = JSON.parse(readFileSync(list, "utf8"));
+    // chooser/urns moved to a module with the same text under another name.
+    cpSync(path.join(dir, VIEWS_DIR, "chooser-urns.ts"), path.join(dir, VIEWS_DIR, "chooser-urns-2.ts"));
+    rmSync(path.join(dir, VIEWS_DIR, "chooser-urns.ts"));
+    for (const r of ["src/app/api/teacher/chooser-set/route.ts"]) writeFileSync(path.join(dir, r), readFileSync(path.join(dir, r), "utf8").replace("cached-views/chooser-urns\"", "cached-views/chooser-urns-2\""));
+    writeFileSync(list, JSON.stringify({ ...was, "chooser/urns": "chooser-urns-2.ts" }, null, 2));
+    const moved = quietly(() => viewCode(dir)) as Record<string, string>;
+    const changed = Object.keys(base).filter((v) => moved[v] !== base[v]);
+    // The route changed too, so every view it serves moves; nothing else.
+    assert.deepEqual(changed.sort(), ["chooser/nearest", "chooser/ranking", "chooser/ranking-full", "chooser/urns"]);
+    // A new view in its own module, called from a new route: the others keep their versions.
+    writeFileSync(path.join(dir, VIEWS_DIR, "new-view.ts"), `import { cachedResult, resultKey } from "../results-cache";\nexport const cachedNew = (urn: string) => cachedResult(resultKey("new/view", urn, {}), async () => 1);\n`);
+    writeFileSync(path.join(dir, "src/app/api/new-view-route.ts"), `import { cachedNew } from "@/lib/cached-views/new-view";\nexport const GET = () => cachedNew("1");\n`);
+    writeFileSync(list, JSON.stringify({ ...was, "chooser/urns": "chooser-urns-2.ts", "new/view": "new-view.ts" }, null, 2));
+    const added = quietly(() => viewCode(dir)) as Record<string, string>;
+    assert.match(added["new/view"], /^[0-9a-f]{16}$/);
+    for (const v of Object.keys(moved)) assert.equal(added[v], moved[v], `${v} unmoved by a new view`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

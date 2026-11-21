@@ -2,7 +2,7 @@
 // npx tsx --test src/lib/results-cache.test.ts
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { cachedResult, codeFor, dataVersionOf, postgresStore, resultKey, resultsCacheStats, setResultsCacheForTests, stableJson, viewKeyPattern, viewOfKey, type ResultsStore, type RowToWrite, type StoredRow, type Versions } from "./results-cache";
+import { cachedResult, codeFor, codeVersions, dataVersionOf, postgresStore, resultKey, resultsCacheStats, setResultsCacheForTests, stableJson, viewKeyPattern, viewOfKey, type ResultsStore, type RowToWrite, type StoredRow, type Versions } from "./results-cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cachedReference, clearReferenceCache } from "./server-cache";
 import { markDegraded, tracedFetch, traced, isDegraded } from "./build-trace";
@@ -557,4 +557,21 @@ test("per-view code: the Postgres prune compares each row with its OWN view's ve
   await postgresStore.prune({ data: "d1", code: "s", views: { "smt/overview": "ov1" } }, cut);
   assert.ok(!rows.some((r) => r.key === "smt/overview|4|h"), "past the maximum age");
   setResultsCacheForTests({});
+});
+
+test("per-view code: with the boot preload on, every view's version is mixed with what the preload runs", () => {
+  const info: { server_code: string | null; view_code: Record<string, string> | null; preload_code: string | null } = { server_code: "0123456789abcdef", view_code: { a: "aaaaaaaaaaaaaaaa", b: "bbbbbbbbbbbbbbbb" }, preload_code: "cccccccccccccccc" };
+  const off = codeVersions(info, {})!;
+  assert.deepEqual(off, { code: info.server_code, views: info.view_code }, "off: the build's own versions");
+  const on = codeVersions(info, { NATIONAL_PRELOAD: "on" })!;
+  assert.notEqual(on.code, off.code);
+  for (const v of ["a", "b"]) assert.notEqual(on.views![v], off.views![v], `${v} moves when the preload is on`);
+  assert.notEqual(on.views!.a, on.views!.b);
+  const moved = codeVersions({ ...info, preload_code: "dddddddddddddddd" }, { NATIONAL_PRELOAD: "on" })!;
+  for (const v of ["a", "b"]) assert.notEqual(moved.views![v], on.views![v], `${v} moves when the preload's code does`);
+  assert.deepEqual(codeVersions({ ...info, preload_code: "dddddddddddddddd" }, {}), off, "off, the preload's code doesn't matter");
+  assert.equal(codeVersions({ ...info, preload_code: "unknown" }, { NATIONAL_PRELOAD: "on" }), null, "on and its version unknown: cache off");
+  assert.deepEqual(codeVersions({ ...info, preload_code: null }, { NATIONAL_PRELOAD: "on" }), off, "no preload in the build");
+  assert.equal(codeVersions({ ...info, server_code: null }, {}), null, "no server_code: cache off, as before");
+  assert.deepEqual(codeVersions({ ...info, view_code: null }, {}), { code: info.server_code, views: null }, "the walk failed: server_code for every view");
 });

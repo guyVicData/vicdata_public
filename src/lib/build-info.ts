@@ -18,6 +18,9 @@ export type BuildInfo = {
    * module and its routes reach); null when the walk failed or the build had no list, and then every view
    * uses server_code. */
   view_code?: Record<string, string> | null;
+  /** A hash of what the boot preload (src/instrumentation.ts) runs; null when the build has none. Anything
+   * else that isn't a 16-hex hash or "commit:<sha>" reads as "unknown" (its walk failed). */
+  preload_code?: string | null;
 };
 
 const SHA = /^[0-9a-f]{7,64}$/;
@@ -50,6 +53,7 @@ export function parseBuildInfo(text: string | null, env: Record<string, string |
     commits: commits && commit && commits[0].startsWith(commit.slice(0, 7)) ? commits : null,
     server_code: typeof raw.server_code === "string" && SERVER_CODE.test(raw.server_code) ? raw.server_code : null,
     view_code: parseViewCode(raw.view_code),
+    preload_code: raw.preload_code === null || raw.preload_code === undefined ? null : typeof raw.preload_code === "string" && SERVER_CODE.test(raw.preload_code) ? raw.preload_code : "unknown",
   };
 }
 

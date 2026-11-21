@@ -205,7 +205,8 @@ function serverCode(commit) {
 //      everything each of them imports -- so another view whose answer feeds this one (SMT's school, which
 //      the SMT views take but key on its URN alone) is in it;
 //   3. ALWAYS (below): the cache itself, how answers are keyed and serialised, the in-process caches, the
-//      build's own settings, this script and the list; and package-lock.json.
+//      build's own settings and this script; and package-lock.json. Not views.json: a view's entry only names
+//      its module, whose path and text are in its version already, so adding a view moves no other view's.
 // Over-including only discards more. Tests are left out (they never run in the app). The version is
 // sha256 (16 hex) over "view-code v1", the view's name and each file's path and text, in order; never equal
 // to a server_code, so a row stored under the single version can't match.
@@ -223,7 +224,6 @@ export const ALWAYS = [
   "src/lib/reference-cache.ts",
   "src/lib/build-info.ts",
   "src/lib/supabase.ts",
-  "src/lib/cached-views/views.json",
   "scripts/write-build-info.mjs",
   "tsconfig.json",
   "next.config.ts",
@@ -296,6 +296,34 @@ export function hashViewFiles(view, files, rootDir = root) {
   return h.digest("hex").slice(0, 16);
 }
 
+// ---- preload_code: what the boot preload runs ----------------------------------------------------------
+// src/instrumentation.ts (the national preload, behind NATIONAL_PRELOAD=on) fills the same in-process keys the
+// views read, some with loaders of its own (src/lib/national-loads.ts), and no route imports it: so neither a
+// view's files nor server_code hold it. Its own version, over everything instrumentation.ts reaches; when the
+// preload is on, results-cache.ts mixes it into every view's version (off, it can't change a value). null when
+// the build has no instrumentation.ts; `commit:<sha>` when the walk fails (changes every deploy).
+export function preloadCodeHash(rootDir = root) {
+  const entry = join(rootDir, "src", "instrumentation.ts");
+  if (!existsSync(entry)) return null;
+  const files = [...importClosure([entry], rootDir)].sort();
+  const h = createHash("sha256").update("preload-code v1\0");
+  for (const f of files) h.update(relative(rootDir, f)).update("\0").update(readFileSync(f)).update("\0");
+  const lock = join(rootDir, "package-lock.json");
+  if (existsSync(lock)) h.update("package-lock.json\0").update(readFileSync(lock));
+  return h.digest("hex").slice(0, 16);
+}
+
+function preloadCode(commit) {
+  try {
+    const h = preloadCodeHash();
+    log(h ? `preload_code over what src/instrumentation.ts reaches` : "preload_code: no src/instrumentation.ts here");
+    return h;
+  } catch (e) {
+    log(`preload_code: the walk failed (${e.message.split("\n")[0]})`);
+    return commit ? `commit:${commit}` : "unknown";
+  }
+}
+
 /** { view: version } for every view; null when there's no list here or the walk failed. Throws ViewListError
  * (fails the build) when the list doesn't match the code. */
 export function viewCode(rootDir = root) {
@@ -338,6 +366,7 @@ async function main() {
     source: info?.commits ? info.source : null,
     server_code: serverCode(commit),
     view_code: viewCode(),
+    preload_code: preloadCode(commit),
   };
   log(result.commits ? `${result.commits.length} commit(s) listed from ${result.source}, newest ${result.commit}` : `no commit list (commits: null); commit ${result.commit ?? "unknown"}`);
 
@@ -365,7 +394,7 @@ if (isMain) {
     log(`failed (${e && e.message ? e.message.split("\n")[0] : e}); writing commits: null`);
     try {
       mkdirSync(dirname(out), { recursive: true });
-      writeFileSync(out, JSON.stringify({ commit: null, built_at: new Date().toISOString(), commits: null, source: null, server_code: null, view_code: null }) + "\n");
+      writeFileSync(out, JSON.stringify({ commit: null, built_at: new Date().toISOString(), commits: null, source: null, server_code: null, view_code: null, preload_code: "unknown" }) + "\n");
     } catch {
       // The app reads a missing file as "no list" too.
     }

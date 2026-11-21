@@ -14,7 +14,7 @@
 //   2. a FRESH process, the cache ON over the same PGlite files: every answer must come from the store
 //      (L2), none built, and equal the first process's cache-off JSON byte for byte.
 // The data version is the live one (production's stamps and the school sync); the code version is a
-// stand-in (a dev checkout has no build-info.json). Every answer is stored here (minimum build time 0)
+// stand-in, or each view's own (view_code) when the checkout has been built (npm run build). Every answer is stored here (minimum build time 0)
 // so every route's answer is checked, not only the slow ones. Reads the live databases only: the
 // school's lists and catchment through the service role, as a platform admin's peek does.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -247,7 +247,11 @@ async function versionsFor(): Promise<Versions> {
   const { firstEntryYear } = await import("../src/lib/admissions/entry-points");
   const d = dataVersionOf({ stamps: await allSourceStamps(), sync: await schoolSyncStamp(), entryYear: firstEntryYear(new Date()), epoch: "" }, Date.now(), 30 * 60_000);
   if (!d) throw new Error("couldn't read the live stamps");
-  const v: Versions = { data: d.data, code: `parity-${Date.now()}`, settled: true };
+  // Each view under its own code version when this checkout has been built (src/generated/build-info.json's
+  // view_code), so the per-view path is the one exercised; otherwise one stand-in for every view.
+  const { buildInfo } = await import("../src/lib/build-info");
+  const v: Versions = { data: d.data, code: `parity-${Date.now()}`, views: buildInfo().view_code ?? null, settled: true };
+  console.log(v.views ? `per-view code versions: ${Object.keys(v.views).length} views` : "one stand-in code version for every view (no build-info.json)");
   console.log(`data version ${d.data} (live; settled: ${d.settled}); liveVersions() here: ${live ? "has a build" : "null (no build-info.json in a dev checkout: the cache would stay off)"}`);
   writeFileSync(pinned, JSON.stringify(v));
   return v;

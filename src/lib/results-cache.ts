@@ -31,6 +31,9 @@
 //                 -- so a deploy drops only the answers whose code changed. The view is the key's first
 //                 part (resultKey). A view the build has no version for, or a build whose walk failed,
 //                 uses server_code (every file the API routes import), which drops more, never less.
+//                 With the boot preload on (NATIONAL_PRELOAD=on) each is mixed with preload_code, a hash
+//                 of what src/instrumentation.ts reaches: it fills the keys the views read, from code
+//                 no route imports (codeVersions).
 // The app's own derived tables (the census cache, nearest neighbours, roll aggregates) are recomputed
 // just after a promote and carry no stamp of their own, so nothing is stored until the newest stamp is
 // RESULTS_CACHE_SETTLE_MIN (30) minutes old -- and when a process sees the data version change, its
@@ -158,12 +161,28 @@ export const viewOfKey = (key: string) => key.slice(0, Math.max(0, key.indexOf("
 /** The code version a view's answers are kept under: its own, else server_code. */
 export const codeFor = (v: { code: string; views?: Record<string, string> | null }, view: string): string => (view && v.views && Object.prototype.hasOwnProperty.call(v.views, view) ? v.views[view] : v.code);
 
-/** The live versions: production's stamps, the school sync, and this build's server_code and view_code. */
-export async function liveVersions(): Promise<Versions | null> {
-  const info = buildInfo();
+/** This build's code versions: server_code, and each view's own (view_code). With the boot preload on
+ * (NATIONAL_PRELOAD=on: it fills the keys the views read, from code no route imports) each is mixed with
+ * preload_code, so a change to what the preload runs moves every view; off, it can't change a value. null
+ * (the cache stays off): no server_code, or the preload on and its version unknown. */
+export function codeVersions(info: { server_code?: string | null; view_code?: Record<string, string> | null; preload_code?: string | null }, env: Record<string, string | undefined> = process.env): { code: string; views: Record<string, string> | null } | null {
   const code = info.server_code;
   if (!code) return null;
   const views = info.view_code ?? null;
+  if (env.NATIONAL_PRELOAD !== "on" || !info.preload_code) return { code, views };
+  if (info.preload_code === "unknown") return null;
+  const p = info.preload_code;
+  const mix = (c: string) => createHash("sha256").update(`${c}\0preload\0${p}`).digest("hex").slice(0, 16);
+  return { code: mix(code), views: views ? Object.fromEntries(Object.entries(views).map(([k, c]) => [k, mix(c)])) : null };
+}
+
+let codeMemo: { code: string; views: Record<string, string> | null } | null | undefined;
+
+/** The live versions: production's stamps, the school sync, and this build's code versions (codeVersions). */
+export async function liveVersions(): Promise<Versions | null> {
+  const cv = (codeMemo ??= codeVersions(buildInfo()));
+  if (!cv) return null;
+  const { code, views } = cv;
   const [stamps, sync] = await Promise.all([allSourceStamps(), schoolSyncStamp()]);
   const t = now();
   const d = dataVersionOf({ stamps, sync, entryYear: firstEntryYear(new Date(t)), epoch: process.env.RESULTS_CACHE_EPOCH ?? "" }, t, settleMs());
