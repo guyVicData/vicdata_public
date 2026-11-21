@@ -1,27 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import ForgotPasswordForm, { BUTTON, FIELD, TEXT_LINK } from "@/components/auth/ForgotPasswordForm";
+import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
+import { AuthShell, AUTH_BUTTON, AUTH_INPUT, AUTH_LINK } from "@/components/auth/AuthShell";
 import {
   EXPIRED_LINK_MESSAGE,
   MIN_PASSWORD_LENGTH,
   NO_LINK_MESSAGE,
   newPasswordProblem,
+  afterResetDestination,
   parseRecoveryArrival,
   updateOutcome,
   type RecoveryArrival,
 } from "@/lib/password-reset";
 
-// R-PASSWORD-RESET: where the recovery email's link lands. This project's browser client is supabase-js's
-// default implicit flow, so the session arrives in the URL fragment and the client (first made by NavBar)
-// saves it and clears the fragment only after checking the token over the network. The arrival is read
-// here, when the page's module first runs in the browser (while the first render is still going), so it
-// is always read before the client clears it. Used once: a later visit in the same tab (client
-// navigation keeps the module) reads as "none". It is spent only once a run of the effect has its
-// answer, so React's dev double effect sees it too.
+// R-PASSWORD-RESET: where the recovery email's link lands. Since cookie sessions (front door part 3) the browser client
+// uses PKCE: Supabase's own link arrives as ?code=, which the client exchanges for the session in its first
+// initialize() (in the browser that asked, which holds the code verifier); a link through /auth/confirm arrives
+// with the session already in the cookie (?recovery=1, any browser); a bad link as ?error=. The arrival is read when
+// the page's module first runs in the browser, before the client clears the URL. Used once: a later visit in the
+// same tab (client navigation keeps the module) reads as "none". It is spent only once a run of the effect has its
+// answer, so React's dev double effect sees it too. After the new password, the device step (/api/auth/device):
+// a known device goes home, a new one to the code screen (DEVICE_CODES=on). The beta gate lets this page and that
+// route through before the device step.
 let arrival: RecoveryArrival = typeof window === "undefined" ? { kind: "none" } : parseRecoveryArrival(window.location.hash, window.location.search);
 
 // A reload after the fragment has gone still finds the form: the recovered user's id, for this tab only.
@@ -47,7 +50,6 @@ function writePending(v: string | null) {
 
 export default function ResetPasswordPage() {
   const supabase = createBrowserSupabaseClient();
-  const router = useRouter();
   const [state, setState] = useState<State>("checking");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -97,7 +99,17 @@ export default function ResetPasswordPage() {
     if (out.kind === "ok") {
       writePending(null);
       setState("done");
-      router.replace("/member");
+      const r = await fetch("/api/auth/device", { method: "POST" }).catch(() => null);
+      const j = (await r?.json().catch(() => ({}))) as { next?: string; error?: string } | undefined;
+      const dest = afterResetDestination(j?.next);
+      if (!dest) {
+        setProblem(j?.error ?? "Your password is changed. Sign in with it to carry on.");
+        setState("ready");
+        return;
+      }
+      // A full load: the proxy must see the device on the very next request.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full load on purpose (above)
+      window.location.assign(dest);
       return;
     }
     if (error) console.error("[ResetPassword] updateUser:", error.status, error.code ?? error.name);
@@ -111,7 +123,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm px-4 py-16 sm:px-6 sm:py-24">
+    <AuthShell wordmarkHref="/">
       {state === "checking" && <p className="text-sm text-neutral-500">Checking your link…</p>}
 
       {(state === "ready" || state === "saving") && (
@@ -130,7 +142,7 @@ export default function ResetPasswordPage() {
                 minLength={MIN_PASSWORD_LENGTH}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={FIELD}
+                className={AUTH_INPUT}
               />
             </label>
             <label className="block text-sm">
@@ -142,13 +154,13 @@ export default function ResetPasswordPage() {
                 minLength={MIN_PASSWORD_LENGTH}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className={FIELD}
+                className={AUTH_INPUT}
               />
             </label>
             <p className="text-sm text-neutral-500">At least {MIN_PASSWORD_LENGTH} characters.</p>
             {problem && <p role="alert" className="text-sm text-red-600">{problem}</p>}
-            <button type="submit" disabled={state === "saving"} className={BUTTON}>
-              {state === "saving" ? "Saving…" : "Save and log in"}
+            <button type="submit" disabled={state === "saving"} className={AUTH_BUTTON}>
+              {state === "saving" ? "Saving…" : "Save and sign in"}
             </button>
           </form>
         </>
@@ -157,7 +169,7 @@ export default function ResetPasswordPage() {
       {state === "done" && (
         <>
           <h1 className="text-xl font-semibold">Password changed</h1>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">You&rsquo;re logged in. Taking you to VicData…</p>
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">You&rsquo;re signed in. Taking you to VicData…</p>
         </>
       )}
 
@@ -168,11 +180,11 @@ export default function ResetPasswordPage() {
           <div className="mt-6">
             <ForgotPasswordForm />
           </div>
-          <Link href="/login" className={`mt-2 ${TEXT_LINK}`}>
-            Back to log in
+          <Link href="/login" className={`mt-2 ${AUTH_LINK}`}>
+            Back to sign in
           </Link>
         </>
       )}
-    </main>
+    </AuthShell>
   );
 }

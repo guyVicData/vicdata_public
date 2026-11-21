@@ -10,6 +10,8 @@ import {
   SEND_FAILED_MESSAGE,
   newPasswordProblem,
   parseRecoveryArrival,
+  confirmDestination,
+  afterResetDestination,
   requestOutcome,
   resetRedirectUrl,
   updateOutcome,
@@ -63,7 +65,10 @@ test("R-PASSWORD-RESET: the recovery link's fragment, a used or expired link, an
   assert.equal(parseRecoveryArrival("", "?error=access_denied&error_code=otp_expired").kind, "link_error");
   assert.deepEqual(parseRecoveryArrival("#access_token=abc&type=signup"), { kind: "none" }, "only a recovery session opens the form");
   assert.deepEqual(parseRecoveryArrival(""), { kind: "none" });
-  assert.deepEqual(parseRecoveryArrival("", "?code=pkce-code"), { kind: "none" }, "not this project's flow");
+  // Cookie sessions (part 3): the PKCE link, and /auth/confirm's redeemed link.
+  assert.deepEqual(parseRecoveryArrival("", "?code=pkce-code"), { kind: "recovery" }, "the PKCE link: the browser client exchanges it");
+  assert.deepEqual(parseRecoveryArrival("", "?recovery=1"), { kind: "recovery" }, "redeemed on the server by /auth/confirm");
+  assert.deepEqual(parseRecoveryArrival("", "?error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired"), { kind: "link_error", code: "otp_expired", description: "Email link is invalid or has expired" });
 });
 
 test("R-PASSWORD-RESET: the new password follows sign-up's rules and is typed twice", () => {
@@ -90,4 +95,24 @@ test("R-PASSWORD-RESET: both pages are never indexed", () => {
   for (const f of ["../app/login/layout.tsx", "../app/reset-password/layout.tsx"]) {
     assert.match(readFileSync(new URL(f, import.meta.url), "utf8"), /NOINDEX_METADATA/, f);
   }
+});
+
+test("R-PASSWORD-RESET: /auth/confirm sends a redeemed link to a path on this site only; a recovery to the reset page", () => {
+  assert.equal(confirmDestination("recovery", "/reset-password"), "/reset-password?recovery=1");
+  assert.equal(confirmDestination("recovery", null), "/reset-password?recovery=1");
+  assert.equal(confirmDestination("recovery", "//evil.example"), "/reset-password?recovery=1");
+  assert.equal(confirmDestination("recovery", "https://evil.example"), "/reset-password?recovery=1");
+  assert.equal(confirmDestination("email", "/teacher"), "/teacher");
+  assert.equal(confirmDestination("email", null), "/member");
+});
+
+test("R-PASSWORD-RESET: after the new password, the device step decides where to go (home, or the code screen)", () => {
+  assert.equal(afterResetDestination("home"), "/member");
+  assert.equal(afterResetDestination("code"), "/login?step=device");
+  assert.equal(afterResetDestination(undefined), null);
+  const page = readFileSync(new URL("../app/reset-password/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /fetch\("\/api\/auth\/device", \{ method: "POST" \}\)/);
+  assert.match(page, /afterResetDestination\(/);
+  const confirm = readFileSync(new URL("../app/auth/confirm/route.ts", import.meta.url), "utf8");
+  assert.match(confirm, /verifyOtp\(\{ type, token_hash/);
 });

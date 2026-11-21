@@ -20,7 +20,7 @@ export const HIDDEN_SCHOOL_PAGES_SOURCE = "/schools/:path*";
 export const HIDDEN_SCHOOL_PAGES_DESTINATION = "/member";
 
 // R-LANDING-MINIMAL (A2): the private-beta landing page and the signed-out screens are never indexed either.
-export const FRONT_DOOR_NOINDEX = ["/", "/login", "/reset-password", "/forgot-password", "/auth/:path*"];
+export const FRONT_DOOR_NOINDEX = ["/", "/forgot-password", "/auth/:path*"]; // /login and /reset-password are in NOINDEX_SOURCES
 
 const nextConfig: NextConfig = {
   async headers() {

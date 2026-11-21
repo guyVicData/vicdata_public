@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+// Front door part 3: the signed-out frame's own controls, so sign-in, this form and /reset-password look like one.
+import { AUTH_BUTTON, AUTH_INPUT, AUTH_LINK } from "./AuthShell";
 import { requestOutcome, resetRedirectUrl, tooSoonMessage, waitRemaining, RESEND_WAIT_SECONDS } from "@/lib/password-reset";
 
 // R-PASSWORD-RESET: the "Forgot password?" form, on /login and on /reset-password when a link has expired.
@@ -10,12 +12,9 @@ import { requestOutcome, resetRedirectUrl, tooSoonMessage, waitRemaining, RESEND
 
 const LAST_SENT_KEY = "vicdata_reset_last_sent";
 
-export const FIELD =
-  "block min-h-11 w-full rounded-md border border-neutral-300 px-3 py-2 text-base sm:text-sm dark:border-neutral-700 dark:bg-neutral-900";
-export const BUTTON =
-  "min-h-11 w-full rounded-md bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900";
-export const TEXT_LINK =
-  "inline-flex min-h-11 items-center text-sm text-neutral-600 underline underline-offset-2 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100";
+export const FIELD = AUTH_INPUT;
+export const BUTTON = AUTH_BUTTON;
+export const TEXT_LINK = AUTH_LINK;
 
 function readLastSent(): number | null {
   try {

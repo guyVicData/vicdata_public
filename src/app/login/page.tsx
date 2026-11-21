@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { AuthShell, AUTH_BUTTON, AUTH_INPUT } from "@/components/auth/AuthShell";
+import { AuthShell, AUTH_BUTTON, AUTH_INPUT, AUTH_LINK } from "@/components/auth/AuthShell";
+import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 import { DeviceCode, goHome } from "@/components/auth/DeviceCode";
 import { SIGNED_OUT_WORDS } from "@/lib/devices/words";
 
@@ -11,9 +12,10 @@ import { SIGNED_OUT_WORDS } from "@/lib/devices/words";
 // public sign-up (A4): testers arrive by invitation (/join/<urn>). Then the device step (E24, /api/auth/device):
 // a device VicData knows goes straight home; one it hasn't seen asks for the 6-digit code emailed to the account
 // (DEVICE_CODES=on). /login?step=device is where the beta gate sends a session that hasn't finished this step;
-// /login?signedOut=<why> says why this browser was signed out.
+// /login?signedOut=<why> says why this browser was signed out. R-PASSWORD-RESET: "Forgot password?" swaps the form
+// for the email-a-link form in place (ForgotPasswordForm; the link lands on /reset-password).
 
-type Step = { kind: "form" } | { kind: "checking" } | { kind: "code"; sentTo: string; message: string | null };
+type Step = { kind: "form" } | { kind: "forgot" } | { kind: "checking" } | { kind: "code"; sentTo: string; message: string | null };
 
 export default function LoginPage() {
   return (
@@ -89,6 +91,18 @@ function Login() {
       </AuthShell>
     );
   if (step.kind === "code") return <DeviceCode sentTo={step.sentTo} initialMessage={step.message} onOther={useAnotherAccount} />;
+  if (step.kind === "forgot")
+    return (
+      <AuthShell wordmarkHref="/">
+        <h1 className="text-xl font-semibold">Forgot your password?</h1>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+          Enter the email address you sign in with. We&rsquo;ll send you a link to choose a new password.
+        </p>
+        <div className="mt-6">
+          <ForgotPasswordForm initialEmail={email} onBack={() => setStep({ kind: "form" })} />
+        </div>
+      </AuthShell>
+    );
 
   return (
     <AuthShell wordmarkHref="/">
@@ -108,6 +122,9 @@ function Login() {
           {submitting ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      <button type="button" onClick={() => setStep({ kind: "forgot" })} className={`mt-2 ${AUTH_LINK}`}>
+        Forgot password?
+      </button>
     </AuthShell>
   );
 }

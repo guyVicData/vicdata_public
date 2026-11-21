@@ -1,8 +1,7 @@
-// R-PASSWORD-RESET (0.8 front door part 3, Q3): "Forgot password?" on today's session model -- the
-// Supabase session lives in the browser (src/lib/supabase.ts, supabase-js's default implicit flow), so
-// the recovery link lands on /reset-password with the session in the URL fragment
-// (#access_token=…&type=recovery) or, for a used or expired link, an error there
-// (#error=access_denied&error_code=otp_expired&error_description=…).
+// R-PASSWORD-RESET (0.8 front door part 3, Q3): "Forgot password?". Since cookie sessions (milestone 1) the
+// recovery link lands on /reset-password with `?code=` (PKCE, the same browser) or, through /auth/confirm, with
+// the session already set (`?recovery=1`, any browser); a used or expired link with `?error=…` (see
+// parseRecoveryArrival). After the new password the page finishes the device step (/api/auth/device).
 //
 // The pure half lives here so it is unit-tested (src/lib/password-reset.test.ts): the neutral message,
 // the redirect URL, the resend wait, the error wording, the fragment, the new-password rules.
@@ -80,9 +79,14 @@ export type RecoveryArrival =
   | { kind: "link_error"; code: string; description: string }
   | { kind: "none" };
 
-/** What the URL the reader arrived on says, read before the Supabase client clears it. A PKCE `?code=` is
- * not this project's flow (the browser client is implicit), so it reads as "none" and the page offers a
- * new link rather than guessing. */
+/** What the URL the reader arrived on says, read before the Supabase client clears it. Since cookie sessions
+ * (front door part 3, milestone 1) the browser client uses PKCE, so the link comes back one of two ways:
+ *   - `?code=…` -- Supabase's own link (the email template's {{ .ConfirmationURL }}): the browser client exchanges
+ *     the code itself, which works only in the browser that asked for the email (it holds the code verifier);
+ *   - `?recovery=1` -- /auth/confirm already redeemed the email's token_hash on the server and set the session
+ *     cookie (the template's {{ .TokenHash }} link): works in any browser, e.g. the phone's mail app.
+ * A bad or used link comes back as `?error=…&error_code=…` (or, from an older link, in the fragment). The old
+ * implicit fragment (`#access_token=…&type=recovery`) still reads as a recovery, though nothing sends it now. */
 export function parseRecoveryArrival(hash: string, search = ""): RecoveryArrival {
   const frag = new URLSearchParams(hash.replace(/^#/, ""));
   const query = new URLSearchParams(search.replace(/^\?/, ""));
@@ -91,8 +95,21 @@ export function parseRecoveryArrival(hash: string, search = ""): RecoveryArrival
   if (code || err) {
     return { kind: "link_error", code: code ?? err ?? "unspecified", description: frag.get("error_description") ?? query.get("error_description") ?? "" };
   }
+  if (query.get("code") || query.get("recovery") === "1") return { kind: "recovery" };
   if (frag.get("type") === "recovery" && frag.get("access_token")) return { kind: "recovery" };
   return { kind: "none" };
+}
+
+/** Where /auth/confirm sends a redeemed email link: a path on this site only, and for a recovery the reset page
+ * told where it came from. */
+export function confirmDestination(type: string | null, next: string | null): string {
+  const path = next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : type === "recovery" ? "/reset-password" : "/member";
+  return type === "recovery" && path.split("?")[0] === "/reset-password" ? "/reset-password?recovery=1" : path;
+}
+
+/** The new device step after a reset: what /api/auth/device's answer means for where to go. */
+export function afterResetDestination(next: string | undefined): string | null {
+  return next === "home" ? "/member" : next === "code" ? "/login?step=device" : null;
 }
 
 export const EXPIRED_LINK_MESSAGE = "This link has expired or has already been used. Each link works once, for a limited time. Send yourself a new one below.";
