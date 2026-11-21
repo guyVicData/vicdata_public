@@ -48,7 +48,10 @@ export async function smtCaller(request: NextRequest, urn: string | null): Promi
 }
 
 const URN = /^\d{5,7}$/;
-export const MAX_SET = 600;
+/** The most schools an SMT set keeps. 750 since 21 Nov 2026: every region's own "All schools" set fits (the largest,
+ * the South East at GCSE, is 682; London 659), which 600 cut short. A state school isn't offered "State schools in
+ * England" (3,497; smt-sets-panel.tsx), so nothing a default offers is cut. */
+export const MAX_SET = 750;
 
 /** The comparison set in a request body: what Teacher's chooser resolved, as URNs. */
 export function setFrom(body: unknown): { kind: string; label: string; urns: string[] } | null {

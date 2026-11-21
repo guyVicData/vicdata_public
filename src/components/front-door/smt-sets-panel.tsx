@@ -37,7 +37,7 @@ export const regionWords = (name: string | null) => (name ? (name === "London" ?
  * and college in England is too many to benchmark as a set (2,535 at Post-16): the Overview's England ranks are it.
  * So, for a state school, are the state schools in England (20 Nov: 3,497 at GCSE, 1,855 at Post-16): the Overview
  * took 67-117 s cold (or hit the database's statement timeout), one build pushed every other school's values out of
- * the server's cache, and the SMT routes keep at most 600 schools of a set (MAX_SET), so it was never the whole
+ * the server's cache, and the SMT routes kept at most 600 schools of a set then (MAX_SET, 750 since 21 Nov), so it was never the whole
  * population the panel described. An independent school keeps its England set (489 at Post-16). */
 type DefaultRanking = { key: string; label: string; filters: RankingFilters };
 export function defaultRankings(school: { independent: boolean; regionCode?: string | null; regionName: string | null } | null, phase: "ks2" | "ks4" | "ks5" | null = "ks5"): DefaultRanking[] {

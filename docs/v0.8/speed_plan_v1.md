@@ -83,7 +83,7 @@ The big-set Overviews weren't being stored at first: their census reads all ran 
 - `38227f4`: a state school isn't offered "State schools in England" (3,497 at GCSE: 67-117 s cold Overview, sometimes the statement timeout, and the routes only ever used its top 600); a note points to the Overview's England figures. Independent schools keep theirs.
 - `cd881d6`: the figures build as a nightly job (`npm run figures:build`, skips when nothing changed); Render cron setup in `smt_school_figures_v1.md`.
 - `0d38c3c`: the SMT routes read the school from the store before building, so a restart no longer pays 6-8 s before a stored answer is served.
-- Open: SMT routes cut a set to 600 schools (`MAX_SET`); "All schools in the South East" (682, Leighton Park's GCSE default) and "All schools in London" (659) are cut. Raise to ~750, or label them -- Guy to decide.
+- 21 Nov: the SMT routes' set limit (`MAX_SET`) raised from 600 to 750 (Guy), so "All schools in the South East" (682, Leighton Park's GCSE default) and "All schools in London" (659) use every school.
 
 ## 4. After the demo: the architecture (agreed with Guy, 20 Nov)
 
