@@ -2,7 +2,9 @@
 
 Guy, 21 Nov 2026. Two parts: (1) the top navigation the same on every page for every kind of user; (2) a
 "Send feedback" button in that navigation for the beta testers. Branch **`t3/nav-consistency-feedback-button`**,
-from `main` at `6b7db90a`. Not merged and not pushed. Nothing was written to any database: the crawl only read
+**rebased onto Stage 2** (`v0.8-front-door-3` at `da5a5324`, which sits on `main` at `f22b8834` with the hidden
+`/schools` pages). The first audit and crawl ran on `main` at `6b7db90a`; the after-state was crawled again on
+the combined build (below). Not merged and not pushed. Nothing was written to any database: the crawl only read
 pages, and the feedback window was opened but never sent.
 
 ## In short
@@ -84,27 +86,35 @@ everywhere, the logo going to `/teacher`, one phone row, and no horizontal scrol
 | 12 | **The phase switch appears on some pages and not others**: Recruitment, SMT (own) and the Teacher dashboards show the school's Teacher phases; Home, Meetings, the library and Admissions (depending on the school's onboarded phases) don't | various | Not changed: Q2 |
 | 13 | **Sets doesn't honour a peek**: `/sets?lookAs=110110&as=smt&peek=1` shows the platform admin's own school's sets, not Leighton Park's (AGENTS.md lists no peek for Sets; View as works) | `/sets*` | Not a nav question. Send feedback on such a page names the school the page shows |
 
-### Stage 2 (v0.8-front-door-3), assumed
+### Stage 2 (v0.8-front-door-3): this branch is rebased onto it
 
-Stage 2 merges first. I read its nav and header changes and merged both branches in a scratch worktree
-(`scratch/nav-on-stage2`, local only). The combined tree type-checks and passes the nav tests. Its effects on
-this audit:
+Stage 2 merges first, and this branch now sits on its tip (`da5a5324`). What it changed, and what this branch does
+with it:
 
-- **Landing page and sign-in.** Stage 2 hides the nav and footer on the landing page and on sign-in (`/`,
-  `/login`, the reset pages: `BareRoutes.tsx`). After the rebase those three routes are `bare` in `nav-routes.ts`,
-  and a test holds the table equal to `BARE_PATHS`.
-- **School-Admin account pages.** Stage 2 hides the site bar there, because it drew two headers. That leaves
-  `AdminShell`'s own header, a third design. This branch replaces both with the one nav (finding 3). The new
-  Sign-ins and devices page (`/teacher/school-account/sign-ins`) is `host`, like its siblings.
-- **Signed-out visitors** only reach the landing page, sign-in and `/join/<urn>`. So the signed-out rows below
-  shrink to `/join/<urn>`, which gets the nav's signed-out form.
+- **The signed-out screens are `bare`: no nav and no footer.** These are `/` (the landing page), `/login`,
+  `/reset-password` and `/forgot-password`, plus the auth hand-offs `/auth/confirm` and `/auth/callback` (route
+  handlers that redirect at once). They are `bare` in `nav-routes.ts`.
+  - Stage 2's own list, `BARE_PATHS` in `BareRoutes.tsx` (which the footer reads), now includes the two `/auth`
+    routes.
+  - A test holds the two lists equal, and Stage 2's own beta-gate test still passes.
+- **School-Admin account pages.** Stage 2 hid the site bar there, because it drew two headers. That left
+  `AdminShell`'s own header, a third design. This branch replaces both with the one nav (finding 3), including
+  on the new Sign-ins and devices page (`/teacher/school-account/sign-ins`, `host`).
+- **`/teacher/welcome`.** Stage 2 noted that the old site nav still showed above it. Here it is `own`: the
+  welcome page draws the shared nav itself and the layout draws nothing (crawled: one nav).
+- **`/member`** now goes to `/teacher` signed in and `/` signed out, never to `/schools/…`. VicData and Home go
+  to `/teacher` directly (crawled: `/` and `/member` signed in both land on `/teacher`).
+- **The hidden `/schools` pages** redirect before they render, so they have no entry in `nav-routes.ts`.
+  Listing their route names would itself break R-NO-PUBLIC-SCHOOL-LINKS. The nav test leaves out exactly the pages
+  `next.config.ts`'s redirect catches.
+- **Signed-out visitors** only reach the bare screens and `/join/<urn>`. `/join/<urn>` gets the nav's signed-out
+  form: VicData (to `/`), Log in, theme.
 - **Cookie sessions** change nothing here: the nav and the feedback button read the session through the same
-  client.
-- **Stage 2's `/account` changes** ("Where you're signed in") sit below the nav and are unaffected.
-
-**The rebase.** The conflicts are expected in `NavBar.tsx` (take this branch's version; the bare routes come from
-the table), `src/catalogue/rules.ts` (keep both blocks of new rules) and the generated `docs/catalogue/*.md`
-(regenerate). The scratch branch has the resolution.
+  client. Log out is Stage 2's `signOutHere()`, kept.
+- **Rebase conflicts**, as planned:
+  - `NavBar.tsx`: this branch's version;
+  - `src/catalogue/rules.ts`: both blocks of new rules;
+  - the generated catalogue: regenerated. Stage 2's committed copy had been generated without `dashboards.md`.
 
 ## What the one nav is now
 
@@ -211,12 +221,15 @@ email addresses are cropped out.
 | Send feedback, Dark / Light, desktop / phone | | `feedback_{dark,light}_{desktop,phone}.png` |
 | Send feedback focused (keyboard) | | `feedback_dark_desktop_focus.png` |
 | The window it opens: on SMT (the page's own surface), on Sets (described from the address) | | `feedback_open_smt_desktop.png`, `feedback_open_sets_phone.png` |
+| On Stage 2: the welcome page (one nav), Account, the School-Admin's account page (phone, in View as: the row wraps, no overflow) and Sign-ins | | `stage2_welcome_desktop.png`, `stage2_account_desktop.png`, `stage2_school_account_phone.png`, `stage2_signins_desktop.png` |
+| On Stage 2, signed out: the landing page (bare), a school's join page (the nav's signed-out form) | | `stage2_landing_signed_out_desktop.png`, `stage2_join_signed_out_phone.png` |
 
 ## Tests
 
 - **R-NAV-ONE and R-NAV-FEEDBACK** are in the rules catalogue, with runners `navOne` and `navFeedback`. Their tests
   are `src/lib/nav-consistency.test.tsx` (11 tests). They check:
-  - every page is listed in `nav-routes.ts`;
+  - every page is listed in `nav-routes.ts`, except the hidden `/schools` pages, which never render;
+  - the `bare` routes are exactly Stage 2's `BARE_PATHS`;
   - an `own` page draws `TeacherNav` and a `host` page doesn't (no second header);
   - the layout's `NavBar` draws only `TeacherNav`;
   - there is one VicData wordmark, and it goes to `/teacher`;
@@ -241,6 +254,14 @@ Each cell is one page × role, at desktop (1280) and phone (390). The tables are
 
 Head office's own pages, as a head-office user rather than a peek, were read in the code: they are the same
 components as the peek.
+
+The first two tables come from the full crawl on `main` (`6b7db90a`): before, and this branch's first after. The
+third is the representative re-crawl on the combined build (Stage 2's tip plus this branch).
+
+- **How the re-crawl signed in.** A cookie session in `@supabase/ssr`'s own format, minted the same way.
+- **Device check.** The local server ran with `DEVICE_SESSIONS=off`, Stage 2's documented emergency switch. The
+  gate still verified the session (signed out, `/teacher/smt` redirected to `/`), but the crawl wrote no device
+  rows to the production database.
 
 ### Before (main at 6b7db90a)
 
@@ -323,7 +344,7 @@ components as the peek.
 | Signed out | `/sets` | same | NavBar(site) | NavBar(site) | Sets, Join your school, Log in | — | / | — | no | — |
 | Signed out | `/teacher/welcome` | same | NavBar(site) + TeacherNav | NavBar(site) + TeacherNav | Sets, Join your school, Log in / Home, Show labels, Account | — | /, / | Log in | no | — |
 
-### After (this branch)
+### After (this branch, on main at 6b7db90a)
 
 | Role | Page | Lands on | Nav desktop | Nav phone | Items (desktop, after VicData) | Active | Logo | Account menu | Phone overflow | Send feedback |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -403,3 +424,31 @@ components as the peek.
 | Signed out | `/teacher/ks4` | same | **none** | **none** |  | — |  | — | no | no |
 | Signed out | `/sets` | same | TeacherNav(host) | TeacherNav(host) | Log in | — | / | — | no | no |
 | Signed out | `/teacher/welcome` | same | TeacherNav | TeacherNav | Log in | — | / | — | no | no |
+
+### After, on Stage 2 (combined build: da5a5324 + this branch)
+
+| Role | Page | Lands on | Nav desktop | Nav phone | Items (desktop, after VicData) | Active | Logo | Account menu | Phone overflow | Send feedback |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Teacher (peek) | `/teacher/walk/gcse-many` | same | walk band (by design) | walk band (by design) | close, Send feedback | — |  | — | no | yes (133×34; phone 44×44) |
+| SMT (peek) | `/teacher/smt` | same | TeacherNav | TeacherNav | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| SMT (peek) | `/teacher/smt/academic` | same | TeacherNav | TeacherNav | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Admissions (peek) | `/teacher/admissions` | same | TeacherNav | TeacherNav | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| School-Admin (View as) | `/teacher/school-account` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| School-Admin (View as) | `/teacher/people` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| School-Admin (View as) | `/teacher/school-account/membership` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| School-Admin (View as) | `/teacher/teams` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| School-Admin (View as) | `/teacher/school-account/sign-ins` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Head office (peek) | `/teacher/group` | same | TeacherNav | TeacherNav | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Head office (peek) | `/teacher/group/overview` | same | TeacherNav | TeacherNav | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/member` | /teacher | TeacherNav | TeacherNav | Home, Show labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/sets` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/platform` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/teacher` | same | TeacherNav | TeacherNav | Home, Show labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/sets/guided` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/` | /teacher | TeacherNav | TeacherNav | Home, Show labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/teacher/welcome` | same | TeacherNav | TeacherNav | Home, Show labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Platform admin, own (multi-role) | `/account` | same | TeacherNav(host) | TeacherNav(host) | Home, Hide labels, Send feedback, Account | — | /teacher | Your Account, Sets, Walkthroughs, School account, People, Teams, Platform, View as…, Log Out | no | yes (133×34; phone 44×44) |
+| Signed out | `/reset-password` | same | bare (by design) | bare (by design) |  | — |  | — | no | no |
+| Signed out | `/` | same | bare (by design) | bare (by design) |  | — |  | — | no | no |
+| Signed out | `/join/110110` | same | TeacherNav(host) | TeacherNav(host) | Log in | — | / | — | no | no |
+| Signed out | `/login` | same | bare (by design) | bare (by design) |  | — |  | — | no | no |
