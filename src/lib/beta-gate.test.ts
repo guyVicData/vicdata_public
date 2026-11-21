@@ -177,21 +177,27 @@ test("R-NOINDEX-SCHOOLS: the sitemap lists no school page and robots.txt has no 
 
 test("R-LANDING-MINIMAL: each landing background is decoration only -- hidden from assistive tech, no text, no links; one constant picks it", async () => {
   const { LandingArt, SpectrumLine } = await import("../components/auth/LandingArt");
-  for (const v of ["arcs", "spectrum", "bands"] as const) {
+  for (const v of ["bands", "bars", "arcs", "spectrum"] as const) {
     const html = renderToStaticMarkup(LandingArt({ variant: v }) ?? "");
     assert.equal(html.replace(/<[^>]+>/g, "").trim(), "", v);
     assert.ok(!/<a |href=|<script|<img/i.test(html), v);
     if (html) assert.match(html, /aria-hidden/, v);
   }
   assert.match(renderToStaticMarkup(SpectrumLine({})), /aria-hidden/);
-  assert.match(src("src/components/auth/landing-variant.ts"), /export const LANDING_VARIANT: LandingVariant = "(arcs|spectrum|bands)";/);
+  assert.match(src("src/components/auth/landing-variant.ts"), /export const LANDING_VARIANT: LandingVariant = "(bands|bars|arcs|spectrum)";/);
   assert.match(src("src/app/globals.css"), /@media \(prefers-reduced-motion: no-preference\) \{\s*\.landing-arc \{ animation/, "the one movement is off under reduced motion");
   assert.match(src("src/app/globals.css"), /@media \(prefers-reduced-motion: no-preference\) \{\s*\.landing-bar \{ transform-origin: left center; animation/, "the bars grow only without reduced motion");
-  // "bands" (the default, Guy 22 Nov): five bars of different lengths, in a strip the page reserves below its content.
-  const bands = renderToStaticMarkup(LandingArt({ variant: "bands" }) ?? "");
-  const widths = [...bands.matchAll(/width:(\d+)%/g)].map((m) => Number(m[1]));
-  assert.equal(widths.length, 5);
-  assert.equal(new Set(widths).size, 5, "every bar a different length");
+  // "bands" v3 (the default, Guy 22 Nov): five bars of different lengths on one diagonal baseline, behind the content;
+  // "bars" (v2): the same idea near-horizontal, in a strip the page reserves below its content.
+  for (const v of ["bands", "bars"] as const) {
+    const html = renderToStaticMarkup(LandingArt({ variant: v }) ?? "");
+    const widths = [...html.matchAll(/width:(\d+)%/g)].map((m) => Number(m[1]));
+    assert.equal(widths.length, 5, v);
+    assert.equal(new Set(widths).size, 5, `${v}: every bar a different length`);
+  }
+  assert.match(renderToStaticMarkup(LandingArt({ variant: "bands" }) ?? ""), /rotate-\[-24deg\]/, "v3 is diagonal");
   const page = src("src/app/page.tsx");
-  assert.match(page, /LANDING_VARIANT === "bands" \? BANDS_RESERVE/, "the content sits above the bars, never on them");
+  assert.match(page, /LANDING_VARIANT === "bars" \? BANDS_RESERVE/, "bars: the content sits above the bars, never on them");
+  // v3's text colours clear the bands at the worst pixel (measured: the report): never the lighter neutral-500 / -400.
+  assert.match(page, /text-neutral-600 dark:text-neutral-300[^"]*">Private beta</);
 });

@@ -4,7 +4,7 @@
 // ROLE_ACCENT_LIGHT, src/components/smt/ui.tsx PHASE_TONES, the Mid fields' Admissions sky). Decoration only:
 // aria-hidden, no text, no pointer events, clipped so it never scrolls sideways. The one movement (the arcs draw
 // themselves in, once) is off under prefers-reduced-motion. Pick with LANDING_VARIANT (src/app/page.tsx).
-export type LandingVariant = "arcs" | "spectrum" | "bands";
+export type LandingVariant = "bands" | "bars" | "arcs" | "spectrum";
 
 // Order: the school journey -- who joins (Admissions), Primary, GCSE, Post-16, then the whole school around them.
 const BANDS = [
@@ -18,7 +18,10 @@ const BANDS = [
 /** The bars' lengths (share of the page's width), in BANDS' order: a gentle rise with one dip at Post-16. */
 const BAR_LENGTHS = ["46%", "61%", "78%", "69%", "92%"] as const;
 
-/** The strip the "bands" variant draws in, reserved below the page's content (the same heights as the strip). */
+/** bands v3 (the default, Guy 22 Nov): the same five lengths' idea on v1's diagonal, longer, as % of the frame. */
+const BAND_LENGTHS = ["52%", "66%", "83%", "74%", "97%"] as const;
+
+/** The strip the "bars" variant draws in, reserved below the page's content (the same heights as the strip). */
 export const BANDS_RESERVE = "pb-[188px] sm:pb-[292px]";
 
 /** Under the logo in every variant: a fine line in the five colours (the "spectrum" variant's whole idea). */
@@ -35,7 +38,27 @@ export function SpectrumLine({ className = "" }: { className?: string }) {
 export function LandingArt({ variant }: { variant: LandingVariant }) {
   if (variant === "spectrum") return null;
   if (variant === "bands")
-    // Guy, 22 Nov: "take them further across the screen and make them different lengths so it gives a sense of a
+    // bands v3 (Guy, 22 Nov: "diagonal, as in v1", and they may pass under the logo and button). Five bars of
+    // different lengths on one diagonal baseline -- still a hint of a chart -- in a frame twice the page's width,
+    // turned like v1's ribbons, so they cross from beyond the lower left well into the upper right. They pass behind
+    // the content with no fade or box: the content's own colours clear the bands (src/app/page.tsx; worst-spot contrasts
+    // measured in the report) (contrast measured: the
+    // report). They grow to their lengths once (.landing-bar), never under prefers-reduced-motion.
+    return (
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-[54%] flex w-[190vw] -translate-x-1/2 -translate-y-1/2 rotate-[-24deg] flex-col gap-3 sm:top-[60%] sm:w-[200vw] sm:gap-5">
+          {BANDS.map((b, i) => (
+            <div
+              key={b.name}
+              className={`landing-bar h-7 shrink-0 rounded-r-full bg-[var(--c)] opacity-[0.2] sm:h-14 dark:opacity-[0.28] ${b.cls}`}
+              style={{ width: BAND_LENGTHS[i], animationDelay: `${i * 110}ms` }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  if (variant === "bars")
+    // bands v2 (Guy, 22 Nov): "take them further across the screen and make them different lengths so it gives a sense of a
     // graph". Five near-horizontal bars from beyond the left edge -- a bar chart on one baseline -- in the strip the
     // page reserves below its content (BANDS_RESERVE, src/app/page.tsx), so no bar ever sits under the logo, the
     // words or Sign in, at any height or width. Lengths rise gently with one dip, like a real chart. They grow to

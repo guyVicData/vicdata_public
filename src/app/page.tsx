@@ -22,12 +22,13 @@ export const metadata: Metadata = {
 
 export default function Landing() {
   return (
-    <main data-landing={LANDING_VARIANT} className={`relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-neutral-50 px-4 pt-16 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 ${LANDING_VARIANT === "bands" ? BANDS_RESERVE : "pb-16"}`}>
+    <main data-landing={LANDING_VARIANT} className={`relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-neutral-50 px-4 pt-16 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 ${LANDING_VARIANT === "bars" ? BANDS_RESERVE : "pb-16"}`}>
       <LandingArt variant={LANDING_VARIANT} />
       <div className="relative flex w-full max-w-[358px] flex-col items-center text-center sm:max-w-[420px]">
         <Logo size="large" />
         <SpectrumLine className="mt-6 max-w-[220px] sm:mt-8 sm:max-w-[300px]" />
-        <p className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400 sm:mt-8">Private beta</p>
+        {/* neutral-600 / neutral-300: at least 4.5:1 over the page and over any band behind it, worst pixel (bands v3). */}
+        <p className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-300 sm:mt-8">Private beta</p>
         <Link href="/login" className={`${AUTH_BUTTON} mt-8 max-w-[280px]`}>
           Sign in
         </Link>
