@@ -47,6 +47,10 @@ export function useFirstHost(): boolean {
   }, [id]);
   return useSyncExternalStore(subscribeHosts, firstHost, () => 0) === id;
 }
+/** How many surfaces on the page could draw the window (the nav's Send feedback draws it when none does). */
+export function useHostCount(): number {
+  return useSyncExternalStore(subscribeHosts, () => hosts.length, () => 0);
+}
 
 export function ViewSurfaceProvider({ surface, config = null, children }: { surface: ViewSurface; config?: DashboardConfig | null; children: ReactNode }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);

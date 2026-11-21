@@ -344,6 +344,10 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
   if (url.setup && member.access !== "viewAs")
     return (
       <MidBand style={admissionsVars("dark")} className="min-h-screen">
+      {/* 0.8 nav consistency (R-NAV-ONE): setup is a page like any other, with the one nav above its frame. */}
+      <div className="mx-auto w-full max-w-[1280px] px-4 pt-4 sm:px-7">
+        <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={navTheme} onTheme={onTheme} />
+      </div>
       <Setup
         member={member}
         step={url.setup}

@@ -148,9 +148,10 @@ export function AdminHeader({ active }: { active: "people" | "teams" }) {
   const off = `${seg} text-[var(--muted)] hover:text-[var(--fg)]`;
   return (
     <div className="border-b border-[var(--border)]">
-      <div className={`${ADMIN_COLUMN} flex items-center justify-between px-5 py-[18px]`}>
-        {/* To Teacher view home, not the public site: these screens are reached from it. */}
-        <Link href="/teacher" className="text-[15px] font-bold tracking-[0.02em]">VicData</Link>
+      {/* 0.8 nav consistency (R-NAV-ONE): the one nav (VicData, Home, Send feedback, Account, the theme) is drawn
+          above this by the root layout; this row keeps only the People | Teams switch -- its own wordmark was a
+          second VicData, and the page had no Account menu or theme switch. */}
+      <div className={`${ADMIN_COLUMN} flex items-center justify-end px-5 py-3`}>
         <nav aria-label="School admin" className="flex gap-1.5 rounded-full border border-[var(--panel-border)] bg-[var(--panel-bg)] p-[3px]">
           {active === "people" ? <span className={on} aria-current="page">People</span> : <Link href="/teacher/people" className={off}>People</Link>}
           {active === "teams" ? <span className={on} aria-current="page">Teams</span> : <Link href="/teacher/teams" className={off}>Teams</Link>}

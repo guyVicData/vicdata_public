@@ -78,6 +78,36 @@
   --row-featured-ks2: #2a2a2e;
 }
 
+/* 0.8 nav consistency (R-NAV-ONE): the one nav drawn by the root layout above a page that doesn't draw it
+   ([data-shell-nav], NavBar.tsx) takes #teacher-root's tokens, the ones a nav reads, in the person's theme.
+   The same values as the blocks above (R-NAV-ONE's test holds them equal). */
+[data-shell-nav] {
+  --bg: #f7f7f8; --fg: #17171b; --muted: #6b6b72; --muted2: #55555c; --muted3: #9a9aa2;
+  --border: #e6e6ea; --panel-bg: #ffffff; --panel-border: #e2e2e7; --panel-border2: #d8d8dd;
+  --box-bg: #f7f7f9; --source: #8d8d95;
+}
+@media (prefers-color-scheme: dark) {
+  [data-shell-nav]:not([data-theme="light"]) {
+    --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
+    --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
+    --box-bg: #0e0e10; --source: #5c5c62;
+  }
+}
+[data-shell-nav][data-theme="dark"] {
+  --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
+  --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
+  --box-bg: #0e0e10; --source: #5c5c62;
+}
+/* R-NAV-FEEDBACK: "Send feedback", traffic-light amber, in every nav.
+   R-NAV-FEEDBACK: "Send feedback", traffic-light amber -- the fill, the ink on it (11:1), and its edge: a darker
+   amber in Light, so the pill stands off a white bar (4.9:1), the fill itself in Dark (11:1 on the bar). */
+#teacher-root, [data-shell-nav], body > [data-feedback-window] { --nav-fb-fill: #ffbf00; --nav-fb-ink: #1f1300; --nav-fb-edge: #a16207; }
+@media (prefers-color-scheme: dark) {
+  #teacher-root:not([data-theme="light"]), [data-shell-nav]:not([data-theme="light"]) { --nav-fb-edge: #ffbf00; }
+}
+#teacher-root[data-theme="dark"], [data-shell-nav][data-theme="dark"], #teacher-root [data-theme="dark"] { --nav-fb-edge: #ffbf00; }
+#teacher-root[data-theme="light"], [data-shell-nav][data-theme="light"] { --nav-fb-edge: #a16207; }
+
 /* 0.8 front door (C18): a dark band inside a light page -- the walk's header in Mid, where the page is Light
    (its plates are white) and the header stays dark. Dark's tokens on the band (the dark variant already
    answers to a [data-theme="dark"] ancestor). */

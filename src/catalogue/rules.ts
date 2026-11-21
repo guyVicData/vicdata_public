@@ -3349,6 +3349,29 @@ export const RULES: Rule[] = [
     origin: "0.8 front door part 3, milestone 3 (E25)",
     status: "active",
   },
+  // ------------------------------------------------------------------ 0.8 nav consistency (Guy, 21 Nov)
+  {
+    id: "R-NAV-ONE",
+    statement:
+      "One nav on every page, for every role: the shell's TeacherNav -- VicData (to the person's home, /teacher), Home, the phase switch where the page has Teacher phases, the label switch, the role switch (more than one role), the View as pill (while viewing as someone), Send feedback, the account menu (Your Account, Sets, the walkthroughs switch, School account, People and Teams for a School-Admin, Platform for a platform admin, View as..., the school picker, Log Out), the theme switch; signed out, VicData, Log in and the theme. A page draws it itself (own) or the root layout draws the same component above it (host), never both and never another bar: every page route is listed in nav-routes.ts. A walkthrough has its own band instead (as designed), with its close button home and Send feedback. No other VicData wordmark is drawn.",
+    why: "Guy, 21 Nov: the site bar (VicData, Sets, Home, Account) was stacked above the SMT, Admissions, group and first-visit pages' own nav -- two headers -- and was the only nav on the sets, account, platform and editor pages; People and Teams had no account menu; the logo went to the public page.",
+    appliesTo: "every page: src/app/**/page.tsx",
+    enforcedIn: ["src/components/shell/nav-routes.ts:NAV_ROUTES, navModeFor", "src/components/NavBar.tsx", "src/components/shell/TeacherNav.tsx:TeacherNav, PhoneNav, AccountMenu", "src/components/admin/AdminChrome.tsx:AdminHeader", "src/components/school-admin/SchoolAccount.tsx:AdminShell", "src/components/admissions/AdmissionsDashboard.tsx", "src/lib/nav-consistency.test.tsx", "docs/v0.8/nav_consistency_audit_v1.md"],
+    testCase: { urn: "110110", school: "every page route (source), and the audit's headless crawl of each page x role (the report)", expect: "Every page is listed; a page listed as own draws TeacherNav, a hosted one doesn't; the layout's NavBar draws only TeacherNav; one VicData wordmark, to /teacher; Sets is in the account menu.", check: "navOne" },
+    origin: "0.8 nav consistency, part 1 (Guy, 21 Nov 2026)",
+    status: "active",
+  },
+  {
+    id: "R-NAV-FEEDBACK",
+    statement:
+      "\"Send feedback\" is in the one nav, desktop and phone, just before the account menu (and in a walk's band), for whoever the feedback setting lets give feedback (feedback_allowed(): admins, then the named beta testers, then all). It is the dashboards' own feedback icon (FeedbackIcon) on a traffic-light amber pill (#ffbf00, ink #1f1300 at 11:1; a darker amber edge in Light, 4.9:1 on the bar), named \"Send feedback\", focusable, 44 px to touch on a phone. It opens the existing feedback window on the whole page (R-FEEDBACK-PAGE): the page's own surface where it has one; elsewhere the page described from its address (product by section, dashboard nav:<path>, the school it is for, the role, View as or peek, state {page}). Nothing new is stored: the same route, table and columns.",
+    why: "Guy, 21 Nov: beta testers need one obvious way to send feedback from any page.",
+    appliesTo: "TeacherNav, PhoneNav, the walk's band; /api/feedback (unchanged)",
+    enforcedIn: ["src/components/feedback/NavFeedbackButton.tsx:NavFeedbackButton, navSurface, navProduct, NAV_FEEDBACK_COLOURS", "src/components/feedback/ViewSurface.tsx:useHostCount", "src/components/shell/TeacherNav.tsx", "src/components/front-door/WalkPage.tsx:WalkHeader", "src/app/globals.css (--nav-fb-*)", "src/lib/nav-consistency.test.tsx"],
+    testCase: { urn: "110110", school: "the button rendered on the server with the store let in and not; the item a Sets page sends, through the server's own check", expect: "Nothing when not let in; aria-label Send feedback, h-11 below sm, the FeedbackIcon svg; contrast pairs pass; a page without a surface records product home, dashboard nav:/sets/guided, the school, page path and query, no panel.", check: "navFeedback" },
+    origin: "0.8 nav consistency, part 2 (Guy, 21 Nov 2026)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

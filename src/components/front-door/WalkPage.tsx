@@ -15,6 +15,7 @@
 //
 // Mid (C18): the root draws Light (the plates are white) and the header is a dark band of its own; the
 // screen sits on the part's colour. Dark and Light draw the theme's own.
+import { NavFeedbackButton } from "@/components/feedback/NavFeedbackButton";
 import Link from "next/link";
 import { PHASE_TONES, type PhaseTone } from "@/components/smt/ui";
 import { useSearchParams } from "next/navigation";
@@ -127,6 +128,9 @@ export function WalkHeader({ walk, step, steps, chip, ctx, band, part }: { walk:
         <span className="flex items-center gap-x-4 sm:flex-1 sm:justify-end">
           {chip && <span data-walk-head-chip="" className="rounded-full border border-[var(--wh-accent)] px-3 py-1 text-[13px] font-medium text-[var(--wh-accent)]">{chip}</span>}
           <span className="text-[13px] text-[var(--wh-muted)]">{step < steps ? `Step ${step + 1} of ${steps}` : "Done"}</span>
+          {/* 0.8 nav consistency (R-NAV-FEEDBACK): a walk has no nav above its band (as designed), so the band
+              carries Send feedback, as the nav does on every other page. */}
+          <NavFeedbackButton />
         </span>
       </div>
     </header>

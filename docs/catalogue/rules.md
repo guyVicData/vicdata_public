@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 260 rules: 252 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -268,6 +268,8 @@ What a number is allowed to be. 260 rules: 252 active, 8 superseded; 22 must lif
 | R-DEVICE-CAP | active | At most DEVICE_CAP devices are signed in at once per kind of account (src/lib/devices/config.ts: staff 3, platform admin 5, preview 10). Signing in on one more signs out the oldest sign-ins: their rows are marked (reason cap) and their Supabase sessions ended (revoke_auth_session), the next page on the new device says so in one line ("You can be signed in on 3 devices at once, so we signed you out on Chrome on Mac."), and the old device's next request is signed out -- its session cookies cleared and /login?signedOut=cap saying why. The beta gate admits a session only while its device row is signed in (one read per session per 30 seconds; our own sign-outs take effect at once); DEVICE_SESSIONS=off is an emergency switch, never the default. "Where you're signed in" on the account page lists the person's own signed-in devices (what, rough place, last active, this device first) with Sign out on each and "Sign out of all devices"; never anyone else's. | no | auto: frontDoor3 | — |
 | R-SIGNINS-RLS | active | account_devices and account_sign_ins (20261126090000) are read by the person themselves and by the School-Admin or account holder of a school where they are approved staff -- nobody else, not even a platform admin's own session (the Platform page reads with the service role after its own check) -- and never their token hash or Supabase session id (column grants); nobody but the service role writes them, or reads device_codes; revoke_auth_session is the service role's only. The School-Admin's Sign-ins and devices page (/teacher/school-account/sign-ins, F27) reads with the admin's own client, so RLS decides: each approved staff member's signed-in devices and last active, flagged accounts (used from more than 4 places in 24 hours) first, and Sign out per person (every device; refused in View as). The account page's row reads "58 devices · 1 flag" with a "1 flag" badge. Platform admins see the same flags across every school on the Platform page ("Sign-in flags"), with Sign out everywhere; no email is sent. | no | auto: frontDoor3 | — |
 | R-JOIN-DOMAIN | active | Each school account holds its email domains (school_email_domains): its first School-Admin's (or the account holder's) domain seeded it, unless that is a personal mail domain (gmail.com, mac.com…), which never stands for a school; the School-Admin or account holder adds and removes domains on People ("Who can join"). join_school marks a request from outside the list (not the domain or a subdomain of it) off_domain: an exception, tagged "Exception" in Join requests and approved only with "Approve as an exception", which sets exception_approved_at and _by in the same update -- the database refuses a plain approval of an exception and any signed-in change to the mark. A school with no list yet holds every request as an exception. An on-domain request is ordinary. Existing members are unaffected (off_domain false); a first member verified on the school's website seeds the list with their domain. | no | auto: frontDoor3 | — |
+| R-NAV-ONE | active | One nav on every page, for every role: the shell's TeacherNav -- VicData (to the person's home, /teacher), Home, the phase switch where the page has Teacher phases, the label switch, the role switch (more than one role), the View as pill (while viewing as someone), Send feedback, the account menu (Your Account, Sets, the walkthroughs switch, School account, People and Teams for a School-Admin, Platform for a platform admin, View as..., the school picker, Log Out), the theme switch; signed out, VicData, Log in and the theme. A page draws it itself (own) or the root layout draws the same component above it (host), never both and never another bar: every page route is listed in nav-routes.ts. A walkthrough has its own band instead (as designed), with its close button home and Send feedback. No other VicData wordmark is drawn. | no | auto: navOne | — |
+| R-NAV-FEEDBACK | active | "Send feedback" is in the one nav, desktop and phone, just before the account menu (and in a walk's band), for whoever the feedback setting lets give feedback (feedback_allowed(): admins, then the named beta testers, then all). It is the dashboards' own feedback icon (FeedbackIcon) on a traffic-light amber pill (#ffbf00, ink #1f1300 at 11:1; a darker amber edge in Light, 4.9:1 on the bar), named "Send feedback", focusable, 44 px to touch on a phone. It opens the existing feedback window on the whole page (R-FEEDBACK-PAGE): the page's own surface where it has one; elsewhere the page described from its address (product by section, dashboard nav:<path>, the school it is for, the role, View as or peek, state {page}). Nothing new is stored: the same route, table and columns. | no | auto: navFeedback | — |
 
 ## Cards
 
@@ -2983,7 +2985,7 @@ What a number is allowed to be. 260 rules: 252 active, 8 superseded; 22 must lif
 | Why | Menus, the bar, pills and layout belong to no one view; without a page item that feedback had nowhere to go but a separate document. |
 | Applies to | the feedback system, every page |
 | Enforced in | - src/components/feedback/PageFeedback.tsx<br>- src/components/feedback/FeedbackWindow.tsx:feedbackPayload<br>- src/lib/feedback-server.ts:feedbackRow<br>- src/components/admin/FeedbackInbox.tsx<br>- supabase/migrations/20261118090000_v08_feedback_page.sql<br>- supabase/tests/v08_feedback_page_pglite.mjs<br>- src/lib/smt-fb2.test.ts |
-| Tagged at | - src/components/feedback/FeedbackWindow.tsx<br>- src/components/feedback/PageFeedback.tsx<br>- src/components/feedback/store.ts<br>- src/lib/feedback-server.ts<br>- src/lib/smt-fb2.test.ts<br>- src/lib/view-ref.ts |
+| Tagged at | - src/components/feedback/FeedbackWindow.tsx<br>- src/components/feedback/NavFeedbackButton.tsx<br>- src/components/feedback/PageFeedback.tsx<br>- src/components/feedback/store.ts<br>- src/lib/feedback-server.ts<br>- src/lib/smt-fb2.test.ts<br>- src/lib/view-ref.ts |
 | Test case | Leighton Park, SMT Overview in View as (unit, PGlite and browser tests) (110110), ks5: The page item carries the full context with no panel or view and its areas; the server takes it and refuses a page key with a panel; the button turns yellow; the inbox row reads Page; in PGlite (17 checks) feedback_for_triage shows is_page and area and feedback_coverage a page row. [runner: feedbackPage] |
 | Origin | 0.8 SMT feedback round 2, section 6 (docs/v0.8/vicdata_0_8_smt_feedback_round2_claude_code_prompt_v2.md) |
 | Status | active |
@@ -4426,6 +4428,38 @@ What a number is allowed to be. 260 rules: 252 active, 8 superseded; 22 must lif
 | Tagged at | - src/components/admin/JoinDomains.tsx<br>- src/lib/join-exception.ts<br>- src/lib/school-admin/signins.test.ts |
 | Test case | the migration over a stub of the live schema in PGlite (Leighton Park, The Chase, a school whose admin is on gmail.com, a new school); the approval update (110110): Leighton Park's list is leightonpark.com, The Chase's thechase.org.uk, the gmail school's empty; an on-domain or subdomain request is ordinary, gmail.com is an exception and a no-list school's every request; a plain approval of an exception is refused with the reason, an explicit one goes through; nobody signed in clears the mark; a teacher can't approve; no existing member is off-domain. [runner: frontDoor3] |
 | Origin | 0.8 front door part 3, milestone 3 (E25) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-NAV-ONE
+
+| Field | Content |
+| --- | --- |
+| Statement | One nav on every page, for every role: the shell's TeacherNav -- VicData (to the person's home, /teacher), Home, the phase switch where the page has Teacher phases, the label switch, the role switch (more than one role), the View as pill (while viewing as someone), Send feedback, the account menu (Your Account, Sets, the walkthroughs switch, School account, People and Teams for a School-Admin, Platform for a platform admin, View as..., the school picker, Log Out), the theme switch; signed out, VicData, Log in and the theme. A page draws it itself (own) or the root layout draws the same component above it (host), never both and never another bar: every page route is listed in nav-routes.ts. A walkthrough has its own band instead (as designed), with its close button home and Send feedback. No other VicData wordmark is drawn. |
+| Why | Guy, 21 Nov: the site bar (VicData, Sets, Home, Account) was stacked above the SMT, Admissions, group and first-visit pages' own nav -- two headers -- and was the only nav on the sets, account, platform and editor pages; People and Teams had no account menu; the logo went to the public page. |
+| Applies to | every page: src/app/**/page.tsx |
+| Enforced in | - src/components/shell/nav-routes.ts:NAV_ROUTES, navModeFor<br>- src/components/NavBar.tsx<br>- src/components/shell/TeacherNav.tsx:TeacherNav, PhoneNav, AccountMenu<br>- src/components/admin/AdminChrome.tsx:AdminHeader<br>- src/components/school-admin/SchoolAccount.tsx:AdminShell<br>- src/components/admissions/AdmissionsDashboard.tsx<br>- src/lib/nav-consistency.test.tsx<br>- docs/v0.8/nav_consistency_audit_v1.md |
+| Tagged at | - src/components/NavBar.tsx<br>- src/components/admin/AdminChrome.tsx<br>- src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/admissions/setup/Setup.tsx<br>- src/components/school-admin/SchoolAccount.tsx<br>- src/components/shell/TeacherNav.tsx<br>- src/components/shell/nav-routes.ts<br>- src/lib/nav-consistency.test.tsx |
+| Test case | every page route (source), and the audit's headless crawl of each page x role (the report) (110110): Every page is listed; a page listed as own draws TeacherNav, a hosted one doesn't; the layout's NavBar draws only TeacherNav; one VicData wordmark, to /teacher; Sets is in the account menu. [runner: navOne] |
+| Origin | 0.8 nav consistency, part 1 (Guy, 21 Nov 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-NAV-FEEDBACK
+
+| Field | Content |
+| --- | --- |
+| Statement | "Send feedback" is in the one nav, desktop and phone, just before the account menu (and in a walk's band), for whoever the feedback setting lets give feedback (feedback_allowed(): admins, then the named beta testers, then all). It is the dashboards' own feedback icon (FeedbackIcon) on a traffic-light amber pill (#ffbf00, ink #1f1300 at 11:1; a darker amber edge in Light, 4.9:1 on the bar), named "Send feedback", focusable, 44 px to touch on a phone. It opens the existing feedback window on the whole page (R-FEEDBACK-PAGE): the page's own surface where it has one; elsewhere the page described from its address (product by section, dashboard nav:<path>, the school it is for, the role, View as or peek, state {page}). Nothing new is stored: the same route, table and columns. |
+| Why | Guy, 21 Nov: beta testers need one obvious way to send feedback from any page. |
+| Applies to | TeacherNav, PhoneNav, the walk's band; /api/feedback (unchanged) |
+| Enforced in | - src/components/feedback/NavFeedbackButton.tsx:NavFeedbackButton, navSurface, navProduct, NAV_FEEDBACK_COLOURS<br>- src/components/feedback/ViewSurface.tsx:useHostCount<br>- src/components/shell/TeacherNav.tsx<br>- src/components/front-door/WalkPage.tsx:WalkHeader<br>- src/app/globals.css (--nav-fb-*)<br>- src/lib/nav-consistency.test.tsx |
+| Tagged at | - src/components/feedback/NavFeedbackButton.tsx<br>- src/components/front-door/WalkPage.tsx<br>- src/components/shell/TeacherNav.tsx<br>- src/lib/nav-consistency.test.tsx |
+| Test case | the button rendered on the server with the store let in and not; the item a Sets page sends, through the server's own check (110110): Nothing when not let in; aria-label Send feedback, h-11 below sm, the FeedbackIcon svg; contrast pairs pass; a page without a surface records product home, dashboard nav:/sets/guided, the school, page path and query, no panel. [runner: navFeedback] |
+| Origin | 0.8 nav consistency, part 2 (Guy, 21 Nov 2026) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

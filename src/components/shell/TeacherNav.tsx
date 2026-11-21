@@ -31,6 +31,30 @@ import { isPlatformAdminCached } from "@/lib/edit-mode";
 import { NavRoleSwitch, showSchool, useMemberSchools } from "./RoleSwitch";
 import { useFewerQuestions } from "@/lib/front-door/fewer";
 import { cachedFetchJson } from "@/lib/fetch-cache";
+import { NavFeedbackButton } from "@/components/feedback/NavFeedbackButton";
+
+// 0.8 nav consistency (Guy, 21 Nov; R-NAV-ONE): this is the one nav, on every page -- drawn by the page itself
+// or, above a page that doesn't, by the root layout (NavBar.tsx; which is which: nav-routes.ts). The same
+// items in the same order everywhere: VicData (to the person's home), Home, the phase switch (Teacher's phases,
+// where the page has them), the label switch, the role switch, the View as pill, Send feedback, Account, the
+// theme. Signed out: VicData, Log in and the theme only.
+
+/** Is there a session here? A local read (no network); null until known, so nothing flashes. */
+function useSignedIn(): boolean | null {
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    void supabase.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setSignedIn(Boolean(session)));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  return signedIn;
+}
+
+/** The wordmark: the person's home (/teacher sends each role to its own), the public front page signed out. */
+function Wordmark({ signedIn }: { signedIn: boolean | null }) {
+  return <Link href={signedIn === false ? "/" : "/teacher"} data-nav-wordmark="" className="text-[15px] font-extrabold tracking-tight">VicData</Link>;
+}
 
 // Speed (20 Nov): the badge's answer is shared by the menus drawn together, not kept: a page opened more than
 // this later asks again, and People drops it on any change, so an approved request clears the badge as before.
@@ -84,13 +108,24 @@ export function TeacherNav({
   theme: Theme;
   onTheme: (t: Theme) => void;
 }) {
+  const signedIn = useSignedIn();
   return (
     <>
     {/* Two groups at opposite edges, as in Redesign.dc.html: the wordmark alone on the
         left, everything from Home to the theme toggle as one cluster pinned to the right. */}
-    <nav aria-label="Teacher view" className="flex flex-wrap items-center justify-between gap-3.5 print:hidden">
-      <Link href="/" className="text-[15px] font-extrabold tracking-tight">VicData</Link>
-      <div className="flex flex-wrap items-center gap-3.5">
+    <nav aria-label="Teacher view" data-shell-nav-bar="" className="flex flex-wrap items-center justify-between gap-3.5 print:hidden">
+      <Wordmark signedIn={signedIn} />
+      {signedIn === false ? (
+        <div className="flex items-center gap-2.5">
+          <Link href="/login" className="inline-flex h-[34px] items-center rounded-full bg-[var(--panel-bg)] px-3.5 text-xs font-bold text-[var(--fg)]">Log in</Link>
+          <ThemeToggle theme={theme} onTheme={onTheme} />
+        </div>
+      ) : (
+      <>
+      {/* R-NAV-ONE: below sm, the phone row every page shares (NavPhoneRow, as the Teacher dashboards' PhoneNav):
+          it used to wrap this cluster into three rows. */}
+      <NavPhoneRow theme={theme} onTheme={onTheme} className="sm:hidden" />
+      <div className="hidden flex-wrap items-center gap-3.5 sm:flex">
         <Link
           href="/teacher"
           aria-label={labelsOn ? undefined : "Home"}
@@ -120,10 +155,14 @@ export function TeacherNav({
           <NavRoleSwitch />
           {/* 0.6 snag 4 (A): platform admins only; nothing at all for anyone else. */}
           <ViewAsPill tone="teacher" />
+          {/* 0.8 nav consistency, part 2 (R-NAV-FEEDBACK): for those the feedback setting lets in. */}
+          <NavFeedbackButton />
           <AccountMenu />
           <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>
       </div>
+      </>
+      )}
     </nav>
       {/* 20 Nov: the way back, in words, when the page was opened from a level above (?back=). */}
       <BackBar className="mt-3" />
@@ -293,6 +332,9 @@ export function AccountMenu() {
           ) : (
             <>
               <Link href="/account" className={rowClass} onClick={() => setOpen(false)}>Your Account</Link>
+              {/* 0.8 nav consistency (R-NAV-ONE): Sets was the retired site bar's own item; it lives here now, so
+                  every page reaches it the same way. */}
+              <Link href="/sets" data-nav-sets="" className={rowClass} onClick={() => setOpen(false)}>Sets</Link>
               {/* 0.8 front door (B10): the home's "Show fewer questions", the same switch. */}
               <button type="button" className={rowClass} data-fewer-questions="" aria-pressed={fewerQuestions} onClick={() => { setOpen(false); setFewerQuestions(!fewerQuestions); }}>
                 {fewerQuestions ? "Show the walkthroughs" : "Hide walkthroughs"}
@@ -379,15 +421,8 @@ export function PhoneNav({
   return (
     <div className={`print:hidden ${className}`}>
       <div className="flex items-center justify-between gap-3 pb-3">
-        <Link href="/" className="text-[15px] font-extrabold tracking-tight">VicData</Link>
-        <div className="flex items-center gap-2.5">
-          <Link href="/teacher" aria-label="Home" title="Home" className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]">
-            {HOME_ICON}
-          </Link>
-          <ViewAsPill tone="teacher" />
-          <AccountMenu />
-          <ThemeToggle theme={theme} onTheme={onTheme} />
-        </div>
+        <Wordmark signedIn={true} />
+        <NavPhoneRow theme={theme} onTheme={onTheme} />
       </div>
       <BackBar className="pb-3" />
       <div className="h-px bg-[var(--panel-border2)]" />
@@ -399,6 +434,25 @@ export function PhoneNav({
         )}
       </div>
       {results && <div className="pt-2.5">{results}</div>}
+    </div>
+  );
+}
+
+/** The phone's nav row, on every page (R-NAV-ONE): Home, the role switch, the View as pill, Send feedback, Account,
+ * the theme -- icons only, as the phone design has it. It wraps (the theme onto a second line) rather than scroll
+ * at 360 px. No label switch and no phase switch: a dashboard's phase is its own row 2 (PhoneNav). */
+function NavPhoneRow({ theme, onTheme, className = "" }: { theme: Theme; onTheme: (t: Theme) => void; className?: string }) {
+  return (
+    <div data-nav-phone-row="" className={`flex min-w-0 flex-wrap items-center justify-end gap-2 ${className}`}>
+      <Link href="/teacher" aria-label="Home" title="Home" className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]">
+        {HOME_ICON}
+      </Link>
+      <NavRoleSwitch />
+      <ViewAsPill tone="teacher" />
+      {/* Its 44 px hit area overhangs by 5 px each side, so the row keeps the nav's 34 px rhythm. */}
+      <NavFeedbackButton className="-mx-[5px]" />
+      <AccountMenu />
+      <ThemeToggle theme={theme} onTheme={onTheme} />
     </div>
   );
 }

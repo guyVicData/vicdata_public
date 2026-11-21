@@ -53,7 +53,8 @@ function Frame({ step, of = 4, entry, back, onSkip, title, intro, children, cta,
             &larr; Back
           </button>
         ) : (
-          <span className="text-[15px] font-bold">VicData</span>
+          // R-NAV-ONE: the nav above carries VicData; the frame's own wordmark was a second one.
+          <span />
         )}
         <button type="button" onClick={onSkip} className="text-[13px] text-[var(--muted)] hover:text-[var(--fg)]">
           {step === null ? "Close" : "Skip for now"}

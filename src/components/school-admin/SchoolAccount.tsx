@@ -14,8 +14,7 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { loadAdminSchool } from "@/components/admin/AdminChrome";
-import { ThemeToggle, useTeacherTheme } from "@/components/shell/TeacherChrome";
-import { AccountMenu } from "@/components/shell/TeacherNav";
+import { useTeacherTheme } from "@/components/shell/TeacherChrome";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { useWidth } from "@/components/admissions/views/charts";
 import { readPeek } from "@/lib/view-as";
@@ -65,18 +64,13 @@ export function AdminShell({ school, children }: { school: string | null; childr
   const phone = width > 0 && width < ADMIN_PHONE;
   return (
     <main id="teacher-root" data-theme={theme} ref={ref} className="min-h-screen w-full bg-[var(--bg)] text-[var(--fg)]">
-      <header className="border-b border-[var(--panel-border)]">
-        <div className={`mx-auto flex max-w-[1200px] items-center gap-3 ${phone ? "px-4 py-2" : "px-10 py-4"}`}>
-          <Link href="/teacher" className="flex min-h-[44px] items-center gap-2.5">
-            <span aria-hidden="true" className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-[var(--fg)] text-[15px] font-extrabold text-[var(--bg)]">V</span>
-            <span className="text-[16px] font-bold">VicData</span>
-          </Link>
-          {!phone && school && <span className="truncate text-[14px] text-[var(--muted2)]">{school}</span>}
-          <span className="flex-grow" />
-          <ThemeToggle theme={theme} />
-          <AccountMenu />
+      {/* 0.8 nav consistency (R-NAV-ONE): the one nav is drawn above this frame by the root layout (it was a second
+          header here: its own VicData, theme switch and account menu). The school stays, as the page's context. */}
+      {school && (
+        <div className={`mx-auto max-w-[1200px] truncate text-[14px] text-[var(--muted2)] ${phone ? "px-4 pt-3" : "px-10 pt-4"}`} data-admin-school="">
+          {school}
         </div>
-      </header>
+      )}
       <ViewAsBanner className={phone ? "mx-4 mt-3" : "mx-auto mt-3 max-w-[760px]"} />
       {width > 0 ? children(phone) : null}
     </main>
