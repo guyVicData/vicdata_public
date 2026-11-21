@@ -479,3 +479,11 @@ body:has(#teacher-root[data-theme="dark"]) {
   --subject-family-health-care: #c0957c;
   --subject-family-enterprise-applied: #e0e05c;
 }
+
+/* 0.8 front door part 3 (A2): the landing page's arcs draw themselves in, once (src/components/auth/LandingArt.tsx).
+   Never under prefers-reduced-motion. */
+.landing-arc { stroke-dasharray: 1; stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .landing-arc { animation: landing-arc-draw 1.4s cubic-bezier(0.22, 1, 0.36, 1) both; stroke-dashoffset: 1; }
+  @keyframes landing-arc-draw { to { stroke-dashoffset: 0; } }
+}

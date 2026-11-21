@@ -174,3 +174,16 @@ test("R-NOINDEX-SCHOOLS: the sitemap lists no school page and robots.txt has no 
   assert.ok(rules.every((x) => !x.disallow), "a crawler that can't fetch a page never sees its noindex");
   delete process.env.ALLOW_INDEXING;
 });
+
+test("R-LANDING-MINIMAL: each landing background is decoration only -- hidden from assistive tech, no text, no links; one constant picks it", async () => {
+  const { LandingArt, SpectrumLine } = await import("../components/auth/LandingArt");
+  for (const v of ["arcs", "spectrum", "bands"] as const) {
+    const html = renderToStaticMarkup(LandingArt({ variant: v }) ?? "");
+    assert.equal(html.replace(/<[^>]+>/g, "").trim(), "", v);
+    assert.ok(!/<a |href=|<script|<img/i.test(html), v);
+    if (html) assert.match(html, /aria-hidden/, v);
+  }
+  assert.match(renderToStaticMarkup(SpectrumLine({})), /aria-hidden/);
+  assert.match(src("src/components/auth/landing-variant.ts"), /export const LANDING_VARIANT: LandingVariant = "(arcs|spectrum|bands)";/);
+  assert.match(src("src/app/globals.css"), /@media \(prefers-reduced-motion: no-preference\) \{\s*\.landing-arc \{ animation/, "the one movement is off under reduced motion");
+});

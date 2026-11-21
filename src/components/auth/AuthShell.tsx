@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "./Logo";
 
 // 0.8 front door part 3: the frame the signed-out screens share -- the landing page, sign-in, the
 // new-device code. The wordmark as the shell draws it (a white "V" tile and "VicData"), one column, the
@@ -9,20 +10,12 @@ export const AUTH_BUTTON = "inline-flex min-h-11 w-full items-center justify-cen
 export const AUTH_LINK = "inline-flex min-h-11 items-center text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400";
 
 export function Wordmark({ href }: { href?: string }) {
-  const mark = (
-    <span className="inline-flex items-center gap-3">
-      <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-900 text-base font-semibold text-white dark:bg-white dark:text-neutral-900">
-        V
-      </span>
-      <span className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-white">VicData</span>
-    </span>
-  );
   return href ? (
     <Link href={href} className="inline-flex min-h-11 items-center">
-      {mark}
+      <Logo />
     </Link>
   ) : (
-    mark
+    <Logo />
   );
 }
 
