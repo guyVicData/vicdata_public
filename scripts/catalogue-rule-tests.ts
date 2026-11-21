@@ -3557,6 +3557,16 @@ const RUNNERS: Record<string, Runner> = {
     const live = rows[0].id === "join" && (s.joinRequests > 0) === !!rows[0].badge && waitingCount(rows) === rows.filter((r) => r.badge).reduce((n, r) => n + (r.id === "join" ? s.joinRequests : 1), 0) && !rows.some((r) => /sign-?ins/i.test(r.title));
     return { pass: unit.pass && live, detail: fmt({ unit: unit.detail, rows: rows.map((r) => `${r.title}: ${r.summary}${r.badge ? ` [${r.badge}]` : ""}`).join("; "), waiting: waitingCount(rows), live }) };
   },
+  // 0.8 front door part 3: each rule's own tests (named for it) in its unit file.
+  async frontDoor3(_L, rule) {
+    const files: Record<string, string> = {
+      "R-COOKIE-SESSION": "src/lib/auth-session.test.ts",
+    };
+    const file = files[rule.id];
+    if (!file) return { pass: false, detail: `no test file listed for ${rule.id}` };
+    const unit = unitByRule(file, rule.id, {}, []);
+    return { pass: unit.pass, detail: unit.detail };
+  },
   async frontDoorMobile(_L, rule) {
     const unit = unitByRule("src/lib/front-door/mobile.test.tsx", rule.id);
     return { pass: unit.pass, detail: unit.detail };

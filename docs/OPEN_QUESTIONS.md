@@ -3705,3 +3705,40 @@ Dark and Light are unchanged. Homes and walks aren't dashboards and keep white.
 
 **Not done here:** C15's republish is SMT Academic only (the new view in its "Every line" panel); no other
 dashboard config changed.
+
+---
+
+## 2026-11-13: front door, part 3
+
+Built 21-22 Nov 2026 on branch `v0.8-front-door-3` from Guy's answers of 21 Nov (Q1 cookie sessions first; Q2 /join
+stays open signed out; Q3 "Forgot password?" built on its own branch; Q4 count signed-in school page views; Q5 device
+codes behind `DEVICE_CODES=off`; A3 already on main). Calls made without asking, per the prompt:
+
+**M1-1. The session cookie is @supabase/ssr's own** (`sb-<project>-auth-token`, SameSite=Lax, 400 days, Secure in
+production), readable by the page's JavaScript (httpOnly is off: the browser client must read it to send Bearer
+and refresh). The httpOnly cookie in this part is the trusted-device one (milestone 3).
+
+**M1-2. Nobody's old session is carried over.** The localStorage copy is deleted on load rather than adopted: after
+milestone 2 every page needs a cookie session the server can see, and after milestone 3 a registered device, so
+everyone signs in once more after the deploy anyway. Adopting the old token would only have delayed that by a page.
+
+**M1-3. The proxy turns the cookie into Bearer for API calls** (src/proxy.ts withSession) instead of editing the 50+
+routes that read `Authorization`. The browser still sends Bearer from getSession(), so both work side by side; only
+same-origin requests (Sec-Fetch-Site same-origin/none/absent) are given one, and the route still verifies the
+token. Moving each route to read the cookie itself is a later tidy-up with no behaviour change.
+
+**M1-4. The proxy verifies with getClaims()**, which is local: the project signs its JWTs with ES256 (its JWKS lists
+one P-256 key), cached per process. No call to Supabase Auth per request; a refresh happens only when the access
+token has expired.
+
+**M1-5. Preview access redeems the magic link on the server** (verifyOtp with the link's hashed token) and sets the
+session cookie on its redirect. The hop through Supabase's /verify is gone, and with it the dependence on the Auth
+redirect allow-list (the substituted-Site-URL bug the route used to guard against). Same posture: four env vars or a
+404, constant-time token check, path-only redirect to PREVIEW_ACCESS_SITE_URL.
+
+**M1-6. scripts/warm-demo.mjs** waits for the session cookie (or, against an older deploy, the localStorage key).
+
+**M1-7. For the forgot-password branch (Q3):** @supabase/ssr's browser client always uses the PKCE flow, so after
+the rebase a recovery link comes back to `/reset-password?code=…` (the browser client exchanges it itself, in the
+browser that asked for the link) and a bad or used link as `?error=…&error_description=…` in the query, not the
+`#access_token`/`#error` fragment that branch parses today. Its page needs that one change when it meets this branch.

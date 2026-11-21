@@ -54,10 +54,14 @@ page.on("response", async (r) => {
   if (new URL(r.url()).pathname === "/api/smt/school" && r.ok()) smtSchoolSeen = await r.json().catch(() => smtSchoolSeen);
 });
 
-// Signed in: the preview route sets its gate cookie and hands over to a real magic link.
+// Signed in: the preview route redeems a real magic link on the server and sets the session cookie on its
+// redirect (cookie sessions, front door part 3). Wait for that cookie (an older deploy kept the session in
+// localStorage instead: either will do).
 await page.goto(`${SITE}/api/testing/preview-session?token=${encodeURIComponent(TOKEN)}&redirect=/teacher`, { waitUntil: "load", timeout: 60_000 });
-// The browser client stores the session from the link's fragment a moment after the page loads: wait for it.
-await page.waitForFunction(() => Object.keys(localStorage).some((k) => k.includes("auth-token")), null, { timeout: 30_000 });
+const signedIn = async () => (await page.context().cookies()).some((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name)) || (await page.evaluate(() => Object.keys(localStorage).some((k) => k.includes("auth-token"))).catch(() => false));
+for (let t0 = Date.now(); !(await signedIn()); await page.waitForTimeout(250)) {
+  if (Date.now() - t0 > 30_000) throw new Error(`Not signed in after the preview route (at ${page.url()}).`);
+}
 await page.waitForTimeout(1000);
 if (page.url().includes("/welcome")) await page.getByRole("button", { name: "Let's start" }).click().catch(() => {});
 

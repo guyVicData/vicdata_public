@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-safe";
 import { isPreviewGroup, previewGroupEmail, seedPreviewGroup } from "@/lib/testing-group";
+import { applySessionCookies, routeSessionClient } from "@/lib/auth-server";
 
 // Passwordless preview access for automated browser agents
 // (docs/vicdata_phase3_agent_preview_access_brief_v1.md).
@@ -13,27 +14,13 @@ import { isPreviewGroup, previewGroupEmail, seedPreviewGroup } from "@/lib/testi
 // credential-entry step rather than working around the refusal: navigating to a URL is an
 // ordinary action, in the same category as a password-reset link.
 //
-// HOW THIS ADAPTS TO THE APP'S REAL SIGN-IN, which is not what the brief assumed:
-//
-// The brief suggests generating a magic link and "redirecting into the app's existing
-// callback handler". There isn't one. This app's only sign-in is
-// supabase.auth.signInWithPassword in src/app/login/page.tsx, and -- more decisively -- it
-// uses plain @supabase/supabase-js, NOT @supabase/ssr, so sessions live in localStorage
-// and not in cookies. A server route therefore cannot establish a browser session by
-// setting a cookie, however it is shaped; that rules out the obvious implementation
-// rather than merely making it awkward.
-//
-// What it does instead is still the app's own mechanism, not a parallel one:
-// supabase-js creates its browser client with detectSessionInUrl defaulting to true, so a
-// client that loads on a URL carrying auth tokens in the fragment completes sign-in and
-// persists a completely ordinary session itself. So this route asks the Supabase Admin API
-// for a REAL magic link and redirects the browser to it; Supabase verifies the one-time
-// token and bounces back to our origin with the tokens in the fragment, where the app's
-// existing browser client picks them up. Nothing bespoke is minted, stored or maintained
-// here, and no new auth path exists for real users.
-//
-// A consequence worth stating: the fragment never reaches this server, which is why the
-// gate cookie has to be set on the redirect BEFORE handing off to Supabase.
+// HOW IT SIGNS IN (since 0.8 front door part 3, milestone 1: cookie sessions): it asks the Supabase Admin
+// API for a REAL magic link for the fixed preview account and redeems it on the server with Supabase's own
+// verifyOtp, over a server client that writes the session to this response's cookies -- the app's ordinary
+// session cookie, the one a password sign-in makes. Nothing bespoke is minted, stored or maintained here,
+// and no new auth path exists for real users. (Before cookie sessions the session lived in localStorage, so
+// the route had to bounce the browser through the link and let the browser client read the tokens from the
+// URL fragment; see git history.)
 //
 // Fails closed exactly like the gate it bypasses: if any of the four env vars is missing,
 // this route does not exist.
@@ -143,54 +130,37 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // A real magic link, verified by Supabase itself. redirectTo must be registered in the
-  // project's Auth redirect allow-list or Supabase refuses it (Q23).
-  //
-  // The origin comes from PREVIEW_ACCESS_SITE_URL, NOT from the incoming request. This was
-  // a real production bug, and one local testing structurally could not catch: on
-  // localhost, request.nextUrl.origin is correct, so dev never disagreed with it. On the
-  // real deployment (Render behind Cloudflare) it resolved to http://localhost:3000 --
-  // the container's own internal address -- so Supabase verified the one-time token
-  // correctly and then bounced the browser to somewhere nobody outside Render can reach.
-  //
-  // Deliberately NOT read from x-forwarded-host/x-forwarded-proto either. Supabase's own
-  // allow-list would catch a bad value, but this feature's whole posture is that it trusts
-  // nothing the caller or the platform hands it that it does not have to, and a fourth env
-  // var costs nothing next to the three that must already be set.
-  const origin = siteUrl.replace(/\/+$/, "");
-  const { data: link, error: linkError } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: signInEmail,
-    options: { redirectTo: `${origin}${redirectPath}` },
-  });
-  if (linkError || !link.properties?.action_link) {
+  // A real magic link, verified HERE (0.8 front door part 3, milestone 1: cookie sessions). The Admin API
+  // makes the one-time token; this route redeems it with Supabase's own verifyOtp on a server client over
+  // this response's cookies, so the browser is handed an ordinary signed-in session cookie on the
+  // redirect -- the same session a password sign-in makes, through the app's own session code
+  // (src/lib/auth-server.ts). Before cookie sessions the browser had to redeem the link itself (the
+  // session lived in localStorage); that hop through Supabase is gone, and with it the need for the
+  // redirect target to be on the project's Auth redirect allow-list (the bug described below). The
+  // redirect goes to PREVIEW_ACCESS_SITE_URL's origin, never the request's (also below).
+  const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: "magiclink", email: signInEmail });
+  const tokenHash = link?.properties?.hashed_token;
+  if (linkError || !tokenHash) {
     console.error("[preview-session] could not generate sign-in link:", linkError?.message);
     return notFound();
   }
-
-  // Supabase does not reject a redirect_to that is missing from the project's Auth
-  // allow-list -- it silently SUBSTITUTES the project's Site URL and returns a link that
-  // looks perfectly valid. That substitution is how the production bug hid: the failure
-  // was a redirect to an unreachable address, with nothing anywhere saying so.
-  //
-  // Proven rather than assumed, against this project: a request for
-  // https://vicdata.co.uk/teacher/ks5 came back as http://localhost:3000, as did a
-  // deliberately bogus host, while https://vicdata.co.uk/teacher was honoured -- so the
-  // allow-list matches one path segment but not two, and the Site URL is still localhost.
-  //
-  // Refusing to hand out a link that goes somewhere other than where we asked turns that
-  // silent misroute into an honest failure with a log line naming the cause.
-  const issued = new URL(link.properties.action_link).searchParams.get("redirect_to");
-  const intended = `${origin}${redirectPath}`;
-  if (issued !== intended) {
-    console.error(
-      `[preview-session] Supabase substituted the redirect target: asked for ${intended}, got ${issued}. ` +
-        "Add this exact URL to the project's Auth redirect allow-list (a /** pattern covers nested paths).",
-    );
+  const { supabase: sessionClient, pending } = routeSessionClient(request);
+  const { data: verified, error: verifyError } = await sessionClient.auth.verifyOtp({ type: "email", token_hash: tokenHash });
+  if (verifyError || !verified.session) {
+    console.error("[preview-session] could not redeem the sign-in link:", verifyError?.message);
     return notFound();
   }
 
-  const response = NextResponse.redirect(link.properties.action_link, { status: 302 });
+  // Why the origin is PREVIEW_ACCESS_SITE_URL, NOT the incoming request's -- a real production bug, and
+  // one local testing structurally could not catch: on localhost, request.nextUrl.origin is correct, so
+  // dev never disagreed with it. On the real deployment (Render behind Cloudflare) it resolved to
+  // http://localhost:3000 -- the container's own internal address. Deliberately NOT read from
+  // x-forwarded-host/x-forwarded-proto either: this feature trusts nothing the caller or the platform
+  // hands it that it does not have to. (Until milestone 1 the same value was the magic link's redirect_to,
+  // which Supabase silently swapped for the project's Site URL when it wasn't on the allow-list; the
+  // route refused such a link. With the link redeemed here, that check has nothing left to guard.)
+  const origin = siteUrl.replace(/\/+$/, "");
+  const response = applySessionCookies(NextResponse.redirect(`${origin}${redirectPath}`, { status: 302 }), pending);
   response.cookies.set(PREVIEW_GATE_COOKIE, await sha256Hex(expectedToken), {
     httpOnly: true,
     secure: true,

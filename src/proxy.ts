@@ -1,6 +1,8 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { countablePublicView, countPublicPageView, publicPageUrn } from "@/lib/usage-public";
 import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-safe";
+import { sessionToBearer } from "@/lib/auth-cookies";
+import { readRequestSession } from "@/lib/auth-server";
 
 // Default-deny: the gate is active unless ACCESS_GATE_ENABLED is explicitly "false".
 // Missing credentials with the gate enabled fails closed (blocks everything), it
@@ -111,8 +113,26 @@ async function gate(request: NextRequest): Promise<NextResponse> {
 // the page is never slower and never changes. No cookie is set; nothing about the visitor is sent
 // or kept; prefetches and anything that says it's a bot aren't counted (src/lib/usage.ts).
 export async function proxy(request: NextRequest, event?: NextFetchEvent): Promise<NextResponse> {
-  const res = await gate(request);
+  const gated = await gate(request);
+  if (gated.headers.get("x-middleware-next") !== "1") return gated;
+  const res = await withSession(request);
   const urn = publicPageUrn(request.nextUrl.pathname);
-  if (urn && event && res.headers.get("x-middleware-next") === "1" && countablePublicView(request.method, request.headers)) event.waitUntil(countPublicPageView(urn));
+  if (urn && event && countablePublicView(request.method, request.headers)) event.waitUntil(countPublicPageView(urn));
   return res;
+}
+
+// 0.8 front door part 3, milestone 1: the cookie session. A request carrying the session cookie has it
+// verified and, when the access token has expired, refreshed (the new cookies go out on this response).
+// An API request from the site's own pages that carries the cookie but no Bearer token is given
+// `Authorization: Bearer <access token>` from it, so every route that reads the header (all of them,
+// today) works from the cookie alone; a request that already sends Bearer is untouched. The route still
+// verifies the token itself, exactly as before.
+async function withSession(request: NextRequest): Promise<NextResponse> {
+  const session = await readRequestSession(request);
+  if (session.accessToken && request.nextUrl.pathname.startsWith("/api/") && sessionToBearer(request.headers)) {
+    const headers = new Headers(request.headers);
+    headers.set("authorization", `Bearer ${session.accessToken}`);
+    return session.apply(NextResponse.next({ request: { headers } }));
+  }
+  return session.apply(NextResponse.next());
 }

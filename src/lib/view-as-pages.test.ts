@@ -25,11 +25,12 @@ test("R-EDIT-FOOTER-EVERYWHERE: SMT and Admissions in View as SMT at Leighton Pa
   const store = new Map<string, string>();
   const jar = new Map<string, string>([[VIEW_AS_COOKIE, serializeViewAsCookie({ urn: LEIGHTON, role: "smt", schoolName: "Leighton Park School" })]]);
   const exp = Math.floor(Date.now() / 1000) + 3600;
-  store.set("sb-supabase-auth-token", JSON.stringify({ access_token: "tok-guy", refresh_token: "r", token_type: "bearer", expires_in: 3600, expires_at: exp, user: { id: "guy", aud: "authenticated", email: "guy@test" } }));
+  // Cookie sessions (front door part 3, milestone 1): the session is the browser's `sb-<ref>-auth-token` cookie.
+  jar.set("sb-supabase-auth-token", "base64-" + Buffer.from(JSON.stringify({ access_token: "tok-guy", refresh_token: "r", token_type: "bearer", expires_in: 3600, expires_at: exp, user: { id: "guy", aud: "authenticated", email: "guy@test" } })).toString("base64url"));
   const g = globalThis as unknown as Record<string, unknown>;
   const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) };
   g.document = { get cookie() { return [...jar].map(([k, v]) => `${k}=${v}`).join("; "); }, set cookie(_: string) {} };
-  g.window = { location: { search: "", protocol: "https:", origin: "http://app.test", href: "http://app.test/teacher/smt" }, localStorage: storage, sessionStorage: storage, dispatchEvent: () => true, addEventListener: () => {}, removeEventListener: () => {} };
+  g.window = { document: g.document, location: { search: "", protocol: "https:", origin: "http://app.test", href: "http://app.test/teacher/smt" }, localStorage: storage, sessionStorage: storage, dispatchEvent: () => true, addEventListener: () => {}, removeEventListener: () => {} };
   g.localStorage = storage;
   // The page's own /api/ calls go to the real route handlers, with the browser's cookie.
   const real = globalThis.fetch;

@@ -3258,6 +3258,20 @@ export const RULES: Rule[] = [
     origin: "Private beta (Guy, 21 Nov): hide the public school pages",
     status: "active",
   },
+  // ------------------------------------------------------------------------------------------------
+  // 0.8 front door part 3: sign-in, the beta gate and account security
+  // (docs/v0.8/vicdata_0_8_front_door_part3_signin_gate_security_claude_code_prompt_v1.md; Guy's answers 21 Nov).
+  {
+    id: "R-COOKIE-SESSION",
+    statement:
+      "The Supabase session lives in a cookie the server can read (@supabase/ssr: `sb-<project>-auth-token`, SameSite=Lax, Secure in production), not in localStorage; the old localStorage copy is removed on load. The proxy verifies the cookie locally against the project's published ES256 key (getClaims), refreshes an expired access token and sends the new cookie on its response; an API request from the site's own pages (Sec-Fetch-Site same-origin, none or absent) carrying the cookie but no Bearer token reaches the route with `Authorization: Bearer <access token>`, so every route keeps reading the header it reads today, and a page that sends Bearer itself is untouched. Another site's request never acts as the user on the strength of the cookie; a forged cookie is no session. Preview access redeems a real magic link on the server (verifyOtp) and leaves the browser holding the same session cookie for its fixed account: off unless enabled, secret-gated, a byte-identical 404 for every failure, a path-only redirect to the configured site.",
+    why: "Q1 (Guy, 21 Nov): the sign-in gate, the trusted-device cookie, the device cap and \"Where you're signed in\" all need the server to see who is signed in.",
+    appliesTo: "every page and API route; /login, /join/[urn], sign-out; /api/testing/preview-session; scripts/warm-demo.mjs",
+    enforcedIn: ["src/lib/supabase.ts:createBrowserSupabaseClient", "src/lib/auth-cookies.ts:isSessionCookie, sessionToBearer", "src/lib/auth-server.ts:readRequestSession, routeSessionClient", "src/proxy.ts:withSession", "src/app/api/testing/preview-session/route.ts", "src/lib/auth-session.test.ts"],
+    testCase: { urn: "110110", school: "a stand-in Supabase Auth with its own ES256 key (src/lib/auth-testkit.ts)", expect: "cookie-only API call gets Bearer; Bearer untouched; cross-site and forged get nothing; an expired token is refreshed with a Set-Cookie; preview: 404 without the secret, a 302 to the configured site with a session cookie with it.", check: "frontDoor3" },
+    origin: "0.8 front door part 3, milestone 1 (Q1)",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);
