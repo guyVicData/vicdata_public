@@ -15,15 +15,16 @@ import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, QUALIFICATION_FAMILIES } from "@/lib/teacher-view-theme";
-import { pickMembership, resolveViewAs } from "@/lib/view-as";
+import { confirmPlatformAdmin, pickMembership, readPeekGroup, resolvePeek, resolveViewAs, resolveViewAsGroup } from "@/lib/view-as";
 import { lensesOf } from "@/components/library/RoleHome";
 import type { TeacherModel } from "@/lib/front-door/teacher-model";
 import { afterWelcome, changelogForMe, loadFrontDoorState, markWelcomeSeen, recordVisit, shouldShowWelcome, whatsNew, type ChangelogEntry } from "@/lib/front-door/visit";
 import { setupPhases, setupTotals } from "@/lib/front-door/setup";
-import type { MidField } from "@/lib/front-door/contrast";
+import { WELCOME_ROLES, welcomeRole, type WelcomeField, type WelcomeRole } from "@/lib/front-door/welcome-role";
 
-/** A first-visit page: the dark root (Mid's header), then one field. */
-export function FirstVisitFrame({ field, children }: { field: MidField; children: ReactNode }) {
+/** A first-visit page: the dark root (Mid's header), then one field. `role`: the welcome's, in its colour;
+ * no field: the plain page (the welcome while it works out whose it is). */
+export function FirstVisitFrame({ field, role, children }: { field?: WelcomeField; role?: WelcomeRole; children: ReactNode }) {
   const [pref] = useThemePref();
   const theme = effectiveTheme(pref);
   return (
@@ -32,8 +33,9 @@ export function FirstVisitFrame({ field, children }: { field: MidField; children
         <ViewAsBanner />
         <TeacherNav phase={null} phases={[]} labelsOn={false} onLabelsOn={() => {}} theme={theme} onTheme={() => {}} />
       </div>
-      <section data-field={field} className="mt-6 flex-grow px-4 py-10 sm:px-10 sm:py-14">
-        <div className="mx-auto flex max-w-[860px] flex-col gap-7">{children}</div>
+      <section data-field={field} data-welcome-role={role} className="relative mt-6 flex-grow overflow-hidden px-4 py-10 sm:px-10 sm:py-14">
+        {role && <WelcomeRibbons />}
+        <div className="relative mx-auto flex max-w-[860px] flex-col gap-7">{children}</div>
       </section>
     </main>
   );
@@ -49,12 +51,20 @@ async function session() {
 }
 
 /** Does this person have subjects to choose (a Teacher role at a school with GCSE or Post-16)? */
-async function needsSetup(): Promise<boolean> {
-  const { supabase, user, token } = await session();
-  if (!user || !token) return false;
+type MembershipRow = { id: string; roles: string[] | null; role: string | null; is_admin: boolean | null; school_accounts: { school_urn: string; account_holder_membership_id: string | null } | null };
+
+/** The person's own school membership, picked as the homes pick it (pickMembership). */
+async function myMembership(): Promise<MembershipRow | null> {
+  const { supabase, user } = await session();
+  if (!user) return null;
   const { data } = await supabase.from("school_memberships").select("id, roles, role, is_admin, school_accounts!school_memberships_school_account_id_fkey(school_urn, account_holder_membership_id)").eq("profile_id", user.id).eq("status", "approved");
-  type Row = { id: string; roles: string[] | null; role: string | null; is_admin: boolean | null; school_accounts: { school_urn: string; account_holder_membership_id: string | null } | null };
-  const m = pickMembership((data ?? []) as unknown as Row[]);
+  return pickMembership((data ?? []) as unknown as MembershipRow[]);
+}
+
+async function needsSetup(): Promise<boolean> {
+  const { token } = await session();
+  if (!token) return false;
+  const m = await myMembership();
   if (!m?.school_accounts) return false;
   if (!lensesOf({ roles: m.roles, role: m.role, is_admin: m.is_admin, isAccountHolder: m.school_accounts.account_holder_membership_id === m.id }).includes("teacher")) return false;
   const res = await fetch(`/api/teacher/phases?urn=${m.school_accounts.school_urn}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
@@ -64,9 +74,38 @@ async function needsSetup(): Promise<boolean> {
 
 // ------------------------------------------------------------------------------------------------ welcome
 
+/**
+ * The welcome's role (welcome-role.ts): a platform admin's peek or View as is the viewed role (head office's
+ * included); anyone else, their own membership's primary role, or head office when they have no school.
+ */
+async function resolveWelcomeRole(): Promise<WelcomeRole> {
+  const { supabase, user, token } = await session();
+  if (!user || !token) return "teacher";
+  const params = new URLSearchParams(window.location.search);
+  let viewed: WelcomeRole | null = null;
+  if (readPeekGroup(params)) viewed = (await confirmPlatformAdmin(supabase)) ? "head_office" : null;
+  else viewed = (await resolvePeek(supabase))?.role ?? (await resolveViewAs(supabase))?.role ?? ((await resolveViewAsGroup(supabase)) ? "head_office" : null);
+  if (viewed) return welcomeRole({ viewed, membership: null, headOffice: false });
+  const m = await myMembership();
+  const membership = m ? { roles: m.roles, role: m.role, is_admin: m.is_admin, isAccountHolder: !!m.school_accounts && m.school_accounts.account_holder_membership_id === m.id } : null;
+  let headOffice = false;
+  if (!membership) {
+    const g = await fetch("/api/group/me", { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+    headOffice = !!(g?.ok && ((await g.json()) as { offices?: unknown[] }).offices?.length);
+  }
+  return welcomeRole({ viewed: null, membership, headOffice });
+}
+
 export function WelcomePage() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  // Drawn once the role is known, so the page never opens in one colour and turns to another.
+  const [role, setRole] = useState<WelcomeRole | null>(null);
+  useEffect(() => {
+    resolveWelcomeRole()
+      .catch((): WelcomeRole => "teacher")
+      .then(setRole);
+  }, []);
   const go = async () => {
     setBusy(true);
     const { supabase, user } = await session();
@@ -75,20 +114,40 @@ export function WelcomePage() {
     if (user && !viewingAs) await markWelcomeSeen(supabase, user.id);
     router.replace(afterWelcome({ needsSetup: !viewingAs && (await needsSetup()) }));
   };
+  if (!role) return <FirstVisitFrame><p className="sr-only">Loading…</p></FirstVisitFrame>;
   return (
-    <FirstVisitFrame field="top">
-      <WelcomeContent busy={busy} onGo={go} />
+    <FirstVisitFrame field={WELCOME_ROLES[role].field} role={role}>
+      <WelcomeContent role={role} busy={busy} onGo={go} />
     </FirstVisitFrame>
   );
 }
 
-export function WelcomeContent({ busy, onGo }: { busy: boolean; onGo: () => void }) {
+/** Three soft ribbons in the role's colour behind the heading, after the landing page's bands. Decoration only. */
+function WelcomeRibbons() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -right-[38%] -top-[6%] h-[300px] w-[110%] rotate-[-18deg] sm:-right-[16%] sm:top-[2%] sm:h-[420px] sm:w-[70%]">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="absolute left-0 right-0 h-[16%] rounded-full bg-[var(--wr-ribbon)] opacity-[var(--wr-ribbon-opacity)]" style={{ top: `${14 + i * 22}%`, left: `${i * 9}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function WelcomeContent({ role, busy, onGo }: { role: WelcomeRole; busy: boolean; onGo: () => void }) {
+  const r = WELCOME_ROLES[role];
   return (
     <>
       <div className="flex flex-col gap-3">
-        <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--field-ink)]">Welcome</p>
-        <h1 className="text-[34px] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--field-ink)] sm:text-[48px]">VicData helps you see how your school is doing</h1>
-        <p className="max-w-[720px] text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">Who takes your subjects, how well they do, and how you compare with schools nearby, from the published figures, in plain questions.</p>
+        <p className="flex flex-wrap items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--field-ink)]">
+          <span data-welcome-chip="" className="rounded-[6px] bg-[var(--wr-chip-bg)] px-2.5 py-1 text-[12.5px] font-bold normal-case tracking-normal text-[var(--wr-text)]">{r.chip}</span>
+          Private beta
+        </p>
+        <h1 className="text-[34px] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--field-ink)] sm:text-[48px]">
+          Welcome to VicData for <span className="whitespace-nowrap text-[var(--wr-heading,var(--wr-text))]">{r.forWhom}</span>
+        </h1>
+        <p className="max-w-[720px] text-[17px] leading-relaxed text-[var(--field-ink)] sm:text-[19px]">{role === "head_office" ? "VicData helps you see how your schools are doing." : "VicData helps you see how your school is doing."} {r.line}</p>
       </div>
       <ul className="flex flex-col gap-3">
         <li className={point}>
@@ -119,7 +178,7 @@ export function WelcomeContent({ busy, onGo }: { busy: boolean; onGo: () => void
           </span>
         </li>
       </ul>
-      <button type="button" onClick={onGo} disabled={busy} data-welcome-continue="" className="w-fit rounded-[12px] bg-[var(--tile-accent)] px-6 py-3.5 text-[16px] font-semibold text-[var(--tile-on-accent)] disabled:opacity-60">
+      <button type="button" onClick={onGo} disabled={busy} data-welcome-continue="" className="w-fit rounded-[12px] border border-[var(--wr-edge)] bg-[var(--wr-fill)] px-6 py-3.5 text-[16px] font-semibold text-[var(--wr-ink)] shadow-[0_1px_2px_rgba(0,0,0,.12),0_8px_20px_-8px_rgba(var(--accent-rgb),.55)] hover:opacity-90 disabled:opacity-60">
         {busy ? "One moment…" : "Let's start"}
       </button>
     </>

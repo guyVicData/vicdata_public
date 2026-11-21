@@ -101,7 +101,7 @@ export function contrastTable(css: string): Pair[] {
   pairs.push({ name: "Ladder Light: muted text on the page", fg: ll["--muted"] ?? light["--muted"], bg: ll["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Dark: muted text on the page", fg: ld["--muted"] ?? dark["--muted"], bg: ld["--bg"], kind: "small" });
   pairs.push({ name: "Ladder Light: muted2 text on the page", fg: light["--muted2"], bg: ll["--bg"], kind: "small" });
-  return [...pairs, ...walkHeadPairs(css), ...makerPairs(css), ...groupPairs(), ...adminPairs(css), ...midDashPairs(css)];
+  return [...pairs, ...walkHeadPairs(css), ...makerPairs(css), ...groupPairs(), ...adminPairs(css), ...midDashPairs(css), ...welcomePairs(css)];
 }
 
 /**
@@ -251,4 +251,61 @@ export function adminPairs(css: string): Pair[] {
     { name: "School admin Dark: the row icon on its tint", fg: d["--admin-text"], bg: d["--admin-tint"], kind: "mark" },
     { name: "School admin: the badge's text on its amber (both themes)", fg: t["--admin-badge-fg"], bg: t["--admin-badge-bg"], kind: "small" },
   ];
+}
+
+/**
+ * 0.8 beta (Guy, 21 Nov): the welcome in the person's role colour (welcome-role.ts; globals.css "the first-visit
+ * welcome"). Light and Dark: the role's word in the heading (large) on the wash at its strongest (the top left:
+ * the accent at 24% over the page), the chip's text on the chip, "Let's start"'s text on its fill, and its edge
+ * (a mark) on the page and on that wash. Mid: the chip's text on white, the button's text on its fill and its edge
+ * on both of the field's stops, the heading's ink on both; School-Admin's own field, as every home field is.
+ */
+export const WELCOME_ROLE_KEYS = ["teacher", "smt", "admissions", "school_admin", "head_office"] as const;
+export const WELCOME_SA_FIELD = { label: "School-Admin (the welcome's amber field)", from: "#fde68a", to: "#c48a12" } as const;
+const WELCOME_MID_FIELD: Record<(typeof WELCOME_ROLE_KEYS)[number], { from: string; to: string }> = {
+  teacher: MID_FIELDS.gcse,
+  smt: MID_FIELDS.top,
+  admissions: MID_FIELDS.admissions,
+  head_office: MID_FIELDS.group,
+  school_admin: WELCOME_SA_FIELD,
+};
+const rgbHex = (rgb: string) => "#" + rgb.split(",").map((v) => Number(v.trim()).toString(16).padStart(2, "0")).join("");
+/** The `--accent-rgb: r,g,b` a rule declares (tokensOf reads only hex values). */
+function accentRgbOf(css: string, selector: string): string | undefined {
+  const flat = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = flat.match(new RegExp(`(?:^|[}\\s])${esc}\\s*\\{[^}]*--accent-rgb:\\s*([\\d,\\s]+);`));
+  return m ? rgbHex(m[1]) : undefined;
+}
+export function welcomePairs(css: string): Pair[] {
+  const pairs: Pair[] = [];
+  const pages = { Light: tokensOf(css, SEL.light)["--bg"], Dark: tokensOf(css, SEL.dark)["--bg"] };
+  for (const r of WELCOME_ROLE_KEYS) {
+    for (const T of ["Light", "Dark"] as const) {
+      const sel = T === "Light" ? `#teacher-root[data-theme="light"] [data-welcome-role="${r}"]` : `#teacher-root[data-theme="dark"]:not([data-pref="mid"]) [data-welcome-role="${r}"]`;
+      const t = tokensOf(css, sel);
+      const page = pages[T];
+      const wash = mix(accentRgbOf(css, sel) ?? page, page, 0.24);
+      pairs.push({ name: `Welcome ${T} ${r}: the role's word in the heading, on the wash`, fg: t["--wr-text"], bg: wash, kind: "large" });
+      pairs.push({ name: `Welcome ${T} ${r}: the chip's text`, fg: t["--wr-text"], bg: t["--wr-chip-bg"], kind: "small" });
+      pairs.push({ name: `Welcome ${T} ${r}: Let's start's text`, fg: t["--wr-ink"], bg: t["--wr-fill"], kind: "small" });
+      pairs.push({ name: `Welcome ${T} ${r}: Let's start's edge on the page`, fg: t["--wr-edge"], bg: page, kind: "mark" });
+      pairs.push({ name: `Welcome ${T} ${r}: Let's start's edge on the wash`, fg: t["--wr-edge"], bg: wash, kind: "mark" });
+    }
+    const all = tokensOf(css, '#teacher-root[data-pref="mid"] [data-welcome-role]');
+    const t = { ...all, ...tokensOf(css, `#teacher-root[data-pref="mid"] [data-welcome-role="${r}"]`) };
+    const { from, to } = WELCOME_MID_FIELD[r];
+    pairs.push({ name: `Welcome Mid ${r}: the chip's text on white`, fg: t["--wr-text"], bg: t["--wr-chip-bg"], kind: "small" });
+    pairs.push({ name: `Welcome Mid ${r}: Let's start's text`, fg: t["--wr-ink"], bg: t["--wr-fill"], kind: "small" });
+    for (const [stop, bg] of [["light", from], ["dark", to]] as const) {
+      pairs.push({ name: `Welcome Mid ${r}: Let's start's edge on the ${stop} stop`, fg: t["--wr-edge"], bg, kind: "mark" });
+      pairs.push({ name: `Welcome Mid ${r}: the heading and the 13 px line on the ${stop} stop`, fg: t["--wr-heading"], bg, kind: "small" });
+    }
+  }
+  const sa = tokensOf(css, '#teacher-root[data-pref="mid"] [data-field="school_admin"]');
+  for (const [stop, bg] of [["light", WELCOME_SA_FIELD.from], ["dark", WELCOME_SA_FIELD.to]] as const) pairs.push({ name: `Mid ${WELCOME_SA_FIELD.label}: text on the ${stop} stop`, fg: sa["--field-ink"], bg, kind: "small" });
+  pairs.push({ name: `Mid ${WELCOME_SA_FIELD.label}: accent text on the tile`, fg: sa["--tile-accent-text"], bg: "#ffffff", kind: "small" });
+  pairs.push({ name: `Mid ${WELCOME_SA_FIELD.label}: accent text on the tint`, fg: sa["--tile-accent-text"], bg: sa["--tile-tint"], kind: "small" });
+  pairs.push({ name: `Mid ${WELCOME_SA_FIELD.label}: white on the accent`, fg: "#ffffff", bg: sa["--tile-accent"], kind: "mark" });
+  return pairs;
 }

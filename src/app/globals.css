@@ -213,6 +213,48 @@ body:has(#teacher-root[data-theme="dark"] [data-dash-ladder]) { background: #080
   --field-ink: #062436; --field-ink-soft: #062436; --tile-accent: #0b6fa6; --tile-tint: #dcf1fc; --tile-accent-text: #0b6fa6;
 }
 
+/* 0.8 beta (Guy, 21 Nov): the first-visit welcome in the person's role colour (welcome-role.ts). The homes'
+   colours, nothing new: Teacher green, SMT orange, Admissions sky, head office bronze, School-Admin amber.
+   --wr-fill / --wr-ink / --wr-edge: "Let's start" (white on the deep value in Light; dark ink on the bright value
+   in Dark; in Mid, white on the field's own deep ink, the one fill whose edge holds 3:1 on both of the field's
+   stops); --wr-text: the role's word in the heading and the chip's text, --wr-chip-bg its chip; --wr-ribbon: the
+   three ribbons behind the heading, after the landing page's bands. Every pair is in R-THEME-CONTRAST
+   (contrast.ts welcomePairs).
+   School-Admin and "Send feedback" (#ffbf00, dark ink, a pill in the nav): School-Admin never draws a bright amber
+   fill here. Its button is the deep ochre of its plain pages (--admin-text, #8a5d00) with white ink in Light and Dark
+   (Dark adds an ochre edge, #c48a12, for 3:1 on the page) and the field's deep ink in Mid -- always the opposite
+   polarity to the feedback pill's dark-on-bright -- its wash is ochre, not amber, and its Mid field runs from pale straw to ochre, not
+   traffic-light amber, so the pill above reads as the nav's, not the page's. */
+#teacher-root[data-pref="mid"] [data-field="school_admin"] {
+  background: radial-gradient(90% 80% at 12% 0%, #FBD46Acc 0%, transparent 62%), radial-gradient(70% 70% at 100% 100%, rgba(0,0,0,.10) 0%, transparent 70%), linear-gradient(150deg, #FDE68A, #C48A12);
+  --field-ink: #2a1c00; --field-ink-soft: #2a1c00; --tile-accent: #8a5d00; --tile-tint: #fdf3dc; --tile-accent-text: #8a5d00;
+}
+/* Light and Dark: a soft wash of the role's colour, stronger at the top left than a home's field. */
+#teacher-root:not([data-pref="mid"]) [data-welcome-role] {
+  background: radial-gradient(80% 55% at 8% 0%, rgba(var(--accent-rgb), .16) 0%, transparent 70%), linear-gradient(180deg, rgba(var(--accent-rgb), .08), rgba(var(--accent-rgb), .02));
+  --wr-ribbon-opacity: .16;
+}
+#teacher-root[data-theme="dark"]:not([data-pref="mid"]) [data-welcome-role] { --wr-ribbon-opacity: .2; }
+#teacher-root[data-pref="mid"] [data-welcome-role] { --wr-ribbon: #ffffff; --wr-ribbon-opacity: .28; --wr-ink: #ffffff; --wr-chip-bg: #ffffff; }
+
+#teacher-root[data-theme="light"] [data-welcome-role="teacher"] { --accent: #15803d; --accent-rgb: 21,128,61; --wr-fill: #15803d; --wr-edge: #15803d; --wr-ink: #ffffff; --wr-text: #12713a; --wr-chip-bg: #dcf5e7; --wr-ribbon: #12a05c; }
+#teacher-root[data-theme="light"] [data-welcome-role="smt"] { --accent: #c2410c; --accent-rgb: 194,65,12; --wr-fill: #c2410c; --wr-edge: #c2410c; --wr-ink: #ffffff; --wr-text: #b13c0b; --wr-chip-bg: #ffeddc; --wr-ribbon: #c2410c; }
+#teacher-root[data-theme="light"] [data-welcome-role="admissions"] { --accent: #0b6fa6; --accent-rgb: 11,111,166; --wr-fill: #0b6fa6; --wr-edge: #0b6fa6; --wr-ink: #ffffff; --wr-text: #0b6fa6; --wr-chip-bg: #dcf1fc; --wr-ribbon: #1596db; }
+#teacher-root[data-theme="light"] [data-welcome-role="head_office"] { --accent: #8a5a2b; --accent-rgb: 168,116,63; --wr-fill: #8a5a2b; --wr-edge: #8a5a2b; --wr-ink: #ffffff; --wr-text: #7e4f24; --wr-chip-bg: #f7eee4; --wr-ribbon: #a8743f; }
+#teacher-root[data-theme="light"] [data-welcome-role="school_admin"] { --accent: #8a5d00; --accent-rgb: 196,138,18; --wr-fill: #8a5d00; --wr-edge: #8a5d00; --wr-ink: #ffffff; --wr-text: #8a5d00; --wr-chip-bg: #fdf3dc; --wr-ribbon: #8a5d00; }
+
+#teacher-root[data-theme="dark"]:not([data-pref="mid"]) [data-welcome-role="teacher"] { --accent: #34d399; --accent-rgb: 52,211,153; --wr-fill: #34d399; --wr-edge: #34d399; --wr-ink: #0a0a0b; --wr-text: #34d399; --wr-chip-bg: #112a22; --wr-ribbon: #34d399; }
+#teacher-root[data-theme="dark"]:not([data-pref="mid"]) [data-welcome-role="smt"] { --accent: #fb923c; --accent-rgb: 251,146,60; --wr-fill: #fb923c; --wr-edge: #fb923c; --wr-ink: #1f0f04; --wr-text: #fb923c; --wr-chip-bg: #312013; --wr-ribbon: #fb923c; }
+#teacher-root[data-theme="dark"]:not([data-pref="mid"]) [data-welcome-role="admissions"] { --accent: #22d3ee; --accent-rgb: 34,211,238; --wr-fill: #22d3ee; --wr-edge: #22d3ee; --wr-ink: #041418; --wr-text: #22d3ee; --wr-chip-bg: #0e2a2f; --wr-ribbon: #22d3ee; }
+#teacher-root[data-theme="dark"]:not([data-pref="mid"]) [data-welcome-role="head_office"] { --accent: #a8743f; --accent-rgb: 168,116,63; --wr-fill: #a8743f; --wr-edge: #a8743f; --wr-ink: #0a0a0b; --wr-text: #c99a66; --wr-chip-bg: #29211a; --wr-ribbon: #a8743f; }
+#teacher-root[data-theme="dark"]:not([data-pref="mid"]) [data-welcome-role="school_admin"] { --accent: #fbbf24; --accent-rgb: 196,138,18; --wr-fill: #8a5d00; --wr-edge: #c48a12; --wr-ink: #ffffff; --wr-text: #fbbf24; --wr-chip-bg: #2a2412; --wr-ribbon: #c48a12; }
+
+#teacher-root[data-pref="mid"] [data-welcome-role="teacher"] { --accent-rgb: 21,128,61; --wr-fill: #07200f; --wr-edge: #07200f; --wr-text: #12713a; --wr-heading: #07200f; }
+#teacher-root[data-pref="mid"] [data-welcome-role="smt"] { --accent-rgb: 194,65,12; --wr-fill: #3a1c02; --wr-edge: #3a1c02; --wr-text: #b13c0b; --wr-heading: #3a1c02; }
+#teacher-root[data-pref="mid"] [data-welcome-role="admissions"] { --accent-rgb: 11,111,166; --wr-fill: #062436; --wr-edge: #062436; --wr-text: #0b6fa6; --wr-heading: #062436; }
+#teacher-root[data-pref="mid"] [data-welcome-role="head_office"] { --accent-rgb: 138,90,43; --wr-fill: #3a1c02; --wr-edge: #3a1c02; --wr-text: #7e4f24; --wr-heading: #3a1c02; }
+#teacher-root[data-pref="mid"] [data-welcome-role="school_admin"] { --accent-rgb: 138,93,0; --wr-fill: #2a1c00; --wr-edge: #2a1c00; --wr-text: #8a5d00; --wr-heading: #2a1c00; }
+
 /* 0.8 front door 2b (M3; Guy, 13 Nov): Mid on the dashboards (MidDash.tsx). The root draws Light under Mid
    (data-mid-dash="<part>"): every token, `dark:` utility and JS colour on the field is Light's, so the
    columns and open panels are near-white plates and a shut panel is Light's raised bar (the ladder: a
