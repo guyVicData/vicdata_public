@@ -113,6 +113,10 @@ test("R-COOKIE-SESSION: with its secret, preview access redeems a real magic lin
     if (u.pathname === "/rest/v1/platform_admins") return json(null);
     return prev(input, init);
   }) as typeof fetch;
+  const { setDeviceStoreForTests } = await import("./devices/http");
+  const { memoryDeviceStore } = await import("./devices/store");
+  const mem = memoryDeviceStore();
+  setDeviceStoreForTests(mem.store);
   try {
     const { GET } = await import("../app/api/testing/preview-session/route");
     const res = await GET(new NextRequest("http://app.test/api/testing/preview-session?token=the-secret&redirect=/teacher/smt"));
@@ -122,10 +126,16 @@ test("R-COOKIE-SESSION: with its secret, preview access redeems a real magic lin
     assert.ok(authLog.otp.includes("hash-preview-user"), "redeemed with Supabase's own verifyOtp");
     const cookies = res.headers.getSetCookie();
     assert.ok(cookies.some((c) => /^sb-supabase-auth-token=base64-/.test(c)), "a real session cookie");
+    // Milestone 3: and its device, signed in at once as the preview kind (no code), with an httpOnly device cookie.
+    assert.ok(cookies.some((c) => /^vicdata_device=/.test(c) && /HttpOnly/i.test(c)));
+    assert.equal(mem.devices.length, 1);
+    assert.equal(mem.devices[0].account_kind, "preview");
+    assert.ok(mem.devices[0].signed_in_at && !mem.devices[0].signed_out_at);
     // An open redirect would hand out a session: anything not a path on this origin falls back.
     const evil = await GET(new NextRequest("http://app.test/api/testing/preview-session?token=the-secret&redirect=//evil.example"));
     assert.equal(evil.headers.get("location"), "https://vicdata.example/teacher");
   } finally {
     globalThis.fetch = prev;
+    setDeviceStoreForTests(null);
   }
 });

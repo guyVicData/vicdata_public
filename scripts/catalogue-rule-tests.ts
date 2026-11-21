@@ -3554,21 +3554,37 @@ const RUNNERS: Record<string, Runner> = {
     const today = new Date().toISOString().slice(0, 10);
     const s = await readAccountSummary(createServiceRoleSupabaseClient(), { urn: "110110", today });
     const rows = accountRows(s, today);
-    const live = rows[0].id === "join" && (s.joinRequests > 0) === !!rows[0].badge && waitingCount(rows) === rows.filter((r) => r.badge).reduce((n, r) => n + (r.id === "join" ? s.joinRequests : 1), 0) && !rows.some((r) => /sign-?ins/i.test(r.title));
+    // Front door part 3 (F27): the Sign-ins and devices row is there, badged exactly when someone is flagged.
+    const signins = rows.find((r) => r.id === "signins");
+    const live = rows[0].id === "join" && (s.joinRequests > 0) === !!rows[0].badge && waitingCount(rows) === rows.filter((r) => r.badge).reduce((n, r) => n + (r.id === "join" ? s.joinRequests : 1), 0) && !!signins && !!signins.badge === !!s.signIns?.flags;
     return { pass: unit.pass && live, detail: fmt({ unit: unit.detail, rows: rows.map((r) => `${r.title}: ${r.summary}${r.badge ? ` [${r.badge}]` : ""}`).join("; "), waiting: waitingCount(rows), live }) };
   },
   // 0.8 front door part 3: each rule's own tests (named for it) in its unit file.
   async frontDoor3(_L, rule) {
-    const files: Record<string, string> = {
-      "R-COOKIE-SESSION": "src/lib/auth-session.test.ts",
-      "R-BETA-GATE": "src/lib/beta-gate.test.ts",
-      "R-LANDING-MINIMAL": "src/lib/beta-gate.test.ts",
-      "R-NOINDEX-SCHOOLS": "src/lib/beta-gate.test.ts",
+    const files: Record<string, string[]> = {
+      "R-COOKIE-SESSION": ["src/lib/auth-session.test.ts"],
+      "R-BETA-GATE": ["src/lib/beta-gate.test.ts"],
+      "R-LANDING-MINIMAL": ["src/lib/beta-gate.test.ts"],
+      "R-NOINDEX-SCHOOLS": ["src/lib/beta-gate.test.ts"],
+      "R-DEVICE-CODES": ["src/lib/devices/devices.test.ts"],
+      "R-DEVICE-CAP": ["src/lib/devices/devices.test.ts"],
+      "R-SIGNINS-RLS": ["src/lib/devices/devices.test.ts", "src/lib/school-admin/signins.test.ts"],
+      "R-JOIN-DOMAIN": ["src/lib/school-admin/signins.test.ts"],
     };
-    const file = files[rule.id];
-    if (!file) return { pass: false, detail: `no test file listed for ${rule.id}` };
-    const unit = unitByRule(file, rule.id, {}, []);
-    return { pass: unit.pass, detail: unit.detail };
+    const list = files[rule.id];
+    if (!list) return { pass: false, detail: `no test file listed for ${rule.id}` };
+    const units = list.map((f) => unitByRule(f, rule.id, {}, []));
+    // The database's half: the PGlite suite's checks named for the rule.
+    let pg = "";
+    let pgOk = true;
+    if (["R-SIGNINS-RLS", "R-JOIN-DOMAIN", "R-DEVICE-CODES"].includes(rule.id)) {
+      const r = pglite("supabase/tests/v08_front_door_r3_signins_pglite.mjs");
+      const mine = r.out.split("\n").filter((l) => l.includes(rule.id));
+      const bad = mine.filter((l) => l.startsWith("FAIL"));
+      pgOk = r.ok && mine.length > 0 && !bad.length;
+      pg = `; pglite ${mine.length - bad.length} of ${mine.length}`;
+    }
+    return { pass: units.every((u) => u.pass) && pgOk, detail: units.map((u) => u.detail).join("; ") + pg };
   },
   async frontDoorMobile(_L, rule) {
     const unit = unitByRule("src/lib/front-door/mobile.test.tsx", rule.id);

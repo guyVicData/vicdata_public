@@ -4,6 +4,10 @@ import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { timingSafeEqual } from "@/lib/timing-safe";
 import { isPreviewGroup, previewGroupEmail, seedPreviewGroup } from "@/lib/testing-group";
 import { applySessionCookies, routeSessionClient } from "@/lib/auth-server";
+import { deviceStore, deviceTokenOf, setDeviceCookie } from "@/lib/devices/http";
+import { registerSignIn } from "@/lib/devices/service";
+import { placeFrom } from "@/lib/devices/place";
+import { deviceSessionsOn } from "@/lib/devices/config";
 
 // Passwordless preview access for automated browser agents
 // (docs/vicdata_phase3_agent_preview_access_brief_v1.md).
@@ -161,6 +165,41 @@ export async function GET(request: NextRequest) {
   // route refused such a link. With the link redeemed here, that check has nothing left to guard.)
   const origin = siteUrl.replace(/\/+$/, "");
   // Milestone 2: the session IS what the beta gate checks, so no separate gate cookie any more.
-  return applySessionCookies(NextResponse.redirect(`${origin}${redirectPath}`, { status: 302 }), pending);
+  const response = applySessionCookies(NextResponse.redirect(`${origin}${redirectPath}`, { status: 302 }), pending);
+  // Milestone 3: and its device, signed in at once as the "preview" kind -- never a code (no inbox to read), a
+  // cap of 10 (agents and the warm-up script share the account). Fails closed like every other step.
+  if (deviceSessionsOn()) {
+    const sessionId = sessionIdOf(verified.session.access_token);
+    if (!sessionId) return notFound();
+    try {
+      const r = await registerSignIn(deviceStore(), { configured: false, send: async () => false }, {
+        userId: verified.session.user.id,
+        sessionId,
+        email: signInEmail,
+        token: deviceTokenOf(request),
+        userAgent: request.headers.get("user-agent"),
+        place: placeFrom(request.headers),
+        kind: "preview",
+        codesOn: false,
+        now: new Date(),
+      });
+      if (r.next !== "home") return notFound();
+      setDeviceCookie(response, r.token);
+    } catch (e) {
+      console.error("[preview-session] could not register the device:", (e as Error).message);
+      return notFound();
+    }
+  }
+  return response;
+}
+
+// The session id inside a token Supabase has just issued to us (verifyOtp's own answer, so not re-verified).
+function sessionIdOf(accessToken: string): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(accessToken.split(".")[1], "base64url").toString("utf8")) as { session_id?: unknown };
+    return typeof payload.session_id === "string" ? payload.session_id : null;
+  } catch {
+    return null;
+  }
 }
 

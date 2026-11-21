@@ -6,7 +6,7 @@
 // home of their other role.
 //   Account     Join requests, People and roles, Teams, School sets, Head office sharing, Membership: a
 //               one-line summary each and a badge when something is waiting ("3 new", "Add a card"). Each
-//               row opens today's page. Sign-ins and devices (F27) is Part 3's: no row yet.
+//               row opens today's page. Part 3 adds Sign-ins and devices (F27), with its "1 flag" badge.
 //   Membership  Your plan, Renewal, Who uses it, Billing, Invoices -- or the pilot's, a covered school's or a
 //               lapsed record's words. Payment actions are disabled: "Coming before the pilot ends".
 // On a phone: one column of cards, every control 44 px.
@@ -22,7 +22,7 @@ import { readPeek } from "@/lib/view-as";
 import type { AccountRow, MembershipView } from "@/lib/school-admin/membership";
 
 export const ADMIN_PHONE = 600;
-const ADMIN_TEXT = "var(--admin-text)";
+export const ADMIN_TEXT = "var(--admin-text)";
 
 export type AccountAnswer = {
   school: { urn: string; name: string };
@@ -35,7 +35,7 @@ export type AccountAnswer = {
 };
 
 /** The school this page is for: a peek's (?lookAs=&as=school_admin&peek=1), else the admin's own (or View as). */
-async function schoolUrn(): Promise<string | null> {
+export async function schoolUrn(): Promise<string | null> {
   const peek = typeof window === "undefined" ? null : readPeek(new URLSearchParams(window.location.search));
   if (peek) return peek.urn;
   const s = await loadAdminSchool();
@@ -104,6 +104,13 @@ const ICONS: Record<string, ReactNode> = {
     <>
       <path d="M3 10.5L12 4l9 6.5V20H3z" />
       <path d="M9.5 20v-5h5v5" />
+    </>
+  ),
+  // 0.8 front door part 3 (F27): a padlock, as the design's row.
+  signins: (
+    <>
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8 10.5V8a4 4 0 018 0v2.5" />
     </>
   ),
   membership: <path d="M7 17L17 7M9 7h8v8" />,

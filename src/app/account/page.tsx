@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { signOutHere } from "@/lib/sign-out";
+import { WhereSignedIn } from "@/components/auth/WhereSignedIn";
+import { approvalUpdate, selectWithOffDomain } from "@/lib/join-exception";
 import { VISIBLE_ROLE_LABELS, visibleRolesOf } from "@/lib/roles";
 import { ViewAsCard } from "@/components/view-as/ViewAs";
 
@@ -45,6 +47,8 @@ type Colleague = {
   role: string | null;
   roles: string[] | null;
   is_admin: boolean;
+  /** 0.8 front door part 3 (E25): a request from outside the school's email domains. */
+  off_domain?: boolean;
   profiles: { email: string; full_name: string | null } | null;
 };
 
@@ -108,7 +112,7 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Your account</h1>
         {/* 2026-09-05, per Guy's direct request: there was no logout button anywhere
@@ -118,6 +122,8 @@ export default function AccountPage() {
       </div>
       {/* 0.6 snag 2/4: View as, platform admins only (renders nothing for anyone else). */}
       <ViewAsCard />
+      {/* 0.8 front door part 3 (E24): the person's own devices. */}
+      <WhereSignedIn />
       {memberships.length === 0 && (
         <p className="text-sm text-neutral-500">
           No memberships yet.{" "}
@@ -242,11 +248,8 @@ function ManagementPanel({
   const [colleagues, setColleagues] = useState<Colleague[]>([]);
 
   const loadColleagues = useCallback(async () => {
-    const { data } = await supabase
-      .from("school_memberships")
-      .select("id, status, role, roles, is_admin, profiles(email, full_name)")
-      .eq("school_account_id", schoolAccountId);
-    setColleagues((data as unknown as Colleague[]) ?? []);
+    const { data } = await selectWithOffDomain<Colleague>((cols) => supabase.from("school_memberships").select(cols).eq("school_account_id", schoolAccountId), "id, status, role, roles, is_admin, profiles(email, full_name)");
+    setColleagues(data ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolAccountId]);
 
@@ -254,11 +257,8 @@ function ManagementPanel({
     (async () => { await loadColleagues(); })();
   }, [loadColleagues]);
 
-  async function approve(membershipId: string) {
-    await supabase
-      .from("school_memberships")
-      .update({ status: "approved", approved_at: new Date().toISOString(), approved_by: currentMembershipId })
-      .eq("id", membershipId);
+  async function approve(c: Colleague) {
+    await supabase.from("school_memberships").update(approvalUpdate({ offDomain: !!c.off_domain, byMembershipId: currentMembershipId })).eq("id", c.id);
     loadColleagues();
   }
 
@@ -299,11 +299,14 @@ function ManagementPanel({
               {c.status !== "approved" && (
                 <span className="ml-2 text-xs text-neutral-500">({STATUS_LABELS[c.status]})</span>
               )}
+              {c.status !== "approved" && c.off_domain && (
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/50 dark:text-amber-100">Exception</span>
+              )}
             </span>
             <span className="flex gap-2">
               {c.status !== "approved" && (
-                <button type="button" className="text-xs underline" onClick={() => approve(c.id)}>
-                  Approve
+                <button type="button" className="text-xs underline" onClick={() => approve(c)}>
+                  {c.off_domain ? "Approve as an exception" : "Approve"}
                 </button>
               )}
               {isAccountHolder && c.id !== currentMembershipId && (

@@ -23,11 +23,26 @@ export const SIGNED_OUT_PAGES: readonly RegExp[] = [
 
 export const SIGNED_OUT_API: readonly RegExp[] = [/^\/api\/(health|version)\/?$/, /^\/api\/testing\/preview-session\/?$/];
 
-export type GateDecision = "pass" | "landing" | "unauthorized" | "home";
+// Milestone 3 (E24): a verified session is signed in only while its device is. Before that -- no device row yet,
+// or a code still to type -- it may reach only the pages that finish signing in (FINISH_PAGES) and the auth API;
+// every other page goes to /login to finish, every other API route answers 401. A device signed out elsewhere (by
+// its owner, the cap, a School-Admin, VicData) is signed out: its session cookies are cleared and every page but
+// those goes to /login, which says why.
+export const FINISH_PAGES: readonly RegExp[] = SIGNED_OUT_PAGES.filter((r) => !r.test("/"));
+export const FINISH_API: readonly RegExp[] = [/^\/api\/auth\//, ...SIGNED_OUT_API];
 
-export function gateDecision(pathname: string, signedIn: boolean): GateDecision {
+export type GateState = "out" | "in" | "unregistered" | "pending" | "revoked";
+export type GateDecision = "pass" | "landing" | "unauthorized" | "home" | "finish_sign_in" | "signed_out";
+
+export function gateDecision(pathname: string, signedIn: boolean | GateState): GateDecision {
+  const state: GateState = signedIn === true ? "in" : signedIn === false ? "out" : signedIn;
   const api = pathname === "/api" || pathname.startsWith("/api/");
-  if (signedIn) return pathname === "/" ? "home" : "pass";
-  if (api) return SIGNED_OUT_API.some((r) => r.test(pathname)) ? "pass" : "unauthorized";
-  return SIGNED_OUT_PAGES.some((r) => r.test(pathname)) ? "pass" : "landing";
+  if (state === "in") return pathname === "/" ? "home" : "pass";
+  if (state === "out") {
+    if (api) return SIGNED_OUT_API.some((r) => r.test(pathname)) ? "pass" : "unauthorized";
+    return SIGNED_OUT_PAGES.some((r) => r.test(pathname)) ? "pass" : "landing";
+  }
+  if (api) return state !== "revoked" && FINISH_API.some((r) => r.test(pathname)) ? "pass" : SIGNED_OUT_API.some((r) => r.test(pathname)) ? "pass" : "unauthorized";
+  if (FINISH_PAGES.some((r) => r.test(pathname))) return "pass";
+  return state === "revoked" ? "signed_out" : "finish_sign_in";
 }

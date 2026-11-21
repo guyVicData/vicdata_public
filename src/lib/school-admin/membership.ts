@@ -4,6 +4,8 @@
 // built: "Update card", "Cancel renewal" and invoice PDFs are shown disabled, saying why.
 // The record: public.account_memberships (20261124090000_v08_front_door_r2_membership.sql).
 
+import { signinsRow } from "./signins";
+
 export type MembershipStatus = "pilot" | "active" | "covered_by_group" | "lapsed";
 
 export type Plan = { code: string; name: string; appliesTo: "secondary" | "primary" | "group"; priceMonthPence: number | null; priceYearPence: number | null; perSchoolMonthPence: number | null; pilotMonths: number };
@@ -140,11 +142,15 @@ export type AccountSummary = {
   membership: MembershipRecord | null;
   /** The membership tables aren't there yet (before the migration). */
   membershipNotSetUp: boolean;
+  /** 0.8 front door part 3 (F27): devices signed in now across the school's staff, and how many people are
+   * flagged; null before the migration (or when it couldn't be read). Absent: no row (older callers). */
+  signIns?: { devices: number; flags: number } | null;
 };
 
 export type AccountRow = { id: string; title: string; summary: string; href: string | null; badge: string | null };
 
-/** The account page's rows, in the design's order. Sign-ins and devices (F27) is Part 3's: no row here. */
+/** The account page's rows, in the design's order. Sign-ins and devices (F27, part 3) sits between head office
+ * sharing and Membership, with its "1 flag" badge. */
 export function accountRows(s: AccountSummary, today: string): AccountRow[] {
   const m = s.membership;
   const rows: AccountRow[] = [
@@ -155,6 +161,10 @@ export function accountRows(s: AccountSummary, today: string): AccountRow[] {
   ];
   if (s.headOffice)
     rows.push({ id: "head_office", title: "Head office sharing", summary: `${s.headOffice.name}: ${s.headOffice.groupView ? "your SMT sees the group dashboards" : "no group dashboards yet"} · Admissions panels ${s.headOffice.admissionsShared ? "shared" : "not shared"}`, href: "/teacher/school-account/head-office", badge: null });
+  if (s.signIns !== undefined) {
+    const w = signinsRow(s.signIns);
+    rows.push({ id: "signins", title: "Sign-ins and devices", summary: w.summary, href: "/teacher/school-account/sign-ins", badge: w.badge });
+  }
   rows.push({
     id: "membership",
     title: "Membership",

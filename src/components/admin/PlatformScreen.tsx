@@ -17,6 +17,7 @@ import { openViewAs } from "@/components/view-as/ViewAs";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { SearchBox, Switch } from "./AdminChrome";
 import { GroupAccountsSection } from "./GroupAccountsSection";
+import { SignInFlagsSection } from "./SignInFlagsSection";
 
 export type SchoolOverviewRow = {
   school_urn: string;
@@ -252,6 +253,8 @@ export function Platform() {
 
       {/* 0.8 groups r1 (G5): head-office accounts. */}
       <GroupAccountsSection />
+      {/* 0.8 front door part 3 (E24): the quiet alert. */}
+      <SignInFlagsSection />
     </main>
   );
 }

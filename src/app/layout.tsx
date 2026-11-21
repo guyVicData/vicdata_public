@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import { SignInNotice } from "@/components/auth/SignInNotice";
 import "./globals.css";
 import "./fonts.css";
 // Map redesign (2026-08-23, State of the School page): Leaflet + CartoDB Positron,
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
+        <SignInNotice />
         <NavBar />
         {children}
         <Footer />

@@ -79,6 +79,10 @@ export default function JoinSchoolPage({
       return;
     }
 
+    // 0.8 front door part 3 (E24): this browser becomes the new account's first device (no code: the account was
+    // made here, by invitation), so "Continue to VicData" goes straight in.
+    await fetch("/api/auth/device", { method: "POST" }).catch(() => null);
+
     setResult(joinData[0] as JoinResult);
   }
 

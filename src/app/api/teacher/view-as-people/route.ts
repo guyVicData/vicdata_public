@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { selectWithOffDomain } from "@/lib/join-exception";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { viewAsForRequest, ViewAsUnconfirmed } from "@/lib/view-as";
 
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
   const { data: account } = await svc.from("school_accounts").select("id").eq("school_urn", urn).maybeSingle<{ id: string }>();
   if (!account) return NextResponse.json({ members: [], teams: [] });
   const [m, t] = await Promise.all([
-    svc.from("school_memberships").select("id, status, role, roles, job_title, is_admin, profiles(email, full_name)").eq("school_account_id", account.id),
+    // 0.8 front door part 3 (E25): with the exception mark, so View as shows Join requests as the admin sees them.
+    selectWithOffDomain((cols) => svc.from("school_memberships").select(cols).eq("school_account_id", account.id), "id, status, role, roles, job_title, is_admin, profiles(email, full_name)"),
     svc.from("teams").select("id, name, auto_key, created_at, team_members(membership_id)").eq("school_account_id", account.id).order("created_at"),
   ]);
   if (m.error || t.error) return NextResponse.json({ error: "Could not load this school's people." }, { status: 502 });

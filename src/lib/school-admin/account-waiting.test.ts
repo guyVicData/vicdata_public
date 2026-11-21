@@ -16,13 +16,16 @@ function fakeReader(tables: Record<string, Row[]>) {
   const calls: string[] = [];
   const from = (table: string) => {
     calls.push(table);
-    const filters: [string, unknown][] = [];
+    const filters: ((r: Row) => boolean)[] = [];
     let head = false;
-    const rows = () => (tables[table] ?? []).filter((r) => filters.every(([k, v]) => r[k] === v));
+    const rows = () => (tables[table] ?? []).filter((r) => filters.every((f) => f(r)));
     const q = {
       select: (_cols: string, o?: { count?: string; head?: boolean }) => ((head = !!o?.head), q),
-      eq: (k: string, v: unknown) => (filters.push([k, v]), q),
-      is: () => q,
+      eq: (k: string, v: unknown) => (filters.push((r) => r[k] === v), q),
+      in: (k: string, vs: unknown[]) => (filters.push((r) => vs.includes(r[k])), q),
+      gte: (k: string, v: string) => (filters.push((r) => String(r[k]) >= v), q),
+      is: (k: string, v: unknown) => (filters.push((r) => (r[k] ?? null) === v), q),
+      limit: () => q,
       maybeSingle: async () => ({ data: rows()[0] ?? null, error: null }),
       then: (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => Promise.resolve(head ? { data: null, count: rows().length, error: null } : { data: rows(), count: null, error: null }).then(ok, bad),
     };
@@ -33,7 +36,9 @@ function fakeReader(tables: Record<string, Row[]>) {
 
 const plan = { code: "secondary", name: "School membership", applies_to: "secondary", price_month_pence: 1000, price_year_pence: 12000, per_school_month_pence: null, pilot_months: 6 };
 const record = (o: Row = {}): Row => ({ id: "m1", school_account_id: "acc1", status: "pilot", joined_on: "2027-01-01", pilot_ends_on: "2027-06-30", renews_on: "2027-07-01", auto_renew: true, covered_by_group_account_id: null, billing_contact_name: null, billing_contact_email: null, purchase_order: null, invoice_address: null, card_brand: null, card_last4: null, card_exp_month: null, card_exp_year: null, membership_plans: plan, membership_invoices: [], ...o });
-const member = (id: string, status: string): Row => ({ id, school_account_id: "acc1", status, roles: ["teacher"], is_admin: false });
+const member = (id: string, status: string): Row => ({ id, profile_id: `p-${id}`, school_account_id: "acc1", status, roles: ["teacher"], is_admin: false });
+// 0.8 front door part 3 (F27): an account used from 5 places in the last day is a flag, and a flag is a badge.
+const fivePlaces = ["Reading", "Leeds", "York", "Bath", "Hull"].map((place, i) => ({ profile_id: "p-a", place, at: new Date(Date.now() - i * 3_600_000).toISOString() }));
 
 const scenarios: { name: string; tables: Record<string, Row[]>; today: string; want: number }[] = [
   { name: "no account", tables: {}, today: "2027-02-01", want: 0 },
@@ -42,6 +47,7 @@ const scenarios: { name: string; tables: Record<string, Row[]>; today: string; w
   { name: "a pilot's card from month 4, and a request", tables: { school_accounts: [{ id: "acc1", school_urn: "110110" }], school_memberships: [member("b", "pending_approval")], account_memberships: [record()] }, today: "2027-04-15", want: 2 },
   { name: "a card on file", tables: { school_accounts: [{ id: "acc1", school_urn: "110110" }], school_memberships: [], account_memberships: [record({ card_brand: "Visa", card_last4: "4417" })] }, today: "2027-04-15", want: 0 },
   { name: "active, not a pilot", tables: { school_accounts: [{ id: "acc1", school_urn: "110110" }], school_memberships: [], account_memberships: [record({ status: "active" })] }, today: "2027-04-15", want: 0 },
+  { name: "a flagged account (part 3)", tables: { school_accounts: [{ id: "acc1", school_urn: "110110" }], school_memberships: [member("a", "approved")], account_memberships: [record()], account_devices: [], account_sign_ins: fivePlaces }, today: "2027-02-01", want: 1 },
   { name: "a record without its plan", tables: { school_accounts: [{ id: "acc1", school_urn: "110110" }], school_memberships: [], account_memberships: [record({ membership_plans: null })] }, today: "2027-04-15", want: 0 },
 ];
 
@@ -58,7 +64,7 @@ test("speed (20 Nov): the badge's count-only read gives the account page's own n
       const fast = waitingCount(accountRows(await readAccountWaiting(lean.reader, { urn: "110110" }), s.today));
       assert.equal(full, s.want, `${s.name}: the page`);
       assert.equal(fast, full, `${s.name}: the badge is the page's number`);
-      assert.ok(lean.calls.every((t) => ["school_accounts", "school_memberships", "account_memberships"].includes(t)), `${s.name}: no other reads (${lean.calls})`);
+      assert.ok(lean.calls.every((t) => ["school_accounts", "school_memberships", "account_memberships", "account_devices", "account_sign_ins"].includes(t)), `${s.name}: no other reads (${lean.calls})`);
     }
   } finally {
     globalThis.fetch = realFetch;

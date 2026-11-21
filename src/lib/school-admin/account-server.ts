@@ -10,6 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleSupabaseClient } from "../supabase";
 import type { AccountSummary, MembershipRecord, MembershipStatus, Plan } from "./membership";
+import { readSigninsCounts } from "./signins-server";
 
 const missing = (msg: string | undefined) => /does not exist|schema cache|account_memberships|membership_plans/i.test(msg ?? "");
 
@@ -86,13 +87,15 @@ export async function readAccountWaiting(reader: SupabaseClient, o: { urn: strin
   const empty: AccountSummary = { school: { urn: o.urn, name: o.urn }, joinRequests: 0, people: 0, roles: 0, activeThisMonth: null, teams: 0, schoolSets: 0, headOffice: null, membership: null, membershipNotSetUp: false };
   const { data: acc } = await reader.from("school_accounts").select("id").eq("school_urn", o.urn).maybeSingle<{ id: string }>();
   if (!acc) return empty;
-  const [pending, rec] = await Promise.all([
+  const [pending, rec, signIns] = await Promise.all([
     reader.from("school_memberships").select("id", { count: "exact", head: true }).eq("school_account_id", acc.id).eq("status", "pending_approval"),
     reader
       .from("account_memberships")
       .select("status, joined_on, card_brand, card_last4, membership_plans(code, name, applies_to, price_month_pence, price_year_pence, per_school_month_pence, pilot_months)")
       .eq("school_account_id", acc.id)
       .maybeSingle<Pick<RecordRow, "status" | "joined_on" | "card_brand" | "card_last4" | "membership_plans">>(),
+    // 0.8 front door part 3 (F27): the Sign-ins row's "1 flag" is a badge too.
+    readSigninsCounts(reader, { schoolAccountId: acc.id, now: new Date() }),
   ]);
   // As readMembership: an error, or a record without its plan, is no record.
   const r = rec.error ? null : rec.data;
@@ -115,7 +118,7 @@ export async function readAccountWaiting(reader: SupabaseClient, o: { urn: strin
           invoices: [],
         }
       : null;
-  return { ...empty, joinRequests: pending.count ?? 0, membership };
+  return { ...empty, joinRequests: pending.count ?? 0, membership, signIns };
 }
 
 /** Everything the account page summarises, for one school. */
@@ -128,11 +131,12 @@ export async function readAccountSummary(reader: SupabaseClient, o: { urn: strin
   if (!acc) return { ...base, schoolAccountId: null, joinRequests: 0, people: 0, roles: 0, activeThisMonth: null, teams: 0, schoolSets: 0, headOffice: null, membership: null, membershipNotSetUp: false };
   const sb = createServiceRoleSupabaseClient();
   const monthStart = `${o.today.slice(0, 7)}-01T00:00:00Z`;
-  const [members, teams, sets, membership] = await Promise.all([
+  const [members, teams, sets, membership, signIns] = await Promise.all([
     reader.from("school_memberships").select("id, status, roles, is_admin").eq("school_account_id", acc.id),
     reader.from("teams").select("id", { count: "exact", head: true }).eq("school_account_id", acc.id),
     reader.from("sets").select("id", { count: "exact", head: true }).eq("school_account_id", acc.id).eq("owner_scope", "school").eq("archived", false),
     readMembership(reader, acc.id),
+    readSigninsCounts(reader, { schoolAccountId: acc.id, now: new Date() }),
   ]);
   const rows = (members.data ?? []) as { id: string; status: string; roles: string[] | null; is_admin: boolean }[];
   const approved = rows.filter((r) => r.status === "approved");
@@ -176,5 +180,6 @@ export async function readAccountSummary(reader: SupabaseClient, o: { urn: strin
     headOffice,
     membership: membership.record,
     membershipNotSetUp: membership.notSetUp,
+    signIns,
   };
 }

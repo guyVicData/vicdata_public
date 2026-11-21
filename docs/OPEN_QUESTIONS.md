@@ -3772,3 +3772,63 @@ now). The root layout's meta description is gone (A2).
 
 **M2-9. Env vars Guy can delete on Render:** `ACCESS_GATE_ENABLED`, `ACCESS_GATE_USER`, `ACCESS_GATE_PASSWORD`. Nothing
 reads them. (Keep all four `PREVIEW_ACCESS_*`.)
+
+**M3-1. The device cookie is an opaque random token, not a signed value.** `vicdata_device` (httpOnly, Secure, Lax,
+400 days) holds 32 random bytes; `account_devices` holds their SHA-256. The server looks the row up on every
+sign-in anyway, so a signature would add nothing; the token can't be forged or guessed, and a sign-out revokes it at
+once. Trust is the row's `trusted_until` (60 days after a code), not the cookie's age.
+
+**M3-2. The gate checks the device row by the session's id** (the JWT's `session_id`), one service-role read per
+session per 30 s, remembered on `globalThis` (the proxy and the routes are separate bundles: found by hand) and
+forgotten at once by every sign-out. If the row can't be read the gate fails closed (503). So **the migration must be
+applied before this deploys**, or everyone is locked out; `DEVICE_SESSIONS=off` on Render is the emergency switch
+back to milestone 2's gate (signed in = a verified session), never the default.
+
+**M3-3. Device codes are our own** (6 digits, HMAC-SHA256 keyed by `DEVICE_CODE_SECRET`, else the service role key,
+and bound to the device; 10 minutes; 5 tries; resend after 60 s, 5 an hour), sent through Resend's HTTP API
+(`src/lib/devices/mailer.ts`, one function). Not Supabase's own email OTP: it needs the same SMTP provider, a change
+to the shared Magic Link template, and makes a throwaway second session per code. Off (`DEVICE_CODES=off`, Q5) until
+Guy picks a provider; on with no mailer configured, nobody gets a code and the new device stays out (fails closed).
+
+**M3-4. No code for a brand-new account's first device** (made in the last 30 minutes, no device yet): the invited
+teacher's walk-through is join → account → welcome, and the account was just made in that browser. Nor for the
+preview account (no inbox).
+
+**M3-5. Caps per kind:** staff 3 (the prompt's), platform admin 5 (View as and peeks across browsers), preview 10 (agents
+and the warm-up script share it). Head office counts as staff. One constant (`DEVICE_CAP`).
+
+**M3-6. The rough place is Cloudflare's** `cf-ipcity` + `cf-ipcountry` ("Reading, UK"); the IP is never read or kept.
+`cf-ipcity` needs Cloudflare's "Add visitor location headers" managed transform (Guy's to switch on); without it the
+place is the country, and the places alert counts countries.
+
+**M3-7. One device cookie per browser.** A second person signing in on the same browser gets their own device (a new
+cookie); the first person's trust on that browser goes with it.
+
+**M3-8. Sign-out reasons:** here, elsewhere (from Where you're signed in), all, cap, admin (School-Admin), platform.
+Each is what /login?signedOut= says.
+
+**M3-9. Two holes found by hand and closed:** a device signed out by the cap could re-register with its still-
+unexpired access token. Now a session whose device row is signed out never registers again, and every
+`/api/auth/*` route asks Supabase Auth whether the session is still alive (an ended session's token is refused), on
+those rare requests only. Both have tests.
+
+**M3-10. E25 domains:** personal mail domains (gmail.com, mac.com, …) never seed a list and can't be added. An empty
+list makes every request an exception. A subdomain of a listed domain is on-domain. **Leighton Park's list starts
+empty** (its School-Admin and account holder are Guy's mac.com test accounts): add leightonpark.com on People.
+
+**M3-11. "Explicit approval" is enforced in the database:** a trigger refuses approving an off-domain request unless
+`exception_approved_at`/`_by` are set in the same update, and refuses any signed-in change to `off_domain`. Both
+approve buttons (People, and the old /account member panel) send them, labelled "Approve as an exception".
+
+**M3-12. The domains editor is on People** ("Who can join", above Join requests), not a new account-page row: it is
+about who joins, and the design's account page has no row for it.
+
+**M3-13. The quiet alert is computed**, not stored: accounts with more than 4 distinct places in `account_sign_ins`
+over 24 hours (a sign-in, or a change of place while browsing). Platform page: "Sign-in flags" with Sign out
+everywhere; School-Admin: flagged first on Sign-ins and devices. No email.
+
+**M3-14. The account menu's badge read** (speed, 20 Nov) now also reads the school's sign-in counts (one more round
+trip, in parallel), because "1 flag" is a badge. R-ADMIN-BADGE rewritten for the new row.
+
+**M3-15. Ending a session** is `revoke_auth_session` (security definer, service role only): it deletes the row from
+`auth.sessions`, so the refresh token dies; the access token is refused by the gate at once and by Auth's /user.

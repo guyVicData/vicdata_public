@@ -18,6 +18,8 @@ import {
 } from "./AdminChrome";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { invalidateFetchCache } from "@/lib/fetch-cache";
+import { approvalUpdate, joinRequestWords, selectWithOffDomain } from "@/lib/join-exception";
+import { JoinDomains } from "@/components/admin/JoinDomains";
 
 type MemberRow = {
   id: string;
@@ -26,6 +28,8 @@ type MemberRow = {
   roles: string[] | null;
   job_title: string | null;
   is_admin: boolean;
+  /** 0.8 front door part 3 (E25): a request from outside the school's email domains -- an exception. */
+  off_domain?: boolean;
   profiles: { email: string | null; full_name: string | null } | null;
 };
 
@@ -82,14 +86,11 @@ export function People({ school }: { school: AdminSchool }) {
       return;
     }
     const [m, t] = await Promise.all([
-      supabase
-        .from("school_memberships")
-        .select("id, status, role, roles, job_title, is_admin, profiles(email, full_name)")
-        .eq("school_account_id", school.schoolAccountId),
+      selectWithOffDomain<MemberRow>((cols) => supabase.from("school_memberships").select(cols).eq("school_account_id", school.schoolAccountId), "id, status, role, roles, job_title, is_admin, profiles(email, full_name)"),
       supabase.from("teams").select("id, name, auto_key, team_members(membership_id)").eq("school_account_id", school.schoolAccountId),
     ]);
     if (m.error) setError("Could not load your school's people. Try again.");
-    setMembers((m.data as unknown as MemberRow[]) ?? []);
+    setMembers(m.data ?? []);
     setTeams((t.data as unknown as TeamRow[]) ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [school.schoolAccountId]);
@@ -137,13 +138,9 @@ export function People({ school }: { school: AdminSchool }) {
     await load();
   }
 
-  const approve = (id: string) =>
-    run(
-      supabase
-        .from("school_memberships")
-        .update({ status: "approved", approved_at: new Date().toISOString(), approved_by: school.membershipId, roles: ["teacher"] })
-        .eq("id", id),
-    );
+  // E25: an exception (off_domain) is approved only explicitly, with its own two fields (src/lib/join-exception.ts).
+  const approve = (m: MemberRow) =>
+    run(supabase.from("school_memberships").update(approvalUpdate({ offDomain: !!m.off_domain, byMembershipId: school.membershipId, extra: { roles: ["teacher"] } })).eq("id", m.id));
   const decline = (id: string) => run(supabase.from("school_memberships").delete().eq("id", id));
 
   function toggleRole(m: MemberRow, role: VisibleRoleId) {
@@ -210,6 +207,9 @@ export function People({ school }: { school: AdminSchool }) {
         }
       />
 
+      {/* 0.8 front door part 3 (E25): who joins as usual, and who is an exception. */}
+      <JoinDomains school={school} readOnly={readOnly} />
+
       <SearchBox value={query} onChange={setQuery} placeholder="Search people" />
 
       <div className="flex flex-wrap gap-1.5">
@@ -229,6 +229,7 @@ export function People({ school }: { school: AdminSchool }) {
       {shownWaiting.map((m) => {
         const email = m.profiles?.email ?? null;
         const matched = Boolean(domain && email && email.toLowerCase().split("@")[1] === domain);
+        const words = joinRequestWords({ offDomain: !!m.off_domain, email });
         return (
           <div
             key={m.id}
@@ -238,22 +239,29 @@ export function People({ school }: { school: AdminSchool }) {
             <div className="flex items-center gap-2.5">
               <Avatar fullName={m.profiles?.full_name} email={email} />
               <div className="min-w-0 flex-grow">
-                <div className="truncate text-[14px] font-bold">{displayNameOf(m.profiles?.full_name, email)}</div>
+                <div className="flex items-center gap-2 truncate text-[14px] font-bold">
+                  {displayNameOf(m.profiles?.full_name, email)}
+                  {words.tag && (
+                    <span data-exception="" className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: ATTENTION_ACCENT.hex, color: ATTENTION_INK }}>
+                      {words.tag}
+                    </span>
+                  )}
+                </div>
                 <div className="truncate text-[12px] text-[var(--muted)]">
-                  Asked to join &middot; {matched ? "school email matched" : email ?? "no email"}
+                  Asked to join &middot; {m.off_domain ? words.line : matched ? "school email matched" : email ?? "no email"}
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => approve(m.id)}
+                onClick={() => approve(m)}
                 disabled={readOnly}
                 title={readOnly ? VIEW_AS_READ_ONLY : undefined}
                 className="rounded-full border-none px-3.5 py-1.5 text-[12px] font-bold disabled:opacity-60"
                 style={{ background: ATTENTION_ACCENT.hex, color: ATTENTION_INK }}
               >
-                Approve as Teacher
+                {words.approve}
               </button>
               <button
                 type="button"
