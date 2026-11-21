@@ -459,7 +459,7 @@ function WindowFor({ target, items, drift }: { target: FeedbackTarget; items: Ow
           <Chips label="How much it matters" options={FEEDBACK_IMPORTANCE} picked={form.importance ? [form.importance] : []} onPick={(x) => setForm({ ...form, importance: x[0] ?? null })} />
           <Chips label="Scope" options={FEEDBACK_SCOPE} picked={form.scope ? [form.scope] : []} onPick={(x) => setForm({ ...form, scope: x[0] ?? null })} />
           <Chips label="Applies to" options={whole ? FEEDBACK_APPLIES_PAGE : FEEDBACK_APPLIES} picked={form.applies ? [form.applies] : []} onPick={(x) => setForm({ ...form, applies: x[0] ?? null })} />
-          {!whole && <Chips label="Where in the view (optional)" options={FEEDBACK_WHERE} picked={form.where} onPick={(where) => setForm({ ...form, where })} multi />}
+          {!whole && <Chips label="Which part (optional)" options={FEEDBACK_WHERE} picked={form.where} onPick={(where) => setForm({ ...form, where })} multi />}
           <div className="mt-3 flex items-center gap-2">
             <button
               type="submit"

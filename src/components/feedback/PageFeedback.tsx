@@ -17,7 +17,7 @@ import { useFirstHost } from "./ViewSurface";
 
 // The footer sits outside #teacher-root, where the --fb-* tokens live: the same two colours, light and dark.
 const COLOUR = { open: "text-[#b7860b] dark:text-[#f5c542]", good: "text-[#1f8a4c] dark:text-[#4ade80]", none: "" } as const;
-const TITLE = { open: "You have open feedback on this page", good: "You marked this page Looks good", none: "Give feedback on this page as a whole: menus, the bar, pills, layout" } as const;
+const TITLE = { open: "You have open feedback on this page", good: "You marked this page Looks good", none: "Give feedback on this page as a whole: menus, buttons, layout" } as const;
 
 export function FooterPageFeedback() {
   const { allowed, items, page, target } = useFeedbackState();

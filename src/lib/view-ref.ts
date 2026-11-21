@@ -87,9 +87,12 @@ export const FEEDBACK_KINDS = [
 ] as const;
 export type FeedbackKind = (typeof FEEDBACK_KINDS)[number]["id"];
 
+// Review pack 22 Nov, issue 3 (R-FEEDBACK-PLAIN-LABELS): every label below is read by beta testers, so it is
+// plain and neutral (no "before the demo", no team words like pills or the set bar). The ids are what is
+// stored and checked (feedback_items constraints, feedback-server.ts): they never change.
 export const FEEDBACK_IMPORTANCE = [
-  { id: "before_demo", label: "before the demo" },
-  { id: "should_fix", label: "should fix" },
+  { id: "before_demo", label: "urgent" },
+  { id: "should_fix", label: "worth fixing" },
   { id: "nice_to_have", label: "nice to have" },
 ] as const;
 export const FEEDBACK_SCOPE = [
@@ -107,19 +110,19 @@ export const FEEDBACK_WHERE = [
   { id: "chart", label: "chart" },
   { id: "table", label: "table" },
   { id: "legend", label: "legend" },
-  { id: "info", label: "(i) text" },
-  { id: "pills", label: "pills and chips" },
+  { id: "info", label: "the (i) explanation" },
+  { id: "pills", label: "buttons and filters" },
 ] as const;
 
 // Section 6: a page item's "Area" chips (tick any). The ids are the database's (feedback_items_area_check).
 export const FEEDBACK_AREAS = [
   { id: "navigation", label: "navigation and menus" },
-  { id: "set_bar", label: "comparison-set bar" },
-  { id: "level_pills", label: "level chips and pills" },
-  { id: "layout", label: "layout" },
-  { id: "banner", label: "banner" },
+  { id: "set_bar", label: "choosing schools to compare" },
+  { id: "level_pills", label: "GCSE, Post-16 and other filter buttons" },
+  { id: "layout", label: "page layout" },
+  { id: "banner", label: "messages at the top of the page" },
   { id: "home", label: "home page" },
-  { id: "account", label: "account" },
+  { id: "account", label: "your account" },
   { id: "other", label: "other" },
 ] as const;
 // On a page, "Applies to" reads for pages: "all similar" is every dashboard of this kind (the same ids).
