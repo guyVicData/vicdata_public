@@ -108,7 +108,6 @@ export default function ResetPasswordPage() {
         return;
       }
       // A full load: the proxy must see the device on the very next request.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full load on purpose (above)
       window.location.assign(dest);
       return;
     }
