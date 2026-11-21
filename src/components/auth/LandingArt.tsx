@@ -4,7 +4,7 @@
 // ROLE_ACCENT_LIGHT, src/components/smt/ui.tsx PHASE_TONES, the Mid fields' Admissions sky). Decoration only:
 // aria-hidden, no text, no pointer events, clipped so it never scrolls sideways. The one movement (the arcs draw
 // themselves in, once) is off under prefers-reduced-motion. Pick with LANDING_VARIANT (src/app/page.tsx).
-export type LandingVariant = "bands" | "bars" | "arcs" | "spectrum";
+export type LandingVariant = "bands" | "bands-long" | "bars" | "arcs" | "spectrum";
 
 // Order: the school journey -- who joins (Admissions), Primary, GCSE, Post-16, then the whole school around them.
 const BANDS = [
@@ -18,7 +18,7 @@ const BANDS = [
 /** The bars' lengths (share of the page's width), in BANDS' order: a gentle rise with one dip at Post-16. */
 const BAR_LENGTHS = ["46%", "61%", "78%", "69%", "92%"] as const;
 
-/** bands v3 (the default, Guy 22 Nov): the same five lengths' idea on v1's diagonal, longer, as % of the frame. */
+/** bands v3 ("bands-long"): the same five lengths' idea on v1's diagonal, longer, as % of the frame. */
 const BAND_LENGTHS = ["52%", "66%", "83%", "74%", "97%"] as const;
 
 /** The strip the "bars" variant draws in, reserved below the page's content (the same heights as the strip). */
@@ -38,6 +38,19 @@ export function SpectrumLine({ className = "" }: { className?: string }) {
 export function LandingArt({ variant }: { variant: LandingVariant }) {
   if (variant === "spectrum") return null;
   if (variant === "bands")
+    // bands v1, the default (Guy, 22 Nov: "looked better"), exactly as first committed (970b4892): five long
+    // translucent ribbons of one length, fanned across the lower right, like the tabs of a home laid on their side.
+    // No movement. Restored after v2 ("bars") and v3 ("bands-long"), which stay as variants.
+    return (
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -bottom-[30%] -right-[25%] h-[90%] w-[90%] rotate-[-24deg] sm:-right-[10%] sm:w-[70%]">
+          {BANDS.map((b, i) => (
+            <div key={b.name} className={`absolute left-0 right-0 h-[9%] rounded-full bg-[var(--c)] opacity-[0.16] dark:opacity-[0.2] ${b.cls}`} style={{ top: `${18 + i * 13}%` }} />
+          ))}
+        </div>
+      </div>
+    );
+  if (variant === "bands-long")
     // bands v3 (Guy, 22 Nov: "diagonal, as in v1", and they may pass under the logo and button). Five bars of
     // different lengths on one diagonal baseline -- still a hint of a chart -- in a frame twice the page's width,
     // turned like v1's ribbons, so they cross from beyond the lower left well into the upper right. They pass behind

@@ -15,6 +15,10 @@ import { LANDING_VARIANT } from "@/components/auth/landing-variant";
 // The background, in VicData's own area and phase colours: one of three designs, chosen by LANDING_VARIANT
 // (src/components/auth/landing-variant.ts).
 
+// "Private beta"'s colour. "bands-long" passes its bars behind the words, so there it is one shade stronger (at least
+// 4.5:1 over any bar, worst pixel); the other designs keep the words on the bare page in v1's colours.
+const BETA_TEXT = LANDING_VARIANT === "bands-long" ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-500 dark:text-neutral-400";
+
 export const metadata: Metadata = {
   title: { absolute: "VicData" },
   robots: { index: false, follow: false, nocache: true },
@@ -27,8 +31,7 @@ export default function Landing() {
       <div className="relative flex w-full max-w-[358px] flex-col items-center text-center sm:max-w-[420px]">
         <Logo size="large" />
         <SpectrumLine className="mt-6 max-w-[220px] sm:mt-8 sm:max-w-[300px]" />
-        {/* neutral-600 / neutral-300: at least 4.5:1 over the page and over any band behind it, worst pixel (bands v3). */}
-        <p className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-300 sm:mt-8">Private beta</p>
+        <p className={`mt-6 text-sm font-medium uppercase tracking-[0.2em] sm:mt-8 ${BETA_TEXT}`}>Private beta</p>
         <Link href="/login" className={`${AUTH_BUTTON} mt-8 max-w-[280px]`}>
           Sign in
         </Link>
