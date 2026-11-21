@@ -113,6 +113,8 @@ export function GradeCountsPanels({
   const current: PanelRender = {
     tag: `Grade counts ${yearText}`.trim(),
     question,
+    // Save as CSV: the year the distribution is for.
+    csvAbout: { year: yearText || null },
     controls: selection ? (
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[11.5px] text-[var(--muted)]">
@@ -166,6 +168,7 @@ export function GradeCountsPanels({
     tag: "Trends",
     afterTag: earlier.length ? <FromYearMenu mode="year" periods={earlier} from={cmpYear} onChange={setCompareFrom} /> : undefined,
     question: `How has ${subjectLabel}'s spread of grades moved?`,
+    csvAbout: { year: yearText || null },
     body: (fullscreen) =>
       cmpYear === null || ownTotal === 0 ? (
         <p className="text-sm text-[var(--muted)]">Only one year of published grades so far, so there is no earlier spread to compare.</p>

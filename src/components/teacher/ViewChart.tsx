@@ -9,6 +9,8 @@
 // colours that then have to be re-themed twice over. Bars built from divs scale to any
 // width, print exactly as they appear, and inherit the theme tokens for free.
 import type { ComputedView } from "@/lib/teacher-view-catalogue";
+import { viewChartCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 function fmt(v: number | null, unit: string): string {
   if (v === null) return "no figure";
@@ -39,6 +41,7 @@ export function ViewChart({
   spacious = false,
   average,
   values = true,
+  csvHeadings,
 }: {
   computed: ComputedView;
   unit: string;
@@ -57,7 +60,18 @@ export function ViewChart({
   // rows. Absent / true: as before.
   average?: { value: number; label: string };
   values?: boolean;
+  // Save as CSV: the name and figure columns' headings ("Subject", "School"; "Result").
+  csvHeadings?: { name?: string; value?: string };
 }) {
+  // Save as CSV: the bars as drawn -- each figure as its row prints it ("—" where there is none;
+  // the compact layout's first 12), the marker, the average.
+  useTeacherCsv(() =>
+    viewChartCsv(
+      computed,
+      (v) => (v === null ? (layout === "row" ? "—" : "no figure") : layout === "row" && formatValue ? formatValue(v) : fmt(v, unit)),
+      { nameHeading: csvHeadings?.name, valueHeading: csvHeadings?.value, markerLabel, average: layout === "row" ? average : undefined, limit: layout === "compact" ? 12 : undefined },
+    ),
+  );
   if (computed.series && computed.periods) {
     const periods = computed.periods;
     const all = computed.series.flatMap((s) => s.values).filter((v): v is number => v !== null);

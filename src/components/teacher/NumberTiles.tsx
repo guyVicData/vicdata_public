@@ -10,6 +10,8 @@ import type { ReactNode } from "react";
 import { DIRECTION_TEXT, type Direction } from "@/lib/teacher-view-trend-styles";
 import { applyMainLabel, applyTileFigures, readTileParams, type TileVars } from "@/lib/tile-figures";
 import { useActiveViewParams } from "@/components/dashboard-config/plan";
+import { tilesCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 export type NumberTile = {
   key: string;
@@ -54,6 +56,8 @@ export function NumberTiles({
   tiles: NumberTile[];
   fullscreen?: boolean;
 }) {
+  // Save as CSV: the main figure and each tile, as configured and drawn.
+  useTeacherCsv(() => tilesCsv(main, tiles));
   return (
     <div className={`flex flex-col ${fullscreen ? "gap-6 py-4" : "gap-4 py-1"}`}>
       {main && (

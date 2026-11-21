@@ -49,6 +49,8 @@ export function csvField(v: CsvCell): string {
     return Math.abs(n) >= 1 ? BigInt(Math.round(n)).toString() : n.toFixed(20).replace(/0+$/, "");
   }
   let s = String(v);
+  // The screen's dash for "no figure" is an empty cell (R-PANEL-CSV-SUPPRESSED): words stay words.
+  if (/^\s*[—–-]\s*$/.test(s)) return "";
   if (FORMULA.test(s)) s = `'${s}`;
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }

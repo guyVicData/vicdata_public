@@ -41,6 +41,7 @@ import { useDashboardTheme, type Theme } from "@/components/shell/TeacherChrome"
 import { MidBand, MidDashProvider, midRootProps } from "@/components/shell/MidDash";
 import { PhoneNav, TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
+import { PanelCsvScope } from "@/components/shell/panel-csv";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardFrame, GroupSwitcher, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
 import { accentVars, featuredRowKey, productAccent } from "@/components/shell/accent";
@@ -2489,6 +2490,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }
       : null;
   const withRuntime = (node: React.ReactNode) => (runtime ? <DashboardRuntimeContext.Provider value={runtime}>{node}</DashboardRuntimeContext.Provider> : node);
+  // Panel menu "Save as CSV" (21 Nov): who the figures are for, for each file's name. No page-wide
+  // set: Comparisons names its own on its panels (PanelRender.csvAbout); Results and Context rest
+  // on England and the school's own subjects, not a set of schools.
+  const withCsvScope = (node: React.ReactNode) => <PanelCsvScope.Provider value={{ who: schoolName, set: null }}>{node}</PanelCsvScope.Provider>;
 
   // ---------------------------------------------------------------- mode "embed" (0.6 E)
   if (embed) {
@@ -2510,7 +2515,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           style={accentStyle}
           className={props.frame === "figure" ? "flex h-full min-h-0 min-w-0 flex-col text-[var(--fg)]" : "text-[var(--fg)]"}
         >
-          <DashboardPlanContext.Provider value={plan}>{withRuntime(hostFor(only.key))}</DashboardPlanContext.Provider>
+          <DashboardPlanContext.Provider value={plan}>{withCsvScope(withRuntime(hostFor(only.key)))}</DashboardPlanContext.Provider>
         </div>
       );
     }
@@ -2519,7 +2524,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     const baseColumn = (key: string) => (key === "context" ? contextColumn : key === "rankings" ? comparisonsColumn : column1);
     return (
       <div data-renderer="embed" style={accentStyle} className="text-[var(--fg)]">
-        {withRuntime(
+        {withCsvScope(withRuntime(
         <DashboardFrame config={embedConfig} superAdmin={superAdmin} columnKeys={columnKeys}>
           {cols.map((c) => {
             if (c.host && !c.problem) return cloneElement(baseColumn(c.key), { key: c.column.id, title: c.column.title });
@@ -2537,7 +2542,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             );
           })}
         </DashboardFrame>,
-        )}
+        ))}
       </div>
     );
   }
@@ -2582,7 +2587,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // 0.8 B7: the usage log's page view (and the scope CardBox's full screen reads). Draws nothing.
   // Groups r1 G0: logged once the subjects and the saved set are read, not before.
   const usageScope: UsageScope | null = schoolUrn && phase ? { product: "teacher", urn: schoolUrn, dashboard: dashboardConfig?.id ?? `teacher.${phase}`, level: focusItem ? focusItem.subject : null, setKind: activeSavedSet ? "saved" : chooserChoice ? chooserChoice.kind : "nearest", resolved: !loading && storedSaved !== "pending" } : null;
-  return (
+  return withCsvScope(
     <UsageReporter scope={usageScope}>
     {editorHost && dashboardConfig && <InPlaceEditor slug={dashboardConfig.id} host={editorHost} />}
     {/* §7: the theme attribute is scoped to Teacher view, never to <html> -- see
@@ -2838,7 +2843,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     </main>
     </MidDashProvider>
     </TableLayoutContext.Provider>
-    </UsageReporter>
+    </UsageReporter>,
   );
 }
 

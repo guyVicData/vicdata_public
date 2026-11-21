@@ -42,7 +42,8 @@ test("R-PANEL-CSV-FILE: numbers as numbers (no %, no separators, no exponent), a
   assert.equal(csvField(1e21), "1000000000000000000000");
   assert.equal(csvField("=SUM(A1)"), "'=SUM(A1)");
   assert.equal(csvField("+44"), "'+44");
-  assert.equal(csvField("—"), "—");
+  assert.equal(csvField("—"), "", "the screen's dash is an empty cell");
+  assert.equal(csvField("too few entries"), "too few entries");
   assert.equal(pct(0.4531), 45);
   assert.equal(pct(0.4531, 1), 45.3);
   assert.equal(shown(12.345, 2), 12.35);

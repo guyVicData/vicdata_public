@@ -21,6 +21,8 @@ import { SECTOR, sectorOf } from "@/lib/school-sector";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 import { windowCut } from "@/lib/subject-ranking-view";
 import { FEATURED_ROW_ACCENT_TEXT, FEATURED_ROW_BG } from "@/components/shell/accent";
+import { schoolRankingCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 // The TAG_COLOURS entry for each sector, and its foreground shade per theme.
 const SECTOR_TAG = { state: "State", independent: "Independent" } as const;
@@ -98,6 +100,9 @@ export function SchoolRankingTable({
   });
 
   const drawn: (SchoolRankingRow | null)[] = windowed ? windowCut(rows.map((r) => ({ ...r, pos: r.pos ?? 0 })), fullscreen) : sorted;
+  // Save as CSV: the rows in the order drawn (a window's cut, the break rows left out), the
+  // columns shown -- a school listed but not placed keeps its words ("too few entries").
+  useTeacherCsv(() => schoolRankingCsv(drawn.filter((r): r is SchoolRankingRow => r !== null), (c) => has(c), { valueHeading, targetName, average }));
   const head = (key: Key, label: string, className: string, title?: string) => (
     <th className={`pb-1.5 font-semibold ${className}`} aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : undefined}>
       <button

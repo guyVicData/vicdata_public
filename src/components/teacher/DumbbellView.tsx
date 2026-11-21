@@ -9,6 +9,8 @@
 // list scrolls inside its box with the focus centred (CentredOnTarget). Full screen: full names, wider.
 import type { DashboardDumbbell } from "@/lib/teacher-dumbbell";
 import { niceAxis } from "@/lib/front-door/axis";
+import { dumbbellCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 /** The dumbbell's scale: round ticks, from a floor below the smallest value (never forced to 0). */
 export function dumbbellAxis(values: number[]): { lo: number; hi: number; ticks: number[] } {
@@ -24,6 +26,8 @@ export function dumbbellAxis(values: number[]): { lo: number; hi: number; ticks:
 }
 
 export function DumbbellView({ d, fullscreen = false, firstLabel, latestLabel }: { d: DashboardDumbbell; fullscreen?: boolean; firstLabel: string; latestLabel: string }) {
+  // Save as CSV: each subject's first and latest entries and the change, the average last.
+  useTeacherCsv(() => dumbbellCsv(d, firstLabel, latestLabel), "trend");
   const values = [...d.rows.flatMap((r) => [r.first, r.latest]), ...(d.average ? [d.average.first, d.average.latest] : [])];
   // Review fixes (14 Nov, Q7): the scale starts at a round floor below the smallest value drawn, not at 0, so a
   // ring and a dot 18 entries apart on ~240 no longer sit on top of each other; the axis says where it starts.

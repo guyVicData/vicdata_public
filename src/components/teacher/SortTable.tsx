@@ -15,6 +15,8 @@
 // own average, or the school's rank in the set).
 import { DIRECTION_TEXT } from "@/lib/teacher-view-trend-styles";
 import { FEATURED_ROW_ACCENT_TEXT, FEATURED_ROW_BG } from "@/components/shell/accent";
+import { sortTableCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 export type SortKey = "name" | "value" | "delta";
 
@@ -127,6 +129,8 @@ export function SortTable({
       .sort((a, b) => b.value! - a.value!)
       .map((r, i) => [r.key, i + 1]),
   );
+  // Save as CSV: the rows in the order drawn, the columns shown.
+  useTeacherCsv(() => sortTableCsv(sorted, columns, { rankOf, leadingRank, showValue, showDelta }));
   // The one change palette (trend-colours.ts via DIRECTION_TEXT), not a local copy.
   const tone = (t: SortRow["deltaTone"]) => DIRECTION_TEXT[t === "positive" ? "up" : t === "negative" ? "down" : "flat"];
 

@@ -11,6 +11,8 @@
 import { lazy, Suspense } from "react";
 import type { TeacherMapSpec } from "@/lib/teacher-map";
 import { igcseOutFor, type AcademicSchoolProfile, type KsStage } from "@/lib/academic-data-view";
+import { mapCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 // 0.6.4 C2: the map's code (AcademicMapView, ~300 KB) loads when a map is first drawn, not
 // with the page; its card box (below) holds the space meanwhile. Leaflet itself was already
@@ -68,6 +70,13 @@ export function RankingsMap({
   teacherMap?: TeacherMapSpec;
 }) {
   const target = profiles?.find((p) => p.urn === targetUrn) ?? null;
+  // Save as CSV: with a Teacher map spec, each school with a place on the map and its figure as the
+  // hover gives it. Without one the map works its figures out inside AcademicMapView: no rows.
+  useTeacherCsv(() =>
+    profiles && teacherMap && target && target.easting !== null && target.northing !== null
+      ? mapCsv(profiles.filter((p) => p.easting !== null && p.northing !== null), targetUrn, teacherMap)
+      : null,
+  );
   if (!profiles) {
     return <div className={`${heightClass} mt-2 flex items-center justify-center rounded-md bg-neutral-100 text-xs text-neutral-500 dark:bg-neutral-900`}>Loading map…</div>;
   }

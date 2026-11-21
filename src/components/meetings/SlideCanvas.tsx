@@ -14,6 +14,7 @@
 import { createContext, isValidElement, useCallback, useContext, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import type { SlideConfig } from "@/catalogue/types";
 import { CardBox, FullscreenReport } from "@/components/teacher/CardBox";
+import { PanelCsvScope } from "@/components/shell/panel-csv";
 import { PanelExport } from "@/components/teacher/PanelFooter";
 import * as PanelIcons from "@/components/teacher/PanelIcons";
 import { FEATURE_ACCENT } from "@/lib/teacher-view-theme";
@@ -279,6 +280,9 @@ function ViewSlotBox({ slot, cell }: { slot: SlideConfig["slots"][number]; cell:
 
   return (
     <div className="h-full [&>div]:!mt-0 [&>div]:!h-full [&>div]:!bg-[var(--panel-bg)]">
+      {/* Panel menu "Save as CSV" (21 Nov): the slot's pinned school names the file; the view
+          drawn inside registers its rows with the slot's CardBox (the year and set come with them). */}
+      <PanelCsvScope.Provider value={{ who: pinned.schoolName ?? pinned.schoolUrn ?? null }}>
       <CardBox
         title={title}
         fixedHeight
@@ -301,6 +305,7 @@ function ViewSlotBox({ slot, cell }: { slot: SlideConfig["slots"][number]; cell:
           )
         }
       </CardBox>
+      </PanelCsvScope.Provider>
     </div>
   );
 }

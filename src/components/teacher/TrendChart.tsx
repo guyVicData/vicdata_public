@@ -26,6 +26,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { countedValues, leastSquares, trendChartKind, type Measure, type PanelData } from "@/lib/teacher-view-panels";
+import { trendChartCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 // The wireframe's own plot geometry, as a coordinate space the HTML axes share.
 const W = 260;
@@ -178,6 +180,9 @@ export function TrendChart({
   // Option K's shaded min-max band for the series not drawn individually.
   band?: { min: (number | null)[]; max: (number | null)[]; label: string };
 }) {
+  // Save as CSV: every line's figure by year (the bars' too, below TREND_LINE_MIN_YEARS), as the
+  // axis and the tooltips print it -- an indexed chart's index, not the counts behind it.
+  useTeacherCsv(() => (data.series.some((s) => s.values.some((v) => v !== null)) ? trendChartCsv(data, measure, { band }) : null), "trend");
   const { periods, series } = data;
   const all = [
     ...series.flatMap((s) => s.values),

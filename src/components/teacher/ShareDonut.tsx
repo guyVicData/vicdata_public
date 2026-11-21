@@ -11,6 +11,8 @@
 // so the icon that selects this view is genuinely disabled for a Results measure (§4.2)
 // rather than this component rendering something misleading.
 import { useLayoutEffect, useRef, useState } from "react";
+import { donutCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 // The two legend lines under the circle, with the gap above them.
 const LEGEND_H = 60;
@@ -41,6 +43,8 @@ export function ShareDonut({
   // beside it, the legend capped the circle at about half the width. The diameter is the
   // smaller of the width and the height left above the legend, so it stays a circle; the
   // old 104 / 180 are the floor.
+  // Save as CSV: the two slices, their figures and their shares as the legend and centre print them.
+  useTeacherCsv(() => donutCsv({ percent, label, valueLabel, otherLabel, groupValueLabel }));
   const fallback = fullscreen ? 180 : 104;
   const box = useRef<HTMLDivElement | null>(null);
   const [space, setSpace] = useState<{ w: number; h: number } | null>(null);

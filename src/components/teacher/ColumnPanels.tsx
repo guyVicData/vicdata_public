@@ -41,6 +41,7 @@ import { MethodNote } from "@/components/shell/MethodNote";
 import { useViewSurface } from "@/components/feedback/ViewSurface";
 import { useReopenRequest } from "@/components/feedback/reopen";
 import type { ViewRef } from "@/lib/view-ref";
+import { TeacherCsvAbout, type TeacherCsvAboutValue } from "./csv-hooks";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -91,7 +92,16 @@ export type PanelRender = {
   // year), on a grade or points measure; null / absent = entries, or no span. Where they
   // include 2021/22 the trend note follows the source, as the column's own caveat does.
   gradingYears?: readonly number[] | null;
+  // Panel menu "Save as CSV" (21 Nov): what the panel's figures rest on -- its data year
+  // (Current's "Data 2024/25") and comparison set -- written as leading columns of the rows its
+  // view registers (csv-hooks.tsx). Absent: the page's PanelCsvScope.
+  csvAbout?: TeacherCsvAboutValue;
 };
+
+// Save as CSV: the panel's year and set, around its body wherever it is drawn.
+function withCsvAbout(panel: PanelRender, body: ReactNode): ReactNode {
+  return panel.csvAbout ? <TeacherCsvAbout.Provider value={panel.csvAbout}>{body}</TeacherCsvAbout.Provider> : body;
+}
 
 // R-TREND-FROM-2223: the note (trends are measured from 2022/23) after the source, in
 // SubjectPanels' caveat style (a block span under the citation) -- in the "i" on the card,
@@ -303,7 +313,7 @@ export function ColumnPanels({
             // 3x3 grid rather than three ragged stacks.
             fixedHeight
           >
-            {({ fullscreen }) => withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(fullscreen))}
+            {({ fullscreen }) => withCsvAbout(panel, withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(fullscreen)))}
           </CardBox>
         );
   };
@@ -365,7 +375,7 @@ export function ColumnPanels({
             return (
               <div key={cfg.id} data-panel-id={cfg.id} data-embed="figure" className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto">
                 <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                  {withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(embed.fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(embed.fullscreen))}
+                  {withCsvAbout(panel, withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(embed.fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(embed.fullscreen)))}
                 </PanelBoundary>
               </div>
             );

@@ -229,6 +229,8 @@ export function CandidatesPanels({
   const current: PanelRender = {
     tag: "Current",
     afterTag: latest === null ? undefined : <DataDate provisional={isProvisional(phase, latest)}>{academicYearLabel(latest)}</DataDate>,
+    // Save as CSV: the year the tiles are for.
+    csvAbout: { year: latest === null ? null : academicYearLabel(latest) },
     question,
     body: (fullscreen) =>
       currentRows.length === 0 ? (

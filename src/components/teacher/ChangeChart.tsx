@@ -12,6 +12,8 @@
 // exactly what ViewChart's own bars already are, and building them the same way keeps the
 // print/theme behaviour ViewChart's comment argues for.
 import { signedDelta } from "@/lib/signed-delta";
+import { changeChartCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 const LANE = 38; // px of travel either side of the zero line
 
@@ -42,6 +44,8 @@ export function ChangeChart({
   // Whether the values are % changes (10% axis steps) or the measure's own units.
   percent?: boolean;
 }) {
+  // Save as CSV: each bar's change as its tooltip prints it.
+  useTeacherCsv(() => changeChartCsv(bars, format), "trend");
   const real = bars.filter((b) => b.value !== null);
   if (real.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No two years of published figures to compare yet.</p>;

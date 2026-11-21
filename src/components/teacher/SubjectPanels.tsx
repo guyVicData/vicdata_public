@@ -523,6 +523,8 @@ export function SubjectPanels({
     // tag; it stays a prop as the column's own name for titles.
     tag: "Current",
     question: questions.current,
+    // Save as CSV: the year Current shows (its year menu's).
+    csvAbout: { year: latest === null ? null : academicYearLabel(latest) },
     // Round 2 §4: Context's year choice is the same dropdown Trends and % Change use, in
     // its one-year mode, beside the tag -- replacing a prev/next chevron pair whose
     // usually-disabled left chevron read as a stray "back" button. It is the year in the
@@ -623,6 +625,7 @@ export function SubjectPanels({
                 layout="row"
                 unit=""
                 formatValue={measure.format}
+                csvHeadings={{ name: "Subject", value: measure.id === "entries" ? "Entries" : "Result" }}
                 markerLabel={benchmarkLabel ? `${benchmarkLabel} average` : undefined}
                 scaleMax={measure.barScaleMax ?? undefined}
                 spacious={spaciousBars}

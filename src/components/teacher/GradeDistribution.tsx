@@ -19,6 +19,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { inRange, type GradeRange } from "@/lib/subject-grades";
 import type { AverageGrade, GradeRow } from "@/lib/grade-spread";
+import { gradeDistributionCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 export type { GradeRow } from "@/lib/grade-spread";
 
@@ -66,6 +68,9 @@ export function GradeDistribution({
   clickTitle?: (grade: string) => string;
 }) {
   const pct = (n: number, of: number) => (of > 0 ? (n / of) * 100 : 0);
+  // Save as CSV: a row per grade -- entries, share, the benchmark's share (BENCH_WITHHELD's words
+  // where fewer than 5 schools publish the grade, as the key says), the earlier year, the range.
+  useTeacherCsv(() => gradeDistributionCsv(rows, total, { benchLabel, compareTotal, compareLabel, inRange: range ? (g) => inRange(range, g) : undefined }));
   // Counts: every bar, tick and earlier-year line in entries (England's share as the entries
   // this school would have at it); else each as a share of its own total.
   const counts = show === "counts";

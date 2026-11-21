@@ -12,6 +12,8 @@
 // colour either a theme token or the subject's own qualification colour.
 import { useLayoutEffect, useRef, useState } from "react";
 import type { Measure } from "@/lib/teacher-view-panels";
+import { verticalBarsCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 // Under the baseline: the column's 4px gap plus up to two label lines, plus the 6px top
 // inset every column starts with, plus 6px of room under the second line -- what the
@@ -58,6 +60,8 @@ export function VerticalBars({
   // in a strip at the top of the accordion round's 384px panel -- and a constant would
   // drift out of date again the next time PANEL_HEIGHT changes. The old 90/220 remain
   // as the floor, which is also what shows until the first measurement lands.
+  // Save as CSV: each bar's figure as its tooltip prints it ("no figure" as words), the average.
+  useTeacherCsv(() => verticalBarsCsv(bars, measure, average));
   const fallback = fullscreen ? 220 : 90;
   const real = bars.map((b) => b.value).filter((v): v is number => v !== null);
   const hasData = real.length > 0;

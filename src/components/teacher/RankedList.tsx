@@ -12,6 +12,8 @@
 import type { Measure } from "@/lib/teacher-view-panels";
 import type { CSSProperties } from "react";
 import { FEATURED_ROW_ACCENT_TEXT, FEATURED_ROW_BG } from "@/components/shell/accent";
+import { rankedListCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 export type RankedListRow = { key: string; label: string; value: number | null; rank?: number | null; change?: string | null; n?: number | null; share?: number | null };
 export type RankedListColumn = "rank" | "sector" | "value" | "change" | "distance" | "n" | "bar";
@@ -29,6 +31,8 @@ export function RankedList({
 }) {
   // A headcount reads "231 candidates"; any other measure is its own formatted figure.
   const unit = measure.id === "entries" ? " candidates" : "";
+  // Save as CSV: the list as drawn (its look's columns).
+  useTeacherCsv(() => rankedListCsv(rows, measure, columns));
   if (columns) return <ColumnsList rows={rows} measure={measure} focusKey={focusKey} columns={columns} unit={unit} />;
   return (
     <ol className="flex flex-col gap-1.5 px-0.5 text-[12.5px] text-[var(--muted2)]">

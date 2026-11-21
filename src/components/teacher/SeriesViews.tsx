@@ -35,6 +35,8 @@ import { ActiveViewContext } from "@/components/dashboard-config/plan";
 import { useTableLayoutStore, yearColumnsShown, yearsLayoutFor, type YearsLayout } from "./tableLayout";
 import { TrendChart } from "./TrendChart";
 import { FEATURED_ROW_BG } from "@/components/shell/accent";
+import { changeListCsv, yearTableCsv } from "./csv";
+import { useTeacherCsv } from "./csv-hooks";
 
 // D2's scale: an index, where 100 is "the same as the first year shown".
 const INDEX_MEASURE: Measure = {
@@ -222,6 +224,19 @@ export function ChangeList({
       : byChange;
   const ranked = drawn.filter((r): r is ChangeRow => r !== null);
   const real = ranked.filter((r) => r.value !== null).map((r) => Math.abs(r.value!));
+  // Save as CSV: the rows in the order drawn (a window's cut without its break rows), each change
+  // as printed, the reference lines after them.
+  useTeacherCsv(
+    () =>
+      real.length === 0
+        ? null
+        : changeListCsv(
+            ranked.map((r) => ({ key: r.key, label: r.label, value: r.value, rank: rankOfKey.get(r.key) ?? null, from: r.from, to: r.to, small: r.small })),
+            format,
+            { values: true, counts, group, average, smallNote: `fewer than ${MINIMUM_SUBJECT_N} entries in the first year` },
+          ),
+    "trend",
+  );
   if (real.length === 0) return <p className="text-xs text-[var(--muted)]">No two years of published figures to compare yet.</p>;
   const maxAbs = Math.max(...real, group?.value !== null && group?.value !== undefined ? Math.abs(group.value) : 0, average ? Math.abs(average.value) : 0) || 1;
   // Half the track either side of zero, with a little room so the longest bar never
@@ -401,17 +416,6 @@ export function YearTable({
   const canSort = windowed ? false : sortable ?? !leadingRank;
   const pad = leadingRank ? "px-1" : "px-1.5";
   const { periods, series } = data;
-  if (periods.length === 0 || series.length === 0) {
-    return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
-  }
-  // R-TREND-FROM-2223: on a trend measured from a later year than the first it shows, the
-  // Change column counts from that year, and the card's two year columns are the change's
-  // own two ends (every year, 2021/22 included, in fullscreen).
-  // 0.6.4 A (R-TREND-TABLE-YEARS): a card that shows first and latest says which years it
-  // leaves out, and the cue swaps to years down, where every year shows.
-  const { shown: yearIdx, hidden } = yearColumnsShown(periods, data.statementFrom, { yearColumns, fullscreen, layout: "across" });
-  const hiddenYears = hidden.map((i) => periods[i]);
-  const rankShown = showRank && !leadingRank && (rankColumn === "always" || (rankColumn === "fullscreen" && fullscreen));
   const lastIdx = periods.length - 1;
 
   // R-NUMBER-TYPE-HONESTY (S3b): the change a row is ranked and sorted by is the measure's
@@ -441,6 +445,29 @@ export function YearTable({
   });
   const cut = windowed ? windowCut(rows.map((r) => ({ ...r, pos: r.s.pos ?? 0, isTarget: r.s.key === focusKey })), fullscreen) : sortedAll;
   const sorted = cut.filter((r): r is (typeof rows)[number] => r !== null);
+  // Save as CSV: the rows in the order drawn (its sort, its window's cut), every year -- the card's
+  // "+N more years" included -- and the change.
+  useTeacherCsv(
+    () =>
+      yearTableCsv(
+        sorted.map((r) => ({ key: r.s.key, label: r.s.label, values: r.s.values, rank: rankOf.get(r.s.key) ?? null, change: r.change ? { delta: r.change.delta, percent: r.change.percent ?? null } : null })),
+        periods,
+        measure,
+        { nameHeading, rank: showRank || leadingRank, counts, showChange, signedPercent: (v) => signed(Math.round(v), (x) => `${x}%`) },
+      ),
+    "trend",
+  );
+  if (periods.length === 0 || series.length === 0) {
+    return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
+  }
+  // R-TREND-FROM-2223: on a trend measured from a later year than the first it shows, the
+  // Change column counts from that year, and the card's two year columns are the change's
+  // own two ends (every year, 2021/22 included, in fullscreen).
+  // 0.6.4 A (R-TREND-TABLE-YEARS): a card that shows first and latest says which years it
+  // leaves out, and the cue swaps to years down, where every year shows.
+  const { shown: yearIdx, hidden } = yearColumnsShown(periods, data.statementFrom, { yearColumns, fullscreen, layout: "across" });
+  const hiddenYears = hidden.map((i) => periods[i]);
+  const rankShown = showRank && !leadingRank && (rankColumn === "always" || (rankColumn === "fullscreen" && fullscreen));
   const rankN = Math.max(0, ...rows.map((r) => r.s.pos ?? 0), ...rankOf.values());
   const rankWidth = windowed ? (ranked && Math.max(...rankOf.values()) >= 1000 ? "w-9" : "w-7") : "w-5";
   const onSort = (key: SortKey) =>

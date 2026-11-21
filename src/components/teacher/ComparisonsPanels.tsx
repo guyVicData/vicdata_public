@@ -21,6 +21,8 @@
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
 import { WalkChart, type Palette } from "@/components/front-door/charts";
+import { rankOverTimeCsv } from "./csv";
+import { TeacherCsvRows } from "./csv-hooks";
 import { SetSelector, type SetSelectorProps } from "@/components/sets/SetSelector";
 import { igcseTargetLine } from "@/lib/igcse-words";
 import { useEffect, useState, type ReactNode } from "react";
@@ -513,6 +515,8 @@ export function ComparisonsPanels({
     tag: "Current",
     afterTag: latest === null ? undefined : <DataDate provisional={isProvisional(phase, latest)}>{academicYearLabel(latest)}</DataDate>,
     question,
+    // Save as CSV: the year ranked and the set it is ranked in.
+    csvAbout: { year: latest === null ? null : academicYearLabel(latest), set: setLabel },
     actions: (
       <>
         {rankingSet ? (
@@ -604,6 +608,7 @@ export function ComparisonsPanels({
             layout="row"
             unit=""
             formatValue={measure.format}
+            csvHeadings={{ name: "School", value: measure.id === "entries" ? "Entries" : measure.label }}
             scaleMax={measure.barScaleMax ?? undefined}
             computed={{
               rows: [
@@ -623,6 +628,7 @@ export function ComparisonsPanels({
             layout="row"
             unit=""
             formatValue={measure.format}
+            csvHeadings={{ name: "School", value: measure.id === "entries" ? "Entries" : measure.label }}
             scaleMax={measure.barScaleMax ?? undefined}
             computed={{
               // No benchmark marker: the other bars ARE the comparison (§4.3). Your own
@@ -845,6 +851,8 @@ export function ComparisonsPanels({
     tag: "Trends",
     afterTag: <FromYearMenu periods={realPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
     question: "How has this school moved against its comparators, year on year?",
+    // Save as CSV: the set (each view's own Year column carries the years).
+    csvAbout: { set: setLabel },
     controls: (
       <div className="flex flex-wrap justify-end gap-1.5">
         {versusPill(versusOpen, setVersusOpen, versusRef)}
@@ -897,6 +905,8 @@ export function ComparisonsPanels({
             chart={{ kind: "lines", years: rankRows.years, series: [{ label: "Our place", values: rankRows.ranks, role: "focus" }], unpublished: [], yCaption: `Place (1st = highest), of ${rankRows.ofRange} schools with a figure`, extraRows: [{ label: "Schools with a figure", values: rankRows.of }], keys: [{ label: "Our place", role: "focus", mark: "line" }], digits: 0 }}
             p={CSS_PALETTE}
           />
+          {/* Save as CSV: the walk chart is front-door's, so the rows are registered here. */}
+          <TeacherCsvRows kind="trend" build={() => rankOverTimeCsv(rankRows)} />
         </>
       ) : trendShows === "table" ? (
         // Every school in the set, ranked on the latest year (sortable), the school's own
