@@ -1,6 +1,7 @@
 // 0.8 front door part 3 (E24): what the auth routes share. Server-only.
 import type { NextRequest, NextResponse } from "next/server";
-import { bearerClaims } from "../auth-server";
+import { sessionToBearer } from "../auth-cookies";
+import { bearerClaims, readRequestSession } from "../auth-server";
 import { createServiceRoleSupabaseClient } from "../supabase";
 import { DEVICE_COOKIE, DEVICE_COOKIE_DAYS, NOTICE_COOKIE } from "./config";
 import { supabaseDeviceStore, type DeviceStore } from "./store";
@@ -13,9 +14,20 @@ export type Caller = { userId: string; sessionId: string; email: string | null }
  * signs in, so they must not take its word for it. Only here (rare requests), never on every page. */
 export async function callerOf(request: NextRequest): Promise<Caller | null> {
   const header = request.headers.get("authorization");
-  const c = await bearerClaims(header);
-  if (!c?.sub || typeof c.session_id !== "string") return null;
-  if (!(await sessionAlive(header!.replace(/^Bearer\s+/i, "")))) return null;
+  let c = await bearerClaims(header);
+  let jwt = c ? header!.replace(/^Bearer\s+/i, "") : null;
+  // Review pack 22 Nov, issue 5 (R-SIGN-OUT-REVOKES): no Bearer token -- the session cookie, from the site's own
+  // pages only (sessionToBearer: never a cross-site request), read as the proxy reads it. Sign-out reached here
+  // with neither and did nothing, so signed-out devices stayed "signed in" and counted towards the cap.
+  if (!c && sessionToBearer(request.headers)) {
+    const s = await readRequestSession(request);
+    if (s.claims && s.accessToken) {
+      c = s.claims;
+      jwt = s.accessToken;
+    }
+  }
+  if (!c?.sub || typeof c.session_id !== "string" || !jwt) return null;
+  if (!(await sessionAlive(jwt))) return null;
   return { userId: c.sub, sessionId: c.session_id, email: typeof c.email === "string" ? c.email : null };
 }
 
