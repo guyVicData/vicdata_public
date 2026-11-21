@@ -7,6 +7,7 @@ import {
   cachedReference,
   clearReferenceCache,
   estimateBytes,
+  hasReference,
   referenceCacheStats,
   setReferenceCacheLimitsForTests,
 } from "./server-cache";
@@ -170,4 +171,32 @@ test("national, same-for-everyone keys keep 12 hours by default; a school's own 
   const { defaultTtlFor, NATIONAL_TTL_MS, REFERENCE_TTL_MS } = await import("./server-cache");
   for (const k of ["smt:population:ks5", "igcse:england", "years:latest", "dashboard:england:ks4", "adm:england-schools:2025", "smt:family-map:ks4"]) assert.equal(defaultTtlFor(k), NATIONAL_TTL_MS, k);
   for (const k of ["smt:census:110110", "school:la:110110", "smt:qrows:ks5:2016:abc", "geo:grades:ks4:x"]) assert.equal(defaultTtlFor(k), REFERENCE_TTL_MS, k);
+});
+
+// 21 Nov (the national preload): Next builds instrumentation.ts apart from the routes, so each gets its own copy of
+// this module. A second copy is loaded here (a different module URL is a different instance) and must share the
+// one store, its byte total, its LRU order and its caps -- the copy the preload fills is the copy a request reads.
+test("one store per process: a second copy of the module shares the cache, its LRU and its budget", async () => {
+  const other = (await import(`./server-cache.ts?copy=${Date.now()}`)) as typeof import("./server-cache");
+  assert.notEqual(other.cachedReference, cachedReference, "a separate module instance");
+  setReferenceCacheLimitsForTests(400 * 1024);
+  let loads = 0;
+  const v = await other.cachedReference("shared:a", async () => (loads++, "x".repeat(20 * 1024)));
+  assert.equal(await cachedReference("shared:a", async () => (loads++, "y")), v, "the preload's copy fills, the route's copy hits");
+  assert.equal(loads, 1);
+  await tick();
+  assert.deepEqual(other.referenceCacheStats(), referenceCacheStats(), "one set of counters");
+  assert.ok(referenceCacheStats().approxBytes > 40 * 1024, "the value is counted once, in the shared total");
+  // The budget (set through the first copy) holds across both: twelve more ~40 KB values, alternately through each
+  // copy, into a 400 KB budget.
+  for (let i = 0; i < 12; i++) {
+    await (i % 2 ? other : { cachedReference }).cachedReference(`shared:${i}`, async () => "z".repeat(20 * 1024));
+    await tick();
+  }
+  assert.ok(referenceCacheStats().approxBytes <= 400 * 1024, "under the one budget");
+  assert.ok(referenceCacheStats().evictions >= 1, "least recently used dropped");
+  assert.equal(other.hasReference("shared:a"), false, "the oldest went first, whichever copy stored it");
+  assert.equal(hasReference("shared:11"), true);
+  other.clearReferenceCache();
+  assert.equal(referenceCacheStats().entries, 0, "one store");
 });
