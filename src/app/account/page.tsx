@@ -101,9 +101,9 @@ export default function AccountPage() {
     return (
       <main className="mx-auto max-w-lg px-6 py-24 text-center">
         <p className="text-sm text-neutral-500">
-          You&rsquo;re not logged in.{" "}
+          You&rsquo;re not signed in.{" "}
           <Link href="/login" className="underline">
-            Log in
+            Sign in
           </Link>{" "}
           or{" "}
           <Link href="/join" className="underline">
@@ -159,7 +159,7 @@ function LogoutButton() {
       disabled={loggingOut}
       className="text-sm text-neutral-500 underline hover:text-neutral-900 disabled:opacity-50 dark:hover:text-neutral-100"
     >
-      {loggingOut ? "Logging out…" : "Log out"}
+      {loggingOut ? "Signing out…" : "Sign out"}
     </button>
   );
 }

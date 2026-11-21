@@ -117,7 +117,7 @@ export function TeacherNav({
       <Wordmark signedIn={signedIn} />
       {signedIn === false ? (
         <div className="flex items-center gap-2.5">
-          <Link href="/login" className="inline-flex h-[34px] items-center rounded-full bg-[var(--panel-bg)] px-3.5 text-xs font-bold text-[var(--fg)]">Log in</Link>
+          <Link href="/login" className="inline-flex h-[34px] items-center rounded-full bg-[var(--panel-bg)] px-3.5 text-xs font-bold text-[var(--fg)]">Sign in</Link>
           <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>
       ) : (
@@ -328,7 +328,7 @@ export function AccountMenu() {
       {open && (
         <PanelMenu label="Account" align="right" width={memberSchools ? 240 : 180}>
           {signedIn === false ? (
-            <Link href="/login" className={rowClass} onClick={() => setOpen(false)}>Log in</Link>
+            <Link href="/login" className={rowClass} onClick={() => setOpen(false)}>Sign in</Link>
           ) : (
             <>
               <Link href="/account" className={rowClass} onClick={() => setOpen(false)}>Your Account</Link>
@@ -368,7 +368,7 @@ export function AccountMenu() {
                 </>
               )}
               <button type="button" onClick={logOut} disabled={loggingOut || signedIn === null} className={rowClass}>
-                {loggingOut ? "Logging out…" : "Log Out"}
+                {loggingOut ? "Signing out…" : "Sign out"}
               </button>
             </>
           )}

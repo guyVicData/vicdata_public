@@ -419,7 +419,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
           console.error("[DataViewShell] getSession failed:", sessionError);
-          setErrorMessage("Could not check your login. Try reloading, or log in again.");
+          setErrorMessage("Could not check your sign-in. Try reloading, or sign in again.");
           setLoadState("error");
           return;
         }
@@ -452,7 +452,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
         setLoadState("loading");
       } catch (e) {
         console.error("[DataViewShell] unexpected error during auth check:", e);
-        setErrorMessage("Something went wrong checking your login. Try reloading.");
+        setErrorMessage("Something went wrong checking your sign-in. Try reloading.");
         setLoadState("error");
       }
     })();

@@ -945,7 +945,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <main className="mx-auto max-w-4xl p-6">
         <p className="text-sm text-amber-700 dark:text-amber-400">{error ?? "Unknown phase."}</p>
         {signedOut && (
-          <Link href="/login" className="mr-4 mt-3 inline-block text-sm text-blue-700 hover:underline dark:text-blue-400">Log in</Link>
+          <Link href="/login" className="mr-4 mt-3 inline-block text-sm text-blue-700 hover:underline dark:text-blue-400">Sign in</Link>
         )}
         <Link href="/teacher" className="mt-3 inline-block text-sm text-blue-700 hover:underline dark:text-blue-400">Back</Link>
       </main>

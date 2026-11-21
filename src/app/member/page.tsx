@@ -43,7 +43,7 @@ export default function HomePage() {
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError) {
           console.error("[HomePage] getUser failed:", userError);
-          setErrorMessage("Could not check your login. Try reloading.");
+          setErrorMessage("Could not check your sign-in. Try reloading.");
           setState("error");
           return;
         }

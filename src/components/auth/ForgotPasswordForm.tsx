@@ -93,7 +93,7 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }: { init
       </button>
       {onBack && (
         <button type="button" onClick={onBack} className={TEXT_LINK}>
-          Back to log in
+          Back to sign in
         </button>
       )}
     </form>

@@ -148,7 +148,7 @@ export function CustomDashboardScreen({ id }: { id: string }) {
         </p>
         {state.status === "signed-out" && (
           <Link href="/login" className="mr-4 mt-3 inline-block text-sm text-[var(--muted)] underline">
-            Log in
+            Sign in
           </Link>
         )}
         <Link href="/teacher" className="mt-3 inline-block text-sm text-[var(--muted)] underline">
