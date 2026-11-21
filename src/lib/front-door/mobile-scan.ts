@@ -23,7 +23,19 @@ export const FRONT_DOOR_SURFACES = [
   "src/app/teacher/school-account/head-office/page.tsx",
   // The school's own group card, on the SMT home and on Head office sharing.
   "src/components/groups/SchoolGroupTile.tsx",
+  // Part 3 (G): the landing page, sign-in, the device-code screen, Where you're signed in, the cap's notice, and the
+  // School-Admin's Sign-ins and devices.
+  "src/app/page.tsx",
+  "src/app/login/page.tsx",
+  "src/components/auth/AuthShell.tsx",
+  "src/components/auth/DeviceCode.tsx",
+  "src/components/auth/WhereSignedIn.tsx",
+  "src/components/auth/SignInNotice.tsx",
+  "src/components/school-admin/Signins.tsx",
 ] as const;
+
+/** Files whose class constants every surface may use (e.g. AUTH_BUTTON from the signed-out frame). */
+export const SHARED_CLASS_FILES = ["src/components/auth/AuthShell.tsx"] as const;
 
 /** Controls that pass another way, by file and a snippet of the tag, with why. */
 export const MOBILE_EXCEPTIONS: { file: string; has: string; why: string }[] = [
@@ -36,7 +48,7 @@ export const MOBILE_EXCEPTIONS: { file: string; has: string; why: string }[] = [
   { file: "src/components/front-door/first-visit.tsx", has: 'className="mt-2 inline-block text-[14px] font-semibold underline', why: "a changelog entry's own link, inside its card (the card is the target's row)" },
 ];
 
-const BASE_44 = [/(?:^|\s)min-h-\[(4[4-9]|[5-9]\d|\d{3})px\]/, /(?:^|\s)h-(1[1-9]|[2-9]\d)(?:\s|$)/, /(?:^|\s)h-\[(4[4-9]|[5-9]\d|\d{3})px\]/, /(?:^|\s)py-(3\.5|[4-9])(?:\s|$)/, /(?:^|\s)py-5(?:\s|$)/];
+const BASE_44 = [/(?:^|\s)min-h-\[(4[4-9]|[5-9]\d|\d{3})px\]/, /(?:^|\s)min-h-(1[1-9]|[2-9]\d)(?:\s|$)/, /(?:^|\s)h-(1[1-9]|[2-9]\d)(?:\s|$)/, /(?:^|\s)h-\[(4[4-9]|[5-9]\d|\d{3})px\]/, /(?:^|\s)py-(3\.5|[4-9])(?:\s|$)/, /(?:^|\s)py-5(?:\s|$)/];
 
 /** The base (phone) classes of a className string: every class not behind a breakpoint or a state. */
 export const baseClasses = (cls: string) => cls.split(/\s+/).filter((c) => c && !/^(sm|md|lg|xl|2xl|hover|focus|disabled|dark):/.test(c)).join(" ");
@@ -79,10 +91,11 @@ export function openingTags(text: string, names: readonly string[]): { name: str
 
 /** A tag's className as the phone sees it: `${phone ? "A" : "B"}` reads A, and `${name}` a shared class
  * string the file defines (const name = phone ? "A" : "B", or a template / string literal). */
-export function phoneClass(tag: string, text: string): string {
+export function phoneClass(tag: string, text: string, shared = ""): string {
   const raw = /className=(?:"([^"]*)"|\{`([\s\S]*?)`\}|\{([A-Za-z_]+)\})/.exec(tag);
   if (!raw) return "";
   const consts = new Map<string, string>();
+  text = shared ? `${shared}\n${text}` : text;
   for (const m of text.matchAll(/const ([A-Za-z_]+) = phone \? "([^"]*)" : "[^"]*";/g)) consts.set(m[1], m[2]);
   for (const m of text.matchAll(/const ([A-Za-z_]+) = `([^`]*)`;/g)) consts.set(m[1], m[2]);
   for (const m of text.matchAll(/const ([A-Za-z_]+) = "([^"]*)";/g)) consts.set(m[1], m[2]);
@@ -96,7 +109,7 @@ export function phoneClass(tag: string, text: string): string {
 const CONTROLS = ["button", "Link", "a", "select", "summary", "input"] as const;
 
 /** Every control in the file without a 44 px base height or a listed exception. */
-export function scanControls(file: string, text: string): MobileFinding[] {
+export function scanControls(file: string, text: string, shared = ""): MobileFinding[] {
   const out: MobileFinding[] = [];
   for (const t of openingTags(text, CONTROLS)) {
     if (t.name === "input" && /type="(checkbox|radio|range|hidden)"/.test(t.tag) && !MOBILE_EXCEPTIONS.some((e) => e.file === file && t.tag.includes(e.has))) {
@@ -104,7 +117,7 @@ export function scanControls(file: string, text: string): MobileFinding[] {
       continue;
     }
     if (MOBILE_EXCEPTIONS.some((e) => e.file === file && t.tag.includes(e.has))) continue;
-    if (tallEnough(phoneClass(t.tag, text))) continue;
+    if (tallEnough(phoneClass(t.tag, text, shared))) continue;
     out.push({ file, line: text.slice(0, t.index).split("\n").length, tag: t.tag.replace(/\s+/g, " ").slice(0, 140) });
   }
   return out;

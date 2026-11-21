@@ -4,10 +4,8 @@ import Link from "next/link";
 // new-device code. The wordmark as the shell draws it (a white "V" tile and "VicData"), one column, the
 // card 358 px at most so a phone (360-430 px) shows it edge to edge with a 16 px gutter (G). Light and
 // Dark follow the system, as the rest of the signed-out site does.
-export const AUTH_INPUT =
-  "block min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none sm:text-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100";
-export const AUTH_BUTTON =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900";
+export const AUTH_INPUT = "block min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none sm:text-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100";
+export const AUTH_BUTTON = "inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900";
 export const AUTH_LINK = "inline-flex min-h-11 items-center text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400";
 
 export function Wordmark({ href }: { href?: string }) {

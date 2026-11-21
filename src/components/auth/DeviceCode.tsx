@@ -60,7 +60,7 @@ export function DeviceCode({ sentTo, initialMessage, onOther }: { sentTo: string
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="6-digit code"
-            className={`${AUTH_INPUT} tracking-[0.3em]`}
+            className={`${AUTH_INPUT} tracking-[0.3em] placeholder:tracking-normal`}
           />
         </label>
         {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}

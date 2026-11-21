@@ -54,6 +54,9 @@ export default function NavBar() {
   // whose module drags the academic data layer into every page's bundle for one list.
   // 0.6 S1: People and Teams carry their own header (People.dc.html, Teams.dc.html) too.
   if (pathname && /^\/teacher(\/(ks2|ks4|ks5|recruitment|meetings|people|teams))?\/?$/.test(pathname)) return null;
+  // 0.8 front door part 3: the School-Admin's account pages (account, membership, head office sharing, sign-ins)
+  // draw their own header (AdminShell), as the design does; this bar was a second one above it.
+  if (pathname && /^\/teacher\/school-account(\/|$)/.test(pathname)) return null;
   // 0.8 front door part 3: the landing page and sign-in carry only their own frame.
   if (isBarePath(pathname)) return null;
 

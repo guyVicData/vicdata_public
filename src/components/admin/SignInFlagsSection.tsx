@@ -53,7 +53,7 @@ export function SignInFlagsSection() {
               <div className="min-w-0">
                 <div className="font-semibold">{f.name}{f.email && f.email !== f.name ? ` · ${f.email}` : ""}</div>
                 <div className="text-[var(--muted)]">{f.schools.join(", ") || "No school"} · {f.devices} {f.devices === 1 ? "device" : "devices"} signed in</div>
-                <div>{f.places.length} places: {f.places.join(", ")}</div>
+                <div>{f.places.length} places: {f.places.join(" · ")}</div>
               </div>
               <button type="button" onClick={() => signOut(f)} className="min-h-[36px] rounded-lg border border-[var(--edge-strong)] px-3 text-[12px] font-semibold">
                 Sign out everywhere

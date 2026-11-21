@@ -10,12 +10,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { FRONT_DOOR_SURFACES, MOBILE_EXCEPTIONS, scanControls, tallEnough, wideFindings } from "./mobile-scan";
+import { FRONT_DOOR_SURFACES, MOBILE_EXCEPTIONS, SHARED_CLASS_FILES, scanControls, tallEnough, wideFindings } from "./mobile-scan";
 
 const root = new URL("../../../", import.meta.url).pathname;
 
 test("R-FRONT-DOOR-MOBILE: every control on every front-door surface has a 44 px hit area at phone width", () => {
-  const found = FRONT_DOOR_SURFACES.flatMap((f) => scanControls(f, readFileSync(root + f, "utf8")));
+  const shared = SHARED_CLASS_FILES.map((f) => readFileSync(root + f, "utf8")).join("\n");
+  const found = FRONT_DOOR_SURFACES.flatMap((f) => scanControls(f, readFileSync(root + f, "utf8"), shared));
   assert.deepEqual(found.map((x) => `${x.file}:${x.line} ${x.tag}`), []);
   for (const e of MOBILE_EXCEPTIONS) assert.ok(readFileSync(root + e.file, "utf8").includes(e.has), `exception still matches: ${e.file} ${e.has}`);
 });

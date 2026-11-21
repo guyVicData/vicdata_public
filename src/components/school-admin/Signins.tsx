@@ -106,7 +106,7 @@ export function SigninsPage() {
                       {p.email && p.email !== p.name && <div className="text-[13px] text-[var(--muted2)]">{p.email}</div>}
                       {p.flaggedPlaces && (
                         <div className="mt-1 text-[13px]" style={{ color: ADMIN_TEXT }}>
-                          Used from {p.flaggedPlaces.length} places in {PLACES_ALERT.hours} hours: {p.flaggedPlaces.join(", ")}
+                          Used from {p.flaggedPlaces.length} places in {PLACES_ALERT.hours} hours: {p.flaggedPlaces.join(" · ")}
                         </div>
                       )}
                       {p.devices.length ? (

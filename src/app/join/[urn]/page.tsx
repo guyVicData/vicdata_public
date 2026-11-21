@@ -175,9 +175,10 @@ function ResultMessage({
     <div>
       <h1 className="text-xl font-semibold">{msg.title}</h1>
       <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{msg.body}</p>
-      {/* 0.8 front door part 3: joining signs you in (the cookie session), so go straight on in. */}
-      <a href="/member" className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white dark:bg-white dark:text-neutral-900">
-        Continue to VicData
+      {/* 0.8 front door part 3: joining signs you in (the cookie session). Approved: straight on to the Teacher home
+          (its welcome, the first time). Waiting: your account, where the request shows until it's approved. */}
+      <a href={result.membership_status === "approved" ? "/teacher" : "/account"} className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white dark:bg-white dark:text-neutral-900">
+        {result.membership_status === "approved" ? "Continue to VicData" : "See your account"}
       </a>
 
       {result.upsell && (

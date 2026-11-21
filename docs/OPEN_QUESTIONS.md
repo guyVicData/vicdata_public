@@ -3832,3 +3832,17 @@ trip, in parallel), because "1 flag" is a badge. R-ADMIN-BADGE rewritten for the
 
 **M3-15. Ending a session** is `revoke_auth_session` (security definer, service role only): it deletes the row from
 `auth.sessions`, so the refresh token dies; the access token is refused by the gate at once and by Auth's /user.
+
+**M4-1. The old site nav is hidden on `/teacher/school-account/*`** (the account, membership, head office sharing and
+sign-ins pages draw their own header, as the design does; it showed two stacked headers, Part 2's pages included).
+
+**M4-2. After joining**, the button reads "Continue to VicData" (to `/teacher`, its welcome the first time) for an
+approved first member, and "See your account" for a request waiting for approval.
+
+**M4-3. R-FRONT-DOOR-MOBILE's static scan** now also reads Tailwind's `min-h-11` (44 px) and the signed-out frame's
+shared class constants (`SHARED_CLASS_FILES`); `/account` gained `w-full` and a 16 px phone gutter (it measured 412 px at
+390: its `<main>` sized itself to its longest line).
+
+**M4-4. Screenshots** were made against a local stand-in for the four new tables (the migration isn't applied), with
+made-up device rows, places and two made-up waiting requests, and Guy's test addresses masked on their way to the
+page (the repo is public). The report lists exactly what is real and what isn't.
