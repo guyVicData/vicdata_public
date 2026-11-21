@@ -316,11 +316,24 @@ export function schoolRankingCsv(
 export function mapCsv(schools: { urn: string; name: string }[], targetUrn: string, spec: TeacherMapSpec): CsvTable | null {
   const plotted = schools.filter((s) => spec.dots[s.urn]);
   if (!plotted.length) return null;
+  // The hover's first line, "Grades 7–9: 34% (67 of 195)": the measure, the figure as a number under a
+  // header with its unit, and the "of" counts as their own columns. Words ("Too few entries") stay words.
+  const parts = plotted.map((s) => {
+    const line = spec.dots[s.urn].lines[0] ?? "";
+    const m = /^(.*?):\s*(.*?)(?:\s*\((\d[\d,]*) of (\d[\d,]*)\))?$/.exec(line);
+    if (m) return { measure: m[1], figure: m[2], of: m[3] ? [Number(m[3].replace(/,/g, "")), Number(m[4].replace(/,/g, ""))] : null };
+    // A change map's line, "+4pp since 2022/23": the change, its span in the header.
+    const c = /^(\S+)\s+(since .+)$/.exec(line);
+    return c ? { measure: `Change ${c[2]}`, figure: c[1], of: null } : { measure: null, figure: line || null, of: null };
+  });
+  const measures = new Set(parts.map((p) => p.measure).filter(Boolean));
+  const fig = figureColumn(measures.size === 1 ? [...measures][0]! : "Figure", parts.map((p) => p.figure));
+  const counts = parts.some((p) => p.of);
   return {
-    columns: ["School", "URN", "This school", "Figure (as the map gives it)", "Entries"],
-    rows: plotted.map((s) => {
+    columns: ["School", "URN", "This school", ...(measures.size > 1 ? ["Measure"] : []), fig.header, ...(counts ? ["Count", "Of"] : []), "Entries"],
+    rows: plotted.map((s, i) => {
       const d = spec.dots[s.urn];
-      return [s.name, s.urn, s.urn === targetUrn ? "yes" : "", d.lines[0] ?? null, d.size === null ? null : Math.round(d.size)];
+      return [s.name, s.urn, s.urn === targetUrn ? "yes" : "", ...(measures.size > 1 ? [parts[i].measure] : []), fig.cells[i], ...(counts ? [parts[i].of?.[0] ?? null, parts[i].of?.[1] ?? null] : []), d.size === null ? null : Math.round(d.size)];
     }),
   };
 }
