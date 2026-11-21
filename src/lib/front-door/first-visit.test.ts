@@ -28,6 +28,8 @@ test("R-WELCOME-ONCE: the welcome shows to a person who hasn't seen it, once, ne
   // The welcome names the private beta and where feedback lives.
   assert.match(w, /private beta/);
   assert.match(w, /Feedback on this page/);
+  // Review pack 22 Nov: the amber Send feedback button in every nav is named too.
+  assert.match(w, /The amber &ldquo;Send feedback&rdquo; button at the top of every page/);
 });
 
 test("R-SETUP-ONE-SCREEN: one screen, every phase the school has, the live count; roles without subjects skip it", () => {

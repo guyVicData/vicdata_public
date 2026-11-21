@@ -175,7 +175,7 @@ export function WelcomeContent({ role, busy, onGo }: { role: WelcomeRole; busy: 
           </span>
           <span>
             <span className="block text-[16px] font-semibold text-[var(--fg)]">Where to tell us</span>
-            <span className="mt-0.5 block text-[14px] leading-relaxed text-[var(--muted2)]">Every chart has a speech-bubble button in its bottom corner, for feedback on that chart. &ldquo;Feedback on this page&rdquo;, at the foot of every page, is for anything else.</span>
+            <span className="mt-0.5 block text-[14px] leading-relaxed text-[var(--muted2)]">The amber &ldquo;Send feedback&rdquo; button at the top of every page is for anything at all. Every chart has a speech-bubble button in its bottom corner, for feedback on that chart. &ldquo;Feedback on this page&rdquo;, at the foot of every page, is for the page as a whole.</span>
           </span>
         </li>
       </ul>
