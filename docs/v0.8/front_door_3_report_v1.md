@@ -1,27 +1,34 @@
 # VicData 0.8 front door, part 3: sign-in, the beta gate and account security (report v1)
 
-Built 21 Nov 2026 on branch **`v0.8-front-door-3`** (from `main`, rebased onto `7c8082cc`), from
-`docs/v0.8/vicdata_0_8_front_door_part3_signin_gate_security_claude_code_prompt_v1.md` and Guy's answers of 21 Nov:
-Q1 cookie sessions first; Q2 `/join/<urn>` stays open signed out; Q3 "Forgot password?" is built on its own branch
-(its routes are let through here); Q4 count signed-in views of `/schools/...`; Q5 device codes behind
-`DEVICE_CODES=off`; A3 was already on `main` (837a3cf) and is kept, with its tests and rule added. Every call made
-without asking is logged under "2026-11-13: front door, part 3" in `docs/OPEN_QUESTIONS.md` (M1-1 … M3-15).
+Built 21-22 Nov 2026 on branch **`v0.8-front-door-3`**, rebased onto `main` at `f22b8834` (the hidden school pages),
+which includes "Forgot password?" (6b7db90a), the per-view results cache (914405c6, 77a674f2) and the boot preload
+(7c8082cc). From `docs/v0.8/vicdata_0_8_front_door_part3_signin_gate_security_claude_code_prompt_v1.md` and Guy's
+answers of 21 Nov: Q1 cookie sessions first; Q2 `/join/<urn>` stays open signed out; Q3 "Forgot password?" built on
+its own branch (now on `main`, merged into this flow here); Q4 count signed-in views of `/schools/...` (moot now:
+see below); Q5 device codes behind `DEVICE_CODES=off`; A3 was already on `main` (837a3cf) and is kept, with its
+tests and rule added. Every call made without asking is logged under "2026-11-13: front door, part 3" in
+`docs/OPEN_QUESTIONS.md` (M1-1 … M4-4).
 
-**Nothing here is live, and nothing was written to the database.** The migration is written and tested in PGlite;
-Guy applies it (step 1 below), and it **must be applied before the deploy** (M3-2).
+**Change of plan (22 Nov): this goes live BEFORE the Leighton Park demo** (code freeze Wednesday 25 Nov), merge-ready
+for Sunday evening, Monday and Tuesday for live testing. **Nothing here is live, and nothing was written to the
+database.** The migration must be applied before the deploy: see the go-live sequence ("Guy's commands", at the end).
 
 ## How far it got
 
-| Milestone | Commit | State |
+| Step | Commit | State |
 |---|---|---|
-| 1. Cookie sessions (Q1) | `fbcce008` | done |
-| 2. Beta access: the gate, the landing page, noindex (A1-A3), preview access on the new gate | `d6dc2d81` | done |
-| 3. Account security (E24, E25) and the admin's Sign-ins page (F27) | `f40dd91f` | done (device codes behind the flag) |
-| 4. Phone layouts (G) and this report | the commit after `f40dd91f` | done |
+| 1. Cookie sessions (Q1) | `de6c654e` | done |
+| 2. Beta access: the gate, the landing page, noindex (A1-A3), preview access on the new gate | `4906a644` | done |
+| 3. Account security (E24, E25) and the admin's Sign-ins page (F27) | `ff5f6b4f` | done (device codes behind the flag) |
+| 4. Phone layouts (G) and the report | `59361d3e` | done |
+| "Forgot password?" under cookie sessions; one sign-in page | `33abd680`, `3ee7d5f9` | done |
+| The landing page: the logo large, three backgrounds in VicData's colours | `970b4892` | done |
+| Rebased onto the hidden school pages; the cap's notice survives /member's forward | `a6e9d8dc` | done |
+| This report's go-live sequence | the last commit | done |
 
-Left open (details under "Open"): device codes have never sent a real email (no provider, Q5); the
-forgot-password branch needs one change when it meets this one; the 50-odd API routes still read `Authorization`
-(the proxy fills it from the cookie), a later tidy-up.
+Left open (details under "Open"): device codes have never sent a real email (no provider, Q5); the reset email's
+template should link through `/auth/confirm` so a link works on another device; the 50-odd API routes still read
+`Authorization` (the proxy fills it from the cookie), a later tidy-up.
 
 ## The session change (milestone 1)
 
@@ -55,8 +62,8 @@ The Supabase session moved from the browser's localStorage to a cookie the serve
 route answers 401.** Signed in means a session the server verified (the cookie, or a script's Bearer token checked
 the same way); signed in, `/` goes to `/member`. From milestone 3 the session's device must be signed in too (below).
 
-- `/auth/callback` is built (a PKCE `?code=` exchanged onto the cookie session). `/auth/confirm` and the reset pages
-  are allowed but not built here (Q3's branch).
+- `/auth/callback` (a PKCE `?code=` exchanged onto the cookie session) and `/auth/confirm` (an email's `token_hash`
+  redeemed on the server) are built; `/reset-password` is main's, adapted ("Forgot password?" below).
 - `/sources` is now behind the gate (not on A1's list).
 - **The landing page** (A2): the wordmark, "Private beta", Sign in. No search, school names, description, OG/Twitter
   metadata or scripts; a plain `<title>VicData</title>`; noindex in the page and as `X-Robots-Tag` (with `/login` and
@@ -157,6 +164,73 @@ PGlite (`supabase/tests/v08_front_door_r3_signins_pglite.mjs`, 37 checks) covers
 4. **Check:** sign in on a private window. The code email arrives, and the device is then listed on Where you're
    signed in.
 
+## "Forgot password?" under cookie sessions (main's 6b7db90a, merged here)
+
+Main's reset page read the recovery session from the URL fragment (the old implicit flow). With cookie sessions the
+browser client uses PKCE, so:
+
+- **Supabase's own link** (the email template's `{{ .ConfirmationURL }}`, today's) comes back as
+  `/reset-password?code=…`; the browser client exchanges it. That works **only in the browser that asked** (it holds
+  the code verifier); opened anywhere else it says "That link doesn't work any more" and offers a new one.
+- **`/auth/confirm`** (new) redeems the email's `token_hash` on the server and sets the session cookie, so the link
+  works **in any browser** (`?recovery=1`). It needs the "Reset password" email template to link there (Guy, in the
+  go-live sequence).
+- A bad or used link comes back as `?error=…` and says so.
+- **After the new password the page runs the device step** (`/api/auth/device`): home on a known device, the code
+  screen on a new one (with codes on).
+- `/login` is one page: the signed-out frame, the device step and "Forgot password?" in place (the email-a-link form,
+  `ForgotPasswordForm`, now drawn with the frame's controls; `/reset-password` too).
+- R-PASSWORD-RESET: `parseRecoveryArrival` reads `?code=` and `?recovery=1` as a recovery (it read `?code=` as
+  nothing); new `confirmDestination` and `afterResetDestination`; 10 tests (was 8); the statement rewritten.
+
+Checked by hand: a recovery token for a Leighton Park test account (admin API, no email sent) through `/auth/confirm`
+shows "Choose a new password" for that account with the session cookie set (the form was not submitted: no password
+was changed); the same link again, and an expired link, say "That link doesn't work any more"; "Forgot password?" on
+`/login` opens the form.
+
+## The landing page: the logo, and three backgrounds to choose from
+
+The logo is large now (96 px tile and 72 px wordmark on a desktop, 64/48 on a phone) and lives in one file,
+`src/components/auth/Logo.tsx`, so the provisional mark is one swap (the small one in the signed-out frame comes from
+the same file). Under it, a fine five-colour line, then "Private beta" and Sign in. Nothing else.
+
+The colours are VicData's own, in the school journey's order: **Admissions** sky (`#1596db` Light / `#22d3ee` Dark),
+**Primary** blue (`#2563eb` / `#60a5fa`, PHASE_TONES), **GCSE** green (`#12a05c` / `#34d399`), **Post-16** violet
+(`#7c5ce6` / `#a78bfa`), and the **whole school's** orange (SMT, `#c2410c` / `#fb923c`, ROLE_ACCENT_LIGHT/ROLE_ACCENT):
+each in its Light value on Light and its Dark value on Dark.
+
+One constant picks the background, `LANDING_VARIANT` in `src/components/auth/landing-variant.ts`:
+
+| Variant | What it is | Screenshots |
+|---|---|---|
+| **`arcs` (the default, recommended)** | five thin translucent concentric arcs from the lower right, one per colour; they draw themselves in once (1.4 s), never under prefers-reduced-motion. Quiet, and the only one with a sense of depth. | `landing_variant_arcs_{desktop,phone}_{dark,light}.png` |
+| `spectrum` | only the five-colour line under the logo: the most restrained | `landing_variant_spectrum_…` |
+| `bands` | five translucent ribbons fanned across the lower right, like a home's phase tabs laid on their side | `landing_variant_bands_…` |
+
+All three are `aria-hidden`, textless and clipped (390 px wide at phone width; a test checks), and the page still says
+only the logo, "Private beta" and Sign in, with no scripts and noindex (R-LANDING-MINIMAL, 14 tests in its file).
+
+## Nav and header changes (for the agent making the top navigation consistent)
+
+Only what Stage 2 needs; all in the shared chrome:
+
+1. **`src/components/NavBar.tsx`**
+   - returns nothing on the signed-out screens: `/`, `/login`, `/reset-password`, `/forgot-password`
+     (`isBarePath`, `src/components/front-door/BareRoutes.tsx`);
+   - returns nothing on `/teacher/school-account/*` (those pages draw their own header, `AdminShell`);
+   - signed out, it shows only "Log in" ("Sets" and "Join your school" both led to the landing page);
+   - "Sets" moved inside the signed-in branch, unchanged otherwise.
+2. **`src/components/Footer.tsx`** — wrapped in `HideOnBareRoutes`: no footer on the signed-out screens.
+3. **`src/app/layout.tsx`** — `SignInNotice` (the cap's one-line amber notice) sits above `NavBar`; the root
+   metadata lost its description.
+4. **`src/components/shell/TeacherNav.tsx` (`AccountMenu`)** — "Log out" calls `signOutHere()` (`src/lib/sign-out.ts`:
+   this browser only, then a full load of `/`); `useRouter` is gone from `AccountMenu`.
+5. **`src/app/account/page.tsx`** — its Log out uses the same helper; "Where you're signed in" sits under View as.
+6. **`src/components/school-admin/SchoolAccount.tsx`** — the account page's Sign-ins row and its padlock icon.
+
+The signed-out screens use their own frame (`src/components/auth/AuthShell.tsx`), not the shared nav. A shared nav
+change should keep `isBarePath` (or its own equivalent) so the landing page stays logo, "Private beta" and Sign in.
+
 ## Phone (G)
 
 The landing page, sign-in, the device-code screen and Where you're signed in share one signed-out frame
@@ -189,7 +263,7 @@ build. How they were made:
 
 | Screen | Files |
 |---|---|
-| Landing | `landing_{desktop,phone}_{dark,light}.png` |
+| Landing, three variants (the default first) | `landing_variant_{arcs,spectrum,bands}_{desktop,phone}_{dark,light}.png` (desktop 1440) |
 | Sign in | `signin_{desktop,phone}_{dark,light}.png` |
 | New-device code | `device_code_{desktop,phone}_{dark,light}.png` |
 | Where you're signed in | `where_signed_in_{desktop,phone}_{dark,light}.png` |
@@ -222,33 +296,42 @@ Retired: none. `docs/catalogue/*.md` regenerated.
 
 ## Tests and parity
 
+All on the branch as rebased onto `f22b8834`, run 22 Nov:
+
 - `npx next typegen && npx tsc --noEmit -p .`: clean. `npm run build`: clean. ESLint on every changed file: clean.
 - **Unit tests** (`find src -name "*.test.ts" -o -name "*.test.tsx" | xargs node --env-file=.env --env-file=.env.local
-  --import tsx --test`): **900 pass, 1 fail** (after the rebase onto `7c8082cc`). The failure is R-GROUP-WALKS-LOAD, already failing on `main`. Run with
-  `--test-force-exit`: without it, `view-as-pages.test.ts` never exits (its header says so), and it hangs the same way on
-  `main` (checked on a clean `origin/main` worktree).
-- **Rule tests:** the nine above pass, plus R-MEMBERSHIP and R-FEEDBACK-PROMOTE (with PGlite installed).
+  --import tsx --test --test-force-exit`, in the foreground): **929 pass, 1 fail**. The failure is R-GROUP-WALKS-LOAD,
+  already failing on `main`. `--test-force-exit` because `view-as-pages.test.ts` never exits without it (its header
+  says so); it hangs the same way on a clean `main`.
+- **Rule tests: 15 pass, 0 fail** -- R-COOKIE-SESSION, R-BETA-GATE, R-LANDING-MINIMAL, R-NOINDEX-SCHOOLS,
+  R-DEVICE-CODES, R-DEVICE-CAP, R-SIGNINS-RLS, R-JOIN-DOMAIN, R-ADMIN-BADGE, R-MEMBERSHIP, R-FRONT-DOOR-MOBILE,
+  R-PASSWORD-RESET, R-NO-PUBLIC-SCHOOL-LINKS, R-FEEDBACK-PROMOTE, R-REPORT-COMMANDS-ORDER.
 - **PGlite:** every suite passes, the new one at 37/37. Three need a `PGLITE_DIR` data folder (LA crosswalk, LSOA
   boundaries, catchment) and weren't run; they don't touch auth or memberships.
 - **Parity harnesses:** not run. No figure code changed: the round touches sign-in, the gate, the account and admin
-  pages, People's join requests and the nav. The R-ADMIN-BADGE live read shows Leighton Park's real rows unchanged.
+  pages, People's join requests, the landing page and the nav. The results cache is untouched (no route of this round
+  calls `cachedResult`; its views list and check pass).
 
-### Checked by hand (local production build)
+### Checked by hand (local production build, 22 Nov, rebased)
 
-- **Sign-in / preview:** the preview route leaves a cookie session and no localStorage token. `/teacher` and its API
-  calls load; cookie-only API calls answer 200; a call with no cookie gets 400 before the gate and 401 after it.
-- **Signed out:** `/`, `/login`, `/join/110110` and `/robots.txt` are 200. `/schools/100053`, `/sets`, `/teacher`,
-  `/member` and `/sources` go to `/`. API calls are 401; health and version 200; preview with a wrong token 404. The
-  landing page sends `X-Robots-Tag: noindex, nofollow` and has no third-party script.
-- **Peek:** the SMT peek at Leighton Park loads with no API errors, under milestones 1, 2 and 3.
+- **Signed out:** `/`, `/login`, `/reset-password`, `/join/110110` and `/api/health` are 200. `/schools/110110` (and
+  `/data`) go to `/member` (main's redirect), then `/`; `/teacher` and `/member` go to `/`. API calls are 401; preview
+  with a wrong token 404. The landing page sends `X-Robots-Tag: noindex, nofollow` and has no third-party script.
+- **Preview:** the route leaves a cookie session and no localStorage token, registers a `preview` device, lands on
+  `/teacher`; signed in, `/` goes to `/member` and on to `/teacher`.
+- **Peek:** the SMT peek at Leighton Park loads with no API errors.
+- **View as:** SMT at Leighton Park, through the `vicdata_view_as` cookie, as the preview platform admin: the banner
+  ("Viewing as SMT · Leighton Park School") and the page, with no API errors.
 - **Sign out:** from the account menu, back to the landing page with no session cookie left.
-- **warm-demo.mjs:** signs in through the preview route and warms all seven pages, with no API errors, under
-  milestones 2 and 3.
+- **warm-demo.mjs:** signs in through the preview route and warms all seven pages with no API errors.
+- **Reset:** see "Forgot password?" above.
 
 **Milestone 3, against the stand-in tables (above):**
 - **Code:** a Leighton Park test account's new browser goes to the code screen, and the API is 401 until the code. A
-  wrong code says "That isn't the code we sent. 4 tries left."; the right one goes home, trusted for 60 days.
-- **Cap:** a 4th browser signs out the oldest and shows the notice. The capped browser's next page is
+  wrong code says "That isn't the code we sent. 4 tries left."; the right one goes home (`/teacher/welcome`), trusted for
+  60 days.
+- **Cap:** a 4th browser signs out the oldest and shows the notice (on the welcome page: found broken after the rebase,
+  when sign-in started forwarding through `/member` to `/teacher`, and fixed). The capped browser's next page is
   `/login?signedOut=cap`, its cookies are cleared, and its token can't re-register (401).
 - **Where you're signed in:** signs out one device, then all.
 - **Sign-ins and devices:** shows "6 devices · 1 flag"; Sign out takes a person off both their devices (reason admin).
@@ -263,67 +346,91 @@ Retired: none. `docs/catalogue/*.md` regenerated.
 
 ## Open
 
-- **Forgot password (Q3), when it lands:** `@supabase/ssr` uses PKCE, so the recovery link comes back as
-  `/reset-password?code=…` (exchanged by the browser that asked), and a bad link as `?error=…` in the query, not the
-  fragment that branch parses. After the new password, the page should call `POST /api/auth/device` (or go to
-  `/login?step=device`) before going home. Its routes already pass the gate. The two branches both edit
-  `src/app/login/page.tsx`: keep this branch's frame and device step, and add its "Forgot password?" link and form
-  under the password field (M1-7).
-- **Supabase Auth's Site URL** reads `http://localhost:3000` (found 20 Nov). Set it to `https://vicdata.co.uk`, and add
-  `https://vicdata.co.uk/auth/callback` (and Q3's `/reset-password`) to the redirect URLs, so email links land.
+- **The reset email's template.** Supabase's own link works only in the browser that asked. For a link that works on
+  a phone too, set the "Reset password" template to link through `/auth/confirm` (go-live step 1).
+- **The hidden school pages (main's R-NO-PUBLIC-SCHOOL-LINKS).** `/schools/**` redirects to `/member` in
+  `next.config.ts`, before the proxy; the gate then sends a signed-out visitor on to `/`, and `/member` sends a
+  signed-in one to `/teacher`. So Q4's count of signed-in `/schools/` views never fires now: harmless, kept for when
+  the pages come back. Sending `/schools/**` straight to `/teacher` or `/` in the proxy was possible but not done
+  (one hop more, nothing gained, and their rule passes as is).
 - **The API routes still read `Authorization`.** The proxy fills it from the cookie. Moving each route to the cookie
   itself is a behaviour-free tidy-up for later.
 - **Cloudflare's "Add visitor location headers"** (a managed transform) gives the city. Without it, places are
   countries, and the alert counts countries.
 - **The account menu's badge read** now includes the sign-in counts: one more round trip, in parallel (M3-14).
+- **The old site nav still shows above `/teacher/welcome`** (and other Teacher pages not in its hide list):
+  pre-existing, the nav agent's.
 
 ## Guy's commands
 
-The branch `v0.8-front-door-3` is local, not pushed: the worktree at `~/.t3/worktrees/vicdata_public/t3-df302cf6`
-shares the repository with `~/dev/vicdata_public`, so it is there already. The live site is
-**`https://vicdata.co.uk`**. This goes live **after the Leighton Park demo**. Everyone signs in once more after it.
+The go-live sequence. **Who:** "Guy" is Guy in the Supabase, Render and Cloudflare dashboards; "the parent" is the
+agent that merges and applies the migration from `~/dev/vicdata_public`. The live site is **`https://vicdata.co.uk`**.
+The order matters at two points: **the migration goes in before the deploy** (the new gate reads `account_devices`
+on every signed-in request and refuses everyone without it), and **the old `ACCESS_GATE_*` variables come off Render
+only after the new deploy is live and checked** (the old code, if ever rolled back to, needs them, and without them
+it locks everyone out).
 
-**1. Migrations** — apply `20261126090000_v08_front_door_r3_signins` **before** merging. The new gate checks
-`account_devices` on every request and fails closed without it. The apply file is the migration plus its
-`schema_migrations` row, in one transaction (writes: the project-ref check first). Then verify.
+**Before step 1 (Guy, Supabase and Render; nothing changes for users yet):**
+
+- **Supabase → Authentication → URL Configuration → Redirect URLs:** add `https://vicdata.co.uk/auth/callback`.
+  (The Site URL is already `https://vicdata.co.uk`, and `https://vicdata.co.uk/reset-password` is already listed.)
+  Verify: both show in the list. Roll back: remove it (nothing uses it until the deploy).
+- **Supabase → Authentication → Emails → "Reset password" template (recommended):** make the link
+  `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password` in place of
+  `{{ .ConfirmationURL }}`, so a reset link opened on another device (a phone's mail app) works. **Do this together
+  with step 3, not before**: today's live code has no `/auth/confirm` (a link would 404 until the deploy). Verify:
+  after step 4, "Forgot password?" for a test account, open the link on a different browser: "Choose a new password".
+  Roll back: put `{{ .ConfirmationURL }}` back (links then work in the asking browser only).
+- **Render → the service → Settings → Health Check Path:** check it is `/api/health` (outside the gate; always 200). If
+  it is `/` it still works (the landing page is 200); anything else (a `/teacher` path) would now answer 307: change it
+  to `/api/health`.
+- **Render → Environment:** keep `ACCESS_GATE_ENABLED`, `ACCESS_GATE_USER`, `ACCESS_GATE_PASSWORD` for now (removed at
+  step 7). Keep all four `PREVIEW_ACCESS_*`. Optional now: add `DEVICE_CODE_SECRET` (a random 32+ characters; without
+  it codes are keyed by the service role key). Leave `DEVICE_CODES` and `DEVICE_SESSIONS` unset. Saving env vars
+  redeploys the current (old) code, harmlessly.
+- **Cloudflare (optional, any time):** Rules → Transform Rules → Managed Transforms → "Add visitor location headers",
+  for city-level places. Also check no Cache Rule caches HTML ("Cache Everything"): sign-in pages and their cookies
+  must never be cached (the app sends `Cache-Control: private, no-store` on refreshed sessions).
+
+**1. Migrations** -- the parent, after merging locally (step 2's merge, **not yet pushed**), from the `main` checkout:
 
 ```
-cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && git show v0.8-front-door-3:supabase/ops/front_door_r3/apply_front_door_r3.sql > /tmp/apply_front_door_r3.sql && supabase db query --remote --yes -f /tmp/apply_front_door_r3.sql && supabase db query --remote --read-only "select version, name from supabase_migrations.schema_migrations where version = '20261126090000'"
+cd ~/dev/vicdata_public && test "$(cat supabase/.temp/project-ref)" = "lnhulykjlxmoneappnsp" && supabase db query --remote --yes -f supabase/ops/front_door_r3/apply_front_door_r3.sql && supabase db query --remote --read-only "select version, name from supabase_migrations.schema_migrations where version = '20261126090000'"
 ```
 
 Expect one row: `20261126090000 | v08_front_door_r3_signins`. Then the read-only checks:
 
 ```
-cd ~/dev/vicdata_public && git show v0.8-front-door-3:supabase/ops/front_door_r3/verify_front_door_r3.sql > /tmp/verify_front_door_r3.sql && supabase db query --remote --read-only -f /tmp/verify_front_door_r3.sql
+cd ~/dev/vicdata_public && supabase db query --remote --read-only -f supabase/ops/front_door_r3/verify_front_door_r3.sql
 ```
 
-Expect:
-- the four tables, all `rls = true`;
-- the five policies;
-- the three `school_memberships` columns;
-- both triggers;
-- `revoke_auth_session` executable by `service_role` only;
-- each school's domains (Leighton Park's `(none)`);
-- `off_domain_memberships = 0`.
+Expect: the four tables, all `rls = true`; the five policies; the three `school_memberships` columns; both triggers;
+`revoke_auth_session` executable by `service_role` only; each school's domains (Leighton Park's `(none)`: its admins
+are mac.com test accounts); `off_domain_memberships = 0`.
 
-The rollback, if ever needed, is `supabase/ops/front_door_r3/rollback_front_door_r3.sql`. Run it after rolling back
-the app, or with `DEVICE_SESSIONS=off` set.
+The old live code keeps working on the new schema (same `join_school` signature; nothing it reads changed). **Roll
+back** (only while the old code is still live, or after rolling the app back, step 3):
+`supabase db query --remote --yes -f supabase/ops/front_door_r3/rollback_front_door_r3.sql`.
 
-Before the merge, on Render (Environment), **delete** `ACCESS_GATE_ENABLED`, `ACCESS_GATE_USER`,
-`ACCESS_GATE_PASSWORD`. Add `DEVICE_CODE_SECRET` (a random 32+ characters) if you want codes keyed apart from the
-service role key. Leave `DEVICE_CODES` and `DEVICE_SESSIONS` unset. Keep all four `PREVIEW_ACCESS_*`. In Supabase Auth
-(URL configuration), set the Site URL to `https://vicdata.co.uk` and add `https://vicdata.co.uk/auth/callback` to the
-redirect URLs.
-
-**2. Merge and push** — from `~/dev/vicdata_public` on a clean `main`, merge, build, push:
+**2. Merge and push** -- the parent, on a clean `main` (the branch is rebased onto `f22b8834`; if `main` has moved,
+rebase again first):
 
 ```
-cd ~/dev/vicdata_public && git checkout main && git pull https://github.com/guyVicData/vicdata_public.git main && git merge --no-ff v0.8-front-door-3 -m "0.8 front door part 3: cookie sessions; the private-beta gate and landing page in place of Basic Auth; new-device codes (off), the device cap, Where you're signed in; joining on the school's email domain; the School-Admin's Sign-ins and devices" && npm install && npm run build && git push https://github.com/guyVicData/vicdata_public.git main
+cd ~/dev/vicdata_public && git checkout main && git pull https://github.com/guyVicData/vicdata_public.git main && git merge --no-ff v0.8-front-door-3 -m "0.8 front door part 3: cookie sessions; the private-beta gate and landing page in place of Basic Auth; new-device codes (off), the device cap, Where you're signed in; joining on the school's email domain; the School-Admin's Sign-ins and devices; Forgot password under cookie sessions" && npm install && npm run build
 ```
 
-(`npm install`: the round adds `@supabase/ssr`.)
+(`npm install`: the round adds `@supabase/ssr`.) Then step 1 (the migration), then push:
+
+```
+cd ~/dev/vicdata_public && git push https://github.com/guyVicData/vicdata_public.git main
+```
 
 **3. Render deploys main on its own** (auto-deploy, On Commit). If no deploy starts within 5 minutes, deploy by hand.
+Now (Guy) switch the reset email template, as above. **Roll back the app:** Render → the service → Events → the
+previous deploy → "Rollback to this deploy" (the old code; the `ACCESS_GATE_*` variables are still set, so its Basic
+Auth gate works), or revert the merge and push. **If only the device check misbehaves** (people stuck at
+"Finishing signing in…", or 503 "VicData can't check your sign-in"): set `DEVICE_SESSIONS=off` on Render (milestone
+2's gate: signed in = a verified session); remove it once fixed.
 
 **4. Wait until /api/version shows the merge commit.**
 
@@ -331,32 +438,65 @@ cd ~/dev/vicdata_public && git checkout main && git pull https://github.com/guyV
 cd ~/dev/vicdata_public && M=$(git rev-parse --short=12 HEAD) && until curl -s https://vicdata.co.uk/api/version | grep -q "\"commit\":\"$M\""; do echo "waiting for $M"; sleep 30; done && curl -s https://vicdata.co.uk/api/version
 ```
 
+Then, straight away (anyone):
+
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://vicdata.co.uk/api/health          # 200
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://vicdata.co.uk/teacher   # 307 https://vicdata.co.uk/
+curl -s -o /dev/null -w "%{http_code}\n" https://vicdata.co.uk/api/teacher/phases   # 401
+curl -sI https://vicdata.co.uk/ | grep -i x-robots                                   # noindex, nofollow
+```
+
+No browser password prompt anywhere from now on.
+
 **5. Republish:** none this round. No published dashboard changed.
 
 **6. Set fixed:** none this round (no feedback items).
 
-**7. Live check** — on vicdata.co.uk, in a private window, Dark and Light, and once at phone width:
+**7. Live check** -- on vicdata.co.uk, in private windows, Dark and Light, and once at phone width. **Everyone is
+signed out once by the deploy** (the session moved from localStorage to a cookie): Leighton Park's testers need
+their passwords (or "Forgot password?").
 
-- **A signed-out visitor:** any school URL (`/schools/110110`, `/sets`, `/teacher/smt`) lands on the landing page:
-  the wordmark, "Private beta", Sign in, nothing else. `curl -sI https://vicdata.co.uk/ | grep -i x-robots` reads
-  `noindex, nofollow`; `curl -s -o /dev/null -w "%{http_code}" https://vicdata.co.uk/api/teacher/phases` reads 401.
-  No browser password prompt anywhere.
-- **An invited teacher** (a test address on a school that has members): the school's join link `/join/<urn>` opens
-  signed out → Work email, Password, Full name → Join → "Request sent" → **See your account** (the request is
-  pending; this browser is already the account's first device). The School-Admin approves it on People (an
-  off-domain address shows as an **Exception**: **Approve as an exception**). The teacher's next visit to `/teacher`
-  opens the welcome. (A first member verified on the school's website is approved at once: **Continue to VicData**
-  goes straight to the welcome.) Decline or remove the test account afterwards.
-- **A known user on a new device:** sign in on Leighton Park's test teacher in a new private window → straight in
-  (codes are off). Open `/account` → **Where you're signed in** lists this browser as "This device", with a place.
-  Sign in on three more browsers: the 4th says "…so we signed you out on …", and the first, reloaded, lands on
-  sign-in saying why. (With codes on: the password, then "Check your email", the code, then in. A second sign-in on
-  that browser asks no code.)
-- **A School-Admin** (Leighton Park's test admin): the account menu → **School account** → the **Sign-ins and devices**
-  row ("n devices") → the page lists the staff with their devices; **Sign out** a test member's devices and confirm
-  their browser is signed out on its next page. Then **People** → **Who can join**: add `leightonpark.com`. A waiting
-  request from outside it shows **Exception** and **Approve as an exception**; approve or decline it.
-- **Preview and warm-up:** `node scripts/warm-demo.mjs 110110` signs in and warms every page as before. The peek
-  `https://vicdata.co.uk/teacher/smt?lookAs=110110&as=smt&peek=1` loads as a platform admin.
-- **Platform:** `/platform` shows **Sign-in flags** ("None." unless an account was used from more than 4 places in a
-  day).
+- **A signed-out visitor:** `/schools/110110`, `/sets`, `/teacher/smt` all land on the landing page: the large logo,
+  the five-colour line and arcs, "Private beta", Sign in, nothing else.
+- **Preview and warm-up:** `/api/testing/preview-session?token=…` lands on `/teacher` signed in (now also as a
+  `preview` device: up to 10 at once, the oldest signed out beyond that); `node scripts/warm-demo.mjs 110110` (the
+  script from `main` after the merge) signs in and warms every page. The peek
+  `https://vicdata.co.uk/teacher/smt?lookAs=110110&as=smt&peek=1` loads; View as from the account menu works and
+  Back to me returns.
+- **A known user on a new device:** sign in on Leighton Park's test teacher in a new private window: straight in
+  (codes are off), the welcome or the home. `/account` → **Where you're signed in** lists "This device" with a place.
+  Sign in on three more browsers: the 4th says "…so we signed you out on …"; the first, reloaded, lands on sign-in
+  saying why.
+- **Forgot password:** on a test account, "Forgot password?" → the email → the link → "Choose a new password" → save
+  → home. (Supabase's built-in sender allows only a few emails an hour: don't spend them before the demo.)
+- **An invited teacher:** `/join/110110` opens signed out → Join with a test address → "Request sent" → **See your
+  account**. The School-Admin approves it on People (an address outside the school's domains shows **Exception**:
+  **Approve as an exception**). Decline or remove the test account afterwards.
+- **A School-Admin** (Leighton Park's test admin): **People → Who can join**: add `leightonpark.com`. The account menu
+  → **School account** → **Sign-ins and devices** lists the staff and their devices; **Sign out** a test member and
+  confirm their browser is signed out on its next page.
+- **Platform:** `/platform` shows **Sign-in flags** ("None.").
+
+**Then (Guy, Render), once Monday's checks pass:** delete `ACCESS_GATE_ENABLED`, `ACCESS_GATE_USER`,
+`ACCESS_GATE_PASSWORD` (nothing reads them now; keep them while a rollback to the old code is still possible).
+
+### What can still bite on the live site
+
+- **Everyone is signed out once.** Have the Leighton Park passwords to hand before the demo; "Forgot password?"
+  depends on Supabase's built-in sender (a few emails an hour) until an SMTP provider is set up.
+- **A Supabase outage now blocks signed-in pages** (the gate's device read fails closed with a 503) where before only
+  the data would have failed. `DEVICE_SESSIONS=off` is the switch.
+- **Preview access** works as before, but it is now a device: more than 10 preview browsers at once sign out the
+  oldest (parallel agents plus warm-demo). It still needs all four `PREVIEW_ACCESS_*`, and the token in the URL.
+- **Peek and View as** are unchanged (the admin's own session; the `vicdata_view_as` cookie), checked by hand.
+- **scripts/warm-demo.mjs** must be the merged one (it waits for the session cookie; the old one waits for
+  localStorage and times out).
+- **Render's health check path** must be `/api/health` (or `/`), as above.
+- **The reset email template**: until it links through `/auth/confirm`, a reset link works only in the browser that
+  asked for it.
+- **A platform admin** can be signed in on 5 devices at once; staff on 3. View as and peeks don't count as devices.
+- **Leighton Park's email-domain list starts empty**: every new join request there is an Exception until
+  `leightonpark.com` is added.
+- **Device codes are off**: a stolen password still works on any browser until a mail provider is chosen and
+  `DEVICE_CODES=on` (see "Device codes" above).

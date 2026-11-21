@@ -3846,3 +3846,19 @@ shared class constants (`SHARED_CLASS_FILES`); `/account` gained `w-full` and a 
 **M4-4. Screenshots** were made against a local stand-in for the four new tables (the migration isn't applied), with
 made-up device rows, places and two made-up waiting requests, and Guy's test addresses masked on their way to the
 page (the repo is public). The report lists exactly what is real and what isn't.
+
+**M5-1 (22 Nov, rebased onto main's "Forgot password?").** M1-7 is done here: `/reset-password` reads `?code=` and
+`?recovery=1`, a new `/auth/confirm` redeems the email's `token_hash` on the server (a link that works in any browser,
+once the reset template links there), and the page finishes the device step after the new password. A recovery
+link is not treated as proof of the device (it would be with codes on: a later improvement could read the token's
+`amr` claim); with codes off it makes no difference.
+
+**M5-2. The landing page's background** is one of three designs, picked by `LANDING_VARIANT`
+(`src/components/auth/landing-variant.ts`); "arcs" is the default. Only the logo, "Private beta" and Sign in; the
+art is decoration only.
+
+**M5-3. `/schools/**` keeps main's redirect to `/member`** (R-NO-PUBLIC-SCHOOL-LINKS); not moved into the proxy.
+Q4's count therefore never fires (the redirect runs before the proxy); kept for when the pages return.
+
+**M5-4. The cap's notice** is kept in the tab's sessionStorage until dismissed or shown for 12 seconds: sign-in now
+lands on /member, which forwards to /teacher, and the notice was being read and lost on the way.
