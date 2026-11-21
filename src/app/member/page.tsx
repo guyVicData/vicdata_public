@@ -7,9 +7,10 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 // Members' landing page (2026-09-05, added per Guy's direct request after a real live
 // failure report on a direct /schools/[urn]/data link): a stable landing page a
-// logged-in member always lands on, that for now just forwards them to their own
-// school's Data View -- there was previously no fallback landing page at all if a
-// direct deep link failed. Login (src/app/login/page.tsx) now sends here instead of
+// logged-in member always lands on. It forwarded to the school's Data View; since the
+// private beta (21 Nov) it forwards an approved member to their home, /teacher, and a
+// signed-out visitor to /. It is also where next.config.ts sends every /schools/**
+// visit, since only the browser knows whether someone is signed in. Login (src/app/login/page.tsx) now sends here instead of
 // straight to /account.
 //
 // At /member, not /home -- Guy's own correction: /home reads as the PUBLIC home
@@ -20,25 +21,25 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 // Same qualified-embed fix account.tsx's own comment documents (school_accounts has
 // three FK relationships to school_memberships, an unqualified embed is genuinely
 // ambiguous to PostgREST -- PGRST201).
-type Membership = {
-  id: string;
-  status: string;
-  school_account_id: string;
-  school_accounts: { school_urn: string; schools: { current_name: string } | null };
-};
 
-type State = "checking" | "logged_out" | "no_memberships" | "choose" | "error";
+type State = "checking" | "no_memberships" | "error";
 
 export default function HomePage() {
   const supabase = createBrowserSupabaseClient();
   const router = useRouter();
   const [state, setState] = useState<State>("checking");
-  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
+        // next.config.ts sends every /schools/** visit here (private beta, R-NO-PUBLIC-SCHOOL-LINKS):
+        // signed out goes to the public home. getSession first: getUser with no session is an error.
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          router.replace("/");
+          return;
+        }
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError) {
           console.error("[HomePage] getUser failed:", userError);
@@ -47,7 +48,7 @@ export default function HomePage() {
           return;
         }
         if (!userData.user) {
-          setState("logged_out");
+          router.replace("/");
           return;
         }
 
@@ -63,17 +64,14 @@ export default function HomePage() {
           return;
         }
 
-        const rows = (data as unknown as Membership[]) ?? [];
-        if (rows.length === 0) {
+        if (!data || data.length === 0) {
           setState("no_memberships");
           return;
         }
-        if (rows.length === 1) {
-          router.replace(`/schools/${rows[0].school_accounts.school_urn}/data`);
-          return;
-        }
-        setMemberships(rows);
-        setState("choose");
+        // Private beta (Guy, 21 Nov): the member's home is /teacher, which picks the
+        // membership itself. This used to forward to the school's Data View at
+        // /schools/<urn>/data, hidden with the public school pages.
+        router.replace("/teacher");
       } catch (e) {
         console.error("[HomePage] unexpected error:", e);
         setErrorMessage("Something went wrong. Try reloading.");
@@ -85,17 +83,6 @@ export default function HomePage() {
 
   if (state === "checking") {
     return <main className="px-6 py-24 text-center text-sm text-neutral-500">Loading…</main>;
-  }
-
-  if (state === "logged_out") {
-    return (
-      <main className="mx-auto max-w-lg px-6 py-24 text-center text-sm text-neutral-500">
-        <Link href="/login" className="underline">
-          Log in
-        </Link>{" "}
-        to see your school&rsquo;s Data View.
-      </main>
-    );
   }
 
   if (state === "no_memberships") {
@@ -127,21 +114,5 @@ export default function HomePage() {
     );
   }
 
-  // "choose": more than one approved membership -- a real, if uncommon, case (e.g. a
-  // consultant or governor at more than one school). Plain list, no attempt at a
-  // "default" school this round.
-  return (
-    <main className="mx-auto max-w-lg px-6 py-24">
-      <h1 className="mb-6 text-xl font-semibold">Choose a school</h1>
-      <ul className="space-y-2">
-        {memberships.map((m) => (
-          <li key={m.id}>
-            <Link href={`/schools/${m.school_accounts.school_urn}/data`} className="underline">
-              {m.school_accounts.schools?.current_name ?? m.school_accounts.school_urn}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </main>
-  );
+  return <main className="px-6 py-24 text-center text-sm text-neutral-500">Loading…</main>;
 }

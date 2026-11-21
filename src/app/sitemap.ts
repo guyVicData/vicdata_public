@@ -4,6 +4,8 @@ import type { MetadataRoute } from "next";
 // step — never auto-submitted). R-NOINDEX-SCHOOLS: never lists a school page, set page, join
 // page or anything carrying a URN -- those are never indexed (next.config.ts NOINDEX_SOURCES,
 // src/lib/noindex.ts). Only the landing page could ever be listed here.
+// R-NO-PUBLIC-SCHOOL-LINKS: the public school pages are hidden for the private beta
+// (/schools/** redirects in next.config.ts), so none may be listed here.
 export default function sitemap(): MetadataRoute.Sitemap {
   return [];
 }
