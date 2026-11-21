@@ -17,6 +17,8 @@ import { indexTo, indexedLabel } from "@/lib/index-base";
 import { FOCUS_LABEL, GROWING_SPAN, MEASURE_LABEL, MEASURE_SHORT, MEASURE_UNIT, ordinal, PHASE_NOUN, POOL_MIN_NOTE, tooFewWords, type GroupOverview, type GroupSchools, type SchoolRow } from "@/lib/groups/dash";
 import { arrowOf, dirClass, fmt, Td, Th, type Unit } from "@/components/smt/ui";
 import { SetTrend, SideBySide } from "./views-sets";
+import { MAIN_ROWS, joinedRows, schoolsTableCsv, resultsTrendCsv } from "./csv";
+import { usePanelCsv } from "@/components/shell/panel-csv";
 import { ARROW, arrowed, flatBand } from "@/lib/signed-delta";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
@@ -119,7 +121,7 @@ export function GroupNow({ o, compact }: { o: GroupOverview; compact: boolean })
 
 // 0.8 group sets (M4): the single-academy trust pool sits with the defaults; mix-matched non-group stays a
 // row of its own (its toggle went with the named-group chips: sets of groups are chosen in the picker).
-export const MAIN_ROWS = ["group", "peer_band:band", "non_group:england", "sat:england", "areas:la", "england:england"];
+export { MAIN_ROWS };
 
 export function AgainstOthers({ o, average, highlightNote }: { o: GroupOverview; average: boolean; highlightNote?: ReactNode }) {
   if (o.sideBySide) return <SideBySide o={o} average={average} />;
@@ -238,9 +240,7 @@ export function GroupMap({ name, schools, highlight, fullscreen, room }: { name:
 // ------------------------------------------------------------------------------ joined and left
 
 export function JoinedLeft({ membership, schools, compact = false, highlight = null }: { membership: MembershipRow[]; schools?: { urn: string; current: boolean }[]; compact?: boolean; highlight?: string | null }) {
-  const rows = membership
-    .map((m) => ({ ...m, left: schools ? !schools.find((s) => s.urn === m.urn)?.current : false }))
-    .sort((a, b) => (b.joined ?? b.lastSeen ?? "").localeCompare(a.joined ?? a.lastSeen ?? "") || a.name.localeCompare(b.name));
+  const rows = joinedRows(membership, schools);
   const shown = compact ? rows.slice(0, 6) : rows;
   if (!rows.length) return <Empty>No membership dates.</Empty>;
   return (
@@ -310,6 +310,8 @@ export function RollTrend({ o, fullscreen, room }: { o: GroupOverview; fullscree
 
 export function ResultsTrend({ o, average, fullscreen, room }: { o: GroupOverview; average: boolean; fullscreen: boolean; room?: number }) {
   const [i, setI] = useState(0);
+  // Panel menu "Save as CSV": the measure on screen (this view holds which).
+  usePanelCsv(() => resultsTrendCsv(o, average, i));
   const parts = o.trends.results;
   if (!parts.length) return <Empty>No published results for the phase in view.</Empty>;
   const p = parts[Math.min(i, parts.length - 1)];
@@ -482,6 +484,8 @@ function MainSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; high
   const [sort, setSort] = useState<SortKey>("roll");
   const head = headlineHeader(s.rows);
   const rows = schoolsSort(s.rows, sort);
+  // Panel menu "Save as CSV": the rows in the order on screen (this table holds the sort).
+  usePanelCsv(() => schoolsTableCsv(s, rows));
   const sortBtn = (k: SortKey, label: string) => (
     <button type="button" onClick={() => setSort(k)} aria-pressed={sort === k} className={`uppercase ${sort === k ? "text-[var(--fg)]" : ""}`}>
       {label}
@@ -556,6 +560,7 @@ function NmSchoolsTable({ s, highlight, onHighlight }: { s: GroupSchools; highli
   const [sort, setSort] = useState<"roll" | "name" | "fsm" | "trend">("roll");
   const nul = (x: number | null | undefined) => (x === null || x === undefined ? -Infinity : x);
   const rows = [...s.rows].sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name) : sort === "fsm" ? nul(b.fsm) - nul(a.fsm) : sort === "trend" ? nul(b.trend) - nul(a.trend) : nul(b.roll) - nul(a.roll)) || a.name.localeCompare(b.name));
+  usePanelCsv(() => schoolsTableCsv(s, rows));
   const sortBtn = (k: typeof sort, label: string) => (
     <button type="button" onClick={() => setSort(k)} aria-pressed={sort === k} className={`uppercase ${sort === k ? "text-[var(--fg)]" : ""}`}>
       {label}

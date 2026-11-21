@@ -49,6 +49,8 @@ import { arrowOf, dirClass } from "@/components/smt/ui";
 import { NmAgainst, NmFsmTrend, NmLine, NmNoResults, NmNow } from "./views-nm";
 import { ARROW, arrowed } from "@/lib/signed-delta";
 import { GROUP_LAYOUT_IDS, type GroupLayoutCell } from "@/lib/groups/dash-layout";
+import { PanelCsvScope, usePanelCsv } from "@/components/shell/panel-csv";
+import { againstCsv, groupViewCsv } from "./csv";
 
 export type GroupDash = "overview" | "schools" | "academic" | "pupils";
 export const GROUP_DASHES: { key: GroupDash; label: string; live: boolean }[] = [
@@ -345,6 +347,8 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
   return (
     <UsageScopeContext.Provider value={quiet ? null : usage}>
       <ViewSurfaceProvider surface={surface}>
+      {/* Panel menu "Save as CSV": the group names the file; the set picked is the default "Comparison set". */}
+      <PanelCsvScope.Provider value={{ who: o.group.name, set: dash === "schools" ? null : o.sideBySide ? o.picker.name : o.compare.label }}>
       <ShellPage phone={phone} rootRef={rootRef}>
         {/* 0.8 front door 2b (M3): in Mid the header -- the banner, the nav, the control bar -- is a dark band
             and the rows below sit on the orange field. A fragment in Dark and Light (the same elements, in order). */}
@@ -402,6 +406,7 @@ function Dashboard({ d: whole, dash, params, setParams, theme, onTheme, onSetsCh
           </>
         )}
       </ShellPage>
+      </PanelCsvScope.Provider>
       </ViewSurfaceProvider>
     </UsageScopeContext.Provider>
   );
@@ -727,6 +732,9 @@ function flagOf(id: ViewId, c: Ctx): ReactNode {
 
 function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen: boolean; room?: number }) {
   const hl = c.params.school;
+  // Panel menu "Save as CSV": the rows of the view on screen, from the same objects it draws (csv.ts);
+  // the results trends, the Schools table and the entry cohorts register their own (they hold the state).
+  usePanelCsv(() => groupViewCsv(id, { d: c.d, o: c.o, s: c.s, average: c.average, projection: c.projection }));
   switch (id) {
     case "GRP-O-NOW":
       return <GroupNow o={c.o} compact={c.phone && !fullscreen} />;
@@ -873,6 +881,8 @@ function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: Ce
 
 /** The phone's Against others: one line per set, the roll and the phase's headline (Phone.dc.html). */
 function PhoneAgainst({ o }: { o: GroupOverview }) {
+  // Panel menu "Save as CSV": the phone's short list is Against others' table, saved whole.
+  usePanelCsv(() => againstCsv(o, false));
   const m = o.against.columns[0];
   return (
     <div className="flex flex-col text-[12.5px]">

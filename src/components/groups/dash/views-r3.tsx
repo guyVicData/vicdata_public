@@ -17,6 +17,8 @@ import { signedDelta, UNSIGNED_ZERO } from "@/lib/signed-delta";
 import { featuredRow } from "@/components/shell/accent";
 import { ofGroupsWords } from "@/lib/groups/group-sets";
 import { RollSideBySide } from "./views-sets";
+import { entryCohortsCsv } from "./csv";
+import { usePanelCsv } from "@/components/shell/panel-csv";
 
 const unitOf = (m: string): Unit => (MEASURE_UNIT[m] === "pct" ? "pct" : MEASURE_UNIT[m] === "va" ? "va" : "points");
 const f = (v: number | null | undefined, m: string) => fmt(v ?? null, unitOf(m), m.startsWith("ks5_aps") ? "aps_per_entry" : undefined);
@@ -371,6 +373,8 @@ export function EntryCohorts({ p, highlight, fullscreen, room }: { p: GroupPupil
   const rows = p.entries.filter((e) => e.pts.filter((x) => x.value).length >= 2);
   const ages = Array.from(new Set(rows.map((r) => r.age))).sort((a, b) => a - b);
   const [picked, setAge] = useState<number | null>(null);
+  // Panel menu "Save as CSV": the entry age on screen (this view holds which).
+  usePanelCsv(() => entryCohortsCsv(p, picked));
   if (!rows.length) return <Empty>Not enough census years.</Empty>;
   const age = picked !== null && ages.includes(picked) ? picked : ages.includes(11) ? 11 : ages[0];
   const years = rows[0].pts.map((x) => x.year);
