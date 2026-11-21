@@ -117,16 +117,20 @@ async function fromGitHub(commit) {
 
 // ---- server_code -------------------------------------------------------------------------------
 const CODE_EXT = [".ts", ".tsx", ".mts", ".js", ".mjs", ".json"];
+// Every form the server code uses: `import x from`, `import { a } from` (over several lines too), `import type`,
+// `import * as`, `export { a } from`, `export * from`, a bare `import "x"`, `import("x")` and `require("x")`.
+// Type-only imports are followed too (they change nothing at run time, so following them only adds files). It
+// reads the text, comments included: an import in a comment is followed as well (more, never fewer).
 const IMPORT_RE = /(?:^|[^\w$.])(?:import|export)\s+(?:type\s+)?(?:[^'"`;]*?\sfrom\s*)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|require\(\s*["']([^"']+)["']\s*\)/g;
 
-function resolveImport(spec, fromFile) {
+function resolveImport(spec, fromFile, rootDir = root) {
   let base;
-  if (spec.startsWith("@/")) base = join(root, "src", spec.slice(2));
+  if (spec.startsWith("@/")) base = join(rootDir, "src", spec.slice(2));
   else if (spec.startsWith(".")) base = resolve(dirname(fromFile), spec);
   else return null; // a package: package-lock.json covers it
   const tries = [base, ...CODE_EXT.map((e) => base + e), ...CODE_EXT.map((e) => join(base, "index" + e))];
   for (const t of tries) if (existsSync(t) && statSync(t).isFile()) return t;
-  return null;
+  return undefined; // a path that names no file
 }
 
 function filesUnder(dir) {
@@ -139,23 +143,39 @@ function filesUnder(dir) {
   return out;
 }
 
-/** sha256 (16 hex) over every file the API routes import, and the lockfile; null if it can't be read. */
-function serverCodeHash() {
-  const api = join(root, "src", "app", "api");
-  if (!existsSync(api)) return null;
+const isTest = (f) => /\.test\.[a-z]+$/.test(f);
+
+/** The files `f` imports (resolved, absolute); `strict`: a relative or @/ import that names no file throws. */
+function importsOf(f, rootDir, strict) {
+  if (f.endsWith(".json")) return [];
+  const deps = [];
+  for (const m of readFileSync(f, "utf8").matchAll(IMPORT_RE)) {
+    const spec = m[1] ?? m[2] ?? m[3];
+    const r = resolveImport(spec, f, rootDir);
+    if (r) deps.push(r);
+    else if (r === undefined && strict) throw new Error(`${relative(rootDir, f)} imports "${spec}", which names no file`);
+  }
+  return deps;
+}
+
+/** Every file reachable by import from `entries` (the entries included). */
+export function importClosure(entries, rootDir = root, strict = false) {
   const seen = new Set();
-  const stack = filesUnder(api).filter((f) => !/\.test\.[a-z]+$/.test(f));
+  const stack = [...entries];
   while (stack.length) {
     const f = stack.pop();
     if (seen.has(f)) continue;
     seen.add(f);
-    if (f.endsWith(".json")) continue;
-    const text = readFileSync(f, "utf8");
-    for (const m of text.matchAll(IMPORT_RE)) {
-      const r = resolveImport(m[1] ?? m[2] ?? m[3], f);
-      if (r && !seen.has(r)) stack.push(r);
-    }
+    for (const r of importsOf(f, rootDir, strict)) if (!seen.has(r)) stack.push(r);
   }
+  return seen;
+}
+
+/** sha256 (16 hex) over every file the API routes import, and the lockfile; null if it can't be read. */
+function serverCodeHash() {
+  const api = join(root, "src", "app", "api");
+  if (!existsSync(api)) return null;
+  const seen = importClosure(filesUnder(api).filter((f) => !isTest(f)));
   const h = createHash("sha256");
   for (const f of [...seen].sort()) h.update(relative(root, f)).update("\0").update(readFileSync(f)).update("\0");
   const lock = join(root, "package-lock.json");
@@ -175,6 +195,134 @@ function serverCode(commit) {
   return commit ? `commit:${commit}` : null;
 }
 
+// ---- view_code: one code version per stored view -----------------------------------------------
+// The results cache keys each answer on its view's own code (src/lib/results-cache.ts), so a deploy discards
+// only the answers whose code changed. The views are listed in src/lib/cached-views/views.json, each with its
+// own module there (the one place that view's resultKey and cachedResult are called). A view's files:
+//   1. everything its module imports, followed import by import;
+//   2. every file that imports the module, and those that import them, up to the routes (the code that
+//      resolves the view's inputs: a route's caller check, the set, the school, the catchment), with
+//      everything each of them imports -- so another view whose answer feeds this one (SMT's school, which
+//      the SMT views take but key on its URN alone) is in it;
+//   3. ALWAYS (below): the cache itself, how answers are keyed and serialised, the in-process caches, the
+//      build's own settings, this script and the list; and package-lock.json.
+// Over-including only discards more. Tests are left out (they never run in the app). The version is
+// sha256 (16 hex) over "view-code v1", the view's name and each file's path and text, in order; never equal
+// to a server_code, so a row stored under the single version can't match.
+//
+// The list is checked first, and a mistake fails the build (not a request): every resultKey under src is
+// called with a string literal, in the module views.json names for that view; every module named exists and
+// calls resultKey with its view; cachedResult is called only in those modules. If the walk itself fails (a
+// file unreadable, an import that names no file), view_code is null and every view uses server_code (more
+// discarded, never less).
+export const VIEWS_DIR = "src/lib/cached-views";
+export const ALWAYS = [
+  "src/lib/results-cache.ts",
+  "src/lib/build-trace.ts",
+  "src/lib/server-cache.ts",
+  "src/lib/reference-cache.ts",
+  "src/lib/build-info.ts",
+  "src/lib/supabase.ts",
+  "src/lib/cached-views/views.json",
+  "scripts/write-build-info.mjs",
+  "tsconfig.json",
+  "next.config.ts",
+  "package.json",
+];
+const VIEW_SALT = "view-code v1";
+
+export class ViewListError extends Error {}
+
+/** The views (name -> module, absolute), checked against every resultKey and cachedResult call under src. */
+export function checkedViews(rootDir = root) {
+  const file = join(rootDir, VIEWS_DIR, "views.json");
+  const list = JSON.parse(readFileSync(file, "utf8"));
+  const views = {};
+  const problems = [];
+  for (const [view, mod] of Object.entries(list)) {
+    if (typeof mod !== "string" || !/^[a-z0-9-]+\.ts$/.test(mod)) {
+      problems.push(`views.json: "${view}" names no module file`);
+      continue;
+    }
+    const p = join(rootDir, VIEWS_DIR, mod);
+    if (!existsSync(p)) problems.push(`views.json: "${view}" -> ${mod}, which isn't there`);
+    else if (!readFileSync(p, "utf8").includes(`resultKey("${view}"`)) problems.push(`${VIEWS_DIR}/${mod} doesn't call resultKey("${view}", ...)`);
+    views[view] = p;
+  }
+  const modules = new Set(Object.values(views));
+  const cacheFile = join(rootDir, "src", "lib", "results-cache.ts");
+  for (const f of filesUnder(join(rootDir, "src"))) {
+    if (isTest(f) || f === cacheFile || f.endsWith(".json")) continue;
+    const text = readFileSync(f, "utf8");
+    const rel = relative(rootDir, f);
+    for (const m of text.matchAll(/\bresultKey\(\s*(["'`])?([^"'`,)]*)/g)) {
+      const view = m[2];
+      if (m[1] !== '"' && m[1] !== "'") problems.push(`${rel}: resultKey(${view}...) -- the view must be a string literal`);
+      else if (!views[view]) problems.push(`${rel}: resultKey("${view}") -- "${view}" isn't in ${VIEWS_DIR}/views.json`);
+      else if (views[view] !== f) problems.push(`${rel}: resultKey("${view}") -- only ${relative(rootDir, views[view])} may build that view's key`);
+    }
+    if (/\bcachedResult\s*(?:<[^>]*>)?\(/.test(text) && !modules.has(f)) problems.push(`${rel}: calls cachedResult outside a view module named in ${VIEWS_DIR}/views.json`);
+  }
+  if (problems.length) throw new ViewListError(problems.join("\n"));
+  return views;
+}
+
+/** Each view's files (absolute, sorted), as described above. */
+export function viewFiles(rootDir = root, views = checkedViews(rootDir)) {
+  const src = filesUnder(join(rootDir, "src")).filter((f) => !isTest(f));
+  // Who imports whom, for the walk up to the routes.
+  const importers = new Map();
+  for (const f of src) for (const d of importsOf(f, rootDir, true)) {
+    if (!importers.has(d)) importers.set(d, new Set());
+    importers.get(d).add(f);
+  }
+  const always = ALWAYS.map((p) => join(rootDir, p)).filter((p) => existsSync(p));
+  const out = {};
+  for (const [view, mod] of Object.entries(views)) {
+    const up = new Set([mod]);
+    const stack = [mod];
+    while (stack.length) for (const i of importers.get(stack.pop()) ?? []) if (!up.has(i)) (up.add(i), stack.push(i));
+    out[view] = [...importClosure([...up, ...always], rootDir, true)].sort();
+  }
+  return out;
+}
+
+/** The hash of one view's files (and the lockfile). */
+export function hashViewFiles(view, files, rootDir = root) {
+  const h = createHash("sha256").update(VIEW_SALT).update("\0").update(view).update("\0");
+  for (const f of files) h.update(relative(rootDir, f)).update("\0").update(readFileSync(f)).update("\0");
+  const lock = join(rootDir, "package-lock.json");
+  if (existsSync(lock)) h.update("package-lock.json\0").update(readFileSync(lock));
+  return h.digest("hex").slice(0, 16);
+}
+
+/** { view: version } for every view; null when there's no list here or the walk failed. Throws ViewListError
+ * (fails the build) when the list doesn't match the code. */
+export function viewCode(rootDir = root) {
+  if (!existsSync(join(rootDir, VIEWS_DIR, "views.json"))) {
+    log("view_code: no view list here; every view uses server_code");
+    return null;
+  }
+  let views;
+  try {
+    views = checkedViews(rootDir);
+  } catch (e) {
+    if (e instanceof ViewListError) throw e;
+    log(`view_code: the view list couldn't be read (${e.message.split("\n")[0]}); every view uses server_code`);
+    return null;
+  }
+  try {
+    const files = viewFiles(rootDir, views);
+    const out = {};
+    for (const [view, fs] of Object.entries(files)) out[view] = hashViewFiles(view, fs, rootDir);
+    log(`view_code for ${Object.keys(out).length} view(s): ${Object.entries(files).map(([v, fs]) => `${v} ${fs.length}`).join(", ")} file(s)`);
+    return out;
+  } catch (e) {
+    log(`view_code: the walk failed (${e.message.split("\n")[0]}); every view uses server_code`);
+    return null;
+  }
+}
+
 async function main() {
   const envCommit = (process.env.RENDER_GIT_COMMIT ?? "").trim();
   let info = fromGit();
@@ -189,6 +337,7 @@ async function main() {
     commits: info?.commits ?? null,
     source: info?.commits ? info.source : null,
     server_code: serverCode(commit),
+    view_code: viewCode(),
   };
   log(result.commits ? `${result.commits.length} commit(s) listed from ${result.source}, newest ${result.commit}` : `no commit list (commits: null); commit ${result.commit ?? "unknown"}`);
 
@@ -201,13 +350,24 @@ async function main() {
   }
 }
 
-// Never fail the build: on any error, say so, write `commits: null` if the file can still be written, and exit 0.
-main().catch((e) => {
-  log(`failed (${e && e.message ? e.message.split("\n")[0] : e}); writing commits: null`);
-  try {
-    mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, JSON.stringify({ commit: null, built_at: new Date().toISOString(), commits: null, source: null, server_code: null }) + "\n");
-  } catch {
-    // The app reads a missing file as "no list" too.
-  }
-}).finally(() => process.exit(0));
+// Never fail the build over the history: on any error, say so, write `commits: null` if the file can still be
+// written, and exit 0. The one exception is a view list that doesn't match the code (ViewListError, above):
+// that fails the build, so a view can't go live without its own code version.
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  let code = 0;
+  main().catch((e) => {
+    if (e instanceof ViewListError) {
+      console.error(`[build-info] the results cache's view list doesn't match the code:\n${e.message}`);
+      code = 1;
+      return;
+    }
+    log(`failed (${e && e.message ? e.message.split("\n")[0] : e}); writing commits: null`);
+    try {
+      mkdirSync(dirname(out), { recursive: true });
+      writeFileSync(out, JSON.stringify({ commit: null, built_at: new Date().toISOString(), commits: null, source: null, server_code: null, view_code: null }) + "\n");
+    } catch {
+      // The app reads a missing file as "no list" too.
+    }
+  }).finally(() => process.exit(code));
+}

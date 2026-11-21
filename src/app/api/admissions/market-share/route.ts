@@ -3,7 +3,7 @@ import { admissionsCaller } from "@/lib/admissions/auth";
 import { listsForRoute, setsInUse } from "@/lib/sets/admissions-route";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
-import { cachedMarket } from "@/lib/cached-views";
+import { cachedMarket } from "@/lib/cached-views/admissions-market-share";
 
 // VicData 0.7 admissions r1 (A5): Market share -- the school's share of the entry age (and its
 // age band) across the rivals plus the school, 2019/20-2025/26, with ranks (R-ADM-GROUP-SHARE).

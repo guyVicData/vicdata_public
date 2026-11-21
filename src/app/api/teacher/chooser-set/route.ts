@@ -4,7 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
 import type { RankingFilters } from "@/lib/comparator-chooser";
-import { cachedFixedSet, cachedNearestSet, cachedRankingPopulationSet, cachedRankingSet } from "@/lib/cached-views";
+import { cachedFixedSet } from "@/lib/cached-views/chooser-urns";
+import { cachedNearestSet } from "@/lib/cached-views/chooser-nearest";
+import { cachedRankingPopulationSet } from "@/lib/cached-views/chooser-ranking-full";
+import { cachedRankingSet } from "@/lib/cached-views/chooser-ranking";
 
 // Teacher view comparator chooser: the rows and series the Comparisons column reads for a
 // choice made in the chooser but not (necessarily) saved -- a list of schools, or a

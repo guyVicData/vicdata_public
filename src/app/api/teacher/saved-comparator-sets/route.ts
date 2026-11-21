@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { KsStage } from "@/lib/academic-data-view";
 import { isIndependent, type PoolSchool } from "@/lib/teacher-view-rankings";
 import { neighbourPool, type NeighbourRow } from "@/lib/teacher-view-comparator-series";
-import { cachedFixedSetRanks } from "@/lib/cached-views";
+import { cachedFixedSetRanks } from "@/lib/cached-views/teacher-saved-set-ranks";
 import { PERSONAL_COMPARATOR_CAP, readViewAsStore, type SavedComparatorSet, type SavedRanking } from "@/lib/teacher-view-saved-sets";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { parseViewAsGroup, PEEK_HEADER, viewAsForRequest, viewAsMembership, ViewAsUnconfirmed } from "@/lib/view-as";

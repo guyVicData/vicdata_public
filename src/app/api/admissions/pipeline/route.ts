@@ -3,7 +3,7 @@ import { admissionsCaller } from "@/lib/admissions/auth";
 import { listsForRoute, setsInUse } from "@/lib/sets/admissions-route";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
-import { cachedPipeline } from "@/lib/cached-views";
+import { cachedPipeline } from "@/lib/cached-views/admissions-pipeline";
 import { savedCatchmentKm } from "@/lib/smt/catchment-server";
 
 // VicData 0.7 admissions r1 (A5): Pipelines for one entry point -- the pool by entry year (past

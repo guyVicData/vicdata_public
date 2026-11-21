@@ -1,0 +1,19 @@
+{
+  "smt/school": "smt-school.ts",
+  "smt/overview": "smt-overview.ts",
+  "smt/academic": "smt-academic.ts",
+  "smt/pupils": "smt-pupils.ts",
+  "smt/context": "smt-context.ts",
+  "smt/context/map": "smt-context-map.ts",
+  "admissions/pipeline": "admissions-pipeline.ts",
+  "admissions/market-share": "admissions-market-share.ts",
+  "admissions/rivals": "admissions-rivals.ts",
+  "admissions/shape": "admissions-shape.ts",
+  "front-door/teacher": "front-door-teacher.ts",
+  "chooser/nearest": "chooser-nearest.ts",
+  "chooser/urns": "chooser-urns.ts",
+  "chooser/ranking": "chooser-ranking.ts",
+  "chooser/ranking-full": "chooser-ranking-full.ts",
+  "teacher/saved-set-ranks": "teacher-saved-set-ranks.ts",
+  "teacher/dashboard": "teacher-dashboard.ts"
+}

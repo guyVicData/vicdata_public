@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setFrom, smtCaller } from "@/lib/smt/auth";
 import { academicOffer } from "@/lib/smt/academic";
-import { cachedAcademic, cachedSmtSchool } from "@/lib/cached-views";
+import { cachedAcademic } from "@/lib/cached-views/smt-academic";
+import { cachedSmtSchool } from "@/lib/cached-views/smt-school";
 import { parseAcademic } from "@/lib/smt/qual-groups";
 
 // VicData 0.8 SMT Academic by qualification: Academic for one state -- the level, the mode (Results ·

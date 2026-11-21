@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setFrom, smtCaller } from "@/lib/smt/auth";
-import { cachedOverview, cachedSmtSchool } from "@/lib/cached-views";
+import { cachedOverview } from "@/lib/cached-views/smt-overview";
+import { cachedSmtSchool } from "@/lib/cached-views/smt-school";
 
 // VicData 0.8 SMT r1: Overview -- the school now, the scorecard against the set, the region and
 // England, the flags, and row 2's trends. POST { urn, set: { kind, label, urns } }: a set is the

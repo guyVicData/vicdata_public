@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveCaller } from "@/lib/view-as-server";
 import { tracedFetch } from "@/lib/build-trace";
-import { cachedTeacherModel } from "@/lib/cached-views";
+import { cachedTeacherModel } from "@/lib/cached-views/front-door-teacher";
 
 // Speed plan §4.2 item 2: after the caller check, through the shared results cache (public rows only).
 export async function GET(request: NextRequest) {

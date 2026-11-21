@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { smtCaller } from "@/lib/smt/auth";
-import { cachedContext, cachedSmtSchool } from "@/lib/cached-views";
+import { cachedContext } from "@/lib/cached-views/smt-context";
+import { cachedSmtSchool } from "@/lib/cached-views/smt-school";
 import { parseLevel } from "@/lib/smt/levels";
 import { resolveCatchment } from "@/lib/smt/catchment";
 import { savedCatchmentKm } from "@/lib/smt/catchment-server";

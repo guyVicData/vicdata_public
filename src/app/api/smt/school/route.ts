@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { smtCaller } from "@/lib/smt/auth";
 import { smtSchool } from "@/lib/smt/school";
 import { traced } from "@/lib/build-trace";
-import { cachedSmtSchool } from "@/lib/cached-views";
+import { cachedSmtSchool } from "@/lib/cached-views/smt-school";
 
 // VicData 0.8 SMT r1: the school as SMT's chips need it -- phases, IGCSE, mixed, boarding, the
 // subject areas at GCSE and Post-16, the latest years. GET ?urn. Public data behind the SMT gate.

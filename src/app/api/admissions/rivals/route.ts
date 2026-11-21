@@ -3,7 +3,7 @@ import { admissionsCaller } from "@/lib/admissions/auth";
 import { listsForRoute } from "@/lib/sets/admissions-route";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
-import { cachedRivals } from "@/lib/cached-views";
+import { cachedRivals } from "@/lib/cached-views/admissions-rivals";
 import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // VicData 0.7 admissions r1 (A5): the rivals -- ranks (headline, subject area; subject when one is

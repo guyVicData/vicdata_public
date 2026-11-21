@@ -3,7 +3,7 @@ import { admissionsCaller } from "@/lib/admissions/auth";
 import { listsForRoute, setsInUse } from "@/lib/sets/admissions-route";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
-import { cachedShape } from "@/lib/cached-views";
+import { cachedShape } from "@/lib/cached-views/admissions-shape";
 
 // VicData 0.7 admissions r1 (A5): shape and size -- the school's shape each year since 2019/20 (its
 // stability), its roll by phase with the XS-XL badges, the feeder area's local shape, and the

@@ -2,7 +2,8 @@
 // npx tsx --test src/lib/results-cache.test.ts
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { cachedResult, dataVersionOf, resultKey, resultsCacheStats, setResultsCacheForTests, stableJson, type ResultsStore, type RowToWrite, type StoredRow, type Versions } from "./results-cache";
+import { cachedResult, codeFor, dataVersionOf, postgresStore, resultKey, resultsCacheStats, setResultsCacheForTests, stableJson, viewKeyPattern, viewOfKey, type ResultsStore, type RowToWrite, type StoredRow, type Versions } from "./results-cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cachedReference, clearReferenceCache } from "./server-cache";
 import { markDegraded, tracedFetch, traced, isDegraded } from "./build-trace";
 
@@ -409,4 +410,151 @@ test("a new (settled) data version empties the in-process values once", async ()
   assert.equal(await cachedReference("sub:population", async () => (reads++, "new population")), "new population", "dropped on the new version");
   await cachedResult("k", b.fn);
   assert.equal(await cachedReference("sub:population", async () => (reads++, "again")), "new population", "only once");
+});
+
+// ---- per-view code versions (scripts/write-build-info.mjs's view_code) --------------------------------
+
+test("per-view code: a view's answers are kept under its own version; a change to one view's code leaves the others'", async () => {
+  versions = { data: "d1", code: "server1", views: { "smt/overview": "ov1", "teacher/dashboard": "td1" }, settled: true };
+  setup();
+  const ov = builder(() => ({ v: "overview" }));
+  const td = builder(() => ({ v: "dashboard" }));
+  const other = builder(() => ({ v: "unlisted" }));
+  const kOv = resultKey("smt/overview", "110110", { set: 1 });
+  const kTd = resultKey("teacher/dashboard", "110110", { phase: "ks4" });
+  const kOther = resultKey("not/listed", "110110", {});
+  await cachedResult(kOv, ov.fn);
+  await cachedResult(kTd, td.fn);
+  await cachedResult(kOther, other.fn);
+  await flush();
+  assert.equal(mem.rows.get(kOv)?.code_version, "ov1", "stored under the view's own version");
+  assert.equal(mem.rows.get(kTd)?.code_version, "td1");
+  assert.equal(mem.rows.get(kOther)?.code_version, "server1", "a view the build has no version for: server_code");
+  // A deploy that changes only the dashboard's code: a fresh process reads the overview from the store and
+  // builds the dashboard again.
+  versions = { ...versions, views: { "smt/overview": "ov1", "teacher/dashboard": "td2" } };
+  restart();
+  await cachedResult(kOv, ov.fn);
+  await cachedResult(kTd, td.fn);
+  await cachedResult(kOther, other.fn);
+  await flush();
+  assert.equal(ov.runs, 1, "the overview's code didn't change: from the store");
+  assert.equal(td.runs, 2, "the dashboard's did: built again");
+  assert.equal(other.runs, 1, "server_code unchanged");
+  assert.equal(mem.rows.get(kTd)?.code_version, "td2");
+  // The walk failed in a later build (no view_code): every view on server_code -- nothing old matches.
+  versions = { data: "d1", code: "server2", views: null, settled: true };
+  restart();
+  await cachedResult(kOv, ov.fn);
+  await cachedResult(kTd, td.fn);
+  assert.equal(ov.runs, 2);
+  assert.equal(td.runs, 3);
+});
+
+test("per-view code: in memory too (L1) the version is the view's own; the version-moved check is per view", async () => {
+  versions = { data: "d1", code: "s", views: { a: "a1", b: "b1" }, settled: true };
+  setup();
+  const a = builder(() => 1);
+  const b = builder(() => 2);
+  await cachedResult(resultKey("a", "1", {}), a.fn);
+  await cachedResult(resultKey("b", "1", {}), b.fn);
+  versions = { ...versions, views: { a: "a1", b: "b2" } };
+  await cachedResult(resultKey("a", "1", {}), a.fn);
+  await cachedResult(resultKey("b", "1", {}), b.fn);
+  assert.equal(a.runs, 1, "a: from memory");
+  assert.equal(b.runs, 2, "b: its version moved");
+  // b's version moves while it is being built: not stored; a's moving doesn't stop b's write.
+  let after: Versions = { ...versions, views: { a: "a9", b: "b2" } };
+  setResultsCacheForTests({ store: mem.store, versions: async () => after, now: () => clock.t, enabled: true, defer: (fn) => fn() });
+  versions = after;
+  const writes = mem.calls.write;
+  await cachedResult(resultKey("b", "2", {}), b.fn);
+  await flush();
+  assert.equal(mem.calls.write, writes + 1, "another view's version moving doesn't matter");
+  const before: Versions = { ...after };
+  setResultsCacheForTests({
+    store: mem.store,
+    versions: (() => {
+      let n = 0;
+      return async () => (n++ === 0 ? before : { ...before, views: { a: "a9", b: "b3" } });
+    })(),
+    now: () => clock.t,
+    enabled: true,
+    defer: (fn) => fn(),
+  });
+  await cachedResult(resultKey("b", "3", {}), b.fn);
+  await flush();
+  assert.equal(mem.calls.write, writes + 1, "b's own version moving: not stored");
+  assert.equal(resultsCacheStats().skips["version moved"], 1);
+});
+
+test("per-view code: keys and fallbacks", () => {
+  assert.equal(viewOfKey(resultKey("smt/context/map", "1", {})), "smt/context/map");
+  assert.equal(viewOfKey("no-pipe"), "");
+  assert.equal(codeFor({ code: "s", views: { "smt/context": "c" } }, "smt/context/map"), "s", "smt/context's version isn't smt/context/map's");
+  assert.equal(codeFor({ code: "s", views: { "smt/context": "c" } }, "smt/context"), "c");
+  assert.equal(codeFor({ code: "s", views: null }, "smt/context"), "s");
+  assert.equal(codeFor({ code: "s", views: { toString: "x" } as Record<string, string> }, "constructor"), "s", "only the view's own entry");
+  assert.equal(viewKeyPattern("smt/context"), "smt/context|%");
+  assert.equal(viewKeyPattern("a_b%c"), "a\\_b\\%c|%");
+});
+
+// The Postgres store's prune, through a stand-in client that applies the filters it is sent to rows in memory.
+type PgRow = { key: string; data_version: string; code_version: string; created_at: string; last_read_at: string };
+function fakeDb(rows: PgRow[]) {
+  const like = (pattern: string) => new RegExp("^" + pattern.replace(/\\(.)|%|_|[.*+?^${}()|[\]\\/]/g, (m, esc) => (esc !== undefined ? esc.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&") : m === "%" ? ".*" : m === "_" ? "." : "\\" + m)) + "$");
+  const unq = (s: string) => s.replace(/^"|"$/g, "");
+  const orTest = (expr: string) => {
+    // data_version.neq."x",code_version.neq."y"  or  created_at.lt."t",last_read_at.lt."u"
+    const parts = expr.split(/,(?=[a-z_]+\.)/).map((p) => p.match(/^([a-z_]+)\.(neq|lt)\.(.*)$/)!);
+    return (r: PgRow) => parts.some(([, col, op, v]) => (op === "neq" ? r[col as keyof PgRow] !== unq(v) : r[col as keyof PgRow] < unq(v)));
+  };
+  const client = {
+    from() {
+      const tests: ((r: PgRow) => boolean)[] = [];
+      const q = {
+        delete: () => q,
+        neq: (c: keyof PgRow, v: string) => (tests.push((r) => r[c] !== v), q),
+        lt: (c: keyof PgRow, v: string) => (tests.push((r) => r[c] < v), q),
+        like: (c: keyof PgRow, p: string) => (tests.push((r) => like(p).test(r[c])), q),
+        or: (e: string) => (tests.push(orTest(e)), q),
+        then(res: (x: { error: null }) => unknown) {
+          for (let i = rows.length - 1; i >= 0; i--) if (tests.every((t) => t(rows[i]))) rows.splice(i, 1);
+          return Promise.resolve({ error: null }).then(res);
+        },
+      };
+      return q;
+    },
+  };
+  return client as unknown as SupabaseClient;
+}
+
+test("per-view code: the Postgres prune compares each row with its OWN view's version", async () => {
+  const old = "2026-11-20T10:00:00.000Z";
+  const fresh = "2026-11-20T11:59:00.000Z";
+  const row = (key: string, code: string, created = old, data = "d1"): PgRow => ({ key, data_version: data, code_version: code, created_at: created, last_read_at: created });
+  const rows = [
+    row("smt/overview|1|h", "ov1"), // current: kept
+    row("smt/overview|2|h", "ov0"), // its view's old code: gone
+    row("smt/overview|3|h", "ov0", fresh), // the same, but made in the last 15 minutes (a deploy overlapping): kept
+    row("smt/context|1|h", "cx1"), // current: kept
+    row("smt/context/map|1|h", "cx1"), // smt/context's version isn't smt/context/map's: gone
+    row("smt/context/map|2|h", "map1"), // current: kept
+    row("teacher/dashboard|1|h", "ov1"), // another view's version: gone
+    row("teacher/dashboard|2|h", "server-old"), // a row from the single-version days: gone
+    row("gone/view|1|h", "whatever"), // a view this build doesn't list: left to the age rules
+    row("smt/overview|9|h", "ov1", old, "d0"), // another data version: gone
+  ];
+  setResultsCacheForTests({ db: fakeDb(rows) });
+  const cut = { mismatchBefore: new Date("2026-11-20T11:45:00Z"), expiredBefore: new Date("2026-11-19T12:00:00Z"), unreadBefore: new Date("2026-09-21T12:00:00Z") };
+  await postgresStore.prune({ data: "d1", code: "server-new", views: { "smt/overview": "ov1", "smt/context": "cx1", "smt/context/map": "map1", "teacher/dashboard": "td1" } }, cut);
+  assert.deepEqual(rows.map((r) => r.key).sort(), ["gone/view|1|h", "smt/context/map|2|h", "smt/context|1|h", "smt/overview|1|h", "smt/overview|3|h"]);
+  // Without view_code (the walk failed): the single version, as before.
+  await postgresStore.prune({ data: "d1", code: "ov1", views: null }, cut);
+  assert.deepEqual(rows.map((r) => r.key).sort(), ["smt/overview|1|h", "smt/overview|3|h"]);
+  // The age rules, either way.
+  rows.push(row("smt/overview|4|h", "ov1", "2026-11-18T00:00:00.000Z"));
+  await postgresStore.prune({ data: "d1", code: "s", views: { "smt/overview": "ov1" } }, cut);
+  assert.ok(!rows.some((r) => r.key === "smt/overview|4|h"), "past the maximum age");
+  setResultsCacheForTests({});
 });

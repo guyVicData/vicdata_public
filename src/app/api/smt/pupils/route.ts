@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setFrom, smtCaller } from "@/lib/smt/auth";
-import { cachedPupils, cachedSmtSchool } from "@/lib/cached-views";
+import { cachedPupils } from "@/lib/cached-views/smt-pupils";
+import { cachedSmtSchool } from "@/lib/cached-views/smt-school";
 import { parseLevel } from "@/lib/smt/levels";
 
 // VicData 0.8 SMT r2: Pupils -- the roll now, shape and size, Admissions' entry points, leaving at 16

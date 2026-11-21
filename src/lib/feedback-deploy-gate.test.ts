@@ -55,7 +55,7 @@ test("the inbox says what a status rests on", () => {
 
 test("R-BUILD-INFO: the list is the build's own, or null", () => {
   const list = ["6bddb6dbe91e", "030d546fef79"];
-  assert.deepEqual(parseBuildInfo(JSON.stringify({ commit: "6bddb6dbe91e", built_at: "2026-11-06T10:40:00Z", commits: list }), {}), { commit: "6bddb6dbe91e", built_at: "2026-11-06T10:40:00Z", commits: list, server_code: null });
+  assert.deepEqual(parseBuildInfo(JSON.stringify({ commit: "6bddb6dbe91e", built_at: "2026-11-06T10:40:00Z", commits: list }), {}), { commit: "6bddb6dbe91e", built_at: "2026-11-06T10:40:00Z", commits: list, server_code: null, view_code: null });
   assert.equal(parseBuildInfo(JSON.stringify({ commit: "6bddb6dbe91e", commits: ["030d546fef79"] }), {}).commits, null, "a list that doesn't start at the build isn't its own");
   assert.equal(parseBuildInfo(JSON.stringify({ commit: "6bddb6dbe91e", commits: null }), {}).commits, null, "no list says so");
   assert.equal(parseBuildInfo("not json", { RENDER_GIT_COMMIT: "6bddb6dbe91eb0fa" }).commit, "6bddb6dbe91e", "no file: the commit from Render, no list");

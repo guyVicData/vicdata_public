@@ -7,7 +7,7 @@
 // For real requests (Leighton Park 110110 and George Dixon 138695: SMT Overview, Academic, Pupils,
 // Context and its map against the nearest set and the big ranking sets; Admissions' four views at
 // 110110; Teacher's dashboard and home), through the same functions the routes call
-// (src/lib/cached-views.ts), with the inputs resolved as the routes resolve them:
+// (src/lib/cached-views/, one module per view), with the inputs resolved as the routes resolve them:
 //   1. a first process, the cache ON over a local PGlite stand-in for public.results_cache (the
 //      migration applied; never the live table): each answer is built cold and stored; then the cache
 //      OFF: each built again; the two JSONs must be equal byte for byte;
@@ -20,10 +20,24 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { liveVersions, resultsCacheStats, setResultsCacheForTests, type ResultsStore, type Versions } from "../src/lib/results-cache";
-import { cachedAcademic, cachedContext, cachedContextMap, cachedFixedSet, cachedMarket, cachedNearestSet, cachedOverview, cachedPipeline, cachedPupils, cachedRankingPopulationSet, cachedRankingSet, cachedRivals, cachedShape, cachedSmtSchool, cachedTeacherModel } from "../src/lib/cached-views";
-import { buildTeacherDashboard } from "../src/lib/teacher-dashboard-data";
-import { cachedResult, resultKey } from "../src/lib/results-cache";
+import { liveVersions, resultsCacheStats, setResultsCacheForTests, viewKeyPattern, type ResultsStore, type Versions } from "../src/lib/results-cache";
+import { cachedSmtSchool } from "../src/lib/cached-views/smt-school";
+import { cachedOverview } from "../src/lib/cached-views/smt-overview";
+import { cachedAcademic } from "../src/lib/cached-views/smt-academic";
+import { cachedPupils } from "../src/lib/cached-views/smt-pupils";
+import { cachedContext } from "../src/lib/cached-views/smt-context";
+import { cachedContextMap } from "../src/lib/cached-views/smt-context-map";
+import { cachedPipeline } from "../src/lib/cached-views/admissions-pipeline";
+import { cachedMarket } from "../src/lib/cached-views/admissions-market-share";
+import { cachedRivals } from "../src/lib/cached-views/admissions-rivals";
+import { cachedShape } from "../src/lib/cached-views/admissions-shape";
+import { cachedTeacherModel } from "../src/lib/cached-views/front-door-teacher";
+import { cachedTeacherDashboard } from "../src/lib/cached-views/teacher-dashboard";
+import { cachedNearestSet } from "../src/lib/cached-views/chooser-nearest";
+import { cachedFixedSet } from "../src/lib/cached-views/chooser-urns";
+import { cachedRankingSet } from "../src/lib/cached-views/chooser-ranking";
+import { cachedRankingPopulationSet } from "../src/lib/cached-views/chooser-ranking-full";
+import { cachedFixedSetRanks } from "../src/lib/cached-views/teacher-saved-set-ranks";
 import { smtSchool, type SmtSchool } from "../src/lib/smt/school";
 import { academicOffer } from "../src/lib/smt/academic";
 import { parseAcademic } from "../src/lib/smt/qual-groups";
@@ -80,7 +94,12 @@ async function pgliteStore(dir: string): Promise<{ store: ResultsStore; close: (
       await db.query(`update results_cache set last_read_at = $1 where key = $2`, [at.toISOString(), key]);
     },
     async prune(v, cut) {
-      await db.query(`delete from results_cache where (data_version <> $1 or code_version <> $2) and created_at < $3`, [v.data, v.code, cut.mismatchBefore.toISOString()]);
+      const views = v.views ? Object.entries(v.views) : [];
+      if (!views.length) await db.query(`delete from results_cache where (data_version <> $1 or code_version <> $2) and created_at < $3`, [v.data, v.code, cut.mismatchBefore.toISOString()]);
+      else {
+        await db.query(`delete from results_cache where data_version <> $1 and created_at < $2`, [v.data, cut.mismatchBefore.toISOString()]);
+        for (const [view, code] of views) await db.query(`delete from results_cache where key like $1 and code_version <> $2 and created_at < $3`, [viewKeyPattern(view), code, cut.mismatchBefore.toISOString()]);
+      }
       await db.query(`delete from results_cache where created_at < $1 or last_read_at < $2`, [cut.expiredBefore.toISOString(), cut.unreadBefore.toISOString()]);
     },
   };
@@ -159,7 +178,7 @@ async function admissionsCases(urn: string): Promise<Case[]> {
 function teacherCases(urn: string): Case[] {
   const cases: Case[] = [];
   for (const p of ["ks4", "ks5"] as const) {
-    cases.push({ name: `teacher/dashboard ${urn} ${p}`, run: () => cachedResult(resultKey("teacher/dashboard", urn, { phase: p }), () => buildTeacherDashboard(anon, urn, p)) });
+    cases.push({ name: `teacher/dashboard ${urn} ${p}`, run: () => cachedTeacherDashboard(anon, urn, p) });
     cases.push({ name: `front-door/teacher ${urn} ${p}`, run: () => cachedTeacherModel(anon, urn, p, { focusKey: null, ticked: [], full: false, lite: false }) });
     cases.push({ name: `front-door/teacher ${urn} ${p} full`, run: () => cachedTeacherModel(anon, urn, p, { focusKey: null, ticked: [], full: true, lite: false }) });
   }
@@ -195,6 +214,9 @@ async function chooserCases(): Promise<Case[]> {
   for (const r of [rankings[0], rankings[3]]) cases.push({ name: `chooser/ranking ${r.tag}`, run: () => cachedRankingSet(r.urn, r.t.name, r.phase, r.f, r.t.la) });
   const near = await cachedNearestSet("110110", "ks4");
   cases.push({ name: `chooser/urns 110110 ks4 (the nearest ten as a list)`, run: () => cachedFixedSet("110110", "ks4", near.rows.map((r) => r.urn).filter((u) => u !== "110110")) });
+  // /api/teacher/saved-comparator-sets' ranking: a pure function of the school, the phase and each set's id and URNs.
+  const nearUrns = near.rows.map((r) => r.urn).filter((u) => u !== "110110");
+  for (const p of ["ks4", "ks5"] as const) cases.push({ name: `teacher/saved-set-ranks 110110 ${p}`, run: () => cachedFixedSetRanks("110110", [{ id: "near", urns: nearUrns }, { id: "half", urns: nearUrns.slice(0, 5) }], p) });
   return cases;
 }
 
@@ -207,7 +229,7 @@ async function allCases(): Promise<Case[]> {
     ...(want("smt/overview", "smt/academic", "smt/pupils", "smt/context") ? [...(await smtCases("110110")), ...(await smtCases("138695"))] : []),
     ...(want("admissions/") ? await admissionsCases("110110") : []),
     ...(want("teacher/dashboard", "front-door/teacher") ? [...teacherCases("110110"), ...teacherCases("138695")] : []),
-    ...(want("smt/school", "chooser/") ? await chooserCases() : []),
+    ...(want("smt/school", "chooser/", "teacher/saved-set-ranks") ? await chooserCases() : []),
   ]);
 }
 
