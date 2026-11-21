@@ -3734,6 +3734,11 @@ const RUNNERS: Record<string, Runner> = {
     const r = unitByRule("src/lib/front-door/feedback-a.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
   },
+  // 0.8 front door part 3, Q3: "Forgot password?" and /reset-password, the pure half.
+  async passwordReset(_L, rule) {
+    const r = unitByRule("src/lib/password-reset.test.ts", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
   async groupWalksLoad() {
     const r = groupTests(["src/lib/front-door/group-walks-load.test.tsx"], null);
     return { pass: r.pass, detail: r.detail };

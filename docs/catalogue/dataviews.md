@@ -2973,7 +2973,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-CHART-AXES |
 | Used on | SMT Academic › The set › Trends |
-| Note | 0.8 feedback C (C10): Teacher's whole-school dumbbell, per level. |
+| Note | Each subject's entries in the first year shown and the latest, at this level; subjects with entries in only one of the two years are left out. |
 | Method | 1. One row per subject and qualification: its entries in the first year (ring) and the latest (dot), largest first.<br>2. The qualification is named only where the level has more than one; the level's main one is left unnamed.<br>3. Colour is the subject family; the dashed row is the plain average of the subjects drawn.<br>Sources: The subject-by-qualification rollup (DfE subject tables): the same entries as column 1<br>Rounding: Entries whole numbers |
 
 ### DV-SMT-A-MOVES — Biggest moves

@@ -4,7 +4,8 @@ import type { NextConfig } from "next";
 // indexed, whatever ALLOW_INDEXING says -- every route that shows one school or carries a URN sends
 // `X-Robots-Tag: noindex, nofollow` (and each has page-level `robots` noindex in its segment layout).
 // robots.ts must NOT Disallow these paths: a crawler that can't fetch a page never sees its noindex.
-export const NOINDEX_SOURCES = ["/schools/:path*", "/join/:path*", "/sets", "/sets/:path*", "/teacher", "/teacher/:path*", "/dashboards", "/dashboards/:path*", "/member", "/member/:path*"];
+// R-PASSWORD-RESET: /login (with "Forgot password?") and /reset-password are never indexed either.
+export const NOINDEX_SOURCES = ["/schools/:path*", "/join/:path*", "/sets", "/sets/:path*", "/teacher", "/teacher/:path*", "/dashboards", "/dashboards/:path*", "/member", "/member/:path*", "/login", "/reset-password"];
 
 const nextConfig: NextConfig = {
   async headers() {

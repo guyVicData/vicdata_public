@@ -3234,6 +3234,18 @@ export const RULES: Rule[] = [
     origin: "0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7)",
     status: "active",
   },
+  // ------------------------------------------------------------------ 0.8 front door part 3, Q3
+  {
+    id: "R-PASSWORD-RESET",
+    statement:
+      "\"Forgot password?\" on /login opens a form that emails a link (Supabase resetPasswordForEmail, redirectTo this site's own /reset-password). Its answer never says whether an account exists: success, and any answer about the address, read \"If that address has a VicData account, we've sent a link…\"; only a second press inside 60 seconds (\"You can ask for another in {n} seconds\", counted on this browser for any address), the hourly email limit and a send that failed read differently. /reset-password takes the recovery session from the link's URL fragment (the browser client's implicit flow), asks for the new password twice with sign-up's rules (at least 8 characters), saves it (updateUser) and lands the reader signed in on /member; a used or expired link, or no link, says so plainly and offers a new one. Both pages are never indexed.",
+    why: "Front door part 3, Q3: A1 allows a password-reset route, and there was none -- a tester who forgot their password had no way back in.",
+    appliesTo: "/login, /reset-password",
+    enforcedIn: ["src/lib/password-reset.ts", "src/components/auth/ForgotPasswordForm.tsx", "src/app/login/page.tsx", "src/app/reset-password/page.tsx", "src/app/login/layout.tsx", "src/app/reset-password/layout.tsx", "next.config.ts:NOINDEX_SOURCES", "src/lib/password-reset.test.ts"],
+    testCase: { urn: "110110", school: "no school: the sign-in pages (unit tests on the messages, the redirect URL, the wait, the link's fragment and the password rules)", expect: "The confirmation is the same for any address; the link returns to {origin}/reset-password; a press inside the wait says how long; an expired link reads as expired; 7-character or mismatched passwords are refused; both pages noindex.", check: "passwordReset" },
+    origin: "0.8 front door part 3, Q3 (docs/v0.8/vicdata_0_8_front_door_part3_signin_gate_security_claude_code_prompt_v1.md), 21 Nov 2026",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

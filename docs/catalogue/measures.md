@@ -53,7 +53,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ Partial: points-eligible entries only, min school count 1 |
 | Honest number types | totals, pct_change, market_share, index100, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-FOCUS-NEVER-FILTERED, R-KS4-SUBJECT-DEDUP, R-QUAL-FAMILY-MATCH, R-SELF-INCLUSIVE-GROUP, R-GEO-APPLIES, R-GEO-POINTS-ELIGIBLE, R-MIN-SCHOOLS, R-IGCSE-EXCL, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-INDEX-HEADCOUNTS, R-PERIOD-TRIM, R-DONUT-COUNTS-ONLY |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools (route.ts:169), src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (route.ts:172)<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles<br>- src/app/api/teacher/subject-geography/route.ts<br>- seriesByUrn.candidates from academic-data-view.ts:entriesSeries (headline pupil_count) in dashboard, chooser-set and saved-sets |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts -> src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools (teacher-dashboard-data.ts:161), src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (teacher-dashboard-data.ts:164)<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles<br>- src/app/api/teacher/subject-geography/route.ts<br>- seriesByUrn.candidates from academic-data-view.ts:entriesSeries (headline pupil_count) in dashboard, chooser-set and saved-sets |
 | Known gaps | - The item list (raw facts, latest year) and the trend (rollup) come from different tables.<br>- No all-qualification area benchmark. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
@@ -76,7 +76,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ academic_subject_geography_aggregate, min school count 1 (dashboard/route.ts:72) |
 | Honest number types | points, change_points, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-KS4-POINTS-GCSE-FULL, R-POINTS-SAME-QUAL, R-MIN-SCHOOLS, R-SAME-YEAR-BENCH, R-GEO-APPLIES, R-FOCUS-NEVER-FILTERED, R-KS4-SUBJECT-DEDUP, R-QUAL-FAMILY-MATCH, R-IGCSE-EXCL, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-PERIOD-TRIM, R-NUMBER-TYPE-HONESTY |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (route.ts:172); England via englandAverages (route.ts:46-74)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts -> src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (teacher-dashboard-data.ts:164); England via englandAverages (teacher-dashboard-data.ts:65-90)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
 | Known gaps | - Rename 'Average point score' -> 'Average points' (C3) done in 0.6 night 2 (teacher-view-panels.ts measuresFor); the Post-16 whole-school headline keeps DfE's own name.<br>- Change is shown in points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "points", changeOf, formatChange). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
@@ -122,7 +122,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✗ Not wired (R-NO-GRADE-RATE-GEO) |
 | Honest number types | rate, change_pp, rank |
 | Rules | R-GRADE-SCALE-MATCH, R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-NO-GRADE-RATE-GEO, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-RATE-PER-QUAL, R-NUMBER-TYPE-HONESTY, R-TREND-LINE-4YR |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
 | Known gaps | - Until the rollup lookup RPC is applied, comparator-grades reads every subject's facts for the set and filters to one subject (audit B §2); with it, one subject is read in the database.<br>- Change is shown in percentage points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "pp", changeOf, formatChange).<br>- No area benchmark is wired although the grade geography would give one. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
@@ -145,7 +145,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row (England not exempt at grade grain) |
 | Honest number types | rate, change_pp, totals, market_share, rank |
 | Rules | R-GRADE-SCALE-MATCH, R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-BANDS-ENGLAND-BENCH, R-DONUT-COUNTS-ONLY, R-MIN-SCHOOLS, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-RATE-PER-QUAL, R-NUMBER-TYPE-HONESTY |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
 | Known gaps | - Until the rollup lookup RPC is applied, comparator-grades reads every subject's facts for the set and filters to one subject (audit B §2); with it, one subject is read in the database. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
@@ -168,7 +168,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row (England not exempt at grade grain) |
 | Honest number types | totals, rate |
 | Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-MIN-SCHOOLS, R-MEASURE-FALLBACK, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-GRADE-SHARE |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
 | Known gaps | - Until the rollup lookup RPC is applied, comparator-grades reads every subject's facts for the set and filters to one subject (audit B §2); with it, one subject is read in the database.<br>- Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK).<br>- The set's share ticks cover the grades this school's spread draws; a grade only other schools have isn't drawn. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
@@ -191,7 +191,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ Partial: scored qualifications only, exact qualification (R-KS5-ENGLAND-EXACT) |
 | Honest number types | totals, pct_change, market_share, index100, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-KS5-ASAEA-EXCL, R-IB-NONSUBJECT, R-FOCUS-NEVER-FILTERED, R-QUAL-FAMILY-MATCH, R-SELF-INCLUSIVE-GROUP, R-GEO-APPLIES, R-GEO-POINTS-ELIGIBLE, R-KS5-ENGLAND-EXACT, R-MIN-SCHOOLS, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-INDEX-HEADCOUNTS, R-PERIOD-TRIM, R-DONUT-COUNTS-ONLY |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools (route.ts:169), src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (route.ts:172), src/lib/academic-data-view.ts:fetchSubjectQualificationHeadlineForSchools (route.ts:176)<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles<br>- src/app/api/teacher/subject-geography/route.ts?phase=ks5&qualificationType= |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts -> src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools (teacher-dashboard-data.ts:161), src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (teacher-dashboard-data.ts:164), src/lib/academic-data-view.ts:fetchSubjectQualificationHeadlineForSchools (teacher-dashboard-data.ts:168)<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles<br>- src/app/api/teacher/subject-geography/route.ts?phase=ks5&qualificationType= |
 | Known gaps | - No IB non-subject filter on the raw-facts item list (R-IB-NONSUBJECT): fragile, and live at Sevenoaks 118952.<br>- No KS5 rows in academic_subject_geography_aggregate: subject-only area figures are GCSE-only.<br>- AS/AEA self-inclusion follow-up still open (R-KS5-ASAEA-EXCL). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
@@ -214,7 +214,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ exact qualification or none (R-KS5-ENGLAND-EXACT), min school count 1 |
 | Honest number types | points, change_points, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-POINTS-SAME-QUAL, R-KS5-ENGLAND-EXACT, R-KS5-ASAEA-EXCL, R-SINGLE-BUCKET-100, R-POINTS-WEIGHTED, R-IB-NONSUBJECT, R-MIN-SCHOOLS, R-SAME-YEAR-BENCH, R-GEO-APPLIES, R-FOCUS-NEVER-FILTERED, R-QUAL-FAMILY-MATCH, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-PERIOD-TRIM, R-NUMBER-TYPE-HONESTY |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectQualificationHeadlineForSchools (route.ts:176); England via englandAverages (route.ts:46-63)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts -> src/lib/academic-data-view.ts:fetchSubjectQualificationHeadlineForSchools (teacher-dashboard-data.ts:168); England via englandAverages (teacher-dashboard-data.ts:65-80)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
 | Known gaps | - The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).<br>- Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
@@ -260,7 +260,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✗ Not wired (R-NO-GRADE-RATE-GEO) |
 | Honest number types | rate, change_pp, rank |
 | Rules | R-GRADE-SCALE-MATCH, R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-NO-GRADE-RATE-GEO, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-RATE-PER-QUAL, R-NUMBER-TYPE-HONESTY, R-TREND-LINE-4YR, R-KS5-ASAEA-EXCL, R-HISTORIC-GRADE-LABELS |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
 | Known gaps | - comparator-grades reads every subject's facts for the set (modern + historic), then filters to one subject: the rollup can't serve Post-16 (no zero-entry grade rows).<br>- Change is shown in percentage points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "pp", changeOf, formatChange).<br>- No area benchmark is wired although the grade geography would give one. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
@@ -283,7 +283,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row (England not exempt at grade grain) |
 | Honest number types | rate, change_pp, totals, market_share, rank |
 | Rules | R-GRADE-SCALE-MATCH, R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-BANDS-ENGLAND-BENCH, R-DONUT-COUNTS-ONLY, R-MIN-SCHOOLS, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-RATE-PER-QUAL, R-NUMBER-TYPE-HONESTY, R-KS5-ASAEA-EXCL, R-HISTORIC-GRADE-LABELS |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
 | Known gaps | - comparator-grades reads every subject's facts for the set (modern + historic), then filters to one subject: the rollup can't serve Post-16 (no zero-entry grade rows). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
@@ -306,7 +306,7 @@ What is counted, at what grain, where, with which honest number types. 24 measur
 | England | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row (England not exempt at grade grain) |
 | Honest number types | totals, rate |
 | Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-MIN-SCHOOLS, R-MEASURE-FALLBACK, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-GRADE-SHARE, R-HISTORIC-GRADE-LABELS |
-| Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
+| Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/teacher-dashboard-data.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
 | Known gaps | - comparator-grades reads every subject's facts for the set (modern + historic), then filters to one subject: the rollup can't serve Post-16 (no zero-entry grade rows).<br>- Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK).<br>- The set's share ticks cover the grades this school's spread draws; a grade only other schools have isn't drawn. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
