@@ -8,6 +8,8 @@ import { WhereSignedIn } from "@/components/auth/WhereSignedIn";
 import { approvalUpdate, selectWithOffDomain } from "@/lib/join-exception";
 import { VISIBLE_ROLE_LABELS, visibleRolesOf } from "@/lib/roles";
 import { ViewAsCard } from "@/components/view-as/ViewAs";
+import { tierRowFor } from "@/lib/account-tier";
+import { confirmPlatformAdmin } from "@/lib/view-as";
 
 // 0.6 S1: a member's roles are a set (school_memberships.roles), labelled from roles.ts;
 // School-Admin is is_admin or the account holder. HOD and Finance are hidden in 0.6.
@@ -56,6 +58,7 @@ export default function AccountPage() {
   const supabase = createBrowserSupabaseClient();
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [platformAdmin, setPlatformAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -82,6 +85,7 @@ export default function AccountPage() {
       )
       .eq("profile_id", uid);
     if (error) console.error("Failed to load school memberships:", error);
+    setPlatformAdmin(await confirmPlatformAdmin(supabase));
     setMemberships((data as unknown as Membership[]) ?? []);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +138,7 @@ export default function AccountPage() {
         </p>
       )}
       {memberships.map((m) => (
-        <MembershipCard key={m.id} membership={m} userId={userId} onChange={load} />
+        <MembershipCard key={m.id} membership={m} userId={userId} platformAdmin={platformAdmin} onChange={load} />
       ))}
     </main>
   );
@@ -163,10 +167,12 @@ function LogoutButton() {
 function MembershipCard({
   membership,
   userId,
+  platformAdmin,
   onChange,
 }: {
   membership: Membership;
   userId: string;
+  platformAdmin: boolean;
   onChange: () => void;
 }) {
   const supabase = createBrowserSupabaseClient();
@@ -221,6 +227,7 @@ function MembershipCard({
           schoolAccountId={account.id}
           tier={account.tier}
           isAccountHolder={isAccountHolder}
+          platformAdmin={platformAdmin}
           currentMembershipId={membership.id}
           userId={userId}
           onChange={onChange}
@@ -234,18 +241,21 @@ function ManagementPanel({
   schoolAccountId,
   tier,
   isAccountHolder,
+  platformAdmin,
   currentMembershipId,
   onChange,
 }: {
   schoolAccountId: string;
   tier: string;
   isAccountHolder: boolean;
+  platformAdmin: boolean;
   currentMembershipId: string;
   userId: string;
   onChange: () => void;
 }) {
   const supabase = createBrowserSupabaseClient();
   const [colleagues, setColleagues] = useState<Colleague[]>([]);
+  const tierRow = tierRowFor({ platformAdmin, isAccountHolder, tier });
 
   const loadColleagues = useCallback(async () => {
     const { data } = await selectWithOffDomain<Colleague>((cols) => supabase.from("school_memberships").select(cols).eq("school_account_id", schoolAccountId), "id, status, role, roles, is_admin, profiles(email, full_name)");
@@ -341,9 +351,14 @@ function ManagementPanel({
         ))}
       </ul>
 
-      {isAccountHolder && (
-        <div className="mt-4 flex items-center gap-2 text-sm">
-          <span className="text-neutral-500">Tier:</span>
+      {tierRow.kind === "read" && (
+        <p data-tier-read="" className="mt-4 text-sm">
+          <span className="text-neutral-500">Plan:</span> {tierRow.label}
+        </p>
+      )}
+      {tierRow.kind === "edit" && (
+        <div data-tier-edit="" className="mt-4 flex items-center gap-2 text-sm">
+          <span className="text-neutral-500">Plan:</span>
           <select
             value={tier}
             onChange={(e) => setTier(e.target.value)}
@@ -352,7 +367,7 @@ function ManagementPanel({
             <option value="individual">Individual</option>
             <option value="school">School-wide</option>
           </select>
-          <span className="text-xs text-neutral-400">(directly settable — no Stripe yet)</span>
+          <span className="text-xs text-neutral-400">(platform admins only)</span>
         </div>
       )}
     </div>
