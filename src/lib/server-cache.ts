@@ -38,40 +38,40 @@ function budgetFromEnv(): number {
   return (Number.isFinite(mb) && mb > 0 ? mb : DEFAULT_MAX_MB) * 1024 * 1024;
 }
 
-let maxBytes = budgetFromEnv();
-let maxEntries = MAX_ENTRIES;
-
 type Entry = { at: number; promise: Promise<unknown>; bytes: number; trace?: BuildTrace };
+type State = { store: Map<string, Entry>; totalBytes: number; evictions: number; oversizedSkips: number; lastLogAt: number; maxBytes: number; maxEntries: number };
+
+// One cache per process, whichever bundle this copy of the module is in (21 Nov, the national preload): Next builds
+// instrumentation.ts separately from the routes, so a module-level Map there was a second, private cache -- the
+// preload filled it and no request ever read it. The state lives on globalThis, so every copy shares it.
 // A Map keeps insertion order: the first key is the least recently used.
-const store = new Map<string, Entry>();
-let totalBytes = 0;
-let evictions = 0;
-let oversizedSkips = 0;
-let lastLogAt = 0;
+const G = globalThis as { __vicdataServerCache?: State };
+const S: State = (G.__vicdataServerCache ??= { store: new Map(), totalBytes: 0, evictions: 0, oversizedSkips: 0, lastLogAt: 0, maxBytes: budgetFromEnv(), maxEntries: MAX_ENTRIES });
+const store = S.store;
 
 function remove(key: string, entry: Entry): void {
   if (store.get(key) !== entry) return;
   store.delete(key);
-  totalBytes -= entry.bytes;
+  S.totalBytes -= entry.bytes;
 }
 
 function maybeLog(): void {
   const now = Date.now();
-  if (now - lastLogAt < LOG_EVERY_MS) return;
-  lastLogAt = now;
+  if (now - S.lastLogAt < LOG_EVERY_MS) return;
+  S.lastLogAt = now;
   console.log(
-    `[server-cache] ${store.size} entries, ~${Math.round(totalBytes / 1024 / 1024)} MB, ` +
-      `${evictions} evicted, ${oversizedSkips} too big to keep, since start`,
+    `[server-cache] ${store.size} entries, ~${Math.round(S.totalBytes / 1024 / 1024)} MB, ` +
+      `${S.evictions} evicted, ${S.oversizedSkips} too big to keep, since start`,
   );
 }
 
 function evictForRoom(keep: string): void {
   let evicted = false;
-  while (totalBytes > maxBytes || store.size > maxEntries) {
+  while (S.totalBytes > S.maxBytes || store.size > S.maxEntries) {
     const oldest = store.keys().next().value as string | undefined;
     if (oldest === undefined || oldest === keep) break;
     remove(oldest, store.get(oldest)!);
-    evictions++;
+    S.evictions++;
     evicted = true;
   }
   if (evicted) maybeLog();
@@ -82,9 +82,18 @@ function evictForRoom(keep: string): void {
 // 12 hours rather than 1 (when the caller passes no ttlMs), so a warm-up in the morning lasts the day. They
 // change only at an ingest; the raw reads beneath them already follow the source stamps (reference-cache.ts),
 // and a deploy or restart empties this cache anyway. A school's own values keep the hour.
+// 21 Nov (the national preload): Admissions' national and regional values too -- each region's births at age 0,
+// the age-profile aggregates, the flag thresholds -- so what the boot preload loads lasts as long as the rest.
 export const NATIONAL_TTL_MS = 12 * 60 * 60_000;
-const NATIONAL_PREFIXES = ["igcse:", "years:latest", "phases:current-periods", "dashboard:england:", "smt:population:", "smt:england-", "smt:family-map:", "smt:boarders:", "adm:england-schools:"];
+const NATIONAL_PREFIXES = ["igcse:", "years:latest", "phases:current-periods", "dashboard:england:", "smt:population:", "smt:england-", "smt:family-map:", "smt:boarders:", "adm:england-schools:", "adm:region-age0:", "adm:age-profile-aggregates", "adm:flag-thresholds"];
 export const defaultTtlFor = (key: string): number => (NATIONAL_PREFIXES.some((p) => key.startsWith(p)) ? NATIONAL_TTL_MS : REFERENCE_TTL_MS);
+
+// Scripts only (scripts/national-cold-timings.ts): told of every miss when it settles -- which keys a view waited on.
+type Observer = (key: string, ms: number, ok: boolean) => void;
+let observer: Observer | null = null;
+export function observeReferenceMisses(fn: Observer | null): void {
+  observer = fn;
+}
 
 export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs: number = defaultTtlFor(key)): Promise<T> {
   const now = Date.now();
@@ -99,6 +108,11 @@ export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs: n
   if (hit) remove(key, hit);
   const { trace, promise } = traced(load);
   const entry: Entry = { at: now, promise, bytes: 0, trace };
+  if (observer) {
+    const o = observer;
+    const t0 = performance.now();
+    promise.then(() => o(key, performance.now() - t0, true), () => o(key, performance.now() - t0, false));
+  }
   store.set(key, entry);
   evictForRoom(key);
   promise.then(
@@ -106,14 +120,14 @@ export function cachedReference<T>(key: string, load: () => Promise<T>, ttlMs: n
       settle(trace);
       if (store.get(key) !== entry) return;
       const bytes = estimateBytes(value);
-      if (bytes > maxBytes * OVERSIZE_FRACTION) {
+      if (bytes > S.maxBytes * OVERSIZE_FRACTION) {
         remove(key, entry);
-        oversizedSkips++;
+        S.oversizedSkips++;
         maybeLog();
         return;
       }
       entry.bytes = bytes;
-      totalBytes += bytes;
+      S.totalBytes += bytes;
       evictForRoom(key);
     },
     () => remove(key, entry),
@@ -206,26 +220,26 @@ function sampled(
 // ---- stats and tests -----------------------------------------------------------------------
 
 export function referenceCacheStats(): { entries: number; approxBytes: number; evictions: number; oversizedSkips: number } {
-  return { entries: store.size, approxBytes: totalBytes, evictions, oversizedSkips };
+  return { entries: store.size, approxBytes: S.totalBytes, evictions: S.evictions, oversizedSkips: S.oversizedSkips };
 }
 
 /** Drop every kept value, keeping the counters (the results cache, when the data version changes). */
 export function clearReferenceValues(): void {
   store.clear();
-  totalBytes = 0;
+  S.totalBytes = 0;
 }
 
 /** Tests only. */
 export function clearReferenceCache(): void {
   store.clear();
-  totalBytes = 0;
-  evictions = 0;
-  oversizedSkips = 0;
-  lastLogAt = 0;
+  S.totalBytes = 0;
+  S.evictions = 0;
+  S.oversizedSkips = 0;
+  S.lastLogAt = 0;
 }
 
 /** Tests only: set the byte budget and key cap (omit both to go back to the defaults). */
 export function setReferenceCacheLimitsForTests(bytes?: number, entries?: number): void {
-  maxBytes = bytes ?? budgetFromEnv();
-  maxEntries = entries ?? MAX_ENTRIES;
+  S.maxBytes = bytes ?? budgetFromEnv();
+  S.maxEntries = entries ?? MAX_ENTRIES;
 }

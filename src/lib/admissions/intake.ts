@@ -155,7 +155,7 @@ export async function intakeChange(urn: string, ep: EntryPoint, opts: { km?: unk
 }
 
 /** ONS mid-year estimates at age 0, the LAs summed, per year: the school's region. */
-function regionBirths(regionName: string): Promise<Map<number, number>> {
+export function regionBirths(regionName: string): Promise<Map<number, number>> {
   return cachedReference(`adm:region-age0:${regionName}`, async () => {
     const { data } = await createServerAnonSupabaseClient().from("la_gss_crosswalk").select("dfe_code").eq("region", regionName);
     const dfe = Array.from(new Set(((data ?? []) as { dfe_code: string }[]).map((r) => r.dfe_code)));

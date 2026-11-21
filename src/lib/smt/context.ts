@@ -142,7 +142,7 @@ const sumAges = (row: number[] | undefined, [lo, hi]: [number, number]): number 
 const pct = (from: number | null | undefined, to: number | null | undefined) => (from && to !== null && to !== undefined ? ((to - from) / from) * 100 : null);
 
 /** England's births by year: the sum of every English district and unitary authority (ONS). */
-function englandBirths(): Promise<Map<number, number>> {
+export function englandBirths(): Promise<Map<number, number>> {
   return cachedReference("smt:england-births", async () => {
     const facts = await lookupReferenceData({ sourceId: "ons_births", breakdowns: ["total"], periodMin: BIRTHS_FROM });
     const out = new Map<number, number>();
