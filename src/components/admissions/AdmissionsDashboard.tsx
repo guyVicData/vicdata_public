@@ -70,6 +70,8 @@ import { AcademicChange, AcademicFooter, AcademicNumbers, AcademicRanking, STAGE
 import { Setup, type SetupStep } from "./setup/Setup";
 import { ShareDialog, SharedListsOnly } from "./sharing/SharedLists";
 import { copySource } from "./export";
+import { admissionsViewCsv } from "./csv";
+import { usePanelCsv, PanelCsvScope } from "@/components/shell/panel-csv";
 import { useBoardingSchool } from "./useBoardingSchool";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { contextFromPanel } from "@/catalogue/pick";
@@ -411,6 +413,8 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
 
   return (
     <UsageScopeContext.Provider value={usageScope}>
+    {/* Panel menu "Save as CSV" (21 Nov): who the files are for, and the page's one set. */}
+    <PanelCsvScope.Provider value={{ who: member.schoolName, set: dash === "pipelines" ? (sets.feeders?.name ?? null) : setLabel }}>
     <ViewSurfaceProvider surface={surface} config={config}>
     <ShellPage phone={phone} rootRef={rootRef}>
       {/* 0.8 front door 2b (M3): in Mid the header -- the banner, the nav, the control bar -- is a dark band
@@ -461,6 +465,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
       )}
     </ShellPage>
     </ViewSurfaceProvider>
+    </PanelCsvScope.Provider>
     </UsageScopeContext.Provider>
   );
 }
@@ -617,7 +622,29 @@ function InstanceBody({ dv, c, o }: { dv: string; c: Ctx; o: ViewOpts }) {
   const st = compareState(o.spec?.compare ?? "follows-page", ADMISSIONS_VIEW_COMPARE[dv as DataviewId]);
   const lists = c.boardingSchool && st.feeders !== "page" && st.feeders !== c.filters.lists ? st.feeders : null;
   const own = useRoute<PipelineView>(lists && c.entry ? `/api/admissions/pipeline?${query(c.member.schoolUrn, c.entry, { ...c.filters, lists }, c.projection ? { projection: "1" } : {})}` : null);
-  return <>{viewBody(dv, lists ? { ...c, pipeline: own, filters: { ...c.filters, lists } } : c, o)}</>;
+  const cc = lists ? { ...c, pipeline: own, filters: { ...c.filters, lists } } : c;
+  // Panel menu "Save as CSV" (21 Nov): the rows this view draws, from the same answer, looks and lines
+  // (csv.ts), with the set its header names.
+  useViewCsv(dv, cc, o);
+  return <>{viewBody(dv, cc, o)}</>;
+}
+
+function useViewCsv(dv: string, c: Ctx, o: ViewOpts): void {
+  const lines = compareState(o.spec?.compare ?? "follows-page", ADMISSIONS_VIEW_COMPARE[dv as DataviewId]).lines;
+  usePanelCsv(() => admissionsViewCsv(dv, { ...c, entryAge: c.entry ? (entryPoint(c.entry)?.age ?? null) : null }, { fullscreen: o.fullscreen, look: looksOf(dv, o.spec?.view.look) as Record<string, unknown>, lines, set: csvSetOf(dv, c) }));
+}
+
+/** The phone's views drawn outside InstanceBody (the Current panel, the compact pipeline and bars) register their rows here. */
+function ViewCsv({ dv, c, o }: { dv: string; c: Ctx; o: ViewOpts }) {
+  useViewCsv(dv, c, o);
+  return null;
+}
+
+/** The set a view's CSV rests on: the one its header names (none for the area and own-entry views). */
+function csvSetOf(dv: string, c: Ctx): string | null {
+  const kind = setKindOfView(dv);
+  if (!kind) return null;
+  return kind === "feeders" ? (c.sets?.feeders?.name ?? null) : (c.sets?.rivals?.name ?? c.setLabel ?? null);
 }
 
 /** What one view draws, by its dataview id, with its instance's looks and lines. */
@@ -1044,16 +1071,19 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
     <>
       {now && (
         <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" chips={phoneSetLine(nowDv, c)} source={sourceOf(nowDv, methodVars(nowDv, c))} caption={notesOf(nowDv, c).caption} focusBar={c.focusBar} view={{ panelId: now.id, panelName: now.name ?? null, instanceId: now.dataviews.find((v) => v.kind === "view" && v.dataview === nowDv)?.id ?? now.defaultView ?? "", dataview: nowDv }}>
-          {() =>
-            c.dash === "pipelines"
+          {() => (
+            <>
+            <ViewCsv dv={nowDv} c={c} o={{ fullscreen: false }} />
+            {c.dash === "pipelines"
               ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
-              : ready(c.market, (m) => <MarketNow m={m} setLabel={c.setLabel} compact />)
-          }
+              : ready(c.market, (m) => <MarketNow m={m} setLabel={c.setLabel} compact />)}
+            </>
+          )}
         </Panel>
       )}
       {large && (
         <Panel tag={largeTitle} title={largeTitle} height="auto" chips={phoneSetLine(largeDv, c)} source={sourceOf(largeDv, methodVars(largeDv, c))} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar} view={{ panelId: large.id, panelName: large.name ?? null, instanceId: largeTab || large.defaultView || "", dataview: largeDv || null }}>
-          {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? <InstanceBody dv={largeDv} c={c} o={{ fullscreen, height, spec: specOf(large, largeTab) }} /> : phoneView(largeDv, c, specOf(large, largeTab))}</div>}
+          {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? <InstanceBody dv={largeDv} c={c} o={{ fullscreen, height, spec: specOf(large, largeTab) }} /> : (largeDv === "DV-ADM-P-PIPELINE" || largeDv === "DV-ADM-M-BARS") ? <><ViewCsv dv={largeDv} c={{ ...c, projection: false }} o={{ fullscreen: false, spec: specOf(large, largeTab) }} />{phoneView(largeDv, c, specOf(large, largeTab))}</> : phoneView(largeDv, c, specOf(large, largeTab))}</div>}
         </Panel>
       )}
       {trends.length > 0 && (

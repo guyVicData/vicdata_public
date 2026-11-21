@@ -7,7 +7,6 @@
 import type { DataviewInstance } from "@/catalogue/types";
 import type { PickPanelContext } from "@/catalogue/pick";
 import type { CopyViewSource } from "@/lib/copy-view";
-import type { PanelMenuAction } from "./ui";
 
 type Ctx = { member: { schoolUrn: string; schoolName: string; viewAs: unknown }; entry: string | null; filters: Record<string, unknown> };
 
@@ -18,11 +17,4 @@ export function copySource(instance: Extract<DataviewInstance, { kind: "view" }>
     title: `${title} · ${c.entry ?? ""}`,
     pinned: { schoolUrn: c.member.schoolUrn, schoolName: c.member.schoolName, params: { entry: c.entry, filters: c.filters }, keepLive: true },
   };
-}
-
-export function copyActions(open: { print: () => void; copy: (() => void) | null }): PanelMenuAction[] {
-  return [
-    { label: "Print this view", onClick: open.print },
-    ...(open.copy ? [{ label: "Copy to meeting slides…", onClick: open.copy }] : []),
-  ];
 }

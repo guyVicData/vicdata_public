@@ -1166,10 +1166,11 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
 }
 
 /** Panel menu "Save as CSV": one view's rows (src/components/smt/csv*.ts), null while loading. */
-export function smtViewCsv(dv: string, c: Pick<Ctx, "school" | "overview" | "pupils" | "context" | "academic">, stage = 0): CsvTable | null {
+export function smtViewCsv(dv: string, c: Pick<Ctx, "school" | "overview" | "pupils" | "context" | "academic"> & Partial<Pick<Ctx, "contextMap" | "shade">>, stage = 0): CsvTable | null {
   if (dv.startsWith("DV-SMT-O-")) return c.overview.status === "ready" ? overviewCsv(dv, c.overview.data, c.school, stage) : null;
-  if (dv.startsWith("DV-SMT-P-")) return c.pupils.status === "ready" ? pupilsCsv(dv, c.pupils.data) : null;
-  if (dv.startsWith("DV-SMT-C-")) return c.context.status === "ready" ? contextCsv(dv, c.context.data) : null;
+  if (dv.startsWith("DV-SMT-P-")) return c.pupils.status === "ready" ? pupilsCsv(dv, c.pupils.data, c.school) : null;
+  // The map's rows follow its neighbourhoods (a separate read) and the panel's "Shade by".
+  if (dv.startsWith("DV-SMT-C-")) return c.context.status === "ready" ? contextCsv(dv, c.context.data, c.contextMap, c.shade) : null;
   return c.academic.status === "ready" ? academicCsv(dv, c.academic.data) : null;
 }
 

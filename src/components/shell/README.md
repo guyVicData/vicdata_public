@@ -29,7 +29,7 @@ These files moved here in 0.8 (Part A) from `src/components/teacher/`, `src/comp
 
 Every panel's top-right icons are `PanelIconRow`, in this order (`PANEL_ICON_ORDER`):
 
-1. **⋯ menu**: Print this graph, Copy this view…, then any panel extras after a divider.
+1. **⋯ menu** (`PanelExport`, R-PANEL-MENU-ORDER): Copy to a dashboard…, Copy to a meeting…, Print or save as PDF, Save as CSV -- a row that can't act is left out, never disabled -- then any panel extras after a divider. **Save as CSV** appears when the view inside registers its rows: `usePanelCsv(() => table)` from `panel-csv.tsx`, built with `src/lib/csv.ts`; the page names the school or group with `PanelCsvScope` (docs/v0.8/panel_menu_csv_v1.md).
 2. **⤢ full screen**: in full screen, the same button exits it.
 3. **⌃ collapse**: Teacher's accordion only.
 

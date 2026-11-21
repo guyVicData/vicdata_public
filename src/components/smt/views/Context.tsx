@@ -22,6 +22,8 @@ import type { Load } from "../api";
 import { fmt, shortYear } from "../ui";
 import { placeLine } from "@/lib/place-line";
 import { arrowed, signedDelta } from "@/lib/signed-delta";
+import { usePanelCsv } from "@/components/shell/panel-csv";
+import { projectionCsv } from "../csv-context";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 const S = productAccent("smt")!;
@@ -511,6 +513,8 @@ export function PopulationProjected({ c, fullscreen, room }: { c: Context; fulls
   const f = c.forward;
   const [ons, setOns] = useState(false);
   const [scenario, setScenario] = useState(false);
+  // Panel menu "Save as CSV": the lines this view draws, its toggles included (ViewBody's is null here).
+  usePanelCsv(() => projectionCsv(c, { ons, scenario }));
   if (!f || f.estimates.filter((x) => x.value !== null).length < 2 || f.projection.length < 2) return <Empty>No projection held for the children {c.area === "around" ? `within ${c.radius}` : `in ${c.place.la ?? "this LA"}`}.</Empty>;
   const first = f.estimates[0]?.year;
   // The line splits where its ages start to include children not yet born; the two parts share that year.

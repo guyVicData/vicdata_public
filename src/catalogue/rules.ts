@@ -3372,6 +3372,51 @@ export const RULES: Rule[] = [
     origin: "0.8 nav consistency, part 2 (Guy, 21 Nov 2026)",
     status: "active",
   },
+  // ------------------------------------------------------------------ panel menu, 21 Nov
+  {
+    id: "R-PANEL-CSV-FILE",
+    statement:
+      "\"Save as CSV\" writes one RFC 4180 file (src/lib/csv.ts): a UTF-8 byte-order mark, a header row, CRLF line ends, a field quoted when it holds a comma, quote or line break (a quote doubled), every row the header's width. Numbers are numbers at the precision the panel shows, without thousands separators or exponents; a percentage is a number under a header that says so (\"Share (%)\" over 45.3, never \"45.3%\"); years as the panel writes them (\"2024/25\"). What the figures rest on -- the comparison set and the data year -- are leading columns (\"Comparison set\", \"Data year\") on every row, not a comment line, and aren't repeated where the table has its own. Text Excel would read as a formula (=, +, @) is prefixed with an apostrophe. The file is named vicdata_<school-or-group>_<panel-title>_<YYYY-MM-DD>.csv, each part slugged.",
+    why: "Guy, 21 Nov: every panel's menu saves its data as a CSV that Excel opens correctly, accents included, and that adds up.",
+    appliesTo: "every panel's ··· menu, every product",
+    enforcedIn: ["src/lib/csv.ts", "src/components/shell/PanelFooter.tsx:PanelExport", "src/lib/panel-menu-csv.test.ts"],
+    testCase: { urn: "110110", school: "no school: the file helper on hand-made rows (commas, quotes, line breaks, accents, a negative, a formula-looking text)", expect: "BOM, header, CRLF; quoted fields parse back to the same cells; 45.3 under \"Share (%)\"; the set and year lead; vicdata_leighton-park-school_scorecard_2026-11-23.csv.", check: "panelCsvFile" },
+    origin: "Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026",
+    status: "active",
+  },
+  {
+    id: "R-PANEL-CSV-ROWS",
+    statement:
+      "A panel's CSV is exactly what the panel shows: the view on screen registers its own rows (usePanelCsv, the one pattern, in the view or the place that picks it), built from the same object it draws, after its set, filters, year and level -- so the CSV can't drift from the screen. The rows are read when the menu opens and again on the click; in full screen the modal's view is the one exported. A view with nothing tabular, or nothing to show (an empty state, still loading), registers nothing and the panel's menu has no \"Save as CSV\" row (never a disabled one); the gaps are listed in docs/v0.8/panel_menu_csv_v1.md. View as and the platform-admin peek can save a CSV (read-only, as the screen).",
+    why: "Guy, 21 Nov: \"downloads the data the panel is showing\" -- the same numbers, never a recomputation that could disagree.",
+    appliesTo: "SMT, Admissions, Teacher, group, custom dashboards, meeting slides",
+    enforcedIn: ["src/components/shell/panel-csv.tsx", "src/components/shell/CardBox.tsx", "src/components/smt/csv.ts", "src/components/admissions/csv.ts", "src/components/teacher/csv.ts", "src/components/groups/dash/csv.ts", "src/lib/panel-menu-csv.test.ts", "src/lib/panel-csv-smt.test.ts", "src/lib/panel-csv-admissions.test.ts", "src/lib/panel-csv-teacher.test.ts", "src/lib/panel-csv-group.test.ts"],
+    testCase: { urn: "110110", school: "hand-made fixtures per product: each table view rendered (server render) beside its CSV", expect: "Every row and figure of the rendered table is the CSV's, at the same precision; a full screen's view wins over the card's; a view with no rows gives no CSV.", check: "panelCsvRows" },
+    origin: "Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026",
+    status: "active",
+  },
+  {
+    id: "R-PANEL-CSV-SUPPRESSED",
+    statement:
+      "A figure the screen withholds stays withheld in the CSV: small-number suppression, R-MIN-SCHOOLS (\"Too few schools (n)\"), R-MIN-ENTRIES (\"too few entries\"), a partial England figure, a band drawn only on enough schools -- the CSV writes the screen's own words, or leaves the cell empty where the screen shows a dash, and never the number behind it.",
+    why: "Guy, 21 Nov: never export a figure the screen hides.",
+    appliesTo: "every panel's \"Save as CSV\"",
+    enforcedIn: ["src/components/smt/csv.ts", "src/components/admissions/csv.ts", "src/components/teacher/csv.ts", "src/components/groups/dash/csv.ts", "src/lib/panel-menu-csv.test.ts", "src/lib/panel-csv-smt.test.ts", "src/lib/panel-csv-admissions.test.ts", "src/lib/panel-csv-teacher.test.ts", "src/lib/panel-csv-group.test.ts"],
+    testCase: { urn: "110110", school: "hand-made fixtures with a withheld figure per product (a set band on 2 schools, a pool of 3 schools, a subject under 5 entries)", expect: "The CSV carries the screen's words or an empty cell, never the figure.", check: "panelCsvSuppressed" },
+    origin: "Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026",
+    status: "active",
+  },
+  {
+    id: "R-PANEL-MENU-ORDER",
+    statement:
+      "Every panel's ··· menu, in every product, is the one PanelExport with the same rows in the same order: \"Copy to a dashboard…\", \"Copy to a meeting…\" (both open the one Copy view dialog on that tab), \"Print or save as PDF\" (the panel printed alone, as before), \"Save as CSV\"; then a divider and the product's own extras (Admissions' \"Edit the feeder lists\"). A row that can't act there is left out, never shown disabled: there are no Coming soon rows; SMT and Admissions views copy to a meeting only (a custom dashboard draws Teacher's hosts); View as, head office and meeting slides have no copy rows; a view with no rows has no CSV row. The button reads \"Panel menu: copy, print or save\".",
+    why: "Guy, 21 Nov: the menu consistent and clearly worded everywhere.",
+    appliesTo: "every panel's ··· menu",
+    enforcedIn: ["src/components/shell/PanelFooter.tsx:PANEL_MENU, panelMenuRows, PanelExport", "src/components/copy-view/CopyViewDialog.tsx:startOn", "src/lib/panel-menu-csv.test.ts"],
+    testCase: { urn: "110110", school: "no school: the menu's rows for each host, and a source scan of src/components", expect: "Each host's rows are the four in order with some left out; no other component draws a ··· menu, an old label or a Coming soon row.", check: "panelMenuOrder" },
+    origin: "Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);

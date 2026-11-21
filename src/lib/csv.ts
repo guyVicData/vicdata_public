@@ -44,7 +44,9 @@ export function csvField(v: CsvCell): string {
     if (!Number.isFinite(v)) return "";
     // Never exponent form or a "-0": what the panel shows, as a spreadsheet reads it.
     const n = Object.is(v, -0) ? 0 : v;
-    return Math.abs(n) >= 1e21 ? n.toFixed(0) : String(n);
+    const str = String(n);
+    if (!str.includes("e")) return str;
+    return Math.abs(n) >= 1 ? BigInt(Math.round(n)).toString() : n.toFixed(20).replace(/0+$/, "");
   }
   let s = String(v);
   if (FORMULA.test(s)) s = `'${s}`;

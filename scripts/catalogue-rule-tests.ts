@@ -236,6 +236,12 @@ function unitByRule(file: string, ruleId: string, env: Record<string, string> = 
   const failed = lines.filter((l) => l.startsWith("not ok"));
   return { pass: r.status === 0 && lines.length > 0 && !failed.length, detail: `${lines.length - failed.length} of ${lines.length} pass${failed.length ? `; failing: ${failed.map((l) => l.replace(/^not ok \d+ - /, "")).join("; ")}` : ""}` };
 }
+// Panel menu, 21 Nov: a rule's tests across every product's CSV suite.
+function panelCsvSuites(ruleId: string): { pass: boolean; detail: string } {
+  const files = ["src/lib/panel-menu-csv.test.ts", "src/lib/panel-csv-smt.test.ts", "src/lib/panel-csv-admissions.test.ts", "src/lib/panel-csv-teacher.test.ts", "src/lib/panel-csv-group.test.ts"].filter((f) => existsSync(path.join(ROOT, f)));
+  const runs = files.map((f) => ({ f, r: unitByRule(f, ruleId, {}, [".env", ".env.local"]) })).filter((x) => !/^0 of 0/.test(x.r.detail));
+  return { pass: runs.length > 0 && runs.every((x) => x.r.pass), detail: runs.map((x) => `${path.basename(x.f)}: ${x.r.detail}`).join("; ") };
+}
 // 0.8 group sets: run group unit tests on the fixtures (the switch on; production's own rows), optionally
 // only the tests whose names match, and a PGlite suite, from the repo root.
 function groupTests(files: string[], pattern: string | null): { pass: boolean; detail: string } {
@@ -3776,6 +3782,19 @@ const RUNNERS: Record<string, Runner> = {
   async navFeedback(_L, rule) {
     const r = unitByRule("src/lib/nav-consistency.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };
+  },
+  // Panel menu, 21 Nov: Save as CSV and the one menu order -- the unit tests, each in its own process.
+  async panelCsvFile(_L, rule) {
+    return unitByRule("src/lib/panel-menu-csv.test.ts", rule.id, {}, [".env", ".env.local"]);
+  },
+  async panelMenuOrder(_L, rule) {
+    return unitByRule("src/lib/panel-menu-csv.test.ts", rule.id, {}, [".env", ".env.local"]);
+  },
+  async panelCsvRows(_L, rule) {
+    return panelCsvSuites(rule.id);
+  },
+  async panelCsvSuppressed(_L, rule) {
+    return panelCsvSuites(rule.id);
   },
   async groupWalksLoad() {
     const r = groupTests(["src/lib/front-door/group-walks-load.test.tsx"], null);

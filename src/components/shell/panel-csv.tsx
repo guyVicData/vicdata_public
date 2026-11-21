@@ -25,7 +25,7 @@ import type { CsvTable } from "@/lib/csv";
 
 export type PanelCsvBuild = () => CsvTable | null;
 
-type Registry = { add: (entry: { current: PanelCsvBuild | null }) => () => void; get: () => CsvTable | null; title: string };
+export type Registry = { add: (entry: { current: PanelCsvBuild | null }) => () => void; get: () => CsvTable | null; title: string };
 
 const RegistryContext = createContext<Registry | null>(null);
 
@@ -34,29 +34,35 @@ export type CsvScope = { who: string | null; set?: string | null; year?: string 
 export const PanelCsvScope = createContext<CsvScope | null>(null);
 export const usePanelCsvScope = () => useContext(PanelCsvScope);
 
+/** The registry itself, pure (R-PANEL-CSV-ROWS tests it): views add a builder and take it away on
+ * unmount; get() is the latest-added builder that has rows -- the modal's while full screen is open,
+ * the card's again once it closes. */
+export function createCsvRegistry(title: string): Registry {
+  let entries: { current: PanelCsvBuild | null }[] = [];
+  return {
+    title,
+    add: (entry) => {
+      entries.push(entry);
+      return () => {
+        entries = entries.filter((e) => e !== entry);
+      };
+    },
+    get: () => {
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const t = entries[i].current?.();
+        if (t) return t;
+      }
+      return null;
+    },
+  };
+}
+
 /** CardBox's: the panel's registry. */
 export function PanelCsvRegistry({ title, children }: { title: string; children: ReactNode }) {
-  const entries = useRef<{ current: PanelCsvBuild | null }[]>([]);
-  const value = useMemo<Registry>(
-    () => ({
-      title,
-      add: (entry) => {
-        entries.current.push(entry);
-        return () => {
-          entries.current = entries.current.filter((e) => e !== entry);
-        };
-      },
-      get: () => {
-        // The latest view to register is the one on screen (the modal's, while it's open).
-        for (let i = entries.current.length - 1; i >= 0; i--) {
-          const t = entries.current[i].current?.();
-          if (t) return t;
-        }
-        return null;
-      },
-    }),
-    [title],
-  );
+  // One registry for the panel's life; the title is read live (a rail switch renames the panel).
+  const reg = useRef<Registry | null>(null);
+  reg.current ??= createCsvRegistry(title);
+  const value = useMemo<Registry>(() => ({ ...reg.current!, title }), [title]);
   return <RegistryContext.Provider value={value}>{children}</RegistryContext.Provider>;
 }
 
