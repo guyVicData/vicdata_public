@@ -17,6 +17,7 @@ import { loadUserState, saveUserState } from "@/lib/dashboards-store";
 import { EC } from "@/lib/editor-layout";
 import { readPeek } from "@/lib/view-as";
 import { memberSummary } from "@/lib/change-summary";
+import { plainWords } from "@/lib/plain-words";
 import type { DashboardConfig } from "@/catalogue/types";
 
 export type UpdatedNoticeProps = {
@@ -70,7 +71,7 @@ export function UpdatedNotice({ dashboardId, version, summary, config = null }: 
     }
   };
   // Never a raw placeholder or an internal view name in front of members (pinch point 1).
-  const parts = (summary ? memberSummary(summary, config) : "").split(/\*([^*]+)\*/g);
+  const parts = (summary ? plainWords(memberSummary(summary, config)) : "").split(/\*([^*]+)\*/g);
   return (
     <div role="status" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "4px 10px", background: EC.barBg, border: `1px solid ${EC.barBorder}`, borderRadius: 12, padding: "9px 12px", fontSize: 12.5, lineHeight: 1.45, color: "var(--fg)" }}>
       <span style={{ fontWeight: 700, color: EC.amberText, whiteSpace: "nowrap" }}>Updated &mdash; what&apos;s changed</span>

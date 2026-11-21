@@ -19,6 +19,7 @@ import { confirmPlatformAdmin, pickMembership, readPeek, readPeekGroup, resolveP
 import { lensesOf } from "@/components/library/RoleHome";
 import type { TeacherModel } from "@/lib/front-door/teacher-model";
 import { afterWelcome, changelogForMe, loadFrontDoorState, markWelcomeSeen, recordVisit, shouldShowWelcome, whatsNew, type ChangelogEntry } from "@/lib/front-door/visit";
+import { plainWords } from "@/lib/plain-words";
 import { setupModeFor, setupPhases, setupTotals } from "@/lib/front-door/setup";
 import { WELCOME_ROLES, welcomeRole, type WelcomeField, type WelcomeRole } from "@/lib/front-door/welcome-role";
 
@@ -316,8 +317,8 @@ export function WhatsNewStrip({ entries }: { entries: ChangelogEntry[] }) {
     <div className="px-4 pt-4 sm:px-10" data-whats-new={entries.length}>
       <p className="mx-auto flex max-w-[1160px] flex-wrap items-center gap-x-3 gap-y-1 rounded-[12px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-4 py-2.5 text-[14px]">
         <span className="rounded-full bg-[var(--fg)] px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--bg)]">New since your last visit</span>
-        <span className="min-w-0 font-medium">{first.title}{entries.length > 1 ? `, and ${entries.length - 1} more` : ""}</span>
-        {first.credit_text && <span className="text-[var(--muted)]">{first.credit_text}</span>}
+        <span className="min-w-0 font-medium">{plainWords(first.title)}{entries.length > 1 ? `, and ${entries.length - 1} more` : ""}</span>
+        {first.credit_text && <span className="text-[var(--muted)]">{plainWords(first.credit_text)}</span>}
         <Link href="/teacher/whats-new" className="ml-auto inline-flex min-h-[44px] items-center font-semibold underline decoration-from-font underline-offset-2 sm:min-h-0">What&rsquo;s new</Link>
       </p>
     </div>
@@ -349,9 +350,9 @@ export function WhatsNewPage() {
           {entries.map((e) => (
             <li key={e.id} className="fd-tile rounded-[16px] p-5" data-changelog-entry="">
               <p className="text-[12.5px] text-[var(--muted)]">{fmt.format(new Date(e.published_at))}</p>
-              <h2 className="mt-1 text-[18px] font-semibold text-[var(--fg)]">{e.title}</h2>
-              {e.body && <p className="mt-1.5 text-[14.5px] leading-relaxed text-[var(--muted2)]">{e.body}</p>}
-              {e.credit_text && <p className="mt-2 text-[14px] font-medium text-[var(--tile-accent-text)]">{e.credit_text}</p>}
+              <h2 className="mt-1 text-[18px] font-semibold text-[var(--fg)]">{plainWords(e.title)}</h2>
+              {e.body && <p className="mt-1.5 text-[14.5px] leading-relaxed text-[var(--muted2)]">{plainWords(e.body)}</p>}
+              {e.credit_text && <p className="mt-2 text-[14px] font-medium text-[var(--tile-accent-text)]">{plainWords(e.credit_text)}</p>}
               {e.link && (
                 <Link href={e.link} className="mt-2 inline-block text-[14px] font-semibold underline decoration-from-font underline-offset-2">
                   Take a look
