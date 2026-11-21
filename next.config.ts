@@ -10,9 +10,9 @@ export const NOINDEX_SOURCES = ["/schools/:path*", "/join/:path*", "/sets", "/se
 // Private beta (Guy, 21 Nov; R-NO-PUBLIC-SCHOOL-LINKS): the public school pages are hidden.
 // Every /schools/** request (the page, its Data View, anything added under it later) is a
 // temporary redirect to /member, before the filesystem and before the proxy, so no school
-// page code runs and the proxy never counts a public-page visit. /member is the hop because
-// only the browser knows whether someone is signed in (the Supabase session is in
-// localStorage): it sends a signed-in member to /teacher and a signed-out visitor to /.
+// page code runs and the proxy never counts a public-page visit. /member is the hop: since cookie
+// sessions (front door part 3) the beta gate (src/proxy.ts) sends a signed-out visitor from it to /
+// before the page loads, and /member sends a signed-in member to /teacher.
 // The pages themselves stay in src/app/schools for after the beta; drop this entry to bring
 // them back. The noindex entries above stay: Next sends no config header on a config
 // redirect, but /member (where it lands) carries one, and the pages do again once restored.
