@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AUTH_BUTTON } from "@/components/auth/AuthShell";
 import { Logo } from "@/components/auth/Logo";
-import { LandingArt, SpectrumLine } from "@/components/auth/LandingArt";
+import { BANDS_RESERVE, LandingArt, SpectrumLine } from "@/components/auth/LandingArt";
 import { LANDING_VARIANT } from "@/components/auth/landing-variant";
 
 // 0.8 front door part 3 (A2, R-LANDING-MINIMAL): the private-beta landing page, the only page a visitor who
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function Landing() {
   return (
-    <main data-landing={LANDING_VARIANT} className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-neutral-50 px-4 py-16 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <main data-landing={LANDING_VARIANT} className={`relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-neutral-50 px-4 pt-16 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 ${LANDING_VARIANT === "bands" ? BANDS_RESERVE : "pb-16"}`}>
       <LandingArt variant={LANDING_VARIANT} />
       <div className="relative flex w-full max-w-[358px] flex-col items-center text-center sm:max-w-[420px]">
         <Logo size="large" />

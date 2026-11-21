@@ -487,3 +487,10 @@ body:has(#teacher-root[data-theme="dark"]) {
   .landing-arc { animation: landing-arc-draw 1.4s cubic-bezier(0.22, 1, 0.36, 1) both; stroke-dashoffset: 1; }
   @keyframes landing-arc-draw { to { stroke-dashoffset: 0; } }
 }
+
+/* The landing page's bars grow to their lengths, once, like bars filling (LandingArt "bands"). Never under
+   prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-bar { transform-origin: left center; animation: landing-bar-grow 1.1s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  @keyframes landing-bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}

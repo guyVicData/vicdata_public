@@ -15,6 +15,12 @@ const BANDS = [
   { name: "whole school", cls: "[--c:#c2410c] dark:[--c:#fb923c]" },
 ] as const;
 
+/** The bars' lengths (share of the page's width), in BANDS' order: a gentle rise with one dip at Post-16. */
+const BAR_LENGTHS = ["46%", "61%", "78%", "69%", "92%"] as const;
+
+/** The strip the "bands" variant draws in, reserved below the page's content (the same heights as the strip). */
+export const BANDS_RESERVE = "pb-[188px] sm:pb-[292px]";
+
 /** Under the logo in every variant: a fine line in the five colours (the "spectrum" variant's whole idea). */
 export function SpectrumLine({ className = "" }: { className?: string }) {
   return (
@@ -29,14 +35,20 @@ export function SpectrumLine({ className = "" }: { className?: string }) {
 export function LandingArt({ variant }: { variant: LandingVariant }) {
   if (variant === "spectrum") return null;
   if (variant === "bands")
+    // Guy, 22 Nov: "take them further across the screen and make them different lengths so it gives a sense of a
+    // graph". Five near-horizontal bars from beyond the left edge -- a bar chart on one baseline -- in the strip the
+    // page reserves below its content (BANDS_RESERVE, src/app/page.tsx), so no bar ever sits under the logo, the
+    // words or Sign in, at any height or width. Lengths rise gently with one dip, like a real chart. They grow to
+    // their lengths once on load (.landing-bar), never under prefers-reduced-motion.
     return (
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Five long translucent ribbons, fanned across the lower right, like the tabs of a home laid on their side. */}
-        <div className="absolute -bottom-[30%] -right-[25%] h-[90%] w-[90%] rotate-[-24deg] sm:-right-[10%] sm:w-[70%]">
-          {BANDS.map((b, i) => (
-            <div key={b.name} className={`absolute left-0 right-0 h-[9%] rounded-full bg-[var(--c)] opacity-[0.16] dark:opacity-[0.2] ${b.cls}`} style={{ top: `${18 + i * 13}%` }} />
-          ))}
-        </div>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[188px] flex-col justify-center gap-2.5 overflow-hidden pb-6 sm:h-[292px] sm:gap-3.5 sm:pb-10">
+        {BANDS.map((b, i) => (
+          <div
+            key={b.name}
+            className={`landing-bar h-6 shrink-0 rounded-r-full bg-[var(--c)] opacity-[0.22] sm:h-10 dark:opacity-[0.3] ${b.cls}`}
+            style={{ width: BAR_LENGTHS[i], animationDelay: `${i * 110}ms` }}
+          />
+        ))}
       </div>
     );
   // "arcs": concentric quarter-arcs from the lower right, each a phase's colour; they draw themselves in once.

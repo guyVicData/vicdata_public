@@ -186,4 +186,12 @@ test("R-LANDING-MINIMAL: each landing background is decoration only -- hidden fr
   assert.match(renderToStaticMarkup(SpectrumLine({})), /aria-hidden/);
   assert.match(src("src/components/auth/landing-variant.ts"), /export const LANDING_VARIANT: LandingVariant = "(arcs|spectrum|bands)";/);
   assert.match(src("src/app/globals.css"), /@media \(prefers-reduced-motion: no-preference\) \{\s*\.landing-arc \{ animation/, "the one movement is off under reduced motion");
+  assert.match(src("src/app/globals.css"), /@media \(prefers-reduced-motion: no-preference\) \{\s*\.landing-bar \{ transform-origin: left center; animation/, "the bars grow only without reduced motion");
+  // "bands" (the default, Guy 22 Nov): five bars of different lengths, in a strip the page reserves below its content.
+  const bands = renderToStaticMarkup(LandingArt({ variant: "bands" }) ?? "");
+  const widths = [...bands.matchAll(/width:(\d+)%/g)].map((m) => Number(m[1]));
+  assert.equal(widths.length, 5);
+  assert.equal(new Set(widths).size, 5, "every bar a different length");
+  const page = src("src/app/page.tsx");
+  assert.match(page, /LANDING_VARIANT === "bands" \? BANDS_RESERVE/, "the content sits above the bars, never on them");
 });
