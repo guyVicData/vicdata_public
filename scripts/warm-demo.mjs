@@ -15,7 +15,8 @@
 //   PLAYWRIGHT_BROWSERS_PATH=~/vicdata-warm/browsers npx -y playwright@1.49.1 install chromium-headless-shell
 // Run:
 //   PW_DIR=~/vicdata-warm PREVIEW_ACCESS_TOKEN=… node scripts/warm-demo.mjs [urn=110110] [--sets]
-// --sets also warms SMT against the regional and national sets (independent schools in the region and in
+// It warms the role homes, SMT's four dashboards, the SMT set dialog's set list, and Admissions (its home, 16+
+// and Market share). --sets also warms SMT against the regional and national sets (independent schools in the region and in
 // England, all sixth forms in the region): 10-20 s each when cold.
 import { createRequire } from "node:module";
 import { readdirSync } from "node:fs";
@@ -45,6 +46,9 @@ const PAGES = [
   ["SMT Pupils", peek("/teacher/smt/pupils", "smt")],
   ["SMT Context", peek("/teacher/smt/context", "smt")],
   ["Admissions home", peek("/teacher/admissions", "admissions")],
+  // Review pack 22 Nov (speed): each was 4.8-6.5 s on its first open.
+  ["Admissions 16+", peek("/teacher/admissions?view=pipelines&entry=16%2B", "admissions")],
+  ["Admissions Market share", peek("/teacher/admissions?view=market-share", "admissions")],
 ];
 
 const browser = await chromium.launch({ executablePath });
@@ -96,9 +100,28 @@ async function visit(label, path) {
   return done;
 }
 
+// The SMT set dialog (the chooser's "Schools in the LA, regional and national rankings…"): its set list is
+// /api/data-view/default-lists, 6 s on its first open (review pack 22 Nov). Opened on the SMT home, after it.
+async function visitSetDialog() {
+  const label = "SMT set dialog (the chooser's set list)";
+  await visit("SMT home (for the set dialog)", peek("/teacher/smt", "smt"));
+  const t0 = Date.now();
+  try {
+    const lists = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/data-view/default-lists", { timeout: 60_000 });
+    await page.locator("[data-set-button]").first().click({ timeout: 15_000 });
+    await page.getByText("Schools in the LA, regional and national rankings…").first().click({ timeout: 15_000 });
+    const r = await lists;
+    console.log(`${((Date.now() - t0) / 1000).toFixed(1).padStart(6)} s  ${label}  (last: /api/data-view/default-lists)${r.ok() ? "" : `  !! ${r.status()} /api/data-view/default-lists`}`);
+    await page.keyboard.press("Escape").catch(() => {});
+  } catch (e) {
+    console.log(`  ${label}: not opened (${e.message.split("\n")[0]})`);
+  }
+}
+
 console.log(`Warming ${SITE} for school ${URN}, one page at a time${WITH_SETS ? ", with the regional and national sets" : ""}.`);
 const t = Date.now();
 for (const [label, path] of PAGES) await visit(label, path);
+await visitSetDialog();
 
 if (WITH_SETS) {
   // The SMT set choice is remembered per school in the browser (useSmtSet.ts); pick each default ranking there.
