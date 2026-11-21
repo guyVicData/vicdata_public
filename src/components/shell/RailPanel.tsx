@@ -149,7 +149,7 @@ export function RailPanel({
         flag={flag}
         fixedHeight={height !== "auto"}
         height={height === "auto" ? undefined : height}
-        menu={({ print }) => <PanelExport onPrint={print} onCopy={onCopy} extra={menu} />}
+        menu={({ print }) => <PanelExport onPrint={print} onCopyToMeeting={onCopy} extra={menu} />}
         focus={{ bar: focusBar }}
         view={view ? { ...view, label: view.label ?? title } : null}
       >

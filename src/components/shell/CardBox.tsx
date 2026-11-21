@@ -21,6 +21,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
 import { PanelNote, SourceNote, WhatThisShows } from "./PanelFooter";
 import { PanelIconRow } from "./PanelIconRow";
+import { PanelCsvRegistry } from "./panel-csv";
 import { reportUsage, useUsageScope } from "@/lib/usage-client";
 import { useViewMarks } from "@/components/feedback/ViewSurface";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
@@ -377,9 +378,11 @@ export function CardBox({
   const captionLine = caption ? <WhatThisShows line>{caption}</WhatThisShows> : null;
 
   return (
-    // Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap.
-    // Fixed-height panels add bottom padding to reserve the footer's row and go
-    // `relative` so it can be pinned there.
+    // Panel menu "Save as CSV" (21 Nov): the view inside registers its rows here (usePanelCsv), card
+    // and modal alike, and the menu reads them (panel-csv.tsx).
+    <PanelCsvRegistry title={title}>
+    {/* Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap. Fixed-height
+        panels add bottom padding to reserve the footer's row and go `relative` so it can be pinned there. */}
     <div
       ref={boxRef}
       data-view-key={marks?.viewKey}
@@ -522,6 +525,7 @@ export function CardBox({
         </TeacherModal>
       )}
     </div>
+    </PanelCsvRegistry>
   );
 }
 

@@ -17,6 +17,11 @@ import { createPortal } from "react-dom";
 import { DashboardPlanContext } from "@/components/dashboard-config/plan";
 import { CopyViewSourceContext } from "@/components/copy-view/CopyViewSourceContext";
 import { MenuDivider, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
+import { usePanelCsvSource } from "./panel-csv";
+import { csvFileName, downloadCsv, toCsv } from "@/lib/csv";
+import { isAdmissionsHost } from "@/catalogue/admissions";
+import { dataviewById } from "@/catalogue/dataviews";
+import type { CopyTarget } from "@/components/copy-view/CopyViewDialog";
 
 // VicData 0.6 S6: loaded only when someone opens it, so pages that never can (every
 // hand-coded dashboard) don't carry the dialog.
@@ -33,7 +38,7 @@ const CopyViewDialog = lazy(() => import("@/components/copy-view/CopyViewDialog"
 export function WhatThisShows({ children, line = false }: { children: ReactNode; line?: boolean }) {
   if (!children) return null;
   if (line)
-    // Full screen and "Print this graph": the same line, printed.
+    // Full screen and "Print or save as PDF": the same line, printed.
     return (
       <p data-what-this-shows="" className="text-[11.5px] leading-snug text-[var(--muted2)]">
         <span className="font-semibold text-[var(--muted)]">What this shows: </span>
@@ -264,9 +269,28 @@ function portalTo(node: ReactNode) {
 const EXPORT_MENU_GAP = 6; // px between the button's bottom and the menu
 const EXPORT_MENU_ROOM = 200; // px above the button the menu needs to open upward
 
-export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => void; onCopy?: () => void; extra?: PanelMenuItem[] }) {
+// Panel menu (Guy, 21 Nov): the same rows, in the same order, on every panel in every product --
+//   1. Copy to a dashboard…   2. Copy to a meeting…   3. Print or save as PDF   4. Save as CSV
+// then a divider and the host's own extras (Admissions' "Edit the feeder lists"). A row that can't
+// do anything here is left out, never shown disabled: the two "Coming soon" rows are gone, a host
+// whose views go to meetings only (SMT, Admissions) has no dashboard row, and a view with no rows
+// to give (panel-csv.tsx) has no CSV row. Both copy rows open the one CopyViewDialog, on that tab.
+// Pure, so the rule test (R-PANEL-MENU-ORDER) checks the order the menu draws.
+export const PANEL_MENU = {
+  dashboard: "Copy to a dashboard…",
+  meeting: "Copy to a meeting…",
+  print: "Print or save as PDF",
+  csv: "Save as CSV",
+} as const;
+export type PanelMenuKey = keyof typeof PANEL_MENU;
+
+export function panelMenuRows(has: { dashboard: boolean; meeting: boolean; csv: boolean }): PanelMenuKey[] {
+  return (["dashboard", "meeting", "print", "csv"] as const).filter((k) => k === "print" || has[k]);
+}
+
+export function PanelExport({ onPrint, onCopyToMeeting, extra = [] }: { onPrint: () => void; onCopyToMeeting?: () => void; extra?: PanelMenuItem[] }) {
   const [open, setOpen] = useState(false);
-  const [copying, setCopying] = useState(false);
+  const [copying, setCopying] = useState<CopyTarget | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [anchor, setAnchor] = useState<{ left: number; top: number; align: "left" | "right"; placement: "above" | "below" } | null>(null);
@@ -293,10 +317,30 @@ export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => vo
   };
   const plan = useContext(DashboardPlanContext);
   const copy = useContext(CopyViewSourceContext);
+  const csv = usePanelCsvSource();
   // The page's path, read when the menu is drawn (it only draws in the browser, open) rather than
   // through usePathname: 0.7 r3 (F1) puts this menu on every panel, and the server renders of
   // panels (unit and rule tests) have no app router for that hook to read.
   const v06 = plan !== null || (open && typeof window !== "undefined" && window.location.pathname.startsWith("/dashboards"));
+  // A copy source (the config renderer, /dashboards) copies to both, unless its view is an
+  // Admissions one (a custom dashboard draws Teacher's hosts: EditorScreen's rule). A host's own
+  // copy (SMT, Admissions) is to a meeting only.
+  const source = !onCopyToMeeting && v06 ? copy : null;
+  const sourceMeetingOnly = !!source && isAdmissionsHost(dataviewById(source.source.instance.dataview)?.host.id);
+  // The rows are read when the menu opens, so the CSV is exactly what the panel shows then.
+  const table = open ? (csv?.get() ?? null) : null;
+  const rows = panelMenuRows({ dashboard: !!source && !sourceMeetingOnly, meeting: !!onCopyToMeeting || !!source, csv: !!table });
+  const act = (k: PanelMenuKey) => {
+    setOpen(false);
+    if (k === "print") return onPrint();
+    if (k === "csv") {
+      const t = csv?.get();
+      if (t) downloadCsv(csvFileName(csv?.scope?.who, csv?.title ?? "panel"), toCsv(t));
+      return;
+    }
+    if (k === "meeting" && onCopyToMeeting) return onCopyToMeeting();
+    setCopying(k);
+  };
   return (
     <span className="relative" ref={ref}>
       <button
@@ -305,8 +349,8 @@ export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => vo
         onClick={toggle}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Export this panel"
-        title="Export"
+        aria-label="Panel menu: copy, print or save"
+        title="Copy, print or save"
         data-panel-menu=""
         // The footer's row is 17px tall (the (i), note and feedback icons).
         className="flex h-[17px] w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
@@ -315,18 +359,10 @@ export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => vo
       </button>
       {open && anchor && portalTo(
         <div ref={menuRef} className="fixed z-[1600] h-0 w-0" style={{ left: anchor.left, top: anchor.top }}>
-          <PanelMenu label="Export" width={EXPORT_MENU_WIDTH} align={anchor.align} placement={anchor.placement}>
-            <MenuRow label="Print this graph" onClick={() => { setOpen(false); onPrint(); }} />
-            {onCopy ? (
-              <MenuRow label="Copy this view…" onClick={() => { setOpen(false); onCopy(); }} />
-            ) : v06 ? (
-              copy && <MenuRow label="Copy this view…" onClick={() => { setOpen(false); setCopying(true); }} />
-            ) : (
-              <>
-                <MenuRow label="Copy to custom dashboard" tag="Coming soon" disabled onClick={() => {}} />
-                <MenuRow label="Copy to a presentation" tag="Coming soon" disabled onClick={() => {}} />
-              </>
-            )}
+          <PanelMenu label="Panel menu" width={EXPORT_MENU_WIDTH} align={anchor.align} placement={anchor.placement}>
+            {rows.map((k) => (
+              <MenuRow key={k} label={PANEL_MENU[k]} onClick={() => act(k)} />
+            ))}
             {extra.length > 0 && <MenuDivider />}
             {extra.map((x) => (
               <MenuRow key={x.label} label={x.label} title={x.title} disabled={x.disabled} onClick={() => { setOpen(false); x.onClick(); }} />
@@ -334,9 +370,9 @@ export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => vo
           </PanelMenu>
         </div>,
       )}
-      {copying && copy && (
+      {copying && source && (
         <Suspense fallback={null}>
-          <CopyViewDialog open source={copy.source} superAdmin={copy.superAdmin} onCopied={copy.onCopied} onClose={() => setCopying(false)} />
+          <CopyViewDialog open startOn={copying} meetingOnly={sourceMeetingOnly} source={source.source} superAdmin={source.superAdmin} onCopied={source.onCopied} onClose={() => setCopying(null)} />
         </Suspense>
       )}
     </span>

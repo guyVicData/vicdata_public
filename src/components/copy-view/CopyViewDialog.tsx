@@ -71,9 +71,13 @@ export type CopyViewDialogProps = {
   // 0.7 admissions r2 (D8): an Admissions view goes to a meeting's slides only (a custom
   // dashboard draws Teacher's hosts). Absent: both, exactly as before.
   meetingOnly?: boolean;
+  // Panel menu (21 Nov): the ··· menu's "Copy to a dashboard…" and "Copy to a meeting…" open the same
+  // dialog on that tab. Absent: the tab last used, as before.
+  startOn?: CopyTarget;
 };
 
-type Mode = "dashboard" | "meeting";
+export type CopyTarget = "dashboard" | "meeting";
+type Mode = CopyTarget;
 
 export function CopyViewDialog(props: CopyViewDialogProps) {
   // Opened from a click, so always in the browser.
@@ -107,7 +111,7 @@ const BarsGlyph = () => (
   </svg>
 );
 
-function Dialog({ onClose, source, superAdmin = false, onCopied, meetingOnly = false }: CopyViewDialogProps) {
+function Dialog({ onClose, source, superAdmin = false, onCopied, meetingOnly = false, startOn }: CopyViewDialogProps) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const router = useRouter();
   const today = localToday();
@@ -115,7 +119,7 @@ function Dialog({ onClose, source, superAdmin = false, onCopied, meetingOnly = f
   const kind = kindWordOf(source.instance.dataview);
   const last = useMemo(() => readLastUsed(storage()), []);
 
-  const [mode, setMode] = useState<Mode>(meetingOnly ? "meeting" : (last?.mode ?? "dashboard"));
+  const [mode, setMode] = useState<Mode>(meetingOnly ? "meeting" : (startOn ?? last?.mode ?? "dashboard"));
   const [data, setData] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dest, setDest] = useState<string | "new" | null>(null);

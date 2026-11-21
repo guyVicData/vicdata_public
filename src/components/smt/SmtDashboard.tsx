@@ -33,6 +33,12 @@ import { useWidth } from "@/components/admissions/views/charts";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { dataviewById } from "@/catalogue/dataviews";
+import { usePanelCsv, PanelCsvScope } from "@/components/shell/panel-csv";
+import type { CsvTable } from "@/lib/csv";
+import { overviewCsv } from "./csv";
+import { pupilsCsv } from "./csv-pupils";
+import { contextCsv } from "./csv-context";
+import { academicCsv } from "./csv-academic";
 import { contextFromPanel } from "@/catalogue/pick";
 import { SMT_DASHBOARDS, SMT_ACADEMIC_ID, SMT_CONTEXT_ID, SMT_OVERVIEW_ID, SMT_PUPILS_ID } from "@/catalogue/dashboards/smt";
 import { ADMISSIONS_NOTES, SMT_NOTES, TREND_BASE_NOTE, smtNote } from "@/catalogue/notes";
@@ -451,6 +457,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   return (
     <UsageScopeContext.Provider value={quiet ? null : usage}>
       <ViewSurfaceProvider surface={surface} config={config}>
+      <PanelCsvScope.Provider value={{ who: member.schoolName, set: set?.label ?? null }}>
       <ShellPage phone={phone} rootRef={rootRef}>
         {/* 0.8 front door 2b (M3): in Mid the header -- banners, nav, the control bar -- is a dark band and
             the rows below sit on the orange field. A fragment in Dark and Light (the same elements, in order). */}
@@ -530,6 +537,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
           </Suspense>
         )}
       </ShellPage>
+      </PanelCsvScope.Provider>
       </ViewSurfaceProvider>
     </UsageScopeContext.Provider>
   );
@@ -993,6 +1001,8 @@ function ready<T>(l: Load<T>, render: (d: T) => ReactNode): ReactNode {
 
 export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; fullscreen: boolean; room?: number }) {
   const [stage, setStage] = useState(0);
+  // Panel menu "Save as CSV": the rows of the view on screen, from the same object it draws.
+  usePanelCsv(() => smtViewCsv(dv, c, stage));
   if (dv.startsWith("DV-SMT-O-")) {
     return ready(c.overview, (o) => {
       switch (dv) {
@@ -1153,6 +1163,14 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
     }
     return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
   });
+}
+
+/** Panel menu "Save as CSV": one view's rows (src/components/smt/csv*.ts), null while loading. */
+export function smtViewCsv(dv: string, c: Pick<Ctx, "school" | "overview" | "pupils" | "context" | "academic">, stage = 0): CsvTable | null {
+  if (dv.startsWith("DV-SMT-O-")) return c.overview.status === "ready" ? overviewCsv(dv, c.overview.data, c.school, stage) : null;
+  if (dv.startsWith("DV-SMT-P-")) return c.pupils.status === "ready" ? pupilsCsv(dv, c.pupils.data) : null;
+  if (dv.startsWith("DV-SMT-C-")) return c.context.status === "ready" ? contextCsv(dv, c.context.data) : null;
+  return c.academic.status === "ready" ? academicCsv(dv, c.academic.data) : null;
 }
 
 /** What the Academic view is about: "A level", "Applied general", "All qualifications", a GCSE area. */
