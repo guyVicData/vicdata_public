@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 251 rules: 243 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 252 rules: 244 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -259,6 +259,7 @@ What a number is allowed to be. 251 rules: 243 active, 8 superseded; 22 must lif
 | R-NM-SETS | active | A set of groups holds groups of one family, and our own group's: a non-mainstream group never shares a set with a mainstream group (and nursery federations never with special and AP trusts), by any route -- the library's Add to set… refuses in one line ("Ark is a mainstream group: special and AP trusts are compared only with special and AP trusts."), the editor's Add groups offers only our family and refuses the rest with the same line, a stored or unsaved set drops another family's groups and says how many, and Nearest in size is our family's. | no | auto: nmSets | — |
 | R-NM-OWN-SCHOOLS | active | A mainstream group's own special, AP, PRU and nursery schools stay out of its figures; in its Schools table each is placed against its region's state-funded pool of its kind (its FSM, DfE's own, beside the pool's; its 3-year roll change beside the pool's like-for-like change; R-MIN-SCHOOLS) in place of the bare "not in group figures" tag, and a pooled line (production's kind_lines) appears only where it has 5 or more current schools of one kind, beside England's pool of that kind. | no | auto: nmOwnSchools | — |
 | R-PASSWORD-RESET | active | "Forgot password?" on /login opens a form that emails a link (Supabase resetPasswordForEmail, redirectTo this site's own /reset-password). Its answer never says whether an account exists: success, and any answer about the address, read "If that address has a VicData account, we've sent a link…"; only a second press inside 60 seconds ("You can ask for another in {n} seconds", counted on this browser for any address), the hourly email limit and a send that failed read differently. /reset-password takes the recovery session from the link's URL fragment (the browser client's implicit flow), asks for the new password twice with sign-up's rules (at least 8 characters), saves it (updateUser) and lands the reader signed in on /member; a used or expired link, or no link, says so plainly and offers a new one. Both pages are never indexed. | no | auto: passwordReset | — |
+| R-NO-PUBLIC-SCHOOL-LINKS | active | For the private beta the public school pages are hidden: every /schools/** request (a school's page, its Data View, anything under it) is a temporary redirect (307) in next.config.ts to /member, which sends a signed-in member to their home (/teacher) and a signed-out visitor to / (only the browser holds the session). The sitemap lists no school page. Nothing a signed-in user can click builds a /schools URL: a school with an in-app view links there (the group home and the group Schools tables open a member school's SMT read-only where it holds VicData); every other school is its name as plain text (the group home's other schools, the groups library's tracklist, Admissions' shared lists), a map marker with no picker is a tooltip only, SchoolSearch is a picker only (onSelect required) and is gone from the public home, and Account no longer offers the Data View. A source scan of src fails on any string or template literal starting /schools outside an allow-list of files reachable only from src/app/schools. | no | auto: noPublicSchoolLinks | — |
 
 ## Cards
 
@@ -4273,6 +4274,22 @@ What a number is allowed to be. 251 rules: 243 active, 8 superseded; 22 must lif
 | Tagged at | - src/app/login/layout.tsx<br>- src/app/login/page.tsx<br>- src/app/reset-password/layout.tsx<br>- src/app/reset-password/page.tsx<br>- src/components/auth/ForgotPasswordForm.tsx<br>- src/lib/password-reset.test.ts<br>- src/lib/password-reset.ts |
 | Test case | no school: the sign-in pages (unit tests on the messages, the redirect URL, the wait, the link's fragment and the password rules) (110110): The confirmation is the same for any address; the link returns to {origin}/reset-password; a press inside the wait says how long; an expired link reads as expired; 7-character or mismatched passwords are refused; both pages noindex. [runner: passwordReset] |
 | Origin | 0.8 front door part 3, Q3 (docs/v0.8/vicdata_0_8_front_door_part3_signin_gate_security_claude_code_prompt_v1.md), 21 Nov 2026 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-NO-PUBLIC-SCHOOL-LINKS
+
+| Field | Content |
+| --- | --- |
+| Statement | For the private beta the public school pages are hidden: every /schools/** request (a school's page, its Data View, anything under it) is a temporary redirect (307) in next.config.ts to /member, which sends a signed-in member to their home (/teacher) and a signed-out visitor to / (only the browser holds the session). The sitemap lists no school page. Nothing a signed-in user can click builds a /schools URL: a school with an in-app view links there (the group home and the group Schools tables open a member school's SMT read-only where it holds VicData); every other school is its name as plain text (the group home's other schools, the groups library's tracklist, Admissions' shared lists), a map marker with no picker is a tooltip only, SchoolSearch is a picker only (onSelect required) and is gone from the public home, and Account no longer offers the Data View. A source scan of src fails on any string or template literal starting /schools outside an allow-list of files reachable only from src/app/schools. |
+| Why | Guy, 21 Nov: the private beta shows only the signed-in products; the public pages and every route to them are hidden. |
+| Applies to | every route under /schools, and every link, push, marker and href in src |
+| Enforced in | - next.config.ts:redirects<br>- src/app/member/page.tsx<br>- src/app/sitemap.ts<br>- src/lib/public-school-links.ts:PUBLIC_PAGE_ONLY, publicSchoolLinkFindings<br>- src/lib/groups/dash.ts:buildSchools (link)<br>- src/components/groups/GroupHome.tsx<br>- src/components/ConsortiumMap.tsx<br>- src/components/SchoolSearch.tsx<br>- src/lib/public-school-links.test.ts |
+| Tagged at | - src/app/member/page.tsx<br>- src/app/page.tsx<br>- src/app/sitemap.ts<br>- src/components/ConsortiumMap.tsx<br>- src/components/SchoolSearch.tsx<br>- src/components/groups/GroupHome.tsx<br>- src/lib/groups/dash.ts<br>- src/lib/public-school-links.test.ts<br>- src/lib/public-school-links.ts |
+| Test case | the source scan (every .ts and .tsx in src), next.config.ts's redirect and the sitemap (110110): /schools, /schools/110110 and /schools/110110/data redirect to /member (temporary); no /schools URL outside the allow-list; every allow-listed file still builds one and is imported only from the hidden pages; the sitemap has no school. [runner: noPublicSchoolLinks] |
+| Origin | Private beta (Guy, 21 Nov): hide the public school pages |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

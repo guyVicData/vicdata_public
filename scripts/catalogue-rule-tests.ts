@@ -3799,6 +3799,11 @@ const RUNNERS: Record<string, Runner> = {
     const live = lp.stage === "ks5" && lp.switchedFrom === "ks4" && ch.stage === "ks4" && !ch.switchedFrom;
     return { pass: r.pass && live, detail: fmt({ fixtures: r.detail, leightonPark: `${lp.stage} (from ${lp.switchedFrom ?? "-"})`, theChase: ch.stage }) };
   },
+  // Private beta (21 Nov): R-NO-PUBLIC-SCHOOL-LINKS -- the redirect, the sitemap and the source scan.
+  async noPublicSchoolLinks(_L, rule) {
+    const r = unitByRule("src/lib/public-school-links.test.ts", rule.id, {}, [".env", ".env.local"]);
+    return { pass: r.pass, detail: r.detail };
+  },
   async subjectColour(_L, rule) {
     const r = unitByRule("src/lib/subject-colour.test.tsx", rule.id, {}, [".env", ".env.local"]);
     return { pass: r.pass, detail: r.detail };

@@ -3246,6 +3246,18 @@ export const RULES: Rule[] = [
     origin: "0.8 front door part 3, Q3 (docs/v0.8/vicdata_0_8_front_door_part3_signin_gate_security_claude_code_prompt_v1.md), 21 Nov 2026",
     status: "active",
   },
+  // ------------------------------------------------------------------ private beta, 21 Nov
+  {
+    id: "R-NO-PUBLIC-SCHOOL-LINKS",
+    statement:
+      "For the private beta the public school pages are hidden: every /schools/** request (a school's page, its Data View, anything under it) is a temporary redirect (307) in next.config.ts to /member, which sends a signed-in member to their home (/teacher) and a signed-out visitor to / (only the browser holds the session). The sitemap lists no school page. Nothing a signed-in user can click builds a /schools URL: a school with an in-app view links there (the group home and the group Schools tables open a member school's SMT read-only where it holds VicData); every other school is its name as plain text (the group home's other schools, the groups library's tracklist, Admissions' shared lists), a map marker with no picker is a tooltip only, SchoolSearch is a picker only (onSelect required) and is gone from the public home, and Account no longer offers the Data View. A source scan of src fails on any string or template literal starting /schools outside an allow-list of files reachable only from src/app/schools.",
+    why: "Guy, 21 Nov: the private beta shows only the signed-in products; the public pages and every route to them are hidden.",
+    appliesTo: "every route under /schools, and every link, push, marker and href in src",
+    enforcedIn: ["next.config.ts:redirects", "src/app/member/page.tsx", "src/app/sitemap.ts", "src/lib/public-school-links.ts:PUBLIC_PAGE_ONLY, publicSchoolLinkFindings", "src/lib/groups/dash.ts:buildSchools (link)", "src/components/groups/GroupHome.tsx", "src/components/ConsortiumMap.tsx", "src/components/SchoolSearch.tsx", "src/lib/public-school-links.test.ts"],
+    testCase: { urn: "110110", school: "the source scan (every .ts and .tsx in src), next.config.ts's redirect and the sitemap", expect: "/schools, /schools/110110 and /schools/110110/data redirect to /member (temporary); no /schools URL outside the allow-list; every allow-listed file still builds one and is imported only from the hidden pages; the sitemap has no school.", check: "noPublicSchoolLinks" },
+    origin: "Private beta (Guy, 21 Nov): hide the public school pages",
+    status: "active",
+  },
 ];
 // Every ID a type-level template allows, checked at runtime by the unit tests.
 export const RULE_IDS: RuleId[] = RULES.map((r) => r.id);
