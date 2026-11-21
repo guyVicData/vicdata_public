@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 266 rules: 258 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -270,6 +270,10 @@ What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lif
 | R-JOIN-DOMAIN | active | Each school account holds its email domains (school_email_domains): its first School-Admin's (or the account holder's) domain seeded it, unless that is a personal mail domain (gmail.com, mac.com…), which never stands for a school; the School-Admin or account holder adds and removes domains on People ("Who can join"). join_school marks a request from outside the list (not the domain or a subdomain of it) off_domain: an exception, tagged "Exception" in Join requests and approved only with "Approve as an exception", which sets exception_approved_at and _by in the same update -- the database refuses a plain approval of an exception and any signed-in change to the mark. A school with no list yet holds every request as an exception. An on-domain request is ordinary. Existing members are unaffected (off_domain false); a first member verified on the school's website seeds the list with their domain. | no | auto: frontDoor3 | — |
 | R-NAV-ONE | active | One nav on every page, for every role: the shell's TeacherNav -- VicData (to the person's home, /teacher), Home, the phase switch where the page has Teacher phases, the label switch, the role switch (more than one role), the View as pill (while viewing as someone), Send feedback, the account menu (Your Account, Sets, the walkthroughs switch, School account, People and Teams for a School-Admin, Platform for a platform admin, View as..., the school picker, Log Out), the theme switch; signed out, VicData, Log in and the theme. A page draws it itself (own) or the root layout draws the same component above it (host), never both and never another bar: every page route is listed in nav-routes.ts. A walkthrough has its own band instead (as designed), with its close button home and Send feedback. No other VicData wordmark is drawn. | no | auto: navOne | — |
 | R-NAV-FEEDBACK | active | "Send feedback" is in the one nav, desktop and phone, just before the account menu (and in a walk's band), for whoever the feedback setting lets give feedback (feedback_allowed(): admins, then the named beta testers, then all). It is the dashboards' own feedback icon (FeedbackIcon) on a traffic-light amber pill (#ffbf00, ink #1f1300 at 11.0:1; a darker amber edge in Light, 4.6:1 on the light bar; 12.0:1 for the fill on the dark bar), named "Send feedback", focusable, 44 px to touch on a phone. It opens the existing feedback window on the whole page (R-FEEDBACK-PAGE): the page's own surface where it has one; elsewhere the page described from its address (product by section, dashboard nav:<path>, the school it is for, the role, View as or peek, state {page}). Nothing new is stored: the same route, table and columns. | no | auto: navFeedback | — |
+| R-PANEL-CSV-FILE | active | "Save as CSV" writes one RFC 4180 file (src/lib/csv.ts): a UTF-8 byte-order mark, a header row, CRLF line ends, a field quoted when it holds a comma, quote or line break (a quote doubled), every row the header's width. Numbers are numbers at the precision the panel shows, without thousands separators or exponents; a percentage is a number under a header that says so ("Share (%)" over 45.3, never "45.3%"); years as the panel writes them ("2024/25"). What the figures rest on -- the comparison set and the data year -- are leading columns ("Comparison set", "Data year") on every row, not a comment line, and aren't repeated where the table has its own. Text Excel would read as a formula (=, +, @) is prefixed with an apostrophe. The file is named vicdata_<school-or-group>_<panel-title>_<YYYY-MM-DD>.csv, each part slugged. | no | auto: panelCsvFile | — |
+| R-PANEL-CSV-ROWS | active | A panel's CSV is exactly what the panel shows: the view on screen registers its own rows (usePanelCsv, the one pattern, in the view or the place that picks it), built from the same object it draws, after its set, filters, year and level -- so the CSV can't drift from the screen. The rows are read when the menu opens and again on the click; in full screen the modal's view is the one exported. A view with nothing tabular, or nothing to show (an empty state, still loading), registers nothing and the panel's menu has no "Save as CSV" row (never a disabled one); the gaps are listed in docs/v0.8/panel_menu_csv_v1.md. View as and the platform-admin peek can save a CSV (read-only, as the screen). | no | auto: panelCsvRows | — |
+| R-PANEL-CSV-SUPPRESSED | active | A figure the screen withholds stays withheld in the CSV: small-number suppression, R-MIN-SCHOOLS ("Too few schools (n)"), R-MIN-ENTRIES ("too few entries"), a partial England figure, a band drawn only on enough schools -- the CSV writes the screen's own words, or leaves the cell empty where the screen shows a dash, and never the number behind it. | no | auto: panelCsvSuppressed | — |
+| R-PANEL-MENU-ORDER | active | Every panel's ··· menu, in every product, is the one PanelExport with the same rows in the same order: "Copy to a dashboard…", "Copy to a meeting…" (both open the one Copy view dialog on that tab), "Print or save as PDF" (the panel printed alone, as before), "Save as CSV"; then a divider and the product's own extras (Admissions' "Edit the feeder lists"). A row that can't act there is left out, never shown disabled: there are no Coming soon rows; SMT and Admissions views copy to a meeting only (a custom dashboard draws Teacher's hosts); View as, head office and meeting slides have no copy rows; a view with no rows has no CSV row. The button reads "Panel menu: copy, print or save". | no | auto: panelMenuOrder | — |
 
 ## Cards
 
@@ -361,7 +365,7 @@ What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lif
 | Why | A figure from one or two schools identifies them and swings wildly; it is not a benchmark. |
 | Applies to | Every LA / region / England figure |
 | Enforced in | - vicdata:supabase/migrations/20260926140000_subject_geography_lookup_min_school_count.sql:35,66,90,123<br>- vicdata:supabase/migrations/20260927121000_academic_subject_grade_geography_aggregate.sql:50,82<br>- src/app/api/teacher/subject-geography/route.ts:59 (national passes 1)<br>- src/lib/teacher-dashboard-data.ts:englandAverages (national passes 1)<br>- src/lib/vicdata-reference.ts:lookupAcademicSubjectGradeGeography (633, passes null)<br>- src/lib/groups/dash.ts:setsFor / withheld (POOL_MIN_SCHOOLS; group pools) |
-| Tagged at | - src/lib/groups/aggregates.ts<br>- src/lib/groups/dash-nm.ts<br>- src/lib/groups/dash.ts<br>- src/lib/groups/non-mainstream.test.ts<br>- src/lib/groups/non-mainstream.ts<br>- src/lib/groups/rules.test.ts<br>- src/lib/teacher-dashboard-data.ts<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/vicdata-reference.ts<br>- src/lib/view-series/geography.ts |
+| Tagged at | - src/components/groups/dash/csv.ts<br>- src/components/teacher/csv.ts<br>- src/lib/groups/aggregates.ts<br>- src/lib/groups/dash-nm.ts<br>- src/lib/groups/dash.ts<br>- src/lib/groups/non-mainstream.test.ts<br>- src/lib/groups/non-mainstream.ts<br>- src/lib/groups/rules.test.ts<br>- src/lib/panel-csv-group.test.ts<br>- src/lib/teacher-dashboard-data.ts<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/vicdata-reference.ts<br>- src/lib/view-series/geography.ts |
 | Test case | Acland Burghley School (100053), ks4, all years: Camden (the school's LA) GCSE points geography: every row returned by default has school_count >= 5, and asking for minimum 1 returns more rows. [runner: minSchools] |
 | Origin | Subject geography rounds (min school count migration) |
 | Status | active |
@@ -793,7 +797,7 @@ What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lif
 | Why | A share of one or two entries swings by tens of points and ranks noise. |
 | Applies to | Context and Comparisons on a Grade counts selection |
 | Enforced in | - src/lib/academic-data-view.ts:MINIMUM_SUBJECT_N<br>- src/components/dashboard-config/TeacherDashboard.tsx:selectionRateOf<br>- src/components/teacher/ComparisonsPanels.tsx:tooFewUrns; src/lib/view-series/ranking.ts:schoolRanking (tooFew) |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/lib/subject-ranking.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/ranking.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/lib/panel-csv-teacher.test.ts<br>- src/lib/subject-ranking.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/ranking.ts |
 | Test case | — |
 | Origin | 0.6.3 grade counts, maps, tables round (S1) |
 | Status | active |
@@ -4233,7 +4237,7 @@ What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lif
 | Why | NM7. |
 | Applies to | every Group page of a non-mainstream group; the library |
 | Enforced in | - src/lib/groups/dash.ts:buildOverview, buildSchools<br>- src/components/groups/dash/views-nm.tsx:NmNoResults<br>- src/components/groups/dash/GroupDashboard.tsx:NM_LAYOUT<br>- src/lib/groups/library-page.ts |
-| Tagged at | - src/components/groups/dash/GroupDashboard.tsx<br>- src/components/groups/dash/views-nm.tsx<br>- src/components/groups/dash/views.tsx<br>- src/components/groups/library/GroupLibrary.tsx<br>- src/lib/front-door/group-answers.ts<br>- src/lib/groups/dash-payload.ts<br>- src/lib/groups/dash.ts<br>- src/lib/groups/non-mainstream.test.ts<br>- src/lib/groups/non-mainstream.ts |
+| Tagged at | - src/components/groups/dash/GroupDashboard.tsx<br>- src/components/groups/dash/csv.ts<br>- src/components/groups/dash/views-nm.tsx<br>- src/components/groups/dash/views.tsx<br>- src/components/groups/library/GroupLibrary.tsx<br>- src/lib/front-door/group-answers.ts<br>- src/lib/groups/dash-payload.ts<br>- src/lib/groups/dash.ts<br>- src/lib/groups/non-mainstream.test.ts<br>- src/lib/groups/non-mainstream.ts |
 | Test case | Nexus (16125), the Birmingham nursery federation (17126), Shaw (4499), Harris and Dukes (the group fixtures, production build 7) (16125): Nexus and Birmingham: no result columns, places or trends, the reason shown; their Schools tables have no headline. [runner: nmCounting] |
 | Origin | 0.8 non-mainstream groups (Guy's NM1-NM12, 13 Nov; docs/v0.8/vicdata_0_8_non_mainstream_groups_claude_code_prompt_v1.md, production build 7) |
 | Status | active |
@@ -4297,7 +4301,7 @@ What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lif
 | Why | Guy, 21 Nov: the private beta shows only the signed-in products; the public pages and every route to them are hidden. |
 | Applies to | every route under /schools, and every link, push, marker and href in src |
 | Enforced in | - next.config.ts:redirects<br>- src/app/member/page.tsx<br>- src/app/sitemap.ts<br>- src/lib/public-school-links.ts:PUBLIC_PAGE_ONLY, publicSchoolLinkFindings<br>- src/lib/groups/dash.ts:buildSchools (link)<br>- src/components/groups/GroupHome.tsx<br>- src/components/ConsortiumMap.tsx<br>- src/components/SchoolSearch.tsx<br>- src/lib/public-school-links.test.ts |
-| Tagged at | - src/app/member/page.tsx<br>- src/app/sitemap.ts<br>- src/components/ConsortiumMap.tsx<br>- src/components/SchoolSearch.tsx<br>- src/components/groups/GroupHome.tsx<br>- src/lib/groups/dash.ts<br>- src/lib/public-school-links.test.ts<br>- src/lib/public-school-links.ts |
+| Tagged at | - src/app/member/page.tsx<br>- src/app/sitemap.ts<br>- src/components/ConsortiumMap.tsx<br>- src/components/SchoolSearch.tsx<br>- src/components/groups/GroupHome.tsx<br>- src/components/shell/nav-routes.ts<br>- src/lib/groups/dash.ts<br>- src/lib/nav-consistency.test.tsx<br>- src/lib/public-school-links.test.ts<br>- src/lib/public-school-links.ts |
 | Test case | the source scan (every .ts and .tsx in src), next.config.ts's redirect and the sitemap (110110): /schools, /schools/110110 and /schools/110110/data redirect to /member (temporary); no /schools URL outside the allow-list; every allow-listed file still builds one and is imported only from the hidden pages; the sitemap has no school. [runner: noPublicSchoolLinks] |
 | Origin | Private beta (Guy, 21 Nov): hide the public school pages |
 | Status | active |
@@ -4441,7 +4445,7 @@ What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lif
 | Why | Guy, 21 Nov: the site bar (VicData, Sets, Home, Account) was stacked above the SMT, Admissions, group and first-visit pages' own nav -- two headers -- and was the only nav on the sets, account, platform and editor pages; People and Teams had no account menu; the logo went to the public page. |
 | Applies to | every page: src/app/**/page.tsx |
 | Enforced in | - src/components/shell/nav-routes.ts:NAV_ROUTES, navModeFor<br>- src/components/NavBar.tsx<br>- src/components/shell/TeacherNav.tsx:TeacherNav, PhoneNav, AccountMenu<br>- src/components/admin/AdminChrome.tsx:AdminHeader<br>- src/components/school-admin/SchoolAccount.tsx:AdminShell<br>- src/components/admissions/AdmissionsDashboard.tsx<br>- src/lib/nav-consistency.test.tsx<br>- docs/v0.8/nav_consistency_audit_v1.md |
-| Tagged at | - src/components/NavBar.tsx<br>- src/components/admin/AdminChrome.tsx<br>- src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/admissions/setup/Setup.tsx<br>- src/components/school-admin/SchoolAccount.tsx<br>- src/components/shell/TeacherNav.tsx<br>- src/components/shell/nav-routes.ts<br>- src/lib/nav-consistency.test.tsx |
+| Tagged at | - src/components/NavBar.tsx<br>- src/components/admin/AdminChrome.tsx<br>- src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/admissions/setup/Setup.tsx<br>- src/components/front-door/BareRoutes.tsx<br>- src/components/school-admin/SchoolAccount.tsx<br>- src/components/shell/TeacherNav.tsx<br>- src/components/shell/nav-routes.ts<br>- src/lib/nav-consistency.test.tsx |
 | Test case | every page route (source), and the audit's headless crawl of each page x role (the report) (110110): Every page is listed; a page listed as own draws TeacherNav, a hosted one doesn't; the layout's NavBar draws only TeacherNav; one VicData wordmark, to /teacher; Sets is in the account menu. [runner: navOne] |
 | Origin | 0.8 nav consistency, part 1 (Guy, 21 Nov 2026) |
 | Status | active |
@@ -4460,6 +4464,70 @@ What a number is allowed to be. 262 rules: 254 active, 8 superseded; 22 must lif
 | Tagged at | - src/components/feedback/NavFeedbackButton.tsx<br>- src/components/front-door/WalkPage.tsx<br>- src/components/shell/TeacherNav.tsx<br>- src/lib/nav-consistency.test.tsx |
 | Test case | the button rendered on the server with the store let in and not; the item a Sets page sends, through the server's own check (110110): Nothing when not let in; aria-label Send feedback, h-11 below sm, the FeedbackIcon svg; contrast pairs pass; a page without a surface records product home, dashboard nav:/sets/guided, the school, page path and query, no panel. [runner: navFeedback] |
 | Origin | 0.8 nav consistency, part 2 (Guy, 21 Nov 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-PANEL-CSV-FILE
+
+| Field | Content |
+| --- | --- |
+| Statement | "Save as CSV" writes one RFC 4180 file (src/lib/csv.ts): a UTF-8 byte-order mark, a header row, CRLF line ends, a field quoted when it holds a comma, quote or line break (a quote doubled), every row the header's width. Numbers are numbers at the precision the panel shows, without thousands separators or exponents; a percentage is a number under a header that says so ("Share (%)" over 45.3, never "45.3%"); years as the panel writes them ("2024/25"). What the figures rest on -- the comparison set and the data year -- are leading columns ("Comparison set", "Data year") on every row, not a comment line, and aren't repeated where the table has its own. Text Excel would read as a formula (=, +, @) is prefixed with an apostrophe. The file is named vicdata_<school-or-group>_<panel-title>_<YYYY-MM-DD>.csv, each part slugged. |
+| Why | Guy, 21 Nov: every panel's menu saves its data as a CSV that Excel opens correctly, accents included, and that adds up. |
+| Applies to | every panel's ··· menu, every product |
+| Enforced in | - src/lib/csv.ts<br>- src/components/shell/PanelFooter.tsx:PanelExport<br>- src/lib/panel-menu-csv.test.ts |
+| Tagged at | - src/lib/panel-menu-csv.test.ts |
+| Test case | no school: the file helper on hand-made rows (commas, quotes, line breaks, accents, a negative, a formula-looking text) (110110): BOM, header, CRLF; quoted fields parse back to the same cells; 45.3 under "Share (%)"; the set and year lead; vicdata_leighton-park-school_scorecard_2026-11-23.csv. [runner: panelCsvFile] |
+| Origin | Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-PANEL-CSV-ROWS
+
+| Field | Content |
+| --- | --- |
+| Statement | A panel's CSV is exactly what the panel shows: the view on screen registers its own rows (usePanelCsv, the one pattern, in the view or the place that picks it), built from the same object it draws, after its set, filters, year and level -- so the CSV can't drift from the screen. The rows are read when the menu opens and again on the click; in full screen the modal's view is the one exported. A view with nothing tabular, or nothing to show (an empty state, still loading), registers nothing and the panel's menu has no "Save as CSV" row (never a disabled one); the gaps are listed in docs/v0.8/panel_menu_csv_v1.md. View as and the platform-admin peek can save a CSV (read-only, as the screen). |
+| Why | Guy, 21 Nov: "downloads the data the panel is showing" -- the same numbers, never a recomputation that could disagree. |
+| Applies to | SMT, Admissions, Teacher, group, custom dashboards, meeting slides |
+| Enforced in | - src/components/shell/panel-csv.tsx<br>- src/components/shell/CardBox.tsx<br>- src/components/smt/csv.ts<br>- src/components/admissions/csv.ts<br>- src/components/teacher/csv.ts<br>- src/components/groups/dash/csv.ts<br>- src/lib/panel-menu-csv.test.ts<br>- src/lib/panel-csv-smt.test.ts<br>- src/lib/panel-csv-admissions.test.ts<br>- src/lib/panel-csv-teacher.test.ts<br>- src/lib/panel-csv-group.test.ts |
+| Tagged at | - src/components/shell/panel-csv.tsx<br>- src/lib/panel-csv-admissions.test.ts<br>- src/lib/panel-csv-group.test.ts<br>- src/lib/panel-csv-smt.test.ts<br>- src/lib/panel-csv-teacher.test.ts<br>- src/lib/panel-menu-csv.test.ts |
+| Test case | hand-made fixtures per product: each table view rendered (server render) beside its CSV (110110): Every row and figure of the rendered table is the CSV's, at the same precision; a full screen's view wins over the card's; a view with no rows gives no CSV. [runner: panelCsvRows] |
+| Origin | Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-PANEL-CSV-SUPPRESSED
+
+| Field | Content |
+| --- | --- |
+| Statement | A figure the screen withholds stays withheld in the CSV: small-number suppression, R-MIN-SCHOOLS ("Too few schools (n)"), R-MIN-ENTRIES ("too few entries"), a partial England figure, a band drawn only on enough schools -- the CSV writes the screen's own words, or leaves the cell empty where the screen shows a dash, and never the number behind it. |
+| Why | Guy, 21 Nov: never export a figure the screen hides. |
+| Applies to | every panel's "Save as CSV" |
+| Enforced in | - src/components/smt/csv.ts<br>- src/components/admissions/csv.ts<br>- src/components/teacher/csv.ts<br>- src/components/groups/dash/csv.ts<br>- src/lib/panel-menu-csv.test.ts<br>- src/lib/panel-csv-smt.test.ts<br>- src/lib/panel-csv-admissions.test.ts<br>- src/lib/panel-csv-teacher.test.ts<br>- src/lib/panel-csv-group.test.ts |
+| Tagged at | - src/lib/csv.ts<br>- src/lib/panel-csv-admissions.test.ts<br>- src/lib/panel-csv-group.test.ts<br>- src/lib/panel-csv-smt.test.ts<br>- src/lib/panel-csv-teacher.test.ts<br>- src/lib/panel-menu-csv.test.ts |
+| Test case | hand-made fixtures with a withheld figure per product (a set band on 2 schools, a pool of 3 schools, a subject under 5 entries) (110110): The CSV carries the screen's words or an empty cell, never the figure. [runner: panelCsvSuppressed] |
+| Origin | Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-PANEL-MENU-ORDER
+
+| Field | Content |
+| --- | --- |
+| Statement | Every panel's ··· menu, in every product, is the one PanelExport with the same rows in the same order: "Copy to a dashboard…", "Copy to a meeting…" (both open the one Copy view dialog on that tab), "Print or save as PDF" (the panel printed alone, as before), "Save as CSV"; then a divider and the product's own extras (Admissions' "Edit the feeder lists"). A row that can't act there is left out, never shown disabled: there are no Coming soon rows; SMT and Admissions views copy to a meeting only (a custom dashboard draws Teacher's hosts); View as, head office and meeting slides have no copy rows; a view with no rows has no CSV row. The button reads "Panel menu: copy, print or save". |
+| Why | Guy, 21 Nov: the menu consistent and clearly worded everywhere. |
+| Applies to | every panel's ··· menu |
+| Enforced in | - src/components/shell/PanelFooter.tsx:PANEL_MENU, panelMenuRows, PanelExport<br>- src/components/copy-view/CopyViewDialog.tsx:startOn<br>- src/lib/panel-menu-csv.test.ts |
+| Tagged at | - src/components/shell/PanelFooter.tsx<br>- src/lib/panel-menu-csv.test.ts |
+| Test case | no school: the menu's rows for each host, and a source scan of src/components (110110): Each host's rows are the four in order with some left out; no other component draws a ··· menu, an old label or a Coming soon row. [runner: panelMenuOrder] |
+| Origin | Panel menu: Save as CSV (docs/v0.8/panel_menu_csv_v1.md), 21 Nov 2026 |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
