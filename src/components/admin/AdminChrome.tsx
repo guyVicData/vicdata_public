@@ -14,7 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { DELTA_POSITIVE, ROLE_ACCENT, accentText } from "@/lib/teacher-view-theme";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
-import { fetchViewedSchool, getActiveViewAs } from "@/lib/view-as";
+import { fetchViewedSchool, getActiveViewAs, resolvePeek, type ViewAsRole } from "@/lib/view-as";
 import { pickMembership, viewAsMembership } from "@/lib/view-as";
 
 // ---------------------------------------------------------------------------------------
@@ -62,27 +62,15 @@ export async function loadAdminSchool(): Promise<AdminSchoolState> {
   const { data: sessionData } = await supabase.auth.getSession();
   const user = sessionData.session?.user;
   if (!user) return { status: "signed-out" };
-  const viewAs = getActiveViewAs();
+  // Review pack 22 Nov, issue 6 (R-PEEK-ADMIN-READONLY): a peek (?lookAs=&as=&peek=1, a confirmed platform
+  // admin) is the viewed school, read-only, exactly as View as -- it used to fall through to the admin's own school.
+  const viewAs = getActiveViewAs() ?? (await resolvePeek(supabase));
   if (viewAs) {
     // 0.8 View as: the viewed school's account from the server (the one caller helper, after it has
     // confirmed a platform admin); the admin's own RLS reads none at a school they aren't a member of.
     // Any school: one with no account still opens, with nothing in it.
     const viewed = await fetchViewedSchool(supabase, viewAs.urn);
-    const account = { id: viewed?.accountId ?? "", account_holder_membership_id: null as string | null };
-    return {
-      status: "ready",
-      school: {
-        userId: user.id,
-        membershipId: "",
-        schoolAccountId: account.id,
-        schoolUrn: viewAs.urn,
-        schoolName: viewAs.schoolName,
-        accountHolderMembershipId: account.account_holder_membership_id,
-        isAccountHolder: false,
-        canManage: viewAsMembership(viewAs.role).is_admin,
-        readOnly: true,
-      },
-    };
+    return { status: "ready", school: viewedAdminSchool(user.id, viewAs, viewed) };
   }
   const { data: rows } = await supabase
     .from("school_memberships")
@@ -107,6 +95,21 @@ export async function loadAdminSchool(): Promise<AdminSchoolState> {
       isAccountHolder,
       canManage: data.is_admin || isAccountHolder,
     },
+  };
+}
+
+/** The School-Admin screens' school in View as or a peek: the viewed school, always read-only. */
+export function viewedAdminSchool(userId: string, v: { urn: string; role: ViewAsRole; schoolName: string }, viewed: { name?: string; accountId?: string } | null): AdminSchool {
+  return {
+    userId,
+    membershipId: "",
+    schoolAccountId: viewed?.accountId ?? "",
+    schoolUrn: v.urn,
+    schoolName: viewed?.name || v.schoolName,
+    accountHolderMembershipId: null,
+    isAccountHolder: false,
+    canManage: viewAsMembership(v.role).is_admin,
+    readOnly: true,
   };
 }
 

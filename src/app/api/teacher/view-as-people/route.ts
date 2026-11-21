@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { selectWithOffDomain } from "@/lib/join-exception";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
-import { viewAsForRequest, ViewAsUnconfirmed } from "@/lib/view-as";
+import { resolveCaller } from "@/lib/view-as-server";
+import { viewedAsSchoolAdmin } from "@/lib/view-as";
 
 // 0.6 snag 4 (B): People and Teams, READ-ONLY, for a platform admin viewing a school as its
 // School-Admin. A School-Admin reads these straight from the tables under RLS; Guy isn't a
@@ -14,18 +14,11 @@ export async function GET(request: NextRequest) {
   const urn = request.nextUrl.searchParams.get("urn");
   const authHeader = request.headers.get("authorization");
   if (!urn || !authHeader) return NextResponse.json({ error: "urn and Authorization are required" }, { status: 400 });
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
-  });
-  let viewAs: Awaited<ReturnType<typeof viewAsForRequest>>;
-  try {
-    viewAs = await viewAsForRequest(supabase, request, urn);
-  } catch (e) {
-    if (e instanceof ViewAsUnconfirmed) return NextResponse.json({ error: e.message }, { status: 502 });
-    throw e;
-  }
-  if (!viewAs || viewAs.role !== "school_admin") return NextResponse.json({ error: "Only your School-Admin can manage people." }, { status: 403 });
+  // Review pack 22 Nov, issue 6 (R-PEEK-ADMIN-READONLY): View as OR a peek (the one caller helper decides both,
+  // after confirming a platform admin), as that school's School-Admin. A member reads under RLS, never here.
+  const caller = await resolveCaller(request, urn, { refusal: "Only your School-Admin can manage people.", allowed: (r) => r.isAdmin || r.isAccountHolder });
+  if (caller instanceof NextResponse) return caller;
+  if (!viewedAsSchoolAdmin(caller)) return NextResponse.json({ error: "Only your School-Admin can manage people." }, { status: 403 });
 
   const svc = createServiceRoleSupabaseClient();
   const { data: account } = await svc.from("school_accounts").select("id").eq("school_urn", urn).maybeSingle<{ id: string }>();

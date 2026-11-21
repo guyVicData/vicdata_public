@@ -76,11 +76,12 @@ export function TeamsScreen() {
   );
 }
 
-export function Teams({ school }: { school: AdminSchool }) {
+/** `seed`: tests only (a server render has no effects), the rows to draw and the team open. */
+export function Teams({ school, seed }: { school: AdminSchool; seed?: { teams: TeamRow[]; members: MemberRow[]; openId?: string } }) {
   const supabase = createBrowserSupabaseClient();
-  const [teams, setTeams] = useState<TeamRow[] | null>(null);
-  const [members, setMembers] = useState<MemberRow[]>([]);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [teams, setTeams] = useState<TeamRow[] | null>(seed?.teams ?? null);
+  const [members, setMembers] = useState<MemberRow[]>(seed?.members ?? []);
+  const [openId, setOpenId] = useState<string | null>(seed?.openId ?? null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   // The team just made: its name field takes focus so typing renames it straight away.

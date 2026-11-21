@@ -493,6 +493,12 @@ export function stateUrn(urn: string): string {
   return v && v.urn === urn ? v.stateKey : urn;
 }
 
+/** A platform admin's View as or peek of a school as its School-Admin: the only callers the read-only People and
+ * Teams route serves (a member reads them under RLS). */
+export function viewedAsSchoolAdmin(c: { access: CallerAccess; viewAsRole: ViewAsRole | null }): boolean {
+  return (c.access === "viewAs" || c.access === "peek") && c.viewAsRole === "school_admin";
+}
+
 // Postgres "undefined_column" / PostgREST's wording for it: the trial_key migration
 // (20261105090000_v06_snag2_trials) isn't applied.
 export function isMissingColumn(error: { code?: string; message?: string } | null | undefined): boolean {

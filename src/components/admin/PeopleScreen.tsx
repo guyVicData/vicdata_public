@@ -65,10 +65,11 @@ export function PeopleScreen() {
   );
 }
 
-export function People({ school }: { school: AdminSchool }) {
+/** `seed`: tests only (a server render has no effects), the rows to draw. */
+export function People({ school, seed }: { school: AdminSchool; seed?: { members: MemberRow[]; teams?: TeamRow[] } }) {
   const supabase = createBrowserSupabaseClient();
-  const [members, setMembers] = useState<MemberRow[] | null>(null);
-  const [teams, setTeams] = useState<TeamRow[]>([]);
+  const [members, setMembers] = useState<MemberRow[] | null>(seed?.members ?? null);
+  const [teams, setTeams] = useState<TeamRow[]>(seed?.teams ?? []);
   const [domain, setDomain] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -201,7 +202,7 @@ export function People({ school }: { school: AdminSchool }) {
         title={`People at ${school.schoolName}`}
         subtitle={readOnly ? `School-Admin view · ${VIEW_AS_READ_ONLY}: you can look, but nothing here is saved` : "School-Admin: you set roles and teams"}
         action={
-          <button type="button" onClick={invite} className={PRIMARY_BUTTON} title="Copy your school's join link">
+          <button type="button" onClick={invite} disabled={readOnly} data-admin-write="" className={PRIMARY_BUTTON} title={readOnly ? VIEW_AS_READ_ONLY : "Copy your school's join link"}>
             {copied ? "Link copied" : "Invite"}
           </button>
         }

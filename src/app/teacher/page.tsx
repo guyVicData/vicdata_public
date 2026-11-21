@@ -19,7 +19,7 @@
 // 0.6 snag 2/4: in View as (src/lib/view-as.ts) this is the role home exactly as a real
 // single-membership member of that role at that school lands on it: config renderer
 // whatever the flag, that member's lens, no role switch.
-import { checkPlatformAdmin, resolveViewAs } from "@/lib/view-as";
+import { checkPlatformAdmin, fetchViewedSchool, resolvePeek, resolveViewAs } from "@/lib/view-as";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { PageSurface } from "@/components/feedback/PageFeedback";
 import { schoolSurface } from "@/components/feedback/surface";
@@ -87,6 +87,8 @@ export default function TeacherHomePage() {
   // 0.7 admissions r2 (D2): the School-Admin's Admissions tile on the Teacher lens (Admissions and
   // SMT get theirs on their own lens; a platform admin through View as as one of those roles).
   const [schoolAdmin, setSchoolAdmin] = useState(false);
+  // A peek writes nothing, not even the nav's labels setting.
+  const [peeking, setPeeking] = useState(false);
   // 0.8 View as (B): the nav's role switch picks the home in place (it stores the choice itself).
   useEffect(() => {
     const on = (e: Event) => setLensState((e as CustomEvent<Lens>).detail);
@@ -108,7 +110,12 @@ export default function TeacherHomePage() {
       // VicData 0.6: a confirmed trial (the look-as pair, or this tab's active trial) is
       // that school as that one role, and the phase tiles carry it on.
       const search = new URLSearchParams(window.location.search);
-      const trial = await resolveViewAs(supabase);
+      // Review pack 22 Nov, issue 6 (R-PEEK-ADMIN-READONLY): a peek is the viewed school as that role, read-only,
+      // exactly as View as (its sections already read it); it used to show the admin's own school.
+      const viewAsHere = await resolveViewAs(supabase);
+      const peekHere = viewAsHere ? null : await resolvePeek(supabase);
+      const trial = viewAsHere ?? (peekHere ? { ...peekHere, schoolName: (await fetchViewedSchool(supabase, peekHere.urn))?.name || peekHere.urn } : null);
+      setPeeking(!!peekHere);
       setVisitReady({ viewingAs: !!trial || search.get("peek") === "1" });
       // A trial always uses the config renderer: role homes exist only there.
       const on = configRendererRequested(search) || !!trial;
@@ -261,7 +268,7 @@ export default function TeacherHomePage() {
             : []),
         ]}
         also={also}
-        labelsUrn={schoolUrn}
+        labelsUrn={peeking ? null : schoolUrn}
         labelsPhases={onboarded}
       />
       {/* 0.8 SMT feedback round 2 (section 6): feedback on this home as a whole. */}
