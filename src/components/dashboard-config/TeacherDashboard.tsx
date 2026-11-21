@@ -102,6 +102,7 @@ import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItems
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { MINIMUM_SUBJECT_N, deserializeAcademicProfile, subjectYearsFor, type WireAcademicSchoolProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 import { setLatestYears, type LatestYears } from "@/catalogue/years";
+import { teacherDashboardGate, viewingTicked } from "@/lib/front-door/setup";
 
 // 0.6.4 C2: the editor and the comparator chooser load when opened (PanelFooter's Copy
 // dialog already does), so a member who never edits doesn't download them with the page.
@@ -203,7 +204,9 @@ export type TeacherDashboardProps = {
 export function TeacherDashboard(props: TeacherDashboardProps) {
   const embed = props.mode === "embed";
   // Preferences, onboarding and last-seen writes happen only on the page itself.
-  const canWrite = !embed;
+  // A peek (the Catalogue's and scripts' read-only look) never writes: not ticks, pills or last-seen.
+  const [peekReadOnly, setPeekReadOnly] = useState(false);
+  const canWrite = !embed && !peekReadOnly;
   const phase = (TEACHER_PHASES as readonly string[]).includes(props.phase) ? (props.phase as TeacherPhase) : null;
   const supabase = createBrowserSupabaseClient();
   const embedConfig = embed ? props.config ?? null : null;
@@ -343,7 +346,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const trial = embed ? null : await resolveViewAs(supabase);
       const requestedPeek = embed || trial ? null : readPeek(search);
       const peekOk = requestedPeek ? await confirmPlatformAdmin(supabase) : false;
-      setViewingAs(!!trial || (peekOk && !!requestedPeek));
+      const viewing = !!trial || (peekOk && !!requestedPeek);
+      setViewingAs(viewing);
+      setPeekReadOnly(peekOk && !!requestedPeek);
       // Started here so it runs alongside the school's data; awaited just before the page
       // first paints, so the stored config is drawn from the start (no swap, no flash).
       let publishedLoad: Promise<Record<string, DashboardConfig>> | null = null;
@@ -403,6 +408,13 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const memberReads = embed
         ? null
         : Promise.all([fetchOnboardedPhases(supabase, urn), fetchPreferences(supabase, urn, phase)]);
+      // R-TEACHER-VIEWING-NO-SETUP: in a peek or View as, the phases the viewed school has (the route
+      // honours both), for the nav's switcher -- the admin's own onboarding rows say nothing about it.
+      const schoolPhasesRead: Promise<TeacherPhase[]> = viewing
+        ? fetch(`/api/teacher/phases?urn=${encodeURIComponent(urn)}`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(async (r) => (r.ok ? ((await r.json()) as { phases?: TeacherPhase[] }).phases ?? [] : []))
+            .catch(() => [])
+        : Promise.resolve([]);
       memberReads?.catch(() => {});
       // Shared for 5 minutes with every other view of this school (fetch-cache.ts).
       const res = await cachedFetchJson<DashboardPayload>(`/api/teacher/dashboard?urn=${encodeURIComponent(urn)}&phase=${phase}`, { token });
@@ -455,9 +467,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         return;
       }
       const [done, prefs] = await memberReads!;
-      setOnboarded(done.includes(phase));
-      setOnboardedPhases(done);
-      setTicked(prefs.subjects);
+      const gate = teacherDashboardGate({ viewingAs: viewing, fromSmt: false, done, phase, schoolPhases: await schoolPhasesRead });
+      setOnboarded(gate.onboarded);
+      setOnboardedPhases(gate.phases);
+      setTicked(viewingTicked(prefs.subjects, subjectItemsOf(loadedEntries).map((i) => i.key), viewing));
       setColumns(prefs.columns);
       const linked = parseLinkedSet(search);
       // 0.8 feedback B5 (SMT 15): opened from the SMT home's "Our subjects" (?subject=<key>&from=smt): on that
@@ -486,13 +499,13 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const periods = (loadedHeadline as AcademicSubjectHeadlineEntry[]).map((h) => h.period);
       const latestPeriod = periods.length ? Math.max(...periods) : null;
       if (hasNewData(latestPeriod, prefs.lastSeenPeriod)) setNewDataPeriod(latestPeriod);
-      await markPeriodSeen(supabase, urn, phase, latestPeriod);
+      if (!(peekOk && requestedPeek)) await markPeriodSeen(supabase, urn, phase, latestPeriod);
       if (publishedLoad) setStoredConfigs(await publishedLoad);
       setLoading(false);
       // 0.6.4 C2: once the page has drawn, at idle, the member's other phase -- its school data
       // and its default comparator set -- into the fetch cache, so switching GCSE <-> Post-16
       // reads them from there (fetch-cache.ts: same keys, 5 minutes).
-      prefetchOtherPhases(urn, phase, done, token);
+      prefetchOtherPhases(urn, phase, gate.phases, token);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.phase, embedKey]);

@@ -15,11 +15,11 @@ import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, QUALIFICATION_FAMILIES } from "@/lib/teacher-view-theme";
-import { confirmPlatformAdmin, pickMembership, readPeekGroup, resolvePeek, resolveViewAs, resolveViewAsGroup } from "@/lib/view-as";
+import { confirmPlatformAdmin, pickMembership, readPeek, readPeekGroup, resolvePeek, resolveViewAs, resolveViewAsGroup } from "@/lib/view-as";
 import { lensesOf } from "@/components/library/RoleHome";
 import type { TeacherModel } from "@/lib/front-door/teacher-model";
 import { afterWelcome, changelogForMe, loadFrontDoorState, markWelcomeSeen, recordVisit, shouldShowWelcome, whatsNew, type ChangelogEntry } from "@/lib/front-door/visit";
-import { setupPhases, setupTotals } from "@/lib/front-door/setup";
+import { setupModeFor, setupPhases, setupTotals } from "@/lib/front-door/setup";
 import { WELCOME_ROLES, welcomeRole, type WelcomeField, type WelcomeRole } from "@/lib/front-door/welcome-role";
 
 /** A first-visit page: the dark root (Mid's header), then one field. `role`: the welcome's, in its colour;
@@ -196,7 +196,9 @@ export function SetupPage() {
   useEffect(() => {
     (async () => {
       const { supabase, user, token } = await session();
-      if (!user || !token || (await resolveViewAs(supabase))) return setState({ status: "skip" });
+      // R-TEACHER-VIEWING-NO-SETUP: a peek or View as never sees setup (it is the signed-in person's own school).
+      if (setupModeFor({ signedIn: !!user && !!token, viewingAs: !!(await resolveViewAs(supabase)), peek: !!readPeek(new URLSearchParams(window.location.search)) }) === "skip") return setState({ status: "skip" });
+      if (!user || !token) return setState({ status: "skip" });
       const { data } = await supabase.from("school_memberships").select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn)").eq("profile_id", user.id).eq("status", "approved");
       const m = pickMembership((data ?? []) as unknown as { id: string; school_accounts: { school_urn: string } | null }[]);
       const urn = m?.school_accounts?.school_urn;
@@ -216,7 +218,10 @@ export function SetupPage() {
     })();
   }, []);
   useEffect(() => {
-    if (state.status === "skip") router.replace("/teacher");
+    // A peek keeps its address on the way home (the home reads it).
+    if (state.status !== "skip") return;
+    const p = readPeek(new URLSearchParams(window.location.search));
+    router.replace(p ? `/teacher?lookAs=${encodeURIComponent(p.urn)}&as=${p.role}&peek=1` : "/teacher");
   }, [state.status, router]);
 
   const toggle = (phase: string, key: string) =>
@@ -224,8 +229,10 @@ export function SetupPage() {
 
   const save = async () => {
     if (state.status !== "ready") return;
-    setSaving(true);
     const { supabase } = await session();
+    // Never saved in a peek or View as, whatever drew the page.
+    if (setupModeFor({ signedIn: true, viewingAs: !!(await resolveViewAs(supabase)), peek: !!readPeek(new URLSearchParams(window.location.search)) }) === "skip") return;
+    setSaving(true);
     const done = await fetchOnboardedPhases(supabase, state.urn);
     for (const l of state.lists) {
       const prefs = await fetchPreferences(supabase, state.urn, l.phase);

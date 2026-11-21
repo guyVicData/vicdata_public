@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { loadUserState, saveUserState } from "@/lib/dashboards-store";
 import { EC } from "@/lib/editor-layout";
+import { readPeek } from "@/lib/view-as";
 import { memberSummary } from "@/lib/change-summary";
 import type { DashboardConfig } from "@/catalogue/types";
 
@@ -30,6 +31,9 @@ export type UpdatedNoticeProps = {
   config?: DashboardConfig | null;
 };
 
+// A platform admin's peek (?lookAs=&as=&peek=1) is read-only: it never records what it has seen.
+const peeking = () => typeof window !== "undefined" && !!readPeek(new URLSearchParams(window.location.search));
+
 export function UpdatedNotice({ dashboardId, version, summary, config = null }: UpdatedNoticeProps) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [show, setShow] = useState(false);
@@ -41,8 +45,8 @@ export function UpdatedNotice({ dashboardId, version, summary, config = null }: 
         const s = await loadUserState(supabase, dashboardId, "");
         if (!live) return;
         if (!s || s.seen_version == null) {
-          // First visit (or no table): record where they start, show nothing.
-          await saveUserState(supabase, dashboardId, "", { seen_version: version });
+          // First visit (or no table): record where they start, show nothing. Never in a peek (read-only).
+          if (!peeking()) await saveUserState(supabase, dashboardId, "", { seen_version: version });
           return;
         }
         if (s.seen_version < version) setShow(true);
@@ -58,6 +62,7 @@ export function UpdatedNotice({ dashboardId, version, summary, config = null }: 
   if (!show) return null;
   const dismiss = async () => {
     setShow(false);
+    if (peeking()) return;
     try {
       await saveUserState(supabase, dashboardId, "", { seen_version: version });
     } catch {

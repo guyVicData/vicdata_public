@@ -10,6 +10,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { listVersions, loadDashboard, loadUserState, type VersionRow } from "@/lib/dashboards-store";
 import { upgradeUserState } from "@/lib/editor-upgrade";
 import { UpdatedNotice } from "./UpdatedNotice";
+import { readPeek } from "@/lib/view-as";
 
 // The version a stored state row was written against (DashboardUserState.version), or null.
 export function stateVersionOf(state: unknown): number | null {
@@ -20,7 +21,8 @@ export function stateVersionOf(state: unknown): number | null {
 
 export function DashboardUpdates({ dashboardId, version, schoolUrn }: { dashboardId: string; version: VersionRow; schoolUrn: string | null }) {
   useEffect(() => {
-    if (!schoolUrn) return;
+    // A peek (?lookAs=&as=&peek=1) is read-only: no state is carried across.
+    if (!schoolUrn || readPeek(new URLSearchParams(window.location.search))) return;
     let live = true;
     (async () => {
       try {
