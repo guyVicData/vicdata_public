@@ -1,14 +1,21 @@
 // VicData 0.8 nav consistency (Guy, 21 Nov; R-NAV-ONE): one navigation, the shell's TeacherNav, on every page.
-// Every page route is in this table, so a new page has to say how it gets the nav:
+// Every page route (and every bare signed-out route) is in this table, so a new page has to say how it gets the nav:
 //   own   the page draws TeacherNav itself (in every state), with its own phase, labels and theme;
 //   host  the root layout's NavBar draws the same TeacherNav above the page (no phase, the person's theme);
+//   bare  the signed-out frame only (front door part 3: the landing page, sign-in, the password pages and the
+//         auth hand-offs): no nav and no footer. BareRoutes.tsx's BARE_PATHS is the same list (the test holds
+//         the two equal);
 //   walk  a walkthrough: its own header band is the whole top of the page, as designed (walk_*.png), with the
 //         close button home and Send feedback in it; no nav above it.
+// The public school pages aren't listed: next.config.ts redirects them before they render (the private beta;
+// R-NO-PUBLIC-SCHOOL-LINKS), so they never draw a nav. The test leaves out exactly what that redirect catches.
 // The table is plain data (no React), so the rule test and NavBar read the same thing.
-export type NavMode = "own" | "host" | "walk";
+export type NavMode = "own" | "host" | "walk" | "bare";
 
 export const NAV_ROUTES: Record<string, NavMode> = {
-  "/": "host",
+  "/": "bare",
+  "/auth/callback": "bare",
+  "/auth/confirm": "bare",
   "/account": "host",
   "/dashboards": "own",
   "/dashboards/[id]": "own",
@@ -16,15 +23,14 @@ export const NAV_ROUTES: Record<string, NavMode> = {
   "/dashboards/new": "host",
   "/join": "host",
   "/join/[urn]": "host",
-  "/login": "host",
+  "/forgot-password": "bare",
+  "/login": "bare",
   "/member": "host",
   "/platform": "host",
   "/platform/catalogue": "host",
   "/platform/chooser-lab": "host",
   "/platform/feedback": "host",
-  "/reset-password": "host",
-  "/schools/[urn]": "host",
-  "/schools/[urn]/data": "host",
+  "/reset-password": "bare",
   "/sets": "host",
   "/sets/[id]": "host",
   "/sets/comparator/new": "host",
@@ -52,6 +58,7 @@ export const NAV_ROUTES: Record<string, NavMode> = {
   "/teacher/school-account": "host",
   "/teacher/school-account/head-office": "host",
   "/teacher/school-account/membership": "host",
+  "/teacher/school-account/sign-ins": "host",
   "/teacher/setup": "own",
   "/teacher/smt": "own",
   "/teacher/smt/academic": "own",

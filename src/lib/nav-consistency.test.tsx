@@ -13,7 +13,9 @@ import { resetFeedbackStore } from "../components/feedback/store";
 import { feedbackPayload, type FormState } from "../components/feedback/FeedbackWindow";
 import { feedbackRow } from "./feedback-server";
 import { pageKey } from "./view-ref";
+import { HIDDEN_SCHOOL_PAGES_SOURCE } from "../../next.config";
 import { SEL, tokensOf } from "./front-door/contrast";
+import { BARE_PATHS, isBarePath } from "../components/front-door/BareRoutes";
 
 const ROOT = join(__dirname, "..", "..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
@@ -29,7 +31,9 @@ function walk(dir: string, out: string[] = []): string[] {
 const pages = walk(join(ROOT, "src/app"))
   .filter((p) => p.endsWith("/page.tsx"))
   .map((p) => "/" + relative(join(ROOT, "src/app"), p).replace(/\/?page\.tsx$/, ""))
-  .map((r) => (r === "/" ? "/" : r.replace(/\/$/, "")));
+  .map((r) => (r === "/" ? "/" : r.replace(/\/$/, "")))
+  // Pages the hidden-schools redirect catches never render (R-NO-PUBLIC-SCHOOL-LINKS): no nav to decide.
+  .filter((r) => !new RegExp(`^${HIDDEN_SCHOOL_PAGES_SOURCE.replace("/:path*", "(?:/.*)?")}$`).test(r));
 
 // The components a page draws, by its @/components imports, one level deep (the page and the components it imports).
 function tree(file: string, depth = 1, seen = new Set<string>()): string[] {
@@ -54,7 +58,8 @@ const pageFile = (route: string) => join(ROOT, "src/app", route === "/" ? "" : r
 
 test("R-NAV-ONE: every page says how it gets the nav, and nothing else is listed", () => {
   for (const r of pages) assert.ok(r in NAV_ROUTES, `${r}: not in nav-routes.ts -- say whether it draws the nav itself (own), the layout draws it (host), or it is a walk`);
-  for (const r of Object.keys(NAV_ROUTES)) assert.ok(pages.includes(r), `${r}: listed in nav-routes.ts but there is no such page`);
+  // A bare route may be a route handler (/auth/*) or reserved for one (/forgot-password): no page needed.
+  for (const [r, mode] of Object.entries(NAV_ROUTES)) assert.ok(pages.includes(r) || mode === "bare", `${r}: listed in nav-routes.ts but there is no such page`);
 });
 
 test("R-NAV-ONE: the root layout draws the one nav host, and the host draws TeacherNav and nothing else", () => {
@@ -72,8 +77,21 @@ test("R-NAV-ONE: a page that draws its own nav draws TeacherNav; a hosted page d
     const src = tree(pageFile(route)).join("\n");
     if (mode === "own") assert.match(src, DRAWS_NAV, `${route}: listed as drawing its own nav, but draws no TeacherNav`);
     if (mode === "host") assert.doesNotMatch(src, DRAWS_NAV, `${route}: the layout draws the nav here, and so does the page -- two headers`);
+    if (mode === "bare" && existsSync(pageFile(route))) assert.doesNotMatch(src, DRAWS_NAV, `${route}: the signed-out frame draws no nav`);
     if (mode === "walk") assert.match(src, /<WalkHeader\b/, `${route}: a walk draws its own band`);
   }
+});
+
+test("R-NAV-ONE: the bare routes are exactly front door part 3's nav-free screens (BARE_PATHS)", () => {
+  const STAGE2 = ["/", "/login", "/reset-password", "/forgot-password", "/auth/confirm", "/auth/callback"];
+  const bare = Object.entries(NAV_ROUTES).filter(([, m]) => m === "bare").map(([r]) => r).sort();
+  assert.deepEqual(bare, [...STAGE2].sort());
+  for (const route of Object.keys(NAV_ROUTES)) assert.equal(NAV_ROUTES[route] === "bare", BARE_PATHS.test(route), route);
+  for (const r of STAGE2) {
+    assert.equal(navModeFor(r), "bare", r);
+    assert.ok(isBarePath(r), r);
+  }
+  for (const r of ["/teacher", "/teacher/welcome", "/member", "/join/110110", "/sets"]) assert.ok(!isBarePath(r) && navModeFor(r) !== "bare", r);
 });
 
 test("R-NAV-ONE: the address decides the nav, a literal page before a dynamic one", () => {
@@ -86,6 +104,8 @@ test("R-NAV-ONE: the address decides the nav, a literal page before a dynamic on
   assert.equal(navModeFor("/teacher/school-account/membership"), "host");
   assert.equal(navModeFor("/sets/guided"), "host");
   assert.equal(navModeFor("/no-such-page"), "host");
+  assert.equal(navModeFor("/teacher/welcome"), "own");
+  assert.equal(navModeFor("/teacher/school-account/sign-ins"), "host");
 });
 
 test("R-NAV-ONE: one VicData wordmark, TeacherNav's, going to the person's home", () => {

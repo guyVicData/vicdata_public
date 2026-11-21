@@ -159,7 +159,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Current panel rework round 1 (Column 1 Current is Number tiles only) |
 | Rules | R-FOCUS-NEVER-FILTERED, R-KS5-ASAEA-EXCL, R-QUAL-FAMILY-MATCH, R-KS4-SUBJECT-DEDUP, R-RANK-TIES |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Candidates › Current, Post-16 Candidates › Candidates › Current |
 | Note | Railless: Column 1 Candidates' Current has no rail. Tiles: entries, rank in category (only if >1 subject), rank of N subjects at school, change. |
 | Method | 1. We take the school's entries for each subject in the latest year. At GCSE this is every qualification in the subject added together; at Post-16 it is the entries for the one qualification you chose (for example A-level Biology).<br>2. The main figure is the number of entries in your subject that year.<br>3. We rank your subject against the other subjects at the school in the same subject category and qualification family, largest first. Subjects with the same number share a place.<br>4. We also rank it against every subject the school runs that year.<br>5. The change tile compares your subject's entries in the latest year with its first published year, as a percentage.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page)<br>Rounding: Entries are whole numbers. The change is a whole percentage. Ties share a rank and the next rank is skipped. |
 
@@ -188,7 +188,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign (option D2); trends row merge round |
 | Rules | R-TREND-LINE-4YR, R-INDEX-HEADCOUNTS, R-PERIOD-TRIM, R-KS5-ASAEA-EXCL, R-QUAL-FAMILY-MATCH, R-KS4-SUBJECT-DEDUP |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Candidates › Trends, Post-16 Candidates › Candidates › Trends |
 | Note | — |
 | Method | 1. We take the school's entries for your subject and for the other subjects in its subject category and qualification family, for every year published (at GCSE all qualifications in a subject added together; at Post-16 the one qualification).<br>2. Years at the start or end with no figure for any subject are dropped; you can start the view at a later year with the 'From' menu.<br>3. Each subject's line is set to 100 in its own first year with entries, and later years are shown against that (110 means 10% more entries).<br>4. A line is drawn only with 4 or more years. With fewer, each subject's change in entries from its first to its last year is shown as ranked bars.<br>5. The words under the chart describe your subject's change from its first to its last year: within 4% either way it is 'broadly stable'.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page)<br>Rounding: Index values are whole numbers. The percentage in the trend sentence is a whole number. Within ±4% the trend reads 'Broadly stable'. |
 
@@ -217,7 +217,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Column 1 qualification match / trend actual numbers round |
 | Rules | R-TREND-LINE-4YR, R-PERIOD-TRIM, R-KS5-ASAEA-EXCL, R-QUAL-FAMILY-MATCH, R-KS4-SUBJECT-DEDUP |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Candidates › Trends, Post-16 Candidates › Candidates › Trends |
 | Note | — |
 | Method | 1. We take the school's entries for your subject and for the other subjects in its subject category and qualification family, for every year published (at GCSE all qualifications in a subject added together; at Post-16 the one qualification).<br>2. Years at the start or end with no figure for any subject are dropped; you can start the view at a later year with the 'From' menu.<br>3. Each subject is drawn at its real number of entries each year, all on one scale.<br>4. This view is only offered with 4 or more years of entries; with fewer the button is switched off.<br>5. The words under the chart describe your subject's change from its first to its last year: within 4% either way it is 'broadly stable'.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page)<br>Rounding: Entries are whole numbers. The percentage in the trend sentence is a whole number. |
 
@@ -246,7 +246,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign (options E, I); trends row merge round |
 | Rules | R-PERIOD-TRIM, R-KS5-ASAEA-EXCL, R-QUAL-FAMILY-MATCH, R-KS4-SUBJECT-DEDUP |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Candidates › Trends, Post-16 Candidates › Candidates › Trends |
 | Note | — |
 | Method | 1. We take the school's entries for your subject and for the other subjects in its subject category and qualification family, for every year published (at GCSE all qualifications in a subject added together; at Post-16 the one qualification).<br>2. Years at the start or end with no figure for any subject are dropped; you can start the view at a later year with the 'From' menu.<br>3. Each subject is one row with its entries in each year.<br>4. The change column is the difference between the first and last years with a figure, in entries, with the percentage change beneath it.<br>5. Rows are listed by the latest year's entries, largest first (you can re-sort); full screen adds each subject's rank.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page)<br>Rounding: Entries are whole numbers. The percentage change is a whole number. |
 
@@ -275,7 +275,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Candidates live review Part 5; trends row merge round |
 | Rules | R-GEO-APPLIES, R-GEO-POINTS-ELIGIBLE, R-MIN-SCHOOLS, R-KS5-ENGLAND-EXACT, R-INDEX-HEADCOUNTS |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Candidates › Trends, Post-16 Candidates › Candidates › Trends |
 | Note | Placement mismatch F2: Column 1 declares subjects-in-school only; the seeded Column 1 Trends panel carries an override (LA, region, England). |
 | Method | 1. We take your school's points-eligible entries in the subject each year: its entries multiplied by the share of them that carry points, rounded to a whole number.<br>2. We take the same count for every school in your local authority, your region and England, added together (at Post-16 for the same exact qualification).<br>3. We keep only the years that have an area figure, within the span you have chosen.<br>4. Each line is set to 100 in its first year, so the school, its local authority and England can be compared on one scale (110 means 10% more entries).<br>5. The region's line is left off the chart because it runs almost on top of England's.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page); LA, region and England figures: VicData's area totals from the same DfE files (GCSE: VicData's area averages (DfE school results added up for the LA, region and England); Post-16: VicData's area averages (DfE school results added up for the LA, region and England)), 2021/22 to the latest year held<br>Rounding: Points-eligible entries are rounded to whole numbers. Index values are whole numbers. |
 
@@ -304,7 +304,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Candidates live review Part 5; trends row merge round |
 | Rules | R-GEO-APPLIES, R-GEO-POINTS-ELIGIBLE, R-MIN-SCHOOLS, R-KS5-ENGLAND-EXACT |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Candidates › Trends, Post-16 Candidates › Candidates › Trends |
 | Note | Placement mismatch F2 (as Area chart). |
 | Method | 1. We take your school's points-eligible entries in the subject each year: its entries multiplied by the share of them that carry points, rounded to a whole number.<br>2. We take the same count for every school in your local authority, your region and England, added together (at Post-16 for the same exact qualification).<br>3. We keep only the years that have an area figure, within the span you have chosen.<br>4. Each place is one row with its count in each year.<br>5. The change column shows the percentage change from the first to the last year with a figure, with the change in entries beneath it.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page); LA, region and England figures: VicData's area totals from the same DfE files (GCSE: VicData's area averages (DfE school results added up for the LA, region and England); Post-16: VicData's area averages (DfE school results added up for the LA, region and England)), 2021/22 to the latest year held<br>Rounding: Points-eligible entries are rounded to whole numbers. The percentage change is a whole number. |
 
@@ -333,7 +333,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend & % change redesign |
 | Rules | R-KS5-ASAEA-EXCL, R-QUAL-FAMILY-MATCH |
-| Used on | (dashboards not seeded yet) |
+| Used on | not placed |
 | Note | Dead branch (audit A §0.5): Column 1's % change half is always the geography view, so CandidatesPanels.tsx:404-417 is unreachable. |
 | Method | 1. We take each subject's entries in its category for every published year.<br>2. Each subject's change is its percentage change from its first to its last year with a figure.<br>3. Subjects are ranked by that change, biggest rise first.<br>4. The category average (the plain average of the subjects' entries each year, your subject included) is drawn as a dashed reference line.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page)<br>Rounding: The percentage change is a whole number. |
 
@@ -362,7 +362,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend & % change redesign |
 | Rules | R-KS5-ASAEA-EXCL, R-QUAL-FAMILY-MATCH |
-| Used on | (dashboards not seeded yet) |
+| Used on | not placed |
 | Note | Dead branch (audit A §0.5): CandidatesPanels.tsx:393-403 is unreachable. |
 | Method | 1. We take each subject's entries in its category for every published year.<br>2. Each subject's change is its percentage change from its first to its last year with a figure.<br>3. Each subject is one row with its first and latest year's entries and the change between them.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16 page)<br>Rounding: The percentage change is a whole number. |
 
@@ -391,7 +391,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 6; grade bands frontend round (bands variant) |
 | Rules | R-SAME-YEAR-BENCH, R-NO-GRADE-RATE-GEO, R-BANDS-ENGLAND-BENCH, R-NON-GRADES-EXCL, R-RANK-TIES, R-KS5-ENGLAND-EXACT |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Current, Post-16 Results › Results › Current |
 | Note | One dataview for the audit's two rows (plain and bands variant): on bands the tiles are met count 'of {n} graded entries at {range}', rate and England gap (placement mismatch M3/M5). |
 | Method | 1. The main figure is your subject's result in the latest year: average points per entry, the share of graded entries at grade 4 or above (A*–E at Post-16), or the share inside your chosen grade band.<br>2. Average points at GCSE come from GCSE (9-1) Full Course entries, and a GCSE Double Award from its own grades (two entries, each the average of its two grades); at Post-16 from the one qualification you chose, on DfE's points table.<br>3. On Average points and Grade 4+: your subject's rank among the subjects in its category at the school, highest first (ties share a place).<br>4. On Average points: England's average for the same subject (Post-16: same subject and qualification) in the same year, and the gap between yours and England's.<br>5. On Grade bands: how many of your graded entries fall in the band, England's share in the band for the same subject and qualification that year, and the gap.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E and Grade bands); England figure: VicData's national total from the same DfE files (GCSE: VicData's area averages (DfE school results added up for the LA, region and England) per subject; Post-16: VicData's area averages (DfE school results added up for the LA, region and England) per subject and exact qualification) (Average points); England grade shares: VicData's national grade totals from the same DfE files (VicData's area averages (DfE school results added up for the LA, region and England)) (Grade bands, focused subject only)<br>Rounding: Average points to 1 decimal place. Rates and shares as whole percentages; gaps on rates in whole percentage points. A gap that rounds to nothing reads 'level with England'. |
 
@@ -420,7 +420,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Grade bands frontend round; 0.6.1 S5 (D3: the range is picked in the top bar, no longer by clicking two grades here) |
 | Rules | R-NON-GRADES-EXCL, R-GRADE-SCALE-MATCH, R-BANDS-ENGLAND-BENCH, R-MIN-SCHOOLS |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Current, Post-16 Results › Results › Current |
 | Note | England share ticks per grade (placement mismatch M5). Was 'Grades (pick a range)': since 0.6.1 S5 a read-only grade distribution with the top bar's band shaded. |
 | Method | 1. We take your school's number of entries at each grade in the subject and qualification for the latest year.<br>2. Each grade's bar is its count as a share of all graded entries.<br>3. Beside each grade, a tick shows England's share of its graded entries at that grade, for the same subject and qualification in the same year.<br>4. The grade band you picked in the top bar is shaded.<br>Sources: DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held; England grade shares: VicData's national grade totals from the same DfE files (VicData's area averages (DfE school results added up for the LA, region and England))<br>Rounding: Shares as whole percentages; counts as whole numbers. |
 
@@ -449,7 +449,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 6 |
 | Rules | R-SAME-YEAR-BENCH, R-NO-GRADE-RATE-GEO, R-KS5-ENGLAND-EXACT, R-QUAL-FAMILY-MATCH, R-KS5-ASAEA-EXCL, R-KS4-SUBJECT-DEDUP |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Current, Post-16 Results › Results › Current |
 | Note | — |
 | Method | 1. We take each subject's result in the latest year: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. Subjects are drawn largest first, with your subject highlighted.<br>3. On Average points each subject carries a marker for England's average in the same subject (Post-16: same qualification) for the same year.<br>4. On Grade bands only your subject carries England's share in the band; on Grade 4+ / A*–E there is no England marker.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E and Grade bands); England figure: VicData's national total from the same DfE files (GCSE: VicData's area averages (DfE school results added up for the LA, region and England) per subject; Post-16: VicData's area averages (DfE school results added up for the LA, region and England) per subject and exact qualification) (Average points); England grade shares: VicData's national grade totals from the same DfE files (VicData's area averages (DfE school results added up for the LA, region and England)) (Grade bands, focused subject only)<br>Rounding: Average points to 1 decimal place. Rates and shares as whole percentages. |
 
@@ -478,7 +478,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 6 |
 | Rules | R-PREV-YEAR-FALLBACK, R-SAME-YEAR-BENCH, R-NO-GRADE-RATE-GEO, R-KS5-ENGLAND-EXACT, R-QUAL-FAMILY-MATCH |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Current, Post-16 Results › Results › Current |
 | Note | — |
 | Method | 1. We take each subject's result in the latest year.<br>2. On Average points the third column is each subject's result minus England's for the same subject in the same year ('vs National').<br>3. On Grade bands the same column compares your subject only with England's share in the band; other subjects show a dash.<br>4. On Grade 4+ / A*–E there is no England figure, so the column is the change from the subject's own previous published year ('vs last year').<br>5. The table opens sorted by that difference, largest first; any column can be sorted.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E and Grade bands); England figure: VicData's national total from the same DfE files (GCSE: VicData's area averages (DfE school results added up for the LA, region and England) per subject; Post-16: VicData's area averages (DfE school results added up for the LA, region and England) per subject and exact qualification) (Average points); England grade shares: VicData's national grade totals from the same DfE files (VicData's area averages (DfE school results added up for the LA, region and England)) (Grade bands, focused subject only)<br>Rounding: Average points and differences to 1 decimal place. Rates as whole percentages; differences in whole percentage points. |
 
@@ -507,7 +507,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign; trends row merge round |
 | Rules | R-TREND-LINE-4YR, R-PERIOD-TRIM, R-THRESHOLD-PERIODS, R-INDEX-HEADCOUNTS, R-QUAL-FAMILY-MATCH, R-KS5-ASAEA-EXCL |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
 | Note | Never indexed (a mean measure). Below 4 years the change list is in the measure's own units (pp / points). |
 | Method | 1. We take each subject's result for every published year (average points from 2021/22; grade rates and bands from the years the subject has grades, 2021/22 on).<br>2. Each subject is a line at its real level (results are never indexed).<br>3. A line needs 4 or more years; with fewer, each subject's change from 2022/23 to the latest year is shown as ranked bars, in points or percentage points.<br>4. 2021/22 is drawn, but the trend sentence, the 'broadly stable' word and the optional fitted line are measured from 2022/23.<br>5. The trend sentence gives your subject's change in points or percentage points; within 4% either way (relative) it reads 'broadly stable'.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held<br>Rounding: Average points to 1 decimal place; changes in points to 1 decimal place. Rates as whole percentages; changes in whole percentage points. |
 
@@ -536,7 +536,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign; trends row merge round |
 | Rules | R-PERIOD-TRIM, R-THRESHOLD-PERIODS, R-QUAL-FAMILY-MATCH |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
 | Note | — |
 | Method | 1. Each subject is one row with its result in each year.<br>2. The change column is the difference between the subject's first figure from 2022/23 on and its latest, in points or percentage points (never a percentage).<br>3. Rows are listed by the latest year's result, highest first; you can re-sort.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held<br>Rounding: Average points and changes to 1 decimal place. Rates as whole percentages; changes in whole percentage points. |
 
@@ -565,7 +565,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 7 (map in Trends) |
 | Rules | R-IGCSE-EXCL, R-POINTS-SAME-QUAL, R-MAP-ENCODING |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
 | Note | Placement mismatch M4: sits in Column 1 Trends but compares a school set. Declared as schools / single, so the seeded Column 1 Trends panel does not match it. 0.6.3 S2: no own toggle any more; each school's change in Results' selected measure over the panel's span, diverging (R-MAP-ENCODING). |
 | Method | 1. For each school in the set we take its result in your subject: average points (GCSE: GCSE (9-1) Full Course; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification, in the same way as your school's.<br>2. For each school we work out the change from its first figure from 2022/23 on to its latest, in points or percentage points.<br>3. Each dot is coloured by that change on one scale centred on zero: green for the biggest rise in the set, red for the biggest fall, pale amber for little change.<br>4. Dot size is the school's entries in the subject in the last year (graded entries on a grade rate).<br>5. Your school wears a thick ring.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held; The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; School locations (easting and northing) from VicData's schools table<br>Rounding: Changes in points to 1 decimal place; in whole percentage points on rates. |
 
@@ -594,7 +594,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Candidates live review Part 5; Post-16 Part C |
 | Rules | R-NO-GRADE-RATE-GEO, R-KS4-POINTS-GCSE-FULL, R-KS5-ENGLAND-EXACT, R-MIN-SCHOOLS, R-GEO-APPLIES |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
 | Note | Placement mismatch F2. On threshold or bands the host shows the not-applicable note, so the view supports points only. |
 | Method | 1. We take your subject's average points per entry each year (GCSE: GCSE (9-1) Full Course; Post-16: the same exact qualification).<br>2. For your local authority and England we take the average points per entry across all their schools in the same subject, weighted by entries (at Post-16 by size), for the same years.<br>3. Each is drawn as a line at its real level, so the gaps between them can be read directly.<br>4. The region's line is left off the chart because it runs almost on top of England's.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); LA, region and England figures: VicData's area totals from the same DfE files (GCSE: VicData's area averages (DfE school results added up for the LA, region and England); Post-16: VicData's area averages (DfE school results added up for the LA, region and England)), 2021/22 to the latest year held<br>Rounding: Average points to 1 decimal place. |
 
@@ -623,7 +623,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Candidates live review Part 5; Post-16 Part C |
 | Rules | R-NO-GRADE-RATE-GEO, R-KS4-POINTS-GCSE-FULL, R-KS5-ENGLAND-EXACT, R-MIN-SCHOOLS, R-GEO-APPLIES |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
 | Note | Placement mismatch F2 (as Area chart). S3b: the Change column shows the change in points alone, not a % (R-NUMBER-TYPE-HONESTY). |
 | Method | 1. We take your subject's average points per entry each year, and the entry-weighted average for your local authority, region and England in the same subject.<br>2. Each place is one row with its figure in each year.<br>3. The change column is the difference in points between the first figure from 2022/23 on and the latest (never a percentage).<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (GCSE page); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Post-16 page); LA, region and England figures: VicData's area totals from the same DfE files (GCSE: VicData's area averages (DfE school results added up for the LA, region and England); Post-16: VicData's area averages (DfE school results added up for the LA, region and England)), 2021/22 to the latest year held<br>Rounding: Average points and changes to 1 decimal place. |
 
@@ -652,7 +652,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Grade bands frontend round (Grade counts) |
 | Rules | R-NON-GRADES-EXCL, R-MIN-SCHOOLS, R-THRESHOLD-PERIODS |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Current, Post-16 Results › Results › Current |
 | Note | Railless. England share ticks (placement mismatch M5). The tag is inconsistent with every other Current tag (audit §4). |
 | Method | 1. We take your school's entries at each grade in the subject and qualification for the latest year.<br>2. Each bar shows the count and its share of all graded entries.<br>3. A tick beside each grade shows England's share at that grade for the same subject and qualification in the same year.<br>4. Clicking grades selects one grade or a range; the line underneath then gives the share of your graded entries in that range, and England's share where England publishes every grade shown.<br>Sources: DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held; England grade shares: VicData's national grade totals from the same DfE files (VicData's area averages (DfE school results added up for the LA, region and England))<br>Rounding: Counts as whole numbers; shares as whole percentages. |
 
@@ -681,7 +681,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Grade bands frontend round (Grade counts) |
 | Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
 | Note | — |
 | Method | 1. We take your school's entries at each grade in the latest year and in the earlier year.<br>2. Each year's bars are shown as shares of that year's own graded entries, so years with different cohort sizes can be compared.<br>3. There are no England ticks here: the school is compared with itself.<br>4. With only one year of grades, the view says a second year is needed.<br>Sources: DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held<br>Rounding: Shares as whole percentages; counts as whole numbers. |
 
@@ -710,7 +710,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Grade bands frontend round (Grade counts) |
 | Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
 | Note | — |
 | Method | 1. We take your school's entries at each grade for each year with grades.<br>2. Each grade is one row, in grade order, with its count in each year.<br>3. The change column is the change in entries at that grade from the change year (2022/23 or later) to the latest year, with the percentage change beneath.<br>4. It starts later than Candidates (which runs from the first year with entries, 2020/21) because these are grades: grade changes are measured from 2022/23, as 2021/22's grades were awarded more generously.<br>Sources: DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held<br>Rounding: Counts as whole numbers; percentage change as a whole number. |
 
@@ -739,7 +739,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 6 §4.2; Post-16 Part D (group totals) |
 | Rules | R-DONUT-COUNTS-ONLY, R-SELF-INCLUSIVE-GROUP, R-KS5-ASAEA-EXCL, R-QUAL-FAMILY-MATCH, R-FOCUS-NEVER-FILTERED |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Current, GCSE Results › Context › Current, Post-16 Candidates › Context › Current, Post-16 Results › Context › Current |
 | Note | On points and rates the host keeps the button disabled ('Share is only meaningful for candidate numbers'), so the view supports results: bands only. |
 | Method | 1. On Candidates we take your subject's entries in the year (GCSE: all qualifications in the subject; Post-16: the one qualification).<br>2. We add up the entries of every subject in the comparison group, your subject included (at Post-16 every qualification except AS and AEA).<br>3. Your subject's share is its entries divided by the group's total.<br>4. On Grade bands the donut is the whole group instead: graded entries inside your chosen range as a share of all the group's graded entries, counting only qualifications on the range's grade scale.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: The share as a whole percentage; entries as whole numbers. |
 
@@ -768,7 +768,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Current panel rework round 1 (Column 1's VerticalBars moved to Context) |
 | Rules | R-QUAL-FAMILY-MATCH, R-KS5-ASAEA-EXCL, R-POINTS-SAME-QUAL, R-POINTS-WEIGHTED, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Current, GCSE Results › Context › Current, Post-16 Candidates › Context › Current, Post-16 Results › Context › Current |
 | Note | Default Context Current view. On Grade bands without a range the host shows points (R-MEASURE-FALLBACK, mismatch M6); on Grade counts it follows the selected grade or prompts for one (R-COUNTS-SELECTION). |
 | Method | 1. Each subject's figure is its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are those in your chosen comparison group (its subject category by default), plus your subject.<br>3. The figures are for the latest year with a figure, or the year you pick (grade rates and bands from 2023/24 on).<br>4. Each subject is an upright bar, largest first, with your subject highlighted.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Entries as whole numbers; average points to 1 decimal place; rates as whole percentages. |
 
@@ -797,7 +797,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Current panel rework round 1 (moved from Column 1) |
 | Rules | R-QUAL-FAMILY-MATCH, R-KS5-ASAEA-EXCL, R-POINTS-SAME-QUAL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Current, GCSE Results › Context › Current, Post-16 Candidates › Context › Current, Post-16 Results › Context › Current |
 | Note | — |
 | Method | 1. Each subject's figure is its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are those in your chosen comparison group (its subject category by default), plus your subject.<br>3. The figures are for the latest year with a figure, or the year you pick (grade rates and bands from 2023/24 on).<br>4. Subjects are listed from highest to lowest, each with its figure and place; your subject is highlighted.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Entries as whole numbers; average points to 1 decimal place; rates as whole percentages. Ties share a place. |
 
@@ -826,7 +826,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 6 |
 | Rules | R-SELF-INCLUSIVE-GROUP, R-QUAL-FAMILY-MATCH, R-KS5-ASAEA-EXCL, R-MEASURE-FALLBACK, R-RANK-TIES |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Current, GCSE Results › Context › Current, Post-16 Candidates › Context › Current, Post-16 Results › Context › Current |
 | Note | Delta 'vs average' (the group average); leading rank, no value column. |
 | Method | 1. Each subject's figure is its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are those in your chosen comparison group (its subject category by default), plus your subject.<br>3. The figures are for the latest year with a figure, or the year you pick (grade rates and bands from 2023/24 on).<br>4. The group average is the plain average of the member subjects' figures (your subject included). For a subject's own figure in the group: entries add up all its qualifications; at Post-16 its points are weighted by points-eligible entries across its qualifications in your subject's family; its grade rate is worked out per qualification and then averaged.<br>5. Each subject's 'vs average' is its figure minus the group average for the same year.<br>6. Subjects are ranked by their figure, highest first (ties share a place); the table shows the rank and the difference, not the figure itself.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Differences in entries as whole numbers; in points to 1 decimal place; in whole percentage points on rates. Ties share a rank. |
 
@@ -855,7 +855,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign; trends row merge round |
 | Rules | R-TREND-LINE-4YR, R-INDEX-HEADCOUNTS, R-PERIOD-TRIM, R-KS5-ASAEA-EXCL |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Trends, Post-16 Candidates › Context › Trends |
 | Note | On 'All subjects' the card is focus vs group average (page.tsx:1922, SubjectPanels.tsx:726-738). |
 | Method | 1. We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.<br>3. Each subject's line is set to 100 in its own first year with entries (110 means 10% more entries).<br>4. On 'All subjects' the card shows just your subject against the group's average; full screen shows every subject.<br>5. A line needs 4 or more years; with fewer, each subject's change in entries is shown as ranked bars.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16)<br>Rounding: Index values are whole numbers. Within ±4% the trend reads 'Broadly stable'. |
 
@@ -884,7 +884,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign; trends row merge round |
 | Rules | R-TREND-LINE-4YR, R-PERIOD-TRIM, R-THRESHOLD-PERIODS, R-POINTS-SAME-QUAL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Results › Context › Trends, Post-16 Results › Context › Trends |
 | Note | — |
 | Method | 1. We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.<br>3. Each subject is a line at its real level (results are never indexed). On 'All subjects' the card shows your subject against the group average; full screen shows every subject.<br>4. A line needs 4 or more years; with fewer, each subject's change from 2022/23 is shown as ranked bars.<br>5. 2021/22 is drawn, but the trend sentence and the fitted line are measured from 2022/23. The group average is the plain average of the member subjects' figures (your subject included). For a subject's own figure in the group: entries add up all its qualifications; at Post-16 its points are weighted by points-eligible entries across its qualifications in your subject's family; its grade rate is worked out per qualification and then averaged.<br>Sources: DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Average points to 1 decimal place; rates as whole percentages; changes in points (1 decimal place) or whole percentage points. |
 
@@ -913,7 +913,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Column 1 qualification match / trend actual numbers round |
 | Rules | R-TREND-LINE-4YR, R-PERIOD-TRIM, R-KS5-ASAEA-EXCL |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Trends, Post-16 Candidates › Context › Trends |
 | Note | — |
 | Method | 1. We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.<br>3. Each subject is drawn at its real number of entries, all on one scale.<br>4. Offered only with 4 or more years of entries; with fewer the button is off.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16)<br>Rounding: Entries as whole numbers. |
 
@@ -942,7 +942,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign; trends row merge round |
 | Rules | R-PERIOD-TRIM, R-KS5-ASAEA-EXCL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Trends, GCSE Results › Context › Trends, Post-16 Candidates › Context › Trends, Post-16 Results › Context › Trends |
 | Note | — |
 | Method | 1. We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.<br>3. Each subject is one row with its figure in each year.<br>4. The change column is first to latest: a percentage on entries (with the change in entries); on results the difference in points or percentage points from 2022/23.<br>5. Rows are listed by the latest figure, highest first; you can re-sort.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Entries as whole numbers; points to 1 decimal place; rates and changes in whole percentages or percentage points. |
 
@@ -971,7 +971,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend & % change redesign (option H) |
 | Rules | R-NUMBER-TYPE-HONESTY, R-KS5-ASAEA-EXCL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Trends, GCSE Results › Context › Trends, Post-16 Candidates › Context › Trends, Post-16 Results › Context › Trends |
 | Note | S3b: % change on entries; change in points on average point score; change in percentage points on rates (R-NUMBER-TYPE-HONESTY). |
 | Method | 1. We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.<br>3. Each subject's change is from its first to its latest figure in the span: a percentage on entries; the difference in points or percentage points on results, from 2022/23.<br>4. Subjects are ranked by that change, biggest rise first, with your subject highlighted.<br>5. A dashed line marks the change in the group average (the plain average of the member subjects each year), worked out the same way.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Percentage change as a whole number; points to 1 decimal place; whole percentage points. |
 
@@ -1000,7 +1000,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 front door part 1, B17 (docs/v0.8/front_door_design/png/dumbbell.png); on the rail in front door 2b (M2) |
 | Rules | R-DUMBBELL, R-KS5-ASAEA-EXCL |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Trends, Post-16 Candidates › Context › Trends |
 | Note | One row per subject ordered by this year's entries; ring = first year, dot = latest; focus row tinted in the accent; a dashed average row last; change in entries with up/down triangles (no green/red). On the dashboard: the subjects the Compared against pill holds, from the year Ranked change measures from (the From menu), in the panel's own colours, the comparison group's per-subject average as the dashed row. In the walk: the whole school from the first year with entries, same-category subjects in the category colour, the school average last. |
 | Method | 1. We take each subject's entries in the first year and the latest year.<br>2. One row per subject, ordered by this year's entries, largest first: a ring for the first year, a dot for the latest, a bar between.<br>3. Your subject's row is tinted in your colour. On the dashboard the other subjects keep the panel's own colours (as Ranked change draws them); in a walk subjects in its category take the category colour, the rest grey.<br>4. The last row is dashed: on the dashboard the comparison group's own per-subject average (as the panel's other views draw it); in a walk the school average, the plain average of the subjects' entries in each of the two years.<br>5. The change is in entries (pupils), with ▲ or ▼ for its direction (no green or red).<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Post-16)<br>Rounding: Entries and changes as whole numbers. |
 
@@ -1029,7 +1029,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend & % change redesign |
 | Rules | R-NUMBER-TYPE-HONESTY, R-KS5-ASAEA-EXCL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Context › Trends, GCSE Results › Context › Trends, Post-16 Candidates › Context › Trends, Post-16 Results › Context › Trends |
 | Note | — |
 | Method | 1. We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.<br>2. The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.<br>3. Each subject is one row with its first and latest figures (full screen: every year).<br>4. The change is a percentage on entries; on results the difference in points or percentage points from 2022/23.<br>5. Rows are ranked by that change, biggest rise first, with a bare rank number.<br>Sources: DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held (Candidates, GCSE); DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (Candidates, Post-16); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held (Results, GCSE); DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (Results, Post-16); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection)<br>Rounding: Percentage change as a whole number; points to 1 decimal place; whole percentage points. Ties share a rank. |
 
@@ -1058,7 +1058,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Snagging round 1 Part 4 (ranking sets) |
 | Rules | R-RANKING-SAMPLE, R-RANKING-MEASURE, R-RANK-TIES, R-IGCSE-EXCL |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Current, GCSE Results › Comparisons › Current, Post-16 Candidates › Comparisons › Current, Post-16 Results › Comparisons › Current |
 | Note | Offered on Candidates and Results columns alike because it shows the whole-school headline (Attainment 8 / A-level points per entry) in both modes; the ranking's own measure, never the column's. 0.6.6: with a subject in focus, the subject's rank on the measure in view across the whole population, its average, and the whole-school rank as a second tile (R-RANKING-MEASURE). |
 | Method | 1. We take every school of this phase in England or the region that matches the ranking's filters.<br>2. With no subject in focus: each school's latest published Attainment 8 (GCSE) or A-level average points per entry (Post-16); we rank them highest first and give the school's place and the plain average of every school's latest figure.<br>3. With a subject in focus: each school's figure in that subject on the measure in view (entries, average points, Grade 4+ / A*–E, a band or a selected grade) in one year; schools below 5 entries are left out; we rank them highest first and give the place, the plain average across the ranking's schools, and the whole-school headline rank as a second tile.<br>4. The main tile is the school's own figure in that year.<br>Sources: A national or regional ranking: every school of the phase in England or the region (DfE school census and GIAS details), narrowed by the chooser's filters; DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (with a subject in focus, on a rate)<br>Rounding: Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers. |
 
@@ -1087,7 +1087,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 7 (Comparisons map) |
 | Rules | R-IGCSE-EXCL, R-RANKING-SAMPLE, R-POINTS-SAME-QUAL, R-MEASURE-FALLBACK, R-MAP-ENCODING, R-COUNTS-SELECTION |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Current, GCSE Results › Comparisons › Current, Post-16 Candidates › Comparisons › Current, Post-16 Results › Comparisons › Current |
 | Note | Default Comparisons Current view. With no subject chip on Results the focus switches to the school's headline (mismatch M7). 0.6.3 S2: on Candidates, size = entries and no colour; on Results, colour = the selected measure (points, Grade 4+ / A*–E, a band or a Grade counts selection) by rank in the set (R-MAP-ENCODING), the panel's rank on the same figure. |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. On Candidates every dot is one neutral colour and its size is the school's entries.<br>3. On Results each dot is coloured by its rank in the set on the measure in view: deepest purple for the highest, palest blue for the lowest. Size is entries (graded entries on a rate).<br>4. A school with no figure, or too few entries, is a hollow grey dot.<br>5. The 'N of M' beside the map is your school's rank among the plotted schools with a figure (ties share a place).<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus); School locations from VicData's schools table<br>Rounding: Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers. |
 
@@ -1116,7 +1116,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 7 |
 | Rules | R-COMPARATOR-NO-FIGURE, R-COMPARATOR-RATE-PER-QUAL, R-IGCSE-EXCL, R-RANKING-SAMPLE, R-FOCUS-NEVER-FILTERED, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Current, GCSE Results › Comparisons › Current, Post-16 Candidates › Comparisons › Current, Post-16 Results › Comparisons › Current |
 | Note | — |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. Each school's figure in the latest year is a bar, largest first, with your school highlighted.<br>3. For a national or regional ranking on its headline measure, the chart is just your school against the whole population's average.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers. |
 
@@ -1145,7 +1145,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 7 §9 |
 | Rules | R-COMPARATOR-NO-FIGURE, R-RANK-TIES, R-IGCSE-EXCL, R-COMPARATOR-RATE-PER-QUAL, R-FOCUS-NEVER-FILTERED, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Current, GCSE Results › Comparisons › Current, Post-16 Candidates › Comparisons › Current, Post-16 Results › Comparisons › Current |
 | Note | — |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. Schools are ranked on the latest year, highest first; schools with the same figure share a place and the next place is skipped.<br>3. Each row shows the place, the school, its sector, its figure and its distance from your school.<br>4. On a subject ranking across a whole population, the rows are a window at real places: the top, the schools around yours and the bottom.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers; distance to 0.1 km. Ties share a place. |
 
@@ -1174,7 +1174,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Teacher view round 7; trends row merge round |
 | Rules | R-TREND-LINE-4YR, R-RANKING-SAMPLE, R-PERIOD-TRIM, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | Compares with the set's average or one named school (vs: pill); mismatch M8 (set implies its own average). |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. Your school's figure each year is one line.<br>3. The other line is, by default, the plain average of the other schools in the set that have a figure that year (your school not included), or one school you pick with 'vs:'. For a ranking on its headline measure it is the whole population's average.<br>4. A line needs 4 or more years; with fewer the panel shows the table only.<br>5. On points and rates 2021/22 is drawn, but the trend sentence, the 'vs' clause and the fitted line are measured from 2022/23.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers. |
 
@@ -1203,7 +1203,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 review fixes, 14 Nov (Q6) |
 | Rules | R-RANK-OF-N, R-RANK-TIES, R-IGCSE-EXCL |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | Ranks within the comparison set each year, highest first; ties share a place. |
 | Method | 1. Each school's figure each year is the one the trend table shows (the same measure, subject and qualification).<br>2. Your school's place that year is 1 plus the number of schools in the set with a higher figure; schools with the same figure share a place. A year with no figure for your school has no place.<br>3. How many schools had a figure each year is in the table: the 'of N' for each place.<br>4. 1st is drawn at the top.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Places as whole numbers. |
 
@@ -1232,7 +1232,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend redesign; trends row merge round |
 | Rules | R-PERIOD-TRIM, R-COMPARATOR-NO-FIGURE, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | — |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. Every school in the set is one row with its figure in each year.<br>3. The change column is first to latest: a percentage on entries; the difference in points or percentage points on results, from 2022/23.<br>4. Rows are listed by the latest year's figure, highest first; you can re-sort.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Attainment 8 and points to 1 decimal place; rates and changes in whole percentages or percentage points; entries as whole numbers. |
 
@@ -1261,7 +1261,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trends row merge round (Trend map / Change map labels) |
 | Rules | R-RANKING-SAMPLE, R-IGCSE-EXCL, R-MEASURE-FALLBACK, R-MAP-ENCODING |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | — |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. For each school we take the plain difference from its first figure in the span to its latest (in entries, points or percentage points).<br>3. Each dot is coloured on one scale centred on zero: green for the biggest rise in the set, red for the biggest fall.<br>4. Dot size is the school's entries in the last year.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus); School locations from VicData's schools table<br>Rounding: Changes in entries as whole numbers; points to 1 decimal place; whole percentage points. |
 
@@ -1290,7 +1290,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend & % change redesign (option H) |
 | Rules | R-NUMBER-TYPE-HONESTY, R-COMPARATOR-NO-FIGURE, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | S3b: % change on entries; change in points on average point score; change in percentage points on rates (R-NUMBER-TYPE-HONESTY). |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. For each school we work out the change over the span: a percentage change on entries; on results the difference in points or percentage points, from 2022/23.<br>3. Schools are ranked by that change, biggest rise first, with your school highlighted.<br>4. The dashed line is the change in the set's average: the plain average of the other schools' figures each year (your school not included), then the change in that yearly average (not the average of the schools' own changes). On a subject ranking it is the average of every ranked school's change.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Percentage change as a whole number; points to 1 decimal place; whole percentage points. |
 
@@ -1319,7 +1319,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Trend & % change redesign |
 | Rules | R-NUMBER-TYPE-HONESTY, R-COMPARATOR-NO-FIGURE, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | — |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. For each school we work out the change over the span: a percentage change on entries; on results the difference in points or percentage points, from 2022/23.<br>3. Each school is one row with its first and latest figures (full screen: every year) and its change.<br>4. Rows are ranked by change, biggest rise first, with a bare rank number. On a subject ranking, the rows are a window of the whole population's change list at real places.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus)<br>Rounding: Percentage change as a whole number; points to 1 decimal place; whole percentage points. Ties share a rank. |
 
@@ -1348,7 +1348,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | Comparisons change map colour scale round |
 | Rules | R-NUMBER-TYPE-HONESTY, R-RANKING-SAMPLE, R-IGCSE-EXCL, R-MEASURE-FALLBACK, R-MAP-ENCODING |
-| Used on | (dashboards not seeded yet) |
+| Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | S3b: a count keeps the fixed ±% scale (forcedColourMode trend); points and rates colour by the absolute change on the set's own range (trend_absolute), keyed 'Change' (R-NUMBER-TYPE-HONESTY). |
 | Method | 1. Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.<br>2. For each school we work out the change over the span: a percentage change on entries; on results the difference in points or percentage points, from 2022/23.<br>3. Each dot is coloured by that change on one scale centred on zero: green for the biggest rise in the set, red for the biggest fall, pale amber for little change.<br>4. Dot size is the school's entries in the last year.<br>Sources: The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list; DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (DfE KS4 and KS5 subject tables), 2020/21 to the latest year held / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to the latest year held (with a subject in focus, Candidates); DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries, DfE 9-1 points table; GCSE Double Award scored from its grades as two entries), via VicData's subject rollup, 2021/22 to the latest year held / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to the latest year held (with a subject in focus, Average points); DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to the latest year held (Grade 4+ / A*–E, bands, a counts selection); DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to the latest year held / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to the latest year held (no subject in focus); School locations from VicData's schools table<br>Rounding: Percentage change as a whole number; points to 1 decimal place; whole percentage points. |
 
@@ -1377,7 +1377,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-NOW, R-ADM-SHAPE-NOT-RANKED |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Entry point › Now |
 | Note | — |
 | Method | 1. Take your pupils at the entry age in the January 2026 census (2025/26). From age 4 only full-time pupils count; at ages 2-3, full-time and part-time.<br>2. Take the same count from the January 2020 census (2019/20) and give the change as a percentage of the 2019/20 figure.<br>3. Split this year's entry-age pupils into girls and boys, each as a percentage of the whole cohort.<br>4. Day pupils: your whole roll (every age, full- and part-time) in the 2025/26 census minus the boarders recorded in that census.<br>5. Size by phase: add up your pupils in each phase band (Early Years 0-4, Primary 5-10, Secondary 11-15, Sixth Form 16-18) and place each against national fifths of schools teaching that phase: XS bottom fifth, then S, M, L, XL top fifth.<br>6. Shape: the shared classifier names the shape of your year groups (ages 5-17) and the line says since which year it has held.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 and 2025/26; DfE school census (January) 2025/26: boarders, whole school; GIAS (Get Information about Schools): boarding status; Age-band roll distributions (DfE school census, rolls by phase band), 2025/26: national fifths (p20-p80) and the LA mean; VicData's shape descriptions on the school's census age profile<br>Rounding: Pupil counts to whole numbers. Change since 2019/20 and the girls/boys split to the whole per cent. |
 
@@ -1406,7 +1406,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-PIPELINE, R-ADM-LADDER, R-ADM-POOL-NOT-INTAKE, R-ADM-FLAG-FEEDER |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Now |
 | Note | — |
 | Method | 1. Choose the schools that hold these children now: the lead's lists, or by default the nearest 15 state primaries (at 16+, the nearest 10 state secondaries, 11-16 schools first, plus your own Year 11, with the primaries below).<br>2. Past years: for each September from 2020 to 2026, add up these schools' pupils one year below the entry age in the January census before it (for example Year 6 in January 2026 for September 2026 at 11+).<br>3. Counted years: for each September from 2027, find the age those children are now (entry age minus years to go) and add up these schools' pupils at that age in the January 2026 census. That count is the line. At 16+, the move from the primaries to the secondaries is scaled by the average ratio seen between them in past years.<br>4. Range for counted years: take every year-on-year change in these schools' year groups since 2019/20 (same schools in both years), keep the middle 80% (10th to 90th percentile), and apply the low and high ends once for each year still to go, so the range widens.<br>5. Years beyond the youngest counted age, from births: blend each LA's births by its weight (a weighted average). A school year is 8/12 of calendar year X plus 4/12 of year X-1. Scale this to your schools by the average ratio of their Reception pupils to those births in past years, then follow it forward as in step 4; the range also uses the low and high Reception ratios. For girls or boys, births are taken as 49% or 51%.<br>6. At 4+ (and younger entry ages) the blended births are the pool itself, not scaled to the schools; the range is the spread of the Reception-to-births ratio around its average.<br>7. Headline: the change from the September 2026 pool to the pool three years after the first forward year (or the last year shown, if sooner).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; ONS births by local authority, calendar years (shire counties as the sum of their districts); ONS subnational population projections, age 10, by upper-tier LA (11+ only; off unless switched on); GIAS (Get Information about Schools): nearest schools, sector, age range, LA<br>Rounding: Pools and ranges shown to whole pupils (hover text). Headline change to the whole per cent. Percentiles interpolated between values (numpy's default method). |
 
@@ -1435,7 +1435,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-INTAKE-CHANGE, R-ADM-CATCHMENT-RULE |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Now |
 | Note | No funnel at 4+: no school-age feeders below 4. |
 | Method | 1. Take the area: the LSOAs within the radius.<br>2. Cohort size: the local as shown-year-olds, the children living in the area at the age a year below entry, in the mid-year before entry (Year 6 = aged 10 for September 11+ entry; Year 11 = aged 15 at 16+).<br>3. Your as shown: your own pupils at the entry age in the January census (full-time from age 4).<br>4. Your as shown is the cohort size × your share (your as shown ÷ the local as shown-year-olds).<br>5. Split the change from the first year held to as shown into those two steps by the log-mean (LMDI) split: each step is L × ln(that factor now ÷ that factor then), where L = (your as shown now − then) ÷ (ln now − ln then). The two steps add up to the whole change exactly.<br>6. Families moving, the cohort size's "of which": count the same children at the earliest age the area's figures hold for them. as shown The cohort size = those children + moved in since (net: in less out). Share the cohort-size step between the two in proportion to each one's change from the first year held to as shown (each local child is worth the same pupils), so the two add up to the step. Where the two changes have opposite signs (more children here, but more families leaving), both are drawn, signed, and still net to the step.<br>7. Where your intake is under 30 at either end, each end is a 3-year average (the base year and the two after it; the latest and the two before it), every figure alike.<br>8. Draw a waterfall: your as shown in the first year held; the cohort-size step from it (up in the accent, down in orange); families moving hollow and dashed beside it, ending level with the step's end (not a step: the running total doesn't move); your share from the running total; your as shown in as shown. Under it, the sum (for example 82 + 18 − 10 = 90). The bars start a little below the lowest level, and say so.<br>Sources: ONS small-area population estimates (LSOAs, 2021 boundaries), single year of age, mid-2011 to the latest mid-year held; DfE school census (January), your own pupils by single age, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, for a state school's radius<br>Rounding: Your intake at each end to whole pupils; the two steps to whole pupils by largest remainders, so they still add up to the change; the "of which" the same way, so its two parts add up to the cohort-size step. Counts in the labels to whole children; the cohort's change to the whole per cent; shares to 1 decimal place (or 2 under 0.1%). |
 
@@ -1464,7 +1464,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-LOCAL-BIRTHS, R-ADM-CATCHMENT-RULE |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Now |
 | Note | — |
 | Method | 1. Births in the catchment: the children aged 0 living in the LSOAs within the radius, each mid-year (ONS's small-area estimates).<br>2. The region and England: ONS's LA estimates aged 0, added up over every LA in the school's region, and over every English LA.<br>3. Index each line to the first year held = 100.<br>4. The second axis label is the September entry each birth year reaches: a child aged 0 in mid-year X starts Year 7 in September X + 11 (Year 12 in X + 16), the as shown-year gap.<br>Sources: ONS small-area population estimates (LSOAs, 2021 boundaries), aged 0, mid-as shown to mid-as shown; ONS mid-year population estimates by LA, aged 0 (the region's LAs and England's, summed)<br>Rounding: Index to whole numbers (hover: the count of children aged 0). |
 
@@ -1493,7 +1493,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-FEEDERS, R-ADM-FLAG-FEEDER |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Now |
 | Note | — |
 | Method | 1. Take the feeder set's schools that hold children one year below the entry age (Reception at 4+; at 16+ the secondaries' Year 11), leaving out your own school.<br>2. For each school, count its pupils at that age in the January 2026 census (2025/26) and two years earlier (2023/24), and work out the change as a percentage.<br>3. Add the same counts across the whole set (schools with both years) to get the set's own change: this is 'the area'.<br>4. Flag: red ('falling faster than the area') when a school fell and its change is more than 5 percentage points below the area's; focus ('rising' above +2%, 'stable' from -2% to +2%) when its change is -2% or better; otherwise no flag. No flag when the school had fewer pupils two years ago than the minimum cohort (the national threshold's minimum for the phase, else 10).<br>5. Draw each school as a dot sized by its 2025/26 count and coloured green (focus), red (red flag) or grey (neither). In the 'value' look, dots are coloured by thirds of the set by pupils instead.<br>6. Your own school is a solid Admissions-blue dot, drawn on top, sized by your entry cohort now (your Year 7 at 11+) on the same scale as the feeders' dots, so your intake reads against theirs.<br>Sources: DfE school census (January), pupils by single age and sex, 2023/24 and 2025/26; GIAS (Get Information about Schools): school locations (easting/northing); National flag thresholds (VicData's national flag thresholds): the minimum cohort only<br>Rounding: Pupils to whole numbers; the two-year change in the hover to the whole per cent. |
 
@@ -1522,7 +1522,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-FEEDERS, R-ADM-FLAG-FEEDER |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Now |
 | Note | — |
 | Method | 1. Take the feeder set's schools that hold children one year below the entry age (Reception at 4+; at 16+ the secondaries' Year 11), leaving out your own school.<br>2. For each school, count its pupils at that age in the January 2026 census (2025/26) and two years earlier (2023/24), and work out the change as a percentage.<br>3. Add the same counts across the whole set (schools with both years) to get the set's own change: this is 'the area'.<br>4. Flag: red ('falling faster than the area') when a school fell and its change is more than 5 percentage points below the area's; focus ('rising' above +2%, 'stable' from -2% to +2%) when its change is -2% or better; otherwise no flag. No flag when the school had fewer pupils two years ago than the minimum cohort (the national threshold's minimum for the phase, else 10).<br>5. Add distance (straight line between school locations, in km), sector, gender, and size: each school's roll in the primary band (top age 11 or under) or secondary band, against national fifths (XS-XL). Sorted nearest first by default.<br>Sources: DfE school census (January), pupils by single age and sex, 2023/24 and 2025/26; GIAS (Get Information about Schools): location, sector, gender, LA; National flag thresholds (minimum cohort); Age-band roll distributions 2025/26 (national fifths) for XS-XL<br>Rounding: Pupils to whole numbers. Each school's trend to the whole per cent; the whole set's to 1 decimal place. Distance to 1 decimal place (km). |
 
@@ -1551,7 +1551,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-SHAPES, R-ADM-SHAPE-NOT-RANKED |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Now |
 | Note | — |
 | Method | 1. Local shape: add up the age profiles of every school in the youngest feeder set (the schools holding Reception) and run the shared classifier on the total. Ages 4 to a year below entry are drawn. At 16+ it is ages 11 to 15 instead, in the feeder set a year below entry (the nearest secondaries, 11-16 schools first, unless a list is saved; your own school left out): the same schools as the feeder cards. The caption names the set counted and the ages it holds.<br>2. Your feeders: the schools of the current feeder set at the age a year below entry (the lead's list, else the nearest state schools), your own school left out, in the set's own order.<br>3. For each feeder: its shape, its size in its phase band against national fifths (XS to XL), and a small outline with a row per age over the local shape's ages (11 to 15 at 16+), the age a year below entry highlighted. Never ranked.<br>Sources: DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils; VicData's shape descriptions; Age-band roll distributions 2025/26 (national fifths)<br>Rounding: Counts to whole numbers (hover). |
 
@@ -1580,7 +1580,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS, R-ADM-POOL-NOT-INTAKE |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Entry point › Trends |
 | Note | — |
 | Method | 1. For each January census from 2019/20 to 2025/26, take your own pupils at the entry age (full-time only from age 4; full- and part-time at ages 2-3).<br>2. Draw one point per census year, joined as a line.<br>3. A year with no census for your school is left as a gap; an earlier year can come from your school's predecessor (for example before an academy conversion).<br>4. At least two years with figures are needed to draw it.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers. |
 
@@ -1609,7 +1609,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Entry point › Trends |
 | Note | — |
 | Method | 1. For each January census from 2019/20 to 2025/26, take your own pupils at the entry age (full-time only from age 4; full- and part-time at ages 2-3).<br>2. Draw one bar per census year; the hover splits it into girls and boys.<br>3. A year with no census for your school is left as a gap; an earlier year can come from your school's predecessor (for example before an academy conversion).<br>4. At least two years with figures are needed to draw it.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers. |
 
@@ -1638,7 +1638,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Entry point › Trends |
 | Note | — |
 | Method | 1. For each January census from 2019/20 to 2025/26, take your own pupils at the entry age (full-time only from age 4; full- and part-time at ages 2-3).<br>2. List one row per census year with the total, girls and boys.<br>3. A year with no census for your school is left as a gap; an earlier year can come from your school's predecessor (for example before an academy conversion).<br>4. At least two years with figures are needed to draw it.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers. |
 
@@ -1667,7 +1667,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS, R-ADM-ENTRY-SEX |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Entry point › Trends |
 | Note | — |
 | Method | 1. For each January census from 2019/20 to 2025/26, take your own girls and boys at the entry age (full-time only from age 4).<br>2. Draw a line for each: girls in the accent, boys dashed.<br>3. Under it, the girls' share of the cohort each year (girls ÷ girls and boys), against 50%, and the change from the first year to the latest in words.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Counts to whole numbers; the girls' share to the whole per cent (1 decimal place on hover). |
 
@@ -1696,7 +1696,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Trends |
 | Note | — |
 | Method | 1. Feeders: the Pipeline's past pools: your feeder set's pupils one year below the entry age in each January census (2019/20 to 2024/25 or 2025/26, the census a year before each September's entry).<br>2. LA: every pupil of that age in all schools in your school's LA (DfE school census, summed by area, LA row), for each census year those figures hold.<br>3. England: the same age added up across the nine regions; a year without all nine is left blank.<br>4. Find the first year all three lines have a figure and set each line to 100 there; every other year is its figure divided by that year's, times 100. If no year is shared, each line starts at 100 in its own first year.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26 (feeder schools); DfE school census via DfE school census, summed by area: pupils by single age per LA and per region, each year held<br>Rounding: Index values to whole numbers on the axis; counts in the hover to whole numbers. |
 
@@ -1725,7 +1725,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Trends |
 | Note | — |
 | Method | 1. Feeders: the Pipeline's past pools: your feeder set's pupils one year below the entry age in each January census (2019/20 to 2024/25 or 2025/26, the census a year before each September's entry).<br>2. LA: every pupil of that age in all schools in your school's LA (DfE school census, summed by area, LA row), for each census year those figures hold.<br>3. England: the same age added up across the nine regions; a year without all nine is left blank.<br>4. List one row per year with the three counts as they are (not indexed); a missing figure shows a dash.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26 (feeder schools); DfE school census via DfE school census, summed by area: pupils by single age per LA and per region<br>Rounding: Whole numbers. |
 
@@ -1754,7 +1754,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Pipeline › Trends |
 | Note | The school page's Population trends in the area, as it draws them. |
 | Method | 1. From the 2025/26 census, take the pupils at each age from 5 to 15 in all schools in your school's LA, and the same for its region.<br>2. Draw each age as a bar, from 15 down to 5.<br>3. Compare the youngest with the oldest: (pupils aged 15 minus pupils aged 5) divided by pupils aged 15. It is shown with the sign turned round, so fewer 5-year-olds than 15-year-olds reads as a fall.<br>4. Name it: Growing (more 5-year-olds than 15-year-olds), Stable (up to 2% fewer), Decline (up to 15% fewer), Steep Decline (up to 25% fewer), Severe Decline (more than 25% fewer).<br>Sources: DfE school census 2025/26 via DfE school census, summed by area: pupils by single age in all schools in the LA and in the region<br>Rounding: The percentage to 1 decimal place. Counts in the hover to whole numbers. |
 
@@ -1783,7 +1783,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-HOLD-SHARE, R-ADM-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Forward › Trends |
 | Note | — |
 | Method | 1. Take your own pupils at the entry age in the January 2026 census (2025/26). With the girls/boys filter on, girls or boys only.<br>2. Now: divide that number by the September 2025 pool (the feeder set's pupils a year below entry in the 2024/25 census) to give your share now.<br>3. For each September from 2027, divide the same number by that year's pool from the Pipeline (counted, then from births). This is the share you would need to take the same number again.<br>4. Range: divide by the top of the pool's range for the low end, and by the bottom of the range for the high end.<br>5. Years with no pool are left out; September 2026 is not shown (it is already past).<br>6. The sentence quotes the share for the year the Pipeline's headline uses (three years after the first forward year), else the fourth year shown; the line is solid for counted years and dashed for years from births, against a dashed line at your share now.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; ONS births by local authority (for the later years of the pool)<br>Rounding: Shares to 1 decimal place. |
 
@@ -1812,7 +1812,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-HOLD-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Pipelines › Forward › Trends |
 | Note | — |
 | Method | 1. Take your own pupils at the entry age in the January 2026 census (2025/26). With the girls/boys filter on, girls or boys only.<br>2. Now: divide that number by the September 2025 pool (the feeder set's pupils a year below entry in the 2024/25 census) to give your share now.<br>3. For each September from 2027, divide the same number by that year's pool from the Pipeline (counted, then from births). This is the share you would need to take the same number again.<br>4. Range: divide by the top of the pool's range for the low end, and by the bottom of the range for the high end.<br>5. Years with no pool are left out; September 2026 is not shown (it is already past).<br>6. List a row for now (marked counted, no range) and a row for each later September with the share needed, its range and its source (counted or births).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; ONS births by local authority (for the later years of the pool)<br>Rounding: Shares and ranges to 1 decimal place. |
 
@@ -1841,7 +1841,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-GROUP-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Entry point › Now |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. Rank: order the schools by their latest count, largest first; ties share a place. 'Of' is the number of schools with a figure that year.<br>4. Market share: your count divided by the group's total that year.<br>5. Since 2019/20: your share now minus your share in the first year, in percentage points.<br>6. Whole school: your rank by total roll (every age; girls or boys only with the filter on) among the group in 2025/26.<br>7. This group: the total at the entry age, the number of rivals, and how many schools are independent, state and boarding (your school included in those three counts).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location<br>Rounding: Share to 1 decimal place; change in share to 1 decimal place (points). |
 
@@ -1870,7 +1870,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-GROUP-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | not placed |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. Add the counts for the group total in the latest year.<br>4. Your share is your count divided by that total; the donut fills that share.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location<br>Rounding: Share to 1 decimal place; total to whole pupils. |
 
@@ -1899,7 +1899,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-RIVAL-RANKS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Now |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. Rank the schools by their latest count (ties share) and draw each as a bar; share = count divided by the group's total.<br>4. Trend arrow: the change in each school's count from the year before; up or down only if it moved more than 2%, otherwise level.<br>5. Results: each school's place in England and in its own region on the whole-school headline for the entry point's stage (4+: KS2 reading, writing and maths at the expected standard; 11+: GCSE Attainment 8; 16+: A-level points per entry) in the latest results year, among every school with a figure, highest first, ties sharing. An IGCSE-heavy independent school at 11+ shows 'IGCSE', is not ranked, and is left out of every school's national and regional population; a school with no published results shows 'none'.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location; DfE performance tables: KS2 , KS4 and KS5 headlines, latest results year<br>Rounding: Share to the whole per cent. Trend hover to 1 decimal place. |
 
@@ -1928,7 +1928,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Now |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. Size each school's dot by its pupils at the entry age in the 2025/26 census (all pupils).<br>3. Colour by sector (state or independent), your school ringed. In the 'change' look, colour by the change since last year instead (more than 2% up or down).<br>4. The hover gives the count and the share of the group (count divided by the group's total), which follow the girls/boys filter.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location<br>Rounding: Share to 1 decimal place. |
 
@@ -1957,7 +1957,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-RIVAL-RANKS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Now |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. For each school in the latest year: rank by count (ties share), count, share of the group's total, and whole-school roll (every age, full- and part-time; girls or boys only with the filter on).<br>4. Size: the school's roll in the entry point's phase band against national fifths (XS-XL).<br>5. Distance: straight line from your school, in km.<br>6. Results: the school's place in England on the stage's headline (see the ranked bars).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location; DfE performance tables (latest results year); Age-band roll distributions 2025/26 (national fifths)<br>Rounding: Share to 1 decimal place; distance to 1 decimal place. |
 
@@ -1986,7 +1986,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MOMENTUM, R-ADM-FLAG-MOMENTUM |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Now |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. Across: each school's change in pupils at the entry age over three census years, to 2025/26, as a percentage of the figure three years before. Growing or shrinking compares this year's roll with three years ago. A school with fewer than four census years is measured from its first.<br>3. Up: each school's change in its whole-school headline (KS2 expected standard %, GCSE Attainment 8, or A-level points per entry) from 2022/23 to the latest results year, in points.<br>4. Which results at 11+: count the rivals with no GCSE results in the latest results year (no Attainment 8, or an IGCSE school, listed but never ranked). If that is over 40% of the rivals (IGCSE_SWITCH_SHARE) and post-16 results cover more of them than GCSE does, Up reads A-level points per entry instead, and the line under the title says so: 'Post-16 results: 6 of 10 rivals have no GCSE results (mostly IGCSE)'. At 40% or below it stays on GCSE and names the rivals it leaves out. At 16+ it is post-16 already; at 4+ KS2. The flags keep the entry point's own results (GCSE at 11+). The set editor's results switch uses the same rule.<br>5. Plot each school in one of four corners: growing or shrinking, improving or slipping. Dots with a gaining or rising flag are amber, a losing or shrinking flag red.<br>6. Flags use two-year changes against national thresholds for the phase (the top or bottom fifth of all schools' changes); with no thresholds loaded, no threshold flag is shown.<br>7. Results rising fast: the headline rose by at least the national top-fifth threshold over two results years, and the school has at least the minimum cohort at the entry age. Gaining pupils: the whole roll rose by at least the top-fifth threshold over two census years (2023/24 to 2025/26). Year 7 (or Reception, Year 12) shrinking: the entry-age count fell by at least the bottom-fifth threshold over the same two years. Losing pupils three years running: the whole roll fell in each of the last three years (2022/23 to 2025/26). New sixth form (11+ and 16+ only): pupils aged 16 now, at least the minimum cohort, and none in any year up to two years ago. Shape changed: the same shape in the last two censuses, different from three years before (this one needs no threshold).<br>Sources: DfE school census (January), pupils by single age and sex, the census three years before 2025/26 to 2025/26; DfE performance tables: the whole-school headline, 2022/23 to the latest results year; National flag thresholds (VicData's national flag thresholds)<br>Rounding: Changes in hovers to 1 decimal place; pupil changes in the list to the whole per cent; results changes to 1 decimal place. |
 
@@ -2015,7 +2015,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-STRENGTHS, R-ADM-FLAG-STRENGTHS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Now |
 | Note | KS2 has no subject areas: not on 4+ (a custom age below 11 shows the reason). |
 | Method | 1. For each subject area you have (at least 10 entries), take your average points in the latest results year.<br>2. Take the same for each rival with that area (at least 10 entries; IGCSE-heavy rivals left out) and average them.<br>3. Your rank: 1 plus the number of rivals above you, out of those rivals plus you. Gap: your figure minus the rivals' average.<br>4. Direction since 2022/23: today's gap minus the 2022/23 gap (rising or falling if it moved more than 0.05 points).<br>5. Flags (only with at least two rivals): Strength = ahead of the average and in the top third; Strength growing = also the gap widened since 2022/23 and your own two-year change is in the national top fifth. Weakness and Weakness widening are the same at the bottom.<br>6. Sorted by gap, biggest lead first.<br>Sources: DfE KS4 or KS5 subject-family results (average points and entries), 2022/23 to the latest results year; National flag thresholds (subject-area)<br>Rounding: Points and gaps to 2 decimal places (hover). |
 
@@ -2044,7 +2044,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-SHAPES, R-ADM-SHAPE-NOT-RANKED |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Now |
 | Note | — |
 | Method | 1. Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.<br>2. Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.<br>3. Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).<br>4. Rivals: each rival's shape, its size in the entry point's phase band against national fifths, and a small outline of its year groups with a row per age over your own school's ages (an age it doesn't teach is an empty row, so the rows line up with yours), each scaled to its own largest year group, in the rival list's own order. Never ranked.<br>Sources: DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils; VicData's shape descriptions; Age-band roll distributions 2025/26 (national fifths)<br>Rounding: Counts to whole numbers (hover). |
 
@@ -2073,7 +2073,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-FLAGS, R-ADM-FLAG-MOMENTUM |
-| Used on | (dashboards not seeded yet) |
+| Used on | not placed |
 | Note | On the published dashboard the flags sit inside Rivals' momentum. |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. Flags use two-year changes against national thresholds for the phase (the top or bottom fifth of all schools' changes); with no thresholds loaded, no threshold flag is shown.<br>3. Results rising fast: the headline rose by at least the national top-fifth threshold over two results years, and the school has at least the minimum cohort at the entry age. Gaining pupils: the whole roll rose by at least the top-fifth threshold over two census years (2023/24 to 2025/26). Year 7 (or Reception, Year 12) shrinking: the entry-age count fell by at least the bottom-fifth threshold over the same two years.<br>4. Losing pupils three years running: the whole roll fell in each of the last three years (2022/23 to 2025/26). New sixth form (11+ and 16+ only): pupils aged 16 now, at least the minimum cohort, and none in any year up to two years ago. Shape changed: the same shape in the last two censuses, different from three years before (this one needs no threshold).<br>5. List the flagged rivals, most flags first, with each one's pupil change at the entry age since 2022/23 and its headline change in points since 2022/23.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26; DfE performance tables (whole-school headline); National flag thresholds<br>Rounding: Pupil change to the whole per cent; results change to 1 decimal place; figures in hovers to 2 decimal places. |
 
@@ -2102,7 +2102,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS, R-ADM-VIEW-MARKET, R-ADM-VS-EACH |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Entry point › Trends |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. Rivals' average: the mean of the rivals' counts that year (rivals with a figure only; your school not included).<br>4. Set both lines to 100 in the first year they both have a figure; every other year is its figure divided by that year's, times 100.<br>5. In full screen: you and each rival in its own colour, each rival indexed to the same year, or to its own first year where it has none then (a rival with under 30 at the entry age then is named under the chart, not drawn), plus the rivals' average as a dashed grey line, each with a key entry.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Index to whole numbers on the axis. |
 
@@ -2131,7 +2131,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Entry point › Trends |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. Rivals' average: the mean of the rivals' counts that year (rivals with a figure only; your school not included).<br>4. Draw your count and the rivals' average side by side for each year (actual numbers, not indexed).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers in the hover. |
 
@@ -2160,7 +2160,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-ACADEMIC, R-ADM-RIVAL-RANKS |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Trends |
 | Note | — |
 | Method | 1. Pick the stage from the entry point: 4+ (ages up to 10) KS2 reading, writing and maths at the expected standard; 11+ GCSE Attainment 8; 16+ A-level points per entry.<br>2. Your rank: 1 plus the number of ranked rivals with a higher headline, out of you and the rivals that have a ranked figure.<br>3. Your place in England: among every school with a figure that year (at 11+ leaving out IGCSE-heavy schools), highest first, ties sharing.<br>4. Change: your headline now minus 2022/23, in points.<br>5. Where you lead and trail: the three subject areas with the biggest lead and the two with the biggest gap behind (as in Strengths and weaknesses; not at KS2).<br>Sources: DfE performance tables: KS2 , KS4 and KS5 whole-school headlines and subject-family results, 2022/23 to the latest results year<br>Rounding: Change to 1 decimal place; gaps to 2 decimal places. |
 
@@ -2189,7 +2189,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-ACADEMIC |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Trends |
 | Note | — |
 | Method | 1. Pick the stage's headline from the entry point (KS2 expected standard %, GCSE Attainment 8, or A-level points per entry).<br>2. List each school's figure in the latest results year, highest first.<br>3. Beside it, its place in England among every school with a figure (at 11+ leaving out IGCSE-heavy schools), ties sharing.<br>Sources: DfE performance tables: KS2 , KS4 and KS5 whole-school headlines and subject-family results, 2022/23 to the latest results year<br>Rounding: Figures to 1 decimal place. |
 
@@ -2218,7 +2218,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-ACADEMIC |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Rivals › Trends |
 | Note | — |
 | Method | 1. Pick the stage's headline from the entry point.<br>2. For each school, take its headline in the latest results year minus its headline in 2022/23, in points.<br>3. Draw the changes as bars either side of zero, biggest rise first.<br>Sources: DfE performance tables: KS2 , KS4 and KS5 whole-school headlines and subject-family results, 2022/23 to the latest results year<br>Rounding: Changes to 1 decimal place. |
 
@@ -2247,7 +2247,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-GROUP-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Trends › Trends |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).<br>4. Draw your share year by year (needs at least two years).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Share to 1 decimal place. |
 
@@ -2276,7 +2276,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Trends › Trends |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).<br>4. List a row per year: your count, the group's total and your share.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Counts to whole numbers; share to 1 decimal place. |
 
@@ -2305,7 +2305,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET |
-| Used on | (dashboards not seeded yet) |
+| Used on | not placed |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).<br>4. List a row per year: your count, the group's total and your rank 'of' the schools with a figure that year.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Whole numbers. |
 
@@ -2334,7 +2334,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Trends › Trends |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.<br>2. For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.<br>3. For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).<br>4. For each school, take its share in the latest year minus its share in the first year, in percentage points.<br>5. Draw the changes as bars either side of zero, biggest gain first.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 and 2025/26<br>Rounding: Change to 1 decimal place (points). |
 
@@ -2363,7 +2363,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-ROLL-INDEXED |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Trends › Trends |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals, narrowed by the sector and boarding filters.<br>2. Set the age band from the entry age to the end of its phase: 4+ ages 4-10, 11+ ages 11-15, 16+ ages 16-18.<br>3. For each school and census year, add up its pupils across those ages (full-time from age 4). With the girls/boys filter on, girls or boys only.<br>4. The rivals' average: the mean of the rivals' band rolls, each year, over the rivals with a figure in every year.<br>5. Index your line and the average to the first year both have (= 100). In full screen each rival is indexed to the same year, or to its own first year where it has none then, in its own colour with a key.<br>6. In the panel: you against the rivals' average. In full screen: you and each rival, with the rivals' average as one more line (dashed grey).<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Index to whole numbers (hover: the pupils behind it). |
 
@@ -2392,7 +2392,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md) |
 | Rules | R-ADM-VIEW-MARKET, R-ADM-GROUP-SHARE, R-ADM-BAND-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | Admissions Market share › Trends › Trends |
 | Note | — |
 | Method | 1. Take the group: your school plus the rivals, narrowed by the sector and boarding filters.<br>2. For each school and census year, add up its pupils across as shown (11+: ages 11-15; 16+: 16-18; 4+: 4-10), full-time from age 4. With the girls/boys filter on, girls or boys only.<br>3. Each year, your total divided by the group's total is your share of as shown.<br>4. Draw one point per year, joined as a line.<br>Sources: DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26<br>Rounding: Share to 1 decimal place. |
 
@@ -2421,7 +2421,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-NOW, R-SMT-P8-REASON, R-SMT-BOARDING-ONLY |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › The school now › Now |
 | Note | — |
 | Method | 1. We take the school's roll from its latest January census, after the Pupils or Day and boarding filter if one is set, and compare it with the 2019/20 census as a percentage change.<br>2. Girls and boys are each shown as a share of girls plus boys; a boarding school shows day pupils and boarders instead.<br>3. For each phase the school teaches we show its headline result for the latest year (Attainment 8, A-level points per entry, or KS2 reading, writing and maths) and its rank among every school in England with that result (at GCSE leaving out IGCSE schools), highest first, ties sharing a place.<br>4. A-level value added and Progress 8 are shown as DfE published them; where Progress 8 is missing, the reason that applies is given instead.<br>5. Size by phase counts the school's pupils in each age band (Primary 5-10, Senior 11-15, 16+ 16-18, and Early Years and 19+ where held) and places them in national fifths for that band, XS (smallest fifth) to XL (largest).<br>Sources: DfE school census (January), the school's own rows from 2019/20; DfE school census, rolls by phase band (national fifths and LA mean roll per phase band); DfE KS4 and KS5 performance tables (Attainment 8, A-level points per entry, A-level value added, Progress 8); DfE KS2 performance tables (reading, writing and maths at the expected standard)<br>Rounding: Roll and pupil counts to whole pupils Change since 2019/20 to a whole per cent Girls and boys to whole per cent Attainment 8 to 1 dp; A-level points per entry to 2 dp; KS2 per cent to 1 dp Value added and Progress 8 signed, to 2 dp |
 
@@ -2450,7 +2450,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-SCORECARD, R-SMT-SET-RANKS, R-SMT-IGCSE-WORDING, R-TREND-FROM-2223 |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › Scorecard › Now |
 | Note | — |
 | Method | 1. Each row is one headline: roll (and boarders at a boarding school), Attainment 8 and grade 5+ in English and maths (GCSE), A-level points per entry and A-level value added (Post-16), KS2 reading, writing and maths (Primary), and market share at 11+.<br>2. 'You' is the school's figure for the latest year.<br>3. The set column ranks the school among the set's schools that have that result, the school counted too: highest first, ties share a place, and the count shows how many were ranked.<br>4. The region and England columns rank the school among every school with that result in its region and in England (at GCSE leaving out IGCSE schools). For the roll, schools are ranked by whole roll among schools that teach the school's main phase.<br>5. 'Since' is the change from 2022/23 to the latest year (points, or percentage points for grade 5+); for the roll and boarders it is the percentage change since 2019/20.<br>6. Under the table, the flags line lists any flags from the Flags view.<br>Sources: DfE school census (January); DfE KS4 and KS5 performance tables (KS4, KS5); DfE KS2 performance tables; Admissions' saved 11+ rivals and the census (market share row)<br>Rounding: Ranks are whole numbers Roll to whole pupils; roll change to a whole per cent Attainment 8 to 1 dp; A-level points per entry to 2 dp; per cents to 1 dp; value added to 2 dp Points and percentage-point changes to 1 dp |
 
@@ -2479,7 +2479,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-MAP |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › Scorecard › Now |
 | Note | — |
 | Method | 1. We take the school and every school in the chosen comparison set.<br>2. Each school with a recorded location is placed on the map; the school is ringed in the accent colour, the others in grey.<br>3. No figures are drawn; the key gives the number of schools in the set.<br>Sources: School locations (easting and northing) from the schools table<br>Rounding: None |
 
@@ -2508,7 +2508,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-FLAGS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › Scorecard › Now |
 | Note | — |
 | Method | 1. Roll falling: the whole roll fell in each of the last three year-on-year moves (four consecutive censuses), starting from at least 50 pupils.<br>2. Entry cohort shrinking: the school's pupils at its entry age (11 for a school with a GCSE phase starting at 11 or younger, else Reception age for a primary, else 16) changed over two years by as much as or more than the national bottom-fifth threshold for that phase's entry cohorts.<br>3. Results faster than the set: we take the school's change in its headline (Attainment 8, or A-level points per entry) over two years, and the middle (median) change of the set's schools with both years.<br>4. The results flag shows when the school's change differs from the set's middle by at least 2 Attainment 8 points or 3 A-level points, and at least 4 set schools have both years.<br>5. Each flag shows the figures behind it.<br>Sources: DfE school census (January); DfE KS4 and KS5 performance tables (Attainment 8, A-level points per entry); Admissions' national flag thresholds<br>Rounding: Results change and set middle to 2 dp in the flag's figures |
 
@@ -2537,7 +2537,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › The school now › Trends |
 | Note | — |
 | Method | 1. We take the school's roll in each January census from 2019/20 (after any Pupils or Day and boarding filter). A boarding school with no boarding filter shows a day line and a boarding line instead.<br>2. For the local authority and England we add up pupils aged 5 to 15 in the census aggregates each year (England is the nine regions added together).<br>3. We find the first year every line has a figure and set each line to 100 in that year.<br>4. Each later year is that year's figure divided by the base year's, times 100.<br>5. Growing or shrinking compares this year's roll with three years ago. The word is 'Growing' or 'Shrinking' when the change rounds to at least 1%, otherwise 'Steady'. A school with fewer than four census years is measured from its first.<br>Sources: DfE school census (January), the school's own; DfE school census, summed by area (census pupils by age, per LA and per region)<br>Rounding: Index values to whole numbers |
 
@@ -2566,7 +2566,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › The school now › Trends |
 | Note | — |
 | Method | 1. The table shows the figures behind the Roll, indexed chart, one row per census year.<br>2. Each line (the school, or day and boarding, then the LA and England) has two columns: its pupils, and its index, set to 100 in the first year all lines share.<br>3. The LA and England columns are pupils aged 5 to 15 in the census aggregates, not total rolls.<br>Sources: DfE school census (January), the school's own; DfE school census, summed by area (census pupils by age, per LA and per region)<br>Rounding: Pupils and index values to whole numbers |
 
@@ -2595,7 +2595,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223, R-IGCSE-EXCL |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › Scorecard › Trends |
 | Note | — |
 | Method | 1. For GCSE we use Attainment 8 and for Post-16 A-level points per entry; where the school has both, chips switch between them. This view is whole-school and does not follow the level.<br>2. The line is the school's figure each year from 2021/22.<br>3. For each year we take the set's other schools with a figure (leaving out IGCSE schools at GCSE) and find the 25th and 75th percentiles; the shaded band runs between them.<br>4. 2021/22 is shaded because grades that year were more generous.<br>5. The word under the chart compares the school's 2022/23 figure with its latest: more than 0.5 points up is 'Rising', more than 0.5 down 'Falling', otherwise 'Steady'. With fewer than 4 years, the points are drawn but not called a trend.<br>Sources: DfE KS4 and KS5 performance tables (Attainment 8; A-level points per entry)<br>Rounding: Attainment 8 to 1 dp; A-level points per entry to 2 dp |
 
@@ -2624,7 +2624,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223 |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › Scorecard › Trends |
 | Note | — |
 | Method | 1. One row per year from 2021/22, for Attainment 8 (GCSE) or A-level points per entry (Post-16).<br>2. 'You' is the school's figure that year.<br>3. The middle half is the 25th to 75th percentile of the set's other schools with a figure that year.<br>4. 'Schools' is how many set schools had a figure that year.<br>Sources: DfE KS4 and KS5 performance tables (Attainment 8; A-level points per entry)<br>Rounding: Attainment 8 to 1 dp; A-level points per entry to 2 dp |
 
@@ -2653,7 +2653,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-ADM-GROUP-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › From Admissions › Trends |
 | Note | Admissions' figures, read-only. Where the school has no Admissions rivals at 11+, the view says why. |
 | Method | 1. We take the school's pupils aged 11 in each January census.<br>2. We add up pupils aged 11 across the school and its saved 11+ rivals.<br>3. The school's share is its pupils divided by that total, as a percentage.<br>4. The grey line is the rival with the largest share in the latest year.<br>5. The word under the chart compares 2022/23 with the latest year: more than 0.5 points up is 'Gaining share', down 'Losing share'.<br>Sources: DfE school census (January), age 11 pupils; Admissions' saved 11+ rival lists<br>Rounding: Shares to 1 dp per cent |
 
@@ -2682,7 +2682,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-ADM-GROUP-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Overview › From Admissions › Trends |
 | Note | — |
 | Method | 1. One row per census year.<br>2. 'You' is the school's pupils aged 11 as a share of all pupils aged 11 across the school and its saved rivals.<br>3. The second column is the same share for the rival with the largest share in the latest year.<br>Sources: DfE school census (January), age 11 pupils; Admissions' saved 11+ rival lists<br>Rounding: Shares to 1 dp per cent |
 
@@ -2711,7 +2711,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-ACADEMIC-NOW, R-SMT-COL1-LEVEL, R-SMT-QUAL-GROUPS, R-SMT-VA-BANDS, R-SMT-P8-REASON, R-SMT-VA-HONEST |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The level now › Now |
 | Note | — |
 | Method | 1. Post-16: one line per qualification group the school offers (A level, Applied, EPQ, Core Maths, AS, IB, T level). Applied shows DfE's two headline types, Applied general and Tech level, each with its own line. DfE sorts qualifications into the two types by subject, so one school's BTECs and OCRs can fall in both.<br>2. Results: points per entry with DfE's grade equivalent. Each line is ranked within its own qualification only, among its comparison set's schools with a figure; A-level points never sit beside BTEC points. Top-grade shares are in the views, not here.<br>3. Entries: the group's entries, its share of all the school's entries at the level, the counts for three years, and the set's typical share (the median share among the set's schools offering it).<br>4. Value added: DfE's figure, its 95% range and band. DfE's own progress band where DfE publishes one (A level, Academic, Applied general, Tech level); elsewhere VicData's three, from the range alone: Clearly above (the whole range above 0), In line (it crosses 0), Clearly below (the whole range below 0), deliberately unlike DfE's five.<br>5. GCSE: Progress 8 with its range and England place; its five bands derived exactly from DfE's definition (well above or below beyond ±0.5 with the range clear of 0). For an independent or IGCSE school, why there is none and a summary of the set's state schools.<br>6. The place is the school's rank in that line's set, highest first, ties sharing a place, counting the school and the set's schools with a figure.<br>Sources: DfE KS5 performance tables: points per entry with DfE's grade equivalent, and value added with its 95% range and progress band, for A level, Academic, Applied general and Tech level; VicData's qualification groups (DfE subject tables, the subject-by-qualification rollup): IB and T level points, EPQ, Core Maths and AS entries and points, every group's entries; DfE KS5 value added by subject: the EPQ, Core Maths, AS and IB value-added rows; DfE KS4 performance tables: Attainment 8, grade 5+ in English and maths, Progress 8 and its 95% range<br>Rounding: Points to 2 dp; value added signed to 2 dp; shares to 1 dp per cent Entries whole numbers; ranks whole numbers |
 
@@ -2740,7 +2740,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS, R-SMT-VA-BANDS, R-SMT-VA-INDEPENDENT |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
 | Method | 1. Each row is one school, ranked by the figure.<br>2. Value added: the dot is the figure and the line its 95% range; the vertical line is 0, England's average. Overlapping ranges aren't clearly different. The axis fits the data: nothing is drawn at an edge.<br>3. Under the chart, the school's place in England on a strip from lowest to highest.<br>4. With Applied chosen, a switch chooses DfE's type: Applied general or Tech level.<br>Sources: As column 1, for the chosen group and the comparison set's schools offering it<br>Rounding: As column 1 |
 
@@ -2769,7 +2769,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS, R-SMT-VA-BANDS, R-SMT-VA-INDEPENDENT, R-SMT-SET-RANKS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
 | Method | 1. One row per school: the figure, its 95% range and band (value added), last year's figure and the change, and the school's place in England.<br>2. Above the table: the school's place in the set, its region and England, and how many of the set are clearly above or clearly below average (value added: the whole range above or below 0).<br>Sources: As column 1, for the chosen group and the comparison set's schools offering it; England and region places from every school with the figure that year<br>Rounding: As column 1; changes to the same precision |
 
@@ -2798,7 +2798,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS, R-SMT-VA-BANDS, R-SMT-VA-INDEPENDENT |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
 | Method | 1. Each school is coloured by its value-added band; grey where none is published.<br>2. Your school is ringed in the SMT accent.<br>Sources: School locations (easting and northing); As column 1, for the chosen group<br>Rounding: None |
 
@@ -2827,7 +2827,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ACADEMIC-MODES, R-VA-SUBJECT-MATCH, R-SMT-SMALL-ENTRIES |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
 | Method | 1. Each subject area, then its qualifications, then their subjects, most entries first. Each subject is ranked only against the same subject in the same qualification, among the set's schools that teach it (each qualification's own comparison set unless you chose one).<br>2. Value added: each row's dot is the school (ringed) among the set's schools' dots; the band is VicData's three from the 95% range.<br>3. † marks a subject VicData placed in its area: its value-added name has no exact match in the results file. The list is VicData's, checked by hand.<br>4. Entries: each subject's entries over three years, its size against England (XS to XL), its share of the school's entries at the level against the set's typical school offering it, and how many of the set offer it.<br>Sources: The subject-by-qualification rollup (entries and points per subject and qualification); DfE KS5 value added by subject; VicData's value-added subject matches: DfE's value-added file names subjects differently from its results file; The England size table (XS to XL, fifths of every school entering the subject in the qualification that year)<br>Rounding: Points to 1 dp; value added signed to 2 dp; shares to 1 dp per cent |
 
@@ -2856,7 +2856,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-GRADES |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Now |
 | Note | — |
 | Method | 1. Each qualification's graded entries in its own scale's bands: A level A*-A, B, C, D-U; AS and Core Maths A, B, C, D-U; IB 7-6, 5-4, 3-1; GCSE 9-7, 6-5, 4, 3-1; BTEC and OCR by grade.<br>2. The top-grade share (A*-A, Distinction*-Distinction, IB 6-7, GCSE 9-7) is the top band's share of the qualification's graded entries.<br>Sources: The school's grade rows (DfE subject tables)<br>Rounding: Shares to whole per cent Entries whole numbers |
 
@@ -2885,7 +2885,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223, R-SMT-YEARS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The level now › Trends |
 | Note | — |
 | Method | 1. The line is the school's figure each year; the band runs from the 25th to the 75th percentile of the set's schools offering the group with a figure that year.<br>2. With All chosen, the trend follows the group with the most entries.<br>Sources: As column 1, for the chosen group, year by year<br>Rounding: As column 1 |
 
@@ -2914,7 +2914,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-TREND-FROM-2223, R-SMT-YEARS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The level now › Trends |
 | Note | — |
 | Method | 1. One row per year: the school's figure, the set's middle half and how many set schools had a figure.<br>Sources: As the trend<br>Rounding: As column 1 |
 
@@ -2943,7 +2943,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-SMT-COL1-LEVEL |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Trends |
 | Note | — |
 | Method | 1. Each line's figure last year (ring) and this year (dot) on one axis that starts at 0, with both figures and the line's entries beside its name.<br>2. In value added, 0 is England's average for that line.<br>3. The change is at the right.<br>Sources: Column 1's lines<br>Rounding: As column 1 |
 
@@ -2972,7 +2972,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS, R-CHART-AXES |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Trends |
 | Note | Each subject's entries in the first year shown and the latest, at this level; subjects with entries in only one of the two years are left out. |
 | Method | 1. One row per subject and qualification: its entries in the first year (ring) and the latest (dot), largest first.<br>2. The qualification is named only where the level has more than one; the level's main one is left unnamed.<br>3. Colour is the subject family; the dashed row is the plain average of the subjects drawn.<br>Sources: The subject-by-qualification rollup (DfE subject tables): the same entries as column 1<br>Rounding: Entries whole numbers |
 
@@ -3001,7 +3001,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ACADEMIC-MODES |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › The set › Trends |
 | Note | — |
 | Method | 1. The five subjects whose entries grew most and the five that shrank most, from the first of three years to the latest. Entries, not students.<br>Sources: The subject-by-qualification rollup<br>Rounding: Entries whole numbers |
 
@@ -3030,7 +3030,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-MIX, R-SMT-QUAL-GROUPS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › Entries › Trends |
 | Note | — |
 | Method | 1. Each year's Post-16 entries split by qualification group: A level (and AS), BTEC, OCR and VRQ, IB, T level, and Other (EPQ, Core Maths and the rest), as shares of the year. The year's total is the page's one total (column 1's). Entries, not students.<br>2. Where a group starts or stops within the years shown, a line says so.<br>Sources: The subject-by-qualification rollup (DfE subject tables): the same entries as column 1, whose yearly sum is DfE's own All-subjects total<br>Rounding: Shares to whole per cent Entries whole numbers |
 
@@ -3059,7 +3059,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-MIX, R-SMT-QUAL-GROUPS |
-| Used on | (dashboards not seeded yet) |
+| Used on | not placed |
 | Note | — |
 | Method | 1. One row per year: each group's entries and share, and the year's total.<br>Sources: As the entries mix<br>Rounding: Shares to whole per cent Entries whole numbers |
 
@@ -3088,7 +3088,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ACADEMIC-MODES |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › Entries › Trends |
 | Note | — |
 | Method | 1. Each subject's share of the school's entries at the level against the set's typical school offering it (the median); the nine furthest apart, either way.<br>Sources: The subject-by-qualification rollup, for the school and its set<br>Rounding: Shares to 1 dp per cent |
 
@@ -3117,7 +3117,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ACADEMIC-MODES, R-SMT-GROUP-SETS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Academic › Entries › Trends |
 | Note | — |
 | Method | 1. The three biggest rises, then the three biggest falls, among the set's schools, on the chart's measure.<br>Sources: As the chart, last year and this<br>Rounding: As column 1 |
 
@@ -3146,7 +3146,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-PUPILS-NOW, R-SMT-BOARDING-ONLY, R-SMT-PUPILS-LEVEL, R-SMT-Y12-AGAINST-Y11 |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Your pupils now › Now |
 | Note | — |
 | Method | 1. The roll is the school's latest January census (after any Pupils or Day and boarding filter), with its percentage change since 2019/20.<br>2. Girls and boys (mixed schools) are each a share of girls plus boys; boarding schools also show day pupils and boarders.<br>3. Year 12 against Year 11 is this year's pupils aged 16 divided by last year's pupils aged 15 at the school: below 100% when more leave than join at 16, above when more join.<br>4. Size by phase places the school's pupils in each age band in national fifths, XS to XL.<br>5. The context line gives the main phase's badge and compares the school with the LA's and England's average roll for that phase.<br>Sources: DfE school census (January), the school's own; DfE school census, rolls by phase band<br>Rounding: Roll to whole pupils Change to a whole per cent Girls and boys to whole per cent Year 12 against Year 11 to a whole per cent |
 
@@ -3175,7 +3175,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-SHAPE, R-ADM-SHAPE-NOT-RANKED, R-SMT-PUPILS-LEVEL, R-SMT-Y12-AGAINST-Y11 |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Shape and size › Now |
 | Note | — |
 | Method | 1. Bars show the school's pupils at each age from Reception (age 4) to Year 13 (age 17) in the latest census; the level's ages are highlighted: GCSE Years 7 to 11 (ages 11 to 15), Post-16 Years 12 and 13 (16 and 17), Primary Reception to Year 6 (4 to 10).<br>2. The shape is the shared classifier's label for the school's pupils by age; 'since' is the year after the last census when it was different.<br>3. For the LA we take nearby schools in the same LA with exactly the same age range and show the most common shape and how many had it.<br>4. For the set we count how many schools have each shape, never ranking them.<br>5. The set's Year 12 against Year 11 is the middle (median) of that figure across set schools whose top age is 17 or more.<br>Sources: DfE school census (January): the school, nearby schools, the comparison set's schools; VicData's shape descriptions<br>Rounding: Year 12 against Year 11 to a whole per cent |
 
@@ -3204,7 +3204,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-NO-PILLS, R-SMT-PUPILS-LEVEL, R-RAIL-HIDES-EMPTY |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Shape and size › Now |
 | Note | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md §1): mixed schools only. |
 | Method | 1. For each year group (Reception, age 4, to Year 13, age 17) we divide the school's girls by its girls and boys in the latest census.<br>2. The set's mark is the middle (median) of the same share across the set's mixed schools with pupils in that year group.<br>3. The change is the school's girls' share across every age now minus the same share in the first census year; the set's is the middle of each mixed school's own change over the same years.<br>4. Where it shifts: Year 7's share (age 11) minus Years 8 to 11's (ages 12 to 15), and the sixth form's (ages 16 and 17) minus Years 7 to 11's (ages 11 to 15); the set's is the middle of each mixed school's same shift.<br>5. The line is the school's girls' share each year, and the middle of the set's mixed schools with a census in every year shown.<br>Sources: DfE school census (January): pupils by single year of age and sex, the school's and the comparison set's schools'; GIAS (Get Information about Schools): gender of entry<br>Rounding: Shares to a whole per cent Changes and shifts to 1 dp percentage points |
 
@@ -3233,7 +3233,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-NO-PILLS, R-SMT-BOARDING-ONLY, R-RAIL-HIDES-EMPTY |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Shape and size › Now |
 | Note | 0.8 SMT Academic (docs/v0.8/smt_academic_claude_code_prompt_v1.md §1): boarding schools only. |
 | Method | 1. For each census year we take the school's boarders and its whole roll; day pupils are the roll minus the boarders.<br>2. Boarders' share is the boarders divided by the whole roll.<br>3. The change is the share now minus the share in the first census year held.<br>4. The set's figure is the middle (median) of its boarding schools' shares (and of their own changes); its line uses only those with boarders in every year shown.<br>Sources: DfE school census (January): boarders and the whole roll, the school's and the comparison set's schools'; GIAS (Get Information about Schools): boarding status (which schools get the view)<br>Rounding: Pupils to whole numbers Shares to a whole per cent Changes to 1 dp percentage points |
 
@@ -3262,7 +3262,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ADMISSIONS-READ-ONLY, R-ADM-POOL-NOT-INTAKE |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Shape and size › Now |
 | Note | — |
 | Method | 1. We read the entry points the school's Admissions lead has saved.<br>2. 'Cohort now' is the school's own pupils at that entry point now, as Admissions' pipeline counts them.<br>3. 'The pool, next entry' is the first future rung of Admissions' ladder: children counted in the feeder schools now, followed forward, or, further ahead, estimated from births.<br>4. Nothing is edited here; each row links to Admissions.<br>Sources: Admissions' saved entry points and feeder lists; Admissions' pipeline (census counts, then ONS births by LA)<br>Rounding: Whole pupils |
 
@@ -3291,7 +3291,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-LEAVING, R-ADM-JOINERS-ESTIMATE, R-SMT-Y12-AGAINST-Y11 |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Shape and size › Now |
 | Note | — |
 | Method | 1. For each year, we take the school's pupils aged 16 (Year 12) and its pupils aged 15 (Year 11) in the census the year before.<br>2. Year 12 against Year 11 is Year 12 divided by last year's Year 11.<br>3. The chart draws Year 12 minus last year's Year 11: above the line, more joined than left; below, more left. The table's last column is the same figure, signed.<br>Sources: DfE school census (January), the school's own<br>Rounding: Per cent to a whole number Pupils to whole numbers |
 
@@ -3320,7 +3320,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ADMISSIONS-READ-ONLY, R-ADM-GROUP-SHARE |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Shape and size › Now |
 | Note | — |
 | Method | 1. We take the school's pupils aged 11 in each January census.<br>2. We add up pupils aged 11 across the school and its saved 11+ rivals.<br>3. The school's share is its pupils divided by that total, as a percentage.<br>4. The grey line is the rival with the largest share in the latest year.<br>Sources: DfE school census (January), age 11 pupils; Admissions' saved 11+ rival lists<br>Rounding: Shares to 1 dp per cent |
 
@@ -3349,7 +3349,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Your pupils now › Trends |
 | Note | — |
 | Method | 1. For each phase the school has, we add up its pupils in that age band each year: Primary 5-10, Senior 11-15, 16+ 16-18 (girls or boys only if that filter is on).<br>2. England is pupils aged 5 to 15 in the census aggregates, the nine regions added together.<br>3. We set every line to 100 in the first year all lines have a figure, and show each year against it.<br>4. Growing or shrinking compares this year's roll with three years ago. The word is 'Growing' or 'Shrinking' when the change rounds to at least 1%, otherwise 'Steady'. A school with fewer than four census years is measured from its first.<br>Sources: DfE school census (January), the school's own; DfE school census, summed by area (regions)<br>Rounding: Index values to whole numbers |
 
@@ -3378,7 +3378,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Your pupils now › Trends |
 | Note | — |
 | Method | 1. One row per census year.<br>2. Each phase (and England) has two columns: its pupils, and its index, set to 100 in the first year all lines have a figure.<br>3. England's columns are pupils aged 5 to 15 in the census aggregates, the nine regions added together.<br>Sources: DfE school census (January), the school's own; DfE school census, summed by area (regions)<br>Rounding: Pupils and index values to whole numbers |
 
@@ -3407,7 +3407,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-ADMISSIONS-READ-ONLY, R-ADM-POOL-NOT-INTAKE, R-ADM-LADDER |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Shape and size › Trends |
 | Note | — |
 | Method | 1. The main entry point is 11+ for a school with a GCSE phase starting at 11 or younger, else 4+ for a primary, else 16+.<br>2. We use the feeder lists the Admissions lead saved, or Admissions' nearby defaults where they can't be read.<br>3. The solid line is the pool counted in the feeder schools' census, year by entry year.<br>4. The dashed line continues from births: the area's births scaled to these schools, starting from the last counted year so the two join.<br>5. The word under the chart compares the last counted year with the end of the line: more than 2% up is 'Pool rising', down 'Pool falling'.<br>Sources: Admissions' pipeline: census counts in feeder schools, then ONS births by LA; Admissions' saved feeder lists, else its nearby defaults<br>Rounding: Whole pupils |
 
@@ -3436,7 +3436,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-TRENDS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Pupils › Area › Trends |
 | Note | — |
 | Method | 1. We take the LA's residents by single year of age from ONS's mid-year estimates; a shire county is its districts added together.<br>2. At Whole school we add ages 5 to 15; at a level, its ages (GCSE 11-15, Post-16 16-17, Primary 4-10).<br>3. The solid line runs from mid-2019 to the latest estimate.<br>4. Where held, a dashed line continues with the LA's projection of children living there (not a forecast for the school); years whose ages include children not yet born are drawn lighter.<br>Sources: ONS mid-year population estimates by single year of age; the children-in-an-area projection for the LA<br>Rounding: Whole children |
 
@@ -3465,7 +3465,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-CONTEXT-NOW, R-SMT-CONTEXT-PLACE, R-SMT-CONTEXT-RESIDENTS, R-SMT-CONTEXT-DEPRIVATION, R-SMT-CONTEXT-FSM, R-SMT-CONTEXT-WORDING |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › The area now › Now |
 | Note | — |
 | Method | 1. The level picks the ages: GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's own age range.<br>2. Children: we add up residents of those ages in the counted neighbourhoods (or the LA) in the latest year, and compare with the first year held. Under it, the authority mix shows which councils those children live in.<br>3. Pupils nearby: we count pupils of those ages in the latest January census at the school and every school within the radius that teaches those ages, in any sector. This is shown beside the residents, never divided by them.<br>4. Births are the LA's births last calendar year, with the change since 2012.<br>5. The projection tile is the change in children of those ages living in the area from the latest count to five years on, with its range; it is a projection, not a forecast for the school.<br>6. Schools nearby counts other schools of the same phase within the radius (or every school in the LA).<br>7. Social context gives the IMD and IDACI deciles of the school's own neighbourhood, the share of children aged 0-15 within the radius living in each IDACI decile (deciles 1-2 against England's 20%), and the school's FSM % with its LA and England the same year. Deprivation describes the area, not the school's pupils.<br>Sources: ONS mid-year population estimates for neighbourhoods (LSOA 2021) (ONS LSOA residents by age, IDACI mix, authority mix, the school's own IMD and IDACI deciles); ONS mid-year population estimates by single year of age (LA residents); the children-in-an-area projection; ONS births by LA; DfE school census (pupils at nearby schools; DfE school census, summed by area for the latest year); DfE free school meals (Schools, pupils and their characteristics)<br>Rounding: Children, births and pupils to whole numbers Children and births change to a whole per cent Projection change and range to 1 dp per cent Authority mix to whole per cents Deprived 20% to a whole per cent FSM to 1 dp; FSM change to 1 dp points |
 
@@ -3494,7 +3494,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-CONTEXT-GEOGRAPHY, R-SMT-CONTEXT-WORDING |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › Map › Now |
 | Note | — |
 | Method | 1. We draw every neighbourhood whose boundary is within the radius plus 2 km; those whose population-weighted centre is inside the radius are the ones counted, and the circle marks the radius.<br>2. 'Children' shading: residents of the level's ages divided by the neighbourhood's area in hectares, split into five equal-sized groups of the neighbourhoods drawn.<br>3. 'IMD' or 'IDACI' shading: each neighbourhood's decile, 1 the most deprived 10% in England; this describes the area, not pupils.<br>4. 'Free school meals' shades schools, not areas: each school's latest FSM %, in bands under 10%, 10-20, 20-30, 30-40, 40% or more; independent schools are hollow because no figure is published.<br>5. With more than 2,500 neighbourhoods, each is drawn as a dot at its centre. Before neighbourhood boundaries are loaded, or with the Area pill on the LA, the region's local authorities are shaded by census pupils of those ages in their schools.<br>Sources: ONS neighbourhood estimates with IoD2025 deciles (residents by age, IMD and IDACI deciles, population-weighted centres); ONS LSOA (December 2021) boundaries (shapes and areas); DfE free school meals (Schools, pupils and their characteristics) (school FSM); DfE school census, summed by area and LA boundaries (district fallback)<br>Rounding: Density legend to 2, 1 or 0 dp depending on size FSM in hovers to 1 dp |
 
@@ -3523,7 +3523,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-CONTEXT-GEOGRAPHY |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › Map › Now |
 | Note | — |
 | Method | 1. We take residents at each single age from 0 to 18 in the latest mid-year estimate, within the radius (or in the LA).<br>2. Each bar is one age; the level's ages are highlighted.<br>3. These are children living in the area, not pupils at its schools.<br>Sources: ONS mid-year population estimates for neighbourhoods (LSOA 2021) (LSOA residents by age); ONS mid-year population estimates by single year of age (LA residents)<br>Rounding: Whole children |
 
@@ -3552,7 +3552,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-BIRTHS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › Map › Now |
 | Note | — |
 | Method | 1. The solid line is the LA's births each calendar year from 2012 (ONS).<br>2. The dashed line is the projection's middle line for children of the level's ages living in the area, from the latest count to the horizon.<br>3. The two lines are different counts in different areas, shown on one chart; the projection is not a forecast for the school.<br>Sources: ONS births by LA; the children-in-an-area projection (middle line)<br>Rounding: Whole births and children |
 
@@ -3581,7 +3581,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-CONTEXT-RESIDENTS, R-SMT-CONTEXT-WORDING |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › Map › Now |
 | Note | — |
 | Method | 1. We add up residents of the level's ages each year within the radius, in the LA (a shire county is its districts), and in England.<br>2. We find the first year all three have a figure and set each line to 100 then.<br>3. Each later year is that year's figure divided by the base year's, times 100.<br>4. These are children living in the area, not pupils.<br>Sources: ONS mid-year population estimates for neighbourhoods (LSOA 2021) (LSOA residents by age); ONS mid-year population estimates by single year of age (LA, and England as every English district and unitary added up)<br>Rounding: Index values to whole numbers; hovers give whole children |
 
@@ -3610,7 +3610,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-BIRTHS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › The area now › Trends |
 | Note | — |
 | Method | 1. We take the LA's births and England's births each calendar year from 2012.<br>2. We set both to 100 in the first year both have a figure (normally 2012).<br>3. Each later year is that year's births divided by the base year's, times 100.<br>4. The word under the chart compares the LA's first and latest years: more than 2% up is 'Rising', more than 2% down 'Falling'.<br>Sources: ONS births by LA<br>Rounding: Index values to whole numbers |
 
@@ -3639,7 +3639,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-BIRTHS |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › The area now › Trends |
 | Note | — |
 | Method | 1. One row per calendar year from 2012.<br>2. The LA and England (the sum of every English district and unitary) each have two columns: actual births, and the index the chart draws, set to 100 in the first year both have a figure.<br>Sources: ONS births by LA<br>Rounding: Whole births; index values to whole numbers |
 
@@ -3668,7 +3668,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-VIEW-BIRTHS, R-SMT-FORWARD, R-SMT-NOT-A-FORECAST |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › Map › Trends |
 | Note | — |
 | Method | 1. For each age, we measure how each authority's children changed in number from one year to the next as they got a year older: families moving in and out, and very rarely deaths.<br>2. We leave out the exceptional years and average the others, giving the most recent years double weight.<br>3. We age today's children forward a year at a time, at those rates.<br>4. The band shows the lowest and highest results from using any single year's rates.<br>5. Children not yet born start from the latest count of babies, moved by ONS's projected change in births. They are drawn lighter.<br>Sources: ONS mid-year population estimates by single year of age, for local authorities and for neighbourhoods (LSOA 2021); births not yet counted: ONS 2022-based subnational projections, percentage change only; the projection's stored settings<br>Rounding: Whole children. A projection of children living in the area, not a forecast for the school. |
 
@@ -3697,6 +3697,6 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Verified at | not yet |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Rules | R-SMT-CONTEXT-GEOGRAPHY |
-| Used on | (dashboards not seeded yet) |
+| Used on | SMT Context › Area › Trends |
 | Note | — |
 | Method | 1. We take residents at each single age from 0 to 18 in the latest mid-year estimate, within the radius (or in the LA).<br>2. Each bar is one age; the level's ages are highlighted.<br>3. These are children living in the area, not pupils.<br>Sources: ONS mid-year population estimates for neighbourhoods (LSOA 2021) (LSOA residents by age); ONS mid-year population estimates by single year of age (LA residents)<br>Rounding: Whole children |

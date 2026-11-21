@@ -10,5 +10,6 @@ The four-layer catalogue (docs/v0.6/vicdata_0_6_view_catalogue_and_offer_design_
 | [measures.md](measures.md) | 24 measures |
 | [renderers.md](renderers.md) | 51 renderers |
 | [dataviews.md](dataviews.md) | 123 dataviews (121 live) |
+| [dashboards.md](dashboards.md) | 10 seeded dashboards |
 
 Regenerate: `npx -y tsx scripts/catalogue-export.ts`. Unit tests: `npx -y tsx --test scripts/catalogue-unit-tests.ts`. Rule tests against real data: `npx -y tsx --env-file=.env scripts/catalogue-rule-tests.ts`.
