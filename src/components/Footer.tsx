@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FooterEditSwitch } from "@/components/edit-mode/EditSwitch";
 import { FooterPageFeedback } from "@/components/feedback/PageFeedback";
+import { HideOnBareRoutes } from "@/components/front-door/BareRoutes";
 
 // Minimal site footer (round 16) -- same neutral palette/border convention as
 // NavBar.tsx, the only other piece of site-wide chrome. Exists mainly to give
@@ -11,7 +12,9 @@ import { FooterPageFeedback } from "@/components/feedback/PageFeedback";
 // (FooterEditSwitch renders nothing anywhere else, or for anyone else), for every platform admin.
 // 0.7 r3 (F5) added "View as…" here; 0.8 View as moved it to the account menu.
 export default function Footer() {
+  // 0.8 front door part 3: none on the landing page and sign-in (src/components/front-door/BareRoutes.tsx).
   return (
+    <HideOnBareRoutes>
     <footer className="mt-auto border-t border-neutral-100 px-6 py-6 text-xs text-neutral-500 dark:border-neutral-800">
       <Link href="/sources" className="hover:text-neutral-900 dark:hover:text-neutral-100">
         Sources & methodology
@@ -20,5 +23,6 @@ export default function Footer() {
       {/* 0.8 SMT feedback round 2 (section 6): feedback on the page as a whole, for those the setting lets in. */}
       <FooterPageFeedback />
     </footer>
+    </HideOnBareRoutes>
   );
 }

@@ -1,25 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthShell, AUTH_BUTTON } from "@/components/auth/AuthShell";
 
-// The public home. Private beta (Guy, 21 Nov): the public school pages are hidden
-// (next.config.ts redirects /schools/** -- R-NO-PUBLIC-SCHOOL-LINKS), so the school
-// search that opened them is gone from here; SchoolSearch stays as the picker the
-// walks, sets, View as and join flow use.
-export default function Home() {
+// 0.8 front door part 3 (A2, R-LANDING-MINIMAL): the private-beta landing page, the only page a visitor who
+// isn't signed in sees (src/proxy.ts sends every other page here). The logo, "Private beta", Sign in.
+// Nothing else: no school search or school names, no description, no "request access", no Open Graph or
+// Twitter metadata, no analytics or third-party scripts, a plain <title>, and noindex (here and as
+// X-Robots-Tag, next.config.ts). A signed-in visitor never sees it: the proxy sends them home.
+export const metadata: Metadata = {
+  title: { absolute: "VicData" },
+  robots: { index: false, follow: false, nocache: true },
+};
+
+export default function Landing() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 py-24">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold">VicData</h1>
-        <p className="mt-2 text-sm text-neutral-500">
-          Roll data and catchment context for school leaders, governors, and
-          admissions teams.
-        </p>
-        <p className="mt-6 text-sm text-neutral-500">
-          VicData is in private beta.{" "}
-          <Link href="/login" className="underline">
-            Log in
-          </Link>
-        </p>
-      </div>
-    </main>
+    <AuthShell>
+      <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Private beta</p>
+      <Link href="/login" className={`${AUTH_BUTTON} mt-6`}>
+        Sign in
+      </Link>
+    </AuthShell>
   );
 }

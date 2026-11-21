@@ -3561,6 +3561,9 @@ const RUNNERS: Record<string, Runner> = {
   async frontDoor3(_L, rule) {
     const files: Record<string, string> = {
       "R-COOKIE-SESSION": "src/lib/auth-session.test.ts",
+      "R-BETA-GATE": "src/lib/beta-gate.test.ts",
+      "R-LANDING-MINIMAL": "src/lib/beta-gate.test.ts",
+      "R-NOINDEX-SCHOOLS": "src/lib/beta-gate.test.ts",
     };
     const file = files[rule.id];
     if (!file) return { pass: false, detail: `no test file listed for ${rule.id}` };

@@ -15,8 +15,6 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = AUTH_URL;
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "service-key";
 installFakeAuth();
-// Milestone 1 keeps the Basic Auth gate; these tests are about the session behind it.
-process.env.ACCESS_GATE_ENABLED ??= "false";
 const src = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
 
 async function runProxy(path: string, headers: Record<string, string> = {}) {

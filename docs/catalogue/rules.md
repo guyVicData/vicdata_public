@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 252 rules: 244 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 254 rules: 246 active, 8 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -180,7 +180,7 @@ What a number is allowed to be. 252 rules: 244 active, 8 superseded; 22 must lif
 | R-FEEDBACK-PAGE | active | Feedback can be on a whole page (section 6): "Feedback on this page" in the footer, next to Edit, for those the feedback setting lets in, on every page with views and on the Data View, the role homes and the group home. It opens the same window ("This page: SMT Overview · Leighton Park School"); the item records the same context as a view item -- product, dashboard or page, version, address, state, school or group, role, View as, app version, device, theme -- with no panel or view (view_key page:<id>), and its Area chips. The button's colour follows the view rules. The inbox shows it as "Page", with a filter; feedback_for_triage has area and is_page; feedback_coverage counts pages apart from views. | no | auto: feedbackPage | — |
 | R-TABLE-FEATURED-ROW | active | In every table in every product the featured school's row (the school itself; on a group's table the group, or the school picked on the map) is tinted in that product's own colour, with its bold kept: Admissions cyan, Teacher's GCSE green and Post-16 violet, SMT orange and the groups (head office) bronze (0.8 front door C20; SMT violet and groups orange before). One token per product (--row-featured-admissions, -gcse, -post16, -smt, -groups), each set for light and dark in globals.css; a product's root names its own as --row-featured, and every table reads that. Text on the tint reads at 4.5:1 or more in both themes. | no | auto: tableFeaturedRow | — |
 | R-FEEDBACK-STATUSES | active | A feedback item's statuses are new, triaged, planned, fixed (merged to main, with resolved_commit), deployed (the live build holds resolved_commit -- set by the server only, stamped deployed_at and deployed_build) and done (checked on the live site), or won't do. Fixed and deployed are still open: the author's icon stays yellow until done. Nobody sets deployed by hand; fixed needs its commit. | no | auto: feedbackDeployGate | — |
-| R-FEEDBACK-PROMOTE | active | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time. | no | auto: feedbackDeployGate | — |
+| R-FEEDBACK-PROMOTE | active | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate (the private-beta gate since front door part 3), returns the live commit and build time. | no | auto: feedbackDeployGate | — |
 | R-FEEDBACK-DEPLOY-GAPS | active | feedback_deploy_gaps lists the items that claim more than the live build (the newest app_builds row) has: deployed or done at a commit the live build doesn't hold, and fixed items older than 48 hours not yet deployed. The inbox shows the count as a banner. | no | auto: feedbackDeployGate | — |
 | R-FEEDBACK-LIVE-CHECK | active | A deployed item becomes done when a platform admin gives "Looks good" on the same view (or page) and school at or after its deployed_at -- automatically, stamping checked_live_at -- or through the inbox's "Checked live". A Looks good before the deploy, on another school, or by a member doesn't close it. Coverage still counts a Looks good as checked. Since Admissions feedback round 2 a Looks good on any of the item's resolved_views counts as on its own view (R-FEEDBACK-RESOLVED-VIEWS). | no | auto: feedbackDeployGate | — |
 | R-FEEDBACK-RESOLVED-VIEWS | active | An item's resolved_views names the views a fix added or changed, beside its own. A platform admin's "Looks good" on any of them, at the item's school and at or after its deployed_at, closes the deployed item as one on its own view does (feedback_items_live_check); one on an unrelated view, another school, before the deploy, or by a member doesn't. It is a triage field: set by scripts/feedback-set-fixed.sh --view (repeatable, adding) or the inbox, by platform admins only; a new item has none. feedback_for_triage shows it, as its last column. | no | auto: feedbackResolvedViews | — |
@@ -258,8 +258,10 @@ What a number is allowed to be. 252 rules: 244 active, 8 superseded; 22 must lif
 | R-NM-NO-RESULTS | active | A non-mainstream group's pages show no results tile, column, place or trend: Overview's Results panel and Academic say "Results aren't compared for special and AP schools" (or "for nursery schools") with the reason (KS2 is 0% at 630 of 652 special schools; no school-level KS4 for AP; Progress 8 ends with 2023/24), its Schools table has no headline, rank or value added, its library card and page none, and its pages show all phases only (pools and FSM are whole-school). Production keeps the figures; the app shows none. | no | auto: nmCounting | — |
 | R-NM-SETS | active | A set of groups holds groups of one family, and our own group's: a non-mainstream group never shares a set with a mainstream group (and nursery federations never with special and AP trusts), by any route -- the library's Add to set… refuses in one line ("Ark is a mainstream group: special and AP trusts are compared only with special and AP trusts."), the editor's Add groups offers only our family and refuses the rest with the same line, a stored or unsaved set drops another family's groups and says how many, and Nearest in size is our family's. | no | auto: nmSets | — |
 | R-NM-OWN-SCHOOLS | active | A mainstream group's own special, AP, PRU and nursery schools stay out of its figures; in its Schools table each is placed against its region's state-funded pool of its kind (its FSM, DfE's own, beside the pool's; its 3-year roll change beside the pool's like-for-like change; R-MIN-SCHOOLS) in place of the bare "not in group figures" tag, and a pooled line (production's kind_lines) appears only where it has 5 or more current schools of one kind, beside England's pool of that kind. | no | auto: nmOwnSchools | — |
-| R-PASSWORD-RESET | active | "Forgot password?" on /login opens a form that emails a link (Supabase resetPasswordForEmail, redirectTo this site's own /reset-password). Its answer never says whether an account exists: success, and any answer about the address, read "If that address has a VicData account, we've sent a link…"; only a second press inside 60 seconds ("You can ask for another in {n} seconds", counted on this browser for any address), the hourly email limit and a send that failed read differently. /reset-password takes the recovery session from the link's URL fragment (the browser client's implicit flow), asks for the new password twice with sign-up's rules (at least 8 characters), saves it (updateUser) and lands the reader signed in on /member; a used or expired link, or no link, says so plainly and offers a new one. Both pages are never indexed. | no | auto: passwordReset | — |
 | R-COOKIE-SESSION | active | The Supabase session lives in a cookie the server can read (@supabase/ssr: `sb-<project>-auth-token`, SameSite=Lax, Secure in production), not in localStorage; the old localStorage copy is removed on load. The proxy verifies the cookie locally against the project's published ES256 key (getClaims), refreshes an expired access token and sends the new cookie on its response; an API request from the site's own pages (Sec-Fetch-Site same-origin, none or absent) carrying the cookie but no Bearer token reaches the route with `Authorization: Bearer <access token>`, so every route keeps reading the header it reads today, and a page that sends Bearer itself is untouched. Another site's request never acts as the user on the strength of the cookie; a forged cookie is no session. Preview access redeems a real magic link on the server (verifyOtp) and leaves the browser holding the same session cookie for its fixed account: off unless enabled, secret-gated, a byte-identical 404 for every failure, a path-only redirect to the configured site. | no | auto: frontDoor3 | — |
+| R-BETA-GATE | active | A private-beta gate replaces the sitewide Basic Auth password (src/proxy.ts; the decision is src/lib/beta-gate.ts's gateDecision). A visitor who isn't signed in reaches only the landing page (/), /login, the auth callback (/auth/callback, /auth/confirm), the password-reset pages (/reset-password, /forgot-password), /join/<urn> (Q2: where invited testers make their account; always noindex, showing only the school's name), robots.txt, sitemap.xml and the icon, and the API routes /api/health, /api/version and /api/testing/preview-session. Every other page, /schools/..., /sets... and /join itself included, redirects to the landing page; every other API route answers 401. Signed in means a session the server verified (the cookie session, or a script's Bearer token checked against the project's key); a forged, expired or junk token is signed out. Signed in, the landing page sends you home (/member). Preview access sits outside the gate (it is what signs the agent in) and fails closed by itself. No Basic Auth remains (no realm, no ACCESS_GATE_* variables, no gate-bypass cookie). Q4: the school page's daily count is of signed-in views of /schools/<urn>. | no | auto: frontDoor3 | — |
+| R-LANDING-MINIMAL | active | The landing page (/) is the VicData wordmark, "Private beta" and a Sign in button, and nothing else: no search input or form, no school names, no description (none in the root layout either), no Open Graph or Twitter metadata, no analytics or third-party scripts, a plain <title> "VicData", page-level noindex and `X-Robots-Tag: noindex, nofollow` (next.config.ts FRONT_DOOR_NOINDEX, with /login and the reset pages). The site nav and footer are not drawn on it or on sign-in (src/components/front-door/BareRoutes.tsx). | no | auto: frontDoor3 | — |
+| R-NOINDEX-SCHOOLS | active | A school page is never indexed, whatever ALLOW_INDEXING says: every route that shows one school or carries a URN (/schools, /join, /sets, /teacher, /dashboards, /member) sends `X-Robots-Tag: noindex, nofollow` (next.config.ts NOINDEX_SOURCES) and page-level robots noindex (each segment's layout exports src/lib/noindex.ts's NOINDEX_METADATA). sitemap.ts lists none of them. robots.ts never Disallows them: a crawler that can't fetch a page never sees its noindex, and the bare URL can still be listed. | no | auto: frontDoor3 | — |
 
 ## Cards
 
@@ -3019,7 +3021,7 @@ What a number is allowed to be. 252 rules: 244 active, 8 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time. |
+| Statement | The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate (the private-beta gate since front door part 3), returns the live commit and build time. |
 | Why | Deployed has to be a fact read from the running build, not a step someone remembers. |
 | Applies to | the feedback system, every build |
 | Enforced in | - scripts/write-build-info.mjs<br>- src/lib/build-info.ts<br>- src/lib/app-build-server.ts<br>- src/app/api/version/route.ts<br>- src/proxy.ts<br>- supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:record_app_build |
@@ -4263,22 +4265,6 @@ What a number is allowed to be. 252 rules: 244 active, 8 superseded; 22 must lif
 | Open issue | — |
 | Fixed | — |
 
-### R-PASSWORD-RESET
-
-| Field | Content |
-| --- | --- |
-| Statement | "Forgot password?" on /login opens a form that emails a link (Supabase resetPasswordForEmail, redirectTo this site's own /reset-password). Its answer never says whether an account exists: success, and any answer about the address, read "If that address has a VicData account, we've sent a link…"; only a second press inside 60 seconds ("You can ask for another in {n} seconds", counted on this browser for any address), the hourly email limit and a send that failed read differently. /reset-password takes the recovery session from the link's URL fragment (the browser client's implicit flow), asks for the new password twice with sign-up's rules (at least 8 characters), saves it (updateUser) and lands the reader signed in on /member; a used or expired link, or no link, says so plainly and offers a new one. Both pages are never indexed. |
-| Why | Front door part 3, Q3: A1 allows a password-reset route, and there was none -- a tester who forgot their password had no way back in. |
-| Applies to | /login, /reset-password |
-| Enforced in | - src/lib/password-reset.ts<br>- src/components/auth/ForgotPasswordForm.tsx<br>- src/app/login/page.tsx<br>- src/app/reset-password/page.tsx<br>- src/app/login/layout.tsx<br>- src/app/reset-password/layout.tsx<br>- next.config.ts:NOINDEX_SOURCES<br>- src/lib/password-reset.test.ts |
-| Tagged at | - src/app/login/layout.tsx<br>- src/app/login/page.tsx<br>- src/app/reset-password/layout.tsx<br>- src/app/reset-password/page.tsx<br>- src/components/auth/ForgotPasswordForm.tsx<br>- src/lib/password-reset.test.ts<br>- src/lib/password-reset.ts |
-| Test case | no school: the sign-in pages (unit tests on the messages, the redirect URL, the wait, the link's fragment and the password rules) (110110): The confirmation is the same for any address; the link returns to {origin}/reset-password; a press inside the wait says how long; an expired link reads as expired; 7-character or mismatched passwords are refused; both pages noindex. [runner: passwordReset] |
-| Origin | 0.8 front door part 3, Q3 (docs/v0.8/vicdata_0_8_front_door_part3_signin_gate_security_claude_code_prompt_v1.md), 21 Nov 2026 |
-| Status | active |
-| Must lift | — |
-| Open issue | — |
-| Fixed | — |
-
 ### R-COOKIE-SESSION
 
 | Field | Content |
@@ -4287,9 +4273,57 @@ What a number is allowed to be. 252 rules: 244 active, 8 superseded; 22 must lif
 | Why | Q1 (Guy, 21 Nov): the sign-in gate, the trusted-device cookie, the device cap and "Where you're signed in" all need the server to see who is signed in. |
 | Applies to | every page and API route; /login, /join/[urn], sign-out; /api/testing/preview-session; scripts/warm-demo.mjs |
 | Enforced in | - src/lib/supabase.ts:createBrowserSupabaseClient<br>- src/lib/auth-cookies.ts:isSessionCookie, sessionToBearer<br>- src/lib/auth-server.ts:readRequestSession, routeSessionClient<br>- src/proxy.ts:withSession<br>- src/app/api/testing/preview-session/route.ts<br>- src/lib/auth-session.test.ts |
-| Tagged at | - src/lib/auth-session.test.ts |
+| Tagged at | - src/lib/auth-session.test.ts<br>- src/lib/beta-gate.test.ts |
 | Test case | a stand-in Supabase Auth with its own ES256 key (src/lib/auth-testkit.ts) (110110): cookie-only API call gets Bearer; Bearer untouched; cross-site and forged get nothing; an expired token is refreshed with a Set-Cookie; preview: 404 without the secret, a 302 to the configured site with a session cookie with it. [runner: frontDoor3] |
 | Origin | 0.8 front door part 3, milestone 1 (Q1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-BETA-GATE
+
+| Field | Content |
+| --- | --- |
+| Statement | A private-beta gate replaces the sitewide Basic Auth password (src/proxy.ts; the decision is src/lib/beta-gate.ts's gateDecision). A visitor who isn't signed in reaches only the landing page (/), /login, the auth callback (/auth/callback, /auth/confirm), the password-reset pages (/reset-password, /forgot-password), /join/<urn> (Q2: where invited testers make their account; always noindex, showing only the school's name), robots.txt, sitemap.xml and the icon, and the API routes /api/health, /api/version and /api/testing/preview-session. Every other page, /schools/..., /sets... and /join itself included, redirects to the landing page; every other API route answers 401. Signed in means a session the server verified (the cookie session, or a script's Bearer token checked against the project's key); a forged, expired or junk token is signed out. Signed in, the landing page sends you home (/member). Preview access sits outside the gate (it is what signs the agent in) and fails closed by itself. No Basic Auth remains (no realm, no ACCESS_GATE_* variables, no gate-bypass cookie). Q4: the school page's daily count is of signed-in views of /schools/<urn>. |
+| Why | A1 (Guy, 9-13 Nov; Q2 and Q4 answered 21 Nov): a few schools see VicData in December and a private beta opens in January 2027; a sitewide password can't tell one tester from another. |
+| Applies to | every route |
+| Enforced in | - src/proxy.ts:proxy, forward<br>- src/lib/beta-gate.ts:SIGNED_OUT_PAGES, SIGNED_OUT_API, gateDecision<br>- src/lib/auth-server.ts:readRequestSession, verifyBearer<br>- src/lib/usage-public.ts<br>- src/lib/beta-gate.test.ts |
+| Tagged at | - src/lib/beta-gate.test.ts<br>- src/lib/beta-gate.ts |
+| Test case | the proxy run on stand-in requests, with a stand-in Supabase Auth (src/lib/auth-testkit.ts) (100053): signed out: the allowed routes pass, /schools/100053, /sets, /teacher, /join redirect to /, API routes 401; /join/110110 passes; forged, expired and junk tokens are signed out; signed in: school pages pass, / goes to /member, a verified Bearer passes; no Basic Auth in src; a signed-in school page view is counted, none signed out. [runner: frontDoor3] |
+| Origin | 0.8 front door part 3, milestone 2 (A1; Q2, Q4) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-LANDING-MINIMAL
+
+| Field | Content |
+| --- | --- |
+| Statement | The landing page (/) is the VicData wordmark, "Private beta" and a Sign in button, and nothing else: no search input or form, no school names, no description (none in the root layout either), no Open Graph or Twitter metadata, no analytics or third-party scripts, a plain <title> "VicData", page-level noindex and `X-Robots-Tag: noindex, nofollow` (next.config.ts FRONT_DOOR_NOINDEX, with /login and the reset pages). The site nav and footer are not drawn on it or on sign-in (src/components/front-door/BareRoutes.tsx). |
+| Why | A2 (Guy, 9-13 Nov): a private beta says nothing about itself to a stranger. |
+| Applies to | / (and the signed-out frame it shares with /login) |
+| Enforced in | - src/app/page.tsx<br>- src/app/layout.tsx:metadata<br>- src/components/auth/AuthShell.tsx<br>- src/components/front-door/BareRoutes.tsx<br>- src/components/NavBar.tsx<br>- src/components/Footer.tsx<br>- next.config.ts:FRONT_DOOR_NOINDEX<br>- src/lib/beta-gate.test.ts |
+| Tagged at | - src/app/login/layout.tsx<br>- src/app/page.tsx<br>- src/lib/beta-gate.test.ts |
+| Test case | the landing page rendered on the server; its metadata; the root layout's source; next.config.ts's headers (—): text exactly "V VicData Private beta Sign in"; no input, form, script, iframe or image; a link to /login; title absolute VicData; robots noindex; no description, openGraph or twitter; / and /login send X-Robots-Tag noindex, nofollow; no nav or footer on / or /login. [runner: frontDoor3] |
+| Origin | 0.8 front door part 3, milestone 2 (A2) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-NOINDEX-SCHOOLS
+
+| Field | Content |
+| --- | --- |
+| Statement | A school page is never indexed, whatever ALLOW_INDEXING says: every route that shows one school or carries a URN (/schools, /join, /sets, /teacher, /dashboards, /member) sends `X-Robots-Tag: noindex, nofollow` (next.config.ts NOINDEX_SOURCES) and page-level robots noindex (each segment's layout exports src/lib/noindex.ts's NOINDEX_METADATA). sitemap.ts lists none of them. robots.ts never Disallows them: a crawler that can't fetch a page never sees its noindex, and the bare URL can still be listed. |
+| Why | A3 (Guy, 9-13 Nov; built on main 20 Nov, commit 837a3cf, ahead of the rest of part 3). |
+| Applies to | every school-bearing route; robots.txt; sitemap.xml |
+| Enforced in | - next.config.ts:NOINDEX_SOURCES<br>- src/lib/noindex.ts:NOINDEX_METADATA<br>- src/app/schools/layout.tsx<br>- src/app/join/layout.tsx<br>- src/app/sets/layout.tsx<br>- src/app/teacher/layout.tsx<br>- src/app/dashboards/layout.tsx<br>- src/app/member/layout.tsx<br>- src/app/robots.ts<br>- src/app/sitemap.ts<br>- src/lib/beta-gate.test.ts |
+| Tagged at | - src/app/dashboards/layout.tsx<br>- src/app/join/layout.tsx<br>- src/app/member/layout.tsx<br>- src/app/robots.ts<br>- src/app/schools/layout.tsx<br>- src/app/sets/layout.tsx<br>- src/app/sitemap.ts<br>- src/app/teacher/layout.tsx<br>- src/lib/beta-gate.test.ts<br>- src/lib/noindex.ts |
+| Test case | next.config.ts's headers, each segment layout's metadata, sitemap() and robots(), with ALLOW_INDEXING=true (—): every school-bearing source sends X-Robots-Tag noindex, nofollow; every segment layout's robots is noindex; the sitemap is empty; robots.txt has no Disallow. [runner: frontDoor3] |
+| Origin | 0.8 front door part 3, A3 (on main since 837a3cf; its tests and rule added in milestone 2) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

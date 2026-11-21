@@ -7,7 +7,7 @@
 // refreshed first (getClaims reads the session through getSession, which refreshes), and the new cookies
 // go out on the response.
 import { createServerClient } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_OPTIONS, hasSessionCookie } from "./auth-cookies";
 
@@ -91,4 +91,27 @@ export function routeSessionClient(request: NextRequest): { supabase: SupabaseCl
 
 export function applySessionCookies(res: NextResponse, pending: { set: CookieToSet[]; headers: Record<string, string> }): NextResponse {
   return applyCookies(res, pending.set, pending.headers);
+}
+
+// A plain client for verifying a token handed to us (no storage, no session): getClaims(jwt) is local.
+let verifier: SupabaseClient | null = null;
+
+/** Whether `Authorization: Bearer <jwt>` carries a token the project signed and that hasn't expired. */
+export async function verifyBearer(header: string | null): Promise<boolean> {
+  return !!(await bearerClaims(header));
+}
+
+export async function bearerClaims(header: string | null): Promise<SessionClaims | null> {
+  const m = /^Bearer\s+(\S+)$/i.exec(header ?? "");
+  if (!m) return null;
+  verifier ??= createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  try {
+    const { data } = await verifier.auth.getClaims(m[1]);
+    const claims = (data?.claims as SessionClaims | undefined) ?? null;
+    return claims?.sub ? claims : null;
+  } catch {
+    return null;
+  }
 }

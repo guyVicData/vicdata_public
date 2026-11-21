@@ -1,7 +1,7 @@
 // Shared constant-time string comparison.
 //
-// Factored out of src/proxy.ts rather than copied: the access gate and the preview-session
-// route now both compare a caller-supplied secret against an env var, and two hand-rolled
+// Factored out of src/proxy.ts rather than copied: the old Basic Auth gate (gone since the 0.8
+// private-beta gate) and the preview-session route both compared a caller-supplied secret against an env var, and two hand-rolled
 // copies of a security primitive is exactly the kind of duplication that drifts -- one
 // gets an early return added "for clarity" and quietly becomes variable-time.
 //
@@ -21,22 +21,10 @@ export function timingSafeEqual(a: string, b: string): boolean {
   return mismatch === 0;
 }
 
-// The gate-bypass cookie carries a SHA-256 of the preview token, never the token itself.
-//
-// Why not just store the token: the cookie only needs to satisfy the Basic Auth gate,
-// whereas the token also mints real sessions. Storing a derived value means a stolen
-// cookie can get past the gate but cannot call preview-session to sign in as anyone --
-// strictly less to lose, for one cheap hash.
-//
-// Async because this runs in the edge runtime, where crypto.subtle is the only hashing
-// primitive available.
+// SHA-256 as lowercase hex, with crypto.subtle (no node:crypto), so the same helper serves any runtime.
 export async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
-
-// Named here rather than in proxy.ts so the route that SETS the cookie and the gate that
-// READS it cannot disagree about the name.
-export const PREVIEW_GATE_COOKIE = "vicdata_preview_gate";

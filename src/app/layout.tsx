@@ -31,9 +31,10 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 const allowIndexing = process.env.ALLOW_INDEXING === "true";
 
+// 0.8 front door part 3 (A2): no description -- the site is a private beta, and the landing page says
+// nothing about what VicData is.
 export const metadata: Metadata = {
   title: "VicData",
-  description: "VicData — school data, decision-ready.",
   robots: allowIndexing
     ? { index: true, follow: true }
     : { index: false, follow: false, nocache: true },

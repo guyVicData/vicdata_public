@@ -1,4 +1,7 @@
-// VicData 0.8 shell + SMT r1, B7 step 2: the public school page's daily count. Server-only (the proxy).
+// VicData 0.8 shell + SMT r1, B7 step 2: the school page's daily count. Server-only (the proxy).
+// 0.8 front door part 3 (Q4, Guy 21 Nov): behind the private-beta gate there are no public views, so the proxy
+// counts SIGNED-IN views of /schools/<urn> instead, through the same function and table
+// (public_page_daily_views keeps its name; the count is still per school per day, with nothing about the viewer).
 // The public school page: /schools/<urn>, counted in the proxy (src/proxy.ts) so the page itself
 // is untouched. A plain RPC call, not supabase-js, to keep the proxy light. Not counted: prefetches
 // and anything that says it's a bot. Nothing about the visitor is sent or kept.

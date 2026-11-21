@@ -1,8 +1,7 @@
 import { NOINDEX_METADATA } from "@/lib/noindex";
 
-// R-PASSWORD-RESET: the sign-in and "Forgot password?" page is never indexed, whatever ALLOW_INDEXING says
-// (src/lib/noindex.ts, next.config.ts).
-export const metadata = { ...NOINDEX_METADATA, title: "Log in · VicData" };
+// R-LANDING-MINIMAL (A2): sign-in is never indexed (and sends X-Robots-Tag, next.config.ts FRONT_DOOR_NOINDEX).
+export const metadata = { ...NOINDEX_METADATA, title: { absolute: "Sign in · VicData" } };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return children;

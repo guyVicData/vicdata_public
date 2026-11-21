@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
-import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-safe";
+import { timingSafeEqual } from "@/lib/timing-safe";
 import { isPreviewGroup, previewGroupEmail, seedPreviewGroup } from "@/lib/testing-group";
 import { applySessionCookies, routeSessionClient } from "@/lib/auth-server";
 
 // Passwordless preview access for automated browser agents
 // (docs/vicdata_phase3_agent_preview_access_brief_v1.md).
 //
-// Why this exists: the deployed site sits behind a Basic Auth gate AND real Supabase
-// sign-in, and both require typing a credential into a field -- which Claude will not do,
+// Why this exists: the deployed site sits behind the private-beta gate (src/proxy.ts), which is
+// real Supabase sign-in, and that requires typing a credential into a field -- which Claude will not do,
 // whoever authorises it. That is a boundary, not a permissions gap, so the fix removes the
 // credential-entry step rather than working around the refusal: navigating to a URL is an
 // ordinary action, in the same category as a password-reset link.
@@ -22,8 +22,8 @@ import { applySessionCookies, routeSessionClient } from "@/lib/auth-server";
 // the route had to bounce the browser through the link and let the browser client read the tokens from the
 // URL fragment; see git history.)
 //
-// Fails closed exactly like the gate it bypasses: if any of the four env vars is missing,
-// this route does not exist.
+// Fails closed: if any of the four env vars is missing, this route does not exist (a 404), and
+// a wrong or missing token gets the same 404.
 export const dynamic = "force-dynamic";
 
 // The starter school. A real, open school with real KS4 and KS5 data, so the Teacher view
@@ -160,14 +160,7 @@ export async function GET(request: NextRequest) {
   // which Supabase silently swapped for the project's Site URL when it wasn't on the allow-list; the
   // route refused such a link. With the link redeemed here, that check has nothing left to guard.)
   const origin = siteUrl.replace(/\/+$/, "");
-  const response = applySessionCookies(NextResponse.redirect(`${origin}${redirectPath}`, { status: 302 }), pending);
-  response.cookies.set(PREVIEW_GATE_COOKIE, await sha256Hex(expectedToken), {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 12,
-  });
-  return response;
+  // Milestone 2: the session IS what the beta gate checks, so no separate gate cookie any more.
+  return applySessionCookies(NextResponse.redirect(`${origin}${redirectPath}`, { status: 302 }), pending);
 }
 

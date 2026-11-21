@@ -2370,7 +2370,7 @@ export const RULES: Rule[] = [
   {
     id: "R-FEEDBACK-PROMOTE",
     statement:
-      "The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate, returns the live commit and build time.",
+      "The build knows its commits (src/generated/build-info.json, `git rev-list --max-count=1000 HEAD` at build time, deepened if Render's clone is shallow, else GitHub's commits API, else null). The server records its own build in app_builds once per process, on its first feedback insert or inbox load, through record_app_build (the service role's only), which moves every fixed item whose commit that build holds to deployed and says how many moved. GET /api/version, outside the access gate (the private-beta gate since front door part 3), returns the live commit and build time.",
     why: "Deployed has to be a fact read from the running build, not a step someone remembers.",
     appliesTo: "the feedback system, every build",
     enforcedIn: ["scripts/write-build-info.mjs", "src/lib/build-info.ts", "src/lib/app-build-server.ts", "src/app/api/version/route.ts", "src/proxy.ts", "supabase/migrations/20261119090000_v08_feedback_deploy_gate.sql:record_app_build"],
@@ -3270,6 +3270,39 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/supabase.ts:createBrowserSupabaseClient", "src/lib/auth-cookies.ts:isSessionCookie, sessionToBearer", "src/lib/auth-server.ts:readRequestSession, routeSessionClient", "src/proxy.ts:withSession", "src/app/api/testing/preview-session/route.ts", "src/lib/auth-session.test.ts"],
     testCase: { urn: "110110", school: "a stand-in Supabase Auth with its own ES256 key (src/lib/auth-testkit.ts)", expect: "cookie-only API call gets Bearer; Bearer untouched; cross-site and forged get nothing; an expired token is refreshed with a Set-Cookie; preview: 404 without the secret, a 302 to the configured site with a session cookie with it.", check: "frontDoor3" },
     origin: "0.8 front door part 3, milestone 1 (Q1)",
+    status: "active",
+  },
+  {
+    id: "R-BETA-GATE",
+    statement:
+      "A private-beta gate replaces the sitewide Basic Auth password (src/proxy.ts; the decision is src/lib/beta-gate.ts's gateDecision). A visitor who isn't signed in reaches only the landing page (/), /login, the auth callback (/auth/callback, /auth/confirm), the password-reset pages (/reset-password, /forgot-password), /join/<urn> (Q2: where invited testers make their account; always noindex, showing only the school's name), robots.txt, sitemap.xml and the icon, and the API routes /api/health, /api/version and /api/testing/preview-session. Every other page, /schools/..., /sets... and /join itself included, redirects to the landing page; every other API route answers 401. Signed in means a session the server verified (the cookie session, or a script's Bearer token checked against the project's key); a forged, expired or junk token is signed out. Signed in, the landing page sends you home (/member). Preview access sits outside the gate (it is what signs the agent in) and fails closed by itself. No Basic Auth remains (no realm, no ACCESS_GATE_* variables, no gate-bypass cookie). Q4: the school page's daily count is of signed-in views of /schools/<urn>.",
+    why: "A1 (Guy, 9-13 Nov; Q2 and Q4 answered 21 Nov): a few schools see VicData in December and a private beta opens in January 2027; a sitewide password can't tell one tester from another.",
+    appliesTo: "every route",
+    enforcedIn: ["src/proxy.ts:proxy, forward", "src/lib/beta-gate.ts:SIGNED_OUT_PAGES, SIGNED_OUT_API, gateDecision", "src/lib/auth-server.ts:readRequestSession, verifyBearer", "src/lib/usage-public.ts", "src/lib/beta-gate.test.ts"],
+    testCase: { urn: "100053", school: "the proxy run on stand-in requests, with a stand-in Supabase Auth (src/lib/auth-testkit.ts)", expect: "signed out: the allowed routes pass, /schools/100053, /sets, /teacher, /join redirect to /, API routes 401; /join/110110 passes; forged, expired and junk tokens are signed out; signed in: school pages pass, / goes to /member, a verified Bearer passes; no Basic Auth in src; a signed-in school page view is counted, none signed out.", check: "frontDoor3" },
+    origin: "0.8 front door part 3, milestone 2 (A1; Q2, Q4)",
+    status: "active",
+  },
+  {
+    id: "R-LANDING-MINIMAL",
+    statement:
+      "The landing page (/) is the VicData wordmark, \"Private beta\" and a Sign in button, and nothing else: no search input or form, no school names, no description (none in the root layout either), no Open Graph or Twitter metadata, no analytics or third-party scripts, a plain <title> \"VicData\", page-level noindex and `X-Robots-Tag: noindex, nofollow` (next.config.ts FRONT_DOOR_NOINDEX, with /login and the reset pages). The site nav and footer are not drawn on it or on sign-in (src/components/front-door/BareRoutes.tsx).",
+    why: "A2 (Guy, 9-13 Nov): a private beta says nothing about itself to a stranger.",
+    appliesTo: "/ (and the signed-out frame it shares with /login)",
+    enforcedIn: ["src/app/page.tsx", "src/app/layout.tsx:metadata", "src/components/auth/AuthShell.tsx", "src/components/front-door/BareRoutes.tsx", "src/components/NavBar.tsx", "src/components/Footer.tsx", "next.config.ts:FRONT_DOOR_NOINDEX", "src/lib/beta-gate.test.ts"],
+    testCase: { urn: "—", school: "the landing page rendered on the server; its metadata; the root layout's source; next.config.ts's headers", expect: "text exactly \"V VicData Private beta Sign in\"; no input, form, script, iframe or image; a link to /login; title absolute VicData; robots noindex; no description, openGraph or twitter; / and /login send X-Robots-Tag noindex, nofollow; no nav or footer on / or /login.", check: "frontDoor3" },
+    origin: "0.8 front door part 3, milestone 2 (A2)",
+    status: "active",
+  },
+  {
+    id: "R-NOINDEX-SCHOOLS",
+    statement:
+      "A school page is never indexed, whatever ALLOW_INDEXING says: every route that shows one school or carries a URN (/schools, /join, /sets, /teacher, /dashboards, /member) sends `X-Robots-Tag: noindex, nofollow` (next.config.ts NOINDEX_SOURCES) and page-level robots noindex (each segment's layout exports src/lib/noindex.ts's NOINDEX_METADATA). sitemap.ts lists none of them. robots.ts never Disallows them: a crawler that can't fetch a page never sees its noindex, and the bare URL can still be listed.",
+    why: "A3 (Guy, 9-13 Nov; built on main 20 Nov, commit 837a3cf, ahead of the rest of part 3).",
+    appliesTo: "every school-bearing route; robots.txt; sitemap.xml",
+    enforcedIn: ["next.config.ts:NOINDEX_SOURCES", "src/lib/noindex.ts:NOINDEX_METADATA", "src/app/schools/layout.tsx", "src/app/join/layout.tsx", "src/app/sets/layout.tsx", "src/app/teacher/layout.tsx", "src/app/dashboards/layout.tsx", "src/app/member/layout.tsx", "src/app/robots.ts", "src/app/sitemap.ts", "src/lib/beta-gate.test.ts"],
+    testCase: { urn: "—", school: "next.config.ts's headers, each segment layout's metadata, sitemap() and robots(), with ALLOW_INDEXING=true", expect: "every school-bearing source sends X-Robots-Tag noindex, nofollow; every segment layout's robots is noindex; the sitemap is empty; robots.txt has no Disallow.", check: "frontDoor3" },
+    origin: "0.8 front door part 3, A3 (on main since 837a3cf; its tests and rule added in milestone 2)",
     status: "active",
   },
 ];

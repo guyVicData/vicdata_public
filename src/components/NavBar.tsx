@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { exitViewAs, getActiveViewAs } from "@/lib/view-as";
 import { ViewAsPill } from "@/components/view-as/ViewAs";
+import { isBarePath } from "@/components/front-door/BareRoutes";
 
 // 0.6 S1 (brief G13): one sign-in event per sign-in, via record_sign_in(), which writes a
 // row per approved membership. supabase-js also fires SIGNED_IN when a tab regains focus
@@ -53,6 +54,8 @@ export default function NavBar() {
   // whose module drags the academic data layer into every page's bundle for one list.
   // 0.6 S1: People and Teams carry their own header (People.dc.html, Teams.dc.html) too.
   if (pathname && /^\/teacher(\/(ks2|ks4|ks5|recruitment|meetings|people|teams))?\/?$/.test(pathname)) return null;
+  // 0.8 front door part 3: the landing page and sign-in carry only their own frame.
+  if (isBarePath(pathname)) return null;
 
   return (
     <header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 text-sm dark:border-neutral-800">
@@ -60,11 +63,12 @@ export default function NavBar() {
         VicData
       </Link>
       <nav className="flex items-center gap-4 text-neutral-500">
-        <Link href="/sets" className="hover:text-neutral-900 dark:hover:text-neutral-100">
-          Sets
-        </Link>
         {loggedIn ? (
           <>
+            {/* 0.8 front door part 3: Sets only signed in (signed out, the beta gate sends it to the landing page). */}
+            <Link href="/sets" className="hover:text-neutral-900 dark:hover:text-neutral-100">
+              Sets
+            </Link>
             {/* 2026-09-05: added alongside the new /member fallback landing page --
                 there was no link back to it anywhere once you'd navigated away. Not
                 /home -- that name is reserved for the public "/" home page. */}
@@ -79,9 +83,7 @@ export default function NavBar() {
           </>
         ) : (
           <>
-            <Link href="/join" className="hover:text-neutral-900 dark:hover:text-neutral-100">
-              Join your school
-            </Link>
+            {/* 0.8 front door part 3: no "Join your school" -- testers join by invitation (/join/<urn>, A4). */}
             <Link href="/login" className="hover:text-neutral-900 dark:hover:text-neutral-100">
               Log in
             </Link>

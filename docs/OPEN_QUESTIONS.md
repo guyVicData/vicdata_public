@@ -3742,3 +3742,33 @@ redirect allow-list (the substituted-Site-URL bug the route used to guard agains
 the rebase a recovery link comes back to `/reset-password?code=…` (the browser client exchanges it itself, in the
 browser that asked for the link) and a bad or used link as `?error=…&error_description=…` in the query, not the
 `#access_token`/`#error` fragment that branch parses today. Its page needs that one change when it meets this branch.
+
+**M2-1. R-BETA-GATE is rewritten for Q2:** `/join/<urn>` opens signed out (always noindex; it still shows only the
+school's name); bare `/join` and anything under `/join/<urn>/…` go to the landing page. The prompt's version
+redirected `/join/[urn]`.
+
+**M2-2. Signed in, `/` goes to `/member`** (which already forwards each person to their home); the landing page is
+only ever seen signed out.
+
+**M2-3. Also open signed out:** robots.txt and sitemap.xml (a crawler must read them; robots.ts is unchanged) and the
+icon. `/sources` is not on A1's list, so it is behind the gate now.
+
+**M2-4. A script's Bearer token counts as signed in for API routes** once the proxy has verified it (same local
+check as the cookie); a junk, forged or expired one is a 401 there, before the route.
+
+**M2-5. `/auth/callback` is built** (a PKCE `?code=` exchange onto the cookie session, then a path on this site or
+/member; anything wrong goes to /login). `/auth/confirm`, `/reset-password` and `/forgot-password` are allowed by the
+gate but not built here (Q3's branch owns the reset pages).
+
+**M2-6. Q4:** the proxy counts signed-in views of `/schools/<urn>` through the same `count_public_page_view` and table
+(`public_page_daily_views`, name kept). No migration.
+
+**M2-7. Sign out signs out this browser only** (`scope: "local"`, then a full load of `/`). Before, the menu's "Log
+out" used Supabase's default, which signs the person out of every device; "Sign out of all devices" (milestone 3)
+is now the only way to do that. One helper for both menus: src/lib/sign-out.ts.
+
+**M2-8. The old site nav, signed out, shows only "Log in"** (Sets and "Join your school" both led to the landing page
+now). The root layout's meta description is gone (A2).
+
+**M2-9. Env vars Guy can delete on Render:** `ACCESS_GATE_ENABLED`, `ACCESS_GATE_USER`, `ACCESS_GATE_PASSWORD`. Nothing
+reads them. (Keep all four `PREVIEW_ACCESS_*`.)

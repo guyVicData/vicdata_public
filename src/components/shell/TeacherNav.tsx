@@ -12,9 +12,9 @@
 // --muted / --panel-bg / --panel-border2, which also have light-theme values.
 import { BackBar } from "./BackBar";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { signOutHere } from "@/lib/sign-out";
 import { getActiveViewAs } from "@/lib/view-as";
 import { fetchNavLabels, saveNavLabels } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
@@ -211,7 +211,6 @@ function PhaseSwitcher({ phase, phases, labelsOn }: { phase: TeacherPhase | null
 }
 
 export function AccountMenu() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
@@ -265,8 +264,7 @@ export function AccountMenu() {
   // The same call account/page.tsx's own "Log out" makes, then the same destination.
   async function logOut() {
     setLoggingOut(true);
-    await createBrowserSupabaseClient().auth.signOut();
-    router.push("/");
+    await signOutHere();
   }
 
   const rowClass = "w-full rounded-[8px] px-2.5 py-2 text-left text-[13px] font-medium hover:bg-[var(--box-bg)] disabled:opacity-50";

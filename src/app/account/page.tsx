@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { signOutHere } from "@/lib/sign-out";
 import { VISIBLE_ROLE_LABELS, visibleRolesOf } from "@/lib/roles";
 import { ViewAsCard } from "@/components/view-as/ViewAs";
 
@@ -135,14 +135,11 @@ export default function AccountPage() {
 }
 
 function LogoutButton() {
-  const supabase = createBrowserSupabaseClient();
-  const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function handleLogout() {
     setLoggingOut(true);
-    await supabase.auth.signOut();
-    router.push("/");
+    await signOutHere();
   }
 
   return (

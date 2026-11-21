@@ -19,9 +19,12 @@ export const NOINDEX_SOURCES = ["/schools/:path*", "/join/:path*", "/sets", "/se
 export const HIDDEN_SCHOOL_PAGES_SOURCE = "/schools/:path*";
 export const HIDDEN_SCHOOL_PAGES_DESTINATION = "/member";
 
+// R-LANDING-MINIMAL (A2): the private-beta landing page and the signed-out screens are never indexed either.
+export const FRONT_DOOR_NOINDEX = ["/", "/login", "/reset-password", "/forgot-password", "/auth/:path*"];
+
 const nextConfig: NextConfig = {
   async headers() {
-    return NOINDEX_SOURCES.map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }));
+    return [...NOINDEX_SOURCES, ...FRONT_DOOR_NOINDEX].map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }));
   },
   async redirects() {
     return [{ source: HIDDEN_SCHOOL_PAGES_SOURCE, destination: HIDDEN_SCHOOL_PAGES_DESTINATION, permanent: false }];
