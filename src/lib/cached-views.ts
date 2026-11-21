@@ -36,6 +36,8 @@ import type { RankingFilters } from "./comparator-chooser";
 import type { RankingPhase } from "./ranking-population";
 import { serializeAcademicProfile } from "./academic-data-view";
 import { fetchTeacherComparatorProfiles, profileUrnsFor } from "./teacher-comparator-profiles";
+import { rankFixedSets } from "./teacher-view-comparator-series";
+import type { KsStage } from "./academic-data-view";
 
 const setKey = (s: SmtSet) => ({ kind: s.kind, label: s.label, urns: s.urns });
 
@@ -152,4 +154,15 @@ export function cachedRankingSet(urn: string, targetName: string, phase: Ranking
 /** A ranking's whole population, for SMT (`full`): ranked, no profiles or series. */
 export function cachedRankingPopulationSet(urn: string, targetName: string, phase: RankingPhase, filters: RankingFilters, laName: string | null) {
   return cachedResult(resultKey("chooser/ranking-full", urn, { phase, filters, targetName, laName }), () => resolveRankingPopulation(urn, targetName, phase, filters, laName));
+}
+
+// ---- Saved sets --------------------------------------------------------------------------------
+
+/** 21 Nov: /api/teacher/saved-comparator-sets' ranking of the school's saved, Victoria Consultancy and group sets
+ * (every member's academic profile: seven reference reads over all the sets' schools, on every SMT and Teacher
+ * page). Public data only, a pure function of the school, the phase and each set's id and URNs in order, so
+ * keyed on exactly those; who may see which set was decided by the route before. Stored from 100 ms: it is
+ * read on nearly every page, so even a short build is worth keeping. */
+export function cachedFixedSetRanks(urn: string, sets: { id: string; urns: string[] }[], phase: KsStage) {
+  return cachedResult(resultKey("teacher/saved-set-ranks", urn, { phase, sets }), () => rankFixedSets(urn, sets, phase), { minBuildMs: 100 });
 }

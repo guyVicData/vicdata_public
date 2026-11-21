@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { KsStage } from "@/lib/academic-data-view";
 import { isIndependent, type PoolSchool } from "@/lib/teacher-view-rankings";
-import { neighbourPool, rankFixedSets, type NeighbourRow } from "@/lib/teacher-view-comparator-series";
+import { neighbourPool, type NeighbourRow } from "@/lib/teacher-view-comparator-series";
+import { cachedFixedSetRanks } from "@/lib/cached-views";
 import { PERSONAL_COMPARATOR_CAP, readViewAsStore, type SavedComparatorSet, type SavedRanking } from "@/lib/teacher-view-saved-sets";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { parseViewAsGroup, PEEK_HEADER, viewAsForRequest, viewAsMembership, ViewAsUnconfirmed } from "@/lib/view-as";
@@ -88,6 +89,20 @@ export async function GET(request: NextRequest) {
   const { data: userData } = await supabase.auth.getUser(authHeader.replace(/^Bearer\s+/i, ""));
   const userId = userData.user?.id;
   if (!userId) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+
+  // 21 Nov (speed): the school's public reads don't depend on who is asking, so they start as soon as the
+  // caller is signed in, alongside the membership checks below, instead of one after another at the end.
+  // A refused caller's answer never includes them.
+  const groupSetsP = schoolGroupSets(urn, supabase);
+  const neighbourRowsP = supabase
+    .from("school_nearest_neighbours")
+    .select("rank, distance_km, schools!school_nearest_neighbours_neighbour_urn_fkey(urn, current_name, phase, status, establishment_type_group, statutory_low_age, statutory_high_age, la_name)")
+    .eq("urn", urn)
+    .eq("pool", "general")
+    .order("rank", { ascending: true })
+    .limit(100)
+    .then((r) => r); // a query builder runs only once awaited: start it now
+  const targetP = supabase.from("schools").select("la_name, establishment_type_group").eq("urn", urn).maybeSingle().then((r) => r);
 
   // 0.6 snag 4 (B): View as (a confirmed platform admin, the View as cookie naming this
   // school) gets exactly what a real single-membership member of the viewed role gets: the
@@ -181,25 +196,23 @@ export async function GET(request: NextRequest) {
       const curator = { roles: membership.roles ?? [], isAdmin: !!membership.is_admin, isAccountHolder: membership.school_accounts.account_holder_membership_id === membership.id, lead: !!membership.admissions_lead };
       const canEditShared = canCurate(curator, "compared_against");
 
-      const read = await readSets(supabase, { schoolAccountId: membership.school_account_id, profileId: userId });
-      const setRows = await withSchools(supabase, read.sets.filter((x) => forTeacherPage(x, phase) && (x.ownerScope === "school" || x.ownerProfileId === userId)), userId);
-
-      // Victoria Consultancy Sets (20261102100000): the VC-authored sets switched on for this
-      // school. Read under the caller's own token, so RLS returns exactly those -- none at all
-      // until VC switches one on -- and never anything writable. Ranked and charted like any
-      // saved set; flagged `vc` so the chooser shows them in their own row.
-      const { data: vcRows } = await supabase
-        .from("vc_set_school_visibility")
-        .select(VC_SELECT)
-        .eq("school_account_id", membership.school_account_id);
-      // 0.8 sets round 1 (B9): saved rankings follow their owner in the set menu -- the school's in
-      // School sets, the member's own in My sets. Read under the member's own token (RLS), as the
-      // chooser reads them.
-      const { data: rankingRows } = await supabase
-        .from("saved_rankings")
-        .select("id, name, phase, filters, owner_membership_id")
-        .eq("school_account_id", membership.school_account_id)
-        .order("created_at", { ascending: true });
+      // The school's sets, the Victoria Consultancy sets and the saved rankings, read together (21 Nov; one
+      // after another before, the same three queries).
+      const [{ read, setRows }, { data: vcRows }, { data: rankingRows }] = await Promise.all([
+        readSets(supabase, { schoolAccountId: membership.school_account_id, profileId: userId }).then(async (read) => ({
+          read,
+          setRows: await withSchools(supabase, read.sets.filter((x) => forTeacherPage(x, phase) && (x.ownerScope === "school" || x.ownerProfileId === userId)), userId),
+        })),
+        // Victoria Consultancy Sets (20261102100000): the VC-authored sets switched on for this
+        // school. Read under the caller's own token, so RLS returns exactly those -- none at all
+        // until VC switches one on -- and never anything writable. Ranked and charted like any
+        // saved set; flagged `vc` so the chooser shows them in their own row.
+        supabase.from("vc_set_school_visibility").select(VC_SELECT).eq("school_account_id", membership.school_account_id),
+        // 0.8 sets round 1 (B9): saved rankings follow their owner in the set menu -- the school's in
+        // School sets, the member's own in My sets. Read under the member's own token (RLS), as the
+        // chooser reads them.
+        supabase.from("saved_rankings").select("id, name, phase, filters, owner_membership_id").eq("school_account_id", membership.school_account_id).order("created_at", { ascending: true }),
+      ]);
       const memberRankings: SavedRanking[] = ((rankingRows ?? []) as { id: string; name: string; phase: "ks4" | "ks5"; filters: SavedRanking["filters"]; owner_membership_id: string | null }[])
         .filter((r) => r.phase === phase)
         .map((r) => ({ id: r.id, name: r.name, shared: r.owner_membership_id === null, mine: r.owner_membership_id === membership.id, editable: r.owner_membership_id === membership.id || (r.owner_membership_id === null && canEditShared), phase: r.phase, filters: r.filters }));
@@ -255,24 +268,18 @@ export async function GET(request: NextRequest) {
 
   // 0.8 groups r3 (S): the school's own groups, each a read-only set (src/lib/groups/school-sets.ts).
   // A school in no group gets none, and the payload is exactly as before.
-  const groupSets = await schoolGroupSets(urn, supabase);
+  const groupSets = await groupSetsP;
 
-  const { ranked, subjectRanked, seriesByUrn, excludedUrns } = await rankFixedSets(
-    urn,
-    [...sets, ...groupSets].map((s) => ({ id: s.id, urns: s.members.map((m) => m.urn) })),
-    phase,
-  );
-
-  const { data: neighbourRows } = await supabase
-    .from("school_nearest_neighbours")
-    .select("rank, distance_km, schools!school_nearest_neighbours_neighbour_urn_fkey(urn, current_name, phase, status, establishment_type_group, statutory_low_age, statutory_high_age, la_name)")
-    .eq("urn", urn)
-    .eq("pool", "general")
-    .order("rank", { ascending: true })
-    .limit(100);
+  const [{ ranked, subjectRanked, seriesByUrn, excludedUrns }, { data: neighbourRows }, { data: target }] = await Promise.all([
+    cachedFixedSetRanks(
+      urn,
+      [...sets, ...groupSets].map((s) => ({ id: s.id, urns: s.members.map((m) => m.urn) })),
+      phase,
+    ),
+    neighbourRowsP,
+    targetP,
+  ]);
   const candidates: PoolSchool[] = neighbourPool((neighbourRows ?? []) as unknown as NeighbourRow[], phase).slice(0, CANDIDATE_COUNT);
-
-  const { data: target } = await supabase.from("schools").select("la_name, establishment_type_group").eq("urn", urn).maybeSingle();
 
   return NextResponse.json({
     me: { membershipId: membership.id, schoolAccountId: membership.school_account_id, canEditShared, creatorKind: ctx.creatorKind, ...(viewAs ? { viewAs: { urn, stateKey: viewAs.stateKey } } : {}) },
